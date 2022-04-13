@@ -22,7 +22,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -79,7 +80,7 @@ func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consu
 	return sp
 }
 
-func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	var errs error
 	for _, singleTrace := range batchpersignal.SplitTraces(td) {
 		errs = multierr.Append(errs, sp.eventMachine.consume(singleTrace))
@@ -157,7 +158,7 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID, worker *eventMachineWorker) error {
+func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker *eventMachineWorker) error {
 	sp.logger.Debug("processing expired", zap.String("traceID",
 		traceID.HexString()))
 
@@ -182,7 +183,7 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID, worker *e
 	return nil
 }
 
-func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID, fire func(...event)) error {
+func (sp *groupByTraceProcessor) markAsReleased(traceID pcommon.TraceID, fire func(...event)) error {
 	// #get is a potentially blocking operation
 	trace, err := sp.st.get(traceID)
 	if err != nil {
@@ -208,8 +209,8 @@ func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID, fire func
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) error {
-	trace := pdata.NewTraces()
+func (sp *groupByTraceProcessor) onTraceReleased(rss []ptrace.ResourceSpans) error {
+	trace := ptrace.NewTraces()
 	for _, rs := range rss {
 		trs := trace.ResourceSpans().AppendEmpty()
 		rs.CopyTo(trs)
@@ -228,7 +229,7 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) erro
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
+func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
 	trace, err := sp.st.delete(traceID)
 	if err != nil {
 		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID.HexString(), err)
@@ -241,7 +242,7 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
 	return nil
 }
 
-func (sp *groupByTraceProcessor) addSpans(traceID pdata.TraceID, trace pdata.Traces) error {
+func (sp *groupByTraceProcessor) addSpans(traceID pcommon.TraceID, trace ptrace.Traces) error {
 	sp.logger.Debug("creating trace at the storage", zap.String("traceID", traceID.HexString()))
 	return sp.st.createOrAppend(traceID, trace)
 }

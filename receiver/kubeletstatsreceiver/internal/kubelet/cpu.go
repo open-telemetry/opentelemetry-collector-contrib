@@ -15,13 +15,14 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addCPUMetrics(dest pdata.MetricSlice, prefix string, s *stats.CPUStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func addCPUMetrics(dest pmetric.MetricSlice, prefix string, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
@@ -29,7 +30,7 @@ func addCPUMetrics(dest pdata.MetricSlice, prefix string, s *stats.CPUStats, sta
 	addCPUTimeMetric(dest, prefix, s, startTime, currentTime)
 }
 
-func addCPUUsageMetric(dest pdata.MetricSlice, prefix string, s *stats.CPUStats, currentTime pdata.Timestamp) {
+func addCPUUsageMetric(dest pmetric.MetricSlice, prefix string, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s.UsageNanoCores == nil {
 		return
 	}
@@ -37,7 +38,7 @@ func addCPUUsageMetric(dest pdata.MetricSlice, prefix string, s *stats.CPUStats,
 	fillDoubleGauge(dest.AppendEmpty(), prefix, metadata.M.CPUUtilization, value, currentTime)
 }
 
-func addCPUTimeMetric(dest pdata.MetricSlice, prefix string, s *stats.CPUStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func addCPUTimeMetric(dest pmetric.MetricSlice, prefix string, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s.UsageCoreNanoSeconds == nil {
 		return
 	}

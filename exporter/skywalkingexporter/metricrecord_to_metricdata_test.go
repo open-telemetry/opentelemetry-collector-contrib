@@ -18,12 +18,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
 func TestMetricDataToLogService(t *testing.T) {
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty() // Add an empty ResourceMetrics
 	rm := md.ResourceMetrics().AppendEmpty()
 
@@ -43,7 +44,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	noneMetric.SetName("none")
 
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
+	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
@@ -51,40 +52,40 @@ func TestMetricDataToLogService(t *testing.T) {
 	intGaugeDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	intGaugeDataPoint.Attributes().InsertString("testa", "test")
 	intGaugeDataPoint.SetIntVal(10)
-	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleGaugeMetric := metrics.AppendEmpty()
-	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
+	doubleGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	doubleGaugeMetric.SetName("double_gauge")
 	doubleGauge := doubleGaugeMetric.Gauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
 	doubleGaugeDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	doubleGaugeDataPoint.SetDoubleVal(10.1)
-	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	doubleGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	intSumMetric := metrics.AppendEmpty()
-	intSumMetric.SetDataType(pdata.MetricDataTypeSum)
+	intSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	intSumMetric.SetName("int_sum")
 	intSum := intSumMetric.Sum()
 	intSumDataPoints := intSum.DataPoints()
 	intSumDataPoint := intSumDataPoints.AppendEmpty()
 	intSumDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	intSumDataPoint.SetIntVal(11)
-	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	intSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.AppendEmpty()
-	doubleSumMetric.SetDataType(pdata.MetricDataTypeSum)
+	doubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	doubleSumMetric.SetName("double_sum")
 	doubleSum := doubleSumMetric.Sum()
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
 	doubleSumDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	doubleSumDataPoint.SetDoubleVal(10.1)
-	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	doubleSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.AppendEmpty()
-	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
+	doubleHistogramMetric.SetDataType(pmetric.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_$histogram")
 	doubleHistogram := doubleHistogramMetric.Histogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
@@ -93,19 +94,19 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleHistogramDataPoint.Attributes().InsertString("innerLabelH", "innerValueH")
 	doubleHistogramDataPoint.SetCount(5)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	doubleHistogramDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 	doubleHistogramDataPoint.SetBucketCounts([]uint64{1, 2, 2})
 	doubleHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
 
 	doubleSummaryMetric := metrics.AppendEmpty()
-	doubleSummaryMetric.SetDataType(pdata.MetricDataTypeSummary)
+	doubleSummaryMetric.SetDataType(pmetric.MetricDataTypeSummary)
 	doubleSummaryMetric.SetName("double-summary")
 	doubleSummary := doubleSummaryMetric.Summary()
 	doubleSummaryDataPoints := doubleSummary.DataPoints()
 	doubleSummaryDataPoint := doubleSummaryDataPoints.AppendEmpty()
 	doubleSummaryDataPoint.SetCount(2)
 	doubleSummaryDataPoint.SetSum(10.1)
-	doubleSummaryDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	doubleSummaryDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 	doubleSummaryDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	doubleSummaryDataPoint.Attributes().InsertString("innerLabelS", "innerValueS")
 	quantileVal := doubleSummaryDataPoint.QuantileValues().AppendEmpty()

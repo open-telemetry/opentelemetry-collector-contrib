@@ -28,7 +28,9 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -195,7 +197,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	tr := pdata.NewTraces()
+	tr := ptrace.NewTraces()
 
 	rl := tr.ResourceSpans().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
@@ -218,7 +220,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 traces are grouped together under one pdata.Logs.
+	// Hence the first 2 traces are grouped together under one plog.Logs.
 	assert.Equal(t, 1, defaultExp.getTraceCount(),
 		"one log should be routed to default exporter",
 	)
@@ -256,7 +258,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	tr := pdata.NewTraces()
+	tr := ptrace.NewTraces()
 	rs := tr.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -321,7 +323,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
-		tr := pdata.NewTraces()
+		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -335,7 +337,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
-		tr := pdata.NewTraces()
+		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
 
@@ -379,7 +381,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	tr := pdata.NewTraces()
+	tr := ptrace.NewTraces()
 	rm := tr.ResourceSpans().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 	rm.Resource().Attributes().InsertString("attr", "acme")
@@ -444,24 +446,24 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	m := pdata.NewMetrics()
+	m := pmetric.NewMetrics()
 
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu")
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_system")
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "something-else")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_idle")
 
 	ctx := context.Background()
@@ -470,7 +472,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 metrics are grouped together under one pdata.Metrics.
+	// Hence the first 2 metrics are grouped together under one pmetric.Metrics.
 	assert.Equal(t, 1, defaultExp.getMetricCount(),
 		"one metric should be routed to default exporter",
 	)
@@ -508,7 +510,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	m := pdata.NewMetrics()
+	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -573,7 +575,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
-		m := pdata.NewMetrics()
+		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -587,7 +589,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
-		m := pdata.NewMetrics()
+		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
 
@@ -631,7 +633,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	m := pdata.NewMetrics()
+	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 	rm.Resource().Attributes().InsertString("attr", "acme")
@@ -679,7 +681,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	l := pdata.NewLogs()
+	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -744,7 +746,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
-		l := pdata.NewLogs()
+		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -758,7 +760,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
-		l := pdata.NewLogs()
+		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
 
@@ -802,7 +804,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	l := pdata.NewLogs()
+	l := plog.NewLogs()
 	rm := l.ResourceLogs().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 	rm.Resource().Attributes().InsertString("attr", "acme")
@@ -849,7 +851,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	l := pdata.NewLogs()
+	l := plog.NewLogs()
 
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
@@ -872,7 +874,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 metrics are grouped together under one pdata.Logs.
+	// Hence the first 2 metrics are grouped together under one plog.Logs.
 	assert.Equal(t, 1, defaultExp.getLogCount(),
 		"one log should be routed to default exporter",
 	)
@@ -914,7 +916,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 		exp.Start(context.Background(), host)
 
 		for i := 0; i < b.N; i++ {
-			m := pdata.NewMetrics()
+			m := pmetric.NewMetrics()
 			rm := m.ResourceMetrics().AppendEmpty()
 
 			attrs := rm.Resource().Attributes()
@@ -954,14 +956,14 @@ func (m *mockComponent) Shutdown(context.Context) error {
 type mockMetricsExporter struct {
 	mockComponent
 	metricCount int32
-	metrics     []pdata.Metrics
+	metrics     []pmetric.Metrics
 }
 
 func (m *mockMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, metrics pdata.Metrics) error {
+func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, metrics pmetric.Metrics) error {
 	atomic.AddInt32(&m.metricCount, 1)
 	m.metrics = append(m.metrics, metrics)
 	return nil
@@ -974,14 +976,14 @@ func (m *mockMetricsExporter) getMetricCount() int {
 type mockLogsExporter struct {
 	mockComponent
 	logCount int32
-	logs     []pdata.Logs
+	logs     []plog.Logs
 }
 
 func (m *mockLogsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (m *mockLogsExporter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (m *mockLogsExporter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	atomic.AddInt32(&m.logCount, 1)
 	m.logs = append(m.logs, logs)
 	return nil
@@ -994,14 +996,14 @@ func (m *mockLogsExporter) getLogCount() int {
 type mockTracesExporter struct {
 	mockComponent
 	traceCount int32
-	traces     []pdata.Traces
+	traces     []ptrace.Traces
 }
 
 func (m *mockTracesExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (m *mockTracesExporter) ConsumeTraces(_ context.Context, traces pdata.Traces) error {
+func (m *mockTracesExporter) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
 	atomic.AddInt32(&m.traceCount, 1)
 	m.traces = append(m.traces, traces)
 	return nil

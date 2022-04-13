@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Common structure for all the Tests
@@ -40,10 +40,10 @@ type testCase struct {
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
 func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
-		attrMap := pdata.NewMapFromRaw(tt.inputAttributes)
+		attrMap := pcommon.NewMapFromRaw(tt.inputAttributes)
 		ap.Process(context.TODO(), nil, attrMap)
 		attrMap.Sort()
-		require.Equal(t, pdata.NewMapFromRaw(tt.expectedAttributes).Sort(), attrMap)
+		require.Equal(t, pcommon.NewMapFromRaw(tt.expectedAttributes).Sort(), attrMap)
 	})
 }
 
@@ -860,7 +860,7 @@ func TestValidConfiguration(t *testing.T) {
 	ap, err := NewAttrProc(cfg)
 	require.NoError(t, err)
 
-	av := pdata.NewValueInt(123)
+	av := pcommon.NewValueInt(123)
 	compiledRegex := regexp.MustCompile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
@@ -929,10 +929,10 @@ func TestFromContext(t *testing.T) {
 			})
 			require.Nil(t, err)
 			require.NotNil(t, ap)
-			attrMap := pdata.NewMap()
+			attrMap := pcommon.NewMap()
 			ap.Process(tc.ctx, nil, attrMap)
 			attrMap.Sort()
-			require.Equal(t, pdata.NewMapFromRaw(tc.expectedAttributes).Sort(), attrMap)
+			require.Equal(t, pcommon.NewMapFromRaw(tc.expectedAttributes).Sort(), attrMap)
 		})
 	}
 }

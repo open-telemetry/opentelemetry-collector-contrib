@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type point struct {
@@ -31,8 +32,8 @@ type point struct {
 	attributes map[string]string
 }
 
-func translateStatsToMetrics(stats *containerStats, ts time.Time, rm pdata.ResourceMetrics) {
-	pbts := pdata.NewTimestampFromTime(ts)
+func translateStatsToMetrics(stats *containerStats, ts time.Time, rm pmetric.ResourceMetrics) {
+	pbts := pcommon.NewTimestampFromTime(ts)
 
 	resource := rm.Resource()
 	resource.Attributes().InsertString(conventions.AttributeContainerRuntime, "podman")
@@ -46,23 +47,23 @@ func translateStatsToMetrics(stats *containerStats, ts time.Time, rm pdata.Resou
 	appendMemoryMetrics(ms, stats, pbts)
 }
 
-func appendMemoryMetrics(ms pdata.MetricSlice, stats *containerStats, ts pdata.Timestamp) {
+func appendMemoryMetrics(ms pmetric.MetricSlice, stats *containerStats, ts pcommon.Timestamp) {
 	gaugeI(ms, "memory.usage.limit", "By", []point{{intVal: stats.MemLimit}}, ts)
 	gaugeI(ms, "memory.usage.total", "By", []point{{intVal: stats.MemUsage}}, ts)
 	gaugeF(ms, "memory.percent", "1", []point{{doubleVal: stats.MemPerc}}, ts)
 }
 
-func appendNetworkMetrics(ms pdata.MetricSlice, stats *containerStats, ts pdata.Timestamp) {
+func appendNetworkMetrics(ms pmetric.MetricSlice, stats *containerStats, ts pcommon.Timestamp) {
 	sum(ms, "network.io.usage.tx_bytes", "By", []point{{intVal: stats.NetInput}}, ts)
 	sum(ms, "network.io.usage.rx_bytes", "By", []point{{intVal: stats.NetOutput}}, ts)
 }
 
-func appendIOMetrics(ms pdata.MetricSlice, stats *containerStats, ts pdata.Timestamp) {
+func appendIOMetrics(ms pmetric.MetricSlice, stats *containerStats, ts pcommon.Timestamp) {
 	sum(ms, "blockio.io_service_bytes_recursive.write", "By", []point{{intVal: stats.BlockOutput}}, ts)
 	sum(ms, "blockio.io_service_bytes_recursive.read", "By", []point{{intVal: stats.BlockInput}}, ts)
 }
 
-func appendCPUMetrics(ms pdata.MetricSlice, stats *containerStats, ts pdata.Timestamp) {
+func appendCPUMetrics(ms pmetric.MetricSlice, stats *containerStats, ts pcommon.Timestamp) {
 	sum(ms, "cpu.usage.system", "ns", []point{{intVal: stats.CPUSystemNano}}, ts)
 	sum(ms, "cpu.usage.total", "ns", []point{{intVal: stats.CPUNano}}, ts)
 	gaugeF(ms, "cpu.percent", "1", []point{{doubleVal: stats.CPU}}, ts)
@@ -79,20 +80,20 @@ func appendCPUMetrics(ms pdata.MetricSlice, stats *containerStats, ts pdata.Time
 	sum(ms, "cpu.usage.percpu", "ns", points, ts)
 }
 
-func initMetric(ms pdata.MetricSlice, name, unit string) pdata.Metric {
+func initMetric(ms pmetric.MetricSlice, name, unit string) pmetric.Metric {
 	m := ms.AppendEmpty()
 	m.SetName(fmt.Sprintf("container.%s", name))
 	m.SetUnit(unit)
 	return m
 }
 
-func sum(ilm pdata.MetricSlice, metricName string, unit string, points []point, ts pdata.Timestamp) {
+func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.SetDataType(pmetric.MetricDataTypeSum)
 	sum := metric.Sum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 	dataPoints := sum.DataPoints()
 
@@ -104,15 +105,15 @@ func sum(ilm pdata.MetricSlice, metricName string, unit string, points []point, 
 	}
 }
 
-func gauge(ms pdata.MetricSlice, metricName string, unit string) pdata.NumberDataPointSlice {
+func gauge(ms pmetric.MetricSlice, metricName string, unit string) pmetric.NumberDataPointSlice {
 	metric := initMetric(ms, metricName, unit)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 
 	gauge := metric.Gauge()
 	return gauge.DataPoints()
 }
 
-func gaugeI(ms pdata.MetricSlice, metricName string, unit string, points []point, ts pdata.Timestamp) {
+func gaugeI(ms pmetric.MetricSlice, metricName string, unit string, points []point, ts pcommon.Timestamp) {
 	dataPoints := gauge(ms, metricName, unit)
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
@@ -122,7 +123,7 @@ func gaugeI(ms pdata.MetricSlice, metricName string, unit string, points []point
 	}
 }
 
-func gaugeF(ms pdata.MetricSlice, metricName string, unit string, points []point, ts pdata.Timestamp) {
+func gaugeF(ms pmetric.MetricSlice, metricName string, unit string, points []point, ts pcommon.Timestamp) {
 	dataPoints := gauge(ms, metricName, unit)
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
@@ -132,7 +133,7 @@ func gaugeF(ms pdata.MetricSlice, metricName string, unit string, points []point
 	}
 }
 
-func setDataPointAttributes(dataPoint pdata.NumberDataPoint, attributes map[string]string) {
+func setDataPointAttributes(dataPoint pmetric.NumberDataPoint, attributes map[string]string) {
 	for k, v := range attributes {
 		dataPoint.Attributes().InsertString(k, v)
 	}

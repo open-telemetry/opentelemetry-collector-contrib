@@ -20,38 +20,39 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func Test_serializeHistogram(t *testing.T) {
-	hist := pdata.NewHistogramDataPoint()
+	hist := pmetric.NewHistogramDataPoint()
 	hist.SetExplicitBounds([]float64{0, 2, 4, 8})
 	hist.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
 	hist.SetCount(2)
 	hist.SetSum(9.5)
-	hist.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+	hist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-	histWithNonEmptyFirstLast := pdata.NewHistogramDataPoint()
+	histWithNonEmptyFirstLast := pmetric.NewHistogramDataPoint()
 	histWithNonEmptyFirstLast.SetExplicitBounds([]float64{0, 2, 4, 8})
 	histWithNonEmptyFirstLast.SetBucketCounts([]uint64{0, 1, 0, 1, 1})
 	histWithNonEmptyFirstLast.SetCount(3)
 	histWithNonEmptyFirstLast.SetSum(9.5)
-	histWithNonEmptyFirstLast.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+	histWithNonEmptyFirstLast.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 	t.Run("delta with prefix and dimension", func(t *testing.T) {
-		got, err := serializeHistogram("delta_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityDelta, hist)
+		got, err := serializeHistogram("delta_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, hist)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_hist,key=value gauge,min=0,max=8,sum=9.5,count=2 1626438600000", got)
 	})
 
 	t.Run("delta with non-empty first and last bucket", func(t *testing.T) {
-		got, err := serializeHistogram("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityDelta, histWithNonEmptyFirstLast)
+		got, err := serializeHistogram("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, histWithNonEmptyFirstLast)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_nonempty_first_last_hist,key=value gauge,min=0,max=8,sum=9.5,count=3 1626438600000", got)
 	})
 
 	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
-		got, err := serializeHistogram("hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.MetricAggregationTemporalityCumulative, hist)
+		got, err := serializeHistogram("hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, hist)
 		assert.Error(t, err)
 		assert.Equal(t, "", got)
 	})

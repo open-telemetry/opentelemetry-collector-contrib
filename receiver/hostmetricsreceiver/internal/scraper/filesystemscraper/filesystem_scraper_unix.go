@@ -18,14 +18,14 @@
 package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
 const fileSystemStatesLen = 3
 
-func (s *scraper) recordFileSystemUsageMetric(now pdata.Timestamp, deviceUsages []*deviceUsage) {
+func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
 	for _, deviceUsage := range deviceUsages {
 		s.mb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Used),
@@ -51,7 +51,7 @@ func (s *scraper) recordFileSystemUsageMetric(now pdata.Timestamp, deviceUsages 
 
 const systemSpecificMetricsLen = 1
 
-func (s *scraper) recordSystemSpecificMetrics(now pdata.Timestamp, deviceUsages []*deviceUsage) {
+func (s *scraper) recordSystemSpecificMetrics(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
 	for _, deviceUsage := range deviceUsages {
 		s.mb.RecordSystemFilesystemInodesUsageDataPoint(
 			now, int64(deviceUsage.usage.InodesUsed), deviceUsage.partition.Device,

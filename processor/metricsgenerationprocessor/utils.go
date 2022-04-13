@@ -15,13 +15,13 @@
 package metricsgenerationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
-func getNameToMetricMap(rm pdata.ResourceMetrics) map[string]pdata.Metric {
+func getNameToMetricMap(rm pmetric.ResourceMetrics) map[string]pmetric.Metric {
 	ilms := rm.ScopeMetrics()
-	metricMap := make(map[string]pdata.Metric)
+	metricMap := make(map[string]pmetric.Metric)
 
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
@@ -35,14 +35,14 @@ func getNameToMetricMap(rm pdata.ResourceMetrics) map[string]pdata.Metric {
 }
 
 // getMetricValue returns the value of the first data point from the given metric.
-func getMetricValue(metric pdata.Metric) float64 {
-	if metric.DataType() == pdata.MetricDataTypeGauge {
+func getMetricValue(metric pmetric.Metric) float64 {
+	if metric.DataType() == pmetric.MetricDataTypeGauge {
 		dataPoints := metric.Gauge().DataPoints()
 		if dataPoints.Len() > 0 {
 			switch dataPoints.At(0).ValueType() {
-			case pdata.MetricValueTypeDouble:
+			case pmetric.MetricValueTypeDouble:
 				return dataPoints.At(0).DoubleVal()
-			case pdata.MetricValueTypeInt:
+			case pmetric.MetricValueTypeInt:
 				return float64(dataPoints.At(0).IntVal())
 			}
 		}
@@ -54,7 +54,7 @@ func getMetricValue(metric pdata.Metric) float64 {
 // generateMetrics creates a new metric based on the given rule and add it to the Resource Metric.
 // The value for newly calculated metrics is always a floting point number and the dataType is set
 // as MetricDataTypeDoubleGauge.
-func generateMetrics(rm pdata.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
+func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
 	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
@@ -63,22 +63,22 @@ func generateMetrics(rm pdata.ResourceMetrics, operand2 float64, rule internalRu
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
 				newMetric := appendMetric(ilm, rule.name, rule.unit)
-				newMetric.SetDataType(pdata.MetricDataTypeGauge)
+				newMetric.SetDataType(pmetric.MetricDataTypeGauge)
 				addDoubleGaugeDataPoints(metric, newMetric, operand2, rule.operation, logger)
 			}
 		}
 	}
 }
 
-func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float64, operation string, logger *zap.Logger) {
+func addDoubleGaugeDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) {
 	dataPoints := from.Gauge().DataPoints()
 	for i := 0; i < dataPoints.Len(); i++ {
 		fromDataPoint := dataPoints.At(i)
 		var operand1 float64
 		switch fromDataPoint.ValueType() {
-		case pdata.MetricValueTypeDouble:
+		case pmetric.MetricValueTypeDouble:
 			operand1 = fromDataPoint.DoubleVal()
-		case pdata.MetricValueTypeInt:
+		case pmetric.MetricValueTypeInt:
 			operand1 = float64(fromDataPoint.IntVal())
 		}
 
@@ -89,7 +89,7 @@ func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float
 	}
 }
 
-func appendMetric(ilm pdata.ScopeMetrics, name, unit string) pdata.Metric {
+func appendMetric(ilm pmetric.ScopeMetrics, name, unit string) pmetric.Metric {
 	metric := ilm.Metrics().AppendEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)

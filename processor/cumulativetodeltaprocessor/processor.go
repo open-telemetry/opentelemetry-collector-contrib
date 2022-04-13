@@ -18,7 +18,7 @@ import (
 	"context"
 	"math"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -58,20 +58,20 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
-	resourceMetricsSlice.RemoveIf(func(rm pdata.ResourceMetrics) bool {
+	resourceMetricsSlice.RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		ilms := rm.ScopeMetrics()
-		ilms.RemoveIf(func(ilm pdata.ScopeMetrics) bool {
+		ilms.RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
 			ms := ilm.Metrics()
-			ms.RemoveIf(func(m pdata.Metric) bool {
+			ms.RemoveIf(func(m pmetric.Metric) bool {
 				if !ctdp.shouldConvertMetric(m.Name()) {
 					return false
 				}
 				switch m.DataType() {
-				case pdata.MetricDataTypeSum:
+				case pmetric.MetricDataTypeSum:
 					ms := m.Sum()
-					if ms.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
+					if ms.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
 						return false
 					}
 
@@ -89,7 +89,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 						MetricIsMonotonic:      ms.IsMonotonic(),
 					}
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
-					ms.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				default:
 					return false
@@ -119,8 +119,8 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
 	switch dps := in.(type) {
-	case pdata.NumberDataPointSlice:
-		dps.RemoveIf(func(dp pdata.NumberDataPoint) bool {
+	case pmetric.NumberDataPointSlice:
+		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()
 			id.Attributes = dp.Attributes()

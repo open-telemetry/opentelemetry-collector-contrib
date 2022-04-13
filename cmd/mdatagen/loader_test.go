@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func Test_loadMetadata(t *testing.T) {
@@ -53,7 +53,7 @@ func Test_loadMetadata(t *testing.T) {
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
 						Sum: &sum{
-							MetricValueType: MetricValueType{pdata.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.MetricValueTypeDouble},
 							Aggregated:      Aggregated{Aggregation: "cumulative"},
 							Mono:            Mono{Monotonic: true},
 						},
@@ -64,7 +64,7 @@ func Test_loadMetadata(t *testing.T) {
 						Description: "Percentage of CPU time broken down by different states.",
 						Unit:        "1",
 						Gauge: &gauge{
-							MetricValueType: MetricValueType{pdata.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.MetricValueTypeDouble},
 						},
 						Attributes: []attributeName{"enumAttribute"},
 					},

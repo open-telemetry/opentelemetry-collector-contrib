@@ -18,21 +18,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type mockVisitor struct {
 	mock.Mock
 }
 
-func (v *mockVisitor) visit(resource pdata.Resource, instrumentationLibrary pdata.InstrumentationScope, span pdata.Span) (ok bool) {
+func (v *mockVisitor) visit(resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
 	args := v.Called(resource, instrumentationLibrary, span)
 	return args.Bool(0)
 }
 
-// Tests the iteration logic over a pdata.Traces type when no ResourceSpans are provided
+// Tests the iteration logic over a ptrace.Traces type when no ResourceSpans are provided
 func TestTraceDataIterationNoResourceSpans(t *testing.T) {
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 
 	visitor := getMockVisitor(true)
 
@@ -41,9 +42,9 @@ func TestTraceDataIterationNoResourceSpans(t *testing.T) {
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
 
-// Tests the iteration logic over a pdata.Traces type when a ResourceSpans is nil
+// Tests the iteration logic over a ptrace.Traces type when a ResourceSpans is nil
 func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
@@ -53,9 +54,9 @@ func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
 
-// Tests the iteration logic over a pdata.Traces type when ScopeSpans is nil
+// Tests the iteration logic over a ptrace.Traces type when ScopeSpans is nil
 func TestTraceDataIterationScopeSpansIsEmpty(t *testing.T) {
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.ScopeSpans().AppendEmpty()
 
@@ -66,9 +67,9 @@ func TestTraceDataIterationScopeSpansIsEmpty(t *testing.T) {
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
 
-// Tests the iteration logic over a pdata.Traces type when there are no Spans
+// Tests the iteration logic over a ptrace.Traces type when there are no Spans
 func TestTraceDataIterationNoSpans(t *testing.T) {
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.ScopeSpans().AppendEmpty()
 
@@ -81,7 +82,7 @@ func TestTraceDataIterationNoSpans(t *testing.T) {
 
 // Tests the iteration logic if the visitor returns true
 func TestTraceDataIterationNoShortCircuit(t *testing.T) {
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ilss := rs.ScopeSpans().AppendEmpty()
 	ilss.Spans().AppendEmpty()
@@ -96,7 +97,7 @@ func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 
 // Tests the iteration logic short circuit if the visitor returns false
 func TestTraceDataIterationShortCircuit(t *testing.T) {
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ilss := rs.ScopeSpans().AppendEmpty()
 	ilss.Spans().AppendEmpty()

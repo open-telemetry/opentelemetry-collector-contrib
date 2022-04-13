@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -38,7 +38,7 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(pdata.NewMetrics(), actualMetrics))
+	require.NoError(t, scrapertest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 }
 
 func TestScraper(t *testing.T) {
