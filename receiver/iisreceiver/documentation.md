@@ -32,7 +32,7 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| direction | The direction data is moving. |
-| request | The type of request sent by a client. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction (direction) | The direction data is moving. | sent, received |
+| request (request) | The type of request sent by a client. | delete, get, head, options, post, put, trace |
