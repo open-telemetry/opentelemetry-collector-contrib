@@ -59,13 +59,14 @@ func TestStartAndShutdownRemote(t *testing.T) {
 
 	// create the mock server
 	server := grpc.NewServer()
+
+	// register the service
+	api_v2.RegisterSamplingManagerServer(server, &samplingServer{})
+
 	go func() {
 		err = server.Serve(lis)
 		require.NoError(t, err)
 	}()
-
-	// register the service
-	api_v2.RegisterSamplingManagerServer(server, &samplingServer{})
 
 	// create the config, pointing to the mock server
 	cfg := createDefaultConfig().(*Config)

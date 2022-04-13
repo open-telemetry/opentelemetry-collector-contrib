@@ -106,6 +106,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 			EnvVarTags: "TAGS",
 		},
 
+		HostMetadata: ddconfig.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: ddconfig.HostnameSourceFirstResource,
+		},
+
 		SendMetadata:        true,
 		OnlyMetadata:        false,
 		UseResourceMetadata: true,
@@ -218,6 +223,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 		},
+
+		HostMetadata: ddconfig.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: ddconfig.HostnameSourceFirstResource,
+		},
+
 		SendMetadata:        true,
 		OnlyMetadata:        false,
 		UseResourceMetadata: true,
@@ -226,6 +237,16 @@ func TestLoadConfig(t *testing.T) {
 	invalidConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "invalid")].(*ddconfig.Config)
 	err = invalidConfig.Sanitize(zap.NewNop())
 	require.Error(t, err)
+
+	hostMetadataConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "hostmetadata")].(*ddconfig.Config)
+	err = hostMetadataConfig.Sanitize(zap.NewNop())
+	require.NoError(t, err)
+
+	assert.Equal(t, ddconfig.HostMetadataConfig{
+		Enabled:        true,
+		HostnameSource: ddconfig.HostnameSourceConfigOrSystem,
+		Tags:           []string{"example:one"},
+	}, hostMetadataConfig.HostMetadata)
 }
 
 // TestLoadConfigEnvVariables tests that the loading configuration takes into account
@@ -270,7 +291,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		Hostname:   "customhostname",
 		Env:        "none",
 		EnvVarTags: "envexample:tag envexample2:tag",
-		Tags:       []string{"example:tag"},
 	}, apiConfig.TagsConfig)
 	assert.Equal(t,
 		ddconfig.APIConfig{
@@ -301,6 +321,12 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 		}, apiConfig.Traces)
+	assert.Equal(t,
+		ddconfig.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: ddconfig.HostnameSourceFirstResource,
+			Tags:           []string{"example:tag"},
+		}, apiConfig.HostMetadata)
 
 	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default2")].(*ddconfig.Config)
 	err = defaultConfig.Sanitize(zap.NewNop())
@@ -363,7 +389,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	// Use the mock server for API key validation
 	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
-	c.SendMetadata = false
+	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
@@ -393,7 +419,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	// Use the mock server for API key validation
 	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
-	c.SendMetadata = false
+	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
 	exp, err := factory.CreateTracesExporter(
@@ -423,13 +449,15 @@ func TestOnlyMetadata(t *testing.T) {
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
-		API:     ddconfig.APIConfig{Key: "notnull"},
-		Metrics: ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
-		Traces:  ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		API:          ddconfig.APIConfig{Key: "notnull"},
+		Metrics:      ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Traces:       ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		OnlyMetadata: true,
 
-		SendMetadata:        true,
-		OnlyMetadata:        true,
-		UseResourceMetadata: true,
+		HostMetadata: ddconfig.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: ddconfig.HostnameSourceFirstResource,
+		},
 	}
 
 	expTraces, err := factory.CreateTracesExporter(

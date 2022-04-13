@@ -19,21 +19,16 @@ import (
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	winperfcounters "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
-	PerfCounters   []PerfCounterConfig     `mapstructure:"perfcounters"`
-}
-
-// PerfCounterConfig defines configuration for a perf counter object.
-type PerfCounterConfig struct {
-	Object    string          `mapstructure:"object"`
-	Instances []string        `mapstructure:"instances"`
-	Counters  []CounterConfig `mapstructure:"counters"`
+	MetricMetaData map[string]MetricConfig        `mapstructure:"metrics"`
+	PerfCounters   []winperfcounters.ObjectConfig `mapstructure:"perfcounters"`
 }
 
 // MetricsConfig defines the configuration for a metric to be created.
@@ -50,12 +45,6 @@ type GaugeMetric struct {
 type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	Monotonic   bool   `mapstructure:"monotonic"`
-}
-
-type CounterConfig struct {
-	Metric     string            `mapstructure:"metric"`
-	Name       string            `mapstructure:"name"`
-	Attributes map[string]string `mapstructure:"attributes"`
 }
 
 func (c *Config) Validate() error {
@@ -97,13 +86,13 @@ func (c *Config) Validate() error {
 		}
 
 		for _, counter := range pc.Counters {
-			if counter.Metric == "" {
+			if counter.MetricRep.Name == "" {
 				continue
 			}
 
 			foundMatchingMetric := false
 			for name := range c.MetricMetaData {
-				if counter.Metric == name {
+				if counter.MetricRep.Name == name {
 					foundMatchingMetric = true
 				}
 			}
