@@ -32,7 +32,7 @@ type PerfCounterWatcher interface {
 	// Path returns the counter path
 	Path() string
 	// ScrapeData collects a measurement and returns the value(s).
-	ScrapeData() (CounterValue, error)
+	ScrapeData() ([]CounterValue, error)
 	// Close all counters/handles related to the query and free all associated memory.
 	Close() error
 	// GetMetricRep gets the representation of the metric the watcher is connected to
@@ -50,26 +50,24 @@ func (w Watcher) Path() string {
 	return w.Counter.Path()
 }
 
-func (w Watcher) ScrapeData() (CounterValue, error) {
-	counterValues, err := w.Counter.ScrapeData()
+func (w Watcher) ScrapeData() ([]CounterValue, error) {
+	scrapedCounterValues, err := w.Counter.ScrapeData()
 	if err != nil {
-		return CounterValue{}, err
+		return []CounterValue{}, err
 	}
-	metric := w.GetMetricRep()
 
-	if len(counterValues) != 1 {
-		return CounterValue{}, fmt.Errorf("returned incorrect amount of counter values: %d", len(counterValues))
-	}
-	counterValue := counterValues[0]
-
-	if counterValue.InstanceName != "" {
-		if metric.Attributes == nil {
-			metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
+	counterValues := []CounterValue{}
+	for _, counterValue := range scrapedCounterValues {
+		metric := w.GetMetricRep()
+		if counterValue.InstanceName != "" {
+			if metric.Attributes == nil {
+				metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
+			}
+			metric.Attributes[instanceLabelName] = counterValue.InstanceName
 		}
-		metric.Attributes[instanceLabelName] = counterValue.InstanceName
+		counterValues = append(counterValues, CounterValue{MetricRep: metric, Value: counterValue.Value})
 	}
-
-	return CounterValue{MetricRep: metric, Value: counterValue.Value}, nil
+	return counterValues, nil
 }
 
 func (w Watcher) Close() error {

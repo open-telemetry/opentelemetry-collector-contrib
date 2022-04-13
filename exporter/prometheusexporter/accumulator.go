@@ -27,6 +27,10 @@ import (
 type accumulatedValue struct {
 	// value contains a metric with exactly one aggregated datapoint.
 	value pdata.Metric
+
+	// resourceAttrs contain the resource attributes. They are used to output instance and job labels.
+	resourceAttrs pdata.Map
+
 	// updated indicates when metric was last changed.
 	updated time.Time
 
@@ -37,8 +41,9 @@ type accumulatedValue struct {
 type accumulator interface {
 	// Accumulate stores aggragated metric values
 	Accumulate(resourceMetrics pdata.ResourceMetrics) (processed int)
-	// Collect returns a slice with relevant aggregated metrics
-	Collect() (metrics []pdata.Metric)
+	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
+	// The number or metrics and attributes returned will be the same.
+	Collect() (metrics []pdata.Metric, resourceAttrs []pdata.Map)
 }
 
 // LastValueAccumulator keeps last value for accumulated metrics
@@ -64,31 +69,32 @@ func newAccumulator(logger *zap.Logger, metricExpiration time.Duration) accumula
 func (a *lastValueAccumulator) Accumulate(rm pdata.ResourceMetrics) (n int) {
 	now := time.Now()
 	ilms := rm.ScopeMetrics()
+	resourceAttrs := rm.Resource().Attributes()
 
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
 
 		metrics := ilm.Metrics()
 		for j := 0; j < metrics.Len(); j++ {
-			n += a.addMetric(metrics.At(j), ilm.Scope(), now)
+			n += a.addMetric(metrics.At(j), ilm.Scope(), resourceAttrs, now)
 		}
 	}
 
 	return
 }
 
-func (a *lastValueAccumulator) addMetric(metric pdata.Metric, il pdata.InstrumentationScope, now time.Time) int {
+func (a *lastValueAccumulator) addMetric(metric pdata.Metric, il pdata.InstrumentationScope, resourceAttrs pdata.Map, now time.Time) int {
 	a.logger.Debug(fmt.Sprintf("accumulating metric: %s", metric.Name()))
 
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
-		return a.accumulateGauge(metric, il, now)
+		return a.accumulateGauge(metric, il, resourceAttrs, now)
 	case pdata.MetricDataTypeSum:
-		return a.accumulateSum(metric, il, now)
+		return a.accumulateSum(metric, il, resourceAttrs, now)
 	case pdata.MetricDataTypeHistogram:
-		return a.accumulateDoubleHistogram(metric, il, now)
+		return a.accumulateDoubleHistogram(metric, il, resourceAttrs, now)
 	case pdata.MetricDataTypeSummary:
-		return a.accumulateSummary(metric, il, now)
+		return a.accumulateSummary(metric, il, resourceAttrs, now)
 	default:
 		a.logger.With(
 			zap.String("data_type", string(metric.DataType())),
@@ -99,7 +105,7 @@ func (a *lastValueAccumulator) addMetric(metric pdata.Metric, il pdata.Instrumen
 	return 0
 }
 
-func (a *lastValueAccumulator) accumulateSummary(metric pdata.Metric, il pdata.InstrumentationScope, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateSummary(metric pdata.Metric, il pdata.InstrumentationScope, resourceAttrs pdata.Map, now time.Time) (n int) {
 	dps := metric.Summary().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -121,14 +127,14 @@ func (a *lastValueAccumulator) accumulateSummary(metric pdata.Metric, il pdata.I
 
 		mm := createMetric(metric)
 		ip.CopyTo(mm.Summary().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: mm, instrumentationLibrary: il, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: mm, resourceAttrs: resourceAttrs, instrumentationLibrary: il, updated: now})
 		n++
 	}
 
 	return n
 }
 
-func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.InstrumentationScope, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.InstrumentationScope, resourceAttrs pdata.Map, now time.Time) (n int) {
 	dps := metric.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -143,7 +149,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.Ins
 		if !ok {
 			m := createMetric(metric)
 			ip.CopyTo(m.Gauge().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, instrumentationLibrary: il, updated: now})
 			n++
 			continue
 		}
@@ -156,13 +162,13 @@ func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.Ins
 
 		m := createMetric(metric)
 		ip.CopyTo(m.Gauge().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, instrumentationLibrary: il, updated: now})
 		n++
 	}
 	return
 }
 
-func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.InstrumentationScope, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.InstrumentationScope, resourceAttrs pdata.Map, now time.Time) (n int) {
 	doubleSum := metric.Sum()
 
 	// Drop metrics with non-cumulative aggregations
@@ -186,7 +192,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 			m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
 			m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, instrumentationLibrary: il, updated: now})
 			n++
 			continue
 		}
@@ -201,13 +207,13 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 		m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
 		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, instrumentationLibrary: il, updated: now})
 		n++
 	}
 	return
 }
 
-func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il pdata.InstrumentationScope, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il pdata.InstrumentationScope, resourceAttrs pdata.Map, now time.Time) (n int) {
 	doubleHistogram := metric.Histogram()
 
 	// Drop metrics with non-cumulative aggregations
@@ -229,7 +235,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 		if !ok {
 			m := createMetric(metric)
 			ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, instrumentationLibrary: il, updated: now})
 			n++
 			continue
 		}
@@ -243,17 +249,18 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 		m := createMetric(metric)
 		ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
 		m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, instrumentationLibrary: il, updated: now})
 		n++
 	}
 	return
 }
 
-// Collect returns a slice with relevant aggregated metrics
-func (a *lastValueAccumulator) Collect() []pdata.Metric {
+// Collect returns a slice with relevant aggregated metrics and their resource attributes.
+func (a *lastValueAccumulator) Collect() ([]pdata.Metric, []pdata.Map) {
 	a.logger.Debug("Accumulator collect called")
 
-	var res []pdata.Metric
+	var metrics []pdata.Metric
+	var resourceAttrs []pdata.Map
 	expirationTime := time.Now().Add(-a.metricExpiration)
 
 	a.registeredMetrics.Range(func(key, value interface{}) bool {
@@ -264,11 +271,12 @@ func (a *lastValueAccumulator) Collect() []pdata.Metric {
 			return true
 		}
 
-		res = append(res, v.value)
+		metrics = append(metrics, v.value)
+		resourceAttrs = append(resourceAttrs, v.resourceAttrs)
 		return true
 	})
 
-	return res
+	return metrics, resourceAttrs
 }
 
 func timeseriesSignature(ilmName string, metric pdata.Metric, attributes pdata.Map) string {
