@@ -68,7 +68,6 @@
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
-- `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#8555)
