@@ -17,7 +17,8 @@ package scrapertest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // IgnoreMetricValues is a CompareOption that clears all values
@@ -27,12 +28,12 @@ func IgnoreMetricValues() CompareOption {
 
 type ignoreMetricValues struct{}
 
-func (opt ignoreMetricValues) apply(expected, actual pdata.Metrics) {
+func (opt ignoreMetricValues) apply(expected, actual pmetric.Metrics) {
 	maskMetricValues(expected)
 	maskMetricValues(actual)
 }
 
-func maskMetricValues(metrics pdata.Metrics) {
+func maskMetricValues(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ilms := rms.At(i).ScopeMetrics()
@@ -43,14 +44,14 @@ func maskMetricValues(metrics pdata.Metrics) {
 }
 
 // maskMetricSliceValues sets all data point values to zero.
-func maskMetricSliceValues(metrics pdata.MetricSlice) {
+func maskMetricSliceValues(metrics pmetric.MetricSlice) {
 	for i := 0; i < metrics.Len(); i++ {
 		maskDataPointSliceValues(getDataPointSlice(metrics.At(i)))
 	}
 }
 
 // maskDataPointSliceValues sets all data point values to zero.
-func maskDataPointSliceValues(dataPoints pdata.NumberDataPointSlice) {
+func maskDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		dataPoint := dataPoints.At(i)
 		dataPoint.SetIntVal(0)
@@ -71,12 +72,12 @@ type ignoreMetricAttributeValue struct {
 	metricNames   []string
 }
 
-func (opt ignoreMetricAttributeValue) apply(expected, actual pdata.Metrics) {
+func (opt ignoreMetricAttributeValue) apply(expected, actual pmetric.Metrics) {
 	maskMetricAttributeValue(expected, opt)
 	maskMetricAttributeValue(actual, opt)
 }
 
-func maskMetricAttributeValue(metrics pdata.Metrics, opt ignoreMetricAttributeValue) {
+func maskMetricAttributeValue(metrics pmetric.Metrics, opt ignoreMetricAttributeValue) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ilms := rms.At(i).ScopeMetrics()
@@ -90,7 +91,7 @@ func maskMetricAttributeValue(metrics pdata.Metrics, opt ignoreMetricAttributeVa
 // the zero value associated with the attribute data type.
 // If metric names are specified, only the data points within those metrics will be masked.
 // Otherwise, all data points with the attribute will be masked.
-func maskMetricSliceAttributeValues(metrics pdata.MetricSlice, attributeName string, metricNames ...string) {
+func maskMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName string, metricNames ...string) {
 	metricNameSet := make(map[string]bool, len(metricNames))
 	for _, metricName := range metricNames {
 		metricNameSet[metricName] = true
@@ -104,7 +105,7 @@ func maskMetricSliceAttributeValues(metrics pdata.MetricSlice, attributeName str
 			// If attribute values are ignored, some data points may become
 			// indistinguishable from each other, but sorting by value allows
 			// for a reasonably thorough comparison and a deterministic outcome.
-			dps.Sort(func(a, b pdata.NumberDataPoint) bool {
+			dps.Sort(func(a, b pmetric.NumberDataPoint) bool {
 				if a.IntVal() < b.IntVal() {
 					return true
 				}
@@ -119,13 +120,13 @@ func maskMetricSliceAttributeValues(metrics pdata.MetricSlice, attributeName str
 
 // maskDataPointSliceAttributeValues sets the value of the specified attribute to
 // the zero value associated with the attribute data type.
-func maskDataPointSliceAttributeValues(dataPoints pdata.NumberDataPointSlice, attributeName string) {
+func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, attributeName string) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		attributes := dataPoints.At(i).Attributes()
 		attribute, ok := attributes.Get(attributeName)
 		if ok {
 			switch attribute.Type() {
-			case pdata.ValueTypeString:
+			case pcommon.ValueTypeString:
 				attributes.UpdateString(attributeName, "")
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))

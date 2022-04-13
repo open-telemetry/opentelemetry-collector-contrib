@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -66,7 +66,7 @@ func (r *resourceEnhancer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (r *resourceEnhancer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (r *resourceEnhancer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		rms := rm.At(i)

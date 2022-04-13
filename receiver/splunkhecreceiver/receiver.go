@@ -31,8 +31,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -250,7 +251,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	sc := bufio.NewScanner(bodyReader)
 
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	resourceCustomizer := r.createResourceCustomizer(req)
 	if resourceCustomizer != nil {
@@ -374,12 +375,12 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 	}
 }
 
-func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pdata.Resource) {
+func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
 	if r.config.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
-			return func(resource pdata.Resource) {
+			return func(resource pcommon.Resource) {
 				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}

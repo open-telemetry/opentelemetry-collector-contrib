@@ -20,8 +20,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -53,39 +54,39 @@ func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
 /*
 	Processing
 */
-func (c *collector) processMetrics(rm pdata.ResourceMetrics) (n int) {
+func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 	return c.accumulator.Accumulate(rm)
 }
 
 var errUnknownMetricType = fmt.Errorf("unknown metric type")
 
-func (c *collector) convertMetric(metric pdata.Metric, resourceAttrs pdata.Map) (prometheus.Metric, error) {
+func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		return c.convertGauge(metric, resourceAttrs)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		return c.convertSum(metric, resourceAttrs)
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		return c.convertDoubleHistogram(metric, resourceAttrs)
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		return c.convertSummary(metric, resourceAttrs)
 	}
 
 	return nil, errUnknownMetricType
 }
 
-func (c *collector) metricName(namespace string, metric pdata.Metric) string {
+func (c *collector) metricName(namespace string, metric pmetric.Metric) string {
 	if namespace != "" {
 		return namespace + "_" + sanitize(metric.Name(), c.skipSanitizeLabel)
 	}
 	return sanitize(metric.Name(), c.skipSanitizeLabel)
 }
 
-func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.Map, resourceAttrs pdata.Map) (*prometheus.Desc, []string) {
+func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string) {
 	keys := make([]string, 0, attributes.Len()+2) // +2 for job and instance labels.
 	values := make([]string, 0, attributes.Len()+2)
 
-	attributes.Range(func(k string, v pdata.Value) bool {
+	attributes.Range(func(k string, v pcommon.Value) bool {
 		keys = append(keys, sanitize(k, c.skipSanitizeLabel))
 		values = append(values, v.AsString())
 		return true
@@ -114,15 +115,15 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.Map,
 	), values
 }
 
-func (c *collector) convertGauge(metric pdata.Metric, resourceAttrs pdata.Map) (prometheus.Metric, error) {
+func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
 	var value float64
 	switch ip.ValueType() {
-	case pdata.MetricValueTypeInt:
+	case pmetric.MetricValueTypeInt:
 		value = float64(ip.IntVal())
-	case pdata.MetricValueTypeDouble:
+	case pmetric.MetricValueTypeDouble:
 		value = ip.DoubleVal()
 	}
 	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, attributes...)
@@ -136,7 +137,7 @@ func (c *collector) convertGauge(metric pdata.Metric, resourceAttrs pdata.Map) (
 	return m, nil
 }
 
-func (c *collector) convertSum(metric pdata.Metric, resourceAttrs pdata.Map) (prometheus.Metric, error) {
+func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Sum().DataPoints().At(0)
 
 	metricType := prometheus.GaugeValue
@@ -147,9 +148,9 @@ func (c *collector) convertSum(metric pdata.Metric, resourceAttrs pdata.Map) (pr
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
 	var value float64
 	switch ip.ValueType() {
-	case pdata.MetricValueTypeInt:
+	case pmetric.MetricValueTypeInt:
 		value = float64(ip.IntVal())
-	case pdata.MetricValueTypeDouble:
+	case pmetric.MetricValueTypeDouble:
 		value = ip.DoubleVal()
 	}
 	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
@@ -163,7 +164,7 @@ func (c *collector) convertSum(metric pdata.Metric, resourceAttrs pdata.Map) (pr
 	return m, nil
 }
 
-func (c *collector) convertSummary(metric pdata.Metric, resourceAttrs pdata.Map) (prometheus.Metric, error) {
+func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	// TODO: In the off chance that we have multiple points
 	// within the same metric, how should we handle them?
 	point := metric.Summary().DataPoints().At(0)
@@ -187,7 +188,7 @@ func (c *collector) convertSummary(metric pdata.Metric, resourceAttrs pdata.Map)
 	return m, nil
 }
 
-func (c *collector) convertDoubleHistogram(metric pdata.Metric, resourceAttrs pdata.Map) (prometheus.Metric, error) {
+func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Histogram().DataPoints().At(0)
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
 

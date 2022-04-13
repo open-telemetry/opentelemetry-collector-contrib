@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var registry = map[string]interface{}{
@@ -54,11 +54,11 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 			return nil
 		}
 
-		if attrs, ok := val.(pdata.Map); ok {
+		if attrs, ok := val.(pcommon.Map); ok {
 			// TODO(anuraaga): Avoid copying when filtering keys https://github.com/open-telemetry/opentelemetry-collector/issues/4756
-			filtered := pdata.NewMap()
+			filtered := pcommon.NewMap()
 			filtered.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, val pdata.Value) bool {
+			attrs.Range(func(key string, val pcommon.Value) bool {
 				if _, ok := keySet[key]; ok {
 					filtered.Insert(key, val)
 				}

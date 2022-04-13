@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +40,7 @@ type logPacker struct {
 	logger *zap.Logger
 }
 
-func (packer *logPacker) LogRecordToEnvelope(logRecord pdata.LogRecord) *contracts.Envelope {
+func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contracts.Envelope {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(logRecord.Timestamp()).Format(time.RFC3339Nano)

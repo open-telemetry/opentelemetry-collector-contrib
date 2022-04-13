@@ -158,8 +158,9 @@ service:
 	}
 
 	appSettings := service.CollectorSettings{
-		Factories:      factories,
-		ConfigProvider: service.MustNewDefaultConfigProvider([]string{confFile.Name()}, nil),
+		Factories: factories,
+		// TODO: Replace with NewConfigProvider
+		ConfigProvider: service.MustNewDefaultConfigProvider([]string{confFile.Name()}, nil), // nolint:staticcheck
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/atomic"
 )
 
@@ -27,7 +27,7 @@ const metricsPictPairsFile = "../../internal/goldendataset/testdata/generated_pi
 func TestGoldenDataProvider(t *testing.T) {
 	dp := NewGoldenDataProvider("", "", metricsPictPairsFile)
 	dp.SetLoadGeneratorCounters(atomic.NewUint64(0))
-	var ms []pdata.Metrics
+	var ms []pmetric.Metrics
 	for {
 		m, done := dp.GenerateMetrics()
 		if done {

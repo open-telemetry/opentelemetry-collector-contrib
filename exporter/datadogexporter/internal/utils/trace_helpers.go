@@ -20,7 +20,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // constants for tags
@@ -114,7 +114,7 @@ func NormalizeSpanName(tag string, isService bool) string {
 }
 
 // NormalizeSpanKind returns a span kind with the SPAN_KIND prefix trimmed off
-func NormalizeSpanKind(kind pdata.SpanKind) string {
+func NormalizeSpanKind(kind ptrace.SpanKind) string {
 	return strings.TrimPrefix(kind.String(), "SPAN_KIND_")
 }
 

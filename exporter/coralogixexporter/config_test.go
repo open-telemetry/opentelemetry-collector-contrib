@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -77,7 +77,7 @@ func TestExporter(t *testing.T) {
 	te := newCoralogixExporter(apiConfig, params)
 	te.client.startConnection(context.Background(), componenttest.NewNopHost())
 	assert.NotNil(t, te, "failed to create trace exporter")
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	err := te.tracesPusher(context.Background(), td)
 	assert.Nil(t, err)
 }

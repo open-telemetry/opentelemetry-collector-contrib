@@ -22,7 +22,8 @@ import (
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 const tagAttributeKey = "fluent.tag"
@@ -33,7 +34,7 @@ const tagAttributeKey = "fluent.tag"
 
 type Event interface {
 	DecodeMsg(dc *msgp.Reader) error
-	LogRecords() pdata.LogRecordSlice
+	LogRecords() plog.LogRecordSlice
 	Chunk() string
 	Compressed() string
 }
@@ -82,8 +83,8 @@ func (em EventMode) String() string {
 
 // parseInterfaceToMap takes map of interface objects and returns
 // AttributeValueMap
-func parseInterfaceToMap(msi map[string]interface{}) pdata.Value {
-	rv := pdata.NewValueMap()
+func parseInterfaceToMap(msi map[string]interface{}) pcommon.Value {
+	rv := pcommon.NewValueMap()
 	am := rv.MapVal()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
@@ -94,8 +95,8 @@ func parseInterfaceToMap(msi map[string]interface{}) pdata.Value {
 
 // parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
-func parseInterfaceToArray(ai []interface{}) pdata.Value {
-	iv := pdata.NewValueSlice()
+func parseInterfaceToArray(ai []interface{}) pcommon.Value {
+	iv := pcommon.NewValueSlice()
 	av := iv.SliceVal()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
@@ -105,32 +106,32 @@ func parseInterfaceToArray(ai []interface{}) pdata.Value {
 }
 
 // parseToAttributeValue converts interface object to AttributeValue
-func parseToAttributeValue(val interface{}) pdata.Value {
+func parseToAttributeValue(val interface{}) pcommon.Value {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
-		return pdata.NewValueBool(r)
+		return pcommon.NewValueBool(r)
 	case string:
-		return pdata.NewValueString(r)
+		return pcommon.NewValueString(r)
 	case uint64:
-		return pdata.NewValueInt(int64(r))
+		return pcommon.NewValueInt(int64(r))
 	case int64:
-		return pdata.NewValueInt(r)
+		return pcommon.NewValueInt(r)
 	// Sometimes strings come in as bytes array
 	case []byte:
-		return pdata.NewValueString(string(r))
+		return pcommon.NewValueString(string(r))
 	case map[string]interface{}:
 		return parseInterfaceToMap(r)
 	case []interface{}:
 		return parseInterfaceToArray(r)
 	case float32:
-		return pdata.NewValueDouble(float64(r))
+		return pcommon.NewValueDouble(float64(r))
 	case float64:
-		return pdata.NewValueDouble(r)
+		return pcommon.NewValueDouble(r)
 	case nil:
-		return pdata.NewValueEmpty()
+		return pcommon.NewValueEmpty()
 	default:
-		return pdata.NewValueString(fmt.Sprintf("%v", val))
+		return pcommon.NewValueString(fmt.Sprintf("%v", val))
 	}
 }
 
@@ -145,7 +146,7 @@ func timeFromTimestamp(ts interface{}) (time.Time, error) {
 	}
 }
 
-func decodeTimestampToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
+func decodeTimestampToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	tsIntf, err := dc.ReadIntf()
 	if err != nil {
 		return msgp.WrapError(err, "Time")
@@ -156,11 +157,11 @@ func decodeTimestampToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 		return msgp.WrapError(err, "Time")
 	}
 
-	lr.SetTimestamp(pdata.NewTimestampFromTime(ts))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 	return nil
 }
 
-func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
+func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	attrs := lr.Attributes()
 
 	recordLen, err := dc.ReadMapHeader()
@@ -199,16 +200,16 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 }
 
 type MessageEventLogRecord struct {
-	pdata.LogRecordSlice
+	plog.LogRecordSlice
 	OptionsMap
 }
 
-func (melr *MessageEventLogRecord) LogRecords() pdata.LogRecordSlice {
+func (melr *MessageEventLogRecord) LogRecords() plog.LogRecordSlice {
 	return melr.LogRecordSlice
 }
 
 func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
-	melr.LogRecordSlice = pdata.NewLogRecordSlice()
+	melr.LogRecordSlice = plog.NewLogRecordSlice()
 	log := melr.LogRecordSlice.AppendEmpty()
 
 	var arrLen uint32
@@ -273,16 +274,16 @@ func parseOptions(dc *msgp.Reader) (OptionsMap, error) {
 }
 
 type ForwardEventLogRecords struct {
-	pdata.LogRecordSlice
+	plog.LogRecordSlice
 	OptionsMap
 }
 
-func (fe *ForwardEventLogRecords) LogRecords() pdata.LogRecordSlice {
+func (fe *ForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 	return fe.LogRecordSlice
 }
 
 func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
-	fe.LogRecordSlice = pdata.NewLogRecordSlice()
+	fe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	var arrLen uint32
 	arrLen, err = dc.ReadArrayHeader()
@@ -327,7 +328,7 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 	return
 }
 
-func parseEntryToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
+func parseEntryToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	arrLen, err := dc.ReadArrayHeader()
 	if err != nil {
 		return msgp.WrapError(err)
@@ -345,18 +346,18 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 }
 
 type PackedForwardEventLogRecords struct {
-	pdata.LogRecordSlice
+	plog.LogRecordSlice
 	OptionsMap
 }
 
-func (pfe *PackedForwardEventLogRecords) LogRecords() pdata.LogRecordSlice {
+func (pfe *PackedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 	return pfe.LogRecordSlice
 }
 
 // DecodeMsg implements msgp.Decodable.  This was originally code generated but
 // then manually copied here in order to handle the optional Options field.
 func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
-	pfe.LogRecordSlice = pdata.NewLogRecordSlice()
+	pfe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()
 	if err != nil {
@@ -430,7 +431,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 
 	msgpReader := msgp.NewReader(reader)
 	for {
-		lr := pdata.NewLogRecord()
+		lr := plog.NewLogRecord()
 		err := parseEntryToLogRecord(msgpReader, lr)
 		if err != nil {
 			if msgp.Cause(err) == io.EOF {
