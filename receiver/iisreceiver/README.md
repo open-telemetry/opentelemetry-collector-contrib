@@ -9,7 +9,7 @@ Supported pipeline types: `metrics`
 
 The following settings are optional:
 
-- `collection_interval` (default = `10s`): The internal at which metrics should be emitted by this receiver.
+- `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
 
 Example:
 
@@ -19,7 +19,7 @@ Example:
         collection_interval: 10s
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented [here](./config.go).
 
 ## Metrics
 
