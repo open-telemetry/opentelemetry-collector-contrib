@@ -19,13 +19,14 @@ package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
@@ -46,17 +47,20 @@ func newIisReceiver(params component.ReceiverCreateSettings, cfg *Config, consum
 // Start creates and starts the prometheus receiver.
 func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 	rcvr.watchers = []winperfcounters.PerfCounterWatcher{}
+
+	var errors scrapererror.ScrapeErrors
 	for _, objCfg := range getScraperCfgs() {
 		objWatchers, err := objCfg.BuildPaths()
 		if err != nil {
-			rcvr.params.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
+			errors.AddPartial(1, fmt.Errorf("some performance counters could not be initialized; %w", err))
+			continue
 		}
 		for _, objWatcher := range objWatchers {
 			rcvr.watchers = append(rcvr.watchers, objWatcher)
 		}
 	}
 
-	return nil
+	return errors.Combine()
 }
 
 func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {

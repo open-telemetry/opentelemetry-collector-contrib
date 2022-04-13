@@ -37,7 +37,7 @@
                      "unit": "{connections}"
                   },
                   {
-                     "description": "Total amount of attempts to connect to the server.",
+                     "description": "Total number of attempts to connect to the server.",
                      "name": "iis.connection.attempt.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -127,7 +127,7 @@
                      "unit": "By"
                   },
                   {
-                     "description": "Total amount of requests of a given type.",
+                     "description": "Total number of requests of a given type.",
                      "name": "iis.request.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -229,7 +229,7 @@
                      "unit": "{requests}"
                   },
                   {
-                     "description": "Current amount of active threads.",
+                     "description": "Current number of active threads.",
                      "name": "iis.thread.active",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",

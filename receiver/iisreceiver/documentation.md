@@ -10,15 +10,15 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | **iis.connection.active** | Number of active connections. | {connections} | Sum(Int) | <ul> </ul> |
 | **iis.connection.anonymous** | Number of connections established anonymously. | {connections} | Sum(Int) | <ul> </ul> |
-| **iis.connection.attempt.count** | Total amount of attempts to connect to the server. | {attempts} | Sum(Int) | <ul> </ul> |
+| **iis.connection.attempt.count** | Total number of attempts to connect to the server. | {attempts} | Sum(Int) | <ul> </ul> |
 | **iis.network.blocked** | Number of bytes blocked due to bandwidth throttling. | By | Sum(Int) | <ul> </ul> |
 | **iis.network.file.count** | Number of transmitted files. | {files} | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **iis.network.io** | Total amount of bytes sent and received. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **iis.request.count** | Total amount of requests of a given type. | {requests} | Sum(Int) | <ul> <li>request</li> </ul> |
+| **iis.request.count** | Total number of requests of a given type. | {requests} | Sum(Int) | <ul> <li>request</li> </ul> |
 | **iis.request.queue.age.max** | Age of oldest request in the queue. | ms | Gauge(Int) | <ul> </ul> |
 | **iis.request.queue.count** | Current number of requests in the queue. | {requests} | Sum(Int) | <ul> </ul> |
 | **iis.request.rejected** | Total number of requests rejected. | {requests} | Sum(Int) | <ul> </ul> |
-| **iis.thread.active** | Current amount of active threads. | {threads} | Sum(Int) | <ul> </ul> |
+| **iis.thread.active** | Current number of active threads. | {threads} | Sum(Int) | <ul> </ul> |
 | **iis.uptime** | The amount of time the server has been up. | s | Gauge(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.

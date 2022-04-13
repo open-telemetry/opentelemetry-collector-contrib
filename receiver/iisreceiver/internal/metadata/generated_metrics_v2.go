@@ -181,7 +181,7 @@ type metricIisConnectionAttemptCount struct {
 // init fills iis.connection.attempt.count metric with initial data.
 func (m *metricIisConnectionAttemptCount) init() {
 	m.data.SetName("iis.connection.attempt.count")
-	m.data.SetDescription("Total amount of attempts to connect to the server.")
+	m.data.SetDescription("Total number of attempts to connect to the server.")
 	m.data.SetUnit("{attempts}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -389,7 +389,7 @@ type metricIisRequestCount struct {
 // init fills iis.request.count metric with initial data.
 func (m *metricIisRequestCount) init() {
 	m.data.SetName("iis.request.count")
-	m.data.SetDescription("Total amount of requests of a given type.")
+	m.data.SetDescription("Total number of requests of a given type.")
 	m.data.SetUnit("{requests}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -593,7 +593,7 @@ type metricIisThreadActive struct {
 // init fills iis.thread.active metric with initial data.
 func (m *metricIisThreadActive) init() {
 	m.data.SetName("iis.thread.active")
-	m.data.SetDescription("Current amount of active threads.")
+	m.data.SetDescription("Current number of active threads.")
 	m.data.SetUnit("{threads}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)

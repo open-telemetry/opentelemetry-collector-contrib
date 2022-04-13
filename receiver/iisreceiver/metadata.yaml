@@ -21,7 +21,7 @@ attributes:
 
 metrics:
   iis.request.count:
-    description: Total amount of requests of a given type.
+    description: Total number of requests of a given type.
     unit: "{requests}"
     sum:
       monotonic: true
@@ -78,7 +78,7 @@ metrics:
     enabled: true
     attributes: [ direction ]
   iis.connection.attempt.count:
-    description: Total amount of attempts to connect to the server.
+    description: Total number of attempts to connect to the server.
     unit: "{attempts}"
     sum:
       monotonic: true
@@ -102,7 +102,7 @@ metrics:
       value_type: int
     enabled: true
   iis.thread.active:
-    description: Current amount of active threads.
+    description: Current number of active threads.
     unit: "{threads}"
     sum:
       monotonic: false
