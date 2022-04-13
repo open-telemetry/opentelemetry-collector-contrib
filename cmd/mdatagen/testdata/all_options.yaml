@@ -12,6 +12,9 @@ attributes:
     description: Attribute with a known set of values.
     enum: [red, green, blue]
 
+  booleanValueType:
+    description: 
+
 metrics:
   # A metric enabled by default.
   system.cpu.time:

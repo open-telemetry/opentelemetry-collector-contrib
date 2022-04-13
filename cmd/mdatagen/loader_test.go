@@ -39,13 +39,20 @@ func Test_loadMetadata(t *testing.T) {
 					"enumAttribute": {
 						Description: "Attribute with a known set of values.",
 						Value:       "",
-						Enum:        []string{"red", "green", "blue"}},
+						Enum:        []string{"red", "green", "blue"},
+						ValueType:   ""},
 					"freeFormAttribute": {
 						Description: "Attribute that can take on any value.",
 						Value:       ""},
 					"freeFormAttributeWithValue": {
 						Description: "Attribute that has alternate value set.",
-						Value:       "state"}},
+						Value:       "state"},
+					"booleanValueType": {
+						Description: "Attribute with a known set of values.",
+						Value:       "",
+						Enum:        []string{"red", "green", "blue"},
+						ValueType:   "bool",
+					}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
 						Enabled:               (func() *bool { t := true; return &t })(),
@@ -57,7 +64,7 @@ func Test_loadMetadata(t *testing.T) {
 							Aggregated:      Aggregated{Aggregation: "cumulative"},
 							Mono:            Mono{Monotonic: true},
 						},
-						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute"},
+						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute", "booleanValueType"},
 					},
 					"system.cpu.utilization": {
 						Enabled:     (func() *bool { f := false; return &f })(),
@@ -66,7 +73,7 @@ func Test_loadMetadata(t *testing.T) {
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []attributeName{"enumAttribute"},
+						Attributes: []attributeName{"enumAttribute", "booleanValueType"},
 					},
 				},
 			},

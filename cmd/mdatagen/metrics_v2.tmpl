@@ -292,3 +292,26 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
+
+// Attributes contains the possible metric attributes that can be used.
+var Attributes = struct {
+{{- range $name, $info := .Attributes }}
+	// {{ $name.Render }} ({{ $info.Description }})
+        {{- if $info.ValueType }}
+        {{ $name.Render }} {{ $info.ValueType }}
+        {{- else }}
+        {{ $name.Render }} string
+        {{- end }}
+{{- end }}
+}{
+{{- range $name, $info := .Attributes }}
+	{{- if $info.Value }}
+	"{{ $info.Value }}",
+	{{- else }}
+	"{{ $name }}",
+	{{- end }}
+{{- end }}
+}
+
+// A is an alias for Attributes.
+var A = Attributes

@@ -97,7 +97,11 @@ var M = Metrics
 var Attributes = struct {
     {{- range $name, $info := .Attributes }}
     // {{ $name.Render }} ({{ $info.Description }})
+    {{- if $info.ValueType }}
+    {{ $name.Render }} {{ $info.ValueType }}
+    {{- else }}
     {{ $name.Render }} string
+    {{- end }}
     {{- end }}
 }{
     {{- range $name, $info := .Attributes }}
