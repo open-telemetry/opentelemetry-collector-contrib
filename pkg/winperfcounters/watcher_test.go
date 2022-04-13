@@ -147,8 +147,8 @@ func (mpc *mockPerfCounter) Path() string {
 }
 
 // ScrapeData
-func (mpc *mockPerfCounter) ScrapeData() (CounterValue, error) {
-	return CounterValue{Value: mpc.value}, mpc.watchErr
+func (mpc *mockPerfCounter) ScrapeData() ([]CounterValue, error) {
+	return []CounterValue{{Value: mpc.value}}, mpc.watchErr
 }
 
 // Close
@@ -240,7 +240,7 @@ func Test_Scraping(t *testing.T) {
 				}
 
 				require.NoError(t, err)
-				counterVals = append(counterVals, value)
+				counterVals = append(counterVals, value...)
 			}
 
 			if test.expectedErr != "" {
@@ -251,6 +251,33 @@ func Test_Scraping(t *testing.T) {
 			require.Equal(t, test.expectedWatched, counterVals)
 		})
 	}
+}
+
+// Test_Scraping_Wildcard tests that wildcard instances pull out values
+func Test_Scraping_Wildcard(t *testing.T) {
+	counterVals := []CounterValue{}
+	var errs error
+
+	cfg := ObjectConfig{
+		Object:    "LogicalDisk",
+		Instances: []string{"*"},
+		Counters:  []CounterConfig{{Name: "Free Megabytes"}},
+	}
+	watchers, err := cfg.BuildPaths()
+	require.NoError(t, err)
+
+	for _, watcher := range watchers {
+		value, err := watcher.ScrapeData()
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+
+		require.NoError(t, err)
+		counterVals = append(counterVals, value...)
+	}
+
+	require.GreaterOrEqual(t, len(counterVals), 3)
 }
 
 // Test_Closing ensures that watchers close appropriately
