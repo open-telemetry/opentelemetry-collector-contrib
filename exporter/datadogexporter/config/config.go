@@ -18,12 +18,14 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
@@ -356,7 +358,11 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 	}
 
 	if c.API.Key == "" {
-		return errUnsetAPIKey
+		err := errUnsetAPIKey
+		if val, ok := os.LookupEnv("DD_API_KEY"); ok && val != "" {
+			err = multierr.Append(err, errUsedEnvVar("api::key", "DD_API_KEY"))
+		}
+		return err
 	}
 
 	c.API.Key = strings.TrimSpace(c.API.Key)
@@ -376,7 +382,7 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 	}
 
 	for _, err := range c.warnings {
-		logger.Warn(fmt.Sprintf("Deprecated: %v", err))
+		logger.Warn(fmt.Sprintf("%v", err))
 	}
 
 	return nil
