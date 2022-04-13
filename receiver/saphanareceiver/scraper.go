@@ -60,9 +60,7 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 	for _, query := range queries {
 		if query.Enabled == nil || query.Enabled(s.cfg) {
-			if err := query.CollectMetrics(ctx, s, client, now); err != nil {
-				errs.AddPartial(len(query.orderedStats), err)
-			}
+			query.CollectMetrics(ctx, s, client, now, errs)
 		}
 	}
 

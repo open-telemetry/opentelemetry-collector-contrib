@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
@@ -741,16 +742,17 @@ var queries = []monitoringQuery{
 	},
 }
 
-func (m *monitoringQuery) CollectMetrics(ctx context.Context, s *sapHanaScraper, client client, now pdata.Timestamp) error {
+func (m *monitoringQuery) CollectMetrics(ctx context.Context, s *sapHanaScraper, client client, now pdata.Timestamp, errs *scrapererror.ScrapeErrors) {
 	rows, err := client.collectDataFromQuery(ctx, m)
 	if err != nil {
-		return err
+		errs.AddPartial(len(m.orderedStats), err)
+		return
 	}
 	for _, data := range rows {
 		for _, stat := range m.orderedStats {
-			stat.collectStat(s, now, data)
+			if err := stat.collectStat(s, now, data); err != nil {
+				errs.AddPartial(1, err)
+			}
 		}
 	}
-
-	return nil
 }
