@@ -19,7 +19,7 @@
 - `windowsperfcountersreceiver`: Move code into separate package for use in other windowsperfcounter receivers (#9108) 
 - `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
 - `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
-- `vmwarevcenterreceiver`: Add metrics receiver for new vcenter receiver component
+- `vcenterreceiver`: Add metrics receiver for new vcenter receiver component
 
 - `routingprocessor`: add option to drop resource attribute used for routing (#8990)
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
 go 1.17
 

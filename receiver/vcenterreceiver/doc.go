@@ -14,4 +14,4 @@
 
 //go:generate mdatagen --experimental-gen metadata.yaml
 
-package vmwarevcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver"
+package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"

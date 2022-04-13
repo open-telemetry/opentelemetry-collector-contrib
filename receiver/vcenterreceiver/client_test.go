@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vmwarevcenterreceiver // import github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver
+package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 func TestGetClusters(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
-		client := vmwareVcenterClient{
+		client := vcenterClient{
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -40,7 +40,7 @@ func TestGetClusters(t *testing.T) {
 func TestGetResourcePools(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
-		client := vmwareVcenterClient{
+		client := vcenterClient{
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -53,7 +53,7 @@ func TestGetResourcePools(t *testing.T) {
 func TestGetVMs(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
-		client := vmwareVcenterClient{
+		client := vcenterClient{
 			vimDriver: c,
 			finder:    finder,
 		}

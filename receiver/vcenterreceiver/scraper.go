@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vmwarevcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver"
+package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
 // example 2022-03-10 14:15:00
@@ -38,7 +38,7 @@ const timeFormat = "2006-01-02 15:04:05"
 var _ component.Receiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
-	client      *vmwareVcenterClient
+	client      *vcenterClient
 	mb          *metadata.MetricsBuilder
 	logger      *zap.Logger
 	vsanEnabled bool
@@ -58,7 +58,13 @@ func newVmwareVcenterScraper(
 }
 
 func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) error {
-	return v.client.Connect(ctx)
+	err := v.client.Connect(ctx)
+	// Start should not stop the collector if Connect does not succeed,
+	// so we log on start when we cannot connect
+	if err != nil {
+		v.logger.Error(fmt.Sprintf("unable to initially connect to vSphere SDK: %s", err.Error()))
+	}
+	return nil
 }
 
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
@@ -67,7 +73,12 @@ func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	if v.client == nil {
-		return pdata.NewMetrics(), errors.New("failed to connect to http client")
+		return pdata.NewMetrics(), errors.New("no SDK client instantiated")
+	}
+
+	// ensure connection before scraping
+	if err := v.client.Connect(ctx); err != nil {
+		return pdata.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
 
 	errs := &scrapererror.ScrapeErrors{}
