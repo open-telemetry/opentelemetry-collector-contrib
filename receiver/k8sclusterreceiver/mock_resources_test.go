@@ -65,7 +65,7 @@ func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
 	time.Sleep(2 * time.Millisecond)
 }
 
-func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
+func createNodes(t *testing.T, client *fake.Clientset, numNodes int) { //nolint
 	for i := 0; i < numNodes; i++ {
 		n := &corev1.Node{
 			ObjectMeta: v1.ObjectMeta{
