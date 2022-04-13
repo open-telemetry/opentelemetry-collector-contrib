@@ -38,11 +38,15 @@ type prometheusExporter struct {
 }
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
+var errBlankPrometheusMetricPath = errors.New("expecting a non-blank metrics path to run the Prometheus metrics handler")
 
 func newPrometheusExporter(config *Config, set component.ExporterCreateSettings) (*prometheusExporter, error) {
 	addr := strings.TrimSpace(config.Endpoint)
 	if strings.TrimSpace(config.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
+	}
+	if strings.TrimSpace(config.MetricsPath) == "" {
+		return nil, errBlankPrometheusMetricPath
 	}
 
 	collector := newCollector(config, set.Logger)

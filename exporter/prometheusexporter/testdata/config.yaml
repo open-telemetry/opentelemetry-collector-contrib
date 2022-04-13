@@ -14,6 +14,9 @@ exporters:
       "another label": spaced value
     send_timestamps: true
     metric_expiration: 60m
+  prometheus/3:
+    endpoint: "1.2.3.4:1234"
+    metrics_path: "/othermetrics"
 
 service:
   pipelines:

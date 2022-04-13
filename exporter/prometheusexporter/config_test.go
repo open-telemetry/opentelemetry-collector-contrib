@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
+	assert.Equal(t, factory.CreateDefaultConfig(), e0)
 
 	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, &Config{
@@ -54,4 +54,13 @@ func TestLoadConfig(t *testing.T) {
 		MetricExpiration:  60 * time.Minute,
 		skipSanitizeLabel: false,
 	}, e1)
+
+	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")]
+	assert.Equal(t, &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "3")),
+		Endpoint:         "1.2.3.4:1234",
+		MetricsPath:      "/othermetrics",
+		ConstLabels:      map[string]string{},
+		MetricExpiration: 5 * time.Minute,
+	}, e2)
 }

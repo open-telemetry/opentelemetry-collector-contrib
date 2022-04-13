@@ -57,7 +57,22 @@ func TestPrometheusExporter(t *testing.T) {
 		{
 			config: &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				Namespace:        "test",
+				ConstLabels: map[string]string{
+					"foo0":  "bar0",
+					"code0": "one0",
+				},
+				Endpoint:         ":8999",
+				SendTimestamps:   false,
+				MetricExpiration: 60 * time.Second,
+			},
+			wantErr: "expecting a non-blank metrics path to run the Prometheus metrics handler",
+		},
+		{
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Endpoint:         ":88999",
+				MetricsPath:      "/metrics",
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
@@ -108,7 +123,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"code1": "one1",
 		},
 		Endpoint:         ":7777",
-		MetricsPath:      "/metrics",
+		MetricsPath:      "/foo/bar/metrics",
 		MetricExpiration: 120 * time.Minute,
 	}
 
@@ -120,7 +135,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/foo/bar/metrics")
 		require.NoError(t, err)
 	})
 
@@ -134,7 +149,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	for delta := 0; delta <= 20; delta += 10 {
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_")))
 
-		res, err1 := http.Get("http://localhost:7777/metrics")
+		res, err1 := http.Get("http://localhost:7777/foo/bar/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
 		if g, w := res.StatusCode, 200; g != w {
@@ -164,7 +179,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
-	res, err := http.Get("http://localhost:7777/metrics")
+	res, err := http.Get("http://localhost:7777/foo/bar/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	if g, w := res.StatusCode, 200; g != w {
