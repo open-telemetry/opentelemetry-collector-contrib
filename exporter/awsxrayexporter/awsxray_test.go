@@ -67,6 +67,7 @@ func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9255")
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 0, "0 spans have xray trace id")
@@ -116,6 +117,7 @@ func constructSpanData() pdata.Traces {
 	return traces
 }
 
+// nolint:unused
 func constructW3CSpanData() pdata.Traces {
 	resource := constructResource()
 	traces := pdata.NewTraces()
