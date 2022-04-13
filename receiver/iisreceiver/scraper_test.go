@@ -107,8 +107,8 @@ func (mpc *mockPerfCounter) Path() string {
 }
 
 // ScrapeData
-func (mpc *mockPerfCounter) ScrapeData() (winperfcounters.CounterValue, error) {
-	return winperfcounters.CounterValue{Value: 1, MetricRep: mpc.MetricRep}, mpc.watchErr
+func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error) {
+	return []winperfcounters.CounterValue{{Value: 1, MetricRep: mpc.MetricRep}}, mpc.watchErr
 }
 
 // Close

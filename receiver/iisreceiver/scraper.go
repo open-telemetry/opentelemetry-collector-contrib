@@ -65,12 +65,14 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	metricBuilder := metadata.NewMetricsBuilder(rcvr.config.Metrics)
 
 	for _, watcher := range rcvr.watchers {
-		counterValue, err := watcher.ScrapeData()
+		counterValues, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		metricBuilder.RecordAny(now, counterValue.Value, counterValue.MetricRep.Name, counterValue.MetricRep.Attributes)
+		for _, counterValue := range counterValues {
+			metricBuilder.RecordAny(now, counterValue.Value, counterValue.MetricRep.Name, counterValue.MetricRep.Attributes)
+		}
 	}
 
 	return metricBuilder.Emit(), errs
