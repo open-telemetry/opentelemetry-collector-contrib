@@ -92,7 +92,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
           
         scrape_configs:
             - job_name: 'otel-collector'
-              scrape_interval: 10ms
+              scrape_interval: 50ms
+              scrape_timeout: 50ms
               static_configs:
                 - targets: ['%s']
         `, srvURL.Host))
