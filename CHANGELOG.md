@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.10.0-0.29b0...HEAD)
 
 ### Fixed
-
+- `opentelemetry-instrumentation-tornado` Fix Tornado errors mapping to 500
+  ([#1048])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1048)
 - `opentelemetry-instrumentation-urllib` make span attributes available to sampler
   ([1014](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1014))
 - `opentelemetry-instrumentation-flask` Fix non-recording span bug

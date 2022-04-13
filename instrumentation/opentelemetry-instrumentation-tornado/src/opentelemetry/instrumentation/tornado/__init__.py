@@ -420,14 +420,15 @@ def _finish_span(tracer, handler, error=None):
             status_code = error.status_code
             if not ctx and status_code == 404:
                 ctx = _start_span(tracer, handler, _time_ns())
-        if status_code != 404:
+        else:
+            status_code = 500
+            reason = None
+        if status_code >= 500:
             finish_args = (
                 type(error),
                 error,
                 getattr(error, "__traceback__", None),
             )
-            status_code = 500
-            reason = None
 
     if not ctx:
         return

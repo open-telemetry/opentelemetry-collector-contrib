@@ -317,6 +317,41 @@ class TestTornadoInstrumentation(TornadoTest, WsgiTestBase):
             },
         )
 
+    def test_http_error(self):
+        response = self.fetch("/raise_403")
+        self.assertEqual(response.code, 403)
+
+        spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
+        self.assertEqual(len(spans), 2)
+        server, client = spans
+
+        self.assertEqual(server.name, "RaiseHTTPErrorHandler.get")
+        self.assertEqual(server.kind, SpanKind.SERVER)
+        self.assertSpanHasAttributes(
+            server,
+            {
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_SCHEME: "http",
+                SpanAttributes.HTTP_HOST: "127.0.0.1:"
+                + str(self.get_http_port()),
+                SpanAttributes.HTTP_TARGET: "/raise_403",
+                SpanAttributes.HTTP_CLIENT_IP: "127.0.0.1",
+                SpanAttributes.HTTP_STATUS_CODE: 403,
+                "tornado.handler": "tests.tornado_test_app.RaiseHTTPErrorHandler",
+            },
+        )
+
+        self.assertEqual(client.name, "GET")
+        self.assertEqual(client.kind, SpanKind.CLIENT)
+        self.assertSpanHasAttributes(
+            client,
+            {
+                SpanAttributes.HTTP_URL: self.get_url("/raise_403"),
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_STATUS_CODE: 403,
+            },
+        )
+
     def test_dynamic_handler(self):
         response = self.fetch("/dyna")
         self.assertEqual(response.code, 404)
