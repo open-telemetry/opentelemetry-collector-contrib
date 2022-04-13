@@ -59,6 +59,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
+- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 
 ## v0.48.0
 
@@ -87,7 +88,6 @@
 ### 🚀 New components 🚀
 
 - `sigv4authextension`: Enable component (#8518)
-- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 
 ## v0.47.0
 
