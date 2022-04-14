@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
+// +build windows
+
 package windowslogreceiver
 
 import (
@@ -31,9 +34,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
-
-//go:build windows
-// +build windows
 
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
