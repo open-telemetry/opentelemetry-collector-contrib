@@ -18,15 +18,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type jobInstanceDefinition struct {
 	job, instance, host, scheme, port string
 }
 
-func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) *pdata.Resource {
-	resource := pdata.NewResource()
+func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) *pcommon.Resource {
+	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	// Using hardcoded values to assert on outward expectations so that
 	// when variables change, these tests will fail and we'll have reports.
@@ -45,7 +45,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 		name, job string
 		instance  string
 		scheme    string
-		want      *pdata.Resource
+		want      *pcommon.Resource
 	}{
 		{
 			name: "all attributes proper",

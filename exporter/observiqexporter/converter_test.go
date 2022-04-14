@@ -22,18 +22,19 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.Logs {
-	logs := pdata.NewLogs()
+func resourceAndLogRecordsToLogs(r pcommon.Resource, lrs []plog.LogRecord) plog.Logs {
+	logs := plog.NewLogs()
 	resLogs := logs.ResourceLogs()
 
 	resLog := resLogs.AppendEmpty()
 	resLogRes := resLog.Resource()
 
-	r.Attributes().Range(func(k string, v pdata.Value) bool {
+	r.Attributes().Range(func(k string, v pcommon.Value) bool {
 		resLogRes.Attributes().Insert(k, v)
 		return true
 	})
@@ -50,15 +51,15 @@ func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.
 func TestLogdataToObservIQFormat(t *testing.T) {
 	ts := time.Date(2021, 12, 11, 10, 9, 8, 1, time.UTC)
 	stringTs := "2021-12-11T10:09:08.000Z"
-	nanoTs := pdata.Timestamp(ts.UnixNano())
+	nanoTs := pcommon.Timestamp(ts.UnixNano())
 	timeNow = func() time.Time {
 		return ts
 	}
 
 	testCases := []struct {
 		name          string
-		logRecordFn   func() pdata.LogRecord
-		logResourceFn func() pdata.Resource
+		logRecordFn   func() plog.LogRecord
+		logResourceFn func() pcommon.Resource
 		agentName     string
 		agentID       string
 		output        observIQLogEntry
@@ -66,8 +67,8 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 	}{
 		{
 			"Happy path with string attributes",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("Message")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
@@ -75,7 +76,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			pdata.NewResource,
+			pcommon.NewResource,
 			"agent",
 			"agentID",
 			observIQLogEntry{
@@ -93,8 +94,8 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"works with attributes of all types",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("Message")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertBool("bool", true)
@@ -102,11 +103,11 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.Attributes().InsertInt("int", 3)
 				logRecord.Attributes().InsertNull("null")
 
-				mapVal := pdata.NewValueMap()
-				mapVal.MapVal().Insert("mapKey", pdata.NewValueString("value"))
+				mapVal := pcommon.NewValueMap()
+				mapVal.MapVal().Insert("mapKey", pcommon.NewValueString("value"))
 				logRecord.Attributes().Insert("map", mapVal)
 
-				arrVal := pdata.NewValueSlice()
+				arrVal := pcommon.NewValueSlice()
 				arrVal.SliceVal().EnsureCapacity(2)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(2)
@@ -115,20 +116,20 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			func() pdata.Resource {
-				res := pdata.NewResource()
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
 				res.Attributes().InsertBool("bool", true)
 				res.Attributes().InsertString("string", "string")
 				res.Attributes().InsertInt("int", 1)
 				res.Attributes().InsertNull("null")
 
-				mapVal := pdata.NewValueMap()
+				mapVal := pcommon.NewValueMap()
 				mapVal.MapVal().InsertDouble("double", 1.1)
 				mapVal.MapVal().InsertBool("bool", false)
 				mapVal.MapVal().InsertNull("null")
 				res.Attributes().Insert("map", mapVal)
 
-				arrVal := pdata.NewValueSlice()
+				arrVal := pcommon.NewValueSlice()
 				arrVal.SliceVal().EnsureCapacity(2)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
 				arrVal.SliceVal().AppendEmpty().SetDoubleVal(2.0)
@@ -171,12 +172,12 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"Body is nil",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			pdata.NewResource,
+			pcommon.NewResource,
 			"agent",
 			"agentID",
 			observIQLogEntry{
@@ -190,17 +191,17 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"Body is map",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 
-				mapVal := pdata.NewValueMap()
-				mapVal.MapVal().Insert("mapKey", pdata.NewValueString("value"))
+				mapVal := pcommon.NewValueMap()
+				mapVal.MapVal().Insert("mapKey", pcommon.NewValueString("value"))
 				mapVal.CopyTo(logRecord.Body())
 
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			pdata.NewResource,
+			pcommon.NewResource,
 			"agent",
 			"agentID",
 			observIQLogEntry{
@@ -216,10 +217,10 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"Body is array",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 
-				pdata.NewValueSlice().CopyTo(logRecord.Body())
+				pcommon.NewValueSlice().CopyTo(logRecord.Body())
 				logRecord.Body().SliceVal().EnsureCapacity(2)
 				logRecord.Body().SliceVal().AppendEmpty().SetStringVal("string")
 				logRecord.Body().SliceVal().AppendEmpty().SetDoubleVal(1.0)
@@ -227,7 +228,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			pdata.NewResource,
+			pcommon.NewResource,
 			"agent",
 			"agentID",
 			observIQLogEntry{
@@ -244,15 +245,15 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"Body is an int",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 
 				logRecord.Body().SetIntVal(1)
 
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			pdata.NewResource,
+			pcommon.NewResource,
 			"agent",
 			"agentID",
 			observIQLogEntry{
@@ -266,11 +267,11 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"Body and attributes are maps",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 
-				bodyMapVal := pdata.NewValueMap()
-				bodyMapVal.MapVal().Insert("mapKey", pdata.NewValueString("body"))
+				bodyMapVal := pcommon.NewValueMap()
+				bodyMapVal.MapVal().Insert("mapKey", pcommon.NewValueString("body"))
 				bodyMapVal.CopyTo(logRecord.Body())
 
 				logRecord.Attributes().InsertString("attrib", "logAttrib")
@@ -278,7 +279,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.SetTimestamp(nanoTs)
 				return logRecord
 			},
-			pdata.NewResource,
+			pcommon.NewResource,
 			"agent",
 			"agentID",
 			observIQLogEntry{
@@ -296,12 +297,12 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"No timestamp on record",
-			func() pdata.LogRecord {
-				logRecord := pdata.NewLogRecord()
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("Message")
 				return logRecord
 			},
-			pdata.NewResource,
+			pcommon.NewResource,
 			"agent",
 			"agentID",
 			observIQLogEntry{
@@ -317,7 +318,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			logs := resourceAndLogRecordsToLogs(testCase.logResourceFn(), []pdata.LogRecord{testCase.logRecordFn()})
+			logs := resourceAndLogRecordsToLogs(testCase.logResourceFn(), []plog.LogRecord{testCase.logRecordFn()})
 			res, errs := logdataToObservIQFormat(
 				logs,
 				testCase.agentID,

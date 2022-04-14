@@ -23,18 +23,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestTranslateStatsToMetrics(t *testing.T) {
 	ts := time.Now()
 	stats := genContainerStats()
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	translateStatsToMetrics(stats, ts, md.ResourceMetrics().AppendEmpty())
 	assertStatsEqualToMetrics(t, stats, md)
 }
 
-func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pdata.Metrics) {
+func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pmetric.Metrics) {
 	assert.Equal(t, md.ResourceMetrics().Len(), 1)
 	rsm := md.ResourceMetrics().At(0)
 
@@ -58,33 +58,33 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pda
 		m := metrics.At(i)
 		switch m.Name() {
 		case "container.memory.usage.limit":
-			assertMetricEqual(t, m, pdata.MetricDataTypeGauge, []point{{intVal: podmanStats.MemLimit}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeGauge, []point{{intVal: podmanStats.MemLimit}})
 		case "container.memory.usage.total":
-			assertMetricEqual(t, m, pdata.MetricDataTypeGauge, []point{{intVal: podmanStats.MemUsage}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeGauge, []point{{intVal: podmanStats.MemUsage}})
 		case "container.memory.percent":
-			assertMetricEqual(t, m, pdata.MetricDataTypeGauge, []point{{doubleVal: podmanStats.MemPerc}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeGauge, []point{{doubleVal: podmanStats.MemPerc}})
 		case "container.network.io.usage.tx_bytes":
-			assertMetricEqual(t, m, pdata.MetricDataTypeSum, []point{{intVal: podmanStats.NetInput}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeSum, []point{{intVal: podmanStats.NetInput}})
 		case "container.network.io.usage.rx_bytes":
-			assertMetricEqual(t, m, pdata.MetricDataTypeSum, []point{{intVal: podmanStats.NetOutput}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeSum, []point{{intVal: podmanStats.NetOutput}})
 
 		case "container.blockio.io_service_bytes_recursive.write":
-			assertMetricEqual(t, m, pdata.MetricDataTypeSum, []point{{intVal: podmanStats.BlockOutput}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeSum, []point{{intVal: podmanStats.BlockOutput}})
 		case "container.blockio.io_service_bytes_recursive.read":
-			assertMetricEqual(t, m, pdata.MetricDataTypeSum, []point{{intVal: podmanStats.BlockInput}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeSum, []point{{intVal: podmanStats.BlockInput}})
 
 		case "container.cpu.usage.system":
-			assertMetricEqual(t, m, pdata.MetricDataTypeSum, []point{{intVal: podmanStats.CPUSystemNano}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeSum, []point{{intVal: podmanStats.CPUSystemNano}})
 		case "container.cpu.usage.total":
-			assertMetricEqual(t, m, pdata.MetricDataTypeSum, []point{{intVal: podmanStats.CPUNano}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeSum, []point{{intVal: podmanStats.CPUNano}})
 		case "container.cpu.percent":
-			assertMetricEqual(t, m, pdata.MetricDataTypeGauge, []point{{doubleVal: podmanStats.CPU}})
+			assertMetricEqual(t, m, pmetric.MetricDataTypeGauge, []point{{doubleVal: podmanStats.CPU}})
 		case "container.cpu.usage.percpu":
 			points := make([]point, len(podmanStats.PerCPU))
 			for i, v := range podmanStats.PerCPU {
 				points[i] = point{intVal: v, attributes: map[string]string{"core": fmt.Sprintf("cpu%d", i)}}
 			}
-			assertMetricEqual(t, m, pdata.MetricDataTypeSum, points)
+			assertMetricEqual(t, m, pmetric.MetricDataTypeSum, points)
 
 		default:
 			t.Errorf(fmt.Sprintf("unexpected metric: %s", m.Name()))
@@ -92,19 +92,19 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pda
 	}
 }
 
-func assertMetricEqual(t *testing.T, m pdata.Metric, dt pdata.MetricDataType, pts []point) {
+func assertMetricEqual(t *testing.T, m pmetric.Metric, dt pmetric.MetricDataType, pts []point) {
 	assert.Equal(t, m.DataType(), dt)
 	switch dt {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		assertPoints(t, m.Gauge().DataPoints(), pts)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		assertPoints(t, m.Sum().DataPoints(), pts)
 	default:
 		t.Errorf("unexpected data type: %s", dt)
 	}
 }
 
-func assertPoints(t *testing.T, dpts pdata.NumberDataPointSlice, pts []point) {
+func assertPoints(t *testing.T, dpts pmetric.NumberDataPointSlice, pts []point) {
 	assert.Equal(t, dpts.Len(), len(pts))
 	for i, expected := range pts {
 		got := dpts.At(i)

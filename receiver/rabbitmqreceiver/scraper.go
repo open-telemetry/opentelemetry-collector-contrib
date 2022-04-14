@@ -20,7 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
@@ -71,18 +72,18 @@ func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) (err e
 }
 
 // scrape collects metrics from the RabbitMQ API
-func (r *rabbitmqScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	now := pdata.NewTimestampFromTime(time.Now())
+func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// Validate we don't attempt to scrape without initializing the client
 	if r.client == nil {
-		return pdata.NewMetrics(), errClientNotInit
+		return pmetric.NewMetrics(), errClientNotInit
 	}
 
 	// Get queues for processing
 	queues, err := r.client.GetQueues(ctx)
 	if err != nil {
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 
 	// Collect metrics for each queue
@@ -95,7 +96,7 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 }
 
 // collectQueue collects metrics
-func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pdata.Timestamp) {
+func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestamp) {
 	r.mb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
 	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageState.Unacknowledged)
 	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageState.Ready)

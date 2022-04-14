@@ -22,7 +22,9 @@ import (
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type tracesExporter struct {
@@ -45,7 +47,7 @@ func newTracesExporter(config *Config, params component.ExporterCreateSettings) 
 	}
 }
 
-func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	batch := e.writer.newBatch()
 
 	err := e.converter.WriteTraces(ctx, td, batch)
@@ -100,7 +102,7 @@ func newMetricsExporter(config *Config, params component.ExporterCreateSettings)
 	}, nil
 }
 
-func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	batch := e.writer.newBatch()
 
 	err := e.converter.WriteMetrics(ctx, md, batch)
@@ -142,7 +144,7 @@ func newLogsExporter(config *Config, params component.ExporterCreateSettings) *l
 	}
 }
 
-func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	batch := e.writer.newBatch()
 
 	err := e.converter.WriteLogs(ctx, ld, batch)

@@ -20,15 +20,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 )
 
-// MatchType specifies the strategy for matching against `pdata.Metric`s. This
+// MatchType specifies the strategy for matching against `pmetric.Metric`s. This
 // is distinct from filterset.MatchType which matches against metric (and
 // tracing) names only. To support matching against metric names and
-// `pdata.Metric`s, filtermetric.MatchType is effectively a superset of
+// `pmetric.Metric`s, filtermetric.MatchType is effectively a superset of
 // filterset.MatchType.
 type MatchType string
 
 // These are the MatchTypes that users can specify for filtering
-// `pdata.Metric`s.
+// `pmetric.Metric`s.
 const (
 	Regexp           = MatchType(filterset.Regexp)
 	Strict           = MatchType(filterset.Strict)

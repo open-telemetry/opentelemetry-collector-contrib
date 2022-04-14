@@ -20,8 +20,9 @@ import (
 	"time"
 	"unsafe"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -42,8 +43,8 @@ var otSpanTagsMapping = map[string]string{
 	"mq.broker":   conventions.AttributeNetPeerName,
 }
 
-func SkywalkingToTraces(segment *agentV3.SegmentObject) pdata.Traces {
-	traceData := pdata.NewTraces()
+func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
+	traceData := ptrace.NewTraces()
 
 	swSpans := segment.Spans
 	if swSpans == nil && len(swSpans) == 0 {
@@ -54,8 +55,8 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) pdata.Traces {
 	rs := resourceSpan.Resource()
 	for _, span := range swSpans {
 		swTagsToInternalResource(span, rs)
-		rs.Attributes().Insert(conventions.AttributeServiceName, pdata.NewValueString(segment.GetService()))
-		rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pdata.NewValueString(segment.GetServiceInstance()))
+		rs.Attributes().Insert(conventions.AttributeServiceName, pcommon.NewValueString(segment.GetService()))
+		rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pcommon.NewValueString(segment.GetServiceInstance()))
 	}
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
@@ -64,7 +65,7 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) pdata.Traces {
 	return traceData
 }
 
-func swTagsToInternalResource(span *agentV3.SpanObject, dest pdata.Resource) {
+func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 	if span == nil {
 		return
 	}
@@ -85,7 +86,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pdata.Resource) {
 	}
 }
 
-func swSpansToSpanSlice(traceID string, spans []*agentV3.SpanObject, dest pdata.SpanSlice) {
+func swSpansToSpanSlice(traceID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
 	if len(spans) == 0 {
 		return
 	}
@@ -99,7 +100,7 @@ func swSpansToSpanSlice(traceID string, spans []*agentV3.SpanObject, dest pdata.
 	}
 }
 
-func swSpanToSpan(traceID string, span *agentV3.SpanObject, dest pdata.Span) {
+func swSpanToSpan(traceID string, span *agentV3.SpanObject, dest ptrace.Span) {
 	dest.SetTraceID(stringToTraceID(traceID))
 	dest.SetSpanID(uInt32ToSpanID(uint32(span.GetSpanId())))
 
@@ -125,18 +126,18 @@ func swSpanToSpan(traceID string, span *agentV3.SpanObject, dest pdata.Span) {
 	switch {
 	case span.SpanLayer == agentV3.SpanLayer_MQ:
 		if span.SpanType == agentV3.SpanType_Entry {
-			dest.SetKind(pdata.SpanKindConsumer)
+			dest.SetKind(ptrace.SpanKindConsumer)
 		} else if span.SpanType == agentV3.SpanType_Exit {
-			dest.SetKind(pdata.SpanKindProducer)
+			dest.SetKind(ptrace.SpanKindProducer)
 		}
 	case span.GetSpanType() == agentV3.SpanType_Exit:
-		dest.SetKind(pdata.SpanKindClient)
+		dest.SetKind(ptrace.SpanKindClient)
 	case span.GetSpanType() == agentV3.SpanType_Entry:
-		dest.SetKind(pdata.SpanKindServer)
+		dest.SetKind(ptrace.SpanKindServer)
 	case span.GetSpanType() == agentV3.SpanType_Local:
-		dest.SetKind(pdata.SpanKindInternal)
+		dest.SetKind(ptrace.SpanKindInternal)
 	default:
-		dest.SetKind(pdata.SpanKindUnspecified)
+		dest.SetKind(ptrace.SpanKindUnspecified)
 	}
 
 	swLogsToSpanEvents(span.GetLogs(), dest.Events())
@@ -144,7 +145,7 @@ func swSpanToSpan(traceID string, span *agentV3.SpanObject, dest pdata.Span) {
 	swReferencesToSpanLinks(span.Refs, dest.Links())
 }
 
-func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest pdata.SpanLinkSlice) {
+func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanLinkSlice) {
 	if len(refs) == 0 {
 		return
 	}
@@ -182,24 +183,24 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest pdata.SpanLi
 	}
 }
 
-func setInternalSpanStatus(span *agentV3.SpanObject, dest pdata.SpanStatus) {
+func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
 	if span.GetIsError() {
-		dest.SetCode(pdata.StatusCodeError)
+		dest.SetCode(ptrace.StatusCodeError)
 		dest.SetMessage("ERROR")
 	} else {
-		dest.SetCode(pdata.StatusCodeOk)
+		dest.SetCode(ptrace.StatusCodeOk)
 		dest.SetMessage("SUCCESS")
 	}
 }
 
-func swLogsToSpanEvents(logs []*agentV3.Log, dest pdata.SpanEventSlice) {
+func swLogsToSpanEvents(logs []*agentV3.Log, dest ptrace.SpanEventSlice) {
 	if len(logs) == 0 {
 		return
 	}
 	dest.EnsureCapacity(len(logs))
 
 	for i, log := range logs {
-		var event pdata.SpanEvent
+		var event ptrace.SpanEvent
 		if dest.Len() > i {
 			event = dest.At(i)
 		} else {
@@ -219,7 +220,7 @@ func swLogsToSpanEvents(logs []*agentV3.Log, dest pdata.SpanEventSlice) {
 	}
 }
 
-func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pdata.Map) {
+func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pcommon.Map) {
 	if pairs == nil {
 		return
 	}
@@ -229,24 +230,24 @@ func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pdat
 	}
 }
 
-// microsecondsToTimestamp converts epoch microseconds to pdata.Timestamp
-func microsecondsToTimestamp(ms int64) pdata.Timestamp {
-	return pdata.NewTimestampFromTime(time.UnixMilli(ms))
+// microsecondsToTimestamp converts epoch microseconds to pcommon.Timestamp
+func microsecondsToTimestamp(ms int64) pcommon.Timestamp {
+	return pcommon.NewTimestampFromTime(time.UnixMilli(ms))
 }
 
-func stringToTraceID(traceID string) pdata.TraceID {
-	return pdata.NewTraceID(unsafeStringToBytes(traceID))
+func stringToTraceID(traceID string) pcommon.TraceID {
+	return pcommon.NewTraceID(unsafeStringToBytes(traceID))
 }
 
-func stringToParentSpanID(traceID string) pdata.SpanID {
-	return pdata.NewSpanID(unsafeStringTo8Bytes(traceID))
+func stringToParentSpanID(traceID string) pcommon.SpanID {
+	return pcommon.NewSpanID(unsafeStringTo8Bytes(traceID))
 }
 
-// uInt32ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
-func uInt32ToSpanID(id uint32) pdata.SpanID {
+// uInt32ToSpanID converts the uint64 representation of a SpanID to pcommon.SpanID.
+func uInt32ToSpanID(id uint32) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint32(spanID[:], id)
-	return pdata.NewSpanID(spanID)
+	return pcommon.NewSpanID(spanID)
 }
 
 func unsafeStringToBytes(s string) [16]byte {

@@ -33,7 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -99,7 +99,7 @@ func TestConsumeMetricsData(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		md           pdata.Metrics
+		md           pmetric.Metrics
 		acceptClient bool
 		createServer bool
 	}{
@@ -280,7 +280,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 	recvWG.Wait()
 }
 
-func generateLargeBatch() pdata.Metrics {
+func generateLargeBatch() pmetric.Metrics {
 	var metrics []*metricspb.Metric
 	ts := time.Now()
 	for i := 0; i < 65000; i++ {

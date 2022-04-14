@@ -21,7 +21,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -55,13 +56,13 @@ func (s *brokerScraper) shutdown(context.Context) error {
 	return nil
 }
 
-func (s *brokerScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	brokers := s.client.Brokers()
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName(instrumentationLibName)
-	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.NewTimestampFromTime(time.Now()), pdata.NewMap(), int64(len(brokers)))
+	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pcommon.NewTimestampFromTime(time.Now()), pcommon.NewMap(), int64(len(brokers)))
 
 	return md, nil
 }

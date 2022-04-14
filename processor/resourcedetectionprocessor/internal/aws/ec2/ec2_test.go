@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -118,7 +118,7 @@ func TestDetector_Detect(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    pdata.Resource
+		want    pcommon.Resource
 		wantErr bool
 	}{
 		{
@@ -135,8 +135,8 @@ func TestDetector_Detect(t *testing.T) {
 				retHostname: "example-hostname",
 				isAvailable: true}},
 			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				res := pdata.NewResource()
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
 				attr := res.Attributes()
 				attr.InsertString("cloud.account.id", "account1234")
 				attr.InsertString("cloud.provider", "aws")
@@ -157,8 +157,8 @@ func TestDetector_Detect(t *testing.T) {
 				isAvailable: false,
 			}},
 			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				return pdata.NewResource()
+			want: func() pcommon.Resource {
+				return pcommon.NewResource()
 			}(),
 			wantErr: false},
 		{
@@ -169,8 +169,8 @@ func TestDetector_Detect(t *testing.T) {
 				isAvailable: true,
 			}},
 			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				return pdata.NewResource()
+			want: func() pcommon.Resource {
+				return pcommon.NewResource()
 			}(),
 			wantErr: true},
 		{
@@ -182,8 +182,8 @@ func TestDetector_Detect(t *testing.T) {
 				isAvailable:    true,
 			}},
 			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				return pdata.NewResource()
+			want: func() pcommon.Resource {
+				return pcommon.NewResource()
 			}(),
 			wantErr: true},
 	}

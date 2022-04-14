@@ -18,23 +18,23 @@ import (
 	"reflect"
 	"testing"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestGetHoneycombTraceID(t *testing.T) {
 	tests := []struct {
 		name    string
-		traceID pdata.TraceID
+		traceID pcommon.TraceID
 		want    string
 	}{
 		{
 			name:    "128-bit zero-padded traceID",
-			traceID: pdata.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 203, 228, 222, 205, 18, 66, 145, 119}),
+			traceID: pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 203, 228, 222, 205, 18, 66, 145, 119}),
 			want:    "cbe4decd12429177",
 		},
 		{
 			name:    "128-bit non-zero-padded traceID",
-			traceID: pdata.NewTraceID([16]byte{242, 59, 66, 234, 194, 137, 160, 253, 205, 228, 143, 203, 227, 171, 26, 50}),
+			traceID: pcommon.NewTraceID([16]byte{242, 59, 66, 234, 194, 137, 160, 253, 205, 228, 143, 203, 227, 171, 26, 50}),
 			want:    "f23b42eac289a0fdcde48fcbe3ab1a32",
 		},
 	}

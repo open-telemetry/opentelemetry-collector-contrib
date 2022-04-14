@@ -19,16 +19,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func Test_newConditionEvaluator(t *testing.T) {
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("bear")
 	tests := []struct {
 		name     string
 		cond     *Condition
-		matching pdata.Span
+		matching ptrace.Span
 	}{
 		{
 			name: "literals match",
@@ -106,8 +107,8 @@ func Test_newConditionEvaluator(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, evaluate(testTransformContext{
 				span:     tt.matching,
-				il:       pdata.NewInstrumentationScope(),
-				resource: pdata.NewResource(),
+				il:       pcommon.NewInstrumentationScope(),
+				resource: pcommon.NewResource(),
 			}))
 		})
 	}
@@ -129,20 +130,20 @@ func Test_newConditionEvaluator(t *testing.T) {
 // Small copy of traces data model for use in common tests
 
 type testTransformContext struct {
-	span     pdata.Span
-	il       pdata.InstrumentationScope
-	resource pdata.Resource
+	span     ptrace.Span
+	il       pcommon.InstrumentationScope
+	resource pcommon.Resource
 }
 
 func (ctx testTransformContext) GetItem() interface{} {
 	return ctx.span
 }
 
-func (ctx testTransformContext) GetInstrumentationScope() pdata.InstrumentationScope {
+func (ctx testTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return ctx.il
 }
 
-func (ctx testTransformContext) GetResource() pdata.Resource {
+func (ctx testTransformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
@@ -164,10 +165,10 @@ func testParsePath(val *Path) (GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
 		return &testGetSetter{
 			getter: func(ctx TransformContext) interface{} {
-				return ctx.GetItem().(pdata.Span).Name()
+				return ctx.GetItem().(ptrace.Span).Name()
 			},
 			setter: func(ctx TransformContext, val interface{}) {
-				ctx.GetItem().(pdata.Span).SetName(val.(string))
+				ctx.GetItem().(ptrace.Span).SetName(val.(string))
 			},
 		}, nil
 	}

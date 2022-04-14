@@ -5,7 +5,8 @@ package metadata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -139,7 +140,7 @@ func DefaultMetricsSettings() MetricsSettings {
 }
 
 type metricElasticsearchClusterDataNodes struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -149,12 +150,12 @@ func (m *metricElasticsearchClusterDataNodes) init() {
 	m.data.SetName("elasticsearch.cluster.data_nodes")
 	m.data.SetDescription("The number of data nodes in the cluster.")
 	m.data.SetUnit("{nodes}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchClusterDataNodes) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchClusterDataNodes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -172,7 +173,7 @@ func (m *metricElasticsearchClusterDataNodes) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterDataNodes) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchClusterDataNodes) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -183,14 +184,14 @@ func (m *metricElasticsearchClusterDataNodes) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchClusterDataNodes(settings MetricSettings) metricElasticsearchClusterDataNodes {
 	m := metricElasticsearchClusterDataNodes{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchClusterHealth struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -200,13 +201,13 @@ func (m *metricElasticsearchClusterHealth) init() {
 	m.data.SetName("elasticsearch.cluster.health")
 	m.data.SetDescription("The health status of the cluster.")
 	m.data.SetUnit("{status}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchClusterHealth) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
+func (m *metricElasticsearchClusterHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, healthStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -214,7 +215,7 @@ func (m *metricElasticsearchClusterHealth) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HealthStatus, pdata.NewValueString(healthStatusAttributeValue))
+	dp.Attributes().Insert(A.HealthStatus, pcommon.NewValueString(healthStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -225,7 +226,7 @@ func (m *metricElasticsearchClusterHealth) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterHealth) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchClusterHealth) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -236,14 +237,14 @@ func (m *metricElasticsearchClusterHealth) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchClusterHealth(settings MetricSettings) metricElasticsearchClusterHealth {
 	m := metricElasticsearchClusterHealth{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchClusterNodes struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -253,12 +254,12 @@ func (m *metricElasticsearchClusterNodes) init() {
 	m.data.SetName("elasticsearch.cluster.nodes")
 	m.data.SetDescription("The total number of nodes in the cluster.")
 	m.data.SetUnit("{nodes}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchClusterNodes) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchClusterNodes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -276,7 +277,7 @@ func (m *metricElasticsearchClusterNodes) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterNodes) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchClusterNodes) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -287,14 +288,14 @@ func (m *metricElasticsearchClusterNodes) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchClusterNodes(settings MetricSettings) metricElasticsearchClusterNodes {
 	m := metricElasticsearchClusterNodes{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchClusterShards struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -304,13 +305,13 @@ func (m *metricElasticsearchClusterShards) init() {
 	m.data.SetName("elasticsearch.cluster.shards")
 	m.data.SetDescription("The number of shards in the cluster.")
 	m.data.SetUnit("{shards}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchClusterShards) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, shardStateAttributeValue string) {
+func (m *metricElasticsearchClusterShards) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, shardStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -318,7 +319,7 @@ func (m *metricElasticsearchClusterShards) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ShardState, pdata.NewValueString(shardStateAttributeValue))
+	dp.Attributes().Insert(A.ShardState, pcommon.NewValueString(shardStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -329,7 +330,7 @@ func (m *metricElasticsearchClusterShards) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterShards) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchClusterShards) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -340,14 +341,14 @@ func (m *metricElasticsearchClusterShards) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchClusterShards(settings MetricSettings) metricElasticsearchClusterShards {
 	m := metricElasticsearchClusterShards{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeCacheEvictions struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -357,13 +358,13 @@ func (m *metricElasticsearchNodeCacheEvictions) init() {
 	m.data.SetName("elasticsearch.node.cache.evictions")
 	m.data.SetDescription("The number of evictions from the cache.")
 	m.data.SetUnit("{evictions}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeCacheEvictions) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
+func (m *metricElasticsearchNodeCacheEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -371,7 +372,7 @@ func (m *metricElasticsearchNodeCacheEvictions) recordDataPoint(start pdata.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CacheName, pdata.NewValueString(cacheNameAttributeValue))
+	dp.Attributes().Insert(A.CacheName, pcommon.NewValueString(cacheNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -382,7 +383,7 @@ func (m *metricElasticsearchNodeCacheEvictions) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeCacheEvictions) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeCacheEvictions) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -393,14 +394,14 @@ func (m *metricElasticsearchNodeCacheEvictions) emit(metrics pdata.MetricSlice) 
 func newMetricElasticsearchNodeCacheEvictions(settings MetricSettings) metricElasticsearchNodeCacheEvictions {
 	m := metricElasticsearchNodeCacheEvictions{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeCacheMemoryUsage struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -410,13 +411,13 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) init() {
 	m.data.SetName("elasticsearch.node.cache.memory.usage")
 	m.data.SetDescription("The size in bytes of the cache.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeCacheMemoryUsage) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
+func (m *metricElasticsearchNodeCacheMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -424,7 +425,7 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) recordDataPoint(start pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CacheName, pdata.NewValueString(cacheNameAttributeValue))
+	dp.Attributes().Insert(A.CacheName, pcommon.NewValueString(cacheNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -435,7 +436,7 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeCacheMemoryUsage) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeCacheMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -446,14 +447,14 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) emit(metrics pdata.MetricSlice
 func newMetricElasticsearchNodeCacheMemoryUsage(settings MetricSettings) metricElasticsearchNodeCacheMemoryUsage {
 	m := metricElasticsearchNodeCacheMemoryUsage{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeClusterConnections struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -463,12 +464,12 @@ func (m *metricElasticsearchNodeClusterConnections) init() {
 	m.data.SetName("elasticsearch.node.cluster.connections")
 	m.data.SetDescription("The number of open tcp connections for internal cluster communication.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeClusterConnections) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchNodeClusterConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -486,7 +487,7 @@ func (m *metricElasticsearchNodeClusterConnections) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeClusterConnections) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeClusterConnections) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -497,14 +498,14 @@ func (m *metricElasticsearchNodeClusterConnections) emit(metrics pdata.MetricSli
 func newMetricElasticsearchNodeClusterConnections(settings MetricSettings) metricElasticsearchNodeClusterConnections {
 	m := metricElasticsearchNodeClusterConnections{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeClusterIo struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -514,13 +515,13 @@ func (m *metricElasticsearchNodeClusterIo) init() {
 	m.data.SetName("elasticsearch.node.cluster.io")
 	m.data.SetDescription("The number of bytes sent and received on the network for internal cluster communication.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeClusterIo) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, directionAttributeValue string) {
+func (m *metricElasticsearchNodeClusterIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -528,7 +529,7 @@ func (m *metricElasticsearchNodeClusterIo) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -539,7 +540,7 @@ func (m *metricElasticsearchNodeClusterIo) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeClusterIo) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeClusterIo) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -550,14 +551,14 @@ func (m *metricElasticsearchNodeClusterIo) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchNodeClusterIo(settings MetricSettings) metricElasticsearchNodeClusterIo {
 	m := metricElasticsearchNodeClusterIo{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeDocuments struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -567,13 +568,13 @@ func (m *metricElasticsearchNodeDocuments) init() {
 	m.data.SetName("elasticsearch.node.documents")
 	m.data.SetDescription("The number of documents on the node.")
 	m.data.SetUnit("{documents}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeDocuments) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, documentStateAttributeValue string) {
+func (m *metricElasticsearchNodeDocuments) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, documentStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -581,7 +582,7 @@ func (m *metricElasticsearchNodeDocuments) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DocumentState, pdata.NewValueString(documentStateAttributeValue))
+	dp.Attributes().Insert(A.DocumentState, pcommon.NewValueString(documentStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -592,7 +593,7 @@ func (m *metricElasticsearchNodeDocuments) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeDocuments) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeDocuments) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -603,14 +604,14 @@ func (m *metricElasticsearchNodeDocuments) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchNodeDocuments(settings MetricSettings) metricElasticsearchNodeDocuments {
 	m := metricElasticsearchNodeDocuments{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeFsDiskAvailable struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -620,12 +621,12 @@ func (m *metricElasticsearchNodeFsDiskAvailable) init() {
 	m.data.SetName("elasticsearch.node.fs.disk.available")
 	m.data.SetDescription("The amount of disk space available across all file stores for this node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeFsDiskAvailable) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchNodeFsDiskAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -643,7 +644,7 @@ func (m *metricElasticsearchNodeFsDiskAvailable) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsDiskAvailable) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeFsDiskAvailable) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -654,14 +655,14 @@ func (m *metricElasticsearchNodeFsDiskAvailable) emit(metrics pdata.MetricSlice)
 func newMetricElasticsearchNodeFsDiskAvailable(settings MetricSettings) metricElasticsearchNodeFsDiskAvailable {
 	m := metricElasticsearchNodeFsDiskAvailable{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeHTTPConnections struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -671,12 +672,12 @@ func (m *metricElasticsearchNodeHTTPConnections) init() {
 	m.data.SetName("elasticsearch.node.http.connections")
 	m.data.SetDescription("The number of HTTP connections to the node.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeHTTPConnections) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchNodeHTTPConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -694,7 +695,7 @@ func (m *metricElasticsearchNodeHTTPConnections) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeHTTPConnections) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeHTTPConnections) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -705,14 +706,14 @@ func (m *metricElasticsearchNodeHTTPConnections) emit(metrics pdata.MetricSlice)
 func newMetricElasticsearchNodeHTTPConnections(settings MetricSettings) metricElasticsearchNodeHTTPConnections {
 	m := metricElasticsearchNodeHTTPConnections{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeOpenFiles struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -722,12 +723,12 @@ func (m *metricElasticsearchNodeOpenFiles) init() {
 	m.data.SetName("elasticsearch.node.open_files")
 	m.data.SetDescription("The number of open file descriptors held by the node.")
 	m.data.SetUnit("{files}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeOpenFiles) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchNodeOpenFiles) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -745,7 +746,7 @@ func (m *metricElasticsearchNodeOpenFiles) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeOpenFiles) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeOpenFiles) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -756,14 +757,14 @@ func (m *metricElasticsearchNodeOpenFiles) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchNodeOpenFiles(settings MetricSettings) metricElasticsearchNodeOpenFiles {
 	m := metricElasticsearchNodeOpenFiles{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeOperationsCompleted struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -773,13 +774,13 @@ func (m *metricElasticsearchNodeOperationsCompleted) init() {
 	m.data.SetName("elasticsearch.node.operations.completed")
 	m.data.SetDescription("The number of operations completed.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeOperationsCompleted) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, operationAttributeValue string) {
+func (m *metricElasticsearchNodeOperationsCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -787,7 +788,7 @@ func (m *metricElasticsearchNodeOperationsCompleted) recordDataPoint(start pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -798,7 +799,7 @@ func (m *metricElasticsearchNodeOperationsCompleted) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeOperationsCompleted) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeOperationsCompleted) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -809,14 +810,14 @@ func (m *metricElasticsearchNodeOperationsCompleted) emit(metrics pdata.MetricSl
 func newMetricElasticsearchNodeOperationsCompleted(settings MetricSettings) metricElasticsearchNodeOperationsCompleted {
 	m := metricElasticsearchNodeOperationsCompleted{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeOperationsTime struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -826,13 +827,13 @@ func (m *metricElasticsearchNodeOperationsTime) init() {
 	m.data.SetName("elasticsearch.node.operations.time")
 	m.data.SetDescription("Time spent on operations.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeOperationsTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, operationAttributeValue string) {
+func (m *metricElasticsearchNodeOperationsTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -840,7 +841,7 @@ func (m *metricElasticsearchNodeOperationsTime) recordDataPoint(start pdata.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -851,7 +852,7 @@ func (m *metricElasticsearchNodeOperationsTime) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeOperationsTime) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeOperationsTime) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -862,14 +863,14 @@ func (m *metricElasticsearchNodeOperationsTime) emit(metrics pdata.MetricSlice) 
 func newMetricElasticsearchNodeOperationsTime(settings MetricSettings) metricElasticsearchNodeOperationsTime {
 	m := metricElasticsearchNodeOperationsTime{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeShardsSize struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -879,12 +880,12 @@ func (m *metricElasticsearchNodeShardsSize) init() {
 	m.data.SetName("elasticsearch.node.shards.size")
 	m.data.SetDescription("The size of the shards assigned to this node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeShardsSize) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchNodeShardsSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -902,7 +903,7 @@ func (m *metricElasticsearchNodeShardsSize) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeShardsSize) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeShardsSize) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -913,14 +914,14 @@ func (m *metricElasticsearchNodeShardsSize) emit(metrics pdata.MetricSlice) {
 func newMetricElasticsearchNodeShardsSize(settings MetricSettings) metricElasticsearchNodeShardsSize {
 	m := metricElasticsearchNodeShardsSize{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeThreadPoolTasksFinished struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -930,13 +931,13 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) init() {
 	m.data.SetName("elasticsearch.node.thread_pool.tasks.finished")
 	m.data.SetDescription("The number of tasks finished by the thread pool.")
 	m.data.SetUnit("{tasks}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeThreadPoolTasksFinished) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
+func (m *metricElasticsearchNodeThreadPoolTasksFinished) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -944,8 +945,8 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewValueString(threadPoolNameAttributeValue))
-	dp.Attributes().Insert(A.TaskState, pdata.NewValueString(taskStateAttributeValue))
+	dp.Attributes().Insert(A.ThreadPoolName, pcommon.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert(A.TaskState, pcommon.NewValueString(taskStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -956,7 +957,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeThreadPoolTasksFinished) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeThreadPoolTasksFinished) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -967,14 +968,14 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) emit(metrics pdata.Metr
 func newMetricElasticsearchNodeThreadPoolTasksFinished(settings MetricSettings) metricElasticsearchNodeThreadPoolTasksFinished {
 	m := metricElasticsearchNodeThreadPoolTasksFinished{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeThreadPoolTasksQueued struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -984,13 +985,13 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) init() {
 	m.data.SetName("elasticsearch.node.thread_pool.tasks.queued")
 	m.data.SetDescription("The number of queued tasks in the thread pool.")
 	m.data.SetUnit("{tasks}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeThreadPoolTasksQueued) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string) {
+func (m *metricElasticsearchNodeThreadPoolTasksQueued) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -998,7 +999,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) recordDataPoint(start pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert(A.ThreadPoolName, pcommon.NewValueString(threadPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1009,7 +1010,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeThreadPoolTasksQueued) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeThreadPoolTasksQueued) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1020,14 +1021,14 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) emit(metrics pdata.Metric
 func newMetricElasticsearchNodeThreadPoolTasksQueued(settings MetricSettings) metricElasticsearchNodeThreadPoolTasksQueued {
 	m := metricElasticsearchNodeThreadPoolTasksQueued{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricElasticsearchNodeThreadPoolThreads struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1037,13 +1038,13 @@ func (m *metricElasticsearchNodeThreadPoolThreads) init() {
 	m.data.SetName("elasticsearch.node.thread_pool.threads")
 	m.data.SetDescription("The number of threads in the thread pool.")
 	m.data.SetUnit("{threads}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
+func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1051,8 +1052,8 @@ func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewValueString(threadPoolNameAttributeValue))
-	dp.Attributes().Insert(A.ThreadState, pdata.NewValueString(threadStateAttributeValue))
+	dp.Attributes().Insert(A.ThreadPoolName, pcommon.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert(A.ThreadState, pcommon.NewValueString(threadStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1063,7 +1064,7 @@ func (m *metricElasticsearchNodeThreadPoolThreads) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeThreadPoolThreads) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeThreadPoolThreads) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1074,14 +1075,14 @@ func (m *metricElasticsearchNodeThreadPoolThreads) emit(metrics pdata.MetricSlic
 func newMetricElasticsearchNodeThreadPoolThreads(settings MetricSettings) metricElasticsearchNodeThreadPoolThreads {
 	m := metricElasticsearchNodeThreadPoolThreads{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmClassesLoaded struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1091,10 +1092,10 @@ func (m *metricJvmClassesLoaded) init() {
 	m.data.SetName("jvm.classes.loaded")
 	m.data.SetDescription("The number of loaded classes")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricJvmClassesLoaded) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricJvmClassesLoaded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1112,7 +1113,7 @@ func (m *metricJvmClassesLoaded) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmClassesLoaded) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmClassesLoaded) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1123,14 +1124,14 @@ func (m *metricJvmClassesLoaded) emit(metrics pdata.MetricSlice) {
 func newMetricJvmClassesLoaded(settings MetricSettings) metricJvmClassesLoaded {
 	m := metricJvmClassesLoaded{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmGcCollectionsCount struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1140,13 +1141,13 @@ func (m *metricJvmGcCollectionsCount) init() {
 	m.data.SetName("jvm.gc.collections.count")
 	m.data.SetDescription("The total number of garbage collections that have occurred")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricJvmGcCollectionsCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
+func (m *metricJvmGcCollectionsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1154,7 +1155,7 @@ func (m *metricJvmGcCollectionsCount) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CollectorName, pdata.NewValueString(collectorNameAttributeValue))
+	dp.Attributes().Insert(A.CollectorName, pcommon.NewValueString(collectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1165,7 +1166,7 @@ func (m *metricJvmGcCollectionsCount) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmGcCollectionsCount) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmGcCollectionsCount) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1176,14 +1177,14 @@ func (m *metricJvmGcCollectionsCount) emit(metrics pdata.MetricSlice) {
 func newMetricJvmGcCollectionsCount(settings MetricSettings) metricJvmGcCollectionsCount {
 	m := metricJvmGcCollectionsCount{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmGcCollectionsElapsed struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1193,13 +1194,13 @@ func (m *metricJvmGcCollectionsElapsed) init() {
 	m.data.SetName("jvm.gc.collections.elapsed")
 	m.data.SetDescription("The approximate accumulated collection elapsed time")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricJvmGcCollectionsElapsed) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
+func (m *metricJvmGcCollectionsElapsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1207,7 +1208,7 @@ func (m *metricJvmGcCollectionsElapsed) recordDataPoint(start pdata.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CollectorName, pdata.NewValueString(collectorNameAttributeValue))
+	dp.Attributes().Insert(A.CollectorName, pcommon.NewValueString(collectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1218,7 +1219,7 @@ func (m *metricJvmGcCollectionsElapsed) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmGcCollectionsElapsed) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmGcCollectionsElapsed) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1229,14 +1230,14 @@ func (m *metricJvmGcCollectionsElapsed) emit(metrics pdata.MetricSlice) {
 func newMetricJvmGcCollectionsElapsed(settings MetricSettings) metricJvmGcCollectionsElapsed {
 	m := metricJvmGcCollectionsElapsed{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmMemoryHeapCommitted struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1246,10 +1247,10 @@ func (m *metricJvmMemoryHeapCommitted) init() {
 	m.data.SetName("jvm.memory.heap.committed")
 	m.data.SetDescription("The amount of memory that is guaranteed to be available for the heap")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricJvmMemoryHeapCommitted) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricJvmMemoryHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1267,7 +1268,7 @@ func (m *metricJvmMemoryHeapCommitted) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryHeapCommitted) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmMemoryHeapCommitted) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1278,14 +1279,14 @@ func (m *metricJvmMemoryHeapCommitted) emit(metrics pdata.MetricSlice) {
 func newMetricJvmMemoryHeapCommitted(settings MetricSettings) metricJvmMemoryHeapCommitted {
 	m := metricJvmMemoryHeapCommitted{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmMemoryHeapMax struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1295,10 +1296,10 @@ func (m *metricJvmMemoryHeapMax) init() {
 	m.data.SetName("jvm.memory.heap.max")
 	m.data.SetDescription("The maximum amount of memory can be used for the heap")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricJvmMemoryHeapMax) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricJvmMemoryHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1316,7 +1317,7 @@ func (m *metricJvmMemoryHeapMax) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryHeapMax) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmMemoryHeapMax) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1327,14 +1328,14 @@ func (m *metricJvmMemoryHeapMax) emit(metrics pdata.MetricSlice) {
 func newMetricJvmMemoryHeapMax(settings MetricSettings) metricJvmMemoryHeapMax {
 	m := metricJvmMemoryHeapMax{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmMemoryHeapUsed struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1344,10 +1345,10 @@ func (m *metricJvmMemoryHeapUsed) init() {
 	m.data.SetName("jvm.memory.heap.used")
 	m.data.SetDescription("The current heap memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricJvmMemoryHeapUsed) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricJvmMemoryHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1365,7 +1366,7 @@ func (m *metricJvmMemoryHeapUsed) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryHeapUsed) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmMemoryHeapUsed) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1376,14 +1377,14 @@ func (m *metricJvmMemoryHeapUsed) emit(metrics pdata.MetricSlice) {
 func newMetricJvmMemoryHeapUsed(settings MetricSettings) metricJvmMemoryHeapUsed {
 	m := metricJvmMemoryHeapUsed{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmMemoryNonheapCommitted struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1393,10 +1394,10 @@ func (m *metricJvmMemoryNonheapCommitted) init() {
 	m.data.SetName("jvm.memory.nonheap.committed")
 	m.data.SetDescription("The amount of memory that is guaranteed to be available for non-heap purposes")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricJvmMemoryNonheapCommitted) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricJvmMemoryNonheapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1414,7 +1415,7 @@ func (m *metricJvmMemoryNonheapCommitted) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryNonheapCommitted) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmMemoryNonheapCommitted) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1425,14 +1426,14 @@ func (m *metricJvmMemoryNonheapCommitted) emit(metrics pdata.MetricSlice) {
 func newMetricJvmMemoryNonheapCommitted(settings MetricSettings) metricJvmMemoryNonheapCommitted {
 	m := metricJvmMemoryNonheapCommitted{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmMemoryNonheapUsed struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1442,10 +1443,10 @@ func (m *metricJvmMemoryNonheapUsed) init() {
 	m.data.SetName("jvm.memory.nonheap.used")
 	m.data.SetDescription("The current non-heap memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricJvmMemoryNonheapUsed) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricJvmMemoryNonheapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1463,7 +1464,7 @@ func (m *metricJvmMemoryNonheapUsed) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryNonheapUsed) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmMemoryNonheapUsed) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1474,14 +1475,14 @@ func (m *metricJvmMemoryNonheapUsed) emit(metrics pdata.MetricSlice) {
 func newMetricJvmMemoryNonheapUsed(settings MetricSettings) metricJvmMemoryNonheapUsed {
 	m := metricJvmMemoryNonheapUsed{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmMemoryPoolMax struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1491,11 +1492,11 @@ func (m *metricJvmMemoryPoolMax) init() {
 	m.data.SetName("jvm.memory.pool.max")
 	m.data.SetDescription("The maximum amount of memory can be used for the memory pool")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricJvmMemoryPoolMax) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+func (m *metricJvmMemoryPoolMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1503,7 +1504,7 @@ func (m *metricJvmMemoryPoolMax) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewValueString(memoryPoolNameAttributeValue))
+	dp.Attributes().Insert(A.MemoryPoolName, pcommon.NewValueString(memoryPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1514,7 +1515,7 @@ func (m *metricJvmMemoryPoolMax) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryPoolMax) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmMemoryPoolMax) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1525,14 +1526,14 @@ func (m *metricJvmMemoryPoolMax) emit(metrics pdata.MetricSlice) {
 func newMetricJvmMemoryPoolMax(settings MetricSettings) metricJvmMemoryPoolMax {
 	m := metricJvmMemoryPoolMax{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmMemoryPoolUsed struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1542,11 +1543,11 @@ func (m *metricJvmMemoryPoolUsed) init() {
 	m.data.SetName("jvm.memory.pool.used")
 	m.data.SetDescription("The current memory pool memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricJvmMemoryPoolUsed) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+func (m *metricJvmMemoryPoolUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1554,7 +1555,7 @@ func (m *metricJvmMemoryPoolUsed) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewValueString(memoryPoolNameAttributeValue))
+	dp.Attributes().Insert(A.MemoryPoolName, pcommon.NewValueString(memoryPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1565,7 +1566,7 @@ func (m *metricJvmMemoryPoolUsed) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryPoolUsed) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmMemoryPoolUsed) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1576,14 +1577,14 @@ func (m *metricJvmMemoryPoolUsed) emit(metrics pdata.MetricSlice) {
 func newMetricJvmMemoryPoolUsed(settings MetricSettings) metricJvmMemoryPoolUsed {
 	m := metricJvmMemoryPoolUsed{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricJvmThreadsCount struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -1593,10 +1594,10 @@ func (m *metricJvmThreadsCount) init() {
 	m.data.SetName("jvm.threads.count")
 	m.data.SetDescription("The current number of threads")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricJvmThreadsCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricJvmThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1614,7 +1615,7 @@ func (m *metricJvmThreadsCount) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmThreadsCount) emit(metrics pdata.MetricSlice) {
+func (m *metricJvmThreadsCount) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1625,7 +1626,7 @@ func (m *metricJvmThreadsCount) emit(metrics pdata.MetricSlice) {
 func newMetricJvmThreadsCount(settings MetricSettings) metricJvmThreadsCount {
 	m := metricJvmThreadsCount{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
@@ -1634,10 +1635,10 @@ func newMetricJvmThreadsCount(settings MetricSettings) metricJvmThreadsCount {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                      pdata.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity                                int             // maximum observed number of metrics per resource.
-	resourceCapacity                               int             // maximum observed number of resource attributes.
-	metricsBuffer                                  pdata.Metrics   // accumulates metrics data before emitting.
+	startTime                                      pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                int               // maximum observed number of metrics per resource.
+	resourceCapacity                               int               // maximum observed number of resource attributes.
+	metricsBuffer                                  pmetric.Metrics   // accumulates metrics data before emitting.
 	metricElasticsearchClusterDataNodes            metricElasticsearchClusterDataNodes
 	metricElasticsearchClusterHealth               metricElasticsearchClusterHealth
 	metricElasticsearchClusterNodes                metricElasticsearchClusterNodes
@@ -1673,7 +1674,7 @@ type MetricsBuilder struct {
 type metricBuilderOption func(*MetricsBuilder)
 
 // WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
+func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
 	}
@@ -1681,8 +1682,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                      pdata.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                                  pdata.NewMetrics(),
+		startTime:                                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                  pmetric.NewMetrics(),
 		metricElasticsearchClusterDataNodes:            newMetricElasticsearchClusterDataNodes(settings.ElasticsearchClusterDataNodes),
 		metricElasticsearchClusterHealth:               newMetricElasticsearchClusterHealth(settings.ElasticsearchClusterHealth),
 		metricElasticsearchClusterNodes:                newMetricElasticsearchClusterNodes(settings.ElasticsearchClusterNodes),
@@ -1720,7 +1721,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
@@ -1730,14 +1731,14 @@ func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
 }
 
 // ResourceOption applies changes to provided resource.
-type ResourceOption func(pdata.Resource)
+type ResourceOption func(pcommon.Resource)
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
 func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
-	rm := pdata.NewResourceMetrics()
+	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	for _, op := range ro {
 		op(rm.Resource())
@@ -1783,162 +1784,162 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 	mb.EmitForResource(ro...)
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordElasticsearchClusterDataNodesDataPoint adds a data point to elasticsearch.cluster.data_nodes metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchClusterDataNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterHealthDataPoint adds a data point to elasticsearch.cluster.health metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.Timestamp, val int64, healthStatusAttributeValue string) {
 	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchClusterNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterShardsDataPoint adds a data point to elasticsearch.cluster.shards metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pdata.Timestamp, val int64, shardStateAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pcommon.Timestamp, val int64, shardStateAttributeValue string) {
 	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue)
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
 }
 
 // RecordElasticsearchNodeCacheMemoryUsageDataPoint adds a data point to elasticsearch.node.cache.memory.usage metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
 }
 
 // RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeClusterConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val int64, documentStateAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue string) {
 	mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue)
 }
 
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOpenFilesDataPoint adds a data point to elasticsearch.node.open_files metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeOpenFiles.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
 // RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeShardsSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.finished metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
 	mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.queued metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string) {
 	mb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue)
 }
 
 // RecordElasticsearchNodeThreadPoolThreadsDataPoint adds a data point to elasticsearch.node.thread_pool.threads metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
 	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue)
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
-func (mb *MetricsBuilder) RecordJvmClassesLoadedDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmClassesLoadedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmClassesLoaded.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmGcCollectionsCountDataPoint adds a data point to jvm.gc.collections.count metric.
-func (mb *MetricsBuilder) RecordJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordJvmGcCollectionsCountDataPoint(ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
 	mb.metricJvmGcCollectionsCount.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmGcCollectionsElapsedDataPoint adds a data point to jvm.gc.collections.elapsed metric.
-func (mb *MetricsBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
 	mb.metricJvmGcCollectionsElapsed.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmMemoryHeapCommittedDataPoint adds a data point to jvm.memory.heap.committed metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapMaxDataPoint adds a data point to jvm.memory.heap.max metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapUsedDataPoint adds a data point to jvm.memory.heap.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapCommittedDataPoint adds a data point to jvm.memory.nonheap.committed metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapUsedDataPoint adds a data point to jvm.memory.nonheap.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryPoolMaxDataPoint adds a data point to jvm.memory.pool.max metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
 	mb.metricJvmMemoryPoolMax.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmMemoryPoolUsedDataPoint adds a data point to jvm.memory.pool.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
 	mb.metricJvmMemoryPoolUsed.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmThreadsCountDataPoint adds a data point to jvm.threads.count metric.
-func (mb *MetricsBuilder) RecordJvmThreadsCountDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordJvmThreadsCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmThreadsCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
 func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pdata.NewTimestampFromTime(time.Now())
+	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
 		op(mb)
 	}

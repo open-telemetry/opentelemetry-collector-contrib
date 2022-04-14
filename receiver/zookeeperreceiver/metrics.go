@@ -17,7 +17,7 @@ package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -62,14 +62,14 @@ func newMetricCreator(mb *metadata.MetricsBuilder) *metricCreator {
 	}
 }
 
-func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pdata.Timestamp, val int64) {
+func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pcommon.Timestamp, val int64) {
 	switch metric {
 	case followersMetricKey:
-		return func(ts pdata.Timestamp, val int64) {
+		return func(ts pcommon.Timestamp, val int64) {
 			m.computedMetricStore[followersMetricKey] = val
 		}
 	case syncedFollowersMetricKey:
-		return func(ts pdata.Timestamp, val int64) {
+		return func(ts pcommon.Timestamp, val int64) {
 			m.computedMetricStore[syncedFollowersMetricKey] = val
 			m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeState.Synced)
 		}
@@ -100,11 +100,11 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pdata.Timest
 	case fSyncThresholdExceedCountMetricKey:
 		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
 	case packetsReceivedMetricKey:
-		return func(ts pdata.Timestamp, val int64) {
+		return func(ts pcommon.Timestamp, val int64) {
 			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Received)
 		}
 	case packetsSentMetricKey:
-		return func(ts pdata.Timestamp, val int64) {
+		return func(ts pcommon.Timestamp, val int64) {
 			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Sent)
 		}
 	}
@@ -112,7 +112,7 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pdata.Timest
 	return nil
 }
 
-func (m *metricCreator) generateComputedMetrics(logger *zap.Logger, ts pdata.Timestamp) {
+func (m *metricCreator) generateComputedMetrics(logger *zap.Logger, ts pcommon.Timestamp) {
 	// not_synced Followers Count
 	if err := m.computeNotSyncedFollowersMetric(ts); err != nil {
 		logger.Debug("metric computation failed", zap.Error(err))
@@ -120,7 +120,7 @@ func (m *metricCreator) generateComputedMetrics(logger *zap.Logger, ts pdata.Tim
 
 }
 
-func (m *metricCreator) computeNotSyncedFollowersMetric(ts pdata.Timestamp) error {
+func (m *metricCreator) computeNotSyncedFollowersMetric(ts pcommon.Timestamp) error {
 	followersTotal, ok := m.computedMetricStore[followersMetricKey]
 	if !ok {
 		return fmt.Errorf("could not compute not_synced follower.count, missing %s", followersMetricKey)
