@@ -87,6 +87,12 @@ class TestAutomatic(InstrumentationTest, TestBase, WsgiTestBase):
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
+    def test_registry_name_is_this_module(self):
+        config = Configurator()
+        self.assertEqual(
+            config.registry.__name__, __name__.rsplit(".", maxsplit=1)[0]
+        )
+
 
 class TestWrappedWithOtherFramework(
     InstrumentationTest, TestBase, WsgiTestBase
