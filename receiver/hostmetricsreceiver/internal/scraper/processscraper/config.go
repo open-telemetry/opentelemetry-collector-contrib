@@ -36,6 +36,9 @@ type Config struct {
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
 	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
+
+	// EnforceUTF8 is a flag that will sanitize invalid UTF-8 characters in the process command line.
+	EnforceUTF8 bool `mapstructure:"enforce_utf8,omitempty"`
 }
 
 type MatchConfig struct {

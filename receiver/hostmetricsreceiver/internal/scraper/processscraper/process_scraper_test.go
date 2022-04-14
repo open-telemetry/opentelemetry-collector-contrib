@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -494,6 +495,113 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskErr
 	return metricsLen - expectedMetricsLen
 }
 
+func TestScrapeMetrics_EnforceUTF8(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	type testCase struct {
+		name               string
+		enforceUtf8        bool
+		omitConfigField    bool
+		inputCmdlineSlices [][]string
+		expectedCmdLines   []string
+	}
+
+	invalidUtf8_2octet := string([]byte{0xc3, 0x28}) // Invalid 2-octet sequence
+	invalidUtf8_sequenceId := string([]byte{0xa0, 0xa1}) // Invalid sequence identifier
+
+	testCases := []testCase{
+		{
+			name:               "Valid UTF-8 Characters Unchanged",
+			enforceUtf8:        true,
+			inputCmdlineSlices: [][]string{
+				[]string{"a", "b", "c"},
+			},
+			expectedCmdLines:   []string{
+				"a b c",
+			},
+		},
+		{
+			name:               "Invalid UTF-8 Characters Sanitized",
+			enforceUtf8:        true,
+			inputCmdlineSlices: [][]string{
+				[]string{invalidUtf8_2octet, "b", "c"},
+				[]string{invalidUtf8_sequenceId, "b", "c"},
+			},
+			expectedCmdLines:   []string{
+				"�( b c",
+				"� b c",
+			},
+		},
+		{
+			name:               "Invalid UTF-8 Characters Unchanged",
+			enforceUtf8:        false,
+			inputCmdlineSlices: [][]string{
+				[]string{invalidUtf8_2octet, "b", "c"},
+				[]string{invalidUtf8_sequenceId, "b", "c"},
+			},
+			expectedCmdLines:   []string{
+				invalidUtf8_2octet + " b c",
+				invalidUtf8_sequenceId + " b c",
+			},
+		},
+		{
+			name:               "Invalid UTF-8 Characters Default (Unchanged)",
+			omitConfigField:    true,
+			inputCmdlineSlices: [][]string{
+				[]string{invalidUtf8_2octet, "b", "c"},
+				[]string{invalidUtf8_sequenceId, "b", "c"},
+			},
+			expectedCmdLines:   []string{
+				invalidUtf8_2octet + " b c",
+				invalidUtf8_sequenceId + " b c",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
+			if !test.omitConfigField {
+				config.EnforceUTF8 = test.enforceUtf8
+			}
+			scraper, err := newProcessScraper(config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			handles := make([]*processHandleMock, 0, len(test.inputCmdlineSlices))
+			for _, inputCmdlineSlice := range test.inputCmdlineSlices {
+				handleMock := &processHandleMock{}
+				handleMock.On("Name").Return("test", nil)
+				handleMock.On("Exe").Return("test", nil)
+				handleMock.On("Username").Return("username", nil)
+				handleMock.On("Times").Return(&cpu.TimesStat{}, nil)
+				handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
+				handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
+
+				handleMock.On("Cmdline").Return(strings.Join(inputCmdlineSlice, " "), nil)
+				handleMock.On("CmdlineSlice").Return(inputCmdlineSlice, nil)
+				handles = append(handles, handleMock)
+			}
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: handles}, nil
+			}
+
+			md, err := scraper.scrape(context.Background())
+			require.NoError(t, err)
+
+			assert.Equal(t, len(test.expectedCmdLines), md.ResourceMetrics().Len())
+			for i, expectedCmdLine := range test.expectedCmdLines {
+				rm := md.ResourceMetrics().At(i)
+				cmdLine, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessCommandLine)
+				assert.Equal(t, expectedCmdLine, cmdLine.StringVal())
+			}
+		})
+	}
+}
+
 func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
@@ -524,6 +632,7 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
 			if !test.omitConfigField {

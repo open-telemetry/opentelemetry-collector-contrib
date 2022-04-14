@@ -90,6 +90,7 @@ process:
     names: [ <process name>, ... ]
     match_type: <strict|regexp>
   mute_process_name_error: <true|false>
+  ensure_utf8: <true|false>
 ```
 
 ## Advanced Configuration

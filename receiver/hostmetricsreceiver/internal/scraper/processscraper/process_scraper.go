@@ -17,6 +17,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/host"
@@ -150,6 +151,14 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		command, err := getProcessCommand(handle)
 		if err != nil {
 			errs.AddPartial(0, fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err))
+		}
+
+		if s.config.EnforceUTF8 {
+			command.command = strings.ToValidUTF8(command.command, "�")
+			command.commandLine = strings.ToValidUTF8(command.commandLine, "�")
+			for i, a := range command.commandLineSlice {
+				command.commandLineSlice[i] = strings.ToValidUTF8(a, "�")
+			}
 		}
 
 		username, err := handle.Username()
