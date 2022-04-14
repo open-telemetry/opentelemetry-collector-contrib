@@ -46,7 +46,7 @@ func (c *Config) Validate() error {
 	var err error
 	metricsErr := c.validateMetricsConfig()
 	if metricsErr != nil {
-		multierr.Append(err, metricsErr)
+		err = multierr.Append(err, metricsErr)
 	}
 
 	return err
@@ -54,12 +54,16 @@ func (c *Config) Validate() error {
 
 // ID returns the ID of the component.
 func (c *Config) ID() config.ComponentID {
-	// defaulting to use the MetricsConfig ID which should be the typeStr
+	// defaulting to use the MetricsConfig ID
 	return c.MetricsConfig.ID()
 }
 
 func (c *Config) validateMetricsConfig() error {
 	mc := c.MetricsConfig
+	if mc == nil {
+		return nil
+	}
+
 	if mc.Endpoint == "" {
 		return errors.New("no endpoint was provided")
 	}
@@ -68,16 +72,19 @@ func (c *Config) validateMetricsConfig() error {
 	res, err := url.Parse(mc.Endpoint)
 	if err != nil {
 		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.MetricsConfig.Endpoint, err))
+		return err
 	}
 
 	if res.Scheme != "http" && res.Scheme != "https" {
 		err = multierr.Append(err, errors.New("url scheme must be http or https"))
 	}
 
-	if mc.Username != "" && mc.Password == "" {
-		err = multierr.Append(err, errors.New("username provided without password"))
-	} else if c.MetricsConfig.Username == "" && c.MetricsConfig.Password != "" {
-		err = multierr.Append(err, errors.New("password provided without user"))
+	if mc.Username == "" {
+		err = multierr.Append(err, errors.New("username not provided and is required"))
+	}
+
+	if mc.Password == "" {
+		err = multierr.Append(err, errors.New("password not provided and is required"))
 	}
 
 	if _, tlsErr := mc.LoadTLSConfig(); err != nil {
