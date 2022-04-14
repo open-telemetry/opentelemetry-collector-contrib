@@ -32,19 +32,10 @@ jobs:
             /home/runner/go/pkg/mod
             /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - run: make otelcontribcol
       - name: Upload Collector Binaries
@@ -65,14 +56,6 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - run: sudo chmod 0777 -R /opt
       - name: Fluentbit Cache
         id: fluentbit-cache
@@ -113,8 +96,10 @@ jobs:
           name: collector-binaries
           path: bin/
       - run: chmod +x bin/*
+      - name: Install Tools
+        run: make install-tools
       - name: Loadtest
-        run: make -C testbed run-tests 
+        run: make -C testbed run-tests
         env:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename

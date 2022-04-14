@@ -29,18 +29,9 @@ jobs:
           path: |
             /home/runner/go/pkg/mod
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
         run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.tool-cache.outputs.cache-hit != 'true'
-        run: make install-tools
   check-collector-module-version:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -70,17 +61,13 @@ jobs:
           path: |
             /home/runner/go/pkg/mod
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
           path: /home/runner/.cache/go-build
           key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Install Tools
+        run: make install-tools
       - name: Lint
         run: make -j2 golint
   checks:
@@ -104,17 +91,13 @@ jobs:
           path: |
             /home/runner/go/pkg/mod
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
           path: /home/runner/.cache/go-build
           key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Install Tools
+        run: make install-tools
       - name: CheckDoc
         run: make checkdoc
       - name: Porto
@@ -151,17 +134,13 @@ jobs:
           path: |
             /home/runner/go/pkg/mod
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
           path: /home/runner/.cache/go-build
           key: go-build-unittest-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Install Tools
+        run: make install-tools
       - name: Run Unit Tests
         run: make gotest
   integration-tests:
@@ -185,12 +164,6 @@ jobs:
           path: |
             /home/runner/go/pkg/mod
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Run Integration Tests
         run: make integration-tests-with-cover
 
@@ -215,12 +188,8 @@ jobs:
           path: |
             /home/runner/go/pkg/mod
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Install Tools
+        run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
@@ -244,12 +213,8 @@ jobs:
           path: |
             /home/runner/go/pkg/mod
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Install Tools
+        run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
 
@@ -412,12 +377,8 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Install Tools
+        run: make install-tools
       - name: Download Binaries
         uses: actions/download-artifact@v3
         with:
@@ -471,12 +432,8 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Install Tools
+        run: make install-tools
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh

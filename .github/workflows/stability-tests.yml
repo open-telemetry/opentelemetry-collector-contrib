@@ -32,19 +32,10 @@ jobs:
             /home/runner/go/pkg/mod
             /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Split Stability Jobs
         id: splitstabilitytest

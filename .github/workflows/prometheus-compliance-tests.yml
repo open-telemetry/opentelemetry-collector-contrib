@@ -12,14 +12,6 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -38,13 +30,15 @@ jobs:
             /home/runner/go/pkg/mod
             /home/runner/.cache/go-build
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Install Tools
+        run: make install-tools
       - run: make otelcontribcol
       - name: Checkout compliance repo
         uses: actions/checkout@v3
         with:
           repository: prometheus/compliance
           path: compliance
-          ref: f0482884578bac67b053e3eaa1ca7f783d146557 
+          ref: f0482884578bac67b053e3eaa1ca7f783d146557
       - name: Copy binary to compliance directory
         run: mkdir compliance/remote_write_sender/bin && cp ./bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_linux_amd64
       - name: Run compliance tests
