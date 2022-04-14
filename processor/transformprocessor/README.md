@@ -22,6 +22,20 @@ it references an unset map value, there will be no action.
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
 the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`
 
+- `join(delimiter, target, elems...)` - `target` is a path expression to a telemetry field to join elems and set `value` into
+e.g., `join("|", attributes["service.name"], attributes["service.name"], attributes["k8s.namespace.name"])`
+`input`:
+```bash
+attributes["service.name"]=demo
+attributes["k8s.namespace.name"]=default
+```
+
+`output`
+```bash
+attributes["service.name"]=demo|default
+attributes["k8s.namespace.name"]=default
+```
+
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
 - `!=` - matches telemetry where the values are not equal to each other
@@ -43,6 +57,7 @@ processors:
         - set(status.code, 1) where attributes["http.path"] == "/health"
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
         - set(name, attributes["http.route"])
+        - join("|", attributes["service.name"], attributes["service.name"], attributes["k8s.namespace.name"])
 service:
   pipelines:
     traces:
@@ -56,3 +71,4 @@ This processor will perform the operations in order for all spans
 1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `name` to the `http.route` attribute if it is set
+4) join the values of `attributes["service.name"]` and `attributes["k8s.namespace.name"]` with `|` delimiter, and set the value into `attributes["service.name"]`, like override.

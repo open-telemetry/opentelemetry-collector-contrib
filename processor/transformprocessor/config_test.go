@@ -44,6 +44,7 @@ func TestLoadingConfig(t *testing.T) {
 			Queries: []string{
 				`set(name, "bear") where attributes["http.path"] == "/animal"`,
 				`keep_keys(attributes, "http.method", "http.path")`,
+				`join("|", attributes["service.name"], attributes["service.name"], attributes["k8s.namespace.name"])`,
 			},
 
 			functions: common.DefaultFunctions(),

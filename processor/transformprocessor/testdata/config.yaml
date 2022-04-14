@@ -4,7 +4,7 @@ processors:
       queries:
         - set(name, "bear") where attributes["http.path"] == "/animal"
         - keep_keys(attributes, "http.method", "http.path")
-
+        - join("|", attributes["service.name"], attributes["service.name"], attributes["k8s.namespace.name"])
 receivers:
   nop:
 

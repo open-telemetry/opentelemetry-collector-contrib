@@ -17,6 +17,7 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -24,6 +25,7 @@ import (
 var registry = map[string]interface{}{
 	"keep_keys": keepKeys,
 	"set":       set,
+	"join":      join,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -70,6 +72,26 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 	}
 }
 
+func join(delimiter Getter, target Setter, elems []Getter) ExprFunc {
+	return func(ctx TransformContext) interface{} {
+		var elemsJoin []string
+		for i, elem := range elems {
+			val := elem.Get(ctx)
+			if val != nil {
+				if str, ok := val.(string); ok {
+					elemsJoin[i] = str
+				}
+			}
+		}
+
+		delimiterStr := delimiter.Get(ctx)
+		if str, ok := delimiterStr.(string); ok {
+			target.Set(ctx, strings.Join(elemsJoin, str))
+		}
+		return nil
+	}
+}
+
 // TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
 // Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
@@ -90,6 +112,19 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 						arg = append(arg, *inv.Arguments[j].String)
 					}
 					args = append(args, reflect.ValueOf(arg))
+				case reflect.Interface:
+					if argType.Elem().Name() == "Getter" {
+						arg := make([]Getter, 0)
+						for j := i; j < len(inv.Arguments); j++ {
+							argDef := inv.Arguments[j]
+							argTemp, err := pathParser(argDef.Path)
+							if err != nil {
+								return nil, fmt.Errorf("invalid argument at position %v %w", i, err)
+							}
+							arg = append(arg, argTemp)
+						}
+						args = append(args, reflect.ValueOf(arg))
+					}
 				default:
 					return nil, fmt.Errorf("unsupported slice type for function %v", inv.Function)
 				}
