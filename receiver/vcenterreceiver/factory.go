@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
@@ -44,10 +45,13 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		component.WithMetricsReceiver(f.createMetricsReceiver),
+		component.WithLogsReceiver(f.createLogsReceiver),
 	)
 }
 
 func createDefaultConfig() config.Receiver {
+	syslogConfig := syslogreceiver.NewFactory().CreateDefaultConfig()
+	syslogDefault, _ := syslogConfig.(*syslogreceiver.SysLogConfig)
 	return &Config{
 		MetricsConfig: &MetricsConfig{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
@@ -59,6 +63,10 @@ func createDefaultConfig() config.Receiver {
 			Endpoint:         "",
 			Username:         "",
 			Password:         "",
+		},
+		LoggingConfig: &LoggingConfig{
+			SysLogConfig:     syslogDefault,
+			TLSClientSetting: configtls.TLSClientSetting{},
 		},
 	}
 }
@@ -113,4 +121,19 @@ func (f *vcenterReceiverFactory) createMetricsReceiver(
 	r := f.ensureReceiver(params, cfg)
 	r.scraper = rcvr
 	return r, nil
+}
+
+func (f *vcenterReceiverFactory) createLogsReceiver(
+	c context.Context,
+	params component.ReceiverCreateSettings,
+	rConf config.Receiver,
+	consumer consumer.Logs,
+) (component.LogsReceiver, error) {
+	cfg, ok := rConf.(*Config)
+	if !ok {
+		return nil, errConfigNotVcenter
+	}
+	rcvr := f.ensureReceiver(params, cfg)
+	rcvr.logsReceiver = newLogsReceiver(cfg, params, consumer)
+	return rcvr, nil
 }

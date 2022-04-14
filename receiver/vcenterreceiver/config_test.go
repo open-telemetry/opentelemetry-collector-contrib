@@ -15,9 +15,11 @@
 package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -33,14 +35,63 @@ func TestConfigValidation(t *testing.T) {
 					Endpoint: "",
 				},
 			},
+			expectedErr: errors.New("no endpoint was provided"),
+		},
+		{
+			desc: "with endpoint",
+			cfg: Config{
+				MetricsConfig: &MetricsConfig{
+					Endpoint: "http://vcsa.some-host",
+				},
+			},
+		},
+		{
+			desc: "not http or https",
+			cfg: Config{
+				MetricsConfig: &MetricsConfig{
+					Endpoint: "ws://vcsa.some-host",
+				},
+			},
+			expectedErr: errors.New("url scheme must be http or https"),
+		},
+		{
+			desc: "unparseable URL",
+			cfg: Config{
+				MetricsConfig: &MetricsConfig{
+					Endpoint:         "h" + string(rune(0x7f)),
+					TLSClientSetting: configtls.TLSClientSetting{},
+				},
+			},
+			expectedErr: errors.New("unable to parse url"),
+		},
+		{
+			desc: "no username",
+			cfg: Config{
+				MetricsConfig: &MetricsConfig{
+					Endpoint: "https://vcsa.some-host",
+					Password: "otelp",
+				},
+			},
+			expectedErr: errors.New("username not provided"),
+		},
+		{
+			desc: "no password",
+			cfg: Config{
+				MetricsConfig: &MetricsConfig{
+					Endpoint: "https://vcsa.some-host",
+					Username: "otelu",
+				},
+			},
+			expectedErr: errors.New("password not provided"),
 		},
 	}
 
 	for _, tc := range cases {
-		err := tc.cfg.Validate()
-		if tc.expectedErr != nil {
-			require.ErrorIs(t, err, tc.expectedErr)
-		}
+		t.Run(tc.desc, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.expectedErr != nil {
+				require.ErrorContains(t, err, tc.expectedErr.Error())
+			}
+		})
 	}
-
 }
