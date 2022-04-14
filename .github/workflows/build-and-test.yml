@@ -35,6 +35,8 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          restore-keys: |
+            v1-tools-${{ runner.os }}-
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
         run: make -j2 gomoddownload
@@ -76,6 +78,8 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          restore-keys: |
+            v1-tools-${{ runner.os }}-
       - name: Cache Build
         uses: actions/cache@v3
         with:
@@ -110,6 +114,8 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          restore-keys: |
+            v1-tools-${{ runner.os }}-
       - name: Cache Build
         uses: actions/cache@v3
         with:
@@ -157,6 +163,8 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          restore-keys: |
+            v1-tools-${{ runner.os }}-
       - name: Cache Build
         uses: actions/cache@v3
         with:
