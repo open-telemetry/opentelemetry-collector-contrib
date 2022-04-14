@@ -32,6 +32,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
 
+//go:build windows
+// +build windows
+
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
