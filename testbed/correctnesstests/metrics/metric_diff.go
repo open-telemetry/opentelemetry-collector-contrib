@@ -18,7 +18,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // MetricDiff is intended to support producing human-readable diffs between two MetricData structs during
@@ -34,7 +35,7 @@ func (mf MetricDiff) String() string {
 	return fmt.Sprintf("{msg='%v' expected=[%v] actual=[%v]}\n", mf.Msg, mf.ExpectedValue, mf.ActualValue)
 }
 
-func diffRMSlices(sent []pdata.ResourceMetrics, recd []pdata.ResourceMetrics) []*MetricDiff {
+func diffRMSlices(sent []pmetric.ResourceMetrics, recd []pmetric.ResourceMetrics) []*MetricDiff {
 	var diffs []*MetricDiff
 	if len(sent) != len(recd) {
 		return []*MetricDiff{{
@@ -51,7 +52,7 @@ func diffRMSlices(sent []pdata.ResourceMetrics, recd []pdata.ResourceMetrics) []
 	return diffs
 }
 
-func diffRMs(diffs []*MetricDiff, expected pdata.ResourceMetrics, actual pdata.ResourceMetrics) []*MetricDiff {
+func diffRMs(diffs []*MetricDiff, expected pmetric.ResourceMetrics, actual pmetric.ResourceMetrics) []*MetricDiff {
 	diffs = diffResource(diffs, expected.Resource(), actual.Resource())
 	diffs = diffILMSlice(
 		diffs,
@@ -63,8 +64,8 @@ func diffRMs(diffs []*MetricDiff, expected pdata.ResourceMetrics, actual pdata.R
 
 func diffILMSlice(
 	diffs []*MetricDiff,
-	expected pdata.ScopeMetricsSlice,
-	actual pdata.ScopeMetricsSlice,
+	expected pmetric.ScopeMetricsSlice,
+	actual pmetric.ScopeMetricsSlice,
 ) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, actual.Len(), expected.Len(), "ScopeMetricsSlice len")
@@ -79,13 +80,13 @@ func diffILMSlice(
 
 func diffILM(
 	diffs []*MetricDiff,
-	expected pdata.ScopeMetrics,
-	actual pdata.ScopeMetrics,
+	expected pmetric.ScopeMetrics,
+	actual pmetric.ScopeMetrics,
 ) []*MetricDiff {
 	return diffMetrics(diffs, expected.Metrics(), actual.Metrics())
 }
 
-func diffMetrics(diffs []*MetricDiff, expected pdata.MetricSlice, actual pdata.MetricSlice) []*MetricDiff {
+func diffMetrics(diffs []*MetricDiff, expected pmetric.MetricSlice, actual pmetric.MetricSlice) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, actual.Len(), expected.Len(), "MetricSlice len")
 	if mismatch {
@@ -97,20 +98,20 @@ func diffMetrics(diffs []*MetricDiff, expected pdata.MetricSlice, actual pdata.M
 	return diffs
 }
 
-func DiffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric) []*MetricDiff {
+func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Metric) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffMetricDescriptor(diffs, expected, actual)
 	if mismatch {
 		return diffs
 	}
 	switch actual.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		diffs = diffNumberPts(diffs, expected.Gauge().DataPoints(), actual.Gauge().DataPoints())
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		diffs = diff(diffs, expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic(), "Sum IsMonotonic")
 		diffs = diff(diffs, expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality(), "Sum AggregationTemporality")
 		diffs = diffNumberPts(diffs, expected.Sum().DataPoints(), actual.Sum().DataPoints())
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		diffs = diff(diffs, expected.Histogram().AggregationTemporality(), actual.Histogram().AggregationTemporality(), "Histogram AggregationTemporality")
 		diffs = diffHistogramPts(diffs, expected.Histogram().DataPoints(), actual.Histogram().DataPoints())
 	}
@@ -119,8 +120,8 @@ func DiffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric)
 
 func diffMetricDescriptor(
 	diffs []*MetricDiff,
-	expected pdata.Metric,
-	actual pdata.Metric,
+	expected pmetric.Metric,
+	actual pmetric.Metric,
 ) ([]*MetricDiff, bool) {
 	diffs = diff(diffs, expected.Name(), actual.Name(), "Metric Name")
 	diffs = diff(diffs, expected.Description(), actual.Description(), "Metric Description")
@@ -130,8 +131,8 @@ func diffMetricDescriptor(
 
 func diffNumberPts(
 	diffs []*MetricDiff,
-	expected pdata.NumberDataPointSlice,
-	actual pdata.NumberDataPointSlice,
+	expected pmetric.NumberDataPointSlice,
+	actual pmetric.NumberDataPointSlice,
 ) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "NumberDataPointSlice len")
@@ -144,9 +145,9 @@ func diffNumberPts(
 			return diffs
 		}
 		switch expected.At(i).ValueType() {
-		case pdata.MetricValueTypeInt:
+		case pmetric.MetricValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "NumberDataPoint Value")
-		case pdata.MetricValueTypeDouble:
+		case pmetric.MetricValueTypeDouble:
 			diffs = diff(diffs, expected.At(i).DoubleVal(), actual.At(i).DoubleVal(), "NumberDataPoint Value")
 		}
 		diffExemplars(diffs, expected.At(i).Exemplars(), actual.At(i).Exemplars())
@@ -156,8 +157,8 @@ func diffNumberPts(
 
 func diffHistogramPts(
 	diffs []*MetricDiff,
-	expected pdata.HistogramDataPointSlice,
-	actual pdata.HistogramDataPointSlice,
+	expected pmetric.HistogramDataPointSlice,
+	actual pmetric.HistogramDataPointSlice,
 ) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "HistogramDataPointSlice len")
@@ -172,8 +173,8 @@ func diffHistogramPts(
 
 func diffDoubleHistogramPt(
 	diffs []*MetricDiff,
-	expected pdata.HistogramDataPoint,
-	actual pdata.HistogramDataPoint,
+	expected pmetric.HistogramDataPoint,
+	actual pmetric.HistogramDataPoint,
 ) []*MetricDiff {
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
@@ -185,8 +186,8 @@ func diffDoubleHistogramPt(
 
 func diffExemplars(
 	diffs []*MetricDiff,
-	expected pdata.ExemplarSlice,
-	actual pdata.ExemplarSlice,
+	expected pmetric.ExemplarSlice,
+	actual pmetric.ExemplarSlice,
 ) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "ExemplarSlice len")
@@ -196,20 +197,20 @@ func diffExemplars(
 	for i := 0; i < expected.Len(); i++ {
 		diffs = diff(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "Exemplar Value Type")
 		switch expected.At(i).ValueType() {
-		case pdata.MetricValueTypeInt:
+		case pmetric.MetricValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "Exemplar Value")
-		case pdata.MetricValueTypeDouble:
+		case pmetric.MetricValueTypeDouble:
 			diffs = diff(diffs, expected.At(i).DoubleVal(), actual.At(i).DoubleVal(), "Exemplar Value")
 		}
 	}
 	return diffs
 }
 
-func diffResource(diffs []*MetricDiff, expected pdata.Resource, actual pdata.Resource) []*MetricDiff {
+func diffResource(diffs []*MetricDiff, expected pcommon.Resource, actual pcommon.Resource) []*MetricDiff {
 	return diffAttrs(diffs, expected.Attributes(), actual.Attributes())
 }
 
-func diffAttrs(diffs []*MetricDiff, expected pdata.Map, actual pdata.Map) []*MetricDiff {
+func diffAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.Map) []*MetricDiff {
 	if !reflect.DeepEqual(expected, actual) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
@@ -241,9 +242,9 @@ func diffValues(
 	return diffs, false
 }
 
-func attrMapToString(m pdata.Map) string {
+func attrMapToString(m pcommon.Map) string {
 	out := ""
-	m.Range(func(k string, v pdata.Value) bool {
+	m.Range(func(k string, v pcommon.Value) bool {
 		out += "[" + k + "=" + v.StringVal() + "]"
 		return true
 	})

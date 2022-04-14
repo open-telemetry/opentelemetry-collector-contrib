@@ -19,7 +19,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -38,17 +39,17 @@ func TestBuildCounterMetric(t *testing.T) {
 	}
 	isMonotonicCounter := false
 	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, lastUpdateInterval)
-	expectedMetrics := pdata.NewScopeMetrics()
+	expectedMetrics := pmetric.NewScopeMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
 	expectedMetric.SetUnit("meter")
-	expectedMetric.SetDataType(pdata.MetricDataTypeSum)
-	expectedMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	expectedMetric.SetDataType(pmetric.MetricDataTypeSum)
+	expectedMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	expectedMetric.Sum().SetIsMonotonic(isMonotonicCounter)
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(32)
-	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastUpdateInterval))
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastUpdateInterval))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	dp.Attributes().InsertString("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)
 }
@@ -68,14 +69,14 @@ func TestBuildGaugeMetric(t *testing.T) {
 		unit:        "meter",
 	}
 	metric := buildGaugeMetric(parsedMetric, timeNow)
-	expectedMetrics := pdata.NewScopeMetrics()
+	expectedMetrics := pmetric.NewScopeMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testGauge")
 	expectedMetric.SetUnit("meter")
-	expectedMetric.SetDataType(pdata.MetricDataTypeGauge)
+	expectedMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	dp := expectedMetric.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(32.3)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	dp.Attributes().InsertString("mykey", "myvalue")
 	dp.Attributes().InsertString("mykey2", "myvalue2")
 	assert.Equal(t, metric, expectedMetrics)
@@ -100,18 +101,18 @@ func TestBuildSummaryMetricUnsampled(t *testing.T) {
 		attrs:      attrs,
 	}
 
-	metric := pdata.NewScopeMetrics()
+	metric := pmetric.NewScopeMetrics()
 	buildSummaryMetric(desc, unsampledMetric, timeNow.Add(-time.Minute), timeNow, statsDDefaultPercentiles, metric)
 
-	expectedMetric := pdata.NewScopeMetrics()
+	expectedMetric := pmetric.NewScopeMetrics()
 	m := expectedMetric.Metrics().AppendEmpty()
 	m.SetName("testSummary")
-	m.SetDataType(pdata.MetricDataTypeSummary)
+	m.SetDataType(pmetric.MetricDataTypeSummary)
 	dp := m.Summary().DataPoints().AppendEmpty()
 	dp.SetSum(21)
 	dp.SetCount(6)
-	dp.SetStartTimestamp(pdata.NewTimestampFromTime(timeNow.Add(-time.Minute)))
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for _, kv := range desc.attrs.ToSlice() {
 		dp.Attributes().InsertString(string(kv.Key), kv.Value.AsString())
 	}
@@ -181,20 +182,20 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 			attrs:      attrs,
 		}
 
-		metric := pdata.NewScopeMetrics()
+		metric := pmetric.NewScopeMetrics()
 		buildSummaryMetric(desc, sampledMetric, timeNow.Add(-time.Minute), timeNow, test.percentiles, metric)
 
-		expectedMetric := pdata.NewScopeMetrics()
+		expectedMetric := pmetric.NewScopeMetrics()
 		m := expectedMetric.Metrics().AppendEmpty()
 		m.SetName("testSummary")
-		m.SetDataType(pdata.MetricDataTypeSummary)
+		m.SetDataType(pmetric.MetricDataTypeSummary)
 		dp := m.Summary().DataPoints().AppendEmpty()
 
 		dp.SetSum(test.sum)
 		dp.SetCount(test.count)
 
-		dp.SetStartTimestamp(pdata.NewTimestampFromTime(timeNow.Add(-time.Minute)))
-		dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 		for _, kv := range desc.attrs.ToSlice() {
 			dp.Attributes().InsertString(string(kv.Key), kv.Value.AsString())
 		}

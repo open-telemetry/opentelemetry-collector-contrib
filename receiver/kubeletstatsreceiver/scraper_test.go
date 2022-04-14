@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/client-go/kubernetes"
@@ -379,7 +379,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 	}
 }
 
-func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pdata.Resource) {
+func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pcommon.Resource) {
 	require.NotNil(t, ev)
 
 	requireAttribute(t, resource.Attributes(), "k8s.volume.name", ev.name)
@@ -389,7 +389,7 @@ func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pdata.Resou
 	}
 }
 
-func requireAttribute(t *testing.T, attr pdata.Map, key string, value string) {
+func requireAttribute(t *testing.T, attr pcommon.Map, key string, value string) {
 	val, ok := attr.Get(key)
 	require.True(t, ok)
 	require.Equal(t, value, val.StringVal())

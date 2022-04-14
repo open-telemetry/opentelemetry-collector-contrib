@@ -24,7 +24,8 @@ import (
 	"github.com/logzio/jaeger-logzio/store"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -39,7 +40,7 @@ type logzioExporter struct {
 	writer                       *store.LogzioSpanWriter
 	logger                       hclog.Logger
 	WriteSpanFunc                func(ctx context.Context, span *model.Span) error
-	InternalTracesToJaegerTraces func(td pdata.Traces) ([]*model.Batch, error)
+	InternalTracesToJaegerTraces func(td ptrace.Traces) ([]*model.Batch, error)
 }
 
 func newLogzioExporter(config *Config, params component.ExporterCreateSettings) (*logzioExporter, error) {
@@ -100,7 +101,7 @@ func newLogzioMetricsExporter(config *Config, set component.ExporterCreateSettin
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }
 
-func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.Traces) error {
+func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace.Traces) error {
 	batches, err := exporter.InternalTracesToJaegerTraces(traces)
 	if err != nil {
 		return err
@@ -116,7 +117,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.
 	return nil
 }
 
-func (exporter *logzioExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (exporter *logzioExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	return nil
 }
 

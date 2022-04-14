@@ -25,7 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -42,7 +43,7 @@ func TestScrape(t *testing.T) {
 		usageFunc                func(string) (*disk.UsageStat, error)
 		expectMetrics            bool
 		expectedDeviceDataPoints int
-		expectedDeviceAttributes []map[string]pdata.Value
+		expectedDeviceAttributes []map[string]pcommon.Value
 		newErrRegex              string
 		initializationErr        string
 		expectedErr              string
@@ -131,18 +132,18 @@ func TestScrape(t *testing.T) {
 			},
 			expectMetrics:            true,
 			expectedDeviceDataPoints: 2,
-			expectedDeviceAttributes: []map[string]pdata.Value{
+			expectedDeviceAttributes: []map[string]pcommon.Value{
 				{
-					"device":     pdata.NewValueString("device_a"),
-					"mountpoint": pdata.NewValueString("mount_point_a"),
-					"type":       pdata.NewValueString("fs_type_a"),
-					"mode":       pdata.NewValueString("unknown"),
+					"device":     pcommon.NewValueString("device_a"),
+					"mountpoint": pcommon.NewValueString("mount_point_a"),
+					"type":       pcommon.NewValueString("fs_type_a"),
+					"mode":       pcommon.NewValueString("unknown"),
 				},
 				{
-					"device":     pdata.NewValueString("device_b"),
-					"mountpoint": pdata.NewValueString("mount_point_d"),
-					"type":       pdata.NewValueString("fs_type_c"),
-					"mode":       pdata.NewValueString("unknown"),
+					"device":     pcommon.NewValueString("device_b"),
+					"mountpoint": pcommon.NewValueString("mount_point_d"),
+					"type":       pcommon.NewValueString("fs_type_c"),
+					"mode":       pcommon.NewValueString("unknown"),
 				},
 			},
 		},
@@ -281,20 +282,20 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func findMetricByName(metrics pdata.MetricSlice, name string) (pdata.Metric, error) {
+func findMetricByName(metrics pmetric.MetricSlice, name string) (pmetric.Metric, error) {
 	for i := 0; i < metrics.Len(); i++ {
 		if metrics.At(i).Name() == name {
 			return metrics.At(i), nil
 		}
 	}
-	return pdata.Metric{}, fmt.Errorf("no metric found with name %s", name)
+	return pmetric.Metric{}, fmt.Errorf("no metric found with name %s", name)
 }
 
 func assertFileSystemUsageMetricValid(
 	t *testing.T,
-	metric pdata.Metric,
+	metric pmetric.Metric,
 	expectedDeviceDataPoints int,
-	expectedDeviceAttributes []map[string]pdata.Value) {
+	expectedDeviceAttributes []map[string]pcommon.Value) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)
@@ -320,12 +321,12 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewValueString(metadata.AttributeState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewValueString(metadata.AttributeState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pcommon.NewValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pcommon.NewValueString(metadata.AttributeState.Free))
 }
 
-func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewValueString(metadata.AttributeState.Reserved))
+func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pcommon.NewValueString(metadata.AttributeState.Reserved))
 }
 
 func isUnix() bool {

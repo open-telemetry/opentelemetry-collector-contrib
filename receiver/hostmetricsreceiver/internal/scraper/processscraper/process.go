@@ -25,7 +25,7 @@ import (
 
 // processMetadata stores process related metadata along
 // with the process handle, and provides a function to
-// initialize a pdata.Resource with the metadata
+// initialize a pcommon.Resource with the metadata
 
 type processMetadata struct {
 	pid        int32

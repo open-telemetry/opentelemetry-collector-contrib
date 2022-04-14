@@ -27,7 +27,7 @@ Supported pipeline types: logs
 | `attributes`           | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `resource`             | {}               | A map of `key: value` pairs to add to the entry's resource                                                    |
 | `operators`            | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
-| `converter`            | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`pdata.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
+| `converter`            | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`plog.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
 
 [entry_link]: https://github.com/open-telemetry/opentelemetry-log-collection/blob/v0.23.0/entry/entry.go#L43-L54
 [pdata_logrecord_link]: https://github.com/open-telemetry/opentelemetry-collector/blob/v0.40.0/model/pdata/generated_log.go#L553-L564

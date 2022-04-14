@@ -26,7 +26,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
@@ -181,12 +182,12 @@ func TestConvert(t *testing.T) {
 	rls := pLogs.ResourceLogs().At(0)
 
 	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
-		m := pdata.NewMap()
+		m := pcommon.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewValueMap())
+		m.Insert("object", pcommon.NewValueMap())
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
@@ -198,21 +199,21 @@ func TestConvert(t *testing.T) {
 
 	lr := logs.At(0)
 
-	assert.Equal(t, pdata.SeverityNumberERROR, lr.SeverityNumber())
+	assert.Equal(t, plog.SeverityNumberERROR, lr.SeverityNumber())
 	assert.Equal(t, "Error", lr.SeverityText())
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
-		m := pdata.NewMap()
+		m := pcommon.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewValueMap())
+		m.Insert("object", pcommon.NewValueMap())
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
-	if assert.Equal(t, pdata.ValueTypeMap, lr.Body().Type()) {
-		m := pdata.NewMap()
+	if assert.Equal(t, pcommon.ValueTypeMap, lr.Body().Type()) {
+		m := pcommon.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
 		m.InsertBool("bool", true)
@@ -506,7 +507,7 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		pLogs := pdata.NewLogs()
+		pLogs := plog.NewLogs()
 		ills := pLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
 		lr := convert(complexEntry())
@@ -582,7 +583,7 @@ func TestConvertMetadata(t *testing.T) {
 	require.Equal(t, "hello", attVal.StringVal())
 
 	bod := result.Body()
-	require.Equal(t, pdata.ValueTypeBool, bod.Type())
+	require.Equal(t, pcommon.ValueTypeBool, bod.Type())
 	require.True(t, bod.BoolVal())
 }
 
@@ -736,47 +737,47 @@ func TestConvertNestedMapBody(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.StringVal())
 }
 
-func anyToBody(body interface{}) pdata.Value {
+func anyToBody(body interface{}) pcommon.Value {
 	entry := entry.New()
 	entry.Body = body
 	return convertAndDrill(entry).Body()
 }
 
-func convertAndDrill(entry *entry.Entry) pdata.LogRecord {
+func convertAndDrill(entry *entry.Entry) plog.LogRecord {
 	return convert(entry)
 }
 
 func TestConvertSeverity(t *testing.T) {
 	cases := []struct {
 		severity       entry.Severity
-		expectedNumber pdata.SeverityNumber
+		expectedNumber plog.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, pdata.SeverityNumberUNDEFINED, ""},
-		{entry.Trace, pdata.SeverityNumberTRACE, "Trace"},
-		{entry.Trace2, pdata.SeverityNumberTRACE2, "Trace2"},
-		{entry.Trace3, pdata.SeverityNumberTRACE3, "Trace3"},
-		{entry.Trace4, pdata.SeverityNumberTRACE4, "Trace4"},
-		{entry.Debug, pdata.SeverityNumberDEBUG, "Debug"},
-		{entry.Debug2, pdata.SeverityNumberDEBUG2, "Debug2"},
-		{entry.Debug3, pdata.SeverityNumberDEBUG3, "Debug3"},
-		{entry.Debug4, pdata.SeverityNumberDEBUG4, "Debug4"},
-		{entry.Info, pdata.SeverityNumberINFO, "Info"},
-		{entry.Info2, pdata.SeverityNumberINFO2, "Info2"},
-		{entry.Info3, pdata.SeverityNumberINFO3, "Info3"},
-		{entry.Info4, pdata.SeverityNumberINFO4, "Info4"},
-		{entry.Warn, pdata.SeverityNumberWARN, "Warn"},
-		{entry.Warn2, pdata.SeverityNumberWARN2, "Warn2"},
-		{entry.Warn3, pdata.SeverityNumberWARN3, "Warn3"},
-		{entry.Warn4, pdata.SeverityNumberWARN4, "Warn4"},
-		{entry.Error, pdata.SeverityNumberERROR, "Error"},
-		{entry.Error2, pdata.SeverityNumberERROR2, "Error2"},
-		{entry.Error3, pdata.SeverityNumberERROR3, "Error3"},
-		{entry.Error4, pdata.SeverityNumberERROR4, "Error4"},
-		{entry.Fatal, pdata.SeverityNumberFATAL, "Fatal"},
-		{entry.Fatal2, pdata.SeverityNumberFATAL2, "Fatal2"},
-		{entry.Fatal3, pdata.SeverityNumberFATAL3, "Fatal3"},
-		{entry.Fatal4, pdata.SeverityNumberFATAL4, "Fatal4"},
+		{entry.Default, plog.SeverityNumberUNDEFINED, ""},
+		{entry.Trace, plog.SeverityNumberTRACE, "Trace"},
+		{entry.Trace2, plog.SeverityNumberTRACE2, "Trace2"},
+		{entry.Trace3, plog.SeverityNumberTRACE3, "Trace3"},
+		{entry.Trace4, plog.SeverityNumberTRACE4, "Trace4"},
+		{entry.Debug, plog.SeverityNumberDEBUG, "Debug"},
+		{entry.Debug2, plog.SeverityNumberDEBUG2, "Debug2"},
+		{entry.Debug3, plog.SeverityNumberDEBUG3, "Debug3"},
+		{entry.Debug4, plog.SeverityNumberDEBUG4, "Debug4"},
+		{entry.Info, plog.SeverityNumberINFO, "Info"},
+		{entry.Info2, plog.SeverityNumberINFO2, "Info2"},
+		{entry.Info3, plog.SeverityNumberINFO3, "Info3"},
+		{entry.Info4, plog.SeverityNumberINFO4, "Info4"},
+		{entry.Warn, plog.SeverityNumberWARN, "Warn"},
+		{entry.Warn2, plog.SeverityNumberWARN2, "Warn2"},
+		{entry.Warn3, plog.SeverityNumberWARN3, "Warn3"},
+		{entry.Warn4, plog.SeverityNumberWARN4, "Warn4"},
+		{entry.Error, plog.SeverityNumberERROR, "Error"},
+		{entry.Error2, plog.SeverityNumberERROR2, "Error2"},
+		{entry.Error3, plog.SeverityNumberERROR3, "Error3"},
+		{entry.Error4, plog.SeverityNumberERROR4, "Error4"},
+		{entry.Fatal, plog.SeverityNumberFATAL, "Fatal"},
+		{entry.Fatal2, plog.SeverityNumberFATAL2, "Fatal2"},
+		{entry.Fatal3, plog.SeverityNumberFATAL3, "Fatal3"},
+		{entry.Fatal4, plog.SeverityNumberFATAL4, "Fatal4"},
 	}
 
 	for _, tc := range cases {
@@ -802,11 +803,11 @@ func TestConvertTrace(t *testing.T) {
 			0x01,
 		}})
 
-	require.Equal(t, pdata.NewTraceID(
+	require.Equal(t, pcommon.NewTraceID(
 		[16]byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.TraceID())
-	require.Equal(t, pdata.NewSpanID(
+	require.Equal(t, pcommon.NewSpanID(
 		[8]byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.SpanID())

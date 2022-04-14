@@ -19,18 +19,18 @@ import (
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
+func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
 	var metricOption dtMetric.MetricOption
 
 	switch dp.ValueType() {
-	case pdata.MetricValueTypeNone:
+	case pmetric.MetricValueTypeNone:
 		return "", fmt.Errorf("unsupported value type none")
-	case pdata.MetricValueTypeInt:
+	case pmetric.MetricValueTypeInt:
 		metricOption = dtMetric.WithIntGaugeValue(dp.IntVal())
-	case pdata.MetricValueTypeDouble:
+	case pmetric.MetricValueTypeDouble:
 		metricOption = dtMetric.WithFloatGaugeValue(dp.DoubleVal())
 	default:
 		return "", fmt.Errorf("unknown data type")

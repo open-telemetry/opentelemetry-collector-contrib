@@ -39,11 +39,11 @@ func TestMetricData(t *testing.T) {
 
 func TestAggregation(t *testing.T) {
 	delta := Aggregated{Aggregation: "delta"}
-	assert.Equal(t, "pdata.MetricAggregationTemporalityDelta", delta.Type())
+	assert.Equal(t, "pmetric.MetricAggregationTemporalityDelta", delta.Type())
 
 	cumulative := Aggregated{Aggregation: "cumulative"}
-	assert.Equal(t, "pdata.MetricAggregationTemporalityCumulative", cumulative.Type())
+	assert.Equal(t, "pmetric.MetricAggregationTemporalityCumulative", cumulative.Type())
 
 	unknown := Aggregated{Aggregation: ""}
-	assert.Equal(t, "pdata.MetricAggregationTemporalityUnknown", unknown.Type())
+	assert.Equal(t, "pmetric.MetricAggregationTemporalityUnknown", unknown.Type())
 }

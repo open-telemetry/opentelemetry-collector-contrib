@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestAddAnnotations(t *testing.T) {
@@ -30,11 +30,11 @@ func TestAddAnnotations(t *testing.T) {
 	input["float32"] = float32(4.5)
 	input["float64"] = 5.5
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.EnsureCapacity(initAttrCapacity)
 	addAnnotations(input, &attrMap)
 
-	expectedAttrMap := pdata.NewMapFromRaw(
+	expectedAttrMap := pcommon.NewMapFromRaw(
 		map[string]interface{}{
 			"int":     0,
 			"int32":   int32(1),

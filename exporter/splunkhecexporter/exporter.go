@@ -26,7 +26,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -41,9 +43,9 @@ const (
 )
 
 type splunkExporter struct {
-	pushMetricsData func(ctx context.Context, md pdata.Metrics) error
-	pushTraceData   func(ctx context.Context, td pdata.Traces) error
-	pushLogData     func(ctx context.Context, td pdata.Logs) error
+	pushMetricsData func(ctx context.Context, md pmetric.Metrics) error
+	pushTraceData   func(ctx context.Context, td ptrace.Traces) error
+	pushLogData     func(ctx context.Context, td plog.Logs) error
 	stop            func(ctx context.Context) (err error)
 	start           func(ctx context.Context, host component.Host) (err error)
 }
