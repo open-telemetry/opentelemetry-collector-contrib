@@ -7,8 +7,8 @@ require (
 	github.com/honeycombio/libhoney-go v1.15.8
 	github.com/klauspost/compress v1.15.1
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.48.1-0.20220412005140-8eb68f40028d
-	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector/pdata v0.49.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/protobuf v1.28.0
@@ -42,5 +42,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
-
-replace go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v0.0.0-20220412005140-8eb68f40028d

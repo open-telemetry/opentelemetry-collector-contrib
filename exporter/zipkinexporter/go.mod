@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkin
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.49.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.48.1-0.20220412005140-8eb68f40028d
-	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector/pdata v0.49.0
 )
 
 require (
@@ -30,15 +30,15 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.48.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.48.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.49.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.48.1-0.20220412005140-8eb68f40028d // indirect
+	go.opentelemetry.io/collector/model v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
 	go.opentelemetry.io/otel v1.6.3 // indirect
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
@@ -63,5 +63,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ../../receiver/zipkinreceiver
-
-replace go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v0.0.0-20220412005140-8eb68f40028d

@@ -5,16 +5,16 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.43.37
 	github.com/google/cadvisor v0.44.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.49.0
 	github.com/shirou/gopsutil/v3 v3.22.3
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.48.1-0.20220412005140-8eb68f40028d
-	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector/pdata v0.49.0
 	go.uber.org/zap v1.21.0
 	k8s.io/api v0.23.5
 	k8s.io/apimachinery v0.23.5
@@ -70,7 +70,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.48.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.49.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect
@@ -138,5 +138,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubel
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-replace go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v0.0.0-20220412005140-8eb68f40028d
