@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestPushMetricsData(t *testing.T) {
@@ -35,7 +35,7 @@ func TestPushMetricsDataErrorOnSend(t *testing.T) {
 }
 
 func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
-	metric := newMetric("test.metric", pdata.MetricDataTypeGauge)
+	metric := newMetric("test.metric", pmetric.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -82,7 +82,7 @@ func createMockMetricsExporter(
 	)
 }
 
-func consumeMetrics(metrics pdata.Metrics, sender *mockMetricSender) error {
+func consumeMetrics(metrics pmetric.Metrics, sender *mockMetricSender) error {
 	ctx := context.Background()
 	mockOTelMetricsExporter, err := createMockMetricsExporter(sender)
 	if err != nil {

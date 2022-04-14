@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // HostIDKey represents a host identifier.
@@ -47,7 +47,7 @@ type HostID struct {
 
 // ResourceToHostID returns a boolean determining whether or not a HostID was able to be
 // computed or not.
-func ResourceToHostID(res pdata.Resource) (HostID, bool) {
+func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 	var cloudAccount, hostID, provider string
 
 	attrs := res.Attributes()
@@ -113,7 +113,7 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	return HostID{}, false
 }
 
-func azureID(attrs pdata.Map, cloudAccount string) string {
+func azureID(attrs pcommon.Map, cloudAccount string) string {
 	var resourceGroupName string
 	if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
 		resourceGroupName = attr.StringVal()

@@ -21,7 +21,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -29,21 +32,21 @@ var (
 	attrMap = prepareAttributeMap()
 )
 
-func prepareAttributeMap() pdata.Map {
+func prepareAttributeMap() pcommon.Map {
 	attributeValues := map[string]interface{}{
 		"xx": "aa",
 		"yy": 11,
 	}
 
-	am := pdata.NewMap()
-	pdata.NewMapFromRaw(attributeValues).CopyTo(am)
+	am := pcommon.NewMap()
+	pcommon.NewMapFromRaw(attributeValues).CopyTo(am)
 
 	am.Sort()
 	return am
 }
 
-func prepareResource(attrMap pdata.Map, selectedKeys []string) pdata.Resource {
-	res := pdata.NewResource()
+func prepareResource(attrMap pcommon.Map, selectedKeys []string) pcommon.Resource {
+	res := pcommon.NewResource()
 	for _, key := range selectedKeys {
 		val, found := attrMap.Get(key)
 		if found {
@@ -54,8 +57,8 @@ func prepareResource(attrMap pdata.Map, selectedKeys []string) pdata.Resource {
 	return res
 }
 
-func filterAttributeMap(attrMap pdata.Map, selectedKeys []string) pdata.Map {
-	filteredAttrMap := pdata.NewMap()
+func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map {
+	filteredAttrMap := pcommon.NewMap()
 	if len(selectedKeys) == 0 {
 		return filteredAttrMap
 	}
@@ -69,8 +72,8 @@ func filterAttributeMap(attrMap pdata.Map, selectedKeys []string) pdata.Map {
 	return filteredAttrMap
 }
 
-func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) pdata.Logs {
-	logs := pdata.NewLogs()
+func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog.Logs {
+	logs := plog.NewLogs()
 
 	for i := 0; i < rlCount; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
@@ -89,8 +92,8 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) pdat
 	return logs
 }
 
-func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pdata.Traces {
-	traces := pdata.NewTraces()
+func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) ptrace.Traces {
+	traces := ptrace.NewTraces()
 
 	for i := 0; i < rsCount; i++ {
 		rs := traces.ResourceSpans().AppendEmpty()
@@ -109,8 +112,8 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pd
 	return traces
 }
 
-func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 
 	for i := 0; i < rmCount; i++ {
 		rm := metrics.ResourceMetrics().AppendEmpty()
@@ -121,11 +124,11 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 		for j := 0; j < ilmCount; j++ {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 
 			for k := 0; k < dataPointCount; k++ {
 				dataPoint := metric.Gauge().DataPoints().AppendEmpty()
-				dataPoint.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
+				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				dataPoint.SetIntVal(int64(k))
 				dataPoint.Attributes().InsertString("commonGroupedAttr", "abc")
 				dataPoint.Attributes().InsertString("commonNonGroupedAttr", "xyz")
@@ -136,8 +139,8 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
-func assertResourceContainsAttributes(t *testing.T, resource pdata.Resource, attributeMap pdata.Map) {
-	attributeMap.Range(func(k string, v pdata.Value) bool {
+func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, attributeMap pcommon.Map) {
+	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		rv, found := resource.Attributes().Get(k)
 		assert.True(t, found)
 		assert.Equal(t, v, rv)
@@ -240,8 +243,8 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Following are record-level attributes that should be preserved after processing
-			outputRecordAttrs := pdata.NewMap()
-			outputResourceAttrs := pdata.NewMap()
+			outputRecordAttrs := pcommon.NewMap()
+			outputResourceAttrs := pcommon.NewMap()
 			if tt.shouldMoveCommonGroupedAttr {
 				// This was present at record level and should be found on Resource level after the processor
 				outputResourceAttrs.InsertString("commonGroupedAttr", "abc")
@@ -385,7 +388,7 @@ func TestAttributeGrouping(t *testing.T) {
 			assert.Equal(t, 1, processedHistogramMetrics.ResourceMetrics().Len())
 			assert.Equal(t, 1, processedExponentialHistogramMetrics.ResourceMetrics().Len())
 
-			resources := []pdata.Resource{
+			resources := []pcommon.Resource{
 				processedLogs.ResourceLogs().At(0).Resource(),
 				processedSpans.ResourceSpans().At(0).Resource(),
 				processedGaugeMetrics.ResourceMetrics().At(0).Resource(),
@@ -460,8 +463,8 @@ func TestAttributeGrouping(t *testing.T) {
 	}
 }
 
-func someSpans(attrs pdata.Map, instrumentationLibraryCount int, spanCount int) pdata.Traces {
-	traces := pdata.NewTraces()
+func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
@@ -476,8 +479,8 @@ func someSpans(attrs pdata.Map, instrumentationLibraryCount int, spanCount int) 
 	return traces
 }
 
-func someLogs(attrs pdata.Map, instrumentationLibraryCount int, logCount int) pdata.Logs {
-	logs := pdata.NewLogs()
+func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) plog.Logs {
+	logs := plog.NewLogs()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
@@ -492,8 +495,8 @@ func someLogs(attrs pdata.Map, instrumentationLibraryCount int, logCount int) pd
 	return logs
 }
 
-func someGaugeMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
@@ -502,7 +505,7 @@ func someGaugeMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCo
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("gauge-", j))
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 			dataPoint := metric.Gauge().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
@@ -510,8 +513,8 @@ func someGaugeMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCo
 	return metrics
 }
 
-func someSumMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
@@ -520,7 +523,7 @@ func someSumMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCoun
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("sum-", j))
-			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.SetDataType(pmetric.MetricDataTypeSum)
 			dataPoint := metric.Sum().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
@@ -528,8 +531,8 @@ func someSumMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCoun
 	return metrics
 }
 
-func someSummaryMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
@@ -538,7 +541,7 @@ func someSummaryMetrics(attrs pdata.Map, instrumentationLibraryCount int, metric
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("summary-", j))
-			metric.SetDataType(pdata.MetricDataTypeSummary)
+			metric.SetDataType(pmetric.MetricDataTypeSummary)
 			dataPoint := metric.Summary().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
@@ -546,8 +549,8 @@ func someSummaryMetrics(attrs pdata.Map, instrumentationLibraryCount int, metric
 	return metrics
 }
 
-func someHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
@@ -556,7 +559,7 @@ func someHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metr
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("histogram-", j))
-			metric.SetDataType(pdata.MetricDataTypeHistogram)
+			metric.SetDataType(pmetric.MetricDataTypeHistogram)
 			dataPoint := metric.Histogram().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
@@ -564,8 +567,8 @@ func someHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metr
 	return metrics
 }
 
-func someExponentialHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
@@ -574,7 +577,7 @@ func someExponentialHistogramMetrics(attrs pdata.Map, instrumentationLibraryCoun
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("exponential-histogram-", j))
-			metric.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+			metric.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
 			dataPoint := metric.ExponentialHistogram().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
@@ -633,7 +636,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	//   Metric "mixed-type" (GAUGE)
 	//     DataPoint {id="eth0"}
 
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	resourceMetrics.Resource().Attributes().UpsertString("host.name", "localhost")
 
@@ -642,7 +645,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	// gauge-1
 	gauge1 := ilm.Metrics().AppendEmpty()
 	gauge1.SetName("gauge-1")
-	gauge1.SetDataType(pdata.MetricDataTypeGauge)
+	gauge1.SetDataType(pmetric.MetricDataTypeGauge)
 	datapoint := gauge1.Gauge().DataPoints().AppendEmpty()
 	datapoint.Attributes().UpsertString("host.name", "host-A")
 	datapoint.Attributes().UpsertString("id", "eth0")
@@ -664,7 +667,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	// mixed-type (same name but different TYPE)
 	mixedType2 := ilm.Metrics().AppendEmpty()
 	mixedType2.SetName("mixed-type")
-	mixedType2.SetDataType(pdata.MetricDataTypeSum)
+	mixedType2.SetDataType(pmetric.MetricDataTypeSum)
 	datapoint = mixedType2.Sum().DataPoints().AppendEmpty()
 	datapoint.Attributes().UpsertString("host.name", "host-A")
 	datapoint.Attributes().UpsertString("id", "eth0")
@@ -675,7 +678,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	// dontmove (metric that will not move to another resource)
 	dontmove := ilm.Metrics().AppendEmpty()
 	dontmove.SetName("dont-move")
-	dontmove.SetDataType(pdata.MetricDataTypeGauge)
+	dontmove.SetDataType(pmetric.MetricDataTypeGauge)
 	datapoint = dontmove.Gauge().DataPoints().AppendEmpty()
 	datapoint.Attributes().UpsertString("id", "eth0")
 
@@ -696,7 +699,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	assert.Equal(t, 1, localhost.ScopeMetrics().At(0).Metrics().Len())
 	localhostMetric := localhost.ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "dont-move", localhostMetric.Name())
-	assert.Equal(t, pdata.MetricDataTypeGauge, localhostMetric.DataType())
+	assert.Equal(t, pmetric.MetricDataTypeGauge, localhostMetric.DataType())
 
 	// We must have host-A
 	hostA, foundHostA := retrieveHostResource(processedMetrics.ResourceMetrics(), "host-A")
@@ -704,17 +707,17 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	assert.Equal(t, 1, hostA.Resource().Attributes().Len())
 	assert.Equal(t, 1, hostA.ScopeMetrics().Len())
 	assert.Equal(t, 3, hostA.ScopeMetrics().At(0).Metrics().Len())
-	hostAGauge1, foundHostAGauge1 := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "gauge-1", pdata.MetricDataTypeGauge)
+	hostAGauge1, foundHostAGauge1 := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "gauge-1", pmetric.MetricDataTypeGauge)
 	assert.True(t, foundHostAGauge1)
 	assert.Equal(t, 4, hostAGauge1.Gauge().DataPoints().Len())
 	assert.Equal(t, 1, hostAGauge1.Gauge().DataPoints().At(0).Attributes().Len())
 	metricIDAttribute, foundMetricIDAttribute := hostAGauge1.Gauge().DataPoints().At(0).Attributes().Get("id")
 	assert.True(t, foundMetricIDAttribute)
 	assert.Equal(t, "eth0", metricIDAttribute.AsString())
-	hostAMixedGauge, foundHostAMixedGauge := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeGauge)
+	hostAMixedGauge, foundHostAMixedGauge := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricDataTypeGauge)
 	assert.True(t, foundHostAMixedGauge)
 	assert.Equal(t, 2, hostAMixedGauge.Gauge().DataPoints().Len())
-	hostAMixedSum, foundHostAMixedSum := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeSum)
+	hostAMixedSum, foundHostAMixedSum := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricDataTypeSum)
 	assert.True(t, foundHostAMixedSum)
 	assert.Equal(t, 2, hostAMixedSum.Sum().DataPoints().Len())
 
@@ -724,16 +727,16 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	assert.Equal(t, 1, hostB.Resource().Attributes().Len())
 	assert.Equal(t, 1, hostB.ScopeMetrics().Len())
 	assert.Equal(t, 2, hostB.ScopeMetrics().At(0).Metrics().Len())
-	hostBGauge1, foundHostBGauge1 := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "gauge-1", pdata.MetricDataTypeGauge)
+	hostBGauge1, foundHostBGauge1 := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "gauge-1", pmetric.MetricDataTypeGauge)
 	assert.True(t, foundHostBGauge1)
 	assert.Equal(t, 2, hostBGauge1.Gauge().DataPoints().Len())
-	hostBMixedGauge, foundHostBMixedGauge := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeGauge)
+	hostBMixedGauge, foundHostBMixedGauge := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "mixed-type", pmetric.MetricDataTypeGauge)
 	assert.True(t, foundHostBMixedGauge)
 	assert.Equal(t, 1, hostBMixedGauge.Gauge().DataPoints().Len())
 }
 
 // Test helper function that retrieves the resource with the specified "host.name" attribute
-func retrieveHostResource(resources pdata.ResourceMetricsSlice, hostname string) (pdata.ResourceMetrics, bool) {
+func retrieveHostResource(resources pmetric.ResourceMetricsSlice, hostname string) (pmetric.ResourceMetrics, bool) {
 	for i := 0; i < resources.Len(); i++ {
 		resource := resources.At(i)
 		hostnameValue, foundKey := resource.Resource().Attributes().Get("host.name")
@@ -741,18 +744,18 @@ func retrieveHostResource(resources pdata.ResourceMetricsSlice, hostname string)
 			return resource, true
 		}
 	}
-	return pdata.ResourceMetrics{}, false
+	return pmetric.ResourceMetrics{}, false
 }
 
 // Test helper function that retrieves the specified metric
-func retrieveMetric(metrics pdata.MetricSlice, name string, metricType pdata.MetricDataType) (pdata.Metric, bool) {
+func retrieveMetric(metrics pmetric.MetricSlice, name string, metricType pmetric.MetricDataType) (pmetric.Metric, bool) {
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
 		if metric.Name() == name && metric.DataType() == metricType {
 			return metric, true
 		}
 	}
-	return pdata.Metric{}, false
+	return pmetric.Metric{}, false
 }
 
 func TestCompacting(t *testing.T) {

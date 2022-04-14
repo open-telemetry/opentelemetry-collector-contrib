@@ -17,7 +17,7 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -43,7 +43,7 @@ func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrP
 	}
 }
 
-func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
@@ -66,32 +66,32 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata
 
 // Attributes are provided for each log and trace, but not at the metric level
 // Need to process attributes for every data point within a metric.
-func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context, m pdata.Metric) {
+func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context, m pmetric.Metric) {
 
 	// This is a lot of repeated code, but since there is no single parent superclass
 	// between metric data types, we can't use polymorphism.
 	switch m.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pdata.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricDataTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())

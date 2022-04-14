@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -169,7 +169,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	verifyAttributeMap(t, expected, attrMap)
 }
 
-func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.Map) {
+func verifyAttributeMap(t *testing.T, expected map[string]string, found pcommon.Map) {
 	for key, val := range expected {
 		attributeVal, found := found.Get(key)
 		require.EqualValues(t, true, found)

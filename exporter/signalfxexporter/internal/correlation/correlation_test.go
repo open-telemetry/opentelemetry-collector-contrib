@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestTrackerAddSpans(t *testing.T) {
@@ -37,13 +37,13 @@ func TestTrackerAddSpans(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, tracker.correlation, "correlation context should be set")
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	attr := rs.Resource().Attributes()
 	attr.InsertString("host.name", "localhost")
 
 	// Add empty first, should ignore.
-	tracker.AddSpans(context.Background(), pdata.NewTraces())
+	tracker.AddSpans(context.Background(), ptrace.NewTraces())
 	assert.Nil(t, tracker.traceTracker)
 
 	tracker.AddSpans(context.Background(), traces)

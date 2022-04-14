@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
@@ -83,7 +83,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName s
 	assert.NoError(t, err, "Start() returned an error")
 	defer func() { assert.NoError(t, wrapper.Shutdown(ctx)) }()
 
-	var metrics []pdata.Metrics
+	var metrics []pmetric.Metrics
 
 	// Make sure two scrapes have been completed (this implies the process was started, scraped, restarted and finally scraped a second time)
 	const waitFor = 30 * time.Second
@@ -102,11 +102,11 @@ func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName s
 
 // assertTwoUniqueValuesScraped iterates over the found metrics and returns true if it finds at least 2 unique metrics, meaning the endpoint
 // was successfully scraped twice AND the subprocess being handled was stopped and restarted
-func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
+func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pmetric.Metrics) {
 	var value float64
 	for i := range metricsSlice {
 		ms := metricsSlice[i].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-		var tempM pdata.Metric
+		var tempM pmetric.Metric
 		ok := false
 		for j := 0; j < ms.Len(); j++ {
 			if ms.At(j).Name() == "timestamp_now" {
@@ -116,7 +116,7 @@ func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 			}
 		}
 		require.True(t, ok, "timestamp_now metric not found")
-		assert.Equal(t, pdata.MetricDataTypeGauge, tempM.DataType())
+		assert.Equal(t, pmetric.MetricDataTypeGauge, tempM.DataType())
 		tempV := tempM.Gauge().DataPoints().At(0).DoubleVal()
 		if i != 0 && tempV != value {
 			return

@@ -23,7 +23,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +63,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger, next 
 
 // processTraces implements ProcessMetricsFunc. It processes the incoming data
 // and returns the data to be sent to the next component
-func (s *redaction) processTraces(ctx context.Context, batch pdata.Traces) (pdata.Traces, error) {
+func (s *redaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
 		rs := batch.ResourceSpans().At(i)
 		s.processResourceSpan(ctx, rs)
@@ -72,7 +73,7 @@ func (s *redaction) processTraces(ctx context.Context, batch pdata.Traces) (pdat
 
 // processResourceSpan processes the RS and all of its spans and then returns the last
 // view metric context. The context can be used for tests
-func (s *redaction) processResourceSpan(ctx context.Context, rs pdata.ResourceSpans) {
+func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
 	rsAttrs := rs.Resource().Attributes()
 
 	// Attributes can be part of a resource span
@@ -91,7 +92,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs pdata.ResourceSp
 }
 
 // processAttrs redacts the attributes of a resource span or a span
-func (s *redaction) processAttrs(_ context.Context, attributes *pdata.Map) {
+func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var toDelete []string
 	var toBlock []string
@@ -104,7 +105,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pdata.Map) {
 	// This sequence satisfies these performance constraints:
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
-	attributes.Range(func(k string, value pdata.Value) bool {
+	attributes.Range(func(k string, value pcommon.Value) bool {
 		// Make a list of attribute keys to redact
 		if _, allowed := s.allowList[k]; !allowed {
 			toDelete = append(toDelete, k)
@@ -120,7 +121,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pdata.Map) {
 
 				valueCopy := value.StringVal()
 				maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
-				attributes.Update(k, pdata.NewValueString(maskedValue))
+				attributes.Update(k, pcommon.NewValueString(maskedValue))
 			}
 		}
 		return true
@@ -136,7 +137,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pdata.Map) {
 }
 
 // ConsumeTraces implements the SpanProcessor interface
-func (s *redaction) ConsumeTraces(ctx context.Context, batch pdata.Traces) error {
+func (s *redaction) ConsumeTraces(ctx context.Context, batch ptrace.Traces) error {
 	batch, err := s.processTraces(ctx, batch)
 	if err != nil {
 		return err
@@ -147,7 +148,7 @@ func (s *redaction) ConsumeTraces(ctx context.Context, batch pdata.Traces) error
 }
 
 // summarizeRedactedSpan adds diagnostic information about redacted attribute keys
-func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pdata.Map) {
+func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pcommon.Map) {
 	redactedSpanCount := int64(len(toDelete))
 	if redactedSpanCount == 0 {
 		return
@@ -155,15 +156,15 @@ func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pdata.M
 	// Record summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toDelete)
-		attributes.Insert(redactedKeys, pdata.NewValueString(strings.Join(toDelete, ",")))
+		attributes.Insert(redactedKeys, pcommon.NewValueString(strings.Join(toDelete, ",")))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(redactedKeyCount, pdata.NewValueInt(redactedSpanCount))
+		attributes.Insert(redactedKeyCount, pcommon.NewValueInt(redactedSpanCount))
 	}
 }
 
 // summarizeMaskedSpan adds diagnostic information about masked attribute values
-func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pdata.Map) {
+func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pcommon.Map) {
 	maskedSpanCount := int64(len(toBlock))
 	if maskedSpanCount == 0 {
 		return
@@ -171,10 +172,10 @@ func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pdata.Map)
 	// Records summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toBlock)
-		attributes.Insert(maskedValues, pdata.NewValueString(strings.Join(toBlock, ",")))
+		attributes.Insert(maskedValues, pcommon.NewValueString(strings.Join(toBlock, ",")))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(maskedValueCount, pdata.NewValueInt(maskedSpanCount))
+		attributes.Insert(maskedValueCount, pcommon.NewValueInt(maskedSpanCount))
 	}
 }
 
