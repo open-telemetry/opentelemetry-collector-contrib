@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -496,7 +496,7 @@ func TestMetricDeclarationMatchesLabels(t *testing.T) {
 		},
 	}
 	logger := zap.NewNop()
-	metric := pdata.NewMetric()
+	metric := pmetric.NewMetric()
 	metric.SetName("a")
 
 	for _, tc := range testCases {

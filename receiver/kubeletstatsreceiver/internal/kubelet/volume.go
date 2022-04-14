@@ -17,14 +17,15 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"strconv"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addVolumeMetrics(dest pdata.MetricSlice, prefix string, s stats.VolumeStats, currentTime pdata.Timestamp) {
+func addVolumeMetrics(dest pmetric.MetricSlice, prefix string, s stats.VolumeStats, currentTime pcommon.Timestamp) {
 	addIntGauge(dest, prefix, metadata.M.VolumeAvailable, s.AvailableBytes, currentTime)
 	addIntGauge(dest, prefix, metadata.M.VolumeCapacity, s.CapacityBytes, currentTime)
 	addIntGauge(dest, prefix, metadata.M.VolumeInodes, s.Inodes, currentTime)

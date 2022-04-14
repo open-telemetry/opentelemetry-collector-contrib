@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -138,7 +138,7 @@ func (ocr *Receiver) processReceivedMsg(
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td ptrace.Traces) error {
 	ctx := ocr.obsrecv.StartTracesOp(longLivedRPCCtx)
 
 	err := ocr.nextConsumer.ConsumeTraces(ctx, td)

@@ -23,7 +23,8 @@ import (
 	"go.elastic.co/apm/model"
 	"go.elastic.co/apm/transport/transporttest"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
@@ -31,11 +32,11 @@ import (
 func TestEncodeMetrics(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+	elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
 
-	scopeMetrics := pdata.NewScopeMetrics()
+	scopeMetrics := pmetric.NewScopeMetrics()
 	metrics := scopeMetrics.Metrics()
-	appendMetric := func(name string, dataType pdata.MetricDataType) pdata.Metric {
+	appendMetric := func(name string, dataType pmetric.MetricDataType) pmetric.Metric {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetDataType(dataType)
@@ -47,74 +48,74 @@ func TestEncodeMetrics(t *testing.T) {
 
 	var expectDropped int
 
-	metric := appendMetric("int_gauge_metric", pdata.MetricDataTypeGauge)
+	metric := appendMetric("int_gauge_metric", pmetric.MetricDataTypeGauge)
 	intGauge := metric.Gauge()
 	intGauge.DataPoints().EnsureCapacity(4)
 	idp := intGauge.DataPoints().AppendEmpty()
-	idp.SetTimestamp(pdata.NewTimestampFromTime(timestamp0))
+	idp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp0))
 	idp.SetIntVal(1)
 	idp = intGauge.DataPoints().AppendEmpty()
-	idp.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	idp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	idp.SetIntVal(2)
 	idp.Attributes().InsertString("k", "v")
 	idp = intGauge.DataPoints().AppendEmpty()
-	idp.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	idp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	idp.SetIntVal(3)
 	idp = intGauge.DataPoints().AppendEmpty()
-	idp.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	idp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	idp.SetIntVal(4)
 	idp.Attributes().InsertString("k", "v2")
 
-	metric = appendMetric("double_gauge_metric", pdata.MetricDataTypeGauge)
+	metric = appendMetric("double_gauge_metric", pmetric.MetricDataTypeGauge)
 	doubleGauge := metric.Gauge()
 	doubleGauge.DataPoints().EnsureCapacity(4)
 	ddp := doubleGauge.DataPoints().AppendEmpty()
-	ddp.SetTimestamp(pdata.NewTimestampFromTime(timestamp0))
+	ddp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp0))
 	ddp.SetDoubleVal(5)
 	ddp = doubleGauge.DataPoints().AppendEmpty()
-	ddp.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	ddp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	ddp.SetDoubleVal(6)
 	ddp.Attributes().InsertString("k", "v")
 	ddp = doubleGauge.DataPoints().AppendEmpty()
-	ddp.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	ddp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	ddp.SetDoubleVal(7)
 	ddp = doubleGauge.DataPoints().AppendEmpty()
-	ddp.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	ddp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	ddp.SetDoubleVal(8)
 	ddp.Attributes().InsertString("k", "v2")
 
-	metric = appendMetric("int_sum_metric", pdata.MetricDataTypeSum)
+	metric = appendMetric("int_sum_metric", pmetric.MetricDataTypeSum)
 	intSum := metric.Sum()
 	intSum.DataPoints().EnsureCapacity(3)
 	is := intSum.DataPoints().AppendEmpty()
-	is.SetTimestamp(pdata.NewTimestampFromTime(timestamp0))
+	is.SetTimestamp(pcommon.NewTimestampFromTime(timestamp0))
 	is.SetIntVal(9)
 	is = intSum.DataPoints().AppendEmpty()
-	is.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	is.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	is.SetIntVal(10)
 	is.Attributes().InsertString("k", "v")
 	is = intSum.DataPoints().AppendEmpty()
-	is.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	is.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	is.SetIntVal(11)
 	is.Attributes().InsertString("k2", "v")
 
-	metric = appendMetric("double_sum_metric", pdata.MetricDataTypeSum)
+	metric = appendMetric("double_sum_metric", pmetric.MetricDataTypeSum)
 	doubleSum := metric.Sum()
 	doubleSum.DataPoints().EnsureCapacity(3)
 	ds := doubleSum.DataPoints().AppendEmpty()
-	ds.SetTimestamp(pdata.NewTimestampFromTime(timestamp0))
+	ds.SetTimestamp(pcommon.NewTimestampFromTime(timestamp0))
 	ds.SetDoubleVal(12)
 	ds = doubleSum.DataPoints().AppendEmpty()
-	ds.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	ds.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	ds.SetDoubleVal(13)
 	ds.Attributes().InsertString("k", "v")
 	ds = doubleSum.DataPoints().AppendEmpty()
-	ds.SetTimestamp(pdata.NewTimestampFromTime(timestamp1))
+	ds.SetTimestamp(pcommon.NewTimestampFromTime(timestamp1))
 	ds.SetDoubleVal(14)
 	ds.Attributes().InsertString("k2", "v")
 
 	// Histograms are currently not supported, and will be ignored.
-	metric = appendMetric("double_histogram_metric", pdata.MetricDataTypeHistogram)
+	metric = appendMetric("double_histogram_metric", pmetric.MetricDataTypeHistogram)
 	metric.Histogram().DataPoints().AppendEmpty()
 	expectDropped++
 

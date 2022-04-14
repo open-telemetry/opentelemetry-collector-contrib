@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -95,7 +95,7 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 	mfs := &mockFileSystem{exists: true, contents: xrayConf}
 	d := Detector{fs: mfs}
 
-	want := pdata.NewResource()
+	want := pcommon.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.platform", "aws_elastic_beanstalk")

@@ -21,7 +21,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -68,12 +69,12 @@ func (m *mySQLScraper) shutdown(context.Context) error {
 }
 
 // scrape scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
-func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if m.sqlclient == nil {
-		return pdata.Metrics{}, errors.New("failed to connect to http client")
+		return pmetric.Metrics{}, errors.New("failed to connect to http client")
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// collect innodb metrics.
 	innodbStats, innoErr := m.sqlclient.getInnodbStats()
@@ -97,7 +98,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
 	m.recordDataPages(now, globalStats, errors)
@@ -511,7 +512,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	return m.mb.Emit(), errors.Combine()
 }
 
-func (m *mySQLScraper) recordDataPages(now pdata.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) recordDataPages(now pcommon.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
 	dirty, err := parseInt(globalStats["Innodb_buffer_pool_pages_dirty"])
 	if err != nil {
 		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
@@ -527,7 +528,7 @@ func (m *mySQLScraper) recordDataPages(now pdata.Timestamp, globalStats map[stri
 	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, data-dirty, "clean")
 }
 
-func (m *mySQLScraper) recordDataUsage(now pdata.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) recordDataUsage(now pcommon.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
 	dirty, err := parseInt(globalStats["Innodb_buffer_pool_bytes_dirty"])
 	if err != nil {
 		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here

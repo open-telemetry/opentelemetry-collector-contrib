@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -251,7 +251,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.expectedNumResourceMetrics == 0 {
 				if tt.wantErr {
 					require.Error(t, err)
-					require.Equal(t, pdata.NewMetrics(), actualMetrics)
+					require.Equal(t, pmetric.NewMetrics(), actualMetrics)
 				}
 
 				require.NoError(t, z.shutdown(ctx))

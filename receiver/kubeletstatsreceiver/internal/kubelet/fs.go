@@ -15,13 +15,14 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addFilesystemMetrics(dest pdata.MetricSlice, prefix string, s *stats.FsStats, currentTime pdata.Timestamp) {
+func addFilesystemMetrics(dest pmetric.MetricSlice, prefix string, s *stats.FsStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}

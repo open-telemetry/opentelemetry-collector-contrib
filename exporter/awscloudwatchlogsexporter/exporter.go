@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -95,7 +96,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 
 }
 
-func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
@@ -137,7 +138,7 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
+func logsToCWLogs(logger *zap.Logger, ld plog.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
 	n := ld.ResourceLogs().Len()
 	if n == 0 {
 		return []*cloudwatchlogs.InputLogEvent{}, 0
@@ -182,7 +183,7 @@ type cwLogBody struct {
 	Resource               map[string]interface{} `json:"resource,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
+func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	body := cwLogBody{
@@ -211,43 +212,43 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 	}, nil
 }
 
-func attrsValue(attrs pdata.Map) map[string]interface{} {
+func attrsValue(attrs pcommon.Map) map[string]interface{} {
 	if attrs.Len() == 0 {
 		return nil
 	}
 	out := make(map[string]interface{}, attrs.Len())
-	attrs.Range(func(k string, v pdata.Value) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		out[k] = attrValue(v)
 		return true
 	})
 	return out
 }
 
-func attrValue(value pdata.Value) interface{} {
+func attrValue(value pcommon.Value) interface{} {
 	switch value.Type() {
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return value.IntVal()
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return value.BoolVal()
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return value.StringVal()
-	case pdata.ValueTypeMap:
+	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pdata.Value) bool {
+		value.MapVal().Range(func(k string, v pcommon.Value) bool {
 			values[k] = attrValue(v)
 			return true
 		})
 		return values
-	case pdata.ValueTypeSlice:
+	case pcommon.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))
 		}
 		return values
-	case pdata.ValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		return nil
 	default:
 		return nil

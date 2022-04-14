@@ -18,7 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func hello() ExprFunc {
@@ -28,7 +29,7 @@ func hello() ExprFunc {
 }
 
 func Test_newGetter(t *testing.T) {
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("bear")
 	tests := []struct {
 		name string
@@ -88,8 +89,8 @@ func Test_newGetter(t *testing.T) {
 			assert.NoError(t, err)
 			val := reader.Get(testTransformContext{
 				span:     span,
-				il:       pdata.NewInstrumentationScope(),
-				resource: pdata.NewResource(),
+				il:       pcommon.NewInstrumentationScope(),
+				resource: pcommon.NewResource(),
 			})
 			assert.Equal(t, tt.want, val)
 		})

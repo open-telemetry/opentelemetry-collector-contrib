@@ -14,18 +14,16 @@
 
 package signalfx // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
 const millisToNanos = 1e6
 
-func fromTimestamp(ts pdata.Timestamp) int64 {
+func fromTimestamp(ts pcommon.Timestamp) int64 {
 	// Convert nanos to millis.
 	return int64(ts) / millisToNanos
 }
 
-func toTimestamp(ts int64) pdata.Timestamp {
+func toTimestamp(ts int64) pcommon.Timestamp {
 	// Convert millis to nanos.
-	return pdata.Timestamp(ts * millisToNanos)
+	return pcommon.Timestamp(ts * millisToNanos)
 }

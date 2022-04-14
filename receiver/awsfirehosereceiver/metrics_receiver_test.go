@@ -25,19 +25,19 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 )
 
 type recordConsumer struct {
-	result pdata.Metrics
+	result pmetric.Metrics
 }
 
 var _ consumer.Metrics = (*recordConsumer)(nil)
 
-func (rc *recordConsumer) ConsumeMetrics(_ context.Context, metrics pdata.Metrics) error {
+func (rc *recordConsumer) ConsumeMetrics(_ context.Context, metrics pmetric.Metrics) error {
 	rc.result = metrics
 	return nil
 }
@@ -116,7 +116,7 @@ func TestMetricsConsumer(t *testing.T) {
 	}
 
 	t.Run("WithCommonAttributes", func(t *testing.T) {
-		base := pdata.NewMetrics()
+		base := pmetric.NewMetrics()
 		base.ResourceMetrics().AppendEmpty()
 		rc := recordConsumer{}
 		mc := &metricsConsumer{
