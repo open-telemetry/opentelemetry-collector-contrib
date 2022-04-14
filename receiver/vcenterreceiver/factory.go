@@ -65,8 +65,7 @@ func createDefaultConfig() config.Receiver {
 			Password:         "",
 		},
 		LoggingConfig: &LoggingConfig{
-			SysLogConfig:     syslogDefault,
-			TLSClientSetting: configtls.TLSClientSetting{},
+			SysLogConfig: syslogDefault,
 		},
 	}
 }

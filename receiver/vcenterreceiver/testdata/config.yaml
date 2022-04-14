@@ -5,6 +5,10 @@ receivers:
       username: otelu
       password: $VCENTER_PASSWORD
       collection_interval: 5m
+    logging:
+      tcp:
+        listen_address: 0.0.0.0:5142
+      protocol: rfc5424
 
 processors:
   nop:
