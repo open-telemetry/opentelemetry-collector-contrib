@@ -23,9 +23,9 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -298,7 +298,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"sanitize_labels_starts_with_underscore",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs3,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -317,15 +317,15 @@ func Test_createLabelSetDropSanitization(t *testing.T) {
 	defer setSanitizeLabelFeatureGateForTest(true)()
 	tests := []struct {
 		name           string
-		resource       pdata.Resource
-		orig           pdata.Map
+		resource       pcommon.Resource
+		orig           pcommon.Map
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
 	}{
 		{
 			"donot_sanitize_labels_starts_with_underscore",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs3,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
