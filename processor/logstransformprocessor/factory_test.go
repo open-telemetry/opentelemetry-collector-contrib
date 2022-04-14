@@ -23,8 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"go.opentelemetry.io/opentelemetry-collector-contrib/internal/stanza"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -38,43 +37,27 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
+		BaseConfig: stanza.BaseConfig{
+			Operators: stanza.OperatorConfigs{},
 		},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.createLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
-	assert.NotNil(t, mp)
 }
 
-func TestInvalidEmptyActions(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
-
-	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
-}
-
-func TestInvalidAttributeActions(t *testing.T) {
+func TestInvalidOperators(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "k", Value: "v", Action: "invalid-action"},
+		BaseConfig: stanza.BaseConfig{
+			Operators: stanza.OperatorConfigs{
+				map[string]interface{}{},
+			},
 		},
 	}
 
-	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
-	assert.Error(t, err)
-
-	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	_, err := factory.createLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
 	assert.Error(t, err)
 }
