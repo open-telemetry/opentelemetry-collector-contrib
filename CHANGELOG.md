@@ -58,7 +58,7 @@
 - `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
 - `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
 - `routingprocessor`: add option to drop resource attribute used for routing (#8990)
-- `transformprocessor`: add `join` function support (#) 
+- `transformprocessor`: add `join` function support (#9270) 
 
 ### 🧰 Bug fixes 🧰
 
