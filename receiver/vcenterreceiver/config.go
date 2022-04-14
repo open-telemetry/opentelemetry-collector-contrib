@@ -75,10 +75,6 @@ func (c *Config) validateMetricsConfig() error {
 		return nil
 	}
 
-	if mc.Endpoint == "" {
-		return errors.New("no endpoint was provided")
-	}
-
 	var err error
 	res, err := url.Parse(mc.Endpoint)
 	if err != nil {

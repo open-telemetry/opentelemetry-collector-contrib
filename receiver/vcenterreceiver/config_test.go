@@ -45,7 +45,7 @@ func TestConfigValidation(t *testing.T) {
 					Endpoint: "",
 				},
 			},
-			expectedErr: errors.New("no endpoint was provided"),
+			expectedErr: errors.New("url scheme must be http or https"),
 		},
 		{
 			desc: "with endpoint",
