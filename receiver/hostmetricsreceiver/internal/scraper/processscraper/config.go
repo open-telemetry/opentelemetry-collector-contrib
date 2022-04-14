@@ -34,6 +34,9 @@ type Config struct {
 
 	// FilterConfig is used to filter the set of processes that are reported on
 	Filters []FilterConfig `mapstructure:"filters"`
+
+	// AggregateChildMetrics when true results in child metrics being aggregated at the parent level
+	AggregateChildMetrics bool `mapstructure:"aggregated_child_metrics,omitempty"`
 }
 
 // ExecutableNameMatchConfig filters by executable name

@@ -24,10 +24,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
+const MAX_SYSTEM_PID = 300
+
 func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTime *cpu.TimesStat) {
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.User, metadata.AttributeState.User)
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.System, metadata.AttributeState.System)
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.Iowait, metadata.AttributeState.Wait)
+}
+
+func (s *scraper) recordAggregateCPUTimeMetrics(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {
+	var user, system, wait float64
+	for _, cpuTime := range cpuTimes {
+		user += cpuTime.User
+		system += cpuTime.System
+		wait += cpuTime.Iowait
+	}
+
+	s.mb.RecordProcessCPUTimeDataPoint(now, user, metadata.AttributeState.User)
+	s.mb.RecordProcessCPUTimeDataPoint(now, system, metadata.AttributeState.System)
+	s.mb.RecordProcessCPUTimeDataPoint(now, wait, metadata.AttributeState.Wait)
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {

@@ -35,6 +35,11 @@ type processMetadata struct {
 	handle     processHandle
 }
 
+type hierarchicalMetadata struct {
+	parent *processMetadata
+	children   []processHandle
+}
+
 type executableMetadata struct {
 	name string
 	path string
@@ -74,6 +79,7 @@ func (m *processMetadata) resourceOptions() []metadata.ResourceOption {
 
 type processHandles interface {
 	Pid(index int) int32
+	ParentPid(index int) (int32, error)
 	At(index int) processHandle
 	Len() int
 }
@@ -87,6 +93,7 @@ type processHandle interface {
 	Times() (*cpu.TimesStat, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
+	Parent() (*process.Process, error)
 }
 
 type gopsProcessHandles struct {
@@ -95,6 +102,29 @@ type gopsProcessHandles struct {
 
 func (p *gopsProcessHandles) Pid(index int) int32 {
 	return p.handles[index].Pid
+}
+
+func parentPid(handle *process.Process) (int32, error) {
+	parent, err := handle.Parent()
+
+	if err != nil {
+		if err.Error() == "invalid pid 0" {
+			return handle.Pid, nil
+		}
+
+		return 0, err
+	}
+
+	// do not consider system/kernel processes as a parent
+	if parent == nil || parent.Pid <= MAX_SYSTEM_PID {
+		return handle.Pid, nil
+	}
+
+	return parentPid(parent)
+}
+
+func (p *gopsProcessHandles) ParentPid(index int) (int32, error) {
+	return parentPid(p.handles[index])
 }
 
 func (p *gopsProcessHandles) At(index int) processHandle {

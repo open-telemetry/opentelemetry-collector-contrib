@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -88,22 +89,27 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
-	for _, md := range metadata {
+	for pid, md := range metadata {
+		// sanity test, this should never happen
+		if md.parent == nil {
+			errs.AddPartial(cpuMetricsLen + memoryMetricsLen + diskMetricsLen, fmt.Errorf( "error reading child metrics, parent %d not found", pid))
+			continue
+		}
+
 		now := pdata.NewTimestampFromTime(time.Now())
-
-		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
-			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		if err = s.scrapeAndAppendCPUTimeMetric(now, md.parent.handle); err != nil {
+			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.parent.executable.name, md.parent.pid, err))
 		}
 
-		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.handle); err != nil {
-			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.parent.handle); err != nil {
+			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.parent.executable.name, md.parent.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
-			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		if err = s.scrapeAndAppendDiskIOMetric(now, md.parent.handle); err != nil {
+			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.parent.executable.name, md.parent.pid, err))
 		}
 
-		s.mb.EmitForResource(md.resourceOptions()...)
+		s.mb.EmitForResource(md.parent.resourceOptions()...)
 	}
 
 	return s.mb.Emit(), errs.Combine()
@@ -113,7 +119,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 // for all currently running processes. If errors occur obtaining information
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
-func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
+func (s *scraper) getProcessMetadata() (map[int32]*hierarchicalMetadata, error) {
 	handles, err := s.getProcessHandles()
 	if err != nil {
 		return nil, err
@@ -121,7 +127,8 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 	var errs scrapererror.ScrapeErrors
 
-	metadata := make([]*processMetadata, 0, handles.Len())
+	metadata := make(map[int32]*hierarchicalMetadata)
+
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
 
@@ -168,15 +175,45 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 
-		md := &processMetadata{
-			pid:        pid,
-			executable: executable,
-			command:    command,
-			username:   username,
-			handle:     handle,
-		}
+		if s.config.AggregateChildMetrics {
+			parentPid, err := handles.ParentPid(i)
+			if err != nil {
+				errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+				// if we were unable to find the parent, store the data against the process itself rather than aggregating
+				// it in the parent
+				parentPid = pid
+			}
 
-		metadata = append(metadata, md)
+			if _, ok := metadata[parentPid]; !ok {
+				metadata[parentPid] = &hierarchicalMetadata{
+					children:   make([]processHandle, 0),
+				}
+			}
+
+			// if this process is the parent process
+			if pid == parentPid {
+				metadata[pid].parent = &processMetadata{
+					pid:        pid,
+					executable: executable,
+					command:    command,
+					username:   username,
+					handle:     handle,
+				}
+			} else {
+				metadata[parentPid].children = append(metadata[parentPid].children, handle)
+			}
+		} else {
+			metadata[pid] = &hierarchicalMetadata{
+				parent: &processMetadata{
+					pid:        pid,
+					executable: executable,
+					command:    command,
+					username:   username,
+					handle:     handle,
+				},
+				children:   make([]processHandle, 0),
+			}
+		}
 	}
 
 	return metadata, errs.Combine()
@@ -191,6 +228,27 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, handle proce
 	s.recordCPUTimeMetric(now, times)
 	return nil
 }
+
+func (s *scraper) scrapeAndAppendAllCPUTimeMetric(now pdata.Timestamp, parent processHandle, children []processHandle) error {
+	var allTimes []*cpu.TimesStat
+
+	times, err := parent.Times()
+	if err != nil {
+		return err
+	}
+	allTimes = append(allTimes, times)
+
+	for _, val := range children {
+		times, err = val.Times()
+		if err != nil {
+			return err
+		}
+		allTimes = append(allTimes, times)
+	}
+	s.recordAggregateCPUTimeMetrics(now, allTimes)
+	return nil
+}
+
 
 func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle processHandle) error {
 	mem, err := handle.MemoryInfo()

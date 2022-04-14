@@ -194,11 +194,17 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 }
 
 type processHandlesMock struct {
+	mock.Mock
 	handles []*processHandleMock
 }
 
-func (p *processHandlesMock) Pid(int) int32 {
-	return 1
+func (p *processHandlesMock) Pid(index int) int32 {
+	return p.handles[index].Pid
+}
+
+func (p *processHandlesMock) ParentPid(index int) (int32, error) {
+	args := p.MethodCalled("ParentPid", mock.Anything)
+	return int32(args.Int(0)), args.Error(1)
 }
 
 func (p *processHandlesMock) At(index int) processHandle {
@@ -211,6 +217,7 @@ func (p *processHandlesMock) Len() int {
 
 type processHandleMock struct {
 	mock.Mock
+	Pid int32
 }
 
 func (p *processHandleMock) Name() (ret string, err error) {
@@ -253,8 +260,15 @@ func (p *processHandleMock) IOCounters() (*process.IOCountersStat, error) {
 	return args.Get(0).(*process.IOCountersStat), args.Error(1)
 }
 
-func newDefaultHandleMock() *processHandleMock {
-	handleMock := &processHandleMock{}
+func (p *processHandleMock) Parent() (*process.Process, error) {
+	args := p.MethodCalled("Parent")
+	return args.Get(0).(*process.Process), args.Error(1)
+}
+
+func newDefaultHandleMock(pid int32) *processHandleMock {
+	handleMock := &processHandleMock{
+		Pid: pid,
+	}
 	handleMock.On("Username").Return("username", nil)
 	handleMock.On("Cmdline").Return("cmdline", nil)
 	handleMock.On("CmdlineSlice").Return([]string{"cmdline"}, nil)
@@ -343,8 +357,9 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handles := make([]*processHandleMock, 0, len(test.names))
-			for _, name := range test.names {
-				handleMock := newDefaultHandleMock()
+			for pid, name := range test.names {
+				// use index to give each process a unique pid
+				handleMock := newDefaultHandleMock(int32(pid))
 				handleMock.On("Name").Return(name, nil)
 				handleMock.On("Exe").Return(name, nil)
 				handles = append(handles, handleMock)
@@ -358,10 +373,13 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, len(test.expectedNames), md.ResourceMetrics().Len())
-			for i, expectedName := range test.expectedNames {
+			for i := 0; i < len(test.expectedNames); i++ {
 				rm := md.ResourceMetrics().At(i)
 				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
-				assert.Equal(t, expectedName, name.StringVal())
+				// for unit test pid matches index of test name since order of process monitoring is
+				// not pre defined
+				pid, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessPID)
+				assert.Equal(t, test.expectedNames[pid.IntVal()], name.StringVal())
 			}
 		})
 	}
@@ -381,6 +399,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		memoryInfoError error
 		ioCountersError error
 		expectedError   string
+		parentError     error
+		aggregateChildMetrics bool
 	}
 
 	testCases := []testCase{
@@ -421,6 +441,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError:   `error reading disk usage for process "test" (pid 1): err6`,
 		},
 		{
+			name:            "Parent Error",
+			parentError: 	 errors.New("err7"),
+			expectedError:   `error reading parent pid for process "test" (pid 1): err7`,
+			aggregateChildMetrics: true,
+		},
+		{
 			name:            "Multiple Errors",
 			cmdlineError:    errors.New("err2"),
 			usernameError:   errors.New("err3"),
@@ -441,7 +467,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
 			}
 
-			scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
+			scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings(),
+				AggregateChildMetrics: test.aggregateChildMetrics})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -451,7 +478,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				username = ""
 			}
 
-			handleMock := &processHandleMock{}
+			handleMock := &processHandleMock{
+				Pid: 1,
+			}
 			handleMock.On("Name").Return("test", test.nameError)
 			handleMock.On("Exe").Return("test", test.exeError)
 			handleMock.On("Username").Return(username, test.usernameError)
@@ -461,8 +490,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 
+
+			handlesMock := &processHandlesMock{handles: []*processHandleMock{handleMock}}
+			handlesMock.On("ParentPid", 0).Return(1, test.parentError)
 			scraper.getProcessHandles = func() (processHandles, error) {
-				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+				return handlesMock, nil
 			}
 
 			md, err := scraper.scrape(context.Background())
@@ -533,16 +565,16 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 		{
 			name:                 "Process Name Error Enabled",
 			muteProcessNameError: false,
-			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError:        "error reading process name for pid %d: %v",
 		},
 		{
 			name:            "Process Name Error Default (Enabled)",
 			omitConfigField: true,
-			expectedError:   fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError:   "error reading process name for pid %d: %v",
 		},
 	}
 
-	for _, test := range testCases {
+	for pid, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
 			if !test.omitConfigField {
@@ -553,7 +585,7 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-			handleMock := newDefaultHandleMock()
+			handleMock := newDefaultHandleMock(int32(pid + 1))
 			handleMock.On("Name").Return("test", processNameError)
 
 			scraper.getProcessExecutable = mockGetProcessExecutable
@@ -573,7 +605,7 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			if config.MuteProcessNameError {
 				assert.Nil(t, err)
 			} else {
-				assert.EqualError(t, err, test.expectedError)
+				assert.EqualError(t, err, fmt.Sprintf(test.expectedError, handleMock.Pid, processNameError))
 			}
 		})
 	}
