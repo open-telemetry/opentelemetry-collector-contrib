@@ -16,6 +16,7 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -76,6 +77,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 	cases := []struct {
 		desc string
 		cfg  Config
+		err  error
 	}{
 		{
 			desc: "bad client connect",
@@ -84,6 +86,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 					Endpoint: "http://no-host",
 				},
 			},
+			err: errors.New("unable to connect"),
 		},
 		{
 			desc: "unparsable endpoint",
@@ -92,14 +95,18 @@ func TestStartFailures_Metrics(t *testing.T) {
 					Endpoint: "<protocol>://some-host",
 				},
 			},
+			err: errors.New("parse"),
 		},
 	}
 
 	ctx := context.Background()
 	for _, tc := range cases {
 		scraper := newVmwareVcenterScraper(zap.NewNop(), &tc.cfg)
-		// start should almost always succeed
 		err := scraper.Start(ctx, nil)
-		require.NoError(t, err)
+		if tc.err != nil {
+			require.ErrorContains(t, err, tc.err.Error())
+		} else {
+			require.NoError(t, err)
+		}
 	}
 }

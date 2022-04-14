@@ -389,7 +389,7 @@ type metricVcenterClusterHostCount struct {
 // init fills vcenter.cluster.host.count metric with initial data.
 func (m *metricVcenterClusterHostCount) init() {
 	m.data.SetName("vcenter.cluster.host.count")
-	m.data.SetDescription("The number of hosts in the datacenter")
+	m.data.SetDescription("The number of hosts in the cluster")
 	m.data.SetUnit("{hosts}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -595,7 +595,7 @@ type metricVcenterClusterVMCount struct {
 // init fills vcenter.cluster.vm.count metric with initial data.
 func (m *metricVcenterClusterVMCount) init() {
 	m.data.SetName("vcenter.cluster.vm.count")
-	m.data.SetDescription("the number of virtual machines in the datacenter")
+	m.data.SetDescription("the number of virtual machines in the cluster")
 	m.data.SetUnit("{virtual_machines}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)

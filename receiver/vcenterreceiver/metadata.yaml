@@ -185,7 +185,7 @@ metrics:
     attributes: [vsan_throughput_direction]
   vcenter.cluster.vm.count:
     enabled: true
-    description: the number of virtual machines in the datacenter
+    description: the number of virtual machines in the cluster
     unit: "{virtual_machines}"
     sum:
       monotonic: false
@@ -194,7 +194,7 @@ metrics:
     attributes: [vm_count_power_state]
   vcenter.cluster.host.count:
     enabled: true
-    description: The number of hosts in the datacenter
+    description: The number of hosts in the cluster
     unit: "{hosts}"
     sum:
       monotonic: false
