@@ -120,7 +120,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.49.0
-  github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver v0.49.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.49.0
