@@ -56,6 +56,11 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, metricsErr)
 	}
 
+	logsErr := c.validateLoggingConfig()
+	if logsErr != nil {
+		err = multierr.Append(err, logsErr)
+	}
+
 	return err
 }
 
@@ -67,6 +72,10 @@ func (c *Config) ID() config.ComponentID {
 
 func (c *Config) validateMetricsConfig() error {
 	mc := c.MetricsConfig
+	if mc == nil {
+		return nil
+	}
+
 	if mc.Endpoint == "" {
 		return errors.New("no endpoint was provided")
 	}
@@ -92,6 +101,20 @@ func (c *Config) validateMetricsConfig() error {
 
 	if _, tlsErr := mc.LoadTLSConfig(); err != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
+	}
+
+	return err
+}
+
+func (c *Config) validateLoggingConfig() error {
+	lc := c.LoggingConfig
+	if lc == nil {
+		return nil
+	}
+
+	var err error
+	if len(lc.Operators) != 0 {
+		err = multierr.Append(err, errors.New("this receiver does not support custom logging operators"))
 	}
 
 	return err

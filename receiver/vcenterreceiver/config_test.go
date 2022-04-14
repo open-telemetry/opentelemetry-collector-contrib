@@ -20,6 +20,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -28,6 +31,13 @@ func TestConfigValidation(t *testing.T) {
 		cfg         Config
 		expectedErr error
 	}{
+		{
+			desc: "nil configs",
+			cfg: Config{
+				MetricsConfig: nil,
+				LoggingConfig: nil,
+			},
+		},
 		{
 			desc: "empty endpoint",
 			cfg: Config{
@@ -83,6 +93,19 @@ func TestConfigValidation(t *testing.T) {
 				},
 			},
 			expectedErr: errors.New("password not provided"),
+		},
+		{
+			desc: "extra logging operators",
+			cfg: Config{
+				LoggingConfig: &LoggingConfig{
+					SysLogConfig: &syslogreceiver.SysLogConfig{
+						BaseConfig: stanza.BaseConfig{
+							Operators: make(stanza.OperatorConfigs, 1),
+						},
+					},
+				},
+			},
+			expectedErr: errors.New("does not support custom logging operators"),
 		},
 	}
 

@@ -29,13 +29,16 @@ func (lr *vcenterLogsReceiver) Start(ctx context.Context, h component.Host) erro
 	f := h.GetFactory(component.KindReceiver, "syslog")
 	rf, ok := f.(component.ReceiverFactory)
 	if !ok {
-		return fmt.Errorf("unable to wrap the tcplog receiver that the %s component wraps", typeStr)
+		return fmt.Errorf("unable to wrap the syslog receiver that the %s component wraps", typeStr)
 	}
-	tcp, err := rf.CreateLogsReceiver(ctx, lr.params, lr.cfg.LoggingConfig.SysLogConfig, lr.consumer)
+	lr.cfg.LoggingConfig.SysLogConfig.Operators = append(lr.cfg.LoggingConfig.SysLogConfig.Operators, []map[string]interface{}{
+		{},
+	}...)
+	syslog, err := rf.CreateLogsReceiver(ctx, lr.params, lr.cfg.LoggingConfig.SysLogConfig, lr.consumer)
 	if err != nil {
 		return fmt.Errorf("unable to start the wrapped syslogreceiver: %w", err)
 	}
-	lr.syslogReceiver = tcp
+	lr.syslogReceiver = syslog
 	return lr.syslogReceiver.Start(ctx, h)
 }
 
