@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var (
@@ -45,11 +45,11 @@ type Aggregated struct {
 func (agg Aggregated) Type() string {
 	switch agg.Aggregation {
 	case "delta":
-		return "pdata.MetricAggregationTemporalityDelta"
+		return "pmetric.MetricAggregationTemporalityDelta"
 	case "cumulative":
-		return "pdata.MetricAggregationTemporalityCumulative"
+		return "pmetric.MetricAggregationTemporalityCumulative"
 	default:
-		return "pdata.MetricAggregationTemporalityUnknown"
+		return "pmetric.MetricAggregationTemporalityUnknown"
 	}
 }
 
@@ -62,16 +62,16 @@ type Mono struct {
 // MetricValueType defines the metric number type.
 type MetricValueType struct {
 	// ValueType is type of the metric number, options are "double", "int".
-	ValueType pdata.MetricValueType `validate:"required"`
+	ValueType pmetric.MetricValueType `validate:"required"`
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (mvt *MetricValueType) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
 	case "int":
-		mvt.ValueType = pdata.MetricValueTypeInt
+		mvt.ValueType = pmetric.MetricValueTypeInt
 	case "double":
-		mvt.ValueType = pdata.MetricValueTypeDouble
+		mvt.ValueType = pmetric.MetricValueTypeDouble
 	default:
 		return fmt.Errorf("invalid value_type: %q", vtStr)
 	}
@@ -86,9 +86,9 @@ func (mvt MetricValueType) String() string {
 // BasicType returns name of a golang basic type for the datapoint type.
 func (mvt MetricValueType) BasicType() string {
 	switch mvt.ValueType {
-	case pdata.MetricValueTypeInt:
+	case pmetric.MetricValueTypeInt:
 		return "int64"
-	case pdata.MetricValueTypeDouble:
+	case pmetric.MetricValueTypeDouble:
 		return "float64"
 	default:
 		return ""

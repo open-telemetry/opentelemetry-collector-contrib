@@ -32,8 +32,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -71,10 +74,10 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 	}, &headers
 }
 
-func createMetricsData(numberOfDataPoints int) pdata.Metrics {
+func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 
 	doubleVal := 1234.5678
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("k0", "v0")
 	rm.Resource().Attributes().InsertString("k1", "v1")
@@ -85,9 +88,9 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		ilm := rm.ScopeMetrics().AppendEmpty()
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName("gauge_double_with_dims")
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		doublePt := metric.Gauge().DataPoints().AppendEmpty()
-		doublePt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 		doublePt.SetDoubleVal(doubleVal)
 		doublePt.Attributes().InsertString("k/n0", "vn0")
 		doublePt.Attributes().InsertString("k/n1", "vn1")
@@ -98,8 +101,8 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	return metrics
 }
 
-func createTraceData(numberOfTraces int) pdata.Traces {
-	traces := pdata.NewTraces()
+func createTraceData(numberOfTraces int) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -107,14 +110,14 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	for i := 0; i < numberOfTraces; i++ {
 		span := ils.Spans().AppendEmpty()
 		span.SetName("root")
-		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
-		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
-		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+		span.SetStartTimestamp(pcommon.Timestamp((i + 1) * 1e9))
+		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
+		span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+		span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 		span.SetTraceState("foo")
 		if i%2 == 0 {
-			span.SetParentSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-			span.Status().SetCode(pdata.StatusCodeOk)
+			span.SetParentSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.Status().SetCode(ptrace.StatusCodeOk)
 			span.Status().SetMessage("ok")
 		}
 	}
@@ -122,7 +125,7 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	return traces
 }
 
-func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
+func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs {
 	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
 }
 
@@ -134,8 +137,8 @@ func repeat(what int, times int) []int {
 	return result
 }
 
-func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) pdata.Logs {
-	logs := pdata.NewLogs()
+func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
+	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
@@ -145,7 +148,7 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 			sl.Scope().SetName(libraries[j])
 			sl.LogRecords().EnsureCapacity(numRecords[j])
 			for k := 0; k < numRecords[j]; k++ {
-				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
+				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
@@ -192,7 +195,7 @@ func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(c.statusCode)
 }
 
-func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([]receivedRequest, error) {
+func runMetricsExport(cfg *Config, metrics pmetric.Metrics, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -233,7 +236,7 @@ func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([]recei
 	}
 }
 
-func runTraceExport(testConfig *Config, traces pdata.Traces, t *testing.T) ([]receivedRequest, error) {
+func runTraceExport(testConfig *Config, traces ptrace.Traces, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -277,7 +280,7 @@ func runTraceExport(testConfig *Config, traces pdata.Traces, t *testing.T) ([]re
 	}
 }
 
-func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([]receivedRequest, error) {
+func runLogExport(cfg *Config, ld plog.Logs, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -332,7 +335,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 	tests := []struct {
 		name   string
 		conf   *Config
-		traces pdata.Traces
+		traces ptrace.Traces
 		want   wantType
 	}{
 		{
@@ -455,7 +458,7 @@ func TestReceiveLogs(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		logs pdata.Logs
+		logs plog.Logs
 		want wantType
 	}{
 		{
@@ -591,7 +594,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 	tests := []struct {
 		name    string
 		conf    *Config
-		metrics pdata.Metrics
+		metrics pmetric.Metrics
 		want    wantType
 	}{
 		{
@@ -755,7 +758,7 @@ func TestInvalidLogs(t *testing.T) {
 
 func TestInvalidMetrics(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	_, err := runMetricsExport(cfg, pdata.NewMetrics(), t)
+	_, err := runMetricsExport(cfg, pmetric.NewMetrics(), t)
 	assert.Error(t, err)
 }
 
@@ -844,15 +847,15 @@ func TestInvalidURLClient(t *testing.T) {
 func Test_pushLogData_nil_Logs(t *testing.T) {
 	tests := []struct {
 		name     func(bool) string
-		logs     pdata.Logs
-		requires func(*testing.T, pdata.Logs)
+		logs     plog.Logs
+		requires func(*testing.T, plog.Logs)
 	}{
 		{
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil ResourceLogs"
 			},
-			logs: pdata.NewLogs(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			logs: plog.NewLogs(),
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Zero(t, logs.ResourceLogs().Len())
 			},
 		},
@@ -860,12 +863,12 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil InstrumentationLogs"
 			},
-			logs: func() pdata.Logs {
-				logs := pdata.NewLogs()
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
 				logs.ResourceLogs().AppendEmpty()
 				return logs
 			}(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
@@ -874,12 +877,12 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil LogRecords"
 			},
-			logs: func() pdata.Logs {
-				logs := pdata.NewLogs()
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
 				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return logs
 			}(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
 				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
@@ -916,7 +919,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 		logger: zaptest.NewLogger(t),
 	}
 
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
 	log.Body().SetDoubleVal(math.Inf(1))

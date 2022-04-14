@@ -17,11 +17,11 @@ package sentryexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // unixNanoToTime converts UNIX Epoch time in nanoseconds
 // to a Time struct.
-func unixNanoToTime(u pdata.Timestamp) time.Time {
+func unixNanoToTime(u pcommon.Timestamp) time.Time {
 	return time.Unix(0, int64(u)).UTC()
 }

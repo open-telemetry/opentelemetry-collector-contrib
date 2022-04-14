@@ -14,14 +14,17 @@
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
 type kv struct {
 	Key, Value string
 }
 
-func distPointPdata(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdata.HistogramDataPoint {
-	hdp := pdata.NewHistogramDataPoint()
+func distPointPdata(ts pcommon.Timestamp, bounds []float64, counts []uint64) *pmetric.HistogramDataPoint {
+	hdp := pmetric.NewHistogramDataPoint()
 	hdp.SetExplicitBounds(bounds)
 	hdp.SetBucketCounts(counts)
 	hdp.SetTimestamp(ts)
@@ -39,12 +42,12 @@ func distPointPdata(ts pdata.Timestamp, bounds []float64, counts []uint64) *pdat
 	return &hdp
 }
 
-func cumulativeDistMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.HistogramDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
+func cumulativeDistMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.HistogramDataPoint) *pmetric.Metric {
+	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeHistogram)
+	metric.SetDataType(pmetric.MetricDataTypeHistogram)
 	histogram := metric.Histogram()
-	histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 	destPointL := histogram.DataPoints()
 	// By default the AggregationTemporality is Cumulative until it'll be changed by the caller.
@@ -60,18 +63,18 @@ func cumulativeDistMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, 
 	return &metric
 }
 
-func doublePointPdata(ts pdata.Timestamp, value float64) *pdata.NumberDataPoint {
-	ndp := pdata.NewNumberDataPoint()
+func doublePointPdata(ts pcommon.Timestamp, value float64) *pmetric.NumberDataPoint {
+	ndp := pmetric.NewNumberDataPoint()
 	ndp.SetTimestamp(ts)
 	ndp.SetDoubleVal(value)
 
 	return &ndp
 }
 
-func gaugeMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
+func gaugeMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
+	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 
 	destPointL := metric.Gauge().DataPoints()
 	for _, point := range points {
@@ -86,8 +89,8 @@ func gaugeMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ..
 	return &metric
 }
 
-func summaryPointPdata(ts pdata.Timestamp, count uint64, sum float64, quantiles, values []float64) *pdata.SummaryDataPoint {
-	sdp := pdata.NewSummaryDataPoint()
+func summaryPointPdata(ts pcommon.Timestamp, count uint64, sum float64, quantiles, values []float64) *pmetric.SummaryDataPoint {
+	sdp := pmetric.NewSummaryDataPoint()
 	sdp.SetTimestamp(ts)
 	sdp.SetCount(count)
 	sdp.SetSum(sum)
@@ -100,10 +103,10 @@ func summaryPointPdata(ts pdata.Timestamp, count uint64, sum float64, quantiles,
 	return &sdp
 }
 
-func summaryMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.SummaryDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
+func summaryMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.SummaryDataPoint) *pmetric.Metric {
+	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeSummary)
+	metric.SetDataType(pmetric.MetricDataTypeSummary)
 
 	destPointL := metric.Summary().DataPoints()
 	for _, point := range points {
@@ -118,12 +121,12 @@ func summaryMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points 
 	return &metric
 }
 
-func sumMetricPdata(name string, kvp []*kv, startTs pdata.Timestamp, points ...*pdata.NumberDataPoint) *pdata.Metric {
-	metric := pdata.NewMetric()
+func sumMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
+	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.SetDataType(pmetric.MetricDataTypeSum)
 	sum := metric.Sum()
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	sum.SetIsMonotonic(true)
 
 	destPointL := sum.DataPoints()

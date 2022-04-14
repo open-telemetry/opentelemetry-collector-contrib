@@ -18,7 +18,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 // one.
 //
 // [1]: https://github.com/jaegertracing/jaeger/blob/cd19b64413eca0f06b61d92fe29bebce1321d0b0/model/ids.go#L81
-func getHoneycombTraceID(traceID pdata.TraceID) string {
+func getHoneycombTraceID(traceID pcommon.TraceID) string {
 	// binary.BigEndian.Uint64() does a bounds check on traceID which will
 	// cause a panic if traceID is fewer than 8 bytes. In this case, we don't
 	// need to check for zero padding on the high part anyway, so just return a
@@ -52,7 +52,7 @@ func getHoneycombTraceID(traceID pdata.TraceID) string {
 }
 
 // getHoneycombSpanID just takes a byte array and hex encodes it.
-func getHoneycombSpanID(id pdata.SpanID) string {
+func getHoneycombSpanID(id pcommon.SpanID) string {
 	if !id.IsEmpty() {
 		return fmt.Sprintf("%x", id.Bytes())
 	}

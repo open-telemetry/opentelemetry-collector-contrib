@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -74,7 +74,7 @@ func TestScrape(t *testing.T) {
 			expectedErr: "err1",
 		},
 	}
-	results := make(map[string]pdata.MetricSlice)
+	results := make(map[string]pmetric.MetricSlice)
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -134,12 +134,12 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, expectedName string) {
+func assertMetricHasSingleDatapoint(t *testing.T, metric pmetric.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 }
 
-func assertCompareAveragePerCPU(t *testing.T, average pdata.Metric, standard pdata.Metric, numCPU int) {
+func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard pmetric.Metric, numCPU int) {
 	valAverage := average.Gauge().DataPoints().At(0).DoubleVal()
 	valStandard := standard.Gauge().DataPoints().At(0).DoubleVal()
 	if numCPU == 1 {

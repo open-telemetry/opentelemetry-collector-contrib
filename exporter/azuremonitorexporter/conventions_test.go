@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestHTTPAttributeMapping(t *testing.T) {
@@ -45,7 +45,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 		conventions.AttributeHTTPClientIP:   conventions.AttributeHTTPClientIP,
 	}
 
-	attributeMap := pdata.NewMapFromRaw(httpAttributeValues)
+	attributeMap := pcommon.NewMapFromRaw(httpAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -80,7 +80,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 		conventions.AttributeRPCMethod:  conventions.AttributeRPCMethod,
 	}
 
-	attributeMap := pdata.NewMapFromRaw(rpcAttributeValues)
+	attributeMap := pcommon.NewMapFromRaw(rpcAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -110,7 +110,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 		conventions.AttributeDBMongoDBCollection:   conventions.AttributeDBMongoDBCollection,
 	}
 
-	attributeMap := pdata.NewMapFromRaw(databaseAttributeValues)
+	attributeMap := pcommon.NewMapFromRaw(databaseAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -147,7 +147,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 		conventions.AttributeMessagingOperation:                         conventions.AttributeMessagingOperation,
 	}
 
-	attributeMap := pdata.NewMapFromRaw(messagingAttributeValues)
+	attributeMap := pcommon.NewMapFromRaw(messagingAttributeValues)
 
 	// Add all the network attributes
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
@@ -177,7 +177,7 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 		conventions.AttributeNetPeerPort: "xx",
 	}
 
-	attributeMap := pdata.NewMapFromRaw(values)
+	attributeMap := pcommon.NewMapFromRaw(values)
 
 	attrs := &NetworkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
@@ -186,8 +186,8 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	assert.Equal(t, int64(0), attrs.NetPeerPort)
 }
 
-func getNetworkAttributes() pdata.Map {
-	return pdata.NewMapFromRaw(map[string]interface{}{
+func getNetworkAttributes() pcommon.Map {
+	return pcommon.NewMapFromRaw(map[string]interface{}{
 		conventions.AttributeNetTransport: conventions.AttributeNetTransport,
 		conventions.AttributeNetPeerIP:    conventions.AttributeNetPeerIP,
 		conventions.AttributeNetPeerPort:  1,

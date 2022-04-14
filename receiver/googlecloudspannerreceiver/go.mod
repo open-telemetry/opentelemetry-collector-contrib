@@ -5,8 +5,7 @@ go 1.17
 require (
 	cloud.google.com/go/spanner v1.31.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.48.0
-	go.opentelemetry.io/collector/model v0.48.0
+	go.opentelemetry.io/collector v0.49.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/api v0.74.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
@@ -21,6 +20,7 @@ require (
 require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
+	go.opentelemetry.io/collector/pdata v0.49.0
 )
 
 require (
@@ -40,7 +40,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/googleapis/gax-go/v2 v2.2.0 // indirect
-	github.com/knadh/koanf v1.4.0 // indirect
+	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
@@ -48,7 +48,6 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/spf13/cast v1.4.1 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.6.3 // indirect
