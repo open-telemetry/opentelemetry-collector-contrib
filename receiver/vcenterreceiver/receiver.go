@@ -16,6 +16,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/multierr"
@@ -35,7 +36,9 @@ func (v *vcenterReceiver) Start(ctx context.Context, host component.Host) error 
 	if v.scraper != nil && v.config.MetricsConfig.Endpoint != "" {
 		scraperErr := v.scraper.Start(ctx, host)
 		if scraperErr != nil {
-			err = multierr.Append(err, scraperErr)
+			// Start should not stop the collector if the metrics client connection attempt does not succeed,
+			// so we log on start when we cannot connect
+			v.logger.Error(fmt.Sprintf("unable to initially connect to vSphere SDK: %s", scraperErr.Error()))
 		}
 	}
 	return err

@@ -58,13 +58,7 @@ func newVmwareVcenterScraper(
 }
 
 func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) error {
-	err := v.client.Connect(ctx)
-	// Start should not stop the collector if Connect does not succeed,
-	// so we log on start when we cannot connect
-	if err != nil {
-		v.logger.Error(fmt.Sprintf("unable to initially connect to vSphere SDK: %s", err.Error()))
-	}
-	return nil
+	return v.client.Connect(ctx)
 }
 
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
