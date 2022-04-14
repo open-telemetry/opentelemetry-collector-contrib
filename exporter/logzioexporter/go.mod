@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/hashicorp/go-hclog v1.2.0
-	github.com/jaegertracing/jaeger v1.32.0
+	github.com/jaegertracing/jaeger v1.33.0
 	github.com/logzio/jaeger-logzio v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.49.0
 	github.com/stretchr/testify v1.7.1
