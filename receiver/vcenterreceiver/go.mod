@@ -18,6 +18,16 @@ require (
 )
 
 require (
+	go.opentelemetry.io/collector/pdata v0.49.0
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+)
+
+require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
+	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
+)
+
+require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -29,16 +39,9 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.6.3 // indirect
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-)
-
-require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
-	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
 )
