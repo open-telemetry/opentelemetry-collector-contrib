@@ -32,6 +32,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `datadogexporter`: The `traces.span_name_remappings` setting now correctly refers to the OpenTelemetry key to be renamed without any sort of normalization. (#9693)
+- `datadogexporter`: Unify traces exporter behavior with Datadog Agent OTLP traces ingest. (#9693)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
 - `filestorageextension`: Copy values returned by Get (#11776)
 - `redactionprocessor`: respect allow_all_keys configuration (#11542)
