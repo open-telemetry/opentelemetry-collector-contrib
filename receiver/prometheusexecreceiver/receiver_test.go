@@ -66,6 +66,7 @@ func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Rece
 
 // TestEndToEnd loads the test config and completes an e2e test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
 func TestEndToEnd(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5859")
 	receiverConfig := loadConfigAssertNoError(t, config.NewComponentIDWithName(typeStr, "end_to_end_test/2"))
 
 	// e2e test with port undefined by user
