@@ -8,6 +8,7 @@
 
 ### 🚀 New components 🚀
 
+- `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 
 ### 💡 Enhancements 💡
