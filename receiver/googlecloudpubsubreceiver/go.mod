@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.17
 
 require (
-	cloud.google.com/go/pubsub v1.19.0
+	cloud.google.com/go/pubsub v1.20.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.49.0
 	go.opentelemetry.io/collector/pdata v0.49.0
