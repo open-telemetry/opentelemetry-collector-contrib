@@ -8,7 +8,7 @@
 
 ### 🚀 New components 🚀
 
-- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component
+- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 
 ### 💡 Enhancements 💡
 
