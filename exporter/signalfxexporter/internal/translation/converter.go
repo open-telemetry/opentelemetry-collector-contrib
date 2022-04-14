@@ -22,7 +22,8 @@ import (
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -73,7 +74,7 @@ func NewMetricsConverter(
 // MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPoint {
+func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -128,7 +129,7 @@ func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 // resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
-func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
+func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 	var dims []*sfxpb.Dimension
 
 	if hostID, ok := splunk.ResourceToHostID(res); ok && hostID.Key != splunk.HostIDKeyHost {
@@ -138,7 +139,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pdata.Value) bool {
+	res.Attributes().Range(func(k string, val pcommon.Value) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
 			return true

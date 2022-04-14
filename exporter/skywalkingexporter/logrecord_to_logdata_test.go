@@ -19,24 +19,25 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 )
 
-func getComplexAttributeValueMap() pdata.Value {
-	mapVal := pdata.NewValueMap()
+func getComplexAttributeValueMap() pcommon.Value {
+	mapVal := pcommon.NewValueMap()
 	mapValReal := mapVal.MapVal()
 	mapValReal.InsertBool("result", true)
 	mapValReal.InsertString("status", "ok")
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
-	arrayVal := pdata.NewValueSlice()
+	arrayVal := pcommon.NewValueSlice()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
-	subMapVal := pdata.NewValueMap()
+	subMapVal := pcommon.NewValueMap()
 	subMapVal.MapVal().InsertString("data", "hello world")
 	mapValReal.Insert("map", subMapVal)
 
@@ -44,8 +45,8 @@ func getComplexAttributeValueMap() pdata.Value {
 	return mapVal
 }
 
-func createLogData(numberOfLogs int) pdata.Logs {
-	logs := pdata.NewLogs()
+func createLogData(numberOfLogs int) plog.Logs {
+	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty()
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("resourceKey", "resourceValue")
@@ -57,13 +58,13 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	sl.Scope().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
+		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-		logRecord.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+		logRecord.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+		logRecord.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 		logRecord.SetFlags(uint32(0x01))
 		logRecord.SetSeverityText("INFO")
-		logRecord.SetSeverityNumber(pdata.SeverityNumberINFO)
+		logRecord.SetSeverityNumber(plog.SeverityNumberINFO)
 		logRecord.SetTimestamp(ts)
 		switch i {
 		case 0:
@@ -80,7 +81,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pdata.NewValueSlice()
+			arrayVal := pcommon.NewValueSlice()
 			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")
@@ -105,7 +106,7 @@ func TestLogsDataToLogService(t *testing.T) {
 			assert.Equal(t, searchLogTag(flags, log), "1")
 			assert.Equal(t, searchLogTag(severityText, log), "INFO")
 			assert.Equal(t, searchLogTag(severityNumber, log), "9")
-			assert.Equal(t, log.Timestamp, pdata.Timestamp(int64(i)*time.Millisecond.Nanoseconds()).AsTime().UnixMilli())
+			assert.Equal(t, log.Timestamp, pcommon.Timestamp(int64(i)*time.Millisecond.Nanoseconds()).AsTime().UnixMilli())
 			if i == 1 {
 				assert.Equal(t, log.GetBody().GetText().GetText(), "true")
 			} else if i == 2 {

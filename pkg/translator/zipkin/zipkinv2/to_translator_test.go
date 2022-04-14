@@ -20,8 +20,9 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
@@ -30,13 +31,13 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 	tests := []struct {
 		name string
 		zs   []*zipkinmodel.SpanModel
-		td   pdata.Traces
+		td   ptrace.Traces
 		err  error
 	}{
 		{
 			name: "empty",
 			zs:   make([]*zipkinmodel.SpanModel, 0),
-			td:   pdata.NewTraces(),
+			td:   ptrace.NewTraces(),
 			err:  nil,
 		},
 		{
@@ -75,8 +76,8 @@ func generateSpanNoEndpoints() []*zipkinmodel.SpanModel {
 	spans[0] = &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
 			TraceID: convertTraceID(
-				pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
-			ID: convertSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
+				pcommon.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
+			ID: convertSpanID(pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
 		},
 		Name:           "MinimalData",
 		Kind:           zipkinmodel.Client,
@@ -106,20 +107,20 @@ func generateSpanErrorTags() []*zipkinmodel.SpanModel {
 	return spans
 }
 
-func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraceSingleSpanNoResourceOrInstrLibrary() ptrace.Traces {
+	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(
-		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
+		pcommon.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetName("MinimalData")
-	span.SetKind(pdata.SpanKindClient)
+	span.SetKind(ptrace.SpanKindClient)
 	span.SetStartTimestamp(1596911098294000000)
 	span.SetEndTimestamp(1596911098295000000)
 	return td
 }
 
-func generateTraceSingleSpanMinmalResource() pdata.Traces {
+func generateTraceSingleSpanMinmalResource() ptrace.Traces {
 	td := generateTraceSingleSpanNoResourceOrInstrLibrary()
 	rs := td.ResourceSpans().At(0)
 	rsc := rs.Resource()
@@ -127,17 +128,17 @@ func generateTraceSingleSpanMinmalResource() pdata.Traces {
 	return td
 }
 
-func generateTraceSingleSpanErrorStatus() pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraceSingleSpanErrorStatus() ptrace.Traces {
+	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(
-		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
+		pcommon.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetName("MinimalData")
-	span.SetKind(pdata.SpanKindClient)
+	span.SetKind(ptrace.SpanKindClient)
 	span.SetStartTimestamp(1596911098294000000)
 	span.SetEndTimestamp(1596911098295000000)
-	span.Status().SetCode(pdata.StatusCodeError)
+	span.Status().SetCode(ptrace.StatusCodeError)
 	return td
 }
 
@@ -147,8 +148,8 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 	spans[0] = &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
 			TraceID: convertTraceID(
-				pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
-			ID: convertSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
+				pcommon.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
+			ID: convertSpanID(pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
 		},
 		Name:           "NoTimestamps",
 		Kind:           zipkinmodel.Client,

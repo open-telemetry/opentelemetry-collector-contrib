@@ -24,8 +24,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/resource/resourcekeys"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -34,7 +35,7 @@ import (
 )
 
 func TestResourceToOC(t *testing.T) {
-	emptyResource := pdata.NewResource()
+	emptyResource := pcommon.NewResource()
 
 	ocNode := generateOcNode()
 	ocResource := generateOcResource()
@@ -45,13 +46,13 @@ func TestResourceToOC(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		resource   pdata.Resource
+		resource   pcommon.Resource
 		ocNode     *occommon.Node
 		ocResource *ocresource.Resource
 	}{
 		{
 			name:       "nil",
-			resource:   pdata.NewResource(),
+			resource:   pcommon.NewResource(),
 			ocNode:     nil,
 			ocResource: nil,
 		},
@@ -81,7 +82,7 @@ func TestResourceToOC(t *testing.T) {
 }
 
 func TestContainerResourceToOC(t *testing.T) {
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	resource.Attributes().InsertString(conventions.AttributeK8SClusterName, "cluster1")
 	resource.Attributes().InsertString(conventions.AttributeK8SPodName, "pod1")
 	resource.Attributes().InsertString(conventions.AttributeK8SNamespaceName, "namespace1")
@@ -200,27 +201,27 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			traces := pdata.NewTraces()
+			traces := ptrace.NewTraces()
 			goldendataset.GenerateResource(test).CopyTo(traces.ResourceSpans().AppendEmpty().Resource())
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
-			actual := pdata.NewResource()
+			actual := pcommon.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
 			// Remove opencensus resource type from actual. This will be added during translation.
 			actual.Attributes().Delete(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
-			expected.Attributes().Range(func(k string, v pdata.Value) bool {
+			expected.Attributes().Range(func(k string, v pcommon.Value) bool {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
-				case pdata.ValueTypeInt:
+				case pcommon.ValueTypeInt:
 					// conventions.AttributeProcessID is special because we preserve the type for this.
 					if k == conventions.AttributeProcessPID {
 						assert.Equal(t, v.IntVal(), a.IntVal())
 					} else {
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
 					}
-				case pdata.ValueTypeMap, pdata.ValueTypeSlice:
+				case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
 					assert.Equal(t, a, a)
 				default:
 					assert.Equal(t, v, a)

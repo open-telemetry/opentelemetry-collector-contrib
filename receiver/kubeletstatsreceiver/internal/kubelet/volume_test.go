@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -189,10 +189,10 @@ func TestDetailedPVCLabels(t *testing.T) {
 			}, nil)
 			metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
 
-			volumeResource := pdata.NewResource()
+			volumeResource := pcommon.NewResource()
 			err := fillVolumeResource(volumeResource, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
-			require.Equal(t, pdata.NewMapFromRaw(tt.want).Sort(), volumeResource.Attributes().Sort())
+			require.Equal(t, pcommon.NewMapFromRaw(tt.want).Sort(), volumeResource.Attributes().Sort())
 		})
 	}
 }

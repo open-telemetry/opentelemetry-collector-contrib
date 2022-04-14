@@ -27,8 +27,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -67,6 +68,7 @@ func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9255")
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 0, "0 spans have xray trace id")
@@ -105,10 +107,10 @@ func generateConfig() config.Exporter {
 	return exporterConfig
 }
 
-func constructSpanData() pdata.Traces {
+func constructSpanData() ptrace.Traces {
 	resource := constructResource()
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
 	ispans := rspans.ScopeSpans().AppendEmpty()
@@ -116,9 +118,10 @@ func constructSpanData() pdata.Traces {
 	return traces
 }
 
-func constructW3CSpanData() pdata.Traces {
+// nolint:unused
+func constructW3CSpanData() ptrace.Traces {
 	resource := constructResource()
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
 	ispans := rspans.ScopeSpans().AppendEmpty()
@@ -126,9 +129,9 @@ func constructW3CSpanData() pdata.Traces {
 	return traces
 }
 
-func constructXrayAndW3CSpanData() pdata.Traces {
+func constructXrayAndW3CSpanData() ptrace.Traces {
 	resource := constructResource()
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
 	ispans := rspans.ScopeSpans().AppendEmpty()
@@ -137,19 +140,19 @@ func constructXrayAndW3CSpanData() pdata.Traces {
 	return traces
 }
 
-func constructXrayTraceSpanData(ispans pdata.ScopeSpans) {
+func constructXrayTraceSpanData(ispans ptrace.ScopeSpans) {
 	constructHTTPClientSpan(newTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 	constructHTTPServerSpan(newTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 }
 
-func constructW3CFormatTraceSpanData(ispans pdata.ScopeSpans) {
+func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 	constructHTTPClientSpan(constructW3CTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 	constructHTTPServerSpan(constructW3CTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 }
 
-func constructResource() pdata.Resource {
-	resource := pdata.NewResource()
-	attrs := pdata.NewMap()
+func constructResource() pcommon.Resource {
+	resource := pcommon.NewResource()
+	attrs := pcommon.NewMap()
 	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
 	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
@@ -162,7 +165,7 @@ func constructResource() pdata.Resource {
 	return resource
 }
 
-func constructHTTPClientSpan(traceID pdata.TraceID) pdata.Span {
+func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -171,16 +174,16 @@ func constructHTTPClientSpan(traceID pdata.TraceID) pdata.Span {
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindClient)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -189,7 +192,7 @@ func constructHTTPClientSpan(traceID pdata.TraceID) pdata.Span {
 	return span
 }
 
-func constructHTTPServerSpan(traceID pdata.TraceID) pdata.Span {
+func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -199,16 +202,16 @@ func constructHTTPServerSpan(traceID pdata.TraceID) pdata.Span {
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -217,8 +220,8 @@ func constructHTTPServerSpan(traceID pdata.TraceID) pdata.Span {
 	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
-	attrs := pdata.NewMap()
+func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
 			attrs.InsertInt(key, int64(cast))
@@ -231,7 +234,7 @@ func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
 	return attrs
 }
 
-func newTraceID() pdata.TraceID {
+func newTraceID() pcommon.TraceID {
 	var r [16]byte
 	epoch := time.Now().Unix()
 	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
@@ -239,22 +242,22 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewTraceID(r)
+	return pcommon.NewTraceID(r)
 }
 
-func constructW3CTraceID() pdata.TraceID {
+func constructW3CTraceID() pcommon.TraceID {
 	var r [16]byte
 	for i := range r {
 		r[i] = byte(rand.Intn(128))
 	}
-	return pdata.NewTraceID(r)
+	return pcommon.NewTraceID(r)
 }
 
-func newSegmentID() pdata.SpanID {
+func newSegmentID() pcommon.SpanID {
 	var r [8]byte
 	_, err := rand.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewSpanID(r)
+	return pcommon.NewSpanID(r)
 }

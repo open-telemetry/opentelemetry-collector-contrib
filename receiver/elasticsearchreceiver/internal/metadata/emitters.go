@@ -14,9 +14,9 @@
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import "go.opentelemetry.io/collector/pdata/pmetric"
 
-func (mb *MetricsBuilder) EmitNodeMetrics(metrics pdata.MetricSlice) {
+func (mb *MetricsBuilder) EmitNodeMetrics(metrics pmetric.MetricSlice) {
 	mb.metricElasticsearchNodeCacheEvictions.emit(metrics)
 	mb.metricElasticsearchNodeCacheMemoryUsage.emit(metrics)
 	mb.metricElasticsearchNodeClusterConnections.emit(metrics)
@@ -44,7 +44,7 @@ func (mb *MetricsBuilder) EmitNodeMetrics(metrics pdata.MetricSlice) {
 	mb.metricJvmThreadsCount.emit(metrics)
 }
 
-func (mb *MetricsBuilder) EmitClusterMetrics(metrics pdata.MetricSlice) {
+func (mb *MetricsBuilder) EmitClusterMetrics(metrics pmetric.MetricSlice) {
 	mb.metricElasticsearchClusterDataNodes.emit(metrics)
 	mb.metricElasticsearchClusterNodes.emit(metrics)
 	mb.metricElasticsearchClusterShards.emit(metrics)
