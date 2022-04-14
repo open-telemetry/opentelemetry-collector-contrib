@@ -11,11 +11,11 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.5.0 // indirect
-	cloud.google.com/go/monitoring v1.2.0 // indirect
-	cloud.google.com/go/trace v1.0.0 // indirect
+	cloud.google.com/go/monitoring v1.4.0 // indirect
+	cloud.google.com/go/trace v1.2.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.11 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.26.1-0.20220307211504-dc45061a44f9 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.3.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.28.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.4.0 // indirect
 	github.com/aws/aws-sdk-go v1.43.32 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
@@ -52,7 +52,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/api v0.74.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb // indirect
+	google.golang.org/genproto v0.0.0-20220405205423-9d709892a2bf // indirect
 	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
