@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/docker/docker v20.10.14+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.49.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.48.1-0.20220412005140-8eb68f40028d
-	go.opentelemetry.io/collector/model v0.48.1-0.20220412005140-8eb68f40028d
-	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector/model v0.49.0
+	go.opentelemetry.io/collector/pdata v0.49.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -59,5 +59,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docke
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-replace go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v0.0.0-20220412005140-8eb68f40028d
