@@ -8,7 +8,7 @@ on:
 
 jobs:
   setup-environment:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     outputs:
       stabilitytest_matrix: ${{ steps.splitstabilitytest.outputs.stabilitytest_matrix}}
     steps:
@@ -52,7 +52,7 @@ jobs:
 
   stability-test:
     # Stability tests disabled in the makefile, this job is currently running a noop make target
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     strategy:
       fail-fast: false

@@ -11,7 +11,7 @@ on:
       - main
 jobs:
   changelog:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     if: "!contains(github.event.pull_request.labels.*.name, 'Skip Changelog')"
 
     steps:

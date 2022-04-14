@@ -10,7 +10,7 @@ env:
 
 jobs:
   setup-environment:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -42,7 +42,7 @@ jobs:
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
   check-collector-module-version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -50,7 +50,7 @@ jobs:
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -84,7 +84,7 @@ jobs:
       - name: Lint
         run: make -j2 golint
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -131,7 +131,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18, 1.17]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -165,7 +165,7 @@ jobs:
       - name: Run Unit Tests
         run: make gotest
   integration-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -195,7 +195,7 @@ jobs:
         run: make integration-tests-with-cover
 
   correctness-traces:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -224,7 +224,7 @@ jobs:
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -254,7 +254,7 @@ jobs:
         run: make -C testbed run-correctness-metrics-tests
 
   build-examples:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
@@ -263,7 +263,7 @@ jobs:
         run: make build-examples
 
   cross-compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [unittest, integration-tests, lint]
     strategy:
       matrix:
@@ -300,7 +300,7 @@ jobs:
           path: ./bin/*
 
   build-package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [cross-compile]
     strategy:
       fail-fast: false
@@ -379,7 +379,7 @@ jobs:
           path: ./dist/*.msi
 
   publish-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [build-package, windows-msi]
     steps:
       - name: Checkout Repo
@@ -397,7 +397,7 @@ jobs:
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
   publish-dev:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [lint, unittest, integration-tests, build-package, windows-msi]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
@@ -456,7 +456,7 @@ jobs:
             docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
             docker push otel/opentelemetry-collector-contrib-dev:latest
   publish-stable:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: [lint, unittest, integration-tests, build-package, windows-msi]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
