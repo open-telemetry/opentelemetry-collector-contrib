@@ -4,7 +4,7 @@
 
 ### 💡 Enhancements 💡
 - `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
-- `riakreceiver`: Add implementation of IIS Metric Receiver (#8832)
+- `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `splunkhecexporter`: Add support for batching traces (#8995)
 - `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
 - `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)

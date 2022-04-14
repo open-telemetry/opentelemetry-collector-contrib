@@ -33,15 +33,16 @@ import (
 )
 
 type iisReceiver struct {
-	params   component.ReceiverCreateSettings
-	config   *Config
-	consumer consumer.Metrics
-	watchers []winperfcounters.PerfCounterWatcher
+	params        component.ReceiverCreateSettings
+	config        *Config
+	consumer      consumer.Metrics
+	watchers      []winperfcounters.PerfCounterWatcher
+	metricBuilder *metadata.MetricsBuilder
 }
 
 // new returns a iisReceiver
 func newIisReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
-	return &iisReceiver{params: params, config: cfg, consumer: consumer}
+	return &iisReceiver{params: params, config: cfg, consumer: consumer, metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics)}
 }
 
 // Start creates and starts the prometheus receiver.
@@ -66,7 +67,6 @@ func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var errs error
 	now := pdata.NewTimestampFromTime(time.Now())
-	metricBuilder := metadata.NewMetricsBuilder(rcvr.config.Metrics)
 
 	for _, watcher := range rcvr.watchers {
 		counterValues, err := watcher.ScrapeData()
@@ -75,11 +75,11 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 			continue
 		}
 		for _, counterValue := range counterValues {
-			metricBuilder.RecordAny(now, counterValue.Value, counterValue.MetricRep.Name, counterValue.MetricRep.Attributes)
+			rcvr.metricBuilder.RecordAny(now, counterValue.Value, counterValue.MetricRep.Name, counterValue.MetricRep.Attributes)
 		}
 	}
 
-	return metricBuilder.Emit(), errs
+	return rcvr.metricBuilder.Emit(), errs
 }
 
 // Shutdown stops the underlying Prometheus receiver.
