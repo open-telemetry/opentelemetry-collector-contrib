@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀

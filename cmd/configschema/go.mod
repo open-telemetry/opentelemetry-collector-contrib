@@ -257,7 +257,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.49.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.49.0 // indirect
@@ -603,8 +602,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ../../exporter/skywalkingexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ../../exporter/stackdriverexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ../../exporter/sumologicexporter
 
