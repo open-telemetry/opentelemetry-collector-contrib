@@ -12,6 +12,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `fluentforwardreceiver`: Release port on shutdown (#9111)
+
 ## v0.49.0
 
 ### 🛑 Breaking changes 🛑
@@ -68,7 +70,6 @@
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
-- `fluentforwardreceiver`: Fluentforward receiver not releasing port for reloading of OTEL collector (#9111)
 
 ## v0.48.0
 
