@@ -44,7 +44,6 @@ type MetricsConfig struct {
 }
 
 type LoggingConfig struct {
-	configtls.TLSClientSetting   `mapstructure:"tls,omitempty"`
 	*syslogreceiver.SysLogConfig `mapstructure:",squash"`
 }
 
@@ -115,6 +114,10 @@ func (c *Config) validateLoggingConfig() error {
 	var err error
 	if len(lc.Operators) != 0 {
 		err = multierr.Append(err, errors.New("this receiver does not support custom logging operators"))
+	}
+
+	if syslogValidateErr := lc.SysLogConfig.Validate(); syslogValidateErr != nil {
+		err = multierr.Append(err, syslogValidateErr)
 	}
 
 	return err
