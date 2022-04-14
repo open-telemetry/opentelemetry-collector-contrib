@@ -39,15 +39,6 @@ func TestConfigValidation(t *testing.T) {
 			},
 		},
 		{
-			desc: "empty endpoint",
-			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "",
-				},
-			},
-			expectedErr: errors.New("url scheme must be http or https"),
-		},
-		{
 			desc: "with endpoint",
 			cfg: Config{
 				MetricsConfig: &MetricsConfig{

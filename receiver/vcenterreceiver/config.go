@@ -71,7 +71,7 @@ func (c *Config) ID() config.ComponentID {
 
 func (c *Config) validateMetricsConfig() error {
 	mc := c.MetricsConfig
-	if mc == nil {
+	if mc == nil || mc.Endpoint == "" {
 		return nil
 	}
 

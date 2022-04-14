@@ -46,7 +46,10 @@ func (lr *vcenterLogsReceiver) Start(ctx context.Context, h component.Host) erro
 		return fmt.Errorf("unable to wrap the syslog receiver that the %s component wraps", typeStr)
 	}
 	lr.cfg.LoggingConfig.SysLogConfig.Operators = append(lr.cfg.LoggingConfig.SysLogConfig.Operators, []map[string]interface{}{
-		{},
+		{
+			"type": "filter",
+			"expr": "",
+		},
 	}...)
 	syslog, err := rf.CreateLogsReceiver(ctx, lr.params, lr.cfg.LoggingConfig.SysLogConfig, lr.consumer)
 	if err != nil {
