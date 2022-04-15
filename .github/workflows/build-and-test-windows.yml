@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: install iis
+      - name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - name: Install SQL Server 2019 Dev
         run: ./.github/workflows/scripts/sqlserver_install.ps1
@@ -38,7 +38,9 @@ jobs:
         # use default Go build tags from Makefile.common
         run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
       - name: Run IIS Unit Tests
-        run: cd receiver/iisreceiver && go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...        
+        run: cd receiver/iisreceiver && go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
+      - name: Run SQL Server Unit Tests
+        run: cd receiver/sqlserverreceiver && go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/main' }}
         run: |
