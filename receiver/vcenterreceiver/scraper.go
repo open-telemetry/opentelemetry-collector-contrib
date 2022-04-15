@@ -178,7 +178,7 @@ func (v *vcenterMetricScraper) collectHosts(
 	clusterRef := cluster.Reference()
 	var hostVsanCSVs *[]types.VsanPerfEntityMetricCSV
 	if v.vsanEnabled {
-		hostVsanCSVs, err = v.client.VSANHosts(ctx, &clusterRef, time.Now(), time.Now())
+		hostVsanCSVs, err = v.client.VSANHosts(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
 		if err != nil {
 			errs.AddPartial(1, err)
 		}
