@@ -16,6 +16,7 @@ package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component"
 	"strconv"
 	"time"
 
@@ -44,6 +45,11 @@ func newMemcachedScraper(
 	}
 }
 
+func (r *memcachedScraper) start(context.Context, component.Host) error {
+	r.mb = metadata.NewMetricsBuilder(r.config.Metrics)
+	return nil
+}
+
 func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
@@ -59,10 +65,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	r.mb = metadata.NewMetricsBuilder(r.config.Metrics)
-
 	now := pcommon.NewTimestampFromTime(time.Now())
-	md := pmetric.NewMetrics()
 
 	for _, stats := range allServerStats {
 		for k, v := range stats.Stats {
@@ -181,7 +184,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	// What do I emit? The generated code expects ResourceOptions but the metadata specified no resources
 
-	return md, nil
+	return r.mb.Emit(), nil
 }
 
 func calculateHitRatio(misses, hits int64) float64 {
