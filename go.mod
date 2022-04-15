@@ -841,7 +841,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ./receiver/wavefrontreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowslogreceiver => ./receiver/windowslogreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ./receiver/windowseventlogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ./receiver/windowsperfcountersreceiver
 

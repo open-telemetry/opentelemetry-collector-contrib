@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowslogreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
 
 go 1.17
 

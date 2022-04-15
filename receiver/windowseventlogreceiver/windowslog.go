@@ -12,17 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
-
-package windowslogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowslogreceiver"
+package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/windows"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
@@ -45,9 +39,6 @@ func (f ReceiverType) Type() config.Type {
 
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
-	return createDefaultConfig()
-}
-func createDefaultConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -67,15 +58,4 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
 type WindowsLogConfig struct {
 	stanza.BaseConfig `mapstructure:",squash"`
 	Input             stanza.InputConfig `mapstructure:",remain"`
-}
-
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*WindowsLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := windows.NewDefaultConfig()
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
-	return &operator.Config{Builder: inputCfg}, nil
 }

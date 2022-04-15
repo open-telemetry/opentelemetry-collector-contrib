@@ -10,8 +10,6 @@ Supported pipeline types: logs
 
 | Field           | Default                  | Description                                                                                                                    |
 | ---             | ---                      | ---                                                                                                                            |
-| `id`            | `windowseventlog` | A unique identifier for the operator                                                                                           |
-| `output`        | Next in pipeline         | The connected operator(s) that will receive all outbound entries                                                               |
 | `channel`       | required                 | The windows event log channel to monitor                                                                                       |
 | `max_reads`     | 100                      | The maximum number of records read into memory, before beginning a new batch                                                   |
 | `start_at`      | `end`                    | On first startup, where to start reading logs from the API. Options are `beginning` or `end`                                   |

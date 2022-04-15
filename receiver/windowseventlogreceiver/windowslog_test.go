@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package windowslogreceiver
+package windowseventlogreceiver
 
 import (
 	"context"
