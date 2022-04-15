@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 const (
@@ -49,6 +51,7 @@ func createDefaultConfig() config.Receiver {
 		NetAddr: confignet.NetAddr{
 			Endpoint: "localhost:11211",
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
