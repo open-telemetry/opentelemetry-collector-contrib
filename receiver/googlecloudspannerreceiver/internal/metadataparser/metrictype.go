@@ -17,7 +17,7 @@ package metadataparser // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
@@ -44,33 +44,33 @@ type MetricType struct {
 	Monotonic   bool            `yaml:"monotonic"`
 }
 
-func (metricType MetricType) dataType() (pdata.MetricDataType, error) {
-	var dataType pdata.MetricDataType
+func (metricType MetricType) dataType() (pmetric.MetricDataType, error) {
+	var dataType pmetric.MetricDataType
 
 	switch metricType.DataType {
 	case GaugeMetricDataType:
-		dataType = pdata.MetricDataTypeGauge
+		dataType = pmetric.MetricDataTypeGauge
 	case SumMetricDataType:
-		dataType = pdata.MetricDataTypeSum
+		dataType = pmetric.MetricDataTypeSum
 	default:
-		return pdata.MetricDataTypeNone, errors.New("invalid data type received")
+		return pmetric.MetricDataTypeNone, errors.New("invalid data type received")
 	}
 
 	return dataType, nil
 }
 
-func (metricType MetricType) aggregationTemporality() (pdata.MetricAggregationTemporality, error) {
-	var aggregationTemporality pdata.MetricAggregationTemporality
+func (metricType MetricType) aggregationTemporality() (pmetric.MetricAggregationTemporality, error) {
+	var aggregationTemporality pmetric.MetricAggregationTemporality
 
 	switch metricType.Aggregation {
 	case DeltaAggregationType:
-		aggregationTemporality = pdata.MetricAggregationTemporalityDelta
+		aggregationTemporality = pmetric.MetricAggregationTemporalityDelta
 	case CumulativeAggregationType:
-		aggregationTemporality = pdata.MetricAggregationTemporalityCumulative
+		aggregationTemporality = pmetric.MetricAggregationTemporalityCumulative
 	case "":
-		aggregationTemporality = pdata.MetricAggregationTemporalityUnspecified
+		aggregationTemporality = pmetric.MetricAggregationTemporalityUnspecified
 	default:
-		return pdata.MetricAggregationTemporalityUnspecified, errors.New("invalid aggregation temporality received")
+		return pmetric.MetricAggregationTemporalityUnspecified, errors.New("invalid aggregation temporality received")
 	}
 
 	return aggregationTemporality, nil

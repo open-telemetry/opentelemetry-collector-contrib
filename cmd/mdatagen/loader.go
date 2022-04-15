@@ -26,7 +26,7 @@ import (
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type metricName string
@@ -52,24 +52,24 @@ func (mn attributeName) RenderUnexported() (string, error) {
 // ValueType defines an attribute value type.
 type ValueType struct {
 	// ValueType is type of the metric number, options are "double", "int".
-	ValueType pdata.ValueType
+	ValueType pcommon.ValueType
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (mvt *ValueType) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
 	case "":
-		mvt.ValueType = pdata.ValueTypeEmpty
+		mvt.ValueType = pcommon.ValueTypeEmpty
 	case "string":
-		mvt.ValueType = pdata.ValueTypeString
+		mvt.ValueType = pcommon.ValueTypeString
 	case "int":
-		mvt.ValueType = pdata.ValueTypeInt
+		mvt.ValueType = pcommon.ValueTypeInt
 	case "double":
-		mvt.ValueType = pdata.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeDouble
 	case "bool":
-		mvt.ValueType = pdata.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeDouble
 	case "bytes":
-		mvt.ValueType = pdata.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeDouble
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}
@@ -84,15 +84,15 @@ func (mvt ValueType) String() string {
 // Primitive returns name of primitive type for the ValueType.
 func (mvt ValueType) Primitive() string {
 	switch mvt.ValueType {
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return "string"
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return "int64"
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return "float64"
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return "bool"
-	case pdata.ValueTypeBytes:
+	case pcommon.ValueTypeBytes:
 		return "[]byte"
 	default:
 		return ""
@@ -157,6 +157,8 @@ type attribute struct {
 type metadata struct {
 	// Name of the component.
 	Name string `validate:"notblank"`
+	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
+	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes" validate:"dive"`
 	// Attributes emitted by one or more metrics.

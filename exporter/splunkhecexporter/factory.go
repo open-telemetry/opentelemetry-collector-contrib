@@ -60,7 +60,9 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		LogDataEnabled:       true,
+		ProfilingDataEnabled: true,
+		ExporterSettings:     config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
@@ -70,6 +72,7 @@ func createDefaultConfig() config.Exporter {
 		MaxConnections:          defaultMaxIdleCons,
 		MaxContentLengthLogs:    maxContentLengthLogsLimit,
 		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
+		MaxContentLengthTraces:  maxContentLengthTracesLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,

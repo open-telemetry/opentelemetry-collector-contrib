@@ -17,6 +17,7 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"go.uber.org/multierr"
 )
 
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
@@ -65,9 +66,48 @@ type Field struct {
 	MapKey *string `( "[" @String "]" )?`
 }
 
+// Query holds a top level Query for processing telemetry data. A Query is a combination of a function
+// invocation and the condition to match telemetry for invoking the function.
+type Query struct {
+	Function  ExprFunc
+	Condition condFunc
+}
+
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+	queries := make([]Query, 0)
+	var errors error
+
+	for _, statement := range statements {
+		parsed, err := parseQuery(statement)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		queries = append(queries, Query{
+			Function:  function,
+			Condition: condition,
+		})
+	}
+
+	if errors != nil {
+		return nil, errors
+	}
+	return queries, nil
+}
+
 var parser = newParser()
 
-func Parse(raw string) (*ParsedQuery, error) {
+func parseQuery(raw string) (*ParsedQuery, error) {
 	parsed := &ParsedQuery{}
 	err := parser.ParseString("", raw, parsed)
 	if err != nil {
@@ -79,13 +119,13 @@ func Parse(raw string) (*ParsedQuery, error) {
 // newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
 // is not formatted for the DSL.
 func newParser() *participle.Parser {
-	lex := lexer.MustSimple([]lexer.Rule{
-		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`, Action: nil},
-		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`, Action: nil},
-		{Name: `Int`, Pattern: `[-+]?\d+`, Action: nil},
-		{Name: `String`, Pattern: `"(\\"|[^"])*"`, Action: nil},
-		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`, Action: nil},
-		{Name: "whitespace", Pattern: `\s+`, Action: nil},
+	lex := lexer.MustSimple([]lexer.SimpleRule{
+		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
+		{Name: `Int`, Pattern: `[-+]?\d+`},
+		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
+		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`},
+		{Name: "whitespace", Pattern: `\s+`},
 	})
 	parser, err := participle.Build(&ParsedQuery{},
 		participle.Lexer(lex),

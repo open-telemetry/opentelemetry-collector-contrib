@@ -23,7 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
@@ -34,7 +35,7 @@ func TestScrape(t *testing.T) {
 		name              string
 		config            Config
 		bootTimeFunc      func() (uint64, error)
-		expectedStartTime pdata.Timestamp
+		expectedStartTime pcommon.Timestamp
 		initializationErr string
 	}
 
@@ -103,12 +104,12 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metric) {
-	expected := pdata.NewMetric()
+func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pmetric.Metric) {
+	expected := pmetric.NewMetric()
 	expected.SetName("system.paging.usage")
 	expected.SetDescription("Swap (unix) or pagefile (windows) usage.")
 	expected.SetUnit("By")
-	expected.SetDataType(pdata.MetricDataTypeSum)
+	expected.SetDataType(pmetric.MetricDataTypeSum)
 	internal.AssertDescriptorEqual(t, expected, hostPagingUsageMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
@@ -124,11 +125,11 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	}
 
 	assert.GreaterOrEqual(t, hostPagingUsageMetric.Sum().DataPoints().Len(), expectedDataPoints)
-	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 0, "state", pdata.NewValueString(metadata.AttributeState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 1, "state", pdata.NewValueString(metadata.AttributeState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 0, "state", pcommon.NewValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 1, "state", pcommon.NewValueString(metadata.AttributeState.Free))
 	// Windows and Linux do not support cached state label
 	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
-		internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 2, "state", pdata.NewValueString(metadata.AttributeState.Cached))
+		internal.AssertSumMetricHasAttributeValue(t, hostPagingUsageMetric, 2, "state", pcommon.NewValueString(metadata.AttributeState.Cached))
 	}
 
 	// on Windows and Linux, also expect the page file device name label
@@ -138,12 +139,12 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	}
 }
 
-func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetric pdata.Metric) {
-	expected := pdata.NewMetric()
+func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetric pmetric.Metric) {
+	expected := pmetric.NewMetric()
 	expected.SetName("system.paging.utilization")
 	expected.SetDescription("Swap (unix) or pagefile (windows) utilization.")
 	expected.SetUnit("1")
-	expected.SetDataType(pdata.MetricDataTypeGauge)
+	expected.SetDataType(pmetric.MetricDataTypeGauge)
 	internal.AssertDescriptorEqual(t, expected, hostPagingUtilizationMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
@@ -159,11 +160,11 @@ func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetri
 	}
 
 	assert.GreaterOrEqual(t, hostPagingUtilizationMetric.Gauge().DataPoints().Len(), expectedDataPoints)
-	internal.AssertGaugeMetricHasAttributeValue(t, hostPagingUtilizationMetric, 0, "state", pdata.NewValueString(metadata.AttributeState.Used))
-	internal.AssertGaugeMetricHasAttributeValue(t, hostPagingUtilizationMetric, 1, "state", pdata.NewValueString(metadata.AttributeState.Free))
+	internal.AssertGaugeMetricHasAttributeValue(t, hostPagingUtilizationMetric, 0, "state", pcommon.NewValueString(metadata.AttributeState.Used))
+	internal.AssertGaugeMetricHasAttributeValue(t, hostPagingUtilizationMetric, 1, "state", pcommon.NewValueString(metadata.AttributeState.Free))
 	// Windows and Linux do not support cached state label
 	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
-		internal.AssertGaugeMetricHasAttributeValue(t, hostPagingUtilizationMetric, 2, "state", pdata.NewValueString(metadata.AttributeState.Cached))
+		internal.AssertGaugeMetricHasAttributeValue(t, hostPagingUtilizationMetric, 2, "state", pcommon.NewValueString(metadata.AttributeState.Cached))
 	}
 
 	// on Windows and Linux, also expect the page file device name label
@@ -173,12 +174,12 @@ func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetri
 	}
 }
 
-func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.Timestamp) {
-	expected := pdata.NewMetric()
+func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pmetric.Metric, startTime pcommon.Timestamp) {
+	expected := pmetric.NewMetric()
 	expected.SetName("system.paging.operations")
 	expected.SetDescription("The number of paging operations.")
 	expected.SetUnit("{operations}")
-	expected.SetDataType(pdata.MetricDataTypeSum)
+	expected.SetDataType(pmetric.MetricDataTypeSum)
 	internal.AssertDescriptorEqual(t, expected, pagingMetric)
 
 	if startTime != 0 {
@@ -192,24 +193,24 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, 
 	}
 	assert.Equal(t, expectedDataPoints, pagingMetric.Sum().DataPoints().Len())
 
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "type", pdata.NewValueString(metadata.AttributeType.Major))
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.PageIn))
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "type", pdata.NewValueString(metadata.AttributeType.Major))
-	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.PageOut))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "type", pcommon.NewValueString(metadata.AttributeType.Major))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.PageIn))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "type", pcommon.NewValueString(metadata.AttributeType.Major))
+	internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 1, "direction", pcommon.NewValueString(metadata.AttributeDirection.PageOut))
 	if runtime.GOOS != "windows" {
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "type", pdata.NewValueString(metadata.AttributeType.Minor))
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "direction", pdata.NewValueString(metadata.AttributeDirection.PageIn))
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "type", pdata.NewValueString(metadata.AttributeType.Minor))
-		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "direction", pdata.NewValueString(metadata.AttributeDirection.PageOut))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "type", pcommon.NewValueString(metadata.AttributeType.Minor))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 2, "direction", pcommon.NewValueString(metadata.AttributeDirection.PageIn))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "type", pcommon.NewValueString(metadata.AttributeType.Minor))
+		internal.AssertSumMetricHasAttributeValue(t, pagingMetric, 3, "direction", pcommon.NewValueString(metadata.AttributeDirection.PageOut))
 	}
 }
 
-func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.Timestamp) {
-	expected := pdata.NewMetric()
+func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pmetric.Metric, startTime pcommon.Timestamp) {
+	expected := pmetric.NewMetric()
 	expected.SetName("system.paging.faults")
 	expected.SetDescription("The number of page faults.")
 	expected.SetUnit("{faults}")
-	expected.SetDataType(pdata.MetricDataTypeSum)
+	expected.SetDataType(pmetric.MetricDataTypeSum)
 	internal.AssertDescriptorEqual(t, expected, pageFaultsMetric)
 
 	if startTime != 0 {
@@ -217,6 +218,6 @@ func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, st
 	}
 
 	assert.Equal(t, 2, pageFaultsMetric.Sum().DataPoints().Len())
-	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 0, "type", pdata.NewValueString(metadata.AttributeType.Major))
-	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 1, "type", pdata.NewValueString(metadata.AttributeType.Minor))
+	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 0, "type", pcommon.NewValueString(metadata.AttributeType.Major))
+	internal.AssertSumMetricHasAttributeValue(t, pageFaultsMetric, 1, "type", pcommon.NewValueString(metadata.AttributeType.Minor))
 }

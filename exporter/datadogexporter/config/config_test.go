@@ -181,15 +181,15 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
-
 	tests := []struct {
-		name   string
-		cfgMap *config.Map
-		err    string
+		name      string
+		configMap *config.Map
+		cfg       Config
+		err       string
 	}{
 		{
 			name: "invalid cumulative monotonic mode",
-			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"sums": map[string]interface{}{
 						"cumulative_monotonic_mode": "invalid_mode",
@@ -199,8 +199,17 @@ func TestUnmarshal(t *testing.T) {
 			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"",
 		},
 		{
+			name: "invalid host metadata hostname source",
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
+				"host_metadata": map[string]interface{}{
+					"hostname_source": "invalid_source",
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'host_metadata.hostname_source': invalid host metadata hostname source \"invalid_source\"",
+		},
+		{
 			name: "invalid summary mode",
-			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"summaries": map[string]interface{}{
 						"mode": "invalid_mode",
@@ -214,8 +223,12 @@ func TestUnmarshal(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			cfg := futureDefaultConfig()
-			err := cfg.Unmarshal(testInstance.cfgMap)
-			assert.EqualError(t, err, testInstance.err)
+			err := cfg.Unmarshal(testInstance.configMap)
+			if err != nil || testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
+			} else {
+				assert.Equal(t, testInstance.cfg, cfg)
+			}
 		})
 	}
 }

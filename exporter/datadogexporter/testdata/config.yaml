@@ -7,12 +7,14 @@ processors:
 exporters:
   datadog/api:
     hostname: customhostname
+    # Deprecated; kept here to avoid regressions.
     env: prod
     # Deprecated; kept here to avoid regressions.
     service: myservice
     # Deprecated; kept here to avoid regressions.
     version: myversion
 
+    # Deprecated; kept here to avoid regressions.
     tags:
       - example:tag
 
@@ -25,10 +27,9 @@ exporters:
 
   datadog/api2:
     hostname: customhostname
-    env: prod
 
-    tags:
-      - example:tag
+    host_metadata:
+      tags: [example:tag]
 
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -46,6 +47,16 @@ exporters:
   datadog/default:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+  datadog/hostmetadata:
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    # Deprecated; kept here to test rename system
+    tags: [example:one]
+    # Deprecated; kept here to test rename system
+    send_metadata: true
+    # Deprecated; kept here to test rename system
+    use_resource_metadata: false
 
   datadog/default2:
 

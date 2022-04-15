@@ -17,7 +17,7 @@ package filtermatcher // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -86,7 +86,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 }
 
 // Match matches a span or log to a set of properties.
-func (mp *PropertiesMatcher) Match(attributes pdata.Map, resource pdata.Resource, library pdata.InstrumentationScope) bool {
+func (mp *PropertiesMatcher) Match(attributes pcommon.Map, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
 	for _, matcher := range mp.libraries {
 		if !matcher.Name.Matches(library.Name()) {
 			return false

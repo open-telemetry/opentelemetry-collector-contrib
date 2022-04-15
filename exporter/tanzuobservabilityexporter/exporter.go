@@ -25,7 +25,7 @@ import (
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -99,7 +99,7 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 	}, nil
 }
 
-func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {

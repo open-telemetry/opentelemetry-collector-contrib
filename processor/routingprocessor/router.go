@@ -21,14 +21,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
 // router routes logs, metrics and traces using the configured attributes and
 // attribute sources.
 // Upon routing it also groups the logs, metrics and spans into a joint upper level
-// structure (pdata.Logs, pdata.Metrics and pdata.Traces respectively) in order
+// structure (plog.Logs, pmetric.Metrics and ptrace.Traces respectively) in order
 // to not cause higher CPU usage in the exporters when exproting data (it's always
 // better to batch before exporting).
 type router struct {
@@ -56,11 +59,11 @@ func newRouter(config Config, logger *zap.Logger) *router {
 }
 
 type routedMetrics struct {
-	metrics   pdata.Metrics
+	metrics   pmetric.Metrics
 	exporters []component.MetricsExporter
 }
 
-func (r *router) RouteMetrics(ctx context.Context, tm pdata.Metrics) []routedMetrics {
+func (r *router) RouteMetrics(ctx context.Context, tm pmetric.Metrics) []routedMetrics {
 	switch r.config.AttributeSource {
 	case contextAttributeSource:
 		fallthrough
@@ -72,14 +75,18 @@ func (r *router) RouteMetrics(ctx context.Context, tm pdata.Metrics) []routedMet
 	}
 }
 
-func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []routedMetrics {
-	// routingEntry is used to group pdata.ResourceMetrics that are routed to
+func (r *router) removeRoutingAttribute(resource pcommon.Resource) {
+	resource.Attributes().Remove(r.config.FromAttribute)
+}
+
+func (r *router) routeMetricsForResource(_ context.Context, tm pmetric.Metrics) []routedMetrics {
+	// routingEntry is used to group pmetric.ResourceMetrics that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the metrics split up which would cause
 	// higher CPU usage.
 	type routingEntry struct {
 		exporters  []component.MetricsExporter
-		resMetrics pdata.ResourceMetricsSlice
+		resMetrics pmetric.ResourceMetricsSlice
 	}
 	routingMap := map[string]routingEntry{}
 
@@ -92,13 +99,16 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.metricsExporters[attrValue]; ok {
 			exp = e
+			if r.config.DropRoutingResourceAttribute {
+				r.removeRoutingAttribute(resMetrics.Resource())
+			}
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
-			resMetrics.CopyTo(rEntry.resMetrics.AppendEmpty())
+			resMetrics.MoveTo(rEntry.resMetrics.AppendEmpty())
 		} else {
-			new := pdata.NewResourceMetricsSlice()
-			resMetrics.CopyTo(new.AppendEmpty())
+			new := pmetric.NewResourceMetricsSlice()
+			resMetrics.MoveTo(new.AppendEmpty())
 
 			routingMap[attrValue] = routingEntry{
 				exporters:  exp,
@@ -107,11 +117,11 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 		}
 	}
 
-	// Now that we have all the ResourceMetrics grouped, let's create pdata.Metrics
+	// Now that we have all the ResourceMetrics grouped, let's create pmetric.Metrics
 	// for each group and add it to the returned routedMetrics slice.
 	ret := make([]routedMetrics, 0, len(routingMap))
 	for _, rEntry := range routingMap {
-		metrics := pdata.NewMetrics()
+		metrics := pmetric.NewMetrics()
 		metrics.ResourceMetrics().EnsureCapacity(rEntry.resMetrics.Len())
 		rEntry.resMetrics.MoveAndAppendTo(metrics.ResourceMetrics())
 
@@ -124,7 +134,7 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 	return ret
 }
 
-func (r *router) routeMetricsForContext(ctx context.Context, tm pdata.Metrics) routedMetrics {
+func (r *router) routeMetricsForContext(ctx context.Context, tm pmetric.Metrics) routedMetrics {
 	value := r.extractor.extractFromContext(ctx)
 
 	exp, ok := r.metricsExporters[value]
@@ -142,11 +152,11 @@ func (r *router) routeMetricsForContext(ctx context.Context, tm pdata.Metrics) r
 }
 
 type routedTraces struct {
-	traces    pdata.Traces
+	traces    ptrace.Traces
 	exporters []component.TracesExporter
 }
 
-func (r *router) RouteTraces(ctx context.Context, tr pdata.Traces) []routedTraces {
+func (r *router) RouteTraces(ctx context.Context, tr ptrace.Traces) []routedTraces {
 	switch r.config.AttributeSource {
 	case contextAttributeSource:
 		fallthrough
@@ -158,14 +168,14 @@ func (r *router) RouteTraces(ctx context.Context, tr pdata.Traces) []routedTrace
 	}
 }
 
-func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []routedTraces {
-	// routingEntry is used to group pdata.ResourceSpans that are routed to
+func (r *router) routeTracesForResource(_ context.Context, tr ptrace.Traces) []routedTraces {
+	// routingEntry is used to group ptrace.ResourceSpans that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
 	// higher CPU usage.
 	type routingEntry struct {
 		exporters []component.TracesExporter
-		resSpans  pdata.ResourceSpansSlice
+		resSpans  ptrace.ResourceSpansSlice
 	}
 	routingMap := map[string]routingEntry{}
 
@@ -178,13 +188,16 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.tracesExporters[attrValue]; ok {
 			exp = e
+			if r.config.DropRoutingResourceAttribute {
+				r.removeRoutingAttribute(resSpans.Resource())
+			}
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
-			resSpans.CopyTo(rEntry.resSpans.AppendEmpty())
+			resSpans.MoveTo(rEntry.resSpans.AppendEmpty())
 		} else {
-			new := pdata.NewResourceSpansSlice()
-			resSpans.CopyTo(new.AppendEmpty())
+			new := ptrace.NewResourceSpansSlice()
+			resSpans.MoveTo(new.AppendEmpty())
 
 			routingMap[attrValue] = routingEntry{
 				exporters: exp,
@@ -193,11 +206,11 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 		}
 	}
 
-	// Now that we have all the ResourceSpans grouped, let's create pdata.Traces
+	// Now that we have all the ResourceSpans grouped, let's create ptrace.Traces
 	// for each group and add it to the returned routedTraces slice.
 	ret := make([]routedTraces, 0, len(routingMap))
 	for _, rEntry := range routingMap {
-		traces := pdata.NewTraces()
+		traces := ptrace.NewTraces()
 		traces.ResourceSpans().EnsureCapacity(rEntry.resSpans.Len())
 		rEntry.resSpans.MoveAndAppendTo(traces.ResourceSpans())
 
@@ -210,7 +223,7 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 	return ret
 }
 
-func (r *router) routeTracesForContext(ctx context.Context, tr pdata.Traces) routedTraces {
+func (r *router) routeTracesForContext(ctx context.Context, tr ptrace.Traces) routedTraces {
 	value := r.extractor.extractFromContext(ctx)
 
 	exp, ok := r.tracesExporters[value]
@@ -228,11 +241,11 @@ func (r *router) routeTracesForContext(ctx context.Context, tr pdata.Traces) rou
 }
 
 type routedLogs struct {
-	logs      pdata.Logs
+	logs      plog.Logs
 	exporters []component.LogsExporter
 }
 
-func (r *router) RouteLogs(ctx context.Context, tl pdata.Logs) []routedLogs {
+func (r *router) RouteLogs(ctx context.Context, tl plog.Logs) []routedLogs {
 	switch r.config.AttributeSource {
 	case contextAttributeSource:
 		fallthrough
@@ -244,14 +257,14 @@ func (r *router) RouteLogs(ctx context.Context, tl pdata.Logs) []routedLogs {
 	}
 }
 
-func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routedLogs {
-	// routingEntry is used to group pdata.ResourceLogs that are routed to
+func (r *router) routeLogsForResource(_ context.Context, tl plog.Logs) []routedLogs {
+	// routingEntry is used to group plog.ResourceLogs that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
 	// higher CPU usage.
 	type routingEntry struct {
 		exporters []component.LogsExporter
-		resLogs   pdata.ResourceLogsSlice
+		resLogs   plog.ResourceLogsSlice
 	}
 	routingMap := map[string]routingEntry{}
 
@@ -264,13 +277,16 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.logsExporters[attrValue]; ok {
 			exp = e
+			if r.config.DropRoutingResourceAttribute {
+				r.removeRoutingAttribute(resLogs.Resource())
+			}
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
-			resLogs.CopyTo(rEntry.resLogs.AppendEmpty())
+			resLogs.MoveTo(rEntry.resLogs.AppendEmpty())
 		} else {
-			new := pdata.NewResourceLogsSlice()
-			resLogs.CopyTo(new.AppendEmpty())
+			new := plog.NewResourceLogsSlice()
+			resLogs.MoveTo(new.AppendEmpty())
 
 			routingMap[attrValue] = routingEntry{
 				exporters: exp,
@@ -279,11 +295,11 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 		}
 	}
 
-	// Now that we have all the ResourceLogs grouped, let's create pdata.Logs
+	// Now that we have all the ResourceLogs grouped, let's create plog.Logs
 	// for each group and add it to the returned routedLogs slice.
 	ret := make([]routedLogs, 0, len(routingMap))
 	for _, rEntry := range routingMap {
-		logs := pdata.NewLogs()
+		logs := plog.NewLogs()
 		logs.ResourceLogs().EnsureCapacity(rEntry.resLogs.Len())
 		rEntry.resLogs.MoveAndAppendTo(logs.ResourceLogs())
 
@@ -296,7 +312,7 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 	return ret
 }
 
-func (r *router) routeLogsForContext(ctx context.Context, tl pdata.Logs) routedLogs {
+func (r *router) routeLogsForContext(ctx context.Context, tl plog.Logs) routedLogs {
 	value := r.extractor.extractFromContext(ctx)
 
 	exp, ok := r.logsExporters[value]

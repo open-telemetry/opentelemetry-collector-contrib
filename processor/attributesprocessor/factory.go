@@ -98,10 +98,6 @@ func createLogProcessor(
 		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
 	}
 
-	if (oCfg.Include != nil && len(oCfg.Include.LogNames) > 0) || (oCfg.Exclude != nil && len(oCfg.Exclude.LogNames) > 0) {
-		set.Logger.Warn("log_names setting is deprecated and will be removed soon")
-	}
-
 	include, err := filterlog.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err

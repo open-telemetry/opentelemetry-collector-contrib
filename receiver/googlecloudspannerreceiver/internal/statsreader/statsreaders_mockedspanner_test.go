@@ -24,7 +24,7 @@ import (
 	"cloud.google.com/go/spanner/spannertest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
@@ -50,7 +50,7 @@ func createMetricsMetadataFromTimestampColumn(query string, timestampColumn stri
 	// Labels
 	queryLabelValuesMetadata := []metadata.LabelValueMetadata{labelValueMetadata}
 
-	metricDataType := metadata.NewMetricDataType(pdata.MetricDataTypeGauge, pdata.MetricAggregationTemporalityUnspecified, false)
+	metricDataType := metadata.NewMetricDataType(pmetric.MetricDataTypeGauge, pmetric.MetricAggregationTemporalityUnspecified, false)
 
 	metricValueMetadata, _ := metadata.NewMetricValueMetadata("metric_value", "METRIC_VALUE", metricDataType, "unit",
 		metadata.IntValueType)

@@ -20,7 +20,7 @@ import (
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -145,7 +145,7 @@ func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetri
 	}
 }
 
-func (dc *DataCollector) CollectMetricData(currentTime time.Time) pdata.Metrics {
+func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metrics {
 	return dc.metricsStore.getMetricData(currentTime)
 }
 
