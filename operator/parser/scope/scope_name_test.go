@@ -51,28 +51,6 @@ func TestScopeNameParser(t *testing.T) {
 			}(),
 			expected: func() *entry.Entry {
 				e := entry.New()
-				e.ScopeName = testScopeName
-				e.ObservedTimestamp = now
-				return e
-			}(),
-		},
-		{
-			name: "root_string_preserve",
-			config: func() *ScopeNameParserConfig {
-				cfg := NewScopeNameParserConfig("test")
-				cfg.ParseFrom = entry.NewBodyField()
-				preserve := entry.NewBodyField()
-				cfg.PreserveTo = &preserve
-				return cfg
-			}(),
-			input: func() *entry.Entry {
-				e := entry.New()
-				e.Body = testScopeName
-				e.ObservedTimestamp = now
-				return e
-			}(),
-			expected: func() *entry.Entry {
-				e := entry.New()
 				e.Body = testScopeName
 				e.ScopeName = testScopeName
 				e.ObservedTimestamp = now
@@ -115,30 +93,7 @@ func TestScopeNameParser(t *testing.T) {
 			}(),
 			expected: func() *entry.Entry {
 				e := entry.New()
-				e.Body = map[string]interface{}{}
-				e.ScopeName = testScopeName
-				e.ObservedTimestamp = now
-				return e
-			}(),
-		},
-		{
-			name: "nonroot_string_preserve",
-			config: func() *ScopeNameParserConfig {
-				cfg := NewScopeNameParserConfig("test")
-				cfg.ParseFrom = entry.NewBodyField("logger")
-				preserve := entry.NewBodyField("somewhere")
-				cfg.PreserveTo = &preserve
-				return cfg
-			}(),
-			input: func() *entry.Entry {
-				e := entry.New()
 				e.Body = map[string]interface{}{"logger": testScopeName}
-				e.ObservedTimestamp = now
-				return e
-			}(),
-			expected: func() *entry.Entry {
-				e := entry.New()
-				e.Body = map[string]interface{}{"somewhere": testScopeName}
 				e.ScopeName = testScopeName
 				e.ObservedTimestamp = now
 				return e

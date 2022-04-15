@@ -48,18 +48,15 @@ type TraceParser struct {
 }
 
 type TraceIdConfig struct {
-	ParseFrom  *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
-	PreserveTo *entry.Field `mapstructure:"preserve_to,omitempty" json:"preserve_to,omitempty" yaml:"preserve_to,omitempty"`
+	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
 }
 
 type SpanIdConfig struct {
-	ParseFrom  *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
-	PreserveTo *entry.Field `mapstructure:"preserve_to,omitempty" json:"preserve_to,omitempty" yaml:"preserve_to,omitempty"`
+	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
 }
 
 type TraceFlagsConfig struct {
-	ParseFrom  *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
-	PreserveTo *entry.Field `mapstructure:"preserve_to,omitempty" json:"preserve_to,omitempty" yaml:"preserve_to,omitempty"`
+	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
 }
 
 // Validate validates a TraceParser, and reconfigures it if necessary
@@ -89,8 +86,8 @@ func (t *TraceParser) Validate() error {
 }
 
 // Best effort hex parsing for trace, spans and flags
-func parseHexField(entry *entry.Entry, field *entry.Field, to *entry.Field) ([]byte, error) {
-	value, ok := entry.Delete(field)
+func parseHexField(entry *entry.Entry, field *entry.Field) ([]byte, error) {
+	value, ok := entry.Get(field)
 	if !ok {
 		return nil, nil
 	}
@@ -99,20 +96,15 @@ func parseHexField(entry *entry.Entry, field *entry.Field, to *entry.Field) ([]b
 	if err != nil {
 		return nil, err
 	}
-
-	if to != nil {
-		err = entry.Set(to, value)
-		return data, err
-	}
 	return data, nil
 }
 
 // Parse will parse a trace (trace_id, span_id and flags) from a field and attach it to the entry
 func (t *TraceParser) Parse(entry *entry.Entry) error {
 	var errTraceId, errSpanId, errTraceFlags error
-	entry.TraceId, errTraceId = parseHexField(entry, t.TraceId.ParseFrom, t.TraceId.PreserveTo)
-	entry.SpanId, errSpanId = parseHexField(entry, t.SpanId.ParseFrom, t.SpanId.PreserveTo)
-	entry.TraceFlags, errTraceFlags = parseHexField(entry, t.TraceFlags.ParseFrom, t.TraceFlags.PreserveTo)
+	entry.TraceId, errTraceId = parseHexField(entry, t.TraceId.ParseFrom)
+	entry.SpanId, errSpanId = parseHexField(entry, t.SpanId.ParseFrom)
+	entry.TraceFlags, errTraceFlags = parseHexField(entry, t.TraceFlags.ParseFrom)
 	if errTraceId != nil || errTraceFlags != nil || errSpanId != nil {
 		err := errors.NewError("Error decoding traces for logs", "")
 		if errTraceId != nil {

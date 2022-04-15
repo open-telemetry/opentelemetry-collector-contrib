@@ -121,7 +121,8 @@ func TestJSONParser(t *testing.T) {
 			},
 			&entry.Entry{
 				Attributes: map[string]interface{}{
-					"superkey": "superval",
+					"superkey":  "superval",
+					"timestamp": float64(1136214245),
 				},
 				Body:      `{"superkey":"superval","timestamp":1136214245}`,
 				Timestamp: time.Unix(1136214245, 0),
@@ -139,7 +140,8 @@ func TestJSONParser(t *testing.T) {
 			},
 			&entry.Entry{
 				Attributes: map[string]interface{}{
-					"superkey": "superval",
+					"superkey":    "superval",
+					"logger_name": "logger",
 				},
 				Body:      `{"superkey":"superval","logger_name":"logger"}`,
 				ScopeName: "logger",

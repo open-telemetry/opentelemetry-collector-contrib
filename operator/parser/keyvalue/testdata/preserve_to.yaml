@@ -1,2 +1,0 @@
-type: key_value_parser
-preserve_to: body.aField

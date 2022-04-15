@@ -84,15 +84,6 @@ func TestKVParserConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "preserve_to",
-			Expect: func() *KVParserConfig {
-				cfg := defaultCfg()
-				preserve := entry.NewBodyField("aField")
-				cfg.PreserveTo = &preserve
-				return cfg
-			}(),
-		},
-		{
 			Name: "delimiter",
 			Expect: func() *KVParserConfig {
 				cfg := defaultCfg()

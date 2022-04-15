@@ -660,16 +660,6 @@ func TestGoldenTimeParserConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"preserve_to",
-			false,
-			func() *TimeParser {
-				cfg := defaultTimeCfg()
-				newPreserve := entry.NewBodyField("aField")
-				cfg.PreserveTo = &newPreserve
-				return cfg
-			}(),
-		},
-		{
 			"location",
 			false,
 			func() *TimeParser {

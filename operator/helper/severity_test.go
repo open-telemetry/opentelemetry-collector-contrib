@@ -518,16 +518,6 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"preserve_to",
-			false,
-			func() *SeverityParserConfig {
-				cfg := defaultSeverityCfg()
-				preserve := entry.NewBodyField("aField")
-				cfg.PreserveTo = &preserve
-				return cfg
-			}(),
-		},
-		{
 			"preset",
 			false,
 			func() *SeverityParserConfig {

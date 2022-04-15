@@ -10,7 +10,6 @@ The `syslog_parser` operator parses the string-type field selected by `parse_fro
 | `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `parse_from`  | `body`           | The [field](/docs/types/field.md) from which the value will be parsed. |
 | `parse_to`    | `body`           | The [field](/docs/types/field.md) to which the value will be parsed. |
-| `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
 | `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `protocol`    | required         | The protocol to parse the syslog messages as. Options are `rfc3164` and `rfc5424`. |
 | `location`    | `UTC`            | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |

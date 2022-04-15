@@ -83,15 +83,6 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
-		{
-			Name: "preserve_to",
-			Expect: func() *URIParserConfig {
-				cfg := defaultCfg()
-				preserve := entry.NewBodyField("aField")
-				cfg.PreserveTo = &preserve
-				return cfg
-			}(),
-		},
 	}
 
 	for _, tc := range cases {

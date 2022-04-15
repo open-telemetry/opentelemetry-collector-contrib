@@ -9,7 +9,6 @@ The `severity_parser` operator sets the severity on an entry by parsing a value 
 | `id`          | `severity_parser` | A unique identifier for the operator. |
 | `output`      | Next in pipeline  | The `id` for the operator to send parsed entries to. |
 | `parse_from`  | required          | The [field](/docs/types/field.md) from which the value will be parsed. |
-| `preserve_to` |                   | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
 | `on_error`    | `send`            | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `preset`      | `default`         | A predefined set of values that should be interpreted at specific severity levels. |
 | `mapping`     |                   | A formatted set of values that should be interpreted as severity levels. |

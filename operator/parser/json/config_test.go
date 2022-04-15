@@ -84,15 +84,6 @@ func TestJSONParserConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "preserve_to",
-			Expect: func() *JSONParserConfig {
-				cfg := defaultCfg()
-				preserve := entry.NewBodyField("aField")
-				cfg.PreserveTo = &preserve
-				return cfg
-			}(),
-		},
-		{
 			Name: "scope_name",
 			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()

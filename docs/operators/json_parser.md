@@ -10,7 +10,6 @@ The `json_parser` operator parses the string-type field selected by `parse_from`
 | `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `parse_from`  | `body`           | The [field](/docs/types/field.md) from which the value will be parsed. |
 | `parse_to`    | `body`           | The [field](/docs/types/field.md) to which the value will be parsed. |
-| `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
 | `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `if`          |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `timestamp`   | `nil`            | An optional [timestamp](/docs/types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
@@ -50,53 +49,6 @@ Configuration:
   "timestamp": "",
   "body": {
     "key": "val"
-  }
-}
-```
-
-</td>
-</tr>
-</table>
-
-#### Parse a nested field to a different field, preserving original
-
-Configuration:
-```yaml
-- type: json_parser
-  parse_from: body.message.embedded
-  parse_to: body.parsed
-  preserve_to: body.message.embedded
-```
-
-<table>
-<tr><td> Input body </td> <td> Output body </td></tr>
-<tr>
-<td>
-
-```json
-{
-  "timestamp": "",
-  "body": {
-    "message": {
-      "embedded": "{\"key\": \"val\"}"
-    }
-  }
-}
-```
-
-</td>
-<td>
-
-```json
-{
-  "timestamp": "",
-  "body": {
-    "message": {
-      "embedded": "{\"key\": \"val\"}"
-    },
-    "parsed": {
-      "key": "val"
-    }
   }
 }
 ```

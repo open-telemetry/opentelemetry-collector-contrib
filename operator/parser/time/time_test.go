@@ -119,34 +119,6 @@ func TestProcess(t *testing.T) {
 			expect: &entry.Entry{
 				ObservedTimestamp: now,
 				Timestamp:         time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
-				Body:              map[string]interface{}{},
-			},
-		},
-		{
-			name: "promote-and-preserve",
-			config: func() (*TimeParserConfig, error) {
-				cfg := NewTimeParserConfig("test_id")
-				parseFrom, err := entry.NewField("body.app_time")
-				if err != nil {
-					return nil, err
-				}
-				cfg.ParseFrom = &parseFrom
-				cfg.PreserveTo = &parseFrom
-				cfg.LayoutType = "gotime"
-				cfg.Layout = "Mon Jan 2 15:04:05 MST 2006"
-				return cfg, nil
-			},
-			input: func() *entry.Entry {
-				e := entry.New()
-				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
-				}
-				return e
-			}(),
-			expect: &entry.Entry{
-				ObservedTimestamp: now,
-				Timestamp:         time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
 				Body: map[string]interface{}{
 					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
 				},
@@ -607,7 +579,7 @@ id: test_operator_id
 on_error: "send"
 parse_from: body.from
 layout_type: gotime
-layout: "Mon Jan 2 15:04:05 MST 2006" 
+layout: "Mon Jan 2 15:04:05 MST 2006"
 output:
   - output1
 `

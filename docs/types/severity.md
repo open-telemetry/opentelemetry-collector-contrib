@@ -11,7 +11,6 @@ Parser operators can parse a severity and attach the resulting value to a log en
 | Field          | Default   | Description |
 | ---            | ---       | ---         |
 | `parse_from`   | required  | The [field](/docs/types/field.md) from which the value will be parsed. |
-| `preserve_to`  |           | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
 | `preset`       | `default` | A predefined set of values that should be interpretted at specific severity levels. |
 | `mapping`      |           | A custom set of values that should be interpretted at designated severity levels. |
 
