@@ -44,7 +44,11 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			)
 
 			if err != nil {
-				return nil, err
+				logger.Sugar().Warnw("Error serializing gauge data point",
+					"name", metric.Name(),
+					"value-type", dp.ValueType().String(),
+					"error", err,
+				)
 			}
 
 			if line != "" {
@@ -66,7 +70,11 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			)
 
 			if err != nil {
-				return nil, err
+				logger.Sugar().Warnw("Error serializing sum data point",
+					"name", metric.Name(),
+					"value-type", dp.ValueType().String(),
+					"error", err,
+				)
 			}
 
 			if line != "" {
@@ -87,7 +95,10 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			)
 
 			if err != nil {
-				return nil, err
+				logger.Sugar().Warnw("Error serializing histogram data point",
+					"name", metric.Name(),
+					"error", err,
+				)
 			}
 
 			if line != "" {
