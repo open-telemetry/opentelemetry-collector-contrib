@@ -15,16 +15,23 @@
 //go:build !windows
 // +build !windows
 
-package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
+package windowseventlogreceiver
 
 import (
-	"errors"
+	"testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"go.opentelemetry.io/collector/config"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	return nil, errors.New("the windows eventlog receiver is only supported on Windows")
+func TestDefaultConfigFailure(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NotNil(t, cfg, "failed to create default config")
+	require.NoError(t, configtest.CheckConfigStruct(cfg))
+
+	r := ReceiverType{}
+	ops, err := r.DecodeInputConfig(cfg)
+	require.Nil(t, ops, "failed to create default config")
+	require.ErrorContains(t, err, "the windows eventlog receiver is only supported on Windows")
 }

@@ -49,25 +49,25 @@ Configuration:
 Output entry sample:
 ```json
 {
-  "body": {
-		"event_id": {
-			"qualifiers": 0,
-			"id": 1000
-		},
-		"provider": {
-			"name": "provider name",
-			"guid": "provider guid",
-			"event_source": "event source"
-		},
-		"system_time": "2020-04-30T12:10:17.656726789Z",
-		"computer": "example computer",
-		"channel": "application",
-		"record_id": 1,
-		"level": "Information",
-		"message": "example message",
-		"task": "example task",
-		"opcode": "example opcode",
-		"keywords": ["example keyword"]
-	}
+    "channel": "Application",
+    "computer": "computer name",
+    "event_id":
+    {
+        "id": 10,
+        "qualifiers": 0
+    },
+    "keywords": "[Classic]",
+    "level": "Information",
+    "message": "Test log",
+    "opcode": "Info",
+    "provider":
+    {
+        "event_source": "",
+        "guid": "",
+        "name": "otel"
+    },
+    "record_id": 12345,
+    "system_time": "2022-04-15T15:28:08.898974100Z",
+    "task": ""
 }
 ```
