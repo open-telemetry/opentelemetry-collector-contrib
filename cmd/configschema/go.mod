@@ -257,7 +257,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.49.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.49.0 // indirect
@@ -358,6 +357,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.49.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.49.0 // indirect
@@ -606,8 +606,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywa
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ../../exporter/stackdriverexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ../../exporter/sumologicexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter => ../../exporter/tanzuobservabilityexporter
@@ -779,6 +777,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ../../receiver/skywalkingreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../receiver/splunkhecreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => ../../receiver/sqlserverreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver => ../../receiver/statsdreceiver
 

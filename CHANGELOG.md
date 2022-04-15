@@ -4,12 +4,15 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
 
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
+- `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 
 ### 💡 Enhancements 💡
 

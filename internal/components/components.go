@@ -61,7 +61,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
@@ -137,6 +136,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -217,6 +217,7 @@ func Components() (component.Factories, error) {
 		simpleprometheusreceiver.NewFactory(),
 		skywalkingreceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),
+		sqlserverreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
@@ -273,7 +274,6 @@ func Components() (component.Factories, error) {
 		signalfxexporter.NewFactory(),
 		skywalkingexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
-		stackdriverexporter.NewFactory(),
 		sumologicexporter.NewFactory(),
 		tanzuobservabilityexporter.NewFactory(),
 		tencentcloudlogserviceexporter.NewFactory(),
