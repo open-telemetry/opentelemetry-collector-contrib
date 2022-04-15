@@ -19,9 +19,9 @@ require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.100.2 // indirect
 	cloud.google.com/go/compute v1.5.0 // indirect
-	cloud.google.com/go/monitoring v1.2.0 // indirect
+	cloud.google.com/go/monitoring v1.4.0 // indirect
 	cloud.google.com/go/spanner v1.31.0 // indirect
-	cloud.google.com/go/trace v1.0.0 // indirect
+	cloud.google.com/go/trace v1.2.0 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible // indirect
@@ -43,8 +43,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db // indirect
 	github.com/DataDog/datadog-go v4.8.2+incompatible // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.26.1-0.20220307211504-dc45061a44f9 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.3.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.28.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.4.0 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
@@ -332,6 +332,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.49.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.49.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.49.0 // indirect
@@ -464,7 +465,7 @@ require (
 	gonum.org/v1/gonum v0.11.0 // indirect
 	google.golang.org/api v0.74.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb // indirect
+	google.golang.org/genproto v0.0.0-20220405205423-9d709892a2bf // indirect
 	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.37.1 // indirect
@@ -728,6 +729,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver => ../../receiver/influxdbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver => ../../receiver/iisreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ../../receiver/jaegerreceiver
 

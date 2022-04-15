@@ -571,19 +571,14 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
-	//Test for honor_labels: true is skipped. Currently, the Prometheus receiver is unable to support this config
-	//See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5757
-	//TODO: Enable this test once issue 5757 is resolved
-	t.Skip("skipping test for honor_labels true configuration")
-
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	//job and instance label values should be honored from honorLabelsTarget
 	expectedAttributes := td.attributes
-	expectedAttributes.Update("job", pcommon.NewValueString("honor_labels_test"))
-	expectedAttributes.Update("instance", pcommon.NewValueString("hostname:8080"))
-	expectedAttributes.Update("host.name", pcommon.NewValueString("hostname"))
-	expectedAttributes.Update("port", pcommon.NewValueString("8080"))
+	expectedAttributes.Update("service.name", pcommon.NewValueString("honor_labels_test"))
+	expectedAttributes.Update("service.instance.id", pcommon.NewValueString("hostname:8080"))
+	expectedAttributes.Update("net.host.port", pcommon.NewValueString("8080"))
+	expectedAttributes.Insert("net.host.name", pcommon.NewValueString("hostname"))
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
