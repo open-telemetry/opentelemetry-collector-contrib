@@ -160,36 +160,6 @@ func TestProcess(t *testing.T) {
 				},
 			},
 		},
-		{
-			"parse-from-and-preserve",
-			func() (operator.Operator, error) {
-				cfg := NewURIParserConfig("test_id")
-				cfg.ParseFrom = entry.NewBodyField("url")
-				cfg.PreserveTo = &cfg.ParseFrom
-				return cfg.Build(testutil.Logger(t))
-			},
-			&entry.Entry{
-				Body: map[string]interface{}{
-					"url": "https://google.com:443/path?user=dev",
-				},
-			},
-			&entry.Entry{
-				Body: map[string]interface{}{
-					"url": "https://google.com:443/path?user=dev",
-				},
-				Attributes: map[string]interface{}{
-					"host": "google.com",
-					"port": "443",
-					"path": "/path",
-					"query": map[string]interface{}{
-						"user": []interface{}{
-							"dev",
-						},
-					},
-					"scheme": "https",
-				},
-			},
-		},
 	}
 
 	for _, tc := range cases {

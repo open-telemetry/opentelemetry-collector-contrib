@@ -92,15 +92,6 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "preserve_to",
-			Expect: func() *RegexParserConfig {
-				cfg := defaultCfg()
-				preserve := entry.NewBodyField("aField")
-				cfg.PreserveTo = &preserve
-				return cfg
-			}(),
-		},
-		{
 			Name: "regex",
 			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()

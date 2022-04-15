@@ -5,14 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.29.1] - 2022-04-15
+
+### Fixed
+- Complete removal of `preserve_to` setting and ensure `parse_from` field is always retained. ([PR468](https://github.com/open-telemetry/opentelemetry-log-collection/pull/468))
+
 # Upgrading to v0.29.0
 
 Several changes have been made that affect configuration for the `filelog`, `syslog`, `tcplog`, `udplog`, and `journald` receivers.
 
 ### Update all usages of [field](/docs/types/field.md) syntax
-  
+
 Field syntax no longer requires the `$` character. Instead each field must begin with `body`, `attributes`, or `resource`.
-  
+
 <table>
 <tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
 <tr><td>
@@ -110,7 +115,7 @@ Field syntax can now refer to nested fields in both `attributes` and `resource`.
 
 ### Update references to parsed values
 
-The default value of `parse_to` has been changed from `body` to `attributes`. As a general rule of thumb, any parsers that previously specified the `parse_to` field are unaffected. If the `parse_to` field was not previously specified, then subsequent operators may need to be updated. 
+The default value of `parse_to` has been changed from `body` to `attributes`. As a general rule of thumb, any parsers that previously specified the `parse_to` field are unaffected. If the `parse_to` field was not previously specified, then subsequent operators may need to be updated.
 
 <table>
 <tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
@@ -352,7 +357,7 @@ if log.Timestamp != nil {
 - Parsers that contain a `parse_to` setting will no longer delete the `parse_from` field. ([PR464](https://github.com/open-telemetry/opentelemetry-log-collection/pull/464))
 - The `preserve_to` setting has been removed from parsers. ([PR464](https://github.com/open-telemetry/opentelemetry-log-collection/pull/464))
 
-### Added 
+### Added
 
 - `key_value_parser` ([PR459](https://github.com/open-telemetry/opentelemetry-log-collection/pull/459))
 - `severity` parsign can now use `preset: otel` to recognize both numeric and text representations of OpenTelemetry's log data model. ([PR460](https://github.com/open-telemetry/opentelemetry-log-collection/pull/460))
@@ -372,9 +377,9 @@ if log.Timestamp != nil {
     - e.g. `attributes.["log.file.name"]`
   - Use `resource` instead of `$resource`.
     - e.g. `resource.["host.name"]`
-  - There is no longer a default top-level field. 
+  - There is no longer a default top-level field.
     - i.e. `foo` is no longer equivalent to `$body.foo`. (It is invalid.)
-  - A top-level field MUST be specified at the beginning of each field. 
+  - A top-level field MUST be specified at the beginning of each field.
     - e.g. `body.foo`, `attributes.foo`, or `resource.foo`.
 - `entry.Entry.Timestamp` field is no longer required and is not initialized by default. ([PR370](https://github.com/open-telemetry/opentelemetry-log-collection/pull/370))
   - The value can be set using the `timestamp` block on any parser, or the using the standalone `time_parser` operator.
@@ -534,7 +539,7 @@ This release contains a few minor updates as well as a major cleanup of the code
 
 ### Added
 - `file_input` now supports multi-level directory globs (i.e. `/var/**/logs/**/*.log`) ([PR97](https://github.com/open-telemetry/opentelemetry-log-collection/pull/97))
-- `add`, `remove`, `move`, `copy`, `retain`, and `flatten` operators, as alternatives to the `restructure` operator. 
+- `add`, `remove`, `move`, `copy`, `retain`, and `flatten` operators, as alternatives to the `restructure` operator.
 - `add_attributes` option to `tcp_input` and `udp_input`, for capturing network attributes ([PR108](https://github.com/open-telemetry/opentelemetry-log-collection/pull/108))
 - `multiline`, `encoding`, and `max_log_size` options to `tcp_input` ([PR125](https://github.com/open-telemetry/opentelemetry-log-collection/pull/125))
 
@@ -549,7 +554,7 @@ This release contains a few minor updates as well as a major cleanup of the code
 ### Added
 - Trace fields added to `entry.Entry`, and an accompanying `trace` parser ([PR76](https://github.com/open-telemetry/opentelemetry-log-collection/pull/76))
 - Severity parser can parse whole numbers formatted as `float64` ([PR90](https://github.com/open-telemetry/opentelemetry-log-collection/pull/90))
-- Support for `mapstructure` to most configs 
+- Support for `mapstructure` to most configs
 
 ### Changed
 - Rename `entry.Record` to `entry.Body` ([PR88](https://github.com/open-telemetry/opentelemetry-log-collection/pull/88))
@@ -568,7 +573,7 @@ This release contains a few minor updates as well as a major cleanup of the code
 - Optional `max_buffer_size` parameter to `tcp_input` operator ([PR35](https://github.com/open-telemetry/opentelemetry-log-collection/pull/35))
 - TLS support to `tcp_input` operator ([PR29](https://github.com/open-telemetry/opentelemetry-log-collection/pull/29))
 
-### Fixed 
+### Fixed
 - Data race in syslog parser ([PR32](https://github.com/open-telemetry/opentelemetry-log-collection/pull/32))
 
 

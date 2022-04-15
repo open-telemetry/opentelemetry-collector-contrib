@@ -15,7 +15,6 @@
 package helper
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -55,44 +54,4 @@ func TestValidateSetsDefaultFields(t *testing.T) {
 	require.Equal(t, &traceId, parser.TraceId.ParseFrom)
 	require.Equal(t, &spanId, parser.SpanId.ParseFrom)
 	require.Equal(t, &traceFlags, parser.TraceFlags.ParseFrom)
-}
-
-func TestPreserveFields(t *testing.T) {
-	traceId := entry.NewBodyField("traceId")
-	spanId := entry.NewBodyField("spanId")
-	traceFlags := entry.NewBodyField("traceFlags")
-	parser := TraceParser{
-		TraceId: &TraceIdConfig{
-			PreserveTo: &traceId,
-		},
-		SpanId: &SpanIdConfig{
-			PreserveTo: &spanId,
-		},
-		TraceFlags: &TraceFlagsConfig{
-			PreserveTo: &traceFlags,
-		},
-	}
-	err := parser.Validate()
-	require.NoError(t, err)
-
-	entry := entry.New()
-	entry.Body = map[string]interface{}{
-		"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
-		"span_id":     "92c3792d54ba94f3",
-		"trace_flags": "01",
-	}
-	err = parser.Parse(entry)
-	require.NoError(t, err)
-	require.Equal(t, map[string]interface{}{
-		"traceId":    "480140f3d770a5ae32f0a22b6a812cff",
-		"spanId":     "92c3792d54ba94f3",
-		"traceFlags": "01",
-	}, entry.Body)
-
-	value, _ := hex.DecodeString("480140f3d770a5ae32f0a22b6a812cff")
-	require.Equal(t, value, entry.TraceId)
-	value, _ = hex.DecodeString("92c3792d54ba94f3")
-	require.Equal(t, value, entry.SpanId)
-	value, _ = hex.DecodeString("01")
-	require.Equal(t, value, entry.TraceFlags)
 }

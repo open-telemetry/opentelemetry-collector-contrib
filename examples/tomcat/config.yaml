@@ -32,7 +32,6 @@ pipeline:
       layout: '%d/%b/%Y:%H:%M:%S %z'
     severity:
       parse_from: http_status
-      preserve_to: http_status
       mapping:
         error: "4xx"
         info:

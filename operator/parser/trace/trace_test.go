@@ -62,10 +62,8 @@ func TestBuild(t *testing.T) {
 			"spanid",
 			func() (*TraceParserConfig, error) {
 				parseFrom := entry.NewBodyField("app_span_id")
-				preserveTo := entry.NewBodyField("orig_span_id")
 				cfg := NewTraceParserConfig("test_id")
 				cfg.SpanId.ParseFrom = &parseFrom
-				cfg.SpanId.PreserveTo = &preserveTo
 				return cfg, nil
 			},
 			false,
@@ -74,10 +72,8 @@ func TestBuild(t *testing.T) {
 			"traceid",
 			func() (*TraceParserConfig, error) {
 				parseFrom := entry.NewBodyField("app_trace_id")
-				preserveTo := entry.NewBodyField("orig_trace_id")
 				cfg := NewTraceParserConfig("test_id")
 				cfg.TraceId.ParseFrom = &parseFrom
-				cfg.TraceId.PreserveTo = &preserveTo
 				return cfg, nil
 			},
 			false,
@@ -86,10 +82,8 @@ func TestBuild(t *testing.T) {
 			"trace-flags",
 			func() (*TraceParserConfig, error) {
 				parseFrom := entry.NewBodyField("trace-flags-field")
-				preserveTo := entry.NewBodyField("parsed-trace-flags")
 				cfg := NewTraceParserConfig("test_id")
 				cfg.TraceFlags.ParseFrom = &parseFrom
-				cfg.TraceFlags.PreserveTo = &preserveTo
 				return cfg, nil
 			},
 			false,
@@ -158,42 +152,10 @@ func TestProcess(t *testing.T) {
 				SpanId:     testSpanIDBytes,
 				TraceId:    testTraceIDBytes,
 				TraceFlags: testTraceFlagsBytes,
-				Body:       map[string]interface{}{},
-			},
-		},
-		{
-			"preserve",
-			func() (operator.Operator, error) {
-				cfg := NewTraceParserConfig("test_id")
-				spanFrom := entry.NewBodyField("app_span_id")
-				spanTo := entry.NewBodyField("orig_span_id")
-				traceFrom := entry.NewBodyField("app_trace_id")
-				traceTo := entry.NewBodyField("orig_trace_id")
-				flagsFrom := entry.NewBodyField("trace_flags_field")
-				flagsTo := entry.NewBodyField("orig_trace_flags")
-				cfg.SpanId.ParseFrom = &spanFrom
-				cfg.SpanId.PreserveTo = &spanTo
-				cfg.TraceId.ParseFrom = &traceFrom
-				cfg.TraceId.PreserveTo = &traceTo
-				cfg.TraceFlags.ParseFrom = &flagsFrom
-				cfg.TraceFlags.PreserveTo = &flagsTo
-				return cfg.Build(testutil.Logger(t))
-			},
-			&entry.Entry{
 				Body: map[string]interface{}{
 					"app_span_id":       "480140f3d770a5ae32f0a22b6a812cff",
 					"app_trace_id":      "92c3792d54ba94f3",
 					"trace_flags_field": "01",
-				},
-			},
-			&entry.Entry{
-				SpanId:     testSpanIDBytes,
-				TraceId:    testTraceIDBytes,
-				TraceFlags: testTraceFlagsBytes,
-				Body: map[string]interface{}{
-					"orig_span_id":     "480140f3d770a5ae32f0a22b6a812cff",
-					"orig_trace_id":    "92c3792d54ba94f3",
-					"orig_trace_flags": "01",
 				},
 			},
 		},
@@ -228,7 +190,11 @@ func TestTraceParserParse(t *testing.T) {
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "01",
 			},
-			map[string]interface{}{},
+			map[string]interface{}{
+				"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
+				"span_id":     "92c3792d54ba94f3",
+				"trace_flags": "01",
+			},
 			false,
 			"480140f3d770a5ae32f0a22b6a812cff",
 			"92c3792d54ba94f3",
@@ -256,7 +222,9 @@ func TestTraceParserParse(t *testing.T) {
 			map[string]interface{}{
 				"trace_id": "480140f3d770a5ae32f0a22b6a812cff",
 			},
-			map[string]interface{}{},
+			map[string]interface{}{
+				"trace_id": "480140f3d770a5ae32f0a22b6a812cff",
+			},
 			false,
 			"480140f3d770a5ae32f0a22b6a812cff",
 			"",
@@ -269,7 +237,11 @@ func TestTraceParserParse(t *testing.T) {
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "01",
 			},
-			map[string]interface{}{},
+			map[string]interface{}{
+				"trace_id":    "foo_bar",
+				"span_id":     "92c3792d54ba94f3",
+				"trace_flags": "01",
+			},
 			true,
 			"",
 			"92c3792d54ba94f3",
@@ -282,24 +254,15 @@ func TestTraceParserParse(t *testing.T) {
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "foo_bar",
 			},
-			map[string]interface{}{},
+			map[string]interface{}{
+				"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
+				"span_id":     "92c3792d54ba94f3",
+				"trace_flags": "foo_bar",
+			},
 			true,
 			"480140f3d770a5ae32f0a22b6a812cff",
 			"92c3792d54ba94f3",
 			"",
-		},
-		{
-			"AllFields",
-			map[string]interface{}{
-				"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
-				"span_id":     "92c3792d54ba94f3",
-				"trace_flags": "01",
-			},
-			map[string]interface{}{},
-			false,
-			"480140f3d770a5ae32f0a22b6a812cff",
-			"92c3792d54ba94f3",
-			"01",
 		},
 	}
 

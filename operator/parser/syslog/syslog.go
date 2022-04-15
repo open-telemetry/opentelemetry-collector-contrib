@@ -110,7 +110,7 @@ type SyslogParser struct {
 
 // Process will parse an entry field as syslog.
 func (s *SyslogParser) Process(ctx context.Context, entry *entry.Entry) error {
-	return s.ParserOperator.ProcessWithCallback(ctx, entry, s.parse, promoteSeverity)
+	return s.ParserOperator.ProcessWithCallback(ctx, entry, s.parse, postprocess)
 }
 
 // parse will parse a value as syslog.
@@ -245,7 +245,7 @@ var severityText = [...]string{
 
 var severityField = entry.NewAttributeField("severity")
 
-func promoteSeverity(e *entry.Entry) error {
+func postprocess(e *entry.Entry) error {
 	sev, ok := severityField.Delete(e)
 	if !ok {
 		return fmt.Errorf("severity field does not exist")
@@ -262,5 +262,11 @@ func promoteSeverity(e *entry.Entry) error {
 
 	e.Severity = severityMapping[sevInt]
 	e.SeverityText = severityText[sevInt]
+
+	_, ok = entry.NewAttributeField("timestamp").Delete(e)
+	if !ok {
+		return fmt.Errorf("failed to cleanup timestamp")
+	}
+
 	return nil
 }

@@ -29,7 +29,6 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 		TransformerConfig: NewTransformerConfig(operatorID, operatorType),
 		ParseFrom:         entry.NewBodyField(),
 		ParseTo:           entry.NewAttributeField(),
-		PreserveTo:        nil,
 	}
 }
 
@@ -39,7 +38,6 @@ type ParserConfig struct {
 
 	ParseFrom            entry.Field           `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
 	ParseTo              entry.Field           `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
-	PreserveTo           *entry.Field          `mapstructure:"preserve_to"         json:"preserve_to"         yaml:"preserve_to"`
 	TimeParser           *TimeParser           `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
 	SeverityParserConfig *SeverityParserConfig `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
 	TraceParser          *TraceParser          `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`

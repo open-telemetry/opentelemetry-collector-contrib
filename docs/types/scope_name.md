@@ -9,7 +9,6 @@ Parser operators can parse a scope name and attach the resulting value to a log 
 | Field          | Default   | Description |
 | ---            | ---       | ---         |
 | `parse_from`   | required  | The [field](/docs/types/field.md) from which the value will be parsed. |
-| `preserve_to`  |           | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
 
 
 ### How to use `scope_name` parsing
