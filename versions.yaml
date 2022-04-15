@@ -178,6 +178,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
