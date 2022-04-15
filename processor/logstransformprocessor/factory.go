@@ -17,12 +17,12 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/opentelemetry-collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
@@ -48,7 +48,10 @@ func createDefaultConfig() config.Processor {
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: stanza.BaseConfig{
 			Operators: stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{},
+			Converter: stanza.ConverterConfig{
+				MaxFlushCount: 100,
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 	}
 }
@@ -60,7 +63,7 @@ func createLogsProcessor(
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	pCfg, ok := cfg.(*Config)
 	if !ok {
-		return nil, errors.New("Could not initialize logs transform processor")
+		return nil, errors.New("could not initialize logs transform processor")
 	}
 	proc := &logsTransformProcessor{logger: params.Logger, config: pCfg}
 	return processorhelper.NewLogsProcessor(

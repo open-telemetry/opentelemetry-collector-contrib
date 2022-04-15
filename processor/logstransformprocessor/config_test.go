@@ -17,6 +17,7 @@ package logstransformprocessor
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -38,10 +39,25 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Processors[config.NewComponentID(typeStr)], &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		BaseConfig:        stanza.BaseConfig{},
-	})
-
-	assert.Equal(t, cfg.Processors[config.NewComponentIDWithName(typeStr, "invalid")], &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "invalid")),
+		BaseConfig: stanza.BaseConfig{
+			ReceiverSettings: config.ReceiverSettings{},
+			Operators: stanza.OperatorConfigs{
+				map[string]interface{}{
+					"type":  "regex_parser",
+					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
+					"severity": map[string]interface{}{
+						"parse_from": "body.sev",
+					},
+					"timestamp": map[string]interface{}{
+						"layout":     "%Y-%m-%d",
+						"parse_from": "body.time",
+					},
+				},
+			},
+			Converter: stanza.ConverterConfig{
+				MaxFlushCount: 100,
+				FlushInterval: 100 * time.Millisecond,
+			},
+		},
 	})
 }

@@ -23,7 +23,7 @@ import (
 // Config defines configuration for Resource processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	stanza.BaseConfig        `mapstructure:"operators"`
+	stanza.BaseConfig        `mapstructure:",squash"`
 }
 
 var _ config.Processor = (*Config)(nil)

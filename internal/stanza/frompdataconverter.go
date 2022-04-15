@@ -16,7 +16,6 @@ package stanza // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/binary"
-	"errors"
 	"math"
 	"runtime"
 	"sync"
@@ -68,22 +67,20 @@ type FromPdataConverter struct {
 }
 
 func NewFromPdataConverter(workerCount int, logger *zap.Logger) *FromPdataConverter {
-	c := &FromPdataConverter{
-		workerChan:  make(chan fromConverterWorkerItem),
-		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
+	if logger == nil {
+		logger = zap.NewNop()
+	}
+	if workerCount == 0 {
+		workerCount = int(math.Max(1, float64(runtime.NumCPU()/4)))
+	}
+
+	return &FromPdataConverter{
+		workerChan:  make(chan fromConverterWorkerItem, workerCount),
+		workerCount: workerCount,
 		entriesChan: make(chan []*entry.Entry),
 		stopChan:    make(chan struct{}),
-		logger:      zap.NewNop(),
+		logger:      logger,
 	}
-
-	if logger != nil {
-		c.logger = logger
-	}
-	if workerCount != 0 {
-		c.workerCount = workerCount
-	}
-
-	return c
 }
 
 func (c *FromPdataConverter) Start() {
@@ -132,6 +129,7 @@ func (c *FromPdataConverter) workerLoop() {
 			select {
 			case c.entriesChan <- convertFromLogs(workerItem):
 			case <-c.stopChan:
+				return
 			}
 		}
 	}
@@ -147,7 +145,7 @@ func (c *FromPdataConverter) Batch(pLogs pdata.Logs) error {
 			case c.workerChan <- fromConverterWorkerItem{Resource: rls.Resource(), LogRecordSlice: scope.LogRecords()}:
 				continue
 			case <-c.stopChan:
-				return errors.New("logs converter has been stopped")
+				return nil
 			}
 		}
 	}

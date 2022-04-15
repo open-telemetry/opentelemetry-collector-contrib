@@ -17,13 +17,15 @@ package logstransformprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/opentelemetry-collector-contrib/internal/stanza"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -39,10 +41,14 @@ func TestCreateProcessor(t *testing.T) {
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: stanza.BaseConfig{
 			Operators: stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				MaxFlushCount: 100,
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 	}
 
-	tp, err := factory.createLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 }
@@ -53,11 +59,13 @@ func TestInvalidOperators(t *testing.T) {
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: stanza.BaseConfig{
 			Operators: stanza.OperatorConfigs{
-				map[string]interface{}{},
+				map[string]interface{}{
+					"type": "nonsense",
+				},
 			},
 		},
 	}
 
-	_, err := factory.createLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	_, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
 	assert.Error(t, err)
 }
