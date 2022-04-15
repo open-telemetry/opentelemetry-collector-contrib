@@ -46,6 +46,7 @@
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
 - `hostmetricsreceiver`:  Ability to configure include/exclude filters on any process attribute (#8188)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
+- `hostmetricsreceiver`:  Option to aggregate the child process metrics into the parent process  (#9106)
   generated code (#5270)
 
 ### 🛑 Breaking changes 🛑
