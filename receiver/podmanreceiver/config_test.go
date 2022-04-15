@@ -45,9 +45,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "podman_stats", dcfg.ID().String())
 	assert.Equal(t, "unix:///run/podman/podman.sock", dcfg.Endpoint)
 	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
+	assert.Equal(t, 5*time.Second, dcfg.Timeout)
 
 	ascfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
 	assert.Equal(t, "podman_stats/all", ascfg.ID().String())
 	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
 	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)
+	assert.Equal(t, 20*time.Second, ascfg.Timeout)
 }

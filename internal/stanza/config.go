@@ -34,7 +34,7 @@ type BaseConfig struct {
 // but this allows a temporary solution
 type OperatorConfigs []map[string]interface{}
 
-// ConverterConfig controls how the internal entry.Entry to pdata.Logs converter
+// ConverterConfig controls how the internal entry.Entry to plog.Logs converter
 // works.
 type ConverterConfig struct {
 	// MaxFlushCount defines the maximum number of entries that can be

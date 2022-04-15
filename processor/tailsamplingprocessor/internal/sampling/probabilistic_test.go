@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -82,7 +82,7 @@ func TestProbabilisticSampling(t *testing.T) {
 
 			sampled := 0
 			for _, traceID := range genRandomTraceIDs(traceCount) {
-				trace := newTraceStringAttrs(pdata.NewMap(), "example", "value")
+				trace := newTraceStringAttrs(pcommon.NewMap(), "example", "value")
 
 				decision, err := probabilisticSampler.Evaluate(traceID, trace)
 				assert.NoError(t, err)
@@ -100,14 +100,14 @@ func TestProbabilisticSampling(t *testing.T) {
 	}
 }
 
-func genRandomTraceIDs(num int) (ids []pdata.TraceID) {
+func genRandomTraceIDs(num int) (ids []pcommon.TraceID) {
 	r := rand.New(rand.NewSource(1))
-	ids = make([]pdata.TraceID, 0, num)
+	ids = make([]pcommon.TraceID, 0, num)
 	for i := 0; i < num; i++ {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], r.Uint64())
 		binary.BigEndian.PutUint64(traceID[8:], r.Uint64())
-		ids = append(ids, pdata.NewTraceID(traceID))
+		ids = append(ids, pcommon.NewTraceID(traceID))
 	}
 	return ids
 }

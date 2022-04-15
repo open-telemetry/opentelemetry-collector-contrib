@@ -23,7 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
@@ -32,7 +33,7 @@ type logNameTest struct {
 	name   string
 	inc    *LogMatchProperties
 	exc    *LogMatchProperties
-	inLogs pdata.Logs
+	inLogs plog.Logs
 	outLN  [][]string // output Log names per Resource
 }
 
@@ -382,14 +383,14 @@ func TestFilterLogProcessor(t *testing.T) {
 	}
 }
 
-func testResourceLogs(lwrs []logWithResource) pdata.Logs {
-	ld := pdata.NewLogs()
+func testResourceLogs(lwrs []logWithResource) plog.Logs {
+	ld := plog.NewLogs()
 
 	for i, lwr := range lwrs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
 		// Add resource level attribtues
-		pdata.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
+		pcommon.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
@@ -397,7 +398,7 @@ func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 
 			// Add record level attribtues
 			for k := 0; k < ls.Len(); k++ {
-				pdata.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
+				pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
 			}
 		}
 	}
@@ -405,14 +406,14 @@ func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 }
 
 func TestNilResourceLogs(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rls.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
 
 func TestNilILL(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
 	ills := rl.ScopeLogs()
@@ -421,7 +422,7 @@ func TestNilILL(t *testing.T) {
 }
 
 func TestNilLog(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
 	ills := rl.ScopeLogs()
@@ -431,7 +432,7 @@ func TestNilLog(t *testing.T) {
 	requireNotPanicsLogs(t, logs)
 }
 
-func requireNotPanicsLogs(t *testing.T, logs pdata.Logs) {
+func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)

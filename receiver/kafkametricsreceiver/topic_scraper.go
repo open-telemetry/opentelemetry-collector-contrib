@@ -22,7 +22,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -58,17 +59,17 @@ func (s *topicScraper) shutdown(context.Context) error {
 	return nil
 }
 
-func (s *topicScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	topics, err := s.client.Topics()
 	if err != nil {
 		s.logger.Error("Error fetching cluster topics ", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
 	var scrapeErrors = scrapererror.ScrapeErrors{}
 
-	now := pdata.NewTimestampFromTime(time.Now())
-	md := pdata.NewMetrics()
+	now := pcommon.NewTimestampFromTime(time.Now())
+	md := pmetric.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName(instrumentationLibName)
 	for _, topic := range topics {
@@ -80,7 +81,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.Metrics, error) {
 			scrapeErrors.Add(err)
 			continue
 		}
-		labels := pdata.NewMap()
+		labels := pcommon.NewMap()
 		labels.UpsertString(metadata.A.Topic, topic)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
 		for _, partition := range partitions {
@@ -133,10 +134,10 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 	)
 }
 
-func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.Map, value int64) {
+func addIntGauge(ms pmetric.MetricSlice, name string, now pcommon.Timestamp, labels pcommon.Map, value int64) {
 	m := ms.AppendEmpty()
 	m.SetName(name)
-	m.SetDataType(pdata.MetricDataTypeGauge)
+	m.SetDataType(pmetric.MetricDataTypeGauge)
 	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(now)
 	dp.SetIntVal(value)

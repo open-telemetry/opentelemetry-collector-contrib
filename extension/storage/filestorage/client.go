@@ -31,13 +31,17 @@ type fileStorageClient struct {
 	db *bbolt.DB
 }
 
-func newClient(filePath string, timeout time.Duration) (*fileStorageClient, error) {
-	options := &bbolt.Options{
+func bboltOptions(timeout time.Duration) *bbolt.Options {
+	return &bbolt.Options{
 		Timeout:        timeout,
 		NoSync:         true,
 		NoFreelistSync: true,
 		FreelistType:   bbolt.FreelistMapType,
 	}
+}
+
+func newClient(filePath string, timeout time.Duration) (*fileStorageClient, error) {
+	options := bboltOptions(timeout)
 	db, err := bbolt.Open(filePath, 0600, options)
 	if err != nil {
 		return nil, err
@@ -121,10 +125,7 @@ func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory str
 	}
 
 	// use temporary file as compaction target
-	options := &bbolt.Options{
-		Timeout: timeout,
-		NoSync:  true,
-	}
+	options := bboltOptions(timeout)
 
 	// cannot reuse newClient as db shouldn't contain any bucket
 	db, err := bbolt.Open(file.Name(), 0600, options)

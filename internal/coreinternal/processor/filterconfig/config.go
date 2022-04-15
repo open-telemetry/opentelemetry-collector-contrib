@@ -90,10 +90,9 @@ type MatchProperties struct {
 	// This is an optional field.
 	SpanNames []string `mapstructure:"span_names"`
 
-	// LogNames is a list of strings that the LogRecord's name field must match
+	// LogBodies is a list of strings that the LogRecord's body field must match
 	// against.
-	// Deprecated: the Name field is removed from the log data model.
-	LogNames []string `mapstructure:"log_names"`
+	LogBodies []string `mapstructure:"log_bodies"`
 
 	// MetricNames is a list of strings to match metric name against.
 	// A match occurs if metric name matches at least one item in the list.
@@ -119,8 +118,8 @@ type MatchProperties struct {
 
 // ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
-	if len(mp.LogNames) > 0 {
-		return errors.New("log_names should not be specified for trace spans")
+	if len(mp.LogBodies) > 0 {
+		return errors.New("log_bodies should not be specified for trace spans")
 	}
 
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
@@ -137,8 +136,8 @@ func (mp *MatchProperties) ValidateForLogs() error {
 		return errors.New("neither services nor span_names should be specified for log records")
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
-		return errors.New(`at least one of "attributes", "libraries" or "resources" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 {
+		return errors.New(`at least one of "attributes", "libraries", "resources" or "log_bodies" field must be specified`)
 	}
 
 	return nil

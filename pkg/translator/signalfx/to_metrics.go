@@ -18,15 +18,16 @@ import (
 	"fmt"
 
 	"github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
 
-// ToMetrics converts SignalFx proto data points to pdata.Metrics.
-func ToMetrics(sfxDataPoints []*model.DataPoint) (pdata.Metrics, error) {
+// ToMetrics converts SignalFx proto data points to pmetric.Metrics.
+func ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {
 	// TODO: not optimized at all, basically regenerating everything for each
 	// 	data point.
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()
 
@@ -45,7 +46,7 @@ func ToMetrics(sfxDataPoints []*model.DataPoint) (pdata.Metrics, error) {
 	return md, err
 }
 
-func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pdata.MetricSlice) error {
+func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice) error {
 	// Combine metric type with the actual data point type
 	sfxMetricType := sfxDataPoint.GetMetricType()
 	sfxDatum := sfxDataPoint.Value
@@ -53,25 +54,25 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pdata.MetricSlice) e
 		return fmt.Errorf("nil datum value for data-point in metric %q", sfxDataPoint.GetMetric())
 	}
 
-	var m pdata.Metric
+	var m pmetric.Metric
 	switch sfxMetricType {
 	case model.MetricType_GAUGE:
 		m = ms.AppendEmpty()
 		// Numerical: Periodic, instantaneous measurement of some state.
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
 
 	case model.MetricType_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+		m.SetDataType(pmetric.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
 	case model.MetricType_CUMULATIVE_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		m.SetDataType(pmetric.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
@@ -82,7 +83,7 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pdata.MetricSlice) e
 	return nil
 }
 
-func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pdata.NumberDataPointSlice) {
+func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pmetric.NumberDataPointSlice) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(toTimestamp(sfxDataPoint.GetTimestamp()))
 	switch {
@@ -96,7 +97,7 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pdata.NumberDataPoin
 
 func fillInAttributes(
 	dimensions []*model.Dimension,
-	attributes pdata.Map,
+	attributes pcommon.Map,
 ) {
 	attributes.Clear()
 	attributes.EnsureCapacity(len(dimensions))

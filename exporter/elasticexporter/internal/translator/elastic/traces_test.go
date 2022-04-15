@@ -24,7 +24,8 @@ import (
 	"go.elastic.co/apm/model"
 	"go.elastic.co/apm/transport/transporttest"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
@@ -32,7 +33,7 @@ import (
 func TestEncodeSpan(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+	elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
 
 	traceID := model.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	rootTransactionID := model.SpanID{1, 1, 1, 1, 1, 1, 1, 1}
@@ -42,40 +43,40 @@ func TestEncodeSpan(t *testing.T) {
 	startTime := time.Unix(123, 0).UTC()
 	endTime := startTime.Add(time.Millisecond * 5)
 
-	rootSpan := pdata.NewSpan()
-	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID))
+	rootSpan := ptrace.NewSpan()
+	rootSpan.SetSpanID(pcommon.NewSpanID(rootTransactionID))
 	rootSpan.SetName("root_span")
 	rootSpan.Attributes().InsertString("string.attr", "string_value")
 	rootSpan.Attributes().InsertInt("int.attr", 123)
 	rootSpan.Attributes().InsertDouble("double.attr", 123.456)
 	rootSpan.Attributes().InsertBool("bool.attr", true)
 
-	clientSpan := pdata.NewSpan()
-	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID))
-	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID))
-	clientSpan.SetKind(pdata.SpanKindClient)
+	clientSpan := ptrace.NewSpan()
+	clientSpan.SetSpanID(pcommon.NewSpanID(clientSpanID))
+	clientSpan.SetParentSpanID(pcommon.NewSpanID(rootTransactionID))
+	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpan.SetName("client_span")
-	clientSpan.Status().SetCode(pdata.StatusCodeError)
+	clientSpan.Status().SetCode(ptrace.StatusCodeError)
 	clientSpan.Attributes().InsertString("string.attr", "string_value")
 	clientSpan.Attributes().InsertInt("int.attr", 123)
 	clientSpan.Attributes().InsertDouble("double.attr", 123.456)
 	clientSpan.Attributes().InsertBool("bool.attr", true)
 
-	serverSpan := pdata.NewSpan()
-	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID))
-	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID))
-	serverSpan.SetKind(pdata.SpanKindServer)
+	serverSpan := ptrace.NewSpan()
+	serverSpan.SetSpanID(pcommon.NewSpanID(serverTransactionID))
+	serverSpan.SetParentSpanID(pcommon.NewSpanID(clientSpanID))
+	serverSpan.SetKind(ptrace.SpanKindServer)
 	serverSpan.SetName("server_span")
-	serverSpan.Status().SetCode(pdata.StatusCodeOk)
+	serverSpan.Status().SetCode(ptrace.StatusCodeOk)
 
-	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
-		span.SetTraceID(pdata.NewTraceID(traceID))
-		span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-		span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	for _, span := range []ptrace.Span{rootSpan, clientSpan, serverSpan} {
+		span.SetTraceID(pcommon.NewTraceID(traceID))
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 	}
 
-	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
-		err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), pdata.NewResource(), &w)
+	for _, span := range []ptrace.Span{rootSpan, clientSpan, serverSpan} {
+		err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
 		require.NoError(t, err)
 	}
 	sendStream(t, &w, &recorder)
@@ -145,23 +146,23 @@ func TestEncodeSpan(t *testing.T) {
 }
 
 func TestEncodeSpanStatus(t *testing.T) {
-	testStatusCode := func(t *testing.T, statusCode pdata.StatusCode, expectedResult, expectedOutcome string) {
+	testStatusCode := func(t *testing.T, statusCode ptrace.StatusCode, expectedResult, expectedOutcome string) {
 		t.Helper()
 
 		var w fastjson.Writer
 		var recorder transporttest.RecorderTransport
-		elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+		elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
 
-		span := pdata.NewSpan()
-		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
-		span.SetSpanID(pdata.NewSpanID([8]byte{1}))
+		span := ptrace.NewSpan()
+		span.SetTraceID(pcommon.NewTraceID([16]byte{1}))
+		span.SetSpanID(pcommon.NewSpanID([8]byte{1}))
 		span.SetName("span")
 
 		if statusCode >= 0 {
 			span.Status().SetCode(statusCode)
 		}
 
-		err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), pdata.NewResource(), &w)
+		err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
 		require.NoError(t, err)
 		sendStream(t, &w, &recorder)
 		payloads := recorder.Payloads()
@@ -171,19 +172,19 @@ func TestEncodeSpanStatus(t *testing.T) {
 	}
 
 	testStatusCode(t, -1, "", "")
-	testStatusCode(t, pdata.StatusCodeUnset, "", "")
-	testStatusCode(t, pdata.StatusCodeOk, "OK", "success")
-	testStatusCode(t, pdata.StatusCodeError, "Error", "failure")
+	testStatusCode(t, ptrace.StatusCodeUnset, "", "")
+	testStatusCode(t, ptrace.StatusCodeOk, "OK", "success")
+	testStatusCode(t, ptrace.StatusCodeError, "Error", "failure")
 }
 
 func TestEncodeSpanTruncation(t *testing.T) {
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName(strings.Repeat("x", 1300))
 
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), pdata.NewResource(), &w)
+	elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
+	err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
 	require.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -489,14 +490,14 @@ func TestInstrumentationLibrary(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("root_span")
 
-	library := pdata.NewInstrumentationScope()
+	library := pcommon.NewInstrumentationScope()
 	library.SetName("library-name")
 	library.SetVersion("1.2.3")
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	elastic.EncodeResourceMetadata(resource, &w)
 	err := elastic.EncodeSpan(span, library, resource, &w)
 	assert.NoError(t, err)
@@ -518,12 +519,12 @@ func transactionWithAttributes(t *testing.T, attrs map[string]interface{}) model
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
 
-	span := pdata.NewSpan()
-	pdata.NewMapFromRaw(attrs).CopyTo(span.Attributes())
+	span := ptrace.NewSpan()
+	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), resource, &w)
+	err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -536,13 +537,13 @@ func spanWithAttributes(t *testing.T, attrs map[string]interface{}) model.Span {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
 
-	span := pdata.NewSpan()
-	span.SetParentSpanID(pdata.NewSpanID([8]byte{1}))
-	pdata.NewMapFromRaw(attrs).CopyTo(span.Attributes())
+	span := ptrace.NewSpan()
+	span.SetParentSpanID(pcommon.NewSpanID([8]byte{1}))
+	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), resource, &w)
+	err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 

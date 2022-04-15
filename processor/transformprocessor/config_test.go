@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func TestLoadingConfig(t *testing.T) {
@@ -46,7 +46,7 @@ func TestLoadingConfig(t *testing.T) {
 				`keep_keys(attributes, "http.method", "http.path")`,
 			},
 
-			functions: traces.DefaultFunctions(),
+			functions: common.DefaultFunctions(),
 		},
 	})
 }

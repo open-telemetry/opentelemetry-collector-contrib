@@ -280,7 +280,7 @@ func Test_parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
-			parsed, err := Parse(tt.query)
+			parsed, err := parseQuery(tt.query)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, parsed)
 		})
@@ -297,7 +297,7 @@ func Test_parse_failure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
-			_, err := Parse(tt)
+			_, err := parseQuery(tt)
 			assert.Error(t, err)
 		})
 	}

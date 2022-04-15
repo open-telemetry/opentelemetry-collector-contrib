@@ -20,7 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 )
@@ -86,7 +87,7 @@ func TestMetricsDataPoint_CopyTo(t *testing.T) {
 	databaseID := databaseID()
 
 	for _, metricValue := range metricValues {
-		dataPoint := pdata.NewNumberDataPoint()
+		dataPoint := pmetric.NewNumberDataPoint()
 		metricsDataPoint := &MetricsDataPoint{
 			metricName:  metricName,
 			timestamp:   timestamp,
@@ -99,7 +100,7 @@ func TestMetricsDataPoint_CopyTo(t *testing.T) {
 
 		assertMetricValue(t, metricValue, dataPoint)
 
-		assert.Equal(t, pdata.NewTimestampFromTime(timestamp), dataPoint.Timestamp())
+		assert.Equal(t, pcommon.NewTimestampFromTime(timestamp), dataPoint.Timestamp())
 		// Adding +3 here because we'll always have 3 labels added for each metric: project_id, instance_id, database
 		assert.Equal(t, 3+len(labelValues), dataPoint.Attributes().Len())
 
@@ -152,8 +153,8 @@ func allPossibleLabelValues() []LabelValue {
 	}
 }
 
-func allPossibleMetricValues(metricDataType pdata.MetricDataType) []MetricValue {
-	dataType := NewMetricDataType(metricDataType, pdata.MetricAggregationTemporalityDelta, true)
+func allPossibleMetricValues(metricDataType pmetric.MetricDataType) []MetricValue {
+	dataType := NewMetricDataType(metricDataType, pmetric.MetricAggregationTemporalityDelta, true)
 	int64Metadata, _ := NewMetricValueMetadata("int64MetricName", "int64MetricColumnName", dataType,
 		metricUnit, IntValueType)
 	float64Metadata, _ := NewMetricValueMetadata("float64MetricName", "float64MetricColumnName", dataType,
@@ -170,19 +171,19 @@ func allPossibleMetricValues(metricDataType pdata.MetricDataType) []MetricValue 
 	}
 }
 
-func assertDefaultLabels(t *testing.T, attributesMap pdata.Map, databaseID *datasource.DatabaseID) {
+func assertDefaultLabels(t *testing.T, attributesMap pcommon.Map, databaseID *datasource.DatabaseID) {
 	assertStringLabelValue(t, attributesMap, projectIDLabelName, databaseID.ProjectID())
 	assertStringLabelValue(t, attributesMap, instanceIDLabelName, databaseID.InstanceID())
 	assertStringLabelValue(t, attributesMap, databaseLabelName, databaseID.DatabaseName())
 }
 
-func assertNonDefaultLabels(t *testing.T, attributesMap pdata.Map, labelValues []LabelValue) {
+func assertNonDefaultLabels(t *testing.T, attributesMap pcommon.Map, labelValues []LabelValue) {
 	for _, labelValue := range labelValues {
 		assertLabelValue(t, attributesMap, labelValue)
 	}
 }
 
-func assertLabelValue(t *testing.T, attributesMap pdata.Map, labelValue LabelValue) {
+func assertLabelValue(t *testing.T, attributesMap pcommon.Map, labelValue LabelValue) {
 	value, exists := attributesMap.Get(labelValue.Metadata().Name())
 
 	assert.True(t, exists)
@@ -198,14 +199,14 @@ func assertLabelValue(t *testing.T, attributesMap pdata.Map, labelValue LabelVal
 	}
 }
 
-func assertStringLabelValue(t *testing.T, attributesMap pdata.Map, labelName string, expectedValue interface{}) {
+func assertStringLabelValue(t *testing.T, attributesMap pcommon.Map, labelName string, expectedValue interface{}) {
 	value, exists := attributesMap.Get(labelName)
 
 	assert.True(t, exists)
 	assert.Equal(t, expectedValue, value.StringVal())
 }
 
-func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pdata.NumberDataPoint) {
+func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pmetric.NumberDataPoint) {
 	switch metricValue.(type) {
 	case int64MetricValue:
 		assert.Equal(t, metricValue.Value(), dataPoint.IntVal())
