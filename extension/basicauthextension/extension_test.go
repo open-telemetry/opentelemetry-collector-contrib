@@ -214,6 +214,20 @@ func TestBasicAuth_ServerInvalid(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestPerRPCAuth(t *testing.T) {
+	metadata := map[string]string{
+		"authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg=",
+	}
+
+	rpcAuth := &perRPCAuth{metadata: metadata}
+	md, err := rpcAuth.GetRequestMetadata(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, md, metadata)
+
+	ok := rpcAuth.RequireTransportSecurity()
+	assert.True(t, ok)
+}
+
 type mockRoundTripper struct{}
 
 func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -253,6 +267,20 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	resp, err := c.RoundTrip(&http.Request{Header: orgHeaders})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedHeaders, resp.Header)
+
+	credential, err := ext.PerRPCCredentials()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, credential)
+
+	md, err := credential.GetRequestMetadata(context.Background())
+	expectedMd := map[string]string{
+		"authorization": fmt.Sprintf("Basic %s", authCreds),
+	}
+	assert.Equal(t, md, expectedMd)
+	assert.NoError(t, err)
+	assert.True(t, credential.RequireTransportSecurity())
+	
 	assert.Nil(t, ext.Shutdown(context.Background()))
 }
 
@@ -281,6 +309,8 @@ func TestBasicAuth_ClientInValid(t *testing.T) {
 		base := &mockRoundTripper{}
 		_, err = ext.RoundTripper(base)
 		assert.Error(t, err)
-	})
 
+		_, err = ext.PerRPCCredentials()
+		assert.Error(t, err)
+	})
 }

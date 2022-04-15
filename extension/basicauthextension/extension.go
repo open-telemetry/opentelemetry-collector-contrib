@@ -56,6 +56,7 @@ func newClientAuthExtension(cfg *Config) (configauth.ClientAuthenticator, error)
 		configauth.WithClientStart(ba.clientStart),
 		configauth.WithClientShutdown(ba.shutdown),
 		configauth.WithClientRoundTripper(ba.RoundTripper),
+		configauth.WithPerRPCCredentials(ba.PerRPCCredentials),
 	), nil
 }
 
@@ -209,6 +210,20 @@ func (*authData) GetAttributeNames() []string {
 	return []string{"username", "raw"}
 }
 
+type perRPCAuth struct {
+	metadata map[string]string
+}
+
+// GetRequestMetadata returns the request metadata to be used with the RPC.
+func (p *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	return p.metadata, nil
+}
+
+// RequireTransportSecurity always returns true for this implementation.
+func (p *perRPCAuth) RequireTransportSecurity() bool {
+	return true
+}
+
 type basicAuthRoundTripper struct {
 	base     http.RoundTripper
 	authData *ClientAuthSettings
@@ -231,5 +246,13 @@ func (ba *basicAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
 }
 
 func (ba *basicAuth) PerRPCCredentials() (creds.PerRPCCredentials, error) {
-	return nil, nil
+	if strings.Contains(ba.clientAuth.Username, ":") {
+		return nil, errInvalidFormat
+	}
+	encoded := base64.StdEncoding.EncodeToString([]byte(ba.clientAuth.Username + ":" + ba.clientAuth.Password))
+	return &perRPCAuth{
+		metadata: map[string]string{
+			"authorization": encoded,
+		},
+	}, nil
 }
