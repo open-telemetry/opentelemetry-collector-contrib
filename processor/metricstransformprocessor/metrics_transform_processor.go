@@ -25,7 +25,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -210,11 +210,11 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
 	groupedMds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 
-	out := pdata.NewMetrics()
+	out := pmetric.NewMetrics()
 
 	for i := 0; i < rms.Len(); i++ {
 		node, resource, metrics := internaldata.ResourceMetricsToOC(rms.At(i))

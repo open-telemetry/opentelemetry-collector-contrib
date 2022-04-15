@@ -89,7 +89,7 @@ jobs:
       - name: Upload Test Results
         if: ${{ success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: stability-test-results
           path: stabilitytest_results.tar

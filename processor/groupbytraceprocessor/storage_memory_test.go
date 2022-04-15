@@ -19,19 +19,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestMemoryCreateAndGetTrace(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceIDs := []pdata.TraceID{
-		pdata.NewTraceID([16]byte{1, 2, 3, 4}),
-		pdata.NewTraceID([16]byte{2, 3, 4, 5}),
+	traceIDs := []pcommon.TraceID{
+		pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
+		pcommon.NewTraceID([16]byte{2, 3, 4, 5}),
 	}
 
-	baseTrace := pdata.NewTraces()
+	baseTrace := ptrace.NewTraces()
 	rss := baseTrace.ResourceSpans()
 	rs := rss.AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -46,7 +47,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	// verify
 	assert.Equal(t, 2, st.count())
 	for _, traceID := range traceIDs {
-		expected := []pdata.ResourceSpans{baseTrace.ResourceSpans().At(0)}
+		expected := []ptrace.ResourceSpans{baseTrace.ResourceSpans().At(0)}
 		expected[0].ScopeSpans().At(0).Spans().At(0).SetTraceID(traceID)
 
 		retrieved, err := st.get(traceID)
@@ -61,9 +62,9 @@ func TestMemoryDeleteTrace(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
-	trace := pdata.NewTraces()
+	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -77,7 +78,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 
 	// verify
 	require.NoError(t, err)
-	assert.Equal(t, []pdata.ResourceSpans{trace.ResourceSpans().At(0)}, deleted)
+	assert.Equal(t, []ptrace.ResourceSpans{trace.ResourceSpans().At(0)}, deleted)
 
 	retrieved, err := st.get(traceID)
 	require.NoError(t, err)
@@ -88,30 +89,30 @@ func TestMemoryAppendSpans(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
-	trace := pdata.NewTraces()
+	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
 
 	st.createOrAppend(traceID, trace)
 
-	secondTrace := pdata.NewTraces()
+	secondTrace := ptrace.NewTraces()
 	secondRss := secondTrace.ResourceSpans()
 	secondRs := secondRss.AppendEmpty()
 	secondIls := secondRs.ScopeSpans().AppendEmpty()
 	secondSpan := secondIls.Spans().AppendEmpty()
 	secondSpan.SetName("second-name")
 	secondSpan.SetTraceID(traceID)
-	secondSpan.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
+	secondSpan.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
 
-	expected := []pdata.ResourceSpans{
-		pdata.NewResourceSpans(),
-		pdata.NewResourceSpans(),
+	expected := []ptrace.ResourceSpans{
+		ptrace.NewResourceSpans(),
+		ptrace.NewResourceSpans(),
 	}
 	ils.CopyTo(expected[0].ScopeSpans().AppendEmpty())
 	secondIls.CopyTo(expected[1].ScopeSpans().AppendEmpty())
@@ -138,15 +139,15 @@ func TestMemoryAppendSpans(t *testing.T) {
 func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
-	trace := pdata.NewTraces()
+	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
 	span.SetName("should-not-be-changed")
 
 	// test

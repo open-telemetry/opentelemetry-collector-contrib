@@ -21,7 +21,8 @@ import (
 
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var staleNaNsPage1 = `
@@ -83,7 +84,7 @@ func TestStaleNaNs(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
 	verifyNumTotalScrapeResults(t, td, resourceMetrics)
 	metrics1 := resourceMetrics[0].ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
@@ -96,7 +97,7 @@ func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 	}
 }
 
-func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMetric *pdata.ResourceMetrics, startTimestamp *pdata.Timestamp, iteration int) {
+func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMetric *pmetric.ResourceMetrics, startTimestamp *pcommon.Timestamp, iteration int) {
 	// m1 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(resourceMetric))
 	wantAttributes := td.attributes // should want attribute be part of complete target or each scrape?
@@ -104,7 +105,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricDataTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -114,7 +115,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pdata.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricDataTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -134,7 +135,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricDataTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -147,7 +148,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricDataTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -163,7 +164,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 	doCompare(t, fmt.Sprintf("validScrape-scrape-%d", iteration), wantAttributes, resourceMetric, e1)
 }
 
-func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMetric *pdata.ResourceMetrics, startTimestamp *pdata.Timestamp, iteration int) {
+func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMetric *pmetric.ResourceMetrics, startTimestamp *pcommon.Timestamp, iteration int) {
 	// m1 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(resourceMetric))
 	wantAttributes := td.attributes
@@ -174,7 +175,7 @@ func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMe
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricDataTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -184,7 +185,7 @@ func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMe
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pdata.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricDataTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -202,7 +203,7 @@ func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMe
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricDataTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -213,7 +214,7 @@ func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMe
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricDataTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -261,7 +262,7 @@ func TestNormalNaNs(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -274,7 +275,7 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resou
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricDataTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -284,7 +285,7 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resou
 				},
 			}),
 		assertMetricPresent("redis_connected_clients",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricDataTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -295,7 +296,7 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resou
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricDataTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -345,7 +346,7 @@ func TestInfValues(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -358,7 +359,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricDataTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -368,7 +369,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 				},
 			}),
 		assertMetricPresent("redis_connected_clients",
-			compareMetricType(pdata.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricDataTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -379,7 +380,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pdata.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricDataTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -391,7 +392,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pdata.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricDataTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{

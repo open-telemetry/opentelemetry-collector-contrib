@@ -24,14 +24,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
 type DetectorType string
 
 type Detector interface {
-	Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error)
+	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
 type DetectorConfig interface{}
@@ -102,7 +102,7 @@ type ResourceProvider struct {
 }
 
 type resourceResult struct {
-	resource  pdata.Resource
+	resource  pcommon.Resource
 	schemaURL string
 	err       error
 }
@@ -116,7 +116,7 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesTo
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pdata.Resource, schemaURL string, err error) {
+func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
 	p.once.Do(func() {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
@@ -130,7 +130,7 @@ func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resour
 func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource = &resourceResult{}
 
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	mergedSchemaURL := ""
 
 	p.logger.Info("began detecting resource information")
@@ -156,35 +156,35 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource.schemaURL = mergedSchemaURL
 }
 
-func AttributesToMap(am pdata.Map) map[string]interface{} {
+func AttributesToMap(am pcommon.Map) map[string]interface{} {
 	mp := make(map[string]interface{}, am.Len())
-	am.Range(func(k string, v pdata.Value) bool {
+	am.Range(func(k string, v pcommon.Value) bool {
 		mp[k] = UnwrapAttribute(v)
 		return true
 	})
 	return mp
 }
 
-func UnwrapAttribute(v pdata.Value) interface{} {
+func UnwrapAttribute(v pcommon.Value) interface{} {
 	switch v.Type() {
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return v.BoolVal()
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return v.IntVal()
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return v.DoubleVal()
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return v.StringVal()
-	case pdata.ValueTypeSlice:
+	case pcommon.ValueTypeSlice:
 		return getSerializableArray(v.SliceVal())
-	case pdata.ValueTypeMap:
+	case pcommon.ValueTypeMap:
 		return AttributesToMap(v.MapVal())
 	default:
 		return nil
 	}
 }
 
-func getSerializableArray(inArr pdata.Slice) []interface{} {
+func getSerializableArray(inArr pcommon.Slice) []interface{} {
 	var outArr []interface{}
 	for i := 0; i < inArr.Len(); i++ {
 		outArr = append(outArr, UnwrapAttribute(inArr.At(i)))
@@ -208,10 +208,10 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 	return currentSchemaURL
 }
 
-func filterAttributes(am pdata.Map, attributesToKeep map[string]struct{}) []string {
+func filterAttributes(am pcommon.Map, attributesToKeep map[string]struct{}) []string {
 	if len(attributesToKeep) > 0 {
 		droppedAttributes := make([]string, 0)
-		am.RemoveIf(func(k string, v pdata.Value) bool {
+		am.RemoveIf(func(k string, v pcommon.Value) bool {
 			_, keep := attributesToKeep[k]
 			if !keep {
 				droppedAttributes = append(droppedAttributes, k)
@@ -223,13 +223,13 @@ func filterAttributes(am pdata.Map, attributesToKeep map[string]struct{}) []stri
 	return nil
 }
 
-func MergeResource(to, from pdata.Resource, overrideTo bool) {
+func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 	if IsEmptyResource(from) {
 		return
 	}
 
 	toAttr := to.Attributes()
-	from.Attributes().Range(func(k string, v pdata.Value) bool {
+	from.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if overrideTo {
 			toAttr.Upsert(k, v)
 		} else {
@@ -239,7 +239,7 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 	})
 }
 
-func IsEmptyResource(res pdata.Resource) bool {
+func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
 }
 

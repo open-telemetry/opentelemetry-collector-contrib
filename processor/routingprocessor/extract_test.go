@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -28,7 +28,7 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 	testcases := []struct {
 		name          string
 		ctxFunc       func() context.Context
-		tracesFunc    func() pdata.Traces
+		tracesFunc    func() ptrace.Traces
 		fromAttr      string
 		expectedValue string
 	}{
@@ -39,8 +39,8 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 					metadata.Pairs("X-Tenant", "acme"),
 				)
 			},
-			tracesFunc: func() pdata.Traces {
-				return pdata.NewTraces()
+			tracesFunc: func() ptrace.Traces {
+				return ptrace.NewTraces()
 			},
 			fromAttr:      "X-Tenant",
 			expectedValue: "acme",
@@ -50,8 +50,8 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 			ctxFunc: func() context.Context {
 				return context.Background()
 			},
-			tracesFunc: func() pdata.Traces {
-				return pdata.NewTraces()
+			tracesFunc: func() ptrace.Traces {
+				return ptrace.NewTraces()
 			},
 			fromAttr:      "X-Tenant",
 			expectedValue: "",
@@ -63,8 +63,8 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 					metadata.Pairs("X-Tenant", ""),
 				)
 			},
-			tracesFunc: func() pdata.Traces {
-				return pdata.NewTraces()
+			tracesFunc: func() ptrace.Traces {
+				return ptrace.NewTraces()
 			},
 			fromAttr:      "X-Tenant",
 			expectedValue: "",
@@ -76,8 +76,8 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 					metadata.Pairs("X-Tenant", "globex", "X-Tenant", "acme"),
 				)
 			},
-			tracesFunc: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			tracesFunc: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				traces.ResourceSpans().AppendEmpty()
 				traces.ResourceSpans().At(0).Resource().
 					Attributes().InsertString("k8s.namespace.name", "namespace-1")
@@ -104,7 +104,7 @@ func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 	testcases := []struct {
 		name          string
 		ctxFunc       func() context.Context
-		tracesFunc    func() pdata.Traces
+		tracesFunc    func() ptrace.Traces
 		fromAttr      string
 		expectedValue string
 	}{
@@ -113,8 +113,8 @@ func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 			ctxFunc: func() context.Context {
 				return context.Background()
 			},
-			tracesFunc: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			tracesFunc: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				rSpans := traces.ResourceSpans().AppendEmpty()
 				rSpans.Resource().Attributes().
 					InsertString("k8s.namespace.name", "namespace-1")
@@ -130,8 +130,8 @@ func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 					metadata.Pairs("k8s.namespace.name", "namespace-1-from-context"),
 				)
 			},
-			tracesFunc: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			tracesFunc: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				rSpans := traces.ResourceSpans().AppendEmpty()
 				rSpans.Resource().Attributes().
 					InsertString("k8s.namespace.name", "namespace-1")

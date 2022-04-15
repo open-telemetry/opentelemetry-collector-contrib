@@ -29,7 +29,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -50,7 +50,7 @@ type client struct {
 
 func (c *client) sendLogs(
 	ctx context.Context,
-	ld pdata.Logs,
+	ld plog.Logs,
 ) error {
 	c.wg.Add(1)
 	defer c.wg.Done()

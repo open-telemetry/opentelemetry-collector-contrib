@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -52,8 +52,8 @@ func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (in
 	return &Detector{}, nil
 }
 
-func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
+func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))
 	if labels == "" {
@@ -76,7 +76,7 @@ func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL s
 // string. Captures the trimmed key & value parts, and ignores any superfluous spaces.
 var labelRegex = regexp.MustCompile(`\s*([[:ascii:]]{1,256}?)\s*=\s*([[:ascii:]]{0,256}?)\s*(?:,|$)`)
 
-func initializeAttributeMap(am pdata.Map, s string) error {
+func initializeAttributeMap(am pcommon.Map, s string) error {
 	matches := labelRegex.FindAllStringSubmatchIndex(s, -1)
 
 	for len(matches) == 0 {

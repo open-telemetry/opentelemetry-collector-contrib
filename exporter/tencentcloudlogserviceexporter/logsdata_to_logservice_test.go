@@ -23,8 +23,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 type logKeyValuePair struct {
@@ -38,19 +39,19 @@ func (kv logKeyValuePairs) Len() int           { return len(kv) }
 func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
-func getComplexAttributeValueMap() pdata.Value {
-	mapVal := pdata.NewValueMap()
+func getComplexAttributeValueMap() pcommon.Value {
+	mapVal := pcommon.NewValueMap()
 	mapValReal := mapVal.MapVal()
 	mapValReal.InsertBool("result", true)
 	mapValReal.InsertString("status", "ok")
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
-	arrayVal := pdata.NewValueSlice()
+	arrayVal := pcommon.NewValueSlice()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
-	subMapVal := pdata.NewValueMap()
+	subMapVal := pcommon.NewValueMap()
 	subMapVal.MapVal().InsertString("data", "hello world")
 	mapValReal.Insert("map", subMapVal)
 
@@ -58,8 +59,8 @@ func getComplexAttributeValueMap() pdata.Value {
 	return mapVal
 }
 
-func createLogData(numberOfLogs int) pdata.Logs {
-	logs := pdata.NewLogs()
+func createLogData(numberOfLogs int) plog.Logs {
+	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
@@ -70,7 +71,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	sl.Scope().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
+		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		switch i {
 		case 0:
@@ -88,7 +89,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pdata.NewValueSlice()
+			arrayVal := pcommon.NewValueSlice()
 			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")

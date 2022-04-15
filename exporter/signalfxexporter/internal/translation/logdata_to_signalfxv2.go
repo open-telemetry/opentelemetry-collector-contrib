@@ -18,7 +18,8 @@ import (
 	"fmt"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -26,8 +27,8 @@ import (
 
 func LogRecordSliceToSignalFxV2(
 	logger *zap.Logger,
-	logs pdata.LogRecordSlice,
-	resourceAttrs pdata.Map,
+	logs plog.LogRecordSlice,
+	resourceAttrs pcommon.Map,
 ) ([]*sfxpb.Event, int) {
 	events := make([]*sfxpb.Event, 0, logs.Len())
 	numDroppedLogRecords := 0
@@ -45,7 +46,7 @@ func LogRecordSliceToSignalFxV2(
 	return events, numDroppedLogRecords
 }
 
-func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.Map, logger *zap.Logger) (*sfxpb.Event, bool) {
+func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.Logger) (*sfxpb.Event, bool) {
 	attrs := lr.Attributes()
 
 	categoryVal, ok := attrs.Get(splunk.SFxEventCategoryKey)
@@ -55,13 +56,13 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.Map, logger *zap.L
 
 	var event sfxpb.Event
 
-	if categoryVal.Type() == pdata.ValueTypeInt {
+	if categoryVal.Type() == pcommon.ValueTypeInt {
 		asCat := sfxpb.EventCategory(categoryVal.IntVal())
 		event.Category = &asCat
 	}
 
-	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pdata.ValueTypeMap {
-		mapVal.MapVal().Range(func(k string, v pdata.Value) bool {
+	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pcommon.ValueTypeMap {
+		mapVal.MapVal().Range(func(k string, v pcommon.Value) bool {
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
 				logger.Debug("Failed to convert log record property value to SignalFx property value", zap.Error(err), zap.String("key", k))
@@ -78,8 +79,8 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.Map, logger *zap.L
 
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
-	resourceAttrsForDimensions := pdata.NewMap()
-	resourceAttrs.Range(func(k string, v pdata.Value) bool {
+	resourceAttrsForDimensions := pcommon.NewMap()
+	resourceAttrs.Range(func(k string, v pcommon.Value) bool {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {
 			resourceAttrsForDimensions.Insert(k, v)
@@ -87,7 +88,7 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.Map, logger *zap.L
 		return true
 	})
 
-	addDimension := func(k string, v pdata.Value) bool {
+	addDimension := func(k string, v pcommon.Value) bool {
 		// Skip internal attributes
 		switch k {
 		case splunk.SFxEventCategoryKey:
@@ -95,13 +96,13 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.Map, logger *zap.L
 		case splunk.SFxEventPropertiesKey:
 			return true
 		case splunk.SFxEventType:
-			if v.Type() == pdata.ValueTypeString {
+			if v.Type() == pcommon.ValueTypeString {
 				event.EventType = v.StringVal()
 			}
 			return true
 		}
 
-		if v.Type() != pdata.ValueTypeString {
+		if v.Type() != pcommon.ValueTypeString {
 			logger.Debug("Failed to convert log record or resource attribute value to SignalFx property value, key is not a string", zap.String("key", k))
 			return true
 		}
@@ -123,19 +124,19 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.Map, logger *zap.L
 	return &event, true
 }
 
-func attributeValToPropertyVal(v pdata.Value) (*sfxpb.PropertyValue, error) {
+func attributeValToPropertyVal(v pcommon.Value) (*sfxpb.PropertyValue, error) {
 	var val sfxpb.PropertyValue
 	switch v.Type() {
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		asInt := v.IntVal()
 		val.IntValue = &asInt
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		asBool := v.BoolVal()
 		val.BoolValue = &asBool
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		asDouble := v.DoubleVal()
 		val.DoubleValue = &asDouble
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		asString := v.StringVal()
 		val.StrValue = &asString
 	default:

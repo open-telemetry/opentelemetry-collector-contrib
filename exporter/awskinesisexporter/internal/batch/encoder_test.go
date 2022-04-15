@@ -15,40 +15,43 @@
 package batch_test
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func NewTestTraces(spanCount int) pdata.Traces {
-	traces := pdata.NewTraces()
+func NewTestTraces(spanCount int) ptrace.Traces {
+	traces := ptrace.NewTraces()
 
 	for i := 0; i < spanCount; i++ {
 		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("foo")
-		span.SetStartTimestamp(pdata.Timestamp(10))
-		span.SetEndTimestamp(pdata.Timestamp(20))
-		span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-		span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+		span.SetStartTimestamp(pcommon.Timestamp(10))
+		span.SetEndTimestamp(pcommon.Timestamp(20))
+		span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+		span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	}
 
 	return traces
 }
 
-func NewTestMetrics(metricCount int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func NewTestMetrics(metricCount int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 
 	for i := 0; i < metricCount; i++ {
 		metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("bar")
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		metric.Gauge().DataPoints().AppendEmpty().SetIntVal(int64(i))
 	}
 
 	return metrics
 }
 
-func NewTestLogs(logCount int) pdata.Logs {
-	logs := pdata.NewLogs()
+func NewTestLogs(logCount int) plog.Logs {
+	logs := plog.NewLogs()
 
 	for i := 0; i < logCount; i++ {
 		log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()

@@ -26,8 +26,8 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -46,7 +46,7 @@ func TestSyncMetadata(t *testing.T) {
 		hostStat           host.InfoStat
 		hostStatErr        error
 		pushFail           bool
-		metricsData        pdata.Metrics
+		metricsData        pmetric.Metrics
 		wantMetadataUpdate []*metadata.MetadataUpdate
 		wantLogs           []string
 	}{
@@ -238,7 +238,7 @@ func TestSyncMetadata(t *testing.T) {
 		{
 			name:               "empty_metrics_data",
 			pushFail:           false,
-			metricsData:        pdata.NewMetrics(),
+			metricsData:        pmetric.NewMetrics(),
 			wantMetadataUpdate: nil,
 			wantLogs:           []string{},
 		},
@@ -305,8 +305,8 @@ func (dc *fakeDimClient) getMetadataUpdates() [][]*metadata.MetadataUpdate {
 	return dc.metadataUpdates
 }
 
-func generateSampleMetricsData(attrs map[string]string) pdata.Metrics {
-	m := pdata.NewMetrics()
+func generateSampleMetricsData(attrs map[string]string) pmetric.Metrics {
+	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics()
 	res := rm.AppendEmpty().Resource()
 	for k, v := range attrs {

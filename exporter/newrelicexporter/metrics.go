@@ -23,7 +23,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -96,8 +97,8 @@ func buildView(tagKeys []tag.Key, m stats.Measure, a *view.Aggregation) *view.Vi
 }
 
 type metricStatsKey struct {
-	MetricType        pdata.MetricDataType
-	MetricTemporality pdata.MetricAggregationTemporality
+	MetricType        pmetric.MetricDataType
+	MetricTemporality pmetric.MetricAggregationTemporality
 }
 
 type spanStatsKey struct {
@@ -130,7 +131,7 @@ func (al attributeLocation) String() string {
 
 type attributeStatsKey struct {
 	location      attributeLocation
-	attributeType pdata.ValueType
+	attributeType pcommon.ValueType
 }
 
 type exportMetadata struct {

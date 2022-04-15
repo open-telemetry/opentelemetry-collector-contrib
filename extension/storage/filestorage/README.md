@@ -1,6 +1,6 @@
 # File Storage
 
-> :construction: This extension is in alpha. Configuration and functionality are subject to change.
+> :construction: This receiver is currently in **BETA**.
 
 The File Storage extension can persist state to the local file system. 
 

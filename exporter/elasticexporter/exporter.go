@@ -29,7 +29,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -44,7 +45,7 @@ func newElasticTracesExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
 	}
-	return exporterhelper.NewTracesExporter(cfg, set, func(ctx context.Context, traces pdata.Traces) error {
+	return exporterhelper.NewTracesExporter(cfg, set, func(ctx context.Context, traces ptrace.Traces) error {
 		var errs error
 		resourceSpansSlice := traces.ResourceSpans()
 		for i := 0; i < resourceSpansSlice.Len(); i++ {
@@ -64,7 +65,7 @@ func newElasticMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %v", err)
 	}
-	return exporterhelper.NewMetricsExporter(cfg, set, func(ctx context.Context, input pdata.Metrics) error {
+	return exporterhelper.NewMetricsExporter(cfg, set, func(ctx context.Context, input pmetric.Metrics) error {
 		var errs error
 		resourceMetricsSlice := input.ResourceMetrics()
 		for i := 0; i < resourceMetricsSlice.Len(); i++ {
@@ -122,7 +123,7 @@ func newTransport(config *Config) (transport.Transport, error) {
 
 // ExportResourceSpans exports OTLP trace data to Elastic APM Server,
 // returning the number of spans that were dropped along with any errors.
-func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.ResourceSpans) (int, error) {
+func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs ptrace.ResourceSpans) (int, error) {
 	var w fastjson.Writer
 	elastic.EncodeResourceMetadata(rs.Resource(), &w)
 	var errs []error
@@ -150,7 +151,7 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 
 // ExportResourceMetrics exports OTLP metrics to Elastic APM Server,
 // returning the number of metrics that were dropped along with any errors.
-func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.ResourceMetrics) (int, error) {
+func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pmetric.ResourceMetrics) (int, error) {
 	var w fastjson.Writer
 	elastic.EncodeResourceMetadata(rm.Resource(), &w)
 	var errs error
