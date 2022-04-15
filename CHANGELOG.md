@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1004])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1004)
 - `opentelemetry-instrumentation-psycopg2` extended the sql commenter support of dbapi into psycopg2
   ([#940](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/940))
+- `opentelemetry-instrumentation-falcon` Add support for falcon==1.4.1
+  ([#1000])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1000)
 - `opentelemetry-instrumentation-falcon` Falcon: Capture custom request/response headers in span attributes
   ([#1003])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1003)
 - `opentelemetry-instrumentation-elasticsearch` no longer creates unique span names by including search target, replaces them with `<target>` and puts the value in attribute `elasticsearch.target`

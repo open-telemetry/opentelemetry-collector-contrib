@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 from unittest.mock import Mock, patch
 
+import pytest
+from falcon import __version__ as _falcon_verison
 from falcon import testing
+from packaging import version as package_version
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.falcon import FalconInstrumentor
@@ -84,9 +87,7 @@ class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
         self._test_method("HEAD")
 
     def _test_method(self, method):
-        self.client().simulate_request(
-            method=method, path="/hello", remote_addr="127.0.0.1"
-        )
+        self.client().simulate_request(method=method, path="/hello")
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
@@ -105,17 +106,23 @@ class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
                 SpanAttributes.NET_HOST_PORT: 80,
                 SpanAttributes.HTTP_HOST: "falconframework.org",
                 SpanAttributes.HTTP_TARGET: "/",
-                SpanAttributes.NET_PEER_IP: "127.0.0.1",
                 SpanAttributes.NET_PEER_PORT: "65133",
                 SpanAttributes.HTTP_FLAVOR: "1.1",
                 "falcon.resource": "HelloWorldResource",
                 SpanAttributes.HTTP_STATUS_CODE: 201,
             },
         )
+        # In falcon<3, NET_PEER_IP is always set by default to 127.0.0.1
+        # In falcon>3, NET_PEER_IP is not set to anything by default to
+        # https://github.com/falconry/falcon/blob/5233d0abed977d9dab78ebadf305f5abe2eef07c/falcon/testing/helpers.py#L1168-L1172 # noqa
+        if SpanAttributes.NET_PEER_IP in span.attributes:
+            self.assertEqual(
+                span.attributes[SpanAttributes.NET_PEER_IP], "127.0.0.1"
+            )
         self.memory_exporter.clear()
 
     def test_404(self):
-        self.client().simulate_get("/does-not-exist", remote_addr="127.0.0.1")
+        self.client().simulate_get("/does-not-exist")
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
@@ -130,16 +137,22 @@ class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
                 SpanAttributes.NET_HOST_PORT: 80,
                 SpanAttributes.HTTP_HOST: "falconframework.org",
                 SpanAttributes.HTTP_TARGET: "/",
-                SpanAttributes.NET_PEER_IP: "127.0.0.1",
                 SpanAttributes.NET_PEER_PORT: "65133",
                 SpanAttributes.HTTP_FLAVOR: "1.1",
                 SpanAttributes.HTTP_STATUS_CODE: 404,
             },
         )
+        # In falcon<3, NET_PEER_IP is always set by default to 127.0.0.1
+        # In falcon>3, NET_PEER_IP is not set to anything by default to
+        # https://github.com/falconry/falcon/blob/5233d0abed977d9dab78ebadf305f5abe2eef07c/falcon/testing/helpers.py#L1168-L1172 # noqa
+        if SpanAttributes.NET_PEER_IP in span.attributes:
+            self.assertEqual(
+                span.attributes[SpanAttributes.NET_PEER_IP], "127.0.0.1"
+            )
 
     def test_500(self):
         try:
-            self.client().simulate_get("/error", remote_addr="127.0.0.1")
+            self.client().simulate_get("/error")
         except NameError:
             pass
         spans = self.memory_exporter.get_finished_spans()
@@ -161,12 +174,18 @@ class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
                 SpanAttributes.NET_HOST_PORT: 80,
                 SpanAttributes.HTTP_HOST: "falconframework.org",
                 SpanAttributes.HTTP_TARGET: "/",
-                SpanAttributes.NET_PEER_IP: "127.0.0.1",
                 SpanAttributes.NET_PEER_PORT: "65133",
                 SpanAttributes.HTTP_FLAVOR: "1.1",
                 SpanAttributes.HTTP_STATUS_CODE: 500,
             },
         )
+        # In falcon<3, NET_PEER_IP is always set by default to 127.0.0.1
+        # In falcon>3, NET_PEER_IP is not set to anything by default to
+        # https://github.com/falconry/falcon/blob/5233d0abed977d9dab78ebadf305f5abe2eef07c/falcon/testing/helpers.py#L1168-L1172 # noqa
+        if SpanAttributes.NET_PEER_IP in span.attributes:
+            self.assertEqual(
+                span.attributes[SpanAttributes.NET_PEER_IP], "127.0.0.1"
+            )
 
     def test_uninstrument(self):
         self.client().simulate_get(path="/hello")
@@ -191,7 +210,7 @@ class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
         self.assertEqual(len(span_list), 1)
 
     def test_traced_request_attributes(self):
-        self.client().simulate_get(path="/hello?q=abc")
+        self.client().simulate_get(path="/hello", query_string="q=abc")
         span = self.memory_exporter.get_finished_spans()[0]
         self.assertIn("query_string", span.attributes)
         self.assertEqual(span.attributes["query_string"], "q=abc")
@@ -201,7 +220,9 @@ class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
         orig = get_global_response_propagator()
         set_global_response_propagator(TraceResponsePropagator())
 
-        response = self.client().simulate_get(path="/hello?q=abc")
+        response = self.client().simulate_get(
+            path="/hello", query_string="q=abc"
+        )
         self.assertTraceResponseHeaderMatchesSpan(
             response.headers, self.memory_exporter.get_finished_spans()[0]
         )
@@ -215,7 +236,7 @@ class TestFalconInstrumentation(TestFalconBase, WsgiTestBase):
         mock_tracer.start_span.return_value = mock_span
         with patch("opentelemetry.trace.get_tracer") as tracer:
             tracer.return_value = mock_tracer
-            self.client().simulate_get(path="/hello?q=abc")
+            self.client().simulate_get(path="/hello", query_string="q=abc")
             self.assertFalse(mock_span.is_recording())
             self.assertTrue(mock_span.is_recording.called)
             self.assertFalse(mock_span.set_attribute.called)
@@ -261,7 +282,7 @@ class TestFalconInstrumentationHooks(TestFalconBase):
         span.update_name("set from hook")
 
     def test_hooks(self):
-        self.client().simulate_get(path="/hello?q=abc")
+        self.client().simulate_get(path="/hello", query_string="q=abc")
         span = self.memory_exporter.get_finished_spans()[0]
 
         self.assertEqual(span.name, "set from hook")
@@ -343,6 +364,11 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
             for key, _ in not_expected.items():
                 self.assertNotIn(key, span.attributes)
 
+    @pytest.mark.skipif(
+        condition=package_version.parse(_falcon_verison)
+        < package_version.parse("2.0.0"),
+        reason="falcon<2 does not implement custom response headers",
+    )
     def test_custom_response_header_added_in_server_span(self):
         self.client().simulate_request(
             method="GET", path="/test_custom_response_headers"
@@ -366,6 +392,11 @@ class TestCustomRequestResponseHeaders(TestFalconBase):
         for key, _ in not_expected.items():
             self.assertNotIn(key, span.attributes)
 
+    @pytest.mark.skipif(
+        condition=package_version.parse(_falcon_verison)
+        < package_version.parse("2.0.0"),
+        reason="falcon<2 does not implement custom response headers",
+    )
     def test_custom_response_header_not_added_in_internal_span(self):
         tracer = trace.get_tracer(__name__)
         with tracer.start_as_current_span("test", kind=trace.SpanKind.SERVER):

@@ -146,6 +146,7 @@ from sys import exc_info
 from typing import Collection
 
 import falcon
+from packaging import version as package_version
 
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import context, trace
@@ -177,12 +178,19 @@ _ENVIRON_EXC = "opentelemetry-falcon.exc"
 
 _response_propagation_setter = FuncSetter(falcon.Response.append_header)
 
-if hasattr(falcon, "App"):
+_parsed_falcon_version = package_version.parse(falcon.__version__)
+if _parsed_falcon_version >= package_version.parse("3.0.0"):
     # Falcon 3
     _instrument_app = "App"
-else:
+    _falcon_version = 3
+elif _parsed_falcon_version >= package_version.parse("2.0.0"):
     # Falcon 2
     _instrument_app = "API"
+    _falcon_version = 2
+else:
+    # Falcon 1
+    _instrument_app = "API"
+    _falcon_version = 1
 
 
 class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
@@ -214,12 +222,30 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
         super().__init__(*args, **kwargs)
 
     def _handle_exception(
-        self, req, resp, ex, params
+        self, arg1, arg2, arg3, arg4
     ):  # pylint: disable=C0103
         # Falcon 3 does not execute middleware within the context of the exception
         # so we capture the exception here and save it into the env dict
+
+        # Translation layer for handling the changed arg position of "ex" in Falcon > 2 vs
+        # Falcon < 2
+        if _falcon_version == 1:
+            ex = arg1
+            req = arg2
+            resp = arg3
+            params = arg4
+        else:
+            req = arg1
+            resp = arg2
+            ex = arg3
+            params = arg4
+
         _, exc, _ = exc_info()
         req.env[_ENVIRON_EXC] = exc
+
+        if _falcon_version == 1:
+            return super()._handle_exception(ex, req, resp, params)
+
         return super()._handle_exception(req, resp, ex, params)
 
     def __call__(self, env, start_response):
@@ -311,7 +337,7 @@ class _TraceMiddleware:
 
     def process_response(
         self, req, resp, resource, req_succeeded=None
-    ):  # pylint:disable=R0201
+    ):  # pylint:disable=R0201,R0912
         span = req.env.get(_ENVIRON_SPAN_KEY)
 
         if not span or not span.is_recording():
@@ -348,9 +374,16 @@ class _TraceMiddleware:
                     description=reason,
                 )
             )
+
+            # Falcon 1 does not support response headers. So
+            # send an empty dict.
+            response_headers = {}
+            if _falcon_version > 1:
+                response_headers = resp.headers
+
             if span.is_recording() and span.kind == trace.SpanKind.SERVER:
                 otel_wsgi.add_custom_response_headers(
-                    span, resp.headers.items()
+                    span, response_headers.items()
                 )
         except ValueError:
             pass

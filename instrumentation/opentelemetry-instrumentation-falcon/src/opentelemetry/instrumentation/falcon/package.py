@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("falcon >= 2.0.0, < 4.0.0",)
+_instruments = ("falcon >= 1.4.1, < 4.0.0",)
