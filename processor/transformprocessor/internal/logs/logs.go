@@ -75,7 +75,7 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 			}
 			return accessResourceAttributesKey(mapKey), nil
 		}
-	case "instrumentation_library":
+	case "instrumentation_scope":
 		if len(path) == 1 {
 			return accessInstrumentationScope(), nil
 		}

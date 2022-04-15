@@ -348,6 +348,38 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "instrumentation_scope name",
+			path: []common.Field{
+				{
+					Name: "instrumentation_scope",
+				},
+				{
+					Name: "name",
+				},
+			},
+			orig: "library",
+			new:  "park",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				il.SetName("park")
+			},
+		},
+		{
+			name: "instrumentation_scope version",
+			path: []common.Field{
+				{
+					Name: "instrumentation_scope",
+				},
+				{
+					Name: "version",
+				},
+			},
+			orig: "version",
+			new:  "next",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				il.SetVersion("next")
+			},
+		},
+		{
 			name: "resource attributes",
 			path: []common.Field{
 				{
