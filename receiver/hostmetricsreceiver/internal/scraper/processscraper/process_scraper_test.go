@@ -389,17 +389,17 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	type testCase struct {
-		name            string
-		osFilter        string
-		nameError       error
-		exeError        error
-		usernameError   error
-		cmdlineError    error
-		timesError      error
-		memoryInfoError error
-		ioCountersError error
-		expectedError   string
-		parentError     error
+		name                  string
+		osFilter              string
+		nameError             error
+		exeError              error
+		usernameError         error
+		cmdlineError          error
+		timesError            error
+		memoryInfoError       error
+		ioCountersError       error
+		expectedError         string
+		parentError           error
 		aggregateChildMetrics bool
 	}
 
@@ -441,9 +441,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError:   `error reading disk usage for process "test" (pid 1): err6`,
 		},
 		{
-			name:            "Parent Error",
-			parentError: 	 errors.New("err7"),
-			expectedError:   `error reading parent pid for process "test" (pid 1): err7`,
+			name:                  "Parent Error",
+			parentError:           errors.New("err7"),
+			expectedError:         `error reading parent pid for process "test" (pid 1): err7`,
 			aggregateChildMetrics: true,
 		},
 		{
@@ -489,7 +489,6 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("Times").Return(&cpu.TimesStat{}, test.timesError)
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
-
 
 			handlesMock := &processHandlesMock{handles: []*processHandleMock{handleMock}}
 			handlesMock.On("ParentPid", 0).Return(1, test.parentError)

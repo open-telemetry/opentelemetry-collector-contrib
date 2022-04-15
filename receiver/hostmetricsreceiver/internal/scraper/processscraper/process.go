@@ -36,8 +36,8 @@ type processMetadata struct {
 }
 
 type hierarchicalMetadata struct {
-	parent *processMetadata
-	children   []processHandle
+	parent   *processMetadata
+	children []processHandle
 }
 
 type executableMetadata struct {

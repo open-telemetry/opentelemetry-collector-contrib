@@ -24,10 +24,7 @@ import (
 
 const MAX_SYSTEM_PID = 300
 
-func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTime *cpu.TimesStat) {}
-
-func (s *scraper) recordAggregateCPUTimeMetrics(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {}
-
+func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {}
 
 func getProcessExecutable(processHandle) (*executableMetadata, error) {
 	return nil, nil

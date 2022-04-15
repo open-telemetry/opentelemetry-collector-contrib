@@ -80,3 +80,12 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [direction]
+
+  process.child.count:
+    enabled: true
+    description: Total child processes aggregated in metric.
+    unit: "children"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true

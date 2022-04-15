@@ -92,21 +92,25 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	for pid, md := range metadata {
 		// sanity test, this should never happen
 		if md.parent == nil {
-			errs.AddPartial(cpuMetricsLen + memoryMetricsLen + diskMetricsLen, fmt.Errorf( "error reading child metrics, parent %d not found", pid))
+			errs.AddPartial(cpuMetricsLen+memoryMetricsLen+diskMetricsLen, fmt.Errorf("error reading child metrics, parent %d not found", pid))
 			continue
 		}
 
 		now := pdata.NewTimestampFromTime(time.Now())
-		if err = s.scrapeAndAppendCPUTimeMetric(now, md.parent.handle); err != nil {
+		if err = s.scrapeAndAppendCPUTimeMetric(now, md.parent.handle, md.children); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.parent.executable.name, md.parent.pid, err))
 		}
 
-		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.parent.handle); err != nil {
+		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.parent.handle, md.children); err != nil {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.parent.executable.name, md.parent.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskIOMetric(now, md.parent.handle); err != nil {
+		if err = s.scrapeAndAppendDiskIOMetric(now, md.parent.handle, md.children); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.parent.executable.name, md.parent.pid, err))
+		}
+
+		if s.config.AggregateChildMetrics {
+			s.mb.RecordProcessChildCountDataPoint(now, int64(len(md.children)))
 		}
 
 		s.mb.EmitForResource(md.parent.resourceOptions()...)
@@ -186,7 +190,7 @@ func (s *scraper) getProcessMetadata() (map[int32]*hierarchicalMetadata, error) 
 
 			if _, ok := metadata[parentPid]; !ok {
 				metadata[parentPid] = &hierarchicalMetadata{
-					children:   make([]processHandle, 0),
+					children: make([]processHandle, 0),
 				}
 			}
 
@@ -211,7 +215,7 @@ func (s *scraper) getProcessMetadata() (map[int32]*hierarchicalMetadata, error) 
 					username:   username,
 					handle:     handle,
 				},
-				children:   make([]processHandle, 0),
+				children: make([]processHandle, 0),
 			}
 		}
 	}
@@ -219,17 +223,7 @@ func (s *scraper) getProcessMetadata() (map[int32]*hierarchicalMetadata, error) 
 	return metadata, errs.Combine()
 }
 
-func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, handle processHandle) error {
-	times, err := handle.Times()
-	if err != nil {
-		return err
-	}
-
-	s.recordCPUTimeMetric(now, times)
-	return nil
-}
-
-func (s *scraper) scrapeAndAppendAllCPUTimeMetric(now pdata.Timestamp, parent processHandle, children []processHandle) error {
+func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, parent processHandle, children []processHandle) error {
 	var allTimes []*cpu.TimesStat
 
 	times, err := parent.Times()
@@ -245,29 +239,53 @@ func (s *scraper) scrapeAndAppendAllCPUTimeMetric(now pdata.Timestamp, parent pr
 		}
 		allTimes = append(allTimes, times)
 	}
-	s.recordAggregateCPUTimeMetrics(now, allTimes)
+	s.recordCPUTimeMetric(now, allTimes)
 	return nil
 }
 
-
-func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle processHandle, children []processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
 		return err
 	}
 
-	s.mb.RecordProcessMemoryPhysicalUsageDataPoint(now, int64(mem.RSS))
-	s.mb.RecordProcessMemoryVirtualUsageDataPoint(now, int64(mem.VMS))
+	memRSS := mem.RSS
+	memVMS := mem.VMS
+
+	for _, val := range children {
+		mem, err = val.MemoryInfo()
+		if err != nil {
+			return err
+		}
+		memRSS += mem.RSS
+		memVMS += mem.VMS
+	}
+
+	s.mb.RecordProcessMemoryPhysicalUsageDataPoint(now, int64(memRSS))
+	s.mb.RecordProcessMemoryVirtualUsageDataPoint(now, int64(memVMS))
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendDiskIOMetric(now pdata.Timestamp, handle processHandle, children []processHandle) error {
 	io, err := handle.IOCounters()
 	if err != nil {
 		return err
 	}
 
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirection.Read)
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirection.Write)
+	readBytes := io.ReadBytes
+	writeBytes := io.WriteBytes
+
+	for _, val := range children {
+		io, err = val.IOCounters()
+		if err != nil {
+			return err
+		}
+
+		readBytes += io.ReadBytes
+		writeBytes += io.WriteBytes
+	}
+
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(readBytes), metadata.AttributeDirection.Read)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(writeBytes), metadata.AttributeDirection.Write)
 	return nil
 }

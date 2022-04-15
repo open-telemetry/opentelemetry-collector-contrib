@@ -26,13 +26,7 @@ import (
 
 const MAX_SYSTEM_PID = 300
 
-func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTime *cpu.TimesStat) {
-	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.User, metadata.AttributeState.User)
-	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.System, metadata.AttributeState.System)
-	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.Iowait, metadata.AttributeState.Wait)
-}
-
-func (s *scraper) recordAggregateCPUTimeMetrics(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {
+func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {
 	var user, system, wait float64
 	for _, cpuTime := range cpuTimes {
 		user += cpuTime.User

@@ -28,6 +28,7 @@ import (
 )
 
 const MAX_SYSTEM_PID = 200
+
 func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTime *cpu.TimesStat) {
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.User, metadata.AttributeState.User)
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.System, metadata.AttributeState.System)

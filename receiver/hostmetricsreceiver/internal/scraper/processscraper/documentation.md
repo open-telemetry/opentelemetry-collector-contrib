@@ -8,6 +8,7 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| **process.child.count** | Total child processes aggregated in metric. | children | Sum(Int) | <ul> </ul> |
 | **process.cpu.time** | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>state</li> </ul> |
 | **process.disk.io** | Disk bytes transferred. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **process.memory.physical_usage** | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |

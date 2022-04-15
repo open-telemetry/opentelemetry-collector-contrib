@@ -15,6 +15,7 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for hostmetricsreceiver/process metrics.
 type MetricsSettings struct {
+	ProcessChildCount          MetricSettings `mapstructure:"process.child.count"`
 	ProcessCPUTime             MetricSettings `mapstructure:"process.cpu.time"`
 	ProcessDiskIo              MetricSettings `mapstructure:"process.disk.io"`
 	ProcessMemoryPhysicalUsage MetricSettings `mapstructure:"process.memory.physical_usage"`
@@ -23,6 +24,9 @@ type MetricsSettings struct {
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
+		ProcessChildCount: MetricSettings{
+			Enabled: true,
+		},
 		ProcessCPUTime: MetricSettings{
 			Enabled: true,
 		},
@@ -36,6 +40,57 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+type metricProcessChildCount struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.child.count metric with initial data.
+func (m *metricProcessChildCount) init() {
+	m.data.SetName("process.child.count")
+	m.data.SetDescription("Total child processes aggregated in metric.")
+	m.data.SetUnit("children")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricProcessChildCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessChildCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessChildCount) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessChildCount(settings MetricSettings) metricProcessChildCount {
+	m := metricProcessChildCount{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricProcessCPUTime struct {
@@ -253,6 +308,7 @@ type MetricsBuilder struct {
 	metricsCapacity                  int             // maximum observed number of metrics per resource.
 	resourceCapacity                 int             // maximum observed number of resource attributes.
 	metricsBuffer                    pdata.Metrics   // accumulates metrics data before emitting.
+	metricProcessChildCount          metricProcessChildCount
 	metricProcessCPUTime             metricProcessCPUTime
 	metricProcessDiskIo              metricProcessDiskIo
 	metricProcessMemoryPhysicalUsage metricProcessMemoryPhysicalUsage
@@ -273,6 +329,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	mb := &MetricsBuilder{
 		startTime:                        pdata.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                    pdata.NewMetrics(),
+		metricProcessChildCount:          newMetricProcessChildCount(settings.ProcessChildCount),
 		metricProcessCPUTime:             newMetricProcessCPUTime(settings.ProcessCPUTime),
 		metricProcessDiskIo:              newMetricProcessDiskIo(settings.ProcessDiskIo),
 		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(settings.ProcessMemoryPhysicalUsage),
@@ -352,6 +409,7 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/process")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricProcessChildCount.emit(ils.Metrics())
 	mb.metricProcessCPUTime.emit(ils.Metrics())
 	mb.metricProcessDiskIo.emit(ils.Metrics())
 	mb.metricProcessMemoryPhysicalUsage.emit(ils.Metrics())
@@ -370,6 +428,11 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
+}
+
+// RecordProcessChildCountDataPoint adds a data point to process.child.count metric.
+func (mb *MetricsBuilder) RecordProcessChildCountDataPoint(ts pdata.Timestamp, val int64) {
+	mb.metricProcessChildCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordProcessCPUTimeDataPoint adds a data point to process.cpu.time metric.
