@@ -1,6 +1,6 @@
 # Basic Authenticator
 
-This extension implements both `configauth.ServerAuthenticator` and `configauth.ClientAuthenticator` to authenticate clients and servers using HTTP Basic Authentication. The authenticator type has to be set to `basicauth`.
+This extension implements both `configauth.ServerAuthenticator` and `configauth.ClientAuthenticator` to authenticate clients and servers using Basic Authentication. The authenticator type has to be set to `basicauth`.
 
 When used as ServerAuthenticator, if the authentication is successful `client.Info.Auth` will expose the following attributes:
 
@@ -13,7 +13,8 @@ The following are the configuration options:
 
 - `htpasswd.file`:  The path to the htpasswd file.
 - `htpasswd.inline`: The htpasswd file inline content.
-- `client_auth`: Single username password combination in the form of `username:password` for client authentication.
+- `client_auth.username`: Username to use for client authentication.
+- `client_auth.password`: Password to use for client authentication.
 
 To configure the extension as a server authenticator, either one of `htpasswd.file` or `htpasswd.inline` has to be set. If both are configured, `htpasswd.inline` credentials take precedence.
 
@@ -31,7 +32,9 @@ extensions:
         ${BASIC_AUTH_USERNAME}:${BASIC_AUTH_PASSWORD}
   
   basicauth/client:
-    client_auth: username:password
+    client_auth: 
+      username: username
+      password: password
 
 receivers:
   otlp:
@@ -43,9 +46,9 @@ receivers:
 processors:
 
 exporters:
-  otlphttp:
+  otlp:
     auth:
-      authenticator: basicauth/client 
+      authenticator: basicauth/client
 
 service:
   extensions: [basicauth/server, basicauth/client]
@@ -53,5 +56,5 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [otlphttp]
+      exporters: [otlp]
 ```

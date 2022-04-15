@@ -53,8 +53,6 @@ func newClientAuthExtension(cfg *Config) (configauth.ClientAuthenticator, error)
 		clientAuth: cfg.ClientAuth,
 	}
 	return configauth.NewClientAuthenticator(
-		configauth.WithClientStart(ba.clientStart),
-		configauth.WithClientShutdown(ba.shutdown),
 		configauth.WithClientRoundTripper(ba.RoundTripper),
 		configauth.WithPerRPCCredentials(ba.PerRPCCredentials),
 	), nil
@@ -71,13 +69,8 @@ func newServerAuthExtension(cfg *Config) (configauth.ServerAuthenticator, error)
 	}
 	return configauth.NewServerAuthenticator(
 		configauth.WithStart(ba.serverStart),
-		configauth.WithShutdown(ba.shutdown),
 		configauth.WithAuthenticate(ba.authenticate),
 	), nil
-}
-
-func (ba *basicAuth) clientStart(_ context.Context, _ component.Host) error {
-	return nil
 }
 
 func (ba *basicAuth) serverStart(ctx context.Context, host component.Host) error {
@@ -106,10 +99,6 @@ func (ba *basicAuth) serverStart(ctx context.Context, host component.Host) error
 
 	ba.matchFunc = htp.Match
 
-	return nil
-}
-
-func (ba *basicAuth) shutdown(ctx context.Context) error {
 	return nil
 }
 
@@ -252,7 +241,7 @@ func (ba *basicAuth) PerRPCCredentials() (creds.PerRPCCredentials, error) {
 	encoded := base64.StdEncoding.EncodeToString([]byte(ba.clientAuth.Username + ":" + ba.clientAuth.Password))
 	return &perRPCAuth{
 		metadata: map[string]string{
-			"authorization": encoded,
+			"authorization": fmt.Sprintf("Basic %s", encoded),
 		},
 	}, nil
 }

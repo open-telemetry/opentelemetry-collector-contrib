@@ -304,7 +304,7 @@ func TestBasicAuth_ClientInvalid(t *testing.T) {
 		require.NotNil(t, ext)
 		require.NoError(t, err)
 
-		require.Nil(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
 		base := &mockRoundTripper{}
 		_, err = ext.RoundTripper(base)
