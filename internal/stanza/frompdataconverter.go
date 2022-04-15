@@ -32,7 +32,7 @@ import (
 //            ┌─────────────────────────────────┐
 //            │ Batch()                         │
 //  ┌─────────┤  Ingests pdata.Logs, splits up  │
-//  │         │  and sends them onto workerChan │
+//  │         │  and places them on workerChan  │
 //  │         └─────────────────────────────────┘
 //  │
 //  │ ┌───────────────────────────────────────────────────┐
@@ -43,7 +43,7 @@ import (
 //  └─┼─┼─► workerLoop()                                      │
 //    └─┤ │   consumes sent log entries from workerChan,      │
 //      │ │   translates received logs to entry.Entry,        │
-//      └─┤   and sends them along                            │
+//      └─┤   and sends them along entriesChan                │
 //        └───────────────────────────────────────────────────┘
 //
 type FromPdataConverter struct {
@@ -56,8 +56,6 @@ type FromPdataConverter struct {
 	// workerChan is an internal communication channel that gets the log
 	// entries from Batch() calls and it receives the data in workerLoop().
 	workerChan chan fromConverterWorkerItem
-	// workerCount configures the amount of workers started.
-	workerCount int
 
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
@@ -70,13 +68,12 @@ func NewFromPdataConverter(workerCount int, logger *zap.Logger) *FromPdataConver
 	if logger == nil {
 		logger = zap.NewNop()
 	}
-	if workerCount == 0 {
-		workerCount = int(math.Max(1, float64(runtime.NumCPU()/4)))
+	if workerCount <= 0 {
+		workerCount = int(math.Max(1, float64(runtime.NumCPU())))
 	}
 
 	return &FromPdataConverter{
 		workerChan:  make(chan fromConverterWorkerItem, workerCount),
-		workerCount: workerCount,
 		entriesChan: make(chan []*entry.Entry),
 		stopChan:    make(chan struct{}),
 		logger:      logger,
@@ -84,9 +81,9 @@ func NewFromPdataConverter(workerCount int, logger *zap.Logger) *FromPdataConver
 }
 
 func (c *FromPdataConverter) Start() {
-	c.logger.Debug("Starting log converter", zap.Int("worker_count", c.workerCount))
+	c.logger.Debug("Starting log converter from pdata", zap.Int("worker_count", cap(c.workerChan)))
 
-	for i := 0; i < c.workerCount; i++ {
+	for i := 0; i < cap(c.workerChan); i++ {
 		c.wg.Add(1)
 		go c.workerLoop()
 	}
@@ -97,6 +94,7 @@ func (c *FromPdataConverter) Stop() {
 		close(c.stopChan)
 		c.wg.Wait()
 		close(c.entriesChan)
+		close(c.workerChan)
 	})
 }
 
@@ -116,7 +114,6 @@ func (c *FromPdataConverter) workerLoop() {
 	defer c.wg.Done()
 
 	for {
-
 		select {
 		case <-c.stopChan:
 			return
@@ -141,8 +138,12 @@ func (c *FromPdataConverter) Batch(pLogs pdata.Logs) error {
 		rls := pLogs.ResourceLogs().At(i)
 		for j := 0; j < rls.ScopeLogs().Len(); j++ {
 			scope := rls.ScopeLogs().At(j)
+			item := fromConverterWorkerItem{
+				Resource:       rls.Resource(),
+				LogRecordSlice: scope.LogRecords(),
+			}
 			select {
-			case c.workerChan <- fromConverterWorkerItem{Resource: rls.Resource(), LogRecordSlice: scope.LogRecords()}:
+			case c.workerChan <- item:
 				continue
 			case <-c.stopChan:
 				return nil

@@ -34,7 +34,7 @@ const (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
-// NewFactory returns a new factory for the Resource processor.
+// NewFactory returns a new factory for the Logs Transform processor.
 func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,

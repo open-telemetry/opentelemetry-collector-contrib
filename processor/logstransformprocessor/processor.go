@@ -21,12 +21,12 @@ import (
 	"runtime"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 )
 
 type logsTransformProcessor struct {
@@ -83,16 +83,15 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 
 	ltp.pipe = pipe
 
-	wkrCount := int(math.Max(1, float64(runtime.NumCPU()/4)))
+	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
 	if baseCfg.Converter.WorkerCount > 0 {
 		wkrCount = baseCfg.Converter.WorkerCount
 	}
-	opts := []stanza.ConverterOption{
+
+	ltp.converter = stanza.NewConverter(
 		stanza.WithLogger(ltp.logger),
 		stanza.WithWorkerCount(wkrCount),
-	}
-
-	ltp.converter = stanza.NewConverter(opts...)
+	)
 
 	ltp.fromConverter = stanza.NewFromPdataConverter(wkrCount, ltp.logger)
 

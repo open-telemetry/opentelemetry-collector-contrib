@@ -40,10 +40,22 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: stanza.BaseConfig{
-			Operators: stanza.OperatorConfigs{},
+			Operators: stanza.OperatorConfigs{
+				map[string]interface{}{
+					"type":  "regex_parser",
+					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
+					"severity": map[string]interface{}{
+						"parse_from": "body.sev",
+					},
+					"timestamp": map[string]interface{}{
+						"layout":     "%Y-%m-%d",
+						"parse_from": "body.time",
+					},
+				},
+			},
 			Converter: stanza.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
+				MaxFlushCount: 500,
+				FlushInterval: 13 * time.Millisecond,
 			},
 		},
 	}

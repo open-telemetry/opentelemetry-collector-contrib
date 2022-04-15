@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
@@ -57,22 +59,22 @@ var (
 )
 
 func parseTime(format, input string) *time.Time {
-	val, _ := time.Parse("%Y-%m-%d", "2022-01-01")
+	val, _ := time.Parse(format, input)
 	return &val
 }
 
 type testLogMessage struct {
-	body               *pdata.Value
-	time               *time.Time
-	severity           pdata.SeverityNumber
-	severityText       *string
-	spanId             *pdata.SpanID
+	body         *pdata.Value
+	time         *time.Time
+	severity     pdata.SeverityNumber
+	severityText *string
+	//spanID             *pdata.SpanID
 	attributes         *map[string]pdata.Value
 	resourceAttributes *map[string]pdata.Value
 }
 
 func TestLogsTransformProcessor(t *testing.T) {
-	baseMessage := pdata.NewValueString("2022-01-01 INFO this is a test")
+	baseMessage := pcommon.NewValueString("2022-01-01 INFO this is a test")
 	tests := []struct {
 		name          string
 		config        *Config
@@ -87,9 +89,9 @@ func TestLogsTransformProcessor(t *testing.T) {
 			},
 			parsedMessage: testLogMessage{
 				body:     &baseMessage,
-				severity: pdata.SeverityNumberINFO,
+				severity: plog.SeverityNumberINFO,
 				attributes: &map[string]pdata.Value{
-					"message": pdata.NewValueString("this is a test"),
+					"message": pcommon.NewValueString("this is a test"),
 				},
 				time: parseTime("%Y-%m-%d", "2022-01-01"),
 			},
@@ -104,6 +106,9 @@ func TestLogsTransformProcessor(t *testing.T) {
 			ltp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
+
+			err = ltp.Start(context.Background(), nil)
+			require.NoError(t, err)
 
 			sourceLogData := generateLogData(tt.sourceMessage)
 			wantLogData := generateLogData(tt.parsedMessage)
