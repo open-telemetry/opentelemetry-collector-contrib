@@ -248,7 +248,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	require.NotNil(t, ext)
 	require.NoError(t, err)
 
-	require.Nil(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
 	base := &mockRoundTripper{}
 	c, err := ext.RoundTripper(base)
@@ -280,11 +280,11 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	assert.Equal(t, md, expectedMd)
 	assert.NoError(t, err)
 	assert.True(t, credential.RequireTransportSecurity())
-	
-	assert.Nil(t, ext.Shutdown(context.Background()))
+
+	assert.NoError(t, ext.Shutdown(context.Background()))
 }
 
-func TestBasicAuth_ClientInValid(t *testing.T) {
+func TestBasicAuth_ClientInvalid(t *testing.T) {
 	t.Run("no username", func(t *testing.T) {
 		_, err := newClientAuthExtension(&Config{
 			ClientAuth: &ClientAuthSettings{
