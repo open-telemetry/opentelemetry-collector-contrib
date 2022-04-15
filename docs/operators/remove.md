@@ -18,7 +18,7 @@ The `remove` operator removes a field from a record.
 
 Remove a value from the body
 ```yaml
-- type: remove 
+- type: remove
   field: body.key1
 ```
 
@@ -30,7 +30,7 @@ Remove a value from the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }
@@ -43,7 +43,7 @@ Remove a value from the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": { }
 }
 ```
@@ -56,7 +56,7 @@ Remove a value from the body
 
 Remove an object from the body
 ```yaml
-- type: remove 
+- type: remove
   field: body.object
 ```
 
@@ -68,7 +68,7 @@ Remove an object from the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "object": {
       "nestedkey": "nestedval"
@@ -84,8 +84,8 @@ Remove an object from the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
-  "body": { 
+  "attributes": { },
+  "body": {
      "key": "val"
   }
 }
@@ -99,7 +99,7 @@ Remove an object from the body
 
 Remove a value from attributes
 ```yaml
-- type: remove 
+- type: remove
   field: attributes.otherkey
 ```
 
@@ -111,9 +111,9 @@ Remove a value from attributes
 ```json
 {
   "resource": { },
-  "attributes": { 
+  "attributes": {
     "otherkey": "val"
-  },  
+  },
   "body": {
     "key": "val"
   },
@@ -126,8 +126,8 @@ Remove a value from attributes
 ```json
 {
   "resource": { },
-  "attributes": {  },  
-  "body": { 
+  "attributes": {  },
+  "body": {
     "key": "val"
   }
 }
@@ -141,7 +141,7 @@ Remove a value from attributes
 
 Remove a value from resource
 ```yaml
-- type: remove 
+- type: remove
   field: resource.otherkey
 ```
 
@@ -152,10 +152,10 @@ Remove a value from resource
 
 ```json
 {
-  "resource": { 
+  "resource": {
     "otherkey": "val"
   },
-  "attributes": {  },  
+  "attributes": {  },
   "body": {
     "key": "val"
   },
@@ -168,8 +168,8 @@ Remove a value from resource
 ```json
 {
   "resource": { },
-  "attributes": { },  
-  "body": { 
+  "attributes": { },
+  "body": {
     "key": "val"
   }
 }
@@ -183,7 +183,7 @@ Remove a value from resource
 
 Remove all resource fields
 ```yaml
-- type: remove 
+- type: remove
   field: resource
 ```
 
@@ -194,11 +194,11 @@ Remove all resource fields
 
 ```json
 {
-  "resource": { 
+  "resource": {
     "key1.0": "val",
     "key2.0": "val"
   },
-  "attributes": {  },  
+  "attributes": {  },
   "body": {
     "key": "val"
   },
@@ -211,8 +211,8 @@ Remove all resource fields
 ```json
 {
   "resource": { },
-  "attributes": { },  
-  "body": { 
+  "attributes": { },
+  "body": {
     "key": "val"
   }
 }
@@ -226,7 +226,7 @@ Remove all resource fields
 
 Remove all attributes
 ```yaml
-- type: remove 
+- type: remove
   field: attributes
 ```
 
@@ -238,10 +238,10 @@ Remove all attributes
 ```json
 {
   "resource": {  },
-  "attributes": { 
+  "attributes": {
     "key1.0": "val",
     "key2.0": "val"
-  },  
+  },
   "body": {
     "key": "val"
   },
@@ -249,13 +249,13 @@ Remove all attributes
 ```
 
 </td>
-<td> 
+<td>
 
 ```json
 {
   "resource": { },
-  "attributes": { },  
-  "body": { 
+  "attributes": { },
+  "body": {
     "key": "val"
   }
 }

@@ -32,8 +32,8 @@ Copy a value from the body to resource
 ```json
 {
   "resource": { },
-  "attributes": { },  
-  "body": { 
+  "attributes": { },
+  "body": {
     "key":"value"
   }
 }
@@ -44,10 +44,10 @@ Copy a value from the body to resource
 
 ```json
 {
-  "resource": { 
+  "resource": {
        "newkey":"value"
   },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key":"value"
   }
@@ -75,7 +75,7 @@ Copy a value from the body to attributes
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": "val2"
@@ -89,9 +89,9 @@ Copy a value from the body to attributes
 ```json
 {
   "resource": { },
-  "attributes": { 
+  "attributes": {
       "newkey": "val2"
-  },  
+  },
   "body": {
     "key3": "val1",
     "key2": "val2"
@@ -120,9 +120,9 @@ Copy a value from attributes to the body
 ```json
 {
   "resource": { },
-  "attributes": { 
+  "attributes": {
       "key": "newval"
-  },  
+  },
   "body": {
     "key1": "val1",
     "key2": "val2"
@@ -136,9 +136,9 @@ Copy a value from attributes to the body
 ```json
 {
   "resource": { },
-  "attributes": { 
+  "attributes": {
       "key": "newval"
-  },  
+  },
   "body": {
     "key3": "val1",
     "key2": "val2",
@@ -168,7 +168,7 @@ Copy a value within the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
       "obj": {
         "nested":"nestedvalue"
@@ -183,7 +183,7 @@ Copy a value within the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "obj": {
         "nested":"nestedvalue"

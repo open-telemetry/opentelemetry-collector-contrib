@@ -1,6 +1,6 @@
 ## Trace Parsing
 
-Traces context fields are defined in the [OpenTelemetry Logs Data Model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#trace-context-fields). 
+Traces context fields are defined in the [OpenTelemetry Logs Data Model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#trace-context-fields).
 
 
 ### `trace` parsing parameters

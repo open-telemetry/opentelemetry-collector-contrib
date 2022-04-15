@@ -35,7 +35,7 @@ Retain fields in the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": "val2",
@@ -51,7 +51,7 @@ Retain fields in the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": "val2"
@@ -80,7 +80,7 @@ Retain an object in the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "object": {
@@ -96,7 +96,7 @@ Retain an object in the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "object": {
       "nestedkey": "val2",
@@ -126,12 +126,12 @@ Retain fields from resource
 
 ```json
 {
-  "resource": { 
+  "resource": {
      "key1": "val1",
      "key2": "val2",
      "key3": "val3"
   },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     }
@@ -144,12 +144,12 @@ Retain fields from resource
 
 ```json
 {
-  "resource": { 
+  "resource": {
      "key1": "val1",
      "key2": "val2",
   },
-  "attributes": { },  
-  "body": { 
+  "attributes": { },
+  "body": {
     "key1": "val1",
   }
 }
@@ -177,12 +177,12 @@ Retain fields from attributes
 ```json
 {
   "resource": { },
-  "attributes": { 
+  "attributes": {
      "key1": "val1",
      "key2": "val2",
      "key3": "val3"
-  },  
-  "body": { 
+  },
+  "body": {
     "key1": "val1",
   }
 }
@@ -194,11 +194,11 @@ Retain fields from attributes
 ```json
 {
   "resource": { },
-  "attributes": { 
+  "attributes": {
      "key1": "val1",
      "key2": "val2",
-  },  
-  "body": { 
+  },
+  "body": {
     "key1": "val1",
   }
 }
@@ -226,15 +226,15 @@ Retain fields from all sources
 
 ```json
 {
-  "resource": { 
+  "resource": {
      "key1": "val1",
      "key2": "val2"
   },
-  "attributes": { 
+  "attributes": {
      "key3": "val3",
      "key4": "val4"
-  },  
-  "body": { 
+  },
+  "body": {
     "key5": "val5",
     "key6": "val6",
   }
@@ -246,13 +246,13 @@ Retain fields from all sources
 
 ```json
 {
-  "resource": { 
+  "resource": {
      "key1": "val1",
   },
-  "attributes": { 
+  "attributes": {
      "key3": "val3",
-  },  
-  "body": { 
+  },
+  "body": {
     "key5": "val5",
   }
 }

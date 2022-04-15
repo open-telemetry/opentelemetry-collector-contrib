@@ -8,7 +8,7 @@ The `move` operator moves (or renames) a field from one location to another.
 | ---        | ---              | ---         |
 | `id`       | `move`           | A unique identifier for the operator. |
 | `output`   | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `from`     | required         | The [field](/docs/types/field.md) from which the value will be moved. | 
+| `from`     | required         | The [field](/docs/types/field.md) from which the value will be moved. |
 | `to`       | required         | The [field](/docs/types/field.md) to which the value will be moved. |
 | `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `if`       |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
@@ -30,7 +30,7 @@ Rename value
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": "val2"
@@ -44,7 +44,7 @@ Rename value
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key3": "val1",
     "key2": "val2"
@@ -73,7 +73,7 @@ Move a value from the body to resource
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "uuid": "091edc50-d91a-460d-83cd-089a62937738"
   }
@@ -85,10 +85,10 @@ Move a value from the body to resource
 
 ```json
 {
-  "resource": { 
+  "resource": {
     "uuid": "091edc50-d91a-460d-83cd-089a62937738"
   },
-  "attributes": { },  
+  "attributes": { },
   "body": { }
 }
 ```
@@ -115,7 +115,7 @@ Move a value from the body to attributes
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "ip": "8.8.8.8"
   }
@@ -128,9 +128,9 @@ Move a value from the body to attributes
 ```json
 {
   "resource": { },
-  "attributes": { 
+  "attributes": {
     "ip": "8.8.8.8"
-  },  
+  },
   "body": { }
 }
 ```
@@ -156,7 +156,7 @@ Replace the body with an individual value nested within the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "log": "The log line"
   }
@@ -169,7 +169,7 @@ Replace the body with an individual value nested within the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": "The log line"
 }
 ```
@@ -195,7 +195,7 @@ Remove a layer from the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "wrapper": {
       "key1": "val1",
@@ -213,7 +213,7 @@ Remove a layer from the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": "val2",
@@ -243,7 +243,7 @@ Merge a layer to the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "firstTimestamp": "2020-08-13T16:43:57Z",
     "object": {
@@ -262,7 +262,7 @@ Merge a layer to the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "firstTimestamp": "2020-08-13T16:43:57Z",
     "apiVersion": "v1",

@@ -1,10 +1,10 @@
 ## Fields
 
-A _Field_ is a reference to a value in a log [entry](/docs/types/field.md). 
+A _Field_ is a reference to a value in a log [entry](/docs/types/field.md).
 
 Many [operators](/docs/operators/README.md) use fields in their configurations. For example, parsers use fields to specify which value to parse and where to write a new value.
 
-Fields are `.`-delimited strings which allow you to select attributes or body on the entry. 
+Fields are `.`-delimited strings which allow you to select attributes or body on the entry.
 
 Fields can be used to select body, resource, or attribute values. For values on the body, use the prefix `body` such as `body.my_value`. To select an attributes, prefix your field with `attributes` such as with `attributes.my_attribute`. For resource values, use the prefix `resource`.
 

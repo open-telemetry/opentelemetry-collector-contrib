@@ -14,7 +14,7 @@ Kubernetes API, and currently requires that Stanza is running inside a Kubernete
 | `discovery_interval ` | `1m`              | The interval at which the operator searches for new namespaces to follow. |
 | `attributes`          | {}                | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`            | {}                | A map of `key: value` pairs to add to the entry's resource. |
- 
+
 ### Example Configurations
 
 #### Mock a file input

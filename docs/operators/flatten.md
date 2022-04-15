@@ -33,7 +33,7 @@ Flatten an object to the base of the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": {
       "nested1": "nestedval1",
@@ -50,7 +50,7 @@ Flatten an object to the base of the body
 ```json
   {
     "resource": { },
-    "attributes": { },  
+    "attributes": { },
     "body": {
       "nested1": "nestedval1",
       "nested2": "nestedval2",
@@ -81,7 +81,7 @@ Flatten an object within another object
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "wrapper": {
       "key1": {
@@ -100,7 +100,7 @@ Flatten an object within another object
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "wrapper": {
       "nested1": "nestedval1",

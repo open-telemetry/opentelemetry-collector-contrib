@@ -1,6 +1,6 @@
 ## Severity Parsing
 
-Severity is represented as a number from 1 to 24. The meaning of these severity levels are defined in the [OpenTelemetry Logs Data Model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber). 
+Severity is represented as a number from 1 to 24. The meaning of these severity levels are defined in the [OpenTelemetry Logs Data Model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber).
 
 > Note: A `default` severity level is also supported, and is used when a value cannot be mapped to any other level.
 
