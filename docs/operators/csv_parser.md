@@ -1,8 +1,8 @@
 ## `csv_parser` operator
 
 The `csv_parser` operator parses the string-type field selected by `parse_from` with the given header values.
- 
-### Configuration Fields 
+
+### Configuration Fields
 
 | Field              | Default                                  | Description  |
 | ---                | ---                                      | ---          |
@@ -111,7 +111,7 @@ Configuration:
     layout_type: strptime
     layout: '%Y-%m-%d'
 ```
- 
+
 <table>
 <tr><td> Input Entry </td> <td> Output Entry </td></tr>
 <tr>

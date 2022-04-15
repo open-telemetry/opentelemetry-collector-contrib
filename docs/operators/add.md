@@ -9,7 +9,7 @@ The `add` operator adds a value to an `entry`'s `body`, `attributes`, or `resour
 | `id`       | `add`            | A unique identifier for the operator. |
 | `output`   | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `field`    | required         | The [field](/docs/types/field.md) to be added. |
-| `value`    | required         | `value` is either a static value or an [expression](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/expression.md). If a value is specified, it will be added to each entry at the field defined by `field`. If an expression is specified, it will be evaluated for each entry and added at the field defined by `field`. |
+| `value`    | required         | `value` is either a static value or an [expression](/docs/types/expression.md). If a value is specified, it will be added to each entry at the field defined by `field`. If an expression is specified, it will be evaluated for each entry and added at the field defined by `field`. |
 | `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `if`       |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
@@ -33,7 +33,7 @@ Add a string to the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }
@@ -46,7 +46,7 @@ Add a string to the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": "val2"
@@ -75,7 +75,7 @@ Add a value to the body using an expression
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }
@@ -88,7 +88,7 @@ Add a value to the body using an expression
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": "val_suffix"
@@ -106,7 +106,7 @@ Add an object to the body
 ```yaml
 - type: add
   field: body.key2
-  value: 
+  value:
     nestedkey: nestedvalue
 ```
 
@@ -118,7 +118,7 @@ Add an object to the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }
@@ -131,7 +131,7 @@ Add an object to the body
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
     "key2": {
@@ -162,7 +162,7 @@ Add a value to attributes
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }
@@ -177,7 +177,7 @@ Add a value to attributes
   "resource": { },
   "attributes": {
      "key2": "val2"
-  },  
+  },
   "body": {
     "key1": "val1"
   }
@@ -205,7 +205,7 @@ Add a value to resource
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }
@@ -217,10 +217,10 @@ Add a value to resource
 
 ```json
 {
-  "resource": { 
+  "resource": {
     "key2": "val2"
   },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1"
   }
@@ -247,7 +247,7 @@ Add a value to resource using an expression
 ```json
 {
   "resource": { },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }
@@ -259,10 +259,10 @@ Add a value to resource using an expression
 
 ```json
 {
-  "resource": { 
+  "resource": {
     "key2": "val_suffix"
   },
-  "attributes": { },  
+  "attributes": { },
   "body": {
     "key1": "val1",
   }

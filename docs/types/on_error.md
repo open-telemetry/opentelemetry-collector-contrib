@@ -1,5 +1,5 @@
 # `on_error` parameter
-The `on_error` parameter determines the error handling strategy an operator should use when it fails to process an entry. There are 2 supported values: `drop` and `send`. 
+The `on_error` parameter determines the error handling strategy an operator should use when it fails to process an entry. There are 2 supported values: `drop` and `send`.
 
 Regardless of the method selected, all processing errors will be logged by the operator.
 
