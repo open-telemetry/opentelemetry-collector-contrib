@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/group
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.49.0
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.48.1-0.20220412005140-8eb68f40028d
-	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector/pdata v0.49.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -33,5 +33,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
-
-replace go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v0.0.0-20220412005140-8eb68f40028d

@@ -412,10 +412,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter:      "stackdriver",
-			skipLifecycle: true, // Is a deprecated exporter that has moved to google cloud exporter
-		},
-		{
 			exporter: "sumologic",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
