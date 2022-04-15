@@ -65,10 +65,16 @@ func createLogsProcessor(
 	if !ok {
 		return nil, errors.New("could not initialize logs transform processor")
 	}
-	proc := &logsTransformProcessor{logger: params.Logger, config: pCfg}
+	proc := &logsTransformProcessor{
+		id:     cfg.ID(),
+		logger: params.Logger,
+		config: pCfg,
+	}
 	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
 		proc.processLogs,
+		processorhelper.WithStart(proc.Start),
+		processorhelper.WithShutdown(proc.Shutdown),
 		processorhelper.WithCapabilities(processorCapabilities))
 }

@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -30,15 +31,15 @@ import (
 )
 
 type logsTransformProcessor struct {
-	wg sync.WaitGroup
+	logger *zap.Logger
+	config *Config
+	id     config.ComponentID
 
-	logger        *zap.Logger
-	config        *Config
 	pipe          pipeline.Pipeline
 	emitter       *stanza.LogEmitter
 	converter     *stanza.Converter
 	fromConverter *stanza.FromPdataConverter
-
+	wg            sync.WaitGroup
 	outputChannel chan pdata.Logs
 }
 
@@ -81,6 +82,16 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 		return err
 	}
 
+	storageClient, err := stanza.GetStorageClient(ctx, ltp.id, component.KindProcessor, host)
+	if err != nil {
+		return err
+	}
+
+	err = pipe.Start(stanza.GetPersister(storageClient))
+	if err != nil {
+		return err
+	}
+
 	ltp.pipe = pipe
 
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
@@ -92,12 +103,12 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 		stanza.WithLogger(ltp.logger),
 		stanza.WithWorkerCount(wkrCount),
 	)
+	ltp.converter.Start()
 
 	ltp.fromConverter = stanza.NewFromPdataConverter(wkrCount, ltp.logger)
+	ltp.fromConverter.Start()
 
 	ltp.outputChannel = make(chan pdata.Logs)
-	ltp.converter.Start()
-	ltp.fromConverter.Start()
 
 	// Below we're starting 3 loops:
 	// * first which reads all the logs translated by the fromConverter and then forwards
