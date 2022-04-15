@@ -7,6 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-log-collection v0.29.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector/model v0.49.0
 	go.opentelemetry.io/collector/pdata v0.49.0
 	go.opentelemetry.io/otel/metric v0.29.0
 	go.opentelemetry.io/otel/trace v1.6.3
