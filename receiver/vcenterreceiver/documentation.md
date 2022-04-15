@@ -41,7 +41,7 @@ These are the metrics available for this scraper.
 | **vcenter.host.vsan.operations** | IOPs consumed by all vSAN clients on the host. | {operations/sec} | Sum(Int) | <ul> <li>vsan_operation_type</li> </ul> |
 | **vcenter.host.vsan.outstanding_io** | Outstanding IO from all vSAN clients in the host, such as virtual machines, stats object, etc. | {operations/sec} | Sum(Int) | <ul> </ul> |
 | **vcenter.host.vsan.throughput** | Throughput consumed by all vSAN clients on the host. | By/s | Sum(Int) | <ul> <li>vsan_throughput_direction</li> </ul> |
-| **vcenter.resource_pool.cpu.shares** | The amount of shares of memory in the resource pool | {shares} | Sum(Int) | <ul> </ul> |
+| **vcenter.resource_pool.cpu.shares** | The amount of shares of CPU in the resource pool | {shares} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.cpu.usage** | The usage of the CPU used by the resource pool | {MHz} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.memory.shares** | The amount of shares of memory in the resource pool | {shares} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.memory.usage** | The usage of the memory by the resource pool | MBy | Sum(Int) | <ul> </ul> |

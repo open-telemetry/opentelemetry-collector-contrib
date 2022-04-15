@@ -1940,7 +1940,7 @@ type metricVcenterResourcePoolCPUShares struct {
 // init fills vcenter.resource_pool.cpu.shares metric with initial data.
 func (m *metricVcenterResourcePoolCPUShares) init() {
 	m.data.SetName("vcenter.resource_pool.cpu.shares")
-	m.data.SetDescription("The amount of shares of memory in the resource pool")
+	m.data.SetDescription("The amount of shares of CPU in the resource pool")
 	m.data.SetUnit("{shares}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)

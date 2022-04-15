@@ -404,7 +404,7 @@ metrics:
     attributes: []
   vcenter.resource_pool.cpu.shares:
     enabled: true
-    description: The amount of shares of memory in the resource pool
+    description: The amount of shares of CPU in the resource pool
     unit: "{shares}"
     sum:
       monotonic: false
