@@ -36,7 +36,6 @@ var (
 	cfg = &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{},
 			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
@@ -64,17 +63,22 @@ func parseTime(format, input string) *time.Time {
 }
 
 type testLogMessage struct {
-	body         *pdata.Value
-	time         *time.Time
-	severity     pdata.SeverityNumber
-	severityText *string
-	//spanID             *pdata.SpanID
+	body               *pdata.Value
+	time               *time.Time
+	severity           pdata.SeverityNumber
+	severityText       *string
+	spanID             *pdata.SpanID
+	traceID            *pdata.TraceID
+	flags              uint32
 	attributes         *map[string]pdata.Value
 	resourceAttributes *map[string]pdata.Value
 }
 
 func TestLogsTransformProcessor(t *testing.T) {
 	baseMessage := pcommon.NewValueString("2022-01-01 INFO this is a test")
+	spanID := pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+	traceID := pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+
 	tests := []struct {
 		name          string
 		config        *Config
@@ -85,22 +89,29 @@ func TestLogsTransformProcessor(t *testing.T) {
 			name:   "simpleTest",
 			config: cfg,
 			sourceMessage: testLogMessage{
-				body: &baseMessage,
+				body:    &baseMessage,
+				spanID:  &spanID,
+				traceID: &traceID,
+				flags:   uint32(0x01),
 			},
 			parsedMessage: testLogMessage{
 				body:     &baseMessage,
 				severity: plog.SeverityNumberINFO,
 				attributes: &map[string]pdata.Value{
-					"message": pcommon.NewValueString("this is a test"),
+					"sev":  pcommon.NewValueString("INFO"),
+					"time": pcommon.NewValueString("2022-01-01"),
+					"msg":  pcommon.NewValueString("this is a test"),
 				},
-				time: parseTime("%Y-%m-%d", "2022-01-01"),
+				spanID:  &spanID,
+				traceID: &traceID,
+				flags:   uint32(0x01),
+				time:    parseTime("%Y-%m-%d", "2022-01-01"),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test logs consumer
 			tln := new(consumertest.LogsSink)
 			factory := NewFactory()
 			ltp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tln)
@@ -117,7 +128,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
 
-			logs[0].ResourceLogs().At(0).Resource().Attributes().Sort()
+			logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
 			assert.EqualValues(t, wantLogData, logs[0])
 		})
 	}
@@ -143,6 +154,18 @@ func generateLogData(content testLogMessage) pdata.Logs {
 			log.Attributes().Insert(k, v)
 		}
 		log.Attributes().Sort()
+	}
+
+	if content.spanID != nil {
+		log.SetSpanID(*content.spanID)
+	}
+
+	if content.traceID != nil {
+		log.SetTraceID(*content.traceID)
+	}
+
+	if content.flags != uint32(0x00) {
+		log.SetFlags(content.flags)
 	}
 
 	resource := ld.ResourceLogs().At(0).Resource()

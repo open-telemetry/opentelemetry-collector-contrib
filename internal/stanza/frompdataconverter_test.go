@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func BenchmarkConvertFromPdataSimple(b *testing.B) {
@@ -46,7 +48,7 @@ func BenchmarkConvertFromPdataComplex(b *testing.B) {
 }
 
 func baseMap() pdata.Map {
-	obj := pdata.NewMap()
+	obj := pcommon.NewMap()
 	obj.InsertBool("bool", true)
 	obj.InsertInt("int", 123)
 	obj.InsertDouble("double", 12.34)
@@ -56,7 +58,7 @@ func baseMap() pdata.Map {
 }
 
 func baseMapValue() pdata.Value {
-	v := pdata.NewValueMap()
+	v := pcommon.NewValueMap()
 	baseMap := baseMap()
 	baseMap.CopyTo(v.MapVal())
 	return v
@@ -77,7 +79,12 @@ func complexPdataForNDifferentHosts(count int, n int) pdata.Logs {
 
 		ills := rls.ScopeLogs().AppendEmpty()
 		lr := ills.LogRecords().AppendEmpty()
-		lr.SetSeverityNumber(pdata.SeverityNumberERROR)
+
+		lr.SetSpanID(pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
+		lr.SetTraceID(pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
+		lr.SetFlags(uint32(0x01))
+
+		lr.SetSeverityNumber(plog.SeverityNumberERROR)
 		lr.SetSeverityText("Error")
 
 		attr.Remove("double")
@@ -161,6 +168,9 @@ func TestConvertFrom(t *testing.T) {
 		)
 
 		assert.Equal(t, entry.Error, e.Severity)
+		assert.Equal(t, []byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}, e.TraceId)
+		assert.Equal(t, []byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}, e.SpanId)
+		assert.Equal(t, uint8(0x01), e.TraceFlags[0])
 	}
 }
 
@@ -169,31 +179,31 @@ func TestConvertFromSeverity(t *testing.T) {
 		expectedSeverity entry.Severity
 		severityNumber   pdata.SeverityNumber
 	}{
-		{entry.Default, pdata.SeverityNumberUNDEFINED},
-		{entry.Trace, pdata.SeverityNumberTRACE},
-		{entry.Trace2, pdata.SeverityNumberTRACE2},
-		{entry.Trace3, pdata.SeverityNumberTRACE3},
-		{entry.Trace4, pdata.SeverityNumberTRACE4},
-		{entry.Debug, pdata.SeverityNumberDEBUG},
-		{entry.Debug2, pdata.SeverityNumberDEBUG2},
-		{entry.Debug3, pdata.SeverityNumberDEBUG3},
-		{entry.Debug4, pdata.SeverityNumberDEBUG4},
-		{entry.Info, pdata.SeverityNumberINFO},
-		{entry.Info2, pdata.SeverityNumberINFO2},
-		{entry.Info3, pdata.SeverityNumberINFO3},
-		{entry.Info4, pdata.SeverityNumberINFO4},
-		{entry.Warn, pdata.SeverityNumberWARN},
-		{entry.Warn2, pdata.SeverityNumberWARN2},
-		{entry.Warn3, pdata.SeverityNumberWARN3},
-		{entry.Warn4, pdata.SeverityNumberWARN4},
-		{entry.Error, pdata.SeverityNumberERROR},
-		{entry.Error2, pdata.SeverityNumberERROR2},
-		{entry.Error3, pdata.SeverityNumberERROR3},
-		{entry.Error4, pdata.SeverityNumberERROR4},
-		{entry.Fatal, pdata.SeverityNumberFATAL},
-		{entry.Fatal2, pdata.SeverityNumberFATAL2},
-		{entry.Fatal3, pdata.SeverityNumberFATAL3},
-		{entry.Fatal4, pdata.SeverityNumberFATAL4},
+		{entry.Default, plog.SeverityNumberUNDEFINED},
+		{entry.Trace, plog.SeverityNumberTRACE},
+		{entry.Trace2, plog.SeverityNumberTRACE2},
+		{entry.Trace3, plog.SeverityNumberTRACE3},
+		{entry.Trace4, plog.SeverityNumberTRACE4},
+		{entry.Debug, plog.SeverityNumberDEBUG},
+		{entry.Debug2, plog.SeverityNumberDEBUG2},
+		{entry.Debug3, plog.SeverityNumberDEBUG3},
+		{entry.Debug4, plog.SeverityNumberDEBUG4},
+		{entry.Info, plog.SeverityNumberINFO},
+		{entry.Info2, plog.SeverityNumberINFO2},
+		{entry.Info3, plog.SeverityNumberINFO3},
+		{entry.Info4, plog.SeverityNumberINFO4},
+		{entry.Warn, plog.SeverityNumberWARN},
+		{entry.Warn2, plog.SeverityNumberWARN2},
+		{entry.Warn3, plog.SeverityNumberWARN3},
+		{entry.Warn4, plog.SeverityNumberWARN4},
+		{entry.Error, plog.SeverityNumberERROR},
+		{entry.Error2, plog.SeverityNumberERROR2},
+		{entry.Error3, plog.SeverityNumberERROR3},
+		{entry.Error4, plog.SeverityNumberERROR4},
+		{entry.Fatal, plog.SeverityNumberFATAL},
+		{entry.Fatal2, plog.SeverityNumberFATAL2},
+		{entry.Fatal3, plog.SeverityNumberFATAL3},
+		{entry.Fatal4, plog.SeverityNumberFATAL4},
 	}
 
 	for _, tc := range cases {

@@ -22,6 +22,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -202,7 +204,7 @@ func convertFrom(src pdata.LogRecord, ent *entry.Entry) {
 	if src.Flags() != 0 {
 		a := make([]byte, 4)
 		binary.LittleEndian.PutUint32(a, src.Flags())
-		ent.TraceFlags[0] = a[0]
+		ent.TraceFlags = []byte{a[0]}
 	}
 }
 
@@ -217,21 +219,21 @@ func valueToMap(value pdata.Map) map[string]interface{} {
 
 func valueToInterface(value pdata.Value) interface{} {
 	switch value.Type() {
-	case pdata.ValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		return nil
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return value.StringVal()
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return value.BoolVal()
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return value.IntVal()
-	case pdata.ValueTypeBytes:
+	case pcommon.ValueTypeBytes:
 		return value.BytesVal()
-	case pdata.ValueTypeMap:
+	case pcommon.ValueTypeMap:
 		return value.MapVal().AsRaw()
-	case pdata.ValueTypeSlice:
+	case pcommon.ValueTypeSlice:
 		arr := make([]interface{}, 0, value.SliceVal().Len())
 		for i := 0; i < value.SliceVal().Len(); i++ {
 			arr = append(arr, valueToInterface(value.SliceVal().At(i)))
@@ -243,29 +245,29 @@ func valueToInterface(value pdata.Value) interface{} {
 }
 
 var fromPdataSevMap = map[pdata.SeverityNumber]entry.Severity{
-	pdata.SeverityNumberUNDEFINED: entry.Default,
-	pdata.SeverityNumberTRACE:     entry.Trace,
-	pdata.SeverityNumberTRACE2:    entry.Trace2,
-	pdata.SeverityNumberTRACE3:    entry.Trace3,
-	pdata.SeverityNumberTRACE4:    entry.Trace4,
-	pdata.SeverityNumberDEBUG:     entry.Debug,
-	pdata.SeverityNumberDEBUG2:    entry.Debug2,
-	pdata.SeverityNumberDEBUG3:    entry.Debug3,
-	pdata.SeverityNumberDEBUG4:    entry.Debug4,
-	pdata.SeverityNumberINFO:      entry.Info,
-	pdata.SeverityNumberINFO2:     entry.Info2,
-	pdata.SeverityNumberINFO3:     entry.Info3,
-	pdata.SeverityNumberINFO4:     entry.Info4,
-	pdata.SeverityNumberWARN:      entry.Warn,
-	pdata.SeverityNumberWARN2:     entry.Warn2,
-	pdata.SeverityNumberWARN3:     entry.Warn3,
-	pdata.SeverityNumberWARN4:     entry.Warn4,
-	pdata.SeverityNumberERROR:     entry.Error,
-	pdata.SeverityNumberERROR2:    entry.Error2,
-	pdata.SeverityNumberERROR3:    entry.Error3,
-	pdata.SeverityNumberERROR4:    entry.Error4,
-	pdata.SeverityNumberFATAL:     entry.Fatal,
-	pdata.SeverityNumberFATAL2:    entry.Fatal2,
-	pdata.SeverityNumberFATAL3:    entry.Fatal3,
-	pdata.SeverityNumberFATAL4:    entry.Fatal4,
+	plog.SeverityNumberUNDEFINED: entry.Default,
+	plog.SeverityNumberTRACE:     entry.Trace,
+	plog.SeverityNumberTRACE2:    entry.Trace2,
+	plog.SeverityNumberTRACE3:    entry.Trace3,
+	plog.SeverityNumberTRACE4:    entry.Trace4,
+	plog.SeverityNumberDEBUG:     entry.Debug,
+	plog.SeverityNumberDEBUG2:    entry.Debug2,
+	plog.SeverityNumberDEBUG3:    entry.Debug3,
+	plog.SeverityNumberDEBUG4:    entry.Debug4,
+	plog.SeverityNumberINFO:      entry.Info,
+	plog.SeverityNumberINFO2:     entry.Info2,
+	plog.SeverityNumberINFO3:     entry.Info3,
+	plog.SeverityNumberINFO4:     entry.Info4,
+	plog.SeverityNumberWARN:      entry.Warn,
+	plog.SeverityNumberWARN2:     entry.Warn2,
+	plog.SeverityNumberWARN3:     entry.Warn3,
+	plog.SeverityNumberWARN4:     entry.Warn4,
+	plog.SeverityNumberERROR:     entry.Error,
+	plog.SeverityNumberERROR2:    entry.Error2,
+	plog.SeverityNumberERROR3:    entry.Error3,
+	plog.SeverityNumberERROR4:    entry.Error4,
+	plog.SeverityNumberFATAL:     entry.Fatal,
+	plog.SeverityNumberFATAL2:    entry.Fatal2,
+	plog.SeverityNumberFATAL3:    entry.Fatal3,
+	plog.SeverityNumberFATAL4:    entry.Fatal4,
 }
