@@ -26,6 +26,16 @@ import (
 const (
 	validMetadata = `
 name: metricreceiver
+attributes:
+  cpu_type:
+    value: type
+    description: The type of CPU consumption
+    enum:
+    - user
+    - io_wait
+    - system
+  host:
+    description: The type of CPU consumption
 metrics:
   system.cpu.time:
     enabled: true
@@ -35,7 +45,7 @@ metrics:
     sum:
       aggregation: cumulative
       value_type: double
-    attributes: []
+    attributes: [host, cpu_type]
 `
 )
 
@@ -45,20 +55,23 @@ func Test_runContents(t *testing.T) {
 		useExpGen bool
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr string
+		name                  string
+		args                  args
+		expectedDocumentation string
+		want                  string
+		wantErr               string
 	}{
 		{
-			name: "valid metadata",
-			args: args{validMetadata, false},
-			want: "",
+			name:                  "valid metadata",
+			args:                  args{validMetadata, false},
+			expectedDocumentation: "testdata/documentation_v1.md",
+			want:                  "",
 		},
 		{
-			name: "valid metadata v2",
-			args: args{validMetadata, true},
-			want: "",
+			name:                  "valid metadata v2",
+			args:                  args{validMetadata, true},
+			expectedDocumentation: "testdata/documentation_v2.md",
+			want:                  "",
 		},
 		{
 			name:    "invalid yaml",
@@ -91,7 +104,17 @@ func Test_runContents(t *testing.T) {
 				}
 				require.FileExists(t, genFilePath)
 
-				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+				actualDocumentation := filepath.Join(tmpdir, "documentation.md")
+				require.FileExists(t, actualDocumentation)
+				if tt.expectedDocumentation != "" {
+					expectedFileBytes, err := ioutil.ReadFile(tt.expectedDocumentation)
+					require.NoError(t, err)
+
+					actualFileBytes, err := ioutil.ReadFile(actualDocumentation)
+					require.NoError(t, err)
+
+					require.Equal(t, expectedFileBytes, actualFileBytes)
+				}
 			}
 		})
 	}

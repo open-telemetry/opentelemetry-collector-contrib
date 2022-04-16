@@ -44,8 +44,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -662,7 +663,7 @@ func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeTraces stores traces to this sink.
-func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 
@@ -674,7 +675,7 @@ func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces
 }
 
 // ConsumeMetrics stores metrics to this sink.
-func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 

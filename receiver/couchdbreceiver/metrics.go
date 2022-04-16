@@ -17,13 +17,13 @@ package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
-func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	averageRequestTimeMetricKey := []string{"request_time", "value", "arithmetic_mean"}
 	averageRequestTimeValue, err := getValueFromBody(averageRequestTimeMetricKey, stats)
 	if err != nil {
@@ -39,7 +39,7 @@ func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pdata.Time
 	c.mb.RecordCouchdbAverageRequestTimeDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	httpdBulkRequestsMetricKey := []string{"httpd", "bulk_requests", "value"}
 	httpdBulkRequestsMetricValue, err := getValueFromBody(httpdBulkRequestsMetricKey, stats)
 	if err != nil {
@@ -55,7 +55,7 @@ func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pdata.Times
 	c.mb.RecordCouchdbHttpdBulkRequestsDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	methods := []string{metadata.AttributeHTTPMethod.COPY, metadata.AttributeHTTPMethod.DELETE, metadata.AttributeHTTPMethod.GET, metadata.AttributeHTTPMethod.HEAD, metadata.AttributeHTTPMethod.OPTIONS, metadata.AttributeHTTPMethod.POST, metadata.AttributeHTTPMethod.PUT}
 	for _, method := range methods {
 		httpdRequestMethodKey := []string{"httpd_request_methods", method, "value"}
@@ -74,7 +74,7 @@ func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pdata.Timestamp
 	}
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	codes := []string{"200", "201", "202", "204", "206", "301", "302", "304", "400", "401", "403", "404", "405", "406", "409", "412", "413", "414", "415", "416", "417", "500", "501", "503"}
 	for _, code := range codes {
 		httpdResponsetCodeKey := []string{"httpd_status_codes", code, "value"}
@@ -93,7 +93,7 @@ func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pdata.Timestam
 	}
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	views := []string{metadata.AttributeView.TemporaryViewReads, metadata.AttributeView.ViewReads}
 	for _, view := range views {
 		viewKey := []string{"httpd", view, "value"}
@@ -112,7 +112,7 @@ func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pdata.Timestamp, s
 	}
 }
 
-func (c *couchdbScraper) recordCouchdbDatabaseOpenDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbDatabaseOpenDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	openDatabaseKey := []string{"open_databases", "value"}
 	openDatabaseMetricValue, err := getValueFromBody(openDatabaseKey, stats)
 	if err != nil {
@@ -128,7 +128,7 @@ func (c *couchdbScraper) recordCouchdbDatabaseOpenDataPoint(now pdata.Timestamp,
 	c.mb.RecordCouchdbDatabaseOpenDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	fileDescriptorKey := []string{"open_os_files", "value"}
 	fileDescriptorMetricValue, err := getValueFromBody(fileDescriptorKey, stats)
 	if err != nil {
@@ -144,7 +144,7 @@ func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pdata.Time
 	c.mb.RecordCouchdbFileDescriptorOpenDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
 	operations := []string{metadata.AttributeOperation.Reads, metadata.AttributeOperation.Writes}
 	keyPaths := [][]string{{"database_reads", "value"}, {"database_writes", "value"}}
 	for i := 0; i < len(operations); i++ {

@@ -24,8 +24,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 /*
@@ -194,7 +195,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 			"library_version": "1.4.3",
 			"aws_instance":    "ap-south-1",
 			"unique_id":       "abcd1234",
-			"span_kind":       pdata.SpanKindClient.String(),
+			"span_kind":       ptrace.SpanKindClient.String(),
 			"status_message":  "message",
 		},
 		StartTime: unixNanoToTime(123),
@@ -284,24 +285,24 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 
 func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
-		testSpan := pdata.NewSpan()
-		testSpan.SetParentSpanID(pdata.InvalidSpanID())
+		testSpan := ptrace.NewSpan()
+		testSpan.SetParentSpanID(pcommon.InvalidSpanID())
 
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationScope(), map[string]string{})
+		sentrySpan := convertToSentrySpan(testSpan, pcommon.NewInstrumentationScope(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
 		assert.True(t, spanIsTransaction(testSpan))
 	})
 
 	t.Run("with full span", func(t *testing.T) {
-		testSpan := pdata.NewSpan()
+		testSpan := ptrace.NewSpan()
 
-		traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-		spanID := pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-		parentSpanID := pdata.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+		traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+		spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		parentSpanID := pcommon.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
-		var startTime pdata.Timestamp = 123
-		var endTime pdata.Timestamp = 1234567890
-		kind := pdata.SpanKindClient
+		var startTime pcommon.Timestamp = 123
+		var endTime pcommon.Timestamp = 1234567890
+		kind := ptrace.SpanKindClient
 		statusMessage := "message"
 
 		testSpan.Attributes().InsertString("key", "value")
@@ -315,9 +316,9 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.SetKind(kind)
 
 		testSpan.Status().SetMessage(statusMessage)
-		testSpan.Status().SetCode(pdata.StatusCodeOk)
+		testSpan.Status().SetCode(ptrace.StatusCodeOk)
 
-		library := pdata.NewInstrumentationScope()
+		library := pcommon.NewInstrumentationScope()
 		library.SetName("otel-python")
 		library.SetVersion("1.4.3")
 
@@ -343,7 +344,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 				"library_version": "1.4.3",
 				"aws_instance":    "ca-central-1",
 				"unique_id":       "abcd1234",
-				"span_kind":       pdata.SpanKindClient.String(),
+				"span_kind":       ptrace.SpanKindClient.String(),
 				"status_message":  statusMessage,
 			},
 			StartTime: unixNanoToTime(startTime),
@@ -362,8 +363,8 @@ type SpanDescriptorsCase struct {
 	testName string
 	// input
 	name     string
-	attrs    pdata.Map
-	spanKind pdata.SpanKind
+	attrs    pcommon.Map
+	spanKind ptrace.SpanKind
 	// output
 	op          string
 	description string
@@ -374,71 +375,71 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeHTTPMethod: "GET",
 			}),
-			spanKind:    pdata.SpanKindClient,
+			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",
 			description: "GET /api/users/{user_id}",
 		},
 		{
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeHTTPMethod: "POST",
 			}),
-			spanKind:    pdata.SpanKindServer,
+			spanKind:    ptrace.SpanKindServer,
 			op:          "http.server",
 			description: "POST /api/users/{user_id}",
 		},
 		{
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeDBSystem: "redis",
 			}),
-			spanKind:    pdata.SpanKindClient,
+			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
 			description: "SET mykey 'Val'",
 		},
 		{
 			testName: "db-call-with-statement",
 			name:     "mysql call",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeDBSystem:    "sqlite",
 				conventions.AttributeDBStatement: "SELECT * FROM table",
 			}),
-			spanKind:    pdata.SpanKindClient,
+			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
 			description: "SELECT * FROM table",
 		},
 		{
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeRPCService: "EchoService",
 			}),
-			spanKind:    pdata.SpanKindClient,
+			spanKind:    ptrace.SpanKindClient,
 			op:          "rpc",
 			description: "grpc.test.EchoService/Echo",
 		},
 		{
 			testName: "message-system",
 			name:     "message-destination",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				"messaging.system": "kafka",
 			}),
-			spanKind:    pdata.SpanKindProducer,
+			spanKind:    ptrace.SpanKindProducer,
 			op:          "message",
 			description: "message-destination",
 		},
 		{
 			testName: "faas",
 			name:     "message-destination",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				"faas.trigger": "pubsub",
 			}),
-			spanKind:    pdata.SpanKindServer,
+			spanKind:    ptrace.SpanKindServer,
 			op:          "pubsub",
 			description: "message-destination",
 		},
@@ -454,7 +455,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 }
 
 func TestGenerateTagsFromAttributes(t *testing.T) {
-	attrs := pdata.NewMap()
+	attrs := pcommon.NewMap()
 
 	attrs.InsertString("string-key", "string-value")
 	attrs.InsertBool("bool-key", true)
@@ -476,7 +477,7 @@ func TestGenerateTagsFromAttributes(t *testing.T) {
 type SpanStatusCase struct {
 	testName string
 	// input
-	spanStatus pdata.SpanStatus
+	spanStatus ptrace.SpanStatus
 	// output
 	status  sentry.SpanStatus
 	message string
@@ -486,16 +487,16 @@ func TestStatusFromSpanStatus(t *testing.T) {
 	testCases := []SpanStatusCase{
 		{
 			testName:   "with empty status",
-			spanStatus: pdata.NewSpanStatus(),
+			spanStatus: ptrace.NewSpanStatus(),
 			status:     sentry.SpanStatusUndefined,
 			message:    "",
 		},
 		{
 			testName: "with status code",
-			spanStatus: func() pdata.SpanStatus {
-				spanStatus := pdata.NewSpanStatus()
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
 				spanStatus.SetMessage("message")
-				spanStatus.SetCode(pdata.StatusCodeError)
+				spanStatus.SetCode(ptrace.StatusCodeError)
 
 				return spanStatus
 			}(),
@@ -504,10 +505,10 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with unimplemented status code",
-			spanStatus: func() pdata.SpanStatus {
-				spanStatus := pdata.NewSpanStatus()
+			spanStatus: func() ptrace.SpanStatus {
+				spanStatus := ptrace.NewSpanStatus()
 				spanStatus.SetMessage("message")
-				spanStatus.SetCode(pdata.StatusCode(1337))
+				spanStatus.SetCode(ptrace.StatusCode(1337))
 
 				return spanStatus
 			}(),
@@ -624,7 +625,7 @@ func (t *mockTransport) Flush(ctx context.Context) bool {
 type PushTraceDataTestCase struct {
 	testName string
 	// input
-	td pdata.Traces
+	td ptrace.Traces
 	// output
 	called bool
 }
@@ -633,14 +634,14 @@ func TestPushTraceData(t *testing.T) {
 	testCases := []PushTraceDataTestCase{
 		{
 			testName: "with no resources",
-			td:       pdata.NewTraces(),
+			td:       ptrace.NewTraces(),
 			called:   false,
 		},
 		{
 			testName: "with no libraries",
-			td: func() pdata.Traces {
-				traces := pdata.NewTraces()
-				resourceSpans := pdata.NewResourceSpans()
+			td: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				resourceSpans := ptrace.NewResourceSpans()
 				tgt := traces.ResourceSpans().AppendEmpty()
 				resourceSpans.CopyTo(tgt)
 				return traces
@@ -649,8 +650,8 @@ func TestPushTraceData(t *testing.T) {
 		},
 		{
 			testName: "with no spans",
-			td: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			td: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				resourceSpans := traces.ResourceSpans()
 				resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty()
 				return traces
@@ -659,8 +660,8 @@ func TestPushTraceData(t *testing.T) {
 		},
 		{
 			testName: "with full trace",
-			td: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			td: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				resourceSpans := traces.ResourceSpans()
 				resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				return traces

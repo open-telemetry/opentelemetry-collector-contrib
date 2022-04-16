@@ -51,7 +51,7 @@ import (
 
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
@@ -104,7 +104,7 @@ type idValue interface {
 
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
-func DocumentFromAttributes(am pdata.Map) Document {
+func DocumentFromAttributes(am pcommon.Map) Document {
 	return DocumentFromAttributesWithPath("", am)
 }
 
@@ -112,7 +112,7 @@ func DocumentFromAttributes(am pdata.Map) Document {
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
 //
 // All keys in the map will be prefixed with path.
-func DocumentFromAttributesWithPath(path string, am pdata.Map) Document {
+func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 	if am.Len() == 0 {
 		return Document{}
 	}
@@ -123,7 +123,7 @@ func DocumentFromAttributesWithPath(path string, am pdata.Map) Document {
 }
 
 // AddTimestamp adds a raw timestamp value to the Document.
-func (doc *Document) AddTimestamp(key string, ts pdata.Timestamp) {
+func (doc *Document) AddTimestamp(key string, ts pcommon.Timestamp) {
 	doc.Add(key, TimestampValue(ts.AsTime()))
 }
 
@@ -154,17 +154,17 @@ func (doc *Document) AddInt(key string, value int64) {
 
 // AddAttributes expands and flattens all key-value pairs from the input attribute map into
 // the document.
-func (doc *Document) AddAttributes(key string, attributes pdata.Map) {
+func (doc *Document) AddAttributes(key string, attributes pcommon.Map) {
 	doc.fields = appendAttributeFields(doc.fields, key, attributes)
 }
 
 // AddAttribute converts and adds a AttributeValue to the document. If the attribute represents a map,
 // the fields will be flattened.
-func (doc *Document) AddAttribute(key string, attribute pdata.Value) {
+func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	switch attribute.Type() {
-	case pdata.ValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		// do not add 'null'
-	case pdata.ValueTypeMap:
+	case pcommon.ValueTypeMap:
 		doc.AddAttributes(key, attribute.MapVal())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
@@ -367,20 +367,20 @@ func TimestampValue(ts time.Time) Value {
 }
 
 // ValueFromAttribute converts a AttributeValue into a value.
-func ValueFromAttribute(attr pdata.Value) Value {
+func ValueFromAttribute(attr pcommon.Value) Value {
 	switch attr.Type() {
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return IntValue(attr.IntVal())
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return DoubleValue(attr.DoubleVal())
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return StringValue(attr.StringVal())
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return BoolValue(attr.BoolVal())
-	case pdata.ValueTypeSlice:
+	case pcommon.ValueTypeSlice:
 		sub := arrFromAttributes(attr.SliceVal())
 		return ArrValue(sub...)
-	case pdata.ValueTypeMap:
+	case pcommon.ValueTypeMap:
 		sub := DocumentFromAttributes(attr.MapVal())
 		return Value{kind: KindObject, doc: sub}
 	default:
@@ -464,7 +464,7 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 	return nil
 }
 
-func arrFromAttributes(aa pdata.Slice) []Value {
+func arrFromAttributes(aa pcommon.Slice) []Value {
 	if aa.Len() == 0 {
 		return nil
 	}
@@ -476,20 +476,20 @@ func arrFromAttributes(aa pdata.Slice) []Value {
 	return values
 }
 
-func appendAttributeFields(fields []field, path string, am pdata.Map) []field {
-	am.Range(func(k string, val pdata.Value) bool {
+func appendAttributeFields(fields []field, path string, am pcommon.Map) []field {
+	am.Range(func(k string, val pcommon.Value) bool {
 		fields = appendAttributeValue(fields, path, k, val)
 		return true
 	})
 	return fields
 }
 
-func appendAttributeValue(fields []field, path string, key string, attr pdata.Value) []field {
-	if attr.Type() == pdata.ValueTypeEmpty {
+func appendAttributeValue(fields []field, path string, key string, attr pcommon.Value) []field {
+	if attr.Type() == pcommon.ValueTypeEmpty {
 		return fields
 	}
 
-	if attr.Type() == pdata.ValueTypeMap {
+	if attr.Type() == pcommon.ValueTypeMap {
 		return appendAttributeFields(fields, flattenKey(path, key), attr.MapVal())
 	}
 

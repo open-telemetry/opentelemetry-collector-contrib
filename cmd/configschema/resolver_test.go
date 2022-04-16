@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -38,7 +38,7 @@ func TestPackageDirLocal(t *testing.T) {
 }
 
 func TestPackageDirError(t *testing.T) {
-	pkg := pdata.NewSum()
+	pkg := pmetric.NewSum()
 	pkgType := reflect.ValueOf(pkg).Type()
 	srcRoot := "test/fail"
 	dr := NewDirResolver(srcRoot, DefaultModule)

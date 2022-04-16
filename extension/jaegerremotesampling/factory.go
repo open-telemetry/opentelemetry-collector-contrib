@@ -48,9 +48,10 @@ func createDefaultConfig() config.Extension {
 				Endpoint: ":14250",
 			},
 		},
+		Source: Source{},
 	}
 }
 
 func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	return newExtension(cfg.(*Config), set.TelemetrySettings)
+	return newExtension(cfg.(*Config), set.TelemetrySettings), nil
 }

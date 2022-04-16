@@ -16,89 +16,80 @@ package jaegerremotesampling
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"net"
+	"path/filepath"
 	"testing"
 
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"google.golang.org/grpc"
 )
 
 func TestNewExtension(t *testing.T) {
 	// test
-	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Source.File = filepath.Join("testdata", "strategy.json")
+	e := newExtension(cfg, componenttest.NewNopTelemetrySettings())
 
 	// verify
 	assert.NotNil(t, e)
 }
 
-func TestStartAndShutdown(t *testing.T) {
+func TestStartAndShutdownLocalFile(t *testing.T) {
 	// prepare
-	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
+	cfg := createDefaultConfig().(*Config)
+	cfg.Source.File = filepath.Join("testdata", "strategy.json")
+
+	e := newExtension(cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, e)
-	require.NoError(t, err)
 	require.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
 
 	// test and verify
 	assert.NoError(t, e.Shutdown(context.Background()))
 }
 
-func TestFailedToStartHTTPServer(t *testing.T) {
-	// prepare
-	errBooBoo := errors.New("the server made a boo boo")
-
-	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
-	require.NotNil(t, e)
+func TestStartAndShutdownRemote(t *testing.T) {
+	// prepare the socket the mock server will listen at
+	lis, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 
-	e.httpServer = &mockComponent{
-		StartFunc: func(_ context.Context, _ component.Host) error {
-			return errBooBoo
-		},
+	// create the mock server
+	server := grpc.NewServer()
+
+	// register the service
+	api_v2.RegisterSamplingManagerServer(server, &samplingServer{})
+
+	go func() {
+		err = server.Serve(lis)
+		require.NoError(t, err)
+	}()
+
+	// create the config, pointing to the mock server
+	cfg := createDefaultConfig().(*Config)
+	cfg.Source.Remote = &configgrpc.GRPCClientSettings{
+		Endpoint:     fmt.Sprintf("localhost:%d", lis.Addr().(*net.TCPAddr).Port),
+		WaitForReady: true,
 	}
 
-	// test and verify
-	assert.Equal(t, errBooBoo, e.Start(context.Background(), componenttest.NewNopHost()))
-}
-
-func TestFailedToShutdownHTTPServer(t *testing.T) {
-	// prepare
-	errBooBoo := errors.New("the server made a boo boo")
-
-	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
+	// create the extension
+	e := newExtension(cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, e)
-	require.NoError(t, err)
 
-	e.httpServer = &mockComponent{
-		ShutdownFunc: func(_ context.Context) error {
-			return errBooBoo
-		},
-	}
-	require.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
-
-	// test and verify
-	assert.Equal(t, errBooBoo, e.Shutdown(context.Background()))
+	// test
+	assert.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, e.Shutdown(context.Background()))
 }
 
-type mockComponent struct {
-	StartFunc    func(_ context.Context, _ component.Host) error
-	ShutdownFunc func(_ context.Context) error
+type samplingServer struct {
+	api_v2.UnimplementedSamplingManagerServer
 }
 
-func (s *mockComponent) Start(ctx context.Context, host component.Host) error {
-	if s.StartFunc == nil {
-		return nil
-	}
-
-	return s.StartFunc(ctx, host)
-}
-
-func (s *mockComponent) Shutdown(ctx context.Context) error {
-	if s.ShutdownFunc == nil {
-		return nil
-	}
-
-	return s.ShutdownFunc(ctx)
+func (s samplingServer) GetSamplingStrategy(ctx context.Context, param *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
+	return &api_v2.SamplingStrategyResponse{
+		StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC,
+	}, nil
 }

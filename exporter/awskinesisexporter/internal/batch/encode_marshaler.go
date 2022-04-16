@@ -18,7 +18,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
@@ -28,21 +30,21 @@ type batchMarshaller struct {
 	batchOptions []Option
 	partitioner  key.Partition
 
-	logsMarshaller    pdata.LogsMarshaler
-	tracesMarshaller  pdata.TracesMarshaler
-	metricsMarshaller pdata.MetricsMarshaler
+	logsMarshaller    plog.Marshaler
+	tracesMarshaller  ptrace.Marshaler
+	metricsMarshaller pmetric.Marshaler
 }
 
 var _ Encoder = (*batchMarshaller)(nil)
 
-func (bm *batchMarshaller) Logs(ld pdata.Logs) (*Batch, error) {
+func (bm *batchMarshaller) Logs(ld plog.Logs) (*Batch, error) {
 	bt := New(bm.batchOptions...)
 
 	// Due to kinesis limitations of only allowing 1Mb of data per record,
 	// the resource data is copied to the export variable then marshaled
 	// due to no current means of marshaling per resource.
 
-	export := pdata.NewLogs()
+	export := plog.NewLogs()
 	export.ResourceLogs().AppendEmpty()
 
 	var errs error
@@ -67,14 +69,14 @@ func (bm *batchMarshaller) Logs(ld pdata.Logs) (*Batch, error) {
 	return bt, errs
 }
 
-func (bm *batchMarshaller) Traces(td pdata.Traces) (*Batch, error) {
+func (bm *batchMarshaller) Traces(td ptrace.Traces) (*Batch, error) {
 	bt := New(bm.batchOptions...)
 
 	// Due to kinesis limitations of only allowing 1Mb of data per record,
 	// the resource data is copied to the export variable then marshaled
 	// due to no current means of marshaling per resource.
 
-	export := pdata.NewTraces()
+	export := ptrace.NewTraces()
 	export.ResourceSpans().AppendEmpty()
 
 	var errs error
@@ -99,14 +101,14 @@ func (bm *batchMarshaller) Traces(td pdata.Traces) (*Batch, error) {
 	return bt, errs
 }
 
-func (bm *batchMarshaller) Metrics(md pdata.Metrics) (*Batch, error) {
+func (bm *batchMarshaller) Metrics(md pmetric.Metrics) (*Batch, error) {
 	bt := New(bm.batchOptions...)
 
 	// Due to kinesis limitations of only allowing 1Mb of data per record,
 	// the resource data is copied to the export variable then marshaled
 	// due to no current means of marshaling per resource.
 
-	export := pdata.NewMetrics()
+	export := pmetric.NewMetrics()
 	export.ResourceMetrics().AppendEmpty()
 
 	var errs error

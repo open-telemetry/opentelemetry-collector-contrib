@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
@@ -30,18 +30,18 @@ import (
 type MockCadvisor struct {
 }
 
-func (c *MockCadvisor) GetMetrics() []pdata.Metrics {
-	md := pdata.NewMetrics()
-	return []pdata.Metrics{md}
+func (c *MockCadvisor) GetMetrics() []pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	return []pmetric.Metrics{md}
 }
 
 // Mock k8sapiserver
 type MockK8sAPIServer struct {
 }
 
-func (m *MockK8sAPIServer) GetMetrics() []pdata.Metrics {
-	md := pdata.NewMetrics()
-	return []pdata.Metrics{md}
+func (m *MockK8sAPIServer) GetMetrics() []pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	return []pmetric.Metrics{md}
 }
 
 func TestReceiver(t *testing.T) {

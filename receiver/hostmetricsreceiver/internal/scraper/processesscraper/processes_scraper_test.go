@@ -25,7 +25,8 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -43,7 +44,7 @@ func TestScrape(t *testing.T) {
 		getMiscStats func() (*load.MiscStat, error)
 		getProcesses func() ([]proc, error)
 		expectedErr  string
-		validate     func(*testing.T, pdata.MetricSlice)
+		validate     func(*testing.T, pmetric.MetricSlice)
 	}
 
 	testCases := []testCase{{
@@ -125,7 +126,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func validateRealData(t *testing.T, metrics pdata.MetricSlice) {
+func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 	assert := assert.New(t)
 
 	metricIndex := 0
@@ -158,11 +159,11 @@ func validateRealData(t *testing.T, metrics pdata.MetricSlice) {
 	}
 }
 
-func validateStartTime(t *testing.T, metrics pdata.MetricSlice) {
+func validateStartTime(t *testing.T, metrics pmetric.MetricSlice) {
 	startTime, err := host.BootTime()
 	assert.NoError(t, err)
 	for i := 0; i < metricsLength; i++ {
-		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), pdata.Timestamp(startTime*1e9))
+		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), pcommon.Timestamp(startTime*1e9))
 	}
 }
 
@@ -194,7 +195,7 @@ func (f fakeProcess) Status() ([]string, error) {
 	return []string{string(f)}, nil
 }
 
-func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {
+func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 	assert := assert.New(t)
 	metricIndex := 0
 	if expectProcessesCountMetric {

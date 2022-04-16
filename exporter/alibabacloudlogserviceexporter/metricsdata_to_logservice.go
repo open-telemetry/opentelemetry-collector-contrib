@@ -21,7 +21,8 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -156,9 +157,9 @@ func min(l, r int) int {
 	return r
 }
 
-func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
+func resourceToMetricLabels(labels *KeyValues, resource pcommon.Resource) {
 	attrs := resource.Attributes()
-	attrs.Range(func(k string, v pdata.Value) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		labels.keyValues = append(labels.keyValues, KeyValue{
 			Key:   k,
 			Value: v.AsString(),
@@ -167,17 +168,17 @@ func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	})
 }
 
-func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		attributeMap.Range(func(k string, v pdata.Value) bool {
+		attributeMap.Range(func(k string, v pcommon.Value) bool {
 			labels.Append(k, v.AsString())
 			return true
 		})
 		switch dataPoint.ValueType() {
-		case pdata.MetricValueTypeInt:
+		case pmetric.MetricValueTypeInt:
 			logs = append(logs,
 				newMetricLogFromRaw(name,
 					labels,
@@ -185,7 +186,7 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 					float64(dataPoint.IntVal()),
 				),
 			)
-		case pdata.MetricValueTypeDouble:
+		case pmetric.MetricValueTypeDouble:
 			logs = append(logs,
 				newMetricLogFromRaw(name,
 					labels,
@@ -198,12 +199,12 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 	return logs
 }
 
-func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		attributeMap.Range(func(k string, v pdata.Value) bool {
+		attributeMap.Range(func(k string, v pcommon.Value) bool {
 			labels.Append(k, v.AsString())
 			return true
 		})
@@ -246,12 +247,12 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 	return logs
 }
 
-func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		attributeMap.Range(func(k string, v pdata.Value) bool {
+		attributeMap.Range(func(k string, v pcommon.Value) bool {
 			labels.Append(k, v.AsString())
 			return true
 		})
@@ -282,17 +283,17 @@ func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, d
 	return logs
 }
 
-func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs []*sls.Log) {
+func metricDataToLogServiceData(md pmetric.Metric, defaultLabels KeyValues) (logs []*sls.Log) {
 	switch md.DataType() {
-	case pdata.MetricDataTypeNone:
+	case pmetric.MetricDataTypeNone:
 		break
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		return numberMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		return numberMetricsToLogs(md.Name(), md.Sum().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		return doubleHistogramMetricsToLogs(md.Name(), md.Histogram().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		return doubleSummaryMetricsToLogs(md.Name(), md.Summary().DataPoints(), defaultLabels)
 	}
 	return logs
@@ -300,7 +301,7 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 
 func metricsDataToLogServiceData(
 	_ *zap.Logger,
-	md pdata.Metrics,
+	md pmetric.Metrics,
 ) (logs []*sls.Log) {
 
 	resMetrics := md.ResourceMetrics()

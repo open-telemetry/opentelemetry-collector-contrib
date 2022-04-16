@@ -15,12 +15,13 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func fillDoubleGauge(dest pdata.Metric, prefix string, metricInt metadata.MetricIntf, value float64, currentTime pdata.Timestamp) {
+func fillDoubleGauge(dest pmetric.Metric, prefix string, metricInt metadata.MetricIntf, value float64, currentTime pcommon.Timestamp) {
 	metricInt.Init(dest)
 	dest.SetName(prefix + dest.Name())
 	dp := dest.Gauge().DataPoints().AppendEmpty()
@@ -28,14 +29,14 @@ func fillDoubleGauge(dest pdata.Metric, prefix string, metricInt metadata.Metric
 	dp.SetTimestamp(currentTime)
 }
 
-func addIntGauge(dest pdata.MetricSlice, prefix string, metricInt metadata.MetricIntf, value *uint64, currentTime pdata.Timestamp) {
+func addIntGauge(dest pmetric.MetricSlice, prefix string, metricInt metadata.MetricIntf, value *uint64, currentTime pcommon.Timestamp) {
 	if value == nil {
 		return
 	}
 	fillIntGauge(dest.AppendEmpty(), prefix, metricInt, int64(*value), currentTime)
 }
 
-func fillIntGauge(dest pdata.Metric, prefix string, metricInt metadata.MetricIntf, value int64, currentTime pdata.Timestamp) {
+func fillIntGauge(dest pmetric.Metric, prefix string, metricInt metadata.MetricIntf, value int64, currentTime pcommon.Timestamp) {
 	metricInt.Init(dest)
 	dest.SetName(prefix + dest.Name())
 	dp := dest.Gauge().DataPoints().AppendEmpty()
@@ -43,7 +44,7 @@ func fillIntGauge(dest pdata.Metric, prefix string, metricInt metadata.MetricInt
 	dp.SetTimestamp(currentTime)
 }
 
-func fillDoubleSum(dest pdata.Metric, prefix string, metricInt metadata.MetricIntf, value float64, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func fillDoubleSum(dest pmetric.Metric, prefix string, metricInt metadata.MetricIntf, value float64, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	metricInt.Init(dest)
 	dest.SetName(prefix + dest.Name())
 	dp := dest.Sum().DataPoints().AppendEmpty()

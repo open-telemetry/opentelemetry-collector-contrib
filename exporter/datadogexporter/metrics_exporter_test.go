@@ -63,8 +63,8 @@ func TestNewExporter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, len(server.MetadataChan), 0)
 
-	cfg.SendMetadata = true
-	cfg.UseResourceMetadata = true
+	cfg.HostMetadata.Enabled = true
+	cfg.HostMetadata.HostnameSource = config.HostnameSourceFirstResource
 	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
 	require.NoError(t, err)
 	body := <-server.MetadataChan

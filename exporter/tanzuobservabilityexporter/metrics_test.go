@@ -23,13 +23,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestEndToEndGaugeConsumer(t *testing.T) {
-	gauge := newMetric("gauge", pdata.MetricDataTypeGauge)
+	gauge := newMetric("gauge", pmetric.MetricDataTypeGauge)
 	dataPoints := gauge.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
 
@@ -80,12 +81,12 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 }
 
 func TestMetricsConsumerNormal(t *testing.T) {
-	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	sum1 := newMetric("sum1", pdata.MetricDataTypeSum)
-	gauge2 := newMetric("gauge2", pdata.MetricDataTypeGauge)
-	sum2 := newMetric("sum2", pdata.MetricDataTypeSum)
-	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
+	gauge1 := newMetric("gauge1", pmetric.MetricDataTypeGauge)
+	sum1 := newMetric("sum1", pmetric.MetricDataTypeSum)
+	gauge2 := newMetric("gauge2", pmetric.MetricDataTypeGauge)
+	sum2 := newMetric("sum2", pmetric.MetricDataTypeSum)
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeGauge}
+	mockSumConsumer := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeSum}
 	sender := &mockFlushCloser{}
 	metrics := constructMetrics(gauge1, sum1, gauge2, sum2)
 	consumer := newMetricsConsumer(
@@ -105,8 +106,8 @@ func TestMetricsConsumerNormal(t *testing.T) {
 }
 
 func TestMetricsConsumerNormalWithSourceTag(t *testing.T) {
-	sum := newMetric("sum", pdata.MetricDataTypeSum)
-	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
+	sum := newMetric("sum", pmetric.MetricDataTypeSum)
+	mockSumConsumer := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeSum}
 	sender := &mockFlushCloser{}
 	tags := map[string]string{"source": "test_source", "test_key": "test_value"}
 	metrics := constructMetricsWithTags(tags, sum)
@@ -127,8 +128,8 @@ func TestMetricsConsumerNormalWithSourceTag(t *testing.T) {
 }
 
 func TestMetricsConsumerNormalWithHostnameTag(t *testing.T) {
-	sum := newMetric("sum", pdata.MetricDataTypeSum)
-	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
+	sum := newMetric("sum", pmetric.MetricDataTypeSum)
+	mockSumConsumer := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeSum}
 	sender := &mockFlushCloser{}
 	tags := map[string]string{"host.name": "test_host.name", "hostname": "test_hostname"}
 	metrics := constructMetricsWithTags(tags, sum)
@@ -159,8 +160,8 @@ func TestMetricsConsumerNone(t *testing.T) {
 }
 
 func TestNewMetricsConsumerPanicsWithDuplicateMetricType(t *testing.T) {
-	mockGaugeConsumer1 := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	mockGaugeConsumer2 := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	mockGaugeConsumer1 := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeGauge}
+	mockGaugeConsumer2 := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeGauge}
 
 	assert.Panics(t, func() {
 		newMetricsConsumer(
@@ -180,7 +181,7 @@ func TestMetricsConsumerPropagatesErrorsOnFlush(t *testing.T) {
 }
 
 func TestMetricsConsumerErrorsWithUnregisteredMetricType(t *testing.T) {
-	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
+	gauge1 := newMetric("gauge1", pmetric.MetricDataTypeGauge)
 	metrics := constructMetrics(gauge1)
 	consumer := newMetricsConsumer(nil, nil, true)
 
@@ -188,9 +189,9 @@ func TestMetricsConsumerErrorsWithUnregisteredMetricType(t *testing.T) {
 }
 
 func TestMetricsConsumerErrorConsuming(t *testing.T) {
-	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
+	gauge1 := newMetric("gauge1", pmetric.MetricDataTypeGauge)
 	mockGaugeConsumer := &mockTypedMetricConsumer{
-		typ:            pdata.MetricDataTypeGauge,
+		typ:            pmetric.MetricDataTypeGauge,
 		errorOnConsume: true}
 	metrics := constructMetrics(gauge1)
 	consumer := newMetricsConsumer(
@@ -202,8 +203,8 @@ func TestMetricsConsumerErrorConsuming(t *testing.T) {
 }
 
 func TestMetricsConsumerNoReportingInternalMetrics(t *testing.T) {
-	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	gauge1 := newMetric("gauge1", pmetric.MetricDataTypeGauge)
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeGauge}
 	metrics := constructMetrics(gauge1)
 	consumer := newMetricsConsumer(
 		[]typedMetricConsumer{mockGaugeConsumer}, nil, false)
@@ -213,9 +214,9 @@ func TestMetricsConsumerNoReportingInternalMetrics(t *testing.T) {
 }
 
 func TestMetricsConsumerErrorConsumingInternal(t *testing.T) {
-	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
+	gauge1 := newMetric("gauge1", pmetric.MetricDataTypeGauge)
 	mockGaugeConsumer := &mockTypedMetricConsumer{
-		typ: pdata.MetricDataTypeGauge, errorOnPushInternalMetrics: true}
+		typ: pmetric.MetricDataTypeGauge, errorOnPushInternalMetrics: true}
 	metrics := constructMetrics(gauge1)
 	consumer := newMetricsConsumer(
 		[]typedMetricConsumer{mockGaugeConsumer}, nil, true)
@@ -227,8 +228,8 @@ func TestMetricsConsumerErrorConsumingInternal(t *testing.T) {
 
 func TestMetricsConsumerRespectContext(t *testing.T) {
 	sender := &mockFlushCloser{}
-	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	gauge1 := newMetric("gauge1", pmetric.MetricDataTypeGauge)
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pmetric.MetricDataTypeGauge}
 	consumer := newMetricsConsumer(
 		[]typedMetricConsumer{mockGaugeConsumer}, sender, true)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -250,7 +251,7 @@ func TestGaugeConsumerErrorSending(t *testing.T) {
 }
 
 func TestGaugeConsumerMissingValue(t *testing.T) {
-	metric := newMetric("missing.value.metric", pdata.MetricDataTypeGauge)
+	metric := newMetric("missing.value.metric", pmetric.MetricDataTypeGauge)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
@@ -296,10 +297,10 @@ func TestGaugeConsumerMissingValue(t *testing.T) {
 
 func TestSumConsumerDelta(t *testing.T) {
 	deltaMetric := newMetric(
-		"test.delta.metric", pdata.MetricDataTypeSum)
+		"test.delta.metric", pmetric.MetricDataTypeSum)
 	sum := deltaMetric.Sum()
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(2)
 	addDataPoint(
@@ -321,7 +322,7 @@ func TestSumConsumerDelta(t *testing.T) {
 
 	sender := &mockSumSender{}
 	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
-	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	assert.Equal(t, pmetric.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// delta sums get treated as delta counters
@@ -348,10 +349,10 @@ func TestSumConsumerDelta(t *testing.T) {
 
 func TestSumConsumerErrorOnSend(t *testing.T) {
 	deltaMetric := newMetric(
-		"test.delta.metric", pdata.MetricDataTypeSum)
+		"test.delta.metric", pmetric.MetricDataTypeSum)
 	sum := deltaMetric.Sum()
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(2)
 	addDataPoint(
@@ -373,7 +374,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 
 	sender := &mockSumSender{errorOnSend: true}
 	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
-	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	assert.Equal(t, pmetric.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// delta sums get treated as delta counters
@@ -384,10 +385,10 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 
 func TestSumConsumerCumulative(t *testing.T) {
 	cumulativeMetric := newMetric(
-		"test.cumulative.metric", pdata.MetricDataTypeSum)
+		"test.cumulative.metric", pmetric.MetricDataTypeSum)
 	sum := cumulativeMetric.Sum()
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -400,7 +401,7 @@ func TestSumConsumerCumulative(t *testing.T) {
 	)
 	sender := &mockSumSender{}
 	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
-	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	assert.Equal(t, pmetric.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// cumulative sums get treated as regular wavefront metrics
@@ -422,10 +423,10 @@ func TestSumConsumerCumulative(t *testing.T) {
 
 func TestSumConsumerUnspecified(t *testing.T) {
 	cumulativeMetric := newMetric(
-		"test.unspecified.metric", pdata.MetricDataTypeSum)
+		"test.unspecified.metric", pmetric.MetricDataTypeSum)
 	sum := cumulativeMetric.Sum()
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityUnspecified)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityUnspecified)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -438,7 +439,7 @@ func TestSumConsumerUnspecified(t *testing.T) {
 	)
 	sender := &mockSumSender{}
 	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
-	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
+	assert.Equal(t, pmetric.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// unspecified sums get treated as regular wavefront metrics
@@ -459,10 +460,10 @@ func TestSumConsumerUnspecified(t *testing.T) {
 }
 
 func TestSumConsumerMissingValue(t *testing.T) {
-	metric := newMetric("missing.value.metric", pdata.MetricDataTypeSum)
+	metric := newMetric("missing.value.metric", pmetric.MetricDataTypeSum)
 	sum := metric.Sum()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
-	sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	dataPoints := sum.DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -501,7 +502,7 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 	countAttributeForEachDataPoint := []uint64{2, 5, 10}
 	deltaMetric := newHistogramMetricWithDataPoints(
 		"delta.metric",
-		pdata.MetricAggregationTemporalityDelta,
+		pmetric.MetricAggregationTemporalityDelta,
 		countAttributeForEachDataPoint)
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
@@ -533,7 +534,7 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 	countAttributeForEachDataPoint := []uint64{2, 5, 10}
 	cumulativeMetric := newHistogramMetricWithDataPoints(
 		"cumulative.metric",
-		pdata.MetricAggregationTemporalityCumulative,
+		pmetric.MetricAggregationTemporalityCumulative,
 		countAttributeForEachDataPoint)
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
@@ -569,7 +570,7 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 	// Create a histogram metric with missing aggregation attribute
 	metric := newHistogramMetricWithDataPoints(
 		"missing.aggregation.metric",
-		pdata.MetricAggregationTemporalityUnspecified,
+		pmetric.MetricAggregationTemporalityUnspecified,
 		nil)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
@@ -583,7 +584,7 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 		regularHistogram,
 		settings,
 	)
-	assert.Equal(t, pdata.MetricDataTypeHistogram, consumer.Type())
+	assert.Equal(t, pmetric.MetricDataTypeHistogram, consumer.Type())
 	var errs []error
 	expectedNoAggregationCount := 3
 	for i := 0; i < expectedNoAggregationCount; i++ {
@@ -606,7 +607,7 @@ func TestHistogramReporting(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger = zap.New(observedZapCore)
 	report := newHistogramReporting(settings)
-	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
+	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
 	malformedCount := 3
 	for i := 0; i < malformedCount; i++ {
 		report.LogMalformed(metric)
@@ -657,8 +658,8 @@ func TestHistogramReportingError(t *testing.T) {
 }
 
 func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
-	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
@@ -705,8 +706,8 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 }
 
 func TestCumulativeHistogramDataPointConsumerError(t *testing.T) {
-	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
@@ -723,9 +724,9 @@ func TestCumulativeHistogramDataPointConsumerError(t *testing.T) {
 }
 
 func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
-	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
+	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	histogramDataPoint.SetExplicitBounds([]float64{10.0})
 	histogramDataPoint.SetBucketCounts([]uint64{4, 12})
 	histogramDataPoint.Attributes().UpsertInt("le", 8)
@@ -758,9 +759,9 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 }
 
 func TestCumulativeHistogramDataPointConsumerMissingBuckets(t *testing.T) {
-	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
+	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -774,8 +775,8 @@ func TestCumulativeHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 }
 
 func TestDeltaHistogramDataPointConsumer(t *testing.T) {
-	metric := newMetric("a.delta.histogram", pdata.MetricDataTypeHistogram)
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	metric := newMetric("a.delta.histogram", pmetric.MetricDataTypeHistogram)
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
@@ -813,8 +814,8 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 }
 
 func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
-	metric := newMetric("one.bucket.delta.histogram", pdata.MetricDataTypeHistogram)
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	metric := newMetric("one.bucket.delta.histogram", pmetric.MetricDataTypeHistogram)
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.SetExplicitBounds([]float64{})
@@ -846,8 +847,8 @@ func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
 }
 
 func TestDeltaHistogramDataPointConsumerError(t *testing.T) {
-	metric := newMetric("a.delta.histogram", pdata.MetricDataTypeHistogram)
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	metric := newMetric("a.delta.histogram", pmetric.MetricDataTypeHistogram)
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
@@ -863,9 +864,9 @@ func TestDeltaHistogramDataPointConsumerError(t *testing.T) {
 }
 
 func TestDeltaHistogramDataPointConsumerMissingBuckets(t *testing.T) {
-	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
+	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
-	histogramDataPoint := pdata.NewHistogramDataPoint()
+	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	sender := &mockDistributionSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newDeltaHistogramDataPointConsumer(sender)
@@ -879,7 +880,7 @@ func TestDeltaHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 }
 
 func TestSummaries(t *testing.T) {
-	summaryMetric := newMetric("test.summary", pdata.MetricDataTypeSummary)
+	summaryMetric := newMetric("test.summary", pmetric.MetricDataTypeSummary)
 	summary := summaryMetric.Summary()
 	dataPoints := summary.DataPoints()
 	dataPoints.EnsureCapacity(2)
@@ -902,7 +903,7 @@ func TestSummaries(t *testing.T) {
 	sender := &mockGaugeSender{}
 	consumer := newSummaryConsumer(sender, componenttest.NewNopTelemetrySettings())
 
-	assert.Equal(t, pdata.MetricDataTypeSummary, consumer.Type())
+	assert.Equal(t, pmetric.MetricDataTypeSummary, consumer.Type())
 
 	var errs []error
 	consumer.Consume(mi, &errs)
@@ -999,7 +1000,7 @@ func TestSummaries(t *testing.T) {
 }
 
 func TestSummaries_QuantileTagExists(t *testing.T) {
-	summaryMetric := newMetric("test.summary.quantile.tag", pdata.MetricDataTypeSummary)
+	summaryMetric := newMetric("test.summary.quantile.tag", pmetric.MetricDataTypeSummary)
 	summary := summaryMetric.Summary()
 	dataPoints := summary.DataPoints()
 	dataPoints.EnsureCapacity(1)
@@ -1045,7 +1046,7 @@ func TestSummaries_QuantileTagExists(t *testing.T) {
 }
 
 func TestSummariesConsumer_ErrorSending(t *testing.T) {
-	summaryMetric := newMetric("test.summary.error", pdata.MetricDataTypeSummary)
+	summaryMetric := newMetric("test.summary.error", pmetric.MetricDataTypeSummary)
 	summary := summaryMetric.Summary()
 	mi := metricInfo{Metric: summaryMetric, Source: "test_source", SourceKey: "host.name"}
 	dataPoints := summary.DataPoints()
@@ -1063,7 +1064,7 @@ func TestSummariesConsumer_ErrorSending(t *testing.T) {
 }
 
 // Sets quantile values for a summary data point
-func setQuantileValues(dataPoint pdata.SummaryDataPoint, quantileValues ...float64) {
+func setQuantileValues(dataPoint pmetric.SummaryDataPoint, quantileValues ...float64) {
 	if len(quantileValues)%2 != 0 {
 		panic("quantileValues must be quantile, value, quantile, value, ...")
 	}
@@ -1079,10 +1080,10 @@ func setQuantileValues(dataPoint pdata.SummaryDataPoint, quantileValues ...float
 
 func TestExponentialHistogramConsumerSpec(t *testing.T) {
 	metric := newExponentialHistogramMetricWithDataPoints(
-		"a.metric", pdata.MetricAggregationTemporalityDelta, []uint64{4, 7, 11})
-	assert.Equal(t, pdata.MetricDataTypeExponentialHistogram, exponentialHistogram.Type())
+		"a.metric", pmetric.MetricAggregationTemporalityDelta, []uint64{4, 7, 11})
+	assert.Equal(t, pmetric.MetricDataTypeExponentialHistogram, exponentialHistogram.Type())
 	aHistogram := exponentialHistogram.AsHistogram(metric)
-	assert.Equal(t, pdata.MetricAggregationTemporalityDelta, aHistogram.AggregationTemporality())
+	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, aHistogram.AggregationTemporality())
 	assert.Equal(t, 3, aHistogram.Len())
 	assert.Equal(t, uint64(4), aHistogram.At(0).Count())
 	assert.Equal(t, uint64(7), aHistogram.At(1).Count())
@@ -1090,7 +1091,7 @@ func TestExponentialHistogramConsumerSpec(t *testing.T) {
 }
 
 func TestExponentialHistogramDataPoint(t *testing.T) {
-	dataPoint := pdata.NewExponentialHistogramDataPoint()
+	dataPoint := pmetric.NewExponentialHistogramDataPoint()
 	dataPoint.SetScale(1)
 	dataPoint.Negative().SetOffset(6)
 	dataPoint.Negative().SetBucketCounts([]uint64{15, 16, 17})
@@ -1112,7 +1113,7 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 }
 
 func TestExponentialHistogramDataPoint_ZeroOnly(t *testing.T) {
-	dataPoint := pdata.NewExponentialHistogramDataPoint()
+	dataPoint := pmetric.NewExponentialHistogramDataPoint()
 	dataPoint.SetScale(0)
 	dataPoint.Negative().SetOffset(2)
 	dataPoint.Positive().SetOffset(1)
@@ -1155,10 +1156,10 @@ func TestAttributesToTagsForMetrics(t *testing.T) {
 // data point.
 func newHistogramMetricWithDataPoints(
 	name string,
-	temporality pdata.MetricAggregationTemporality,
+	temporality pmetric.MetricAggregationTemporality,
 	countAttributeForEachDataPoint []uint64,
-) pdata.Metric {
-	result := newMetric(name, pdata.MetricDataTypeHistogram)
+) pmetric.Metric {
+	result := newMetric(name, pmetric.MetricDataTypeHistogram)
 	aHistogram := result.Histogram()
 	aHistogram.SetAggregationTemporality(temporality)
 	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
@@ -1171,10 +1172,10 @@ func newHistogramMetricWithDataPoints(
 // Works like newHistogramMetricWithDataPoints but creates an exponential histogram metric
 func newExponentialHistogramMetricWithDataPoints(
 	name string,
-	temporality pdata.MetricAggregationTemporality,
+	temporality pmetric.MetricAggregationTemporality,
 	countAttributeForEachDataPoint []uint64,
-) pdata.Metric {
-	result := newMetric(name, pdata.MetricDataTypeExponentialHistogram)
+) pmetric.Metric {
+	result := newMetric(name, pmetric.MetricDataTypeExponentialHistogram)
 	aHistogram := result.ExponentialHistogram()
 	aHistogram.SetAggregationTemporality(temporality)
 	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
@@ -1185,7 +1186,7 @@ func newExponentialHistogramMetricWithDataPoints(
 }
 
 func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
-	metric := newMetric("test.metric", pdata.MetricDataTypeGauge)
+	metric := newMetric("test.metric", pmetric.MetricDataTypeGauge)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(2)
@@ -1220,7 +1221,7 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	sender := &mockGaugeSender{errorOnSend: errorOnSend}
 	consumer := newGaugeConsumer(sender, componenttest.NewNopTelemetrySettings())
 
-	assert.Equal(t, pdata.MetricDataTypeGauge, consumer.Type())
+	assert.Equal(t, pmetric.MetricDataTypeGauge, consumer.Type())
 	var errs []error
 	consumer.Consume(mi, &errs)
 	assert.ElementsMatch(t, expected, sender.metrics)
@@ -1231,8 +1232,8 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	}
 }
 
-func constructMetrics(metricList ...pdata.Metric) pdata.Metrics {
-	result := pdata.NewMetrics()
+func constructMetrics(metricList ...pmetric.Metric) pmetric.Metrics {
+	result := pmetric.NewMetrics()
 	result.ResourceMetrics().EnsureCapacity(1)
 	rm := result.ResourceMetrics().AppendEmpty()
 	rm.ScopeMetrics().EnsureCapacity(1)
@@ -1244,8 +1245,8 @@ func constructMetrics(metricList ...pdata.Metric) pdata.Metrics {
 	return result
 }
 
-func constructMetricsWithTags(tags map[string]string, metricList ...pdata.Metric) pdata.Metrics {
-	result := pdata.NewMetrics()
+func constructMetricsWithTags(tags map[string]string, metricList ...pmetric.Metric) pmetric.Metrics {
+	result := pmetric.NewMetrics()
 	result.ResourceMetrics().EnsureCapacity(1)
 	rm := result.ResourceMetrics().AppendEmpty()
 	for key, val := range tags {
@@ -1260,8 +1261,8 @@ func constructMetricsWithTags(tags map[string]string, metricList ...pdata.Metric
 	return result
 }
 
-func newMetric(name string, typ pdata.MetricDataType) pdata.Metric {
-	result := pdata.NewMetric()
+func newMetric(name string, typ pmetric.MetricDataType) pmetric.Metric {
+	result := pmetric.NewMetric()
 	result.SetName(name)
 	result.SetDataType(typ)
 	return result
@@ -1271,26 +1272,26 @@ func addDataPoint(
 	value interface{},
 	ts int64,
 	tags map[string]interface{},
-	slice pdata.NumberDataPointSlice,
+	slice pmetric.NumberDataPointSlice,
 ) {
 	dataPoint := slice.AppendEmpty()
 	if value != nil {
 		setDataPointValue(value, dataPoint)
 	}
 	setDataPointTimestamp(ts, dataPoint)
-	pdata.NewMapFromRaw(tags).CopyTo(dataPoint.Attributes())
+	pcommon.NewMapFromRaw(tags).CopyTo(dataPoint.Attributes())
 }
 
 type dataPointWithTimestamp interface {
-	SetTimestamp(v pdata.Timestamp)
+	SetTimestamp(v pcommon.Timestamp)
 }
 
 func setDataPointTimestamp(ts int64, dataPoint dataPointWithTimestamp) {
 	dataPoint.SetTimestamp(
-		pdata.NewTimestampFromTime(time.Unix(ts, 0)))
+		pcommon.NewTimestampFromTime(time.Unix(ts, 0)))
 }
 
-func setDataPointValue(value interface{}, dataPoint pdata.NumberDataPoint) {
+func setDataPointValue(value interface{}, dataPoint pmetric.NumberDataPoint) {
 	switch v := value.(type) {
 	case int:
 		dataPoint.SetIntVal(int64(v))
@@ -1369,7 +1370,7 @@ func (m *mockDistributionSender) SendDistribution(
 }
 
 type mockTypedMetricConsumer struct {
-	typ                          pdata.MetricDataType
+	typ                          pmetric.MetricDataType
 	errorOnConsume               bool
 	errorOnPushInternalMetrics   bool
 	names                        []string
@@ -1378,7 +1379,7 @@ type mockTypedMetricConsumer struct {
 	pushInternalMetricsCallCount int
 }
 
-func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
+func (m *mockTypedMetricConsumer) Type() pmetric.MetricDataType {
 	return m.typ
 }
 

@@ -17,6 +17,7 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"go.opentelemetry.io/collector/config"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
@@ -36,6 +37,6 @@ type Config struct {
 var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
-	_, err := traces.Parse(c.Traces.Queries, c.Traces.functions)
+	_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
 	return err
 }

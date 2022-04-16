@@ -24,7 +24,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
@@ -145,10 +146,10 @@ func TestRecordMetricMetadata(t *testing.T) {
 		dataOutputCount:  20,
 		externalDuration: 50,
 		metricMetadataCount: map[metricStatsKey]int{
-			{MetricType: pdata.MetricDataTypeSummary}:                                                              1,
-			{MetricType: pdata.MetricDataTypeHistogram}:                                                            1,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityDelta}:      2,
-			{MetricType: pdata.MetricDataTypeSum, MetricTemporality: pdata.MetricAggregationTemporalityCumulative}: 3,
+			{MetricType: pmetric.MetricDataTypeSummary}:                                                                1,
+			{MetricType: pmetric.MetricDataTypeHistogram}:                                                              1,
+			{MetricType: pmetric.MetricDataTypeSum, MetricTemporality: pmetric.MetricAggregationTemporalityDelta}:      2,
+			{MetricType: pmetric.MetricDataTypeSum, MetricTemporality: pmetric.MetricAggregationTemporalityCumulative}: 3,
 		},
 	}
 
@@ -293,13 +294,13 @@ func TestRecordAttributeMetadata(t *testing.T) {
 		dataOutputCount:  20,
 		externalDuration: 50,
 		attributeMetadataCount: map[attributeStatsKey]int{
-			{attributeType: pdata.ValueTypeSlice, location: attributeLocationResource}:   1,
-			{attributeType: pdata.ValueTypeBool, location: attributeLocationSpan}:        1,
-			{attributeType: pdata.ValueTypeMap, location: attributeLocationSpanEvent}:    1,
-			{attributeType: pdata.ValueTypeDouble, location: attributeLocationLog}:       1,
-			{attributeType: pdata.ValueTypeInt, location: attributeLocationResource}:     1,
-			{attributeType: pdata.ValueTypeEmpty, location: attributeLocationSpan}:       1,
-			{attributeType: pdata.ValueTypeString, location: attributeLocationSpanEvent}: 1,
+			{attributeType: pcommon.ValueTypeSlice, location: attributeLocationResource}:   1,
+			{attributeType: pcommon.ValueTypeBool, location: attributeLocationSpan}:        1,
+			{attributeType: pcommon.ValueTypeMap, location: attributeLocationSpanEvent}:    1,
+			{attributeType: pcommon.ValueTypeDouble, location: attributeLocationLog}:       1,
+			{attributeType: pcommon.ValueTypeInt, location: attributeLocationResource}:     1,
+			{attributeType: pcommon.ValueTypeEmpty, location: attributeLocationSpan}:       1,
+			{attributeType: pcommon.ValueTypeString, location: attributeLocationSpanEvent}: 1,
 		},
 	}
 

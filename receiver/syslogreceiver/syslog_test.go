@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
@@ -76,10 +76,10 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	for i := 0; i < numLogs; i++ {
 		log := logs.At(i)
 
-		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
-		msg, ok := log.Body().MapVal().Get("message")
+		require.Equal(t, log.Timestamp(), pcommon.Timestamp(1614470402003000000+i*60*1000*1000*1000))
+		msg, ok := log.Attributes().AsRaw()["message"]
 		require.True(t, ok)
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("test msg %d", i))
+		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
 	}
 }
 
