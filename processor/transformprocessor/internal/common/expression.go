@@ -17,13 +17,13 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type TransformContext interface {
 	GetItem() interface{}
-	GetInstrumentationScope() pdata.InstrumentationScope
-	GetResource() pdata.Resource
+	GetInstrumentationScope() pcommon.InstrumentationScope
+	GetResource() pcommon.Resource
 }
 
 type ExprFunc func(ctx TransformContext) interface{}

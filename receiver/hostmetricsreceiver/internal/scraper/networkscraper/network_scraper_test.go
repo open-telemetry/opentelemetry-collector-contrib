@@ -23,7 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -39,7 +40,7 @@ func TestScrape(t *testing.T) {
 		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
 		connectionsFunc      func(string) ([]net.ConnectionStat, error)
 		expectNetworkMetrics bool
-		expectedStartTime    pdata.Timestamp
+		expectedStartTime    pcommon.Timestamp
 		newErrRegex          string
 		initializationErr    string
 		expectedErr          string
@@ -170,20 +171,20 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, expectedName string, startTime pdata.Timestamp) {
+func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedName string, startTime pcommon.Timestamp) {
 	assert.Equal(t, expectedName, metric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Transmit))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.Receive))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.Transmit))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pcommon.NewValueString(metadata.AttributeDirection.Receive))
 }
 
-func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
+func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.Equal(t, metric.Name(), "system.network.connections")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewValueString(metadata.AttributeProtocol.Tcp))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pcommon.NewValueString(metadata.AttributeProtocol.Tcp))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

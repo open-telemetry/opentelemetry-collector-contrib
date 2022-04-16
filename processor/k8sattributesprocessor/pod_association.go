@@ -20,8 +20,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
@@ -29,7 +29,7 @@ import (
 // extractPodIds extracts IP and pod UID from attributes or request context.
 // It returns a value pair containing configured label and IP Address and/or Pod UID.
 // If empty value in return it means that attributes does not contains configured label to match resources for Pod.
-func extractPodID(ctx context.Context, attrs pdata.Map, associations []kube.Association) (string, kube.PodIdentifier) {
+func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.Association) (string, kube.PodIdentifier) {
 	// If pod association is not set
 	if len(associations) == 0 {
 		return extractPodIDNoAssociations(ctx, attrs)
@@ -62,7 +62,7 @@ func extractPodID(ctx context.Context, attrs pdata.Map, associations []kube.Asso
 	return "", ""
 }
 
-func extractPodIDNoAssociations(ctx context.Context, attrs pdata.Map) (string, kube.PodIdentifier) {
+func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) (string, kube.PodIdentifier) {
 	var podIP, labelIP kube.PodIdentifier
 	podIP = kube.PodIdentifier(stringAttributeFromMap(attrs, k8sIPLabelName))
 	if podIP != "" {
@@ -117,9 +117,9 @@ func getConnectionIP(ctx context.Context) kube.PodIdentifier {
 
 }
 
-func stringAttributeFromMap(attrs pdata.Map, key string) string {
+func stringAttributeFromMap(attrs pcommon.Map, key string) string {
 	if val, ok := attrs.Get(key); ok {
-		if val.Type() == pdata.ValueTypeString {
+		if val.Type() == pcommon.ValueTypeString {
 			return val.StringVal()
 		}
 	}

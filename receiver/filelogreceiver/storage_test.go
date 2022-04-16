@@ -172,7 +172,7 @@ func (l *recallLogger) recall() []string {
 	return l.written
 }
 
-// TODO use stateless Convert() from #3125 to generate exact pdata.Logs
+// TODO use stateless Convert() from #3125 to generate exact plog.Logs
 // for now, just validate body
 func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 	return func() bool {

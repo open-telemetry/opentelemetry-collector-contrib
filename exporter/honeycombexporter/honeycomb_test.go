@@ -31,7 +31,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -66,7 +67,7 @@ func testingServer(callback func(data []honeycombData)) *httptest.Server {
 	}))
 }
 
-func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombData {
+func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) []honeycombData {
 	var got []honeycombData
 	server := testingServer(func(data []honeycombData) {
 		got = append(got, data...)
@@ -98,7 +99,7 @@ func baseConfig() *Config {
 }
 
 func TestExporter(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("service.name", "test_service")
 	rs.Resource().Attributes().InsertString("A", "B")
@@ -109,28 +110,28 @@ func TestExporter(t *testing.T) {
 	lib.SetVersion("1.0.0")
 
 	clientSpan := instrLibrarySpans.Spans().AppendEmpty()
-	clientSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
-	clientSpan.SetSpanID(pdata.NewSpanID([8]byte{0x03}))
-	clientSpan.SetParentSpanID(pdata.NewSpanID([8]byte{0x02}))
+	clientSpan.SetTraceID(pcommon.NewTraceID([16]byte{0x01}))
+	clientSpan.SetSpanID(pcommon.NewSpanID([8]byte{0x03}))
+	clientSpan.SetParentSpanID(pcommon.NewSpanID([8]byte{0x02}))
 	clientSpan.SetName("client")
-	clientSpan.SetKind(pdata.SpanKindClient)
+	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpanLink := clientSpan.Links().AppendEmpty()
-	clientSpanLink.SetTraceID(pdata.NewTraceID([16]byte{0x04}))
-	clientSpanLink.SetSpanID(pdata.NewSpanID([8]byte{0x05}))
+	clientSpanLink.SetTraceID(pcommon.NewTraceID([16]byte{0x04}))
+	clientSpanLink.SetSpanID(pcommon.NewSpanID([8]byte{0x05}))
 	clientSpanLink.Attributes().InsertInt("span_link_attr", 12345)
 
 	serverSpan := instrLibrarySpans.Spans().AppendEmpty()
-	serverSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
-	serverSpan.SetSpanID(pdata.NewSpanID([8]byte{0x04}))
-	serverSpan.SetParentSpanID(pdata.NewSpanID([8]byte{0x03}))
+	serverSpan.SetTraceID(pcommon.NewTraceID([16]byte{0x01}))
+	serverSpan.SetSpanID(pcommon.NewSpanID([8]byte{0x04}))
+	serverSpan.SetParentSpanID(pcommon.NewSpanID([8]byte{0x03}))
 	serverSpan.SetName("server")
-	serverSpan.SetKind(pdata.SpanKindServer)
+	serverSpan.SetKind(ptrace.SpanKindServer)
 
 	rootSpan := instrLibrarySpans.Spans().AppendEmpty()
-	rootSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
-	rootSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
+	rootSpan.SetTraceID(pcommon.NewTraceID([16]byte{0x01}))
+	rootSpan.SetSpanID(pcommon.NewSpanID([8]byte{0x02}))
 	rootSpan.SetName("root")
-	rootSpan.SetKind(pdata.SpanKindServer)
+	rootSpan.SetKind(ptrace.SpanKindServer)
 	rootSpan.Attributes().InsertString("span_attr_name", "Span Attribute")
 	rootSpan.Attributes().InsertString("B", "D")
 	rootSpanEvent := rootSpan.Events().AppendEmpty()
@@ -223,7 +224,7 @@ func TestExporter(t *testing.T) {
 }
 
 func TestSpanKinds(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("service.name", "test_service")
 	instrLibrarySpans := rs.ScopeSpans().AppendEmpty()
@@ -233,14 +234,14 @@ func TestSpanKinds(t *testing.T) {
 
 	initSpan(instrLibrarySpans.Spans().AppendEmpty())
 
-	spanKinds := []pdata.SpanKind{
-		pdata.SpanKindInternal,
-		pdata.SpanKindClient,
-		pdata.SpanKindServer,
-		pdata.SpanKindProducer,
-		pdata.SpanKindConsumer,
-		pdata.SpanKindUnspecified,
-		pdata.SpanKind(1000),
+	spanKinds := []ptrace.SpanKind{
+		ptrace.SpanKindInternal,
+		ptrace.SpanKindClient,
+		ptrace.SpanKindServer,
+		ptrace.SpanKindProducer,
+		ptrace.SpanKindConsumer,
+		ptrace.SpanKindUnspecified,
+		ptrace.SpanKind(1000),
 	}
 
 	expectedStrings := []string{
@@ -286,39 +287,39 @@ func TestSpanKinds(t *testing.T) {
 	}
 }
 
-func initSpan(span pdata.Span) {
+func initSpan(span ptrace.Span) {
 	span.SetName("spanName")
-	span.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
-	span.SetParentSpanID(pdata.NewSpanID([8]byte{0x02}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{0x03}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{0x01}))
+	span.SetParentSpanID(pcommon.NewSpanID([8]byte{0x02}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0x03}))
 	span.Attributes().InsertString("span_attr_name", "Span Attribute")
 }
 
 func TestSampleRateAttribute(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	instrLibrarySpans := rs.ScopeSpans().AppendEmpty()
 
 	intSampleRateSpan := instrLibrarySpans.Spans().AppendEmpty()
-	intSampleRateSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
-	intSampleRateSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
+	intSampleRateSpan.SetTraceID(pcommon.NewTraceID([16]byte{0x01}))
+	intSampleRateSpan.SetSpanID(pcommon.NewSpanID([8]byte{0x02}))
 	intSampleRateSpan.SetName("root")
-	intSampleRateSpan.SetKind(pdata.SpanKindServer)
+	intSampleRateSpan.SetKind(ptrace.SpanKindServer)
 	intSampleRateSpan.Attributes().InsertString("some_attribute", "A value")
 	intSampleRateSpan.Attributes().InsertInt("hc.sample.rate", 13)
 
 	noSampleRateSpan := instrLibrarySpans.Spans().AppendEmpty()
-	noSampleRateSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
-	noSampleRateSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
+	noSampleRateSpan.SetTraceID(pcommon.NewTraceID([16]byte{0x01}))
+	noSampleRateSpan.SetSpanID(pcommon.NewSpanID([8]byte{0x02}))
 	noSampleRateSpan.SetName("root")
-	noSampleRateSpan.SetKind(pdata.SpanKindServer)
+	noSampleRateSpan.SetKind(ptrace.SpanKindServer)
 	noSampleRateSpan.Attributes().InsertString("no_sample_rate", "gets_default")
 
 	invalidSampleRateSpan := instrLibrarySpans.Spans().AppendEmpty()
-	invalidSampleRateSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
-	invalidSampleRateSpan.SetSpanID(pdata.NewSpanID([8]byte{0x02}))
+	invalidSampleRateSpan.SetTraceID(pcommon.NewTraceID([16]byte{0x01}))
+	invalidSampleRateSpan.SetSpanID(pcommon.NewSpanID([8]byte{0x02}))
 	invalidSampleRateSpan.SetName("root")
-	invalidSampleRateSpan.SetKind(pdata.SpanKindServer)
+	invalidSampleRateSpan.SetKind(ptrace.SpanKindServer)
 	invalidSampleRateSpan.Attributes().InsertString("hc.sample.rate", "wrong_type")
 
 	cfg := baseConfig()

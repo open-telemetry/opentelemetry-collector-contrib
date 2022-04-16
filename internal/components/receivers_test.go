@@ -116,6 +116,10 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "influxdb",
 		},
 		{
+			receiver:     "iis",
+			skipLifecyle: true, // Requires a running windows process
+		},
+		{
 			receiver: "jaeger",
 		},
 		{
@@ -210,6 +214,10 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "splunk_hec",
+		},
+		{
+			receiver:     "sqlserver",
+			skipLifecyle: true, // Requires a running windows process
 		},
 		{
 			receiver: "statsd",

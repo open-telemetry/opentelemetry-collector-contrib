@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
@@ -221,7 +221,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	converter.Stop()
 }
 
-func consumeNLogsFromConverter(ch <-chan pdata.Logs, count int, wg *sync.WaitGroup) {
+func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	n := 0

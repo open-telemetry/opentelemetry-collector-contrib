@@ -21,14 +21,14 @@ import (
 	"go.elastic.co/apm/model"
 	"go.elastic.co/apm/transport/transporttest"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
 
 func TestMetadataDefaults(t *testing.T) {
-	out := metadataWithResource(t, pdata.NewResource())
+	out := metadataWithResource(t, pcommon.NewResource())
 	assert.Equal(t, metadata{
 		service: model.Service{
 			Name: "unknown",
@@ -137,13 +137,13 @@ func TestMetadataKubernetes(t *testing.T) {
 	}, out.system.Kubernetes)
 }
 
-func resourceFromAttributesMap(attrs map[string]interface{}) pdata.Resource {
-	resource := pdata.NewResource()
-	pdata.NewMapFromRaw(attrs).CopyTo(resource.Attributes())
+func resourceFromAttributesMap(attrs map[string]interface{}) pcommon.Resource {
+	resource := pcommon.NewResource()
+	pcommon.NewMapFromRaw(attrs).CopyTo(resource.Attributes())
 	return resource
 }
 
-func metadataWithResource(t *testing.T, resource pdata.Resource) metadata {
+func metadataWithResource(t *testing.T, resource pcommon.Resource) metadata {
 	var out metadata
 	var recorder transporttest.RecorderTransport
 	var w fastjson.Writer

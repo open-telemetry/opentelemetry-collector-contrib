@@ -19,7 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -32,17 +33,17 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Status().SetCode(pdata.StatusCodeError)
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.Status().SetCode(ptrace.StatusCodeError)
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 
 	trace := &TraceData{
-		ReceivedBatches: []pdata.Traces{traces},
+		ReceivedBatches: []ptrace.Traces{traces},
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -59,18 +60,18 @@ func TestAndEvaluatorSampled(t *testing.T) {
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
 	span.Attributes().InsertString("attribute_name", "attribute_value")
-	span.Status().SetCode(pdata.StatusCodeError)
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.Status().SetCode(ptrace.StatusCodeError)
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 
 	trace := &TraceData{
-		ReceivedBatches: []pdata.Traces{traces},
+		ReceivedBatches: []ptrace.Traces{traces},
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)

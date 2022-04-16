@@ -20,7 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -56,24 +57,24 @@ func (r *riakScraper) start(ctx context.Context, host component.Host) (err error
 }
 
 // scrape collects metrics from the Riak API
-func (r *riakScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (r *riakScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	// Validate we don't attempt to scrape without initializing the client
 	if r.client == nil {
-		return pdata.NewMetrics(), errors.New("client not initialized")
+		return pmetric.NewMetrics(), errors.New("client not initialized")
 	}
 
 	// Get stats for processing
 	stats, err := r.client.GetStats(ctx)
 	if err != nil {
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 
 	return r.collectStats(stats)
 }
 
 // collectStats collects metrics
-func (r *riakScraper) collectStats(stat *model.Stats) (pdata.Metrics, error) {
-	now := pdata.NewTimestampFromTime(time.Now())
+func (r *riakScraper) collectStats(stat *model.Stats) (pmetric.Metrics, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
 	var errors scrapererror.ScrapeErrors
 	//scrape node.operation.count metric
 	r.mb.RecordRiakNodeOperationCountDataPoint(now, stat.NodeGets, metadata.AttributeRequest.Get)

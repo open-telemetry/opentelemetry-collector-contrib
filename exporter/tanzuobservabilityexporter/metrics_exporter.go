@@ -23,7 +23,7 @@ import (
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type metricsExporter struct {
@@ -80,7 +80,7 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 	}, nil
 }
 
-func (e *metricsExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	return e.consumer.Consume(ctx, md)
 }
 

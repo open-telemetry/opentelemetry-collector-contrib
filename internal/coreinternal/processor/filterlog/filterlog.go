@@ -17,7 +17,8 @@ package filterlog // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermatcher"
@@ -29,7 +30,7 @@ import (
 // TODO: Modify Matcher to invoke both the include and exclude properties so
 //  calling processors will always have the same logic.
 type Matcher interface {
-	MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationScope) bool
+	MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
 }
 
 // propertiesMatcher allows matching a log record against various log record properties.
@@ -77,8 +78,8 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // At least one of log record names or attributes must be specified. It is
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
-func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationScope) bool {
-	if lr.Body().Type() == pdata.ValueTypeString && mp.bodyFilters != nil && mp.bodyFilters.Matches(lr.Body().StringVal()) {
+func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
+	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && mp.bodyFilters.Matches(lr.Body().StringVal()) {
 		return true
 	}
 

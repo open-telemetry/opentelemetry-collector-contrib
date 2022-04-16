@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +45,7 @@ type logServiceLogsSender struct {
 
 func (s *logServiceLogsSender) pushLogsData(
 	ctx context.Context,
-	md pdata.Logs) error {
+	md plog.Logs) error {
 	var err error
 	clsLogs := convertLogs(md)
 	if len(clsLogs) > 0 {
