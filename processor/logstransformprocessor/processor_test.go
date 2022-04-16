@@ -89,7 +89,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 			name:   "simpleTest",
 			config: cfg,
 			sourceMessages: []testLogMessage{
-				testLogMessage{
+				{
 					body:    &baseMessage,
 					spanID:  &spanID,
 					traceID: &traceID,
@@ -97,7 +97,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 				},
 			},
 			parsedMessages: []testLogMessage{
-				testLogMessage{
+				{
 					body:         &baseMessage,
 					severity:     plog.SeverityNumberINFO,
 					severityText: &infoSeverityText,
