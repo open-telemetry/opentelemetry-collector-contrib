@@ -17,6 +17,7 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"runtime"
 	"sync"
@@ -192,6 +193,10 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
 			if !ok {
 				ltp.logger.Debug("emitter channel got closed")
 				continue
+			}
+
+			for _, entry := range e {
+				fmt.Printf("Severity of entry %s\n", entry.Attributes)
 			}
 
 			ltp.converter.Batch(e)

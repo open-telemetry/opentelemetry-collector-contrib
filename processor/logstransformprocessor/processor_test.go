@@ -41,11 +41,11 @@ var (
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
 					"severity": map[string]interface{}{
-						"parse_from": "body.sev",
+						"parse_from": "attributes.sev",
 					},
 					"timestamp": map[string]interface{}{
 						"layout":     "%Y-%m-%d",
-						"parse_from": "body.time",
+						"parse_from": "attributes.time",
 					},
 				},
 			},
@@ -58,54 +58,57 @@ var (
 )
 
 func parseTime(format, input string) *time.Time {
-	val, _ := time.Parse(format, input)
+	val, _ := time.ParseInLocation(format, input, time.Local)
 	return &val
 }
 
 type testLogMessage struct {
-	body               *pdata.Value
-	time               *time.Time
-	severity           pdata.SeverityNumber
-	severityText       *string
-	spanID             *pdata.SpanID
-	traceID            *pdata.TraceID
-	flags              uint32
-	attributes         *map[string]pdata.Value
-	resourceAttributes *map[string]pdata.Value
+	body         *pdata.Value
+	time         *time.Time
+	severity     pdata.SeverityNumber
+	severityText *string
+	spanID       *pdata.SpanID
+	traceID      *pdata.TraceID
+	flags        uint32
+	attributes   *map[string]pdata.Value
 }
 
 func TestLogsTransformProcessor(t *testing.T) {
 	baseMessage := pcommon.NewValueString("2022-01-01 INFO this is a test")
 	spanID := pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	traceID := pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+	infoSeverityText := "Info"
 
 	tests := []struct {
-		name          string
-		config        *Config
-		sourceMessage testLogMessage
-		parsedMessage testLogMessage
+		name           string
+		config         *Config
+		sourceMessages []testLogMessage
+		parsedMessages []testLogMessage
 	}{
 		{
 			name:   "simpleTest",
 			config: cfg,
-			sourceMessage: testLogMessage{
-				body:    &baseMessage,
-				spanID:  &spanID,
-				traceID: &traceID,
-				flags:   uint32(0x01),
-			},
-			parsedMessage: testLogMessage{
-				body:     &baseMessage,
-				severity: plog.SeverityNumberINFO,
-				attributes: &map[string]pdata.Value{
-					"sev":  pcommon.NewValueString("INFO"),
-					"time": pcommon.NewValueString("2022-01-01"),
-					"msg":  pcommon.NewValueString("this is a test"),
+			sourceMessages: []testLogMessage{
+				testLogMessage{
+					body:    &baseMessage,
+					spanID:  &spanID,
+					traceID: &traceID,
+					flags:   uint32(0x01),
 				},
-				spanID:  &spanID,
-				traceID: &traceID,
-				flags:   uint32(0x01),
-				time:    parseTime("%Y-%m-%d", "2022-01-01"),
+			},
+			parsedMessages: []testLogMessage{
+				testLogMessage{
+					body:         &baseMessage,
+					severity:     plog.SeverityNumberINFO,
+					severityText: &infoSeverityText,
+					attributes: &map[string]pdata.Value{
+						"msg": pcommon.NewValueString("this is a test"),
+					},
+					spanID:  &spanID,
+					traceID: &traceID,
+					flags:   uint32(0x01),
+					time:    parseTime("2006-01-02", "2022-01-01"),
+				},
 			},
 		},
 	}
@@ -121,8 +124,8 @@ func TestLogsTransformProcessor(t *testing.T) {
 			err = ltp.Start(context.Background(), nil)
 			require.NoError(t, err)
 
-			sourceLogData := generateLogData(tt.sourceMessage)
-			wantLogData := generateLogData(tt.parsedMessage)
+			sourceLogData := generateLogData(tt.sourceMessages)
+			wantLogData := generateLogData(tt.parsedMessages)
 			err = ltp.ConsumeLogs(context.Background(), sourceLogData)
 			require.NoError(t, err)
 			logs := tln.AllLogs()
@@ -134,46 +137,41 @@ func TestLogsTransformProcessor(t *testing.T) {
 	}
 }
 
-func generateLogData(content testLogMessage) pdata.Logs {
+func generateLogData(messages []testLogMessage) pdata.Logs {
 	ld := testdata.GenerateLogsOneEmptyResourceLogs()
-	log := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	if content.body != nil {
-		content.body.CopyTo(log.Body())
-	}
-	if content.time != nil {
-		log.SetTimestamp(pdata.NewTimestampFromTime(*content.time))
-	}
-	if content.severity != 0 {
-		log.SetSeverityNumber(content.severity)
-	}
-	if content.severityText != nil {
-		log.SetSeverityText(*content.severityText)
-	}
-	if content.attributes != nil {
-		for k, v := range *content.attributes {
-			log.Attributes().Insert(k, v)
+	for _, content := range messages {
+		log := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		if content.body != nil {
+			content.body.CopyTo(log.Body())
 		}
-		log.Attributes().Sort()
-	}
-
-	if content.spanID != nil {
-		log.SetSpanID(*content.spanID)
-	}
-
-	if content.traceID != nil {
-		log.SetTraceID(*content.traceID)
-	}
-
-	if content.flags != uint32(0x00) {
-		log.SetFlags(content.flags)
-	}
-
-	resource := ld.ResourceLogs().At(0).Resource()
-	if content.resourceAttributes != nil {
-		for k, v := range *content.resourceAttributes {
-			resource.Attributes().Insert(k, v)
+		if content.time != nil {
+			log.SetTimestamp(pdata.NewTimestampFromTime(*content.time))
 		}
-		resource.Attributes().Sort()
+		if content.severity != 0 {
+			log.SetSeverityNumber(content.severity)
+		}
+		if content.severityText != nil {
+			log.SetSeverityText(*content.severityText)
+		}
+		if content.attributes != nil {
+			for k, v := range *content.attributes {
+				log.Attributes().Insert(k, v)
+			}
+			log.Attributes().Sort()
+		}
+
+		if content.spanID != nil {
+			log.SetSpanID(*content.spanID)
+		}
+
+		if content.traceID != nil {
+			log.SetTraceID(*content.traceID)
+		}
+
+		if content.flags != uint32(0x00) {
+			log.SetFlags(content.flags)
+		}
 	}
+
 	return ld
 }
