@@ -15,7 +15,7 @@
 package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -43,6 +43,6 @@ func newNameMatcher(config *MatchProperties) (*nameMatcher, error) {
 
 // MatchMetric matches a metric using the metric properties configured on the nameMatcher.
 // A metric only matches if every metric property configured on the nameMatcher is a match.
-func (m *nameMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
+func (m *nameMatcher) MatchMetric(metric pmetric.Metric) (bool, error) {
 	return m.nameFilters.Matches(metric.Name()), nil
 }

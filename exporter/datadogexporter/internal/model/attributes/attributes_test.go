@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestTagsFromAttributes(t *testing.T) {
@@ -36,7 +36,7 @@ func TestTagsFromAttributes(t *testing.T) {
 		conventions.AttributeAWSECSClusterARN:      "cluster_arn",
 		"tags.datadoghq.com/service":               "service_name",
 	}
-	attrs := pdata.NewMapFromRaw(attributeMap)
+	attrs := pcommon.NewMapFromRaw(attributeMap)
 
 	assert.ElementsMatch(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutableName, "otelcol"),
@@ -48,7 +48,7 @@ func TestTagsFromAttributes(t *testing.T) {
 }
 
 func TestTagsFromAttributesEmpty(t *testing.T) {
-	attrs := pdata.NewMap()
+	attrs := pcommon.NewMap()
 
 	assert.Equal(t, []string{}, TagsFromAttributes(attrs))
 }
@@ -85,12 +85,12 @@ func TestContainerTagFromAttributesEmpty(t *testing.T) {
 func TestOriginIDFromAttributes(t *testing.T) {
 	tests := []struct {
 		name     string
-		attrs    pdata.Map
+		attrs    pcommon.Map
 		originID string
 	}{
 		{
 			name: "pod UID and container ID",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeContainerID: "container_id_goes_here",
 				conventions.AttributeK8SPodUID:   "k8s_pod_uid_goes_here",
 			}),
@@ -98,21 +98,21 @@ func TestOriginIDFromAttributes(t *testing.T) {
 		},
 		{
 			name: "only container ID",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeContainerID: "container_id_goes_here",
 			}),
 			originID: "container_id://container_id_goes_here",
 		},
 		{
 			name: "only pod UID",
-			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
 				conventions.AttributeK8SPodUID: "k8s_pod_uid_goes_here",
 			}),
 			originID: "kubernetes_pod_uid://k8s_pod_uid_goes_here",
 		},
 		{
 			name:  "none",
-			attrs: pdata.NewMap(),
+			attrs: pcommon.NewMap(),
 		},
 	}
 

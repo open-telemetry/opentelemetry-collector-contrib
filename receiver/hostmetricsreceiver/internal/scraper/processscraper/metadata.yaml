@@ -1,5 +1,7 @@
 name: hostmetricsreceiver/process
 
+sem_conv_version: 1.9.0
+
 resource_attributes:
   process.pid:
     description: Process identifier (PID).

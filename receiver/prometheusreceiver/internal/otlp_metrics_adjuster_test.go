@@ -20,16 +20,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
 var (
-	pdt1Ms = pdata.Timestamp(time.Unix(0, 1000000).UnixNano())
-	pdt2Ms = pdata.Timestamp(time.Unix(0, 2000000).UnixNano())
-	pdt3Ms = pdata.Timestamp(time.Unix(0, 3000000).UnixNano())
-	pdt4Ms = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
-	pdt5Ms = pdata.Timestamp(time.Unix(0, 5000000).UnixNano())
+	pdt1Ms = pcommon.Timestamp(time.Unix(0, 1000000).UnixNano())
+	pdt2Ms = pcommon.Timestamp(time.Unix(0, 2000000).UnixNano())
+	pdt3Ms = pcommon.Timestamp(time.Unix(0, 3000000).UnixNano())
+	pdt4Ms = pcommon.Timestamp(time.Unix(0, 5000000).UnixNano())
+	pdt5Ms = pcommon.Timestamp(time.Unix(0, 5000000).UnixNano())
 
 	bounds0  = []float64{1, 2, 4}
 	percent0 = []float64{10, 50, 90}
@@ -43,10 +44,10 @@ func Test_gauge_pdata(t *testing.T) {
 	script := []*metricsAdjusterTestPdata{
 		{
 			"Gauge: round 1 - gauge not adjusted",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				m0.SetName("gauge1")
 				g0 := m0.Gauge()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -56,10 +57,10 @@ func Test_gauge_pdata(t *testing.T) {
 				pt0.SetDoubleVal(44)
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				m0.SetName("gauge1")
 				g0 := m0.Gauge()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -73,10 +74,10 @@ func Test_gauge_pdata(t *testing.T) {
 		},
 		{
 			"Gauge: round 2 - gauge not adjusted",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				m0.SetName("gauge1")
 				g0 := m0.Gauge()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -88,10 +89,10 @@ func Test_gauge_pdata(t *testing.T) {
 
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				m0.SetName("gauge1")
 				g0 := m0.Gauge()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -106,10 +107,10 @@ func Test_gauge_pdata(t *testing.T) {
 		},
 		{
 			"Gauge: round 3 - value less than previous value - gauge is not adjusted",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				m0.SetName("gauge1")
 				g0 := m0.Gauge()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -121,10 +122,10 @@ func Test_gauge_pdata(t *testing.T) {
 
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				m0.SetName("gauge1")
 				g0 := m0.Gauge()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -146,10 +147,10 @@ func Test_cumulative_pdata(t *testing.T) {
 	script := []*metricsAdjusterTestPdata{
 		{
 			"Cumulative: round 1 - initial instance, start time is established",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -161,10 +162,10 @@ func Test_cumulative_pdata(t *testing.T) {
 
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -180,10 +181,10 @@ func Test_cumulative_pdata(t *testing.T) {
 		},
 		{
 			"Cumulative: round 2 - instance adjusted based on round 1",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -195,10 +196,10 @@ func Test_cumulative_pdata(t *testing.T) {
 
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -214,10 +215,10 @@ func Test_cumulative_pdata(t *testing.T) {
 		},
 		{
 			"Cumulative: round 3 - instance reset (value less than previous value), start time is reset",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -229,10 +230,10 @@ func Test_cumulative_pdata(t *testing.T) {
 
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -248,10 +249,10 @@ func Test_cumulative_pdata(t *testing.T) {
 		},
 		{
 			"Cumulative: round 4 - instance adjusted based on round 3",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -263,10 +264,10 @@ func Test_cumulative_pdata(t *testing.T) {
 
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -282,10 +283,10 @@ func Test_cumulative_pdata(t *testing.T) {
 		},
 		{
 			"Cumulative: round 5 - instance adjusted based on round 4",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -297,10 +298,10 @@ func Test_cumulative_pdata(t *testing.T) {
 
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				m0.SetName("cumulative1")
 				g0 := m0.Sum()
 				pt0 := g0.DataPoints().AppendEmpty()
@@ -318,7 +319,7 @@ func Test_cumulative_pdata(t *testing.T) {
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
-func populateSummary(sdp *pdata.SummaryDataPoint, timestamp pdata.Timestamp, count uint64, sum float64, quantilePercents, quantileValues []float64) {
+func populateSummary(sdp *pmetric.SummaryDataPoint, timestamp pcommon.Timestamp, count uint64, sum float64, quantilePercents, quantileValues []float64) {
 	quantiles := sdp.QuantileValues()
 	for i := range quantilePercents {
 		qv := quantiles.AppendEmpty()
@@ -334,10 +335,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 	script := []*metricsAdjusterTestPdata{
 		{
 			"Summary No Count: round 1 - initial instance, start time is established",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -345,10 +346,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 				populateSummary(&pt0, pdt1Ms, 10, 40, percent0, []float64{1, 5, 8})
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -360,10 +361,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 		},
 		{
 			"Summary No Count: round 2 - instance adjusted based on round 1",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -371,10 +372,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 				populateSummary(&pt0, pdt2Ms, 15, 70, percent0, []float64{7, 44, 9})
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -386,10 +387,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 		},
 		{
 			"Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -397,10 +398,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 				populateSummary(&pt0, pdt3Ms, 12, 66, percent0, []float64{3, 22, 5})
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -412,10 +413,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 		},
 		{
 			"Summary No Count: round 4 - instance adjusted based on round 3",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -424,10 +425,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 				pt0.SetStartTimestamp(pdt4Ms)
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -446,10 +447,10 @@ func Test_summary_flag_norecordedvalue(t *testing.T) {
 	script := []*metricsAdjusterTestPdata{
 		{
 			"Summary No Count: round 1 - initial instance, start time is established",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -459,10 +460,10 @@ func Test_summary_flag_norecordedvalue(t *testing.T) {
 				populateSummary(&pt0, pdt1Ms, 10, 40, percent0, []float64{1, 5, 8})
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -476,10 +477,10 @@ func Test_summary_flag_norecordedvalue(t *testing.T) {
 		},
 		{
 			"Summary Flag NoRecordedValue: round 2 - instance adjusted based on round 1",
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -489,10 +490,10 @@ func Test_summary_flag_norecordedvalue(t *testing.T) {
 				pt0.SetFlags(1)
 				return &mL
 			}(),
-			func() *pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			func() *pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				m0.SetName("summary1")
 				s0 := m0.Summary()
 				pt0 := s0.DataPoints().AppendEmpty()
@@ -566,8 +567,8 @@ var (
 	sumMetric       = sumMetricPdata
 )
 
-func metricSlice(metrics ...*pdata.Metric) *pdata.MetricSlice {
-	ms := pdata.NewMetricSlice()
+func metricSlice(metrics ...*pmetric.Metric) *pmetric.MetricSlice {
+	ms := pmetric.NewMetricSlice()
 	for _, metric := range metrics {
 		destMetric := ms.AppendEmpty()
 		metric.CopyTo(destMetric)
@@ -629,24 +630,24 @@ func Test_histogram_flag_norecordedvalue(t *testing.T) {
 		},
 		{
 			"Histogram: round 2 - instance adjusted based on round 1",
-			func() *pdata.MetricSlice {
-				metric := pdata.NewMetric()
+			func() *pmetric.MetricSlice {
+				metric := pmetric.NewMetric()
 				metric.SetName(cd1)
-				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				metric.SetDataType(pmetric.MetricDataTypeHistogram)
 				histogram := metric.Histogram()
-				histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				destPointL := histogram.DataPoints()
 				dp := destPointL.AppendEmpty()
 				dp.SetTimestamp(pdt2Ms)
 				dp.SetFlags(1)
 				return metricSlice(histogramMetric(cd1, k1v1k2v2, pdt2Ms, &dp))
 			}(),
-			func() *pdata.MetricSlice {
-				metric := pdata.NewMetric()
+			func() *pmetric.MetricSlice {
+				metric := pmetric.NewMetric()
 				metric.SetName(cd1)
-				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				metric.SetDataType(pmetric.MetricDataTypeHistogram)
 				histogram := metric.Histogram()
-				histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				destPointL := histogram.DataPoints()
 				dp := destPointL.AppendEmpty()
 				dp.SetTimestamp(pdt2Ms)
@@ -661,24 +662,24 @@ func Test_histogram_flag_norecordedvalue(t *testing.T) {
 }
 
 func Test_histogram_flag_norecordedvalue_first_observation(t *testing.T) {
-	m1 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m1 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeHistogram)
+		metric.SetDataType(pmetric.MetricDataTypeHistogram)
 		histogram := metric.Histogram()
-		histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		destPointL := histogram.DataPoints()
 		dp := destPointL.AppendEmpty()
 		dp.SetTimestamp(pdt1Ms)
 		dp.SetFlags(1)
 		return metricSlice(histogramMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
 	}()
-	m2 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m2 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeHistogram)
+		metric.SetDataType(pmetric.MetricDataTypeHistogram)
 		histogram := metric.Histogram()
-		histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		destPointL := histogram.DataPoints()
 		dp := destPointL.AppendEmpty()
 		dp.SetTimestamp(pdt2Ms)
@@ -704,10 +705,10 @@ func Test_histogram_flag_norecordedvalue_first_observation(t *testing.T) {
 }
 
 func Test_summary_flag_norecordedvalue_first_observation(t *testing.T) {
-	m1 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m1 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeSummary)
+		metric.SetDataType(pmetric.MetricDataTypeSummary)
 		summary := metric.Summary()
 		destPointL := summary.DataPoints()
 		dp := destPointL.AppendEmpty()
@@ -715,10 +716,10 @@ func Test_summary_flag_norecordedvalue_first_observation(t *testing.T) {
 		dp.SetFlags(1)
 		return metricSlice(summaryMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
 	}()
-	m2 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m2 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeSummary)
+		metric.SetDataType(pmetric.MetricDataTypeSummary)
 		summary := metric.Summary()
 		destPointL := summary.DataPoints()
 		dp := destPointL.AppendEmpty()
@@ -745,10 +746,10 @@ func Test_summary_flag_norecordedvalue_first_observation(t *testing.T) {
 }
 
 func Test_gauge_flag_norecordedvalue_first_observation(t *testing.T) {
-	m1 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m1 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		gauge := metric.Gauge()
 		destPointL := gauge.DataPoints()
 		dp := destPointL.AppendEmpty()
@@ -756,10 +757,10 @@ func Test_gauge_flag_norecordedvalue_first_observation(t *testing.T) {
 		dp.SetFlags(1)
 		return metricSlice(gaugeMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
 	}()
-	m2 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m2 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		gauge := metric.Gauge()
 		destPointL := gauge.DataPoints()
 		dp := destPointL.AppendEmpty()
@@ -786,24 +787,24 @@ func Test_gauge_flag_norecordedvalue_first_observation(t *testing.T) {
 }
 
 func Test_sum_flag_norecordedvalue_first_observation(t *testing.T) {
-	m1 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m1 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeSum)
+		metric.SetDataType(pmetric.MetricDataTypeSum)
 		sum := metric.Sum()
-		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		destPointL := sum.DataPoints()
 		dp := destPointL.AppendEmpty()
 		dp.SetTimestamp(pdt1Ms)
 		dp.SetFlags(1)
 		return metricSlice(sumMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
 	}()
-	m2 := func() *pdata.MetricSlice {
-		metric := pdata.NewMetric()
+	m2 := func() *pmetric.MetricSlice {
+		metric := pmetric.NewMetric()
 		metric.SetName(cd1)
-		metric.SetDataType(pdata.MetricDataTypeSum)
+		metric.SetDataType(pmetric.MetricDataTypeSum)
 		sum := metric.Sum()
-		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		destPointL := sum.DataPoints()
 		dp := destPointL.AppendEmpty()
 		dp.SetTimestamp(pdt2Ms)
@@ -1075,7 +1076,7 @@ func Test_jobGC_pdata(t *testing.T) {
 		},
 	}
 
-	emptyMetricSlice := func() *pdata.MetricSlice { ms := pdata.NewMetricSlice(); return &ms }
+	emptyMetricSlice := func() *pmetric.MetricSlice { ms := pmetric.NewMetricSlice(); return &ms }
 	job2Script1 := []*metricsAdjusterTestPdata{
 		{
 			"JobGC: job2, round 1 - no metrics adjusted, just trigger gc",
@@ -1125,8 +1126,8 @@ func Test_jobGC_pdata(t *testing.T) {
 
 type metricsAdjusterTestPdata struct {
 	description string
-	metrics     *pdata.MetricSlice
-	adjusted    *pdata.MetricSlice
+	metrics     *pmetric.MetricSlice
+	adjusted    *pmetric.MetricSlice
 	resets      int
 }
 

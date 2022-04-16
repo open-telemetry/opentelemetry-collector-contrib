@@ -21,7 +21,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -52,9 +53,9 @@ func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (c *couchdbScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if c.client == nil {
-		return pdata.NewMetrics(), errors.New("no client available")
+		return pmetric.NewMetrics(), errors.New("no client available")
 	}
 
 	localNode := "_local"
@@ -64,10 +65,10 @@ func (c *couchdbScraper) scrape(context.Context) (pdata.Metrics, error) {
 			zap.String("endpoint", c.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
 	c.recordCouchdbAverageRequestTimeDataPoint(now, stats, errors)

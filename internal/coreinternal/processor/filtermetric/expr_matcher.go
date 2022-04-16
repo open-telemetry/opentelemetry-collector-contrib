@@ -15,7 +15,7 @@
 package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterexpr"
 )
@@ -36,7 +36,7 @@ func newExprMatcher(expressions []string) (*exprMatcher, error) {
 	return m, nil
 }
 
-func (m *exprMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
+func (m *exprMatcher) MatchMetric(metric pmetric.Metric) (bool, error) {
 	for _, matcher := range m.matchers {
 		matched, err := matcher.MatchMetric(metric)
 		if err != nil {

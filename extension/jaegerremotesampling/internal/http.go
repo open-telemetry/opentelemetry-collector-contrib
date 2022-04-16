@@ -23,36 +23,36 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
+	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 var (
-	errMissingClientConfigManager = errors.New("the client config manager has not been provided")
+	errMissingStrategyStore = errors.New("the strategy store has not been provided")
 )
 
 var _ component.Component = (*SamplingHTTPServer)(nil)
 
 type SamplingHTTPServer struct {
-	telemetry component.TelemetrySettings
-	settings  confighttp.HTTPServerSettings
-	cfgMgr    configmanager.ClientConfigManager
+	telemetry     component.TelemetrySettings
+	settings      confighttp.HTTPServerSettings
+	strategyStore strategystore.StrategyStore
 
 	mux        *http.ServeMux
 	srv        *http.Server
 	shutdownWG *sync.WaitGroup
 }
 
-func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServerSettings, cfgMgr configmanager.ClientConfigManager) (*SamplingHTTPServer, error) {
-	if cfgMgr == nil {
-		return nil, errMissingClientConfigManager
+func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServerSettings, strategyStore strategystore.StrategyStore) (*SamplingHTTPServer, error) {
+	if strategyStore == nil {
+		return nil, errMissingStrategyStore
 	}
 
 	srv := &SamplingHTTPServer{
-		telemetry: telemetry,
-		settings:  settings,
-		cfgMgr:    cfgMgr,
+		telemetry:     telemetry,
+		settings:      settings,
+		strategyStore: strategyStore,
 
 		shutdownWG: &sync.WaitGroup{},
 	}
@@ -107,7 +107,7 @@ func (h *SamplingHTTPServer) samplingStrategyHandler(rw http.ResponseWriter, r *
 		return
 	}
 
-	resp, err := h.cfgMgr.GetSamplingStrategy(r.Context(), svc)
+	resp, err := h.strategyStore.GetSamplingStrategy(r.Context(), svc)
 	if err != nil {
 		err = fmt.Errorf("failed to get sampling strategy for service %q: %v", svc, err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)

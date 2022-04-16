@@ -17,13 +17,15 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/model/pdata"
 	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
@@ -72,18 +74,18 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
 
 	metadata, err := s.getProcessMetadata()
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
-			return pdata.NewMetrics(), err
+			return pmetric.NewMetrics(), err
 		}
 
 		errs.AddPartial(partialErr.Failed, partialErr)
@@ -227,6 +229,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, parent proce
 	var allTimes []*cpu.TimesStat
 
 	times, err := parent.Times()
+
 	if err != nil {
 		return err
 	}
@@ -243,8 +246,8 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, parent proce
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle processHandle, children []processHandle) error {
-	mem, err := handle.MemoryInfo()
+func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, parent processHandle, children []processHandle) error {
+	mem, err := parent.MemoryInfo()
 	if err != nil {
 		return err
 	}
@@ -266,8 +269,8 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle 
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(now pdata.Timestamp, handle processHandle, children []processHandle) error {
-	io, err := handle.IOCounters()
+func (s *scraper) scrapeAndAppendDiskIOMetric(now pdata.Timestamp, parent processHandle, children []processHandle) error {
+	io, err := parent.IOCounters()
 	if err != nil {
 		return err
 	}

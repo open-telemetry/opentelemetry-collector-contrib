@@ -38,8 +38,8 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
 {{- range $attributeName, $attributeInfo := .Attributes }}
-| {{ $attributeName }} | {{ $attributeInfo.Description }} |
+| {{ $attributeName }}{{- if $attributeInfo.Value }} ({{ $attributeInfo.Value }}){{- end}} | {{ $attributeInfo.Description }} | {{ stringsJoin $attributeInfo.Enum ", " }} |
 {{- end }}

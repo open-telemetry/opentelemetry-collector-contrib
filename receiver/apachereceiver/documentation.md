@@ -26,8 +26,8 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| scoreboard_state | The state of a connection. |
-| server_name | The name of the Apache HTTP server. |
-| workers_state | The state of workers. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| scoreboard_state (state) | The state of a connection. | open, waiting, starting, reading, sending, keepalive, dnslookup, closing, logging, finishing, idle_cleanup |
+| server_name | The name of the Apache HTTP server. |  |
+| workers_state (state) | The state of workers. | busy, idle |

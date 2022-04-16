@@ -19,12 +19,12 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"github.com/shirou/gopsutil/v3/cpu"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const MAX_SYSTEM_PID = 300
 
-func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {}
+func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTimes []*cpu.TimesStat) {}
 
 func getProcessExecutable(processHandle) (*executableMetadata, error) {
 	return nil, nil
