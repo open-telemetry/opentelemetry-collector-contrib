@@ -21,20 +21,13 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/shirou/gopsutil/v3/cpu"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
+	"github.com/shirou/gopsutil/v3/cpu"
 )
 
 const MAX_SYSTEM_PID = 200
 
-func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat) {
-	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.User, metadata.AttributeState.User)
-	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.System, metadata.AttributeState.System)
-}
-
-func (s *scraper) recordAggregateCPUTimeMetrics(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {
+func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTimes []*cpu.TimesStat) {
 	var user, system float64
 	for _, cpuTime := range cpuTimes {
 		user += cpuTime.User
