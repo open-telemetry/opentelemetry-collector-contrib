@@ -2,7 +2,7 @@
 
 Supported pipeline types: logs
 
-The logs transform processor can be used to apply [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) [operators](https://github.com/open-telemetry/opentelemetry-log-collection/tree/main/docs/operators) to logs from any receiver.
+The logs transform processor can be used to apply [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) [operators](https://github.com/open-telemetry/opentelemetry-log-collection/tree/main/docs/operators) to logs coming from any receiver.
 Please refer to [config.go](./config.go) for the config spec.
 
 Examples:
