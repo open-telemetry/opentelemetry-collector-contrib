@@ -9,8 +9,11 @@
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
-- `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
+
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
+- `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
+- `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
