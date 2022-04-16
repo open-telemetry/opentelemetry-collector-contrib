@@ -11,22 +11,6 @@
 ### 🚀 New components 🚀
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 ### 💡 Enhancements 💡
-- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
-- `splunkhecexporter`: Add support for batching traces (#8995)
-- `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
-- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
-- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
-- `filestorageextension`: Change bbolt DB settings for better performance (#9004)
-- `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
-- `attributesprocessor`: Add support to filter on log body (#8996)
-- `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
-- `prometheusexporter`: Add `job` and `instance` labels to metrics so they can be scraped with `honor_labels: true` (#9115)
-- `podmanreceiver`: Add API timeout configuration option (#9014)
-- `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
-- `splunkheceporter`: Add an option to disable log or profiling data (#9065)
-- `windowsperfcountersreceiver`: Move code into separate package for use in other windowsperfcounter receivers (#9108) 
-- `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
-- `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 
 ### 🧰 Bug fixes 🧰
