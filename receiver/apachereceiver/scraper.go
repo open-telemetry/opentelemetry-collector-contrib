@@ -24,13 +24,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-<<<<<<< HEAD
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-=======
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
->>>>>>> main
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
@@ -74,12 +70,8 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-<<<<<<< HEAD
 	var errors scrapererror.ScrapeErrors
-	now := pdata.NewTimestampFromTime(time.Now())
-=======
 	now := pcommon.NewTimestampFromTime(time.Now())
->>>>>>> main
 	for metricKey, metricValue := range parseStats(stats) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
