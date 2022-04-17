@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-const MAX_SYSTEM_PID = 300
+const maxSystemPid = 300
 
 func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTimes []*cpu.TimesStat) {}
 

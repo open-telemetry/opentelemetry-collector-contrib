@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
-const MAX_SYSTEM_PID = 200
+const maxSystemPid = 200
 
 func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTimes []*cpu.TimesStat) {
 	var user, system float64

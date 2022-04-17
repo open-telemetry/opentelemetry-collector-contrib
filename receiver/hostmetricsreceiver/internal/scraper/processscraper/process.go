@@ -116,7 +116,7 @@ func parentPid(handle *process.Process) (int32, error) {
 	}
 
 	// do not consider system/kernel processes as a parent
-	if parent == nil || parent.Pid <= MAX_SYSTEM_PID {
+	if parent == nil || parent.Pid <= maxSystemPid {
 		return handle.Pid, nil
 	}
 

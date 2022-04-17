@@ -548,7 +548,7 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskErr
 
 	metricsLength := metricsLen
 	if aggregateChildMetrics {
-		metricsLength += 1
+		metricsLength++
 	}
 	return metricsLength - expectedMetricsLen
 }
