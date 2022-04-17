@@ -75,15 +75,15 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	for metricKey, metricValue := range parseStats(stats) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
-			addPartialIfError(errors, 1, r.mb.RecordApacheUptimeDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errors, r.mb.RecordApacheUptimeDataPoint(now, metricValue, r.cfg.serverName))
 		case "ConnsTotal":
-			addPartialIfError(errors, 1, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errors, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
 		case "BusyWorkers":
-			addPartialIfError(errors, 1, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "busy"))
+			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "busy"))
 		case "IdleWorkers":
-			addPartialIfError(errors, 1, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "idle"))
+			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "idle"))
 		case "Total Accesses":
-			addPartialIfError(errors, 1, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errors, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
 		case "Total kBytes":
 			i, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
@@ -102,9 +102,9 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return r.mb.Emit(), errors.Combine()
 }
 
-func addPartialIfError(errors scrapererror.ScrapeErrors, count int, err error) {
+func addPartialIfError(errors scrapererror.ScrapeErrors, err error) {
 	if err != nil {
-		errors.AddPartial(count, err)
+		errors.AddPartial(1, err)
 	}
 }
 
