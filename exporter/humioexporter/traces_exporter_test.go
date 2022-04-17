@@ -26,8 +26,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func createSpanID(stringVal string) [8]byte {
@@ -110,7 +111,7 @@ func TestPushTraceData(t *testing.T) {
 				t.Errorf("unexpected error when starting component")
 			}
 
-			err = exp.pushTraceData(context.Background(), pdata.NewTraces())
+			err = exp.pushTraceData(context.Background(), ptrace.NewTraces())
 
 			// Assert
 			if (err != nil) != tC.wantErr {
@@ -129,7 +130,7 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	// Arrange
 	// We do not export spans with missing service names, so this span should
 	// fail exporting
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
@@ -153,7 +154,7 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	// Arrange
 	// Prepare a valid span with a service name...
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(2)
 	rspan := traces.ResourceSpans().AppendEmpty()
 	rspan.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
@@ -189,23 +190,23 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 
 func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	// Arrange
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 
 	// Three spans for the same trace across two different resources, as
 	// well a span from a separate trace
 	res1 := traces.ResourceSpans().AppendEmpty()
 	res1.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-A")
 	ils1 := res1.ScopeSpans().AppendEmpty()
-	ils1.Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
-	ils1.Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	ils1.Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	ils1.Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("10000000000000000000000000000000")))
 
 	res2 := traces.ResourceSpans().AppendEmpty()
 	res2.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-B")
-	res2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	res2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("10000000000000000000000000000000")))
 
 	res3 := traces.ResourceSpans().AppendEmpty()
 	res3.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-C")
-	res3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
+	res3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("20000000000000000000000000000000")))
 
 	// Organize by trace id
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
@@ -238,26 +239,26 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 
 func TestSpanToHumioEvent(t *testing.T) {
 	// Arrange
-	span := pdata.NewSpan()
-	span.SetTraceID(pdata.NewTraceID(createTraceID("10")))
-	span.SetSpanID(pdata.NewSpanID(createSpanID("20")))
+	span := ptrace.NewSpan()
+	span.SetTraceID(pcommon.NewTraceID(createTraceID("10")))
+	span.SetSpanID(pcommon.NewSpanID(createSpanID("20")))
 	span.SetName("span")
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
-	span.Status().SetCode(pdata.StatusCodeOk)
+	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("done")
 	span.Attributes().InsertString("key", "val")
 
-	inst := pdata.NewInstrumentationScope()
+	inst := pcommon.NewInstrumentationScope()
 	inst.SetName("otel-test")
 	inst.SetVersion("1.0.0")
 
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	res.Attributes().InsertString("service.name", "myapp")
 
 	expected := &HumioStructuredEvent{
@@ -305,9 +306,9 @@ func TestSpanToHumioEvent(t *testing.T) {
 
 func TestSpanToHumioEventNoInstrumentation(t *testing.T) {
 	// Arrange
-	span := pdata.NewSpan()
-	inst := pdata.NewInstrumentationScope()
-	res := pdata.NewResource()
+	span := ptrace.NewSpan()
+	inst := pcommon.NewInstrumentationScope()
+	res := pcommon.NewResource()
 
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
@@ -332,15 +333,15 @@ func TestSpanToHumioEventNoInstrumentation(t *testing.T) {
 
 func TestToHumioLinks(t *testing.T) {
 	// Arrange
-	slice := pdata.NewSpanLinkSlice()
+	slice := ptrace.NewSpanLinkSlice()
 	link1 := slice.AppendEmpty()
-	link1.SetTraceID(pdata.NewTraceID(createTraceID("11")))
-	link1.SetSpanID(pdata.NewSpanID(createSpanID("22")))
+	link1.SetTraceID(pcommon.NewTraceID(createTraceID("11")))
+	link1.SetSpanID(pcommon.NewSpanID(createSpanID("22")))
 	link1.SetTraceState("state1")
 
 	link2 := slice.AppendEmpty()
-	link2.SetTraceID(pdata.NewTraceID(createTraceID("33")))
-	link2.SetSpanID(pdata.NewSpanID(createSpanID("44")))
+	link2.SetTraceID(pcommon.NewTraceID(createTraceID("33")))
+	link2.SetSpanID(pcommon.NewSpanID(createSpanID("44")))
 
 	expected := []*HumioLink{
 		{
@@ -366,13 +367,13 @@ func TestToHumioAttributes(t *testing.T) {
 	// Arrange
 	testCases := []struct {
 		desc     string
-		attr     func() pdata.Map
+		attr     func() pcommon.Map
 		expected interface{}
 	}{
 		{
 			desc: "Simple types",
-			attr: func() pdata.Map {
-				attrMap := pdata.NewMap()
+			attr: func() pcommon.Map {
+				attrMap := pcommon.NewMap()
 				attrMap.InsertString("string", "val")
 				attrMap.InsertInt("integer", 42)
 				attrMap.InsertDouble("double", 4.2)
@@ -388,8 +389,8 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Nil element",
-			attr: func() pdata.Map {
-				attrMap := pdata.NewMap()
+			attr: func() pcommon.Map {
+				attrMap := pcommon.NewMap()
 				attrMap.InsertNull("key")
 				return attrMap
 			},
@@ -399,9 +400,9 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Array element",
-			attr: func() pdata.Map {
-				attrMap := pdata.NewMap()
-				arr := pdata.NewValueSlice()
+			attr: func() pcommon.Map {
+				attrMap := pcommon.NewMap()
+				arr := pcommon.NewValueSlice()
 				arr.SliceVal().AppendEmpty().SetStringVal("a")
 				arr.SliceVal().AppendEmpty().SetStringVal("b")
 				arr.SliceVal().AppendEmpty().SetIntVal(4)
@@ -416,9 +417,9 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Nested map",
-			attr: func() pdata.Map {
-				attrMap := pdata.NewMap()
-				nested := pdata.NewValueMap()
+			attr: func() pcommon.Map {
+				attrMap := pcommon.NewMap()
+				nested := pcommon.NewValueMap()
 				nested.MapVal().InsertString("key", "val")
 				attrMap.Insert("nested", nested)
 				attrMap.InsertBool("active", true)
@@ -445,11 +446,11 @@ func TestToHumioAttributes(t *testing.T) {
 
 func TestToHumioAttributesShaded(t *testing.T) {
 	// Arrange
-	attrMapA := pdata.NewMap()
+	attrMapA := pcommon.NewMap()
 	attrMapA.InsertString("string", "val")
 	attrMapA.InsertInt("integer", 42)
 
-	attrMapB := pdata.NewMap()
+	attrMapB := pcommon.NewMap()
 	attrMapB.InsertInt("integer", 0)
 	attrMapB.InsertString("key", "val")
 

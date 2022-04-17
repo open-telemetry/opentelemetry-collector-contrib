@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -29,14 +29,14 @@ type logExporter struct {
 	logger           *zap.Logger
 }
 
-func (exporter *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
+func (exporter *logExporter) onLogData(context context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	logPacker := newLogPacker(exporter.logger)
 
 	for i := 0; i < resourceLogs.Len(); i++ {
-		instrumentationLibraryLogs := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < instrumentationLibraryLogs.Len(); j++ {
-			logs := instrumentationLibraryLogs.At(j).LogRecords()
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logs := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				envelope := logPacker.LogRecordToEnvelope(logs.At(k))
 				envelope.IKey = exporter.config.InstrumentationKey

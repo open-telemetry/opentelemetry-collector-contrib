@@ -48,7 +48,7 @@ jobs:
         run: make install-tools
       - run: make otelcontribcol
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: collector-binaries
           path: ./bin/*
@@ -108,7 +108,7 @@ jobs:
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Collector Binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: collector-binaries
           path: bin/
@@ -127,7 +127,7 @@ jobs:
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           path: ./*.tar
       - name: GitHub Issue Generator

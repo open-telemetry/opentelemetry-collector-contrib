@@ -24,7 +24,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -102,7 +103,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 // 	return nil
 // }
 
-func (exp *traceExporter) pushTraceDataScrubbed(ctx context.Context, td pdata.Traces) error {
+func (exp *traceExporter) pushTraceDataScrubbed(ctx context.Context, td ptrace.Traces) error {
 	return exp.scrubber.Scrub(exp.pushTraceData(ctx, td))
 }
 
@@ -111,14 +112,14 @@ var _ consumer.ConsumeTracesFunc = (*traceExporter)(nil).pushTraceData
 
 func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
-	td pdata.Traces,
+	td ptrace.Traces,
 ) error {
 
 	// Start host metadata with resource attributes from
 	// the first payload.
-	if exp.cfg.SendMetadata {
+	if exp.cfg.HostMetadata.Enabled {
 		exp.onceMetadata.Do(func() {
-			attrs := pdata.NewMap()
+			attrs := pcommon.NewMap()
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}

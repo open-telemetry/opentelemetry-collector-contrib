@@ -19,21 +19,22 @@ import (
 	"io"
 	"math/rand"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // GenerateTraces generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise
 // parameters defined in the parameters file specified by the tracePairsFile parameter. The pairs to generate
 // spans for for defined in the file specified by the spanPairsFile parameter.
 // The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
-func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces, error) {
+func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]ptrace.Traces, error) {
 	random := io.Reader(rand.New(rand.NewSource(42)))
 	pairsData, err := loadPictOutputFile(tracePairsFile)
 	if err != nil {
 		return nil, err
 	}
 	pairsTotal := len(pairsData) - 1
-	traces := make([]pdata.Traces, pairsTotal)
+	traces := make([]ptrace.Traces, pairsTotal)
 	for index, values := range pairsData {
 		if index == 0 {
 			continue
@@ -43,7 +44,7 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces
 			InstrumentationLibrary: PICTInputInstrumentationLibrary(values[TracesColumnInstrumentationLibrary]),
 			Spans:                  PICTInputSpans(values[TracesColumnSpans]),
 		}
-		traces[index-1] = pdata.NewTraces()
+		traces[index-1] = ptrace.NewTraces()
 		spanErr := appendResourceSpan(tracingInputs, spanPairsFile, random, traces[index-1].ResourceSpans())
 		if spanErr != nil {
 			return nil, err
@@ -59,7 +60,7 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces
 //
 // The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
 func appendResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader, resourceSpansSlice pdata.ResourceSpansSlice) error {
+	random io.Reader, resourceSpansSlice ptrace.ResourceSpansSlice) error {
 	resourceSpan := resourceSpansSlice.AppendEmpty()
 	err := appendScopeSpans(tracingInputs, spanPairsFile, random, resourceSpan.ScopeSpans())
 	if err != nil {
@@ -70,7 +71,7 @@ func appendResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
 }
 
 func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader, instrumentationLibrarySpansSlice pdata.ScopeSpansSlice) error {
+	random io.Reader, scopeSpansSlice ptrace.ScopeSpansSlice) error {
 	var count int
 	switch tracingInputs.InstrumentationLibrary {
 	case LibraryNone:
@@ -81,7 +82,7 @@ func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
 		count = 2
 	}
 	for i := 0; i < count; i++ {
-		err := fillScopeSpans(tracingInputs, i, spanPairsFile, random, instrumentationLibrarySpansSlice.AppendEmpty())
+		err := fillScopeSpans(tracingInputs, i, spanPairsFile, random, scopeSpansSlice.AppendEmpty())
 		if err != nil {
 			return err
 		}
@@ -89,23 +90,23 @@ func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
 	return nil
 }
 
-func fillScopeSpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string, random io.Reader, instrumentationLibrarySpans pdata.ScopeSpans) error {
+func fillScopeSpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string, random io.Reader, scopeSpans ptrace.ScopeSpans) error {
 	spanCaseCount, err := countTotalSpanCases(spanPairsFile)
 	if err != nil {
 		return err
 	}
-	fillInstrumentationLibrary(tracingInputs, index, instrumentationLibrarySpans.Scope())
+	fillInstrumentationLibrary(tracingInputs, index, scopeSpans.Scope())
 	switch tracingInputs.Spans {
 	case LibrarySpansNone:
 		return nil
 	case LibrarySpansOne:
-		return appendSpans(1, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(1, spanPairsFile, random, scopeSpans.Spans())
 	case LibrarySpansSeveral:
-		return appendSpans(spanCaseCount/4, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(spanCaseCount/4, spanPairsFile, random, scopeSpans.Spans())
 	case LibrarySpansAll:
-		return appendSpans(spanCaseCount, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(spanCaseCount, spanPairsFile, random, scopeSpans.Spans())
 	default:
-		return appendSpans(16, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(16, spanPairsFile, random, scopeSpans.Spans())
 	}
 }
 
@@ -118,7 +119,7 @@ func countTotalSpanCases(spanPairsFile string) (int, error) {
 	return count, err
 }
 
-func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, instrumentationLibrary pdata.InstrumentationScope) {
+func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, instrumentationLibrary pcommon.InstrumentationScope) {
 	if tracingInputs.InstrumentationLibrary == LibraryNone {
 		return
 	}

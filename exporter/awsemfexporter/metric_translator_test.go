@@ -28,8 +28,9 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -445,7 +446,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	testCases := []struct {
 		testName          string
-		metric            *pdata.ResourceMetrics
+		metric            *pmetric.ResourceMetrics
 		counterLabels     map[string]string
 		timerLabels       map[string]string
 		expectedNamespace string
@@ -844,7 +845,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 						timestampMs: timestamp,
 					},
 					receiver:       prometheusReceiver,
-					metricDataType: pdata.MetricDataTypeGauge,
+					metricDataType: pmetric.MetricDataTypeGauge,
 				},
 			},
 			nil,
@@ -2267,7 +2268,7 @@ type testMetric struct {
 
 type logGroupStreamTest struct {
 	name             string
-	inputMetrics     pdata.Metrics
+	inputMetrics     pmetric.Metrics
 	inLogGroupName   string
 	inLogStreamName  string
 	outLogGroupName  string
@@ -2421,23 +2422,23 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 	}
 }
 
-func generateTestMetrics(tm testMetric) pdata.Metrics {
-	md := pdata.NewMetrics()
+func generateTestMetrics(tm testMetric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	pdata.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
+	pcommon.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		for _, value := range tm.metricValues[i] {
 			dp := m.Gauge().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
-			pdata.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())
+			pcommon.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())
 		}
 	}
 	return md

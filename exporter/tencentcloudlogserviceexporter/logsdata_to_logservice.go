@@ -19,8 +19,9 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"google.golang.org/protobuf/proto"
 
 	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
@@ -44,7 +45,7 @@ const (
 	clsLogInstrumentationVersion = "otlp.version"
 )
 
-func convertLogs(ld pdata.Logs) []*cls.Log {
+func convertLogs(ld plog.Logs) []*cls.Log {
 	clsLogs := make([]*cls.Log, 0, ld.LogRecordCount())
 
 	rls := ld.ResourceLogs()
@@ -69,7 +70,7 @@ func convertLogs(ld pdata.Logs) []*cls.Log {
 	return clsLogs
 }
 
-func resourceToLogContents(resource pdata.Resource) []*cls.Log_Content {
+func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 	attrs := resource.Attributes()
 
 	var hostname, serviceName string
@@ -82,7 +83,7 @@ func resourceToLogContents(resource pdata.Resource) []*cls.Log_Content {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.Range(func(k string, v pdata.Value) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
@@ -110,7 +111,7 @@ func resourceToLogContents(resource pdata.Resource) []*cls.Log_Content {
 	}
 }
 
-func instrumentationLibraryToLogContents(instrumentationLibrary pdata.InstrumentationScope) []*cls.Log_Content {
+func instrumentationLibraryToLogContents(instrumentationLibrary pcommon.InstrumentationScope) []*cls.Log_Content {
 	return []*cls.Log_Content{
 		{
 			Key:   proto.String(clsLogInstrumentationName),
@@ -123,10 +124,10 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 	}
 }
 
-func mapLogRecordToLogService(lr pdata.LogRecord,
+func mapLogRecordToLogService(lr plog.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*cls.Log_Content) *cls.Log {
-	if lr.Body().Type() == pdata.ValueTypeEmpty {
+	if lr.Body().Type() == pcommon.ValueTypeEmpty {
 		return nil
 	}
 	var clsLog cls.Log
@@ -136,7 +137,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	clsLog.Contents = make([]*cls.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
 
 	fields := map[string]interface{}{}
-	lr.Attributes().Range(func(k string, v pdata.Value) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})

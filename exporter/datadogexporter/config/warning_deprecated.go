@@ -38,7 +38,7 @@ type renameError struct {
 	issueNumber uint
 }
 
-// List of settings that are deprecated.
+// List of settings that are deprecated but not yet removed.
 var renamedSettings = []renameError{
 	{
 		oldName:      "metrics::send_monotonic_counter",
@@ -53,7 +53,41 @@ var renamedSettings = []renameError{
 			}
 		},
 	},
+	{
+		oldName:      "tags",
+		newName:      "host_metadata::tags",
+		oldRemovedIn: "v0.52.0",
+		issueNumber:  9099,
+		updateFn: func(c *Config) {
+			c.HostMetadata.Tags = c.Tags
+		},
+	},
+	{
+		oldName:      "send_metadata",
+		newName:      "host_metadata::enabled",
+		oldRemovedIn: "v0.52.0",
+		issueNumber:  9099,
+		updateFn: func(c *Config) {
+			c.HostMetadata.Enabled = c.SendMetadata
+		},
+	},
+	{
+		oldName:      "use_resource_metadata",
+		newName:      "host_metadata::hostname_source",
+		oldRemovedIn: "v0.52.0",
+		issueNumber:  9099,
+		updateFn: func(c *Config) {
+			if c.UseResourceMetadata {
+				c.HostMetadata.HostnameSource = HostnameSourceFirstResource
+			} else {
+				c.HostMetadata.HostnameSource = HostnameSourceConfigOrSystem
+			}
+		},
+	},
 }
+
+// List of settings that have been removed, but for which we keep a custom error.
+var removedSettings = []renameError{}
 
 // Error implements the error interface.
 func (e renameError) Error() string {
@@ -64,6 +98,19 @@ func (e renameError) Error() string {
 		e.oldRemovedIn,
 		e.issueNumber,
 	)
+}
+
+// RemovedErr returns an error describing that the old name was removed in favor of the new name.
+func (e renameError) RemovedErr(configMap *config.Map) error {
+	if configMap.IsSet(e.oldName) {
+		return fmt.Errorf(
+			"%q was removed in favor of %q. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
+			e.oldName,
+			e.newName,
+			e.issueNumber,
+		)
+	}
+	return nil
 }
 
 // Check if the deprecated option is being used.
@@ -92,6 +139,13 @@ func handleRenamedSettings(configMap *config.Map, cfg *Config) (warnings []error
 			// only update config if old name is in use
 			renaming.UpdateCfg(cfg)
 		}
+	}
+	return
+}
+
+func handleRemovedSettings(configMap *config.Map) (err error) {
+	for _, removed := range removedSettings {
+		err = multierr.Append(err, removed.RemovedErr(configMap))
 	}
 	return
 }

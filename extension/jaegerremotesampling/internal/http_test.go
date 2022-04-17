@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +36,7 @@ func TestMissingClientConfigManager(t *testing.T) {
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, nil)
 
 	// verify
-	assert.Equal(t, errMissingClientConfigManager, err)
+	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
 }
 
@@ -46,7 +45,7 @@ func TestStartAndStop(t *testing.T) {
 	srvSettings := confighttp.HTTPServerSettings{
 		Endpoint: ":0",
 	}
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, NewClientConfigManager())
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -72,7 +71,7 @@ func TestEndpointsAreWired(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, NewClientConfigManager())
+			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
 			require.NoError(t, err)
 			require.NotNil(t, s)
 
@@ -98,7 +97,7 @@ func TestEndpointsAreWired(t *testing.T) {
 
 func TestServiceNameIsRequired(t *testing.T) {
 	// prepare
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, NewClientConfigManager())
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -116,11 +115,11 @@ func TestServiceNameIsRequired(t *testing.T) {
 }
 
 func TestErrorFromClientConfigManager(t *testing.T) {
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, NewClientConfigManager())
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
-	s.cfgMgr = &mockCfgMgr{
+	s.strategyStore = &mockCfgMgr{
 		getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
 			return nil, errors.New("some error")
 		},
@@ -142,20 +141,12 @@ func TestErrorFromClientConfigManager(t *testing.T) {
 }
 
 type mockCfgMgr struct {
-	getSamplingStrategyFunc    func(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error)
-	getBaggageRestrictionsFunc func(ctx context.Context, serviceName string) ([]*baggage.BaggageRestriction, error)
+	getSamplingStrategyFunc func(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error)
 }
 
 func (m *mockCfgMgr) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
 	if m.getSamplingStrategyFunc != nil {
 		return m.getSamplingStrategyFunc(ctx, serviceName)
 	}
-	return nil, nil
-}
-
-func (m *mockCfgMgr) GetBaggageRestrictions(ctx context.Context, serviceName string) ([]*baggage.BaggageRestriction, error) {
-	if m.getBaggageRestrictionsFunc != nil {
-		return m.getBaggageRestrictionsFunc(ctx, serviceName)
-	}
-	return nil, nil
+	return sampling.NewSamplingStrategyResponse(), nil
 }

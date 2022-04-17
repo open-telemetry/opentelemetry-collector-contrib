@@ -21,8 +21,8 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -613,8 +613,8 @@ func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
 	}
 }
 
-func generateResourceWithOcNodeAndResource() pdata.Resource {
-	resource := pdata.NewResource()
+func generateResourceWithOcNodeAndResource() pcommon.Resource {
+	resource := pcommon.NewResource()
 	resource.Attributes().InsertString(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
 	resource.Attributes().InsertString(conventions.AttributeHostName, "host1")
 	resource.Attributes().InsertInt(conventions.AttributeProcessPID, 123)

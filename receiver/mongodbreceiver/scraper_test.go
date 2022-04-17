@@ -24,7 +24,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -115,11 +116,11 @@ func TestGlobalLockTimeOldFormat(t *testing.T) {
 		},
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	scraper.recordGlobalLockTime(now, doc, scrapererror.ScrapeErrors{})
 	expectedValue := (int64(116749+14340) / 1000)
 
-	metrics := pdata.NewMetricSlice()
+	metrics := pmetric.NewMetricSlice()
 	scraper.mb.EmitAdmin(metrics)
 	collectedValue := metrics.At(0).Sum().DataPoints().At(0).IntVal()
 	require.Equal(t, expectedValue, collectedValue)
