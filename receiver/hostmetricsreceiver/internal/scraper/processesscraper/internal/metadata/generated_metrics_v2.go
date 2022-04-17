@@ -3,15 +3,11 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -224,29 +220,9 @@ func (mb *MetricsBuilder) RecordSystemProcessesCountDataPoint(ts pcommon.Timesta
 	mb.metricSystemProcessesCount.recordDataPoint(mb.startTime, ts, val, statusAttributeValue)
 }
 
-// ParseSystemProcessesCountDataPoint attempts to parse and add a data point to system.processes.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemProcessesCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, statusAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemProcessesCount, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemProcessesCount.recordDataPoint(mb.startTime, ts, i, statusAttributeValue)
-	}
-}
-
 // RecordSystemProcessesCreatedDataPoint adds a data point to system.processes.created metric.
 func (mb *MetricsBuilder) RecordSystemProcessesCreatedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemProcessesCreated.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSystemProcessesCreatedDataPoint attempts to parse and add a data point to system.processes.created metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemProcessesCreatedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemProcessesCreated, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemProcessesCreated.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

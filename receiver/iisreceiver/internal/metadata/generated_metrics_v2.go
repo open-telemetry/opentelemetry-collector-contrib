@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -802,29 +798,9 @@ func (mb *MetricsBuilder) RecordIisConnectionActiveDataPoint(ts pcommon.Timestam
 	mb.metricIisConnectionActive.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseIisConnectionActiveDataPoint attempts to parse and add a data point to iis.connection.active metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisConnectionActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisConnectionActive, value was %s: %w", val, err))
-	} else {
-		mb.metricIisConnectionActive.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordIisConnectionAnonymousDataPoint adds a data point to iis.connection.anonymous metric.
 func (mb *MetricsBuilder) RecordIisConnectionAnonymousDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricIisConnectionAnonymous.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseIisConnectionAnonymousDataPoint attempts to parse and add a data point to iis.connection.anonymous metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisConnectionAnonymousDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisConnectionAnonymous, value was %s: %w", val, err))
-	} else {
-		mb.metricIisConnectionAnonymous.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordIisConnectionAttemptCountDataPoint adds a data point to iis.connection.attempt.count metric.
@@ -832,29 +808,9 @@ func (mb *MetricsBuilder) RecordIisConnectionAttemptCountDataPoint(ts pcommon.Ti
 	mb.metricIisConnectionAttemptCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseIisConnectionAttemptCountDataPoint attempts to parse and add a data point to iis.connection.attempt.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisConnectionAttemptCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisConnectionAttemptCount, value was %s: %w", val, err))
-	} else {
-		mb.metricIisConnectionAttemptCount.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordIisNetworkBlockedDataPoint adds a data point to iis.network.blocked metric.
 func (mb *MetricsBuilder) RecordIisNetworkBlockedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricIisNetworkBlocked.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseIisNetworkBlockedDataPoint attempts to parse and add a data point to iis.network.blocked metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisNetworkBlockedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisNetworkBlocked, value was %s: %w", val, err))
-	} else {
-		mb.metricIisNetworkBlocked.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordIisNetworkFileCountDataPoint adds a data point to iis.network.file.count metric.
@@ -862,29 +818,9 @@ func (mb *MetricsBuilder) RecordIisNetworkFileCountDataPoint(ts pcommon.Timestam
 	mb.metricIisNetworkFileCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
-// ParseIisNetworkFileCountDataPoint attempts to parse and add a data point to iis.network.file.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisNetworkFileCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisNetworkFileCount, value was %s: %w", val, err))
-	} else {
-		mb.metricIisNetworkFileCount.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
-	}
-}
-
 // RecordIisNetworkIoDataPoint adds a data point to iis.network.io metric.
 func (mb *MetricsBuilder) RecordIisNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	mb.metricIisNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
-}
-
-// ParseIisNetworkIoDataPoint attempts to parse and add a data point to iis.network.io metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisNetworkIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisNetworkIo, value was %s: %w", val, err))
-	} else {
-		mb.metricIisNetworkIo.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
-	}
 }
 
 // RecordIisRequestCountDataPoint adds a data point to iis.request.count metric.
@@ -892,29 +828,9 @@ func (mb *MetricsBuilder) RecordIisRequestCountDataPoint(ts pcommon.Timestamp, v
 	mb.metricIisRequestCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
 }
 
-// ParseIisRequestCountDataPoint attempts to parse and add a data point to iis.request.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisRequestCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, requestAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisRequestCount, value was %s: %w", val, err))
-	} else {
-		mb.metricIisRequestCount.recordDataPoint(mb.startTime, ts, i, requestAttributeValue)
-	}
-}
-
 // RecordIisRequestQueueAgeMaxDataPoint adds a data point to iis.request.queue.age.max metric.
 func (mb *MetricsBuilder) RecordIisRequestQueueAgeMaxDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricIisRequestQueueAgeMax.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseIisRequestQueueAgeMaxDataPoint attempts to parse and add a data point to iis.request.queue.age.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisRequestQueueAgeMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisRequestQueueAgeMax, value was %s: %w", val, err))
-	} else {
-		mb.metricIisRequestQueueAgeMax.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordIisRequestQueueCountDataPoint adds a data point to iis.request.queue.count metric.
@@ -922,29 +838,9 @@ func (mb *MetricsBuilder) RecordIisRequestQueueCountDataPoint(ts pcommon.Timesta
 	mb.metricIisRequestQueueCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseIisRequestQueueCountDataPoint attempts to parse and add a data point to iis.request.queue.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisRequestQueueCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisRequestQueueCount, value was %s: %w", val, err))
-	} else {
-		mb.metricIisRequestQueueCount.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordIisRequestRejectedDataPoint adds a data point to iis.request.rejected metric.
 func (mb *MetricsBuilder) RecordIisRequestRejectedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricIisRequestRejected.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseIisRequestRejectedDataPoint attempts to parse and add a data point to iis.request.rejected metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisRequestRejectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisRequestRejected, value was %s: %w", val, err))
-	} else {
-		mb.metricIisRequestRejected.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordIisThreadActiveDataPoint adds a data point to iis.thread.active metric.
@@ -952,29 +848,9 @@ func (mb *MetricsBuilder) RecordIisThreadActiveDataPoint(ts pcommon.Timestamp, v
 	mb.metricIisThreadActive.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseIisThreadActiveDataPoint attempts to parse and add a data point to iis.thread.active metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisThreadActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisThreadActive, value was %s: %w", val, err))
-	} else {
-		mb.metricIisThreadActive.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordIisUptimeDataPoint adds a data point to iis.uptime metric.
 func (mb *MetricsBuilder) RecordIisUptimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricIisUptime.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseIisUptimeDataPoint attempts to parse and add a data point to iis.uptime metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseIisUptimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for IisUptime, value was %s: %w", val, err))
-	} else {
-		mb.metricIisUptime.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

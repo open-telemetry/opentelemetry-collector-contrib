@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -1800,29 +1796,9 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pcommo
 	mb.metricElasticsearchClusterDataNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseElasticsearchClusterDataNodesDataPoint attempts to parse and add a data point to elasticsearch.cluster.data_nodes metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchClusterDataNodesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchClusterDataNodes, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchClusterDataNodes.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordElasticsearchClusterHealthDataPoint adds a data point to elasticsearch.cluster.health metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.Timestamp, val int64, healthStatusAttributeValue string) {
 	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
-}
-
-// ParseElasticsearchClusterHealthDataPoint attempts to parse and add a data point to elasticsearch.cluster.health metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchClusterHealthDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, healthStatusAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchClusterHealth, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, i, healthStatusAttributeValue)
-	}
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
@@ -1830,29 +1806,9 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pcommon.Ti
 	mb.metricElasticsearchClusterNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseElasticsearchClusterNodesDataPoint attempts to parse and add a data point to elasticsearch.cluster.nodes metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchClusterNodesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchClusterNodes, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchClusterNodes.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordElasticsearchClusterShardsDataPoint adds a data point to elasticsearch.cluster.shards metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pcommon.Timestamp, val int64, shardStateAttributeValue string) {
 	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue)
-}
-
-// ParseElasticsearchClusterShardsDataPoint attempts to parse and add a data point to elasticsearch.cluster.shards metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchClusterShardsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, shardStateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchClusterShards, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, i, shardStateAttributeValue)
-	}
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
@@ -1860,29 +1816,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pcom
 	mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
 }
 
-// ParseElasticsearchNodeCacheEvictionsDataPoint attempts to parse and add a data point to elasticsearch.node.cache.evictions metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeCacheEvictionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cacheNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeCacheEvictions, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, i, cacheNameAttributeValue)
-	}
-}
-
 // RecordElasticsearchNodeCacheMemoryUsageDataPoint adds a data point to elasticsearch.node.cache.memory.usage metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
 	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
-}
-
-// ParseElasticsearchNodeCacheMemoryUsageDataPoint attempts to parse and add a data point to elasticsearch.node.cache.memory.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeCacheMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cacheNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeCacheMemoryUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, i, cacheNameAttributeValue)
-	}
 }
 
 // RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
@@ -1890,29 +1826,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts 
 	mb.metricElasticsearchNodeClusterConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseElasticsearchNodeClusterConnectionsDataPoint attempts to parse and add a data point to elasticsearch.node.cluster.connections metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeClusterConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeClusterConnections, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeClusterConnections.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
-}
-
-// ParseElasticsearchNodeClusterIoDataPoint attempts to parse and add a data point to elasticsearch.node.cluster.io metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeClusterIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeClusterIo, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
-	}
 }
 
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
@@ -1920,29 +1836,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pcommon.T
 	mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue)
 }
 
-// ParseElasticsearchNodeDocumentsDataPoint attempts to parse and add a data point to elasticsearch.node.documents metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, documentStateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeDocuments, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, i, documentStateAttributeValue)
-	}
-}
-
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseElasticsearchNodeFsDiskAvailableDataPoint attempts to parse and add a data point to elasticsearch.node.fs.disk.available metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeFsDiskAvailableDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeFsDiskAvailable, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
@@ -1950,29 +1846,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pco
 	mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseElasticsearchNodeHTTPConnectionsDataPoint attempts to parse and add a data point to elasticsearch.node.http.connections metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeHTTPConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeHTTPConnections, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordElasticsearchNodeOpenFilesDataPoint adds a data point to elasticsearch.node.open_files metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeOpenFiles.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseElasticsearchNodeOpenFilesDataPoint attempts to parse and add a data point to elasticsearch.node.open_files metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeOpenFilesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeOpenFiles, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeOpenFiles.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
@@ -1980,29 +1856,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts
 	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
-// ParseElasticsearchNodeOperationsCompletedDataPoint attempts to parse and add a data point to elasticsearch.node.operations.completed metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeOperationsCompletedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeOperationsCompleted, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, i, operationAttributeValue)
-	}
-}
-
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
-}
-
-// ParseElasticsearchNodeOperationsTimeDataPoint attempts to parse and add a data point to elasticsearch.node.operations.time metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeOperationsTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeOperationsTime, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, i, operationAttributeValue)
-	}
 }
 
 // RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
@@ -2010,29 +1866,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pcommon.
 	mb.metricElasticsearchNodeShardsSize.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseElasticsearchNodeShardsSizeDataPoint attempts to parse and add a data point to elasticsearch.node.shards.size metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeShardsSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeShardsSize, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeShardsSize.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.finished metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
 	mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue)
-}
-
-// ParseElasticsearchNodeThreadPoolTasksFinishedDataPoint attempts to parse and add a data point to elasticsearch.node.thread_pool.tasks.finished metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeThreadPoolTasksFinished, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, i, threadPoolNameAttributeValue, taskStateAttributeValue)
-	}
 }
 
 // RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.queued metric.
@@ -2040,29 +1876,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(
 	mb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue)
 }
 
-// ParseElasticsearchNodeThreadPoolTasksQueuedDataPoint attempts to parse and add a data point to elasticsearch.node.thread_pool.tasks.queued metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, threadPoolNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeThreadPoolTasksQueued, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(mb.startTime, ts, i, threadPoolNameAttributeValue)
-	}
-}
-
 // RecordElasticsearchNodeThreadPoolThreadsDataPoint adds a data point to elasticsearch.node.thread_pool.threads metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
 	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue)
-}
-
-// ParseElasticsearchNodeThreadPoolThreadsDataPoint attempts to parse and add a data point to elasticsearch.node.thread_pool.threads metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseElasticsearchNodeThreadPoolThreadsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ElasticsearchNodeThreadPoolThreads, value was %s: %w", val, err))
-	} else {
-		mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, i, threadPoolNameAttributeValue, threadStateAttributeValue)
-	}
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
@@ -2070,29 +1886,9 @@ func (mb *MetricsBuilder) RecordJvmClassesLoadedDataPoint(ts pcommon.Timestamp, 
 	mb.metricJvmClassesLoaded.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseJvmClassesLoadedDataPoint attempts to parse and add a data point to jvm.classes.loaded metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmClassesLoadedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmClassesLoaded, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmClassesLoaded.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordJvmGcCollectionsCountDataPoint adds a data point to jvm.gc.collections.count metric.
 func (mb *MetricsBuilder) RecordJvmGcCollectionsCountDataPoint(ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
 	mb.metricJvmGcCollectionsCount.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
-}
-
-// ParseJvmGcCollectionsCountDataPoint attempts to parse and add a data point to jvm.gc.collections.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, collectorNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmGcCollectionsCount, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmGcCollectionsCount.recordDataPoint(mb.startTime, ts, i, collectorNameAttributeValue)
-	}
 }
 
 // RecordJvmGcCollectionsElapsedDataPoint adds a data point to jvm.gc.collections.elapsed metric.
@@ -2100,29 +1896,9 @@ func (mb *MetricsBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pcommon.Time
 	mb.metricJvmGcCollectionsElapsed.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
 }
 
-// ParseJvmGcCollectionsElapsedDataPoint attempts to parse and add a data point to jvm.gc.collections.elapsed metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmGcCollectionsElapsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, collectorNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmGcCollectionsElapsed, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmGcCollectionsElapsed.recordDataPoint(mb.startTime, ts, i, collectorNameAttributeValue)
-	}
-}
-
 // RecordJvmMemoryHeapCommittedDataPoint adds a data point to jvm.memory.heap.committed metric.
 func (mb *MetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseJvmMemoryHeapCommittedDataPoint attempts to parse and add a data point to jvm.memory.heap.committed metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmMemoryHeapCommittedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmMemoryHeapCommitted, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordJvmMemoryHeapMaxDataPoint adds a data point to jvm.memory.heap.max metric.
@@ -2130,29 +1906,9 @@ func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, 
 	mb.metricJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseJvmMemoryHeapMaxDataPoint attempts to parse and add a data point to jvm.memory.heap.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmMemoryHeapMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmMemoryHeapMax, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordJvmMemoryHeapUsedDataPoint adds a data point to jvm.memory.heap.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseJvmMemoryHeapUsedDataPoint attempts to parse and add a data point to jvm.memory.heap.used metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmMemoryHeapUsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmMemoryHeapUsed, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordJvmMemoryNonheapCommittedDataPoint adds a data point to jvm.memory.nonheap.committed metric.
@@ -2160,29 +1916,9 @@ func (mb *MetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pcommon.Ti
 	mb.metricJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseJvmMemoryNonheapCommittedDataPoint attempts to parse and add a data point to jvm.memory.nonheap.committed metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmMemoryNonheapCommittedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmMemoryNonheapCommitted, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordJvmMemoryNonheapUsedDataPoint adds a data point to jvm.memory.nonheap.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseJvmMemoryNonheapUsedDataPoint attempts to parse and add a data point to jvm.memory.nonheap.used metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmMemoryNonheapUsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmMemoryNonheapUsed, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordJvmMemoryPoolMaxDataPoint adds a data point to jvm.memory.pool.max metric.
@@ -2190,44 +1926,14 @@ func (mb *MetricsBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pcommon.Timestamp, 
 	mb.metricJvmMemoryPoolMax.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
-// ParseJvmMemoryPoolMaxDataPoint attempts to parse and add a data point to jvm.memory.pool.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmMemoryPoolMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, memoryPoolNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmMemoryPoolMax, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmMemoryPoolMax.recordDataPoint(mb.startTime, ts, i, memoryPoolNameAttributeValue)
-	}
-}
-
 // RecordJvmMemoryPoolUsedDataPoint adds a data point to jvm.memory.pool.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
 	mb.metricJvmMemoryPoolUsed.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
-// ParseJvmMemoryPoolUsedDataPoint attempts to parse and add a data point to jvm.memory.pool.used metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmMemoryPoolUsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, memoryPoolNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmMemoryPoolUsed, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmMemoryPoolUsed.recordDataPoint(mb.startTime, ts, i, memoryPoolNameAttributeValue)
-	}
-}
-
 // RecordJvmThreadsCountDataPoint adds a data point to jvm.threads.count metric.
 func (mb *MetricsBuilder) RecordJvmThreadsCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricJvmThreadsCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseJvmThreadsCountDataPoint attempts to parse and add a data point to jvm.threads.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseJvmThreadsCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for JvmThreadsCount, value was %s: %w", val, err))
-	} else {
-		mb.metricJvmThreadsCount.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

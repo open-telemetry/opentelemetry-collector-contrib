@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -1233,29 +1229,9 @@ func (mb *MetricsBuilder) RecordSqlserverBatchRequestRateDataPoint(ts pcommon.Ti
 	mb.metricSqlserverBatchRequestRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverBatchRequestRateDataPoint attempts to parse and add a data point to sqlserver.batch.request.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverBatchRequestRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverBatchRequestRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverBatchRequestRate.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverBatchSQLCompilationRateDataPoint adds a data point to sqlserver.batch.sql_compilation.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverBatchSQLCompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverBatchSQLCompilationRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverBatchSQLCompilationRateDataPoint attempts to parse and add a data point to sqlserver.batch.sql_compilation.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverBatchSQLCompilationRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverBatchSQLCompilationRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverBatchSQLCompilationRate.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverBatchSQLRecompilationRateDataPoint adds a data point to sqlserver.batch.sql_recompilation.rate metric.
@@ -1263,29 +1239,9 @@ func (mb *MetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts p
 	mb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverBatchSQLRecompilationRateDataPoint attempts to parse and add a data point to sqlserver.batch.sql_recompilation.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverBatchSQLRecompilationRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverBatchSQLRecompilationRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverLockWaitRateDataPoint adds a data point to sqlserver.lock.wait.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverLockWaitRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverLockWaitRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverLockWaitRateDataPoint attempts to parse and add a data point to sqlserver.lock.wait.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverLockWaitRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverLockWaitRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverLockWaitRate.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverLockWaitTimeAvgDataPoint adds a data point to sqlserver.lock.wait_time.avg metric.
@@ -1293,29 +1249,9 @@ func (mb *MetricsBuilder) RecordSqlserverLockWaitTimeAvgDataPoint(ts pcommon.Tim
 	mb.metricSqlserverLockWaitTimeAvg.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverLockWaitTimeAvgDataPoint attempts to parse and add a data point to sqlserver.lock.wait_time.avg metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverLockWaitTimeAvgDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverLockWaitTimeAvg, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverLockWaitTimeAvg.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverPageBufferCacheHitRatioDataPoint adds a data point to sqlserver.page.buffer_cache.hit_ratio metric.
 func (mb *MetricsBuilder) RecordSqlserverPageBufferCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverPageBufferCacheHitRatio.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverPageBufferCacheHitRatioDataPoint attempts to parse and add a data point to sqlserver.page.buffer_cache.hit_ratio metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverPageBufferCacheHitRatioDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverPageBufferCacheHitRatio, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverPageBufferCacheHitRatio.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverPageCheckpointFlushRateDataPoint adds a data point to sqlserver.page.checkpoint.flush.rate metric.
@@ -1323,29 +1259,9 @@ func (mb *MetricsBuilder) RecordSqlserverPageCheckpointFlushRateDataPoint(ts pco
 	mb.metricSqlserverPageCheckpointFlushRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverPageCheckpointFlushRateDataPoint attempts to parse and add a data point to sqlserver.page.checkpoint.flush.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverPageCheckpointFlushRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverPageCheckpointFlushRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverPageCheckpointFlushRate.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverPageLazyWriteRateDataPoint adds a data point to sqlserver.page.lazy_write.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverPageLazyWriteRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverPageLazyWriteRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverPageLazyWriteRateDataPoint attempts to parse and add a data point to sqlserver.page.lazy_write.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverPageLazyWriteRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverPageLazyWriteRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverPageLazyWriteRate.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverPageLifeExpectancyDataPoint adds a data point to sqlserver.page.life_expectancy metric.
@@ -1353,29 +1269,9 @@ func (mb *MetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.
 	mb.metricSqlserverPageLifeExpectancy.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverPageLifeExpectancyDataPoint attempts to parse and add a data point to sqlserver.page.life_expectancy metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverPageLifeExpectancyDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverPageLifeExpectancy, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverPageLifeExpectancy.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverPageOperationRateDataPoint adds a data point to sqlserver.page.operation.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.Timestamp, val float64, pageOperationsAttributeValue string) {
 	mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue)
-}
-
-// ParseSqlserverPageOperationRateDataPoint attempts to parse and add a data point to sqlserver.page.operation.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverPageOperationRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, pageOperationsAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverPageOperationRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, f, pageOperationsAttributeValue)
-	}
 }
 
 // RecordSqlserverPageSplitRateDataPoint adds a data point to sqlserver.page.split.rate metric.
@@ -1383,29 +1279,9 @@ func (mb *MetricsBuilder) RecordSqlserverPageSplitRateDataPoint(ts pcommon.Times
 	mb.metricSqlserverPageSplitRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverPageSplitRateDataPoint attempts to parse and add a data point to sqlserver.page.split.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverPageSplitRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverPageSplitRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverPageSplitRate.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverTransactionRateDataPoint adds a data point to sqlserver.transaction.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverTransactionRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverTransactionRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverTransactionRateDataPoint attempts to parse and add a data point to sqlserver.transaction.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionRate.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverTransactionWriteRateDataPoint adds a data point to sqlserver.transaction.write.rate metric.
@@ -1413,29 +1289,9 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionWriteRateDataPoint(ts pcommo
 	mb.metricSqlserverTransactionWriteRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverTransactionWriteRateDataPoint attempts to parse and add a data point to sqlserver.transaction.write.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionWriteRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionWriteRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionWriteRate.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverTransactionLogFlushDataRateDataPoint adds a data point to sqlserver.transaction_log.flush.data.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverTransactionLogFlushDataRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverTransactionLogFlushDataRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverTransactionLogFlushDataRateDataPoint attempts to parse and add a data point to sqlserver.transaction_log.flush.data.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionLogFlushDataRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionLogFlushDataRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionLogFlushDataRate.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverTransactionLogFlushRateDataPoint adds a data point to sqlserver.transaction_log.flush.rate metric.
@@ -1443,29 +1299,9 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionLogFlushRateDataPoint(ts pco
 	mb.metricSqlserverTransactionLogFlushRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverTransactionLogFlushRateDataPoint attempts to parse and add a data point to sqlserver.transaction_log.flush.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionLogFlushRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionLogFlushRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionLogFlushRate.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverTransactionLogFlushWaitRateDataPoint adds a data point to sqlserver.transaction_log.flush.wait.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverTransactionLogFlushWaitRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverTransactionLogFlushWaitRateDataPoint attempts to parse and add a data point to sqlserver.transaction_log.flush.wait.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionLogFlushWaitRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionLogFlushWaitRate, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionLogFlushWaitRate.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverTransactionLogGrowthCountDataPoint adds a data point to sqlserver.transaction_log.growth.count metric.
@@ -1473,29 +1309,9 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionLogGrowthCountDataPoint(ts p
 	mb.metricSqlserverTransactionLogGrowthCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverTransactionLogGrowthCountDataPoint attempts to parse and add a data point to sqlserver.transaction_log.growth.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionLogGrowthCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionLogGrowthCount, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionLogGrowthCount.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverTransactionLogShrinkCountDataPoint adds a data point to sqlserver.transaction_log.shrink.count metric.
 func (mb *MetricsBuilder) RecordSqlserverTransactionLogShrinkCountDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverTransactionLogShrinkCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverTransactionLogShrinkCountDataPoint attempts to parse and add a data point to sqlserver.transaction_log.shrink.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionLogShrinkCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionLogShrinkCount, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionLogShrinkCount.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordSqlserverTransactionLogUsageDataPoint adds a data point to sqlserver.transaction_log.usage metric.
@@ -1503,29 +1319,9 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionLogUsageDataPoint(ts pcommon
 	mb.metricSqlserverTransactionLogUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSqlserverTransactionLogUsageDataPoint attempts to parse and add a data point to sqlserver.transaction_log.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverTransactionLogUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverTransactionLogUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverTransactionLogUsage.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSqlserverUserConnectionCountDataPoint adds a data point to sqlserver.user.connection.count metric.
 func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSqlserverUserConnectionCountDataPoint attempts to parse and add a data point to sqlserver.user.connection.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSqlserverUserConnectionCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SqlserverUserConnectionCount, value was %s: %w", val, err))
-	} else {
-		mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

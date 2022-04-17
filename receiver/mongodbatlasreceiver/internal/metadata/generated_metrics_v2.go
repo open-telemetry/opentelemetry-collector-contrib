@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -3812,29 +3808,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasDbCountsDataPoint(ts pcommon.Timesta
 	mb.metricMongodbatlasDbCounts.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue)
 }
 
-// ParseMongodbatlasDbCountsDataPoint attempts to parse and add a data point to mongodbatlas.db.counts metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDbCountsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, objectTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDbCounts, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDbCounts.recordDataPoint(mb.startTime, ts, f, objectTypeAttributeValue)
-	}
-}
-
 // RecordMongodbatlasDbSizeDataPoint adds a data point to mongodbatlas.db.size metric.
 func (mb *MetricsBuilder) RecordMongodbatlasDbSizeDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue string) {
 	mb.metricMongodbatlasDbSize.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue)
-}
-
-// ParseMongodbatlasDbSizeDataPoint attempts to parse and add a data point to mongodbatlas.db.size metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDbSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, objectTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDbSize, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDbSize.recordDataPoint(mb.startTime, ts, f, objectTypeAttributeValue)
-	}
 }
 
 // RecordMongodbatlasDiskPartitionIopsAverageDataPoint adds a data point to mongodbatlas.disk.partition.iops.average metric.
@@ -3842,29 +3818,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts
 	mb.metricMongodbatlasDiskPartitionIopsAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
 }
 
-// ParseMongodbatlasDiskPartitionIopsAverageDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.iops.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionIopsAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskDirectionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionIopsAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionIopsAverage.recordDataPoint(mb.startTime, ts, f, diskDirectionAttributeValue)
-	}
-}
-
 // RecordMongodbatlasDiskPartitionIopsMaxDataPoint adds a data point to mongodbatlas.disk.partition.iops.max metric.
 func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
 	mb.metricMongodbatlasDiskPartitionIopsMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
-}
-
-// ParseMongodbatlasDiskPartitionIopsMaxDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.iops.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionIopsMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskDirectionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionIopsMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionIopsMax.recordDataPoint(mb.startTime, ts, f, diskDirectionAttributeValue)
-	}
 }
 
 // RecordMongodbatlasDiskPartitionLatencyAverageDataPoint adds a data point to mongodbatlas.disk.partition.latency.average metric.
@@ -3872,29 +3828,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyAverageDataPoint
 	mb.metricMongodbatlasDiskPartitionLatencyAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
 }
 
-// ParseMongodbatlasDiskPartitionLatencyAverageDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.latency.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionLatencyAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskDirectionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionLatencyAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionLatencyAverage.recordDataPoint(mb.startTime, ts, f, diskDirectionAttributeValue)
-	}
-}
-
 // RecordMongodbatlasDiskPartitionLatencyMaxDataPoint adds a data point to mongodbatlas.disk.partition.latency.max metric.
 func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
 	mb.metricMongodbatlasDiskPartitionLatencyMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
-}
-
-// ParseMongodbatlasDiskPartitionLatencyMaxDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.latency.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionLatencyMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskDirectionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionLatencyMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionLatencyMax.recordDataPoint(mb.startTime, ts, f, diskDirectionAttributeValue)
-	}
 }
 
 // RecordMongodbatlasDiskPartitionSpaceAverageDataPoint adds a data point to mongodbatlas.disk.partition.space.average metric.
@@ -3902,29 +3838,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(t
 	mb.metricMongodbatlasDiskPartitionSpaceAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
 }
 
-// ParseMongodbatlasDiskPartitionSpaceAverageDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.space.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionSpaceAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionSpaceAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionSpaceAverage.recordDataPoint(mb.startTime, ts, f, diskStatusAttributeValue)
-	}
-}
-
 // RecordMongodbatlasDiskPartitionSpaceMaxDataPoint adds a data point to mongodbatlas.disk.partition.space.max metric.
 func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
 	mb.metricMongodbatlasDiskPartitionSpaceMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
-}
-
-// ParseMongodbatlasDiskPartitionSpaceMaxDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.space.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionSpaceMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionSpaceMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionSpaceMax.recordDataPoint(mb.startTime, ts, f, diskStatusAttributeValue)
-	}
 }
 
 // RecordMongodbatlasDiskPartitionUsageAverageDataPoint adds a data point to mongodbatlas.disk.partition.usage.average metric.
@@ -3932,29 +3848,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageAverageDataPoint(t
 	mb.metricMongodbatlasDiskPartitionUsageAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
 }
 
-// ParseMongodbatlasDiskPartitionUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionUsageAverage.recordDataPoint(mb.startTime, ts, f, diskStatusAttributeValue)
-	}
-}
-
 // RecordMongodbatlasDiskPartitionUsageMaxDataPoint adds a data point to mongodbatlas.disk.partition.usage.max metric.
 func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
 	mb.metricMongodbatlasDiskPartitionUsageMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
-}
-
-// ParseMongodbatlasDiskPartitionUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionUsageMax.recordDataPoint(mb.startTime, ts, f, diskStatusAttributeValue)
-	}
 }
 
 // RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint adds a data point to mongodbatlas.disk.partition.utilization.average metric.
@@ -3962,29 +3858,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationAverageDataP
 	mb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
 }
 
-// ParseMongodbatlasDiskPartitionUtilizationAverageDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.utilization.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionUtilizationAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(mb.startTime, ts, f, diskStatusAttributeValue)
-	}
-}
-
 // RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint adds a data point to mongodbatlas.disk.partition.utilization.max metric.
 func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
 	mb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
-}
-
-// ParseMongodbatlasDiskPartitionUtilizationMaxDataPoint attempts to parse and add a data point to mongodbatlas.disk.partition.utilization.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, diskStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasDiskPartitionUtilizationMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(mb.startTime, ts, f, diskStatusAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessAssertsDataPoint adds a data point to mongodbatlas.process.asserts metric.
@@ -3992,29 +3868,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessAssertsDataPoint(ts pcommon.T
 	mb.metricMongodbatlasProcessAsserts.recordDataPoint(mb.startTime, ts, val, assertTypeAttributeValue)
 }
 
-// ParseMongodbatlasProcessAssertsDataPoint attempts to parse and add a data point to mongodbatlas.process.asserts metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessAssertsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, assertTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessAsserts, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessAsserts.recordDataPoint(mb.startTime, ts, f, assertTypeAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessBackgroundFlushDataPoint adds a data point to mongodbatlas.process.background_flush metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessBackgroundFlushDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbatlasProcessBackgroundFlush.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseMongodbatlasProcessBackgroundFlushDataPoint attempts to parse and add a data point to mongodbatlas.process.background_flush metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessBackgroundFlushDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessBackgroundFlush, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessBackgroundFlush.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordMongodbatlasProcessCacheIoDataPoint adds a data point to mongodbatlas.process.cache.io metric.
@@ -4022,29 +3878,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheIoDataPoint(ts pcommon.T
 	mb.metricMongodbatlasProcessCacheIo.recordDataPoint(mb.startTime, ts, val, cacheDirectionAttributeValue)
 }
 
-// ParseMongodbatlasProcessCacheIoDataPoint attempts to parse and add a data point to mongodbatlas.process.cache.io metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCacheIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cacheDirectionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCacheIo, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCacheIo.recordDataPoint(mb.startTime, ts, f, cacheDirectionAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessCacheSizeDataPoint adds a data point to mongodbatlas.process.cache.size metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheSizeDataPoint(ts pcommon.Timestamp, val float64, cacheStatusAttributeValue string) {
 	mb.metricMongodbatlasProcessCacheSize.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue)
-}
-
-// ParseMongodbatlasProcessCacheSizeDataPoint attempts to parse and add a data point to mongodbatlas.process.cache.size metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCacheSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cacheStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCacheSize, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCacheSize.recordDataPoint(mb.startTime, ts, f, cacheStatusAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessConnectionsDataPoint adds a data point to mongodbatlas.process.connections metric.
@@ -4052,29 +3888,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessConnectionsDataPoint(ts pcomm
 	mb.metricMongodbatlasProcessConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseMongodbatlasProcessConnectionsDataPoint attempts to parse and add a data point to mongodbatlas.process.connections metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessConnections, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessConnections.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.children.normalized.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
-}
-
-// ParseMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.children.normalized.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUChildrenNormalizedUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.children.normalized.usage.max metric.
@@ -4082,29 +3898,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageMax
 	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.children.normalized.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUChildrenNormalizedUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.children.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	mb.metricMongodbatlasProcessCPUChildrenUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
-}
-
-// ParseMongodbatlasProcessCPUChildrenUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.children.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUChildrenUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUChildrenUsageAverage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.children.usage.max metric.
@@ -4112,29 +3908,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(
 	mb.metricMongodbatlasProcessCPUChildrenUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasProcessCPUChildrenUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.children.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUChildrenUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUChildrenUsageMax.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.normalized.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
-}
-
-// ParseMongodbatlasProcessCPUNormalizedUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.normalized.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUNormalizedUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.normalized.usage.max metric.
@@ -4142,29 +3918,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoin
 	mb.metricMongodbatlasProcessCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasProcessCPUNormalizedUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.normalized.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUNormalizedUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessCPUUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	mb.metricMongodbatlasProcessCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
-}
-
-// ParseMongodbatlasProcessCPUUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUUsageAverage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessCPUUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.usage.max metric.
@@ -4172,29 +3928,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts pcomm
 	mb.metricMongodbatlasProcessCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasProcessCPUUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.process.cpu.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCPUUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCPUUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCPUUsageMax.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessCursorsDataPoint adds a data point to mongodbatlas.process.cursors metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessCursorsDataPoint(ts pcommon.Timestamp, val float64, cursorStateAttributeValue string) {
 	mb.metricMongodbatlasProcessCursors.recordDataPoint(mb.startTime, ts, val, cursorStateAttributeValue)
-}
-
-// ParseMongodbatlasProcessCursorsDataPoint attempts to parse and add a data point to mongodbatlas.process.cursors metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessCursorsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cursorStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessCursors, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessCursors.recordDataPoint(mb.startTime, ts, f, cursorStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessDbDocumentRateDataPoint adds a data point to mongodbatlas.process.db.document.rate metric.
@@ -4202,29 +3938,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessDbDocumentRateDataPoint(ts pc
 	mb.metricMongodbatlasProcessDbDocumentRate.recordDataPoint(mb.startTime, ts, val, documentStatusAttributeValue)
 }
 
-// ParseMongodbatlasProcessDbDocumentRateDataPoint attempts to parse and add a data point to mongodbatlas.process.db.document.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessDbDocumentRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, documentStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessDbDocumentRate, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessDbDocumentRate.recordDataPoint(mb.startTime, ts, f, documentStatusAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessDbOperationsRateDataPoint adds a data point to mongodbatlas.process.db.operations.rate metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsRateDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue string, clusterRoleAttributeValue string) {
 	mb.metricMongodbatlasProcessDbOperationsRate.recordDataPoint(mb.startTime, ts, val, operationAttributeValue, clusterRoleAttributeValue)
-}
-
-// ParseMongodbatlasProcessDbOperationsRateDataPoint attempts to parse and add a data point to mongodbatlas.process.db.operations.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessDbOperationsRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string, clusterRoleAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessDbOperationsRate, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessDbOperationsRate.recordDataPoint(mb.startTime, ts, f, operationAttributeValue, clusterRoleAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessDbOperationsTimeDataPoint adds a data point to mongodbatlas.process.db.operations.time metric.
@@ -4232,29 +3948,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts 
 	mb.metricMongodbatlasProcessDbOperationsTime.recordDataPoint(mb.startTime, ts, val, executionTypeAttributeValue)
 }
 
-// ParseMongodbatlasProcessDbOperationsTimeDataPoint attempts to parse and add a data point to mongodbatlas.process.db.operations.time metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessDbOperationsTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, executionTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessDbOperationsTime, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessDbOperationsTime.recordDataPoint(mb.startTime, ts, f, executionTypeAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint adds a data point to mongodbatlas.process.db.query_executor.scanned metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue string) {
 	mb.metricMongodbatlasProcessDbQueryExecutorScanned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue)
-}
-
-// ParseMongodbatlasProcessDbQueryExecutorScannedDataPoint attempts to parse and add a data point to mongodbatlas.process.db.query_executor.scanned metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, scannedTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessDbQueryExecutorScanned, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessDbQueryExecutorScanned.recordDataPoint(mb.startTime, ts, f, scannedTypeAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint adds a data point to mongodbatlas.process.db.query_targeting.scanned_per_returned metric.
@@ -4262,29 +3958,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryTargetingScannedPerRet
 	mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue)
 }
 
-// ParseMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint attempts to parse and add a data point to mongodbatlas.process.db.query_targeting.scanned_per_returned metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, scannedTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessDbQueryTargetingScannedPerReturned, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.recordDataPoint(mb.startTime, ts, f, scannedTypeAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessDbStorageDataPoint adds a data point to mongodbatlas.process.db.storage metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessDbStorageDataPoint(ts pcommon.Timestamp, val float64, storageStatusAttributeValue string) {
 	mb.metricMongodbatlasProcessDbStorage.recordDataPoint(mb.startTime, ts, val, storageStatusAttributeValue)
-}
-
-// ParseMongodbatlasProcessDbStorageDataPoint attempts to parse and add a data point to mongodbatlas.process.db.storage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessDbStorageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, storageStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessDbStorage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessDbStorage.recordDataPoint(mb.startTime, ts, f, storageStatusAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessFtsCPUUsageDataPoint adds a data point to mongodbatlas.process.fts.cpu.usage metric.
@@ -4292,29 +3968,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts pcomm
 	mb.metricMongodbatlasProcessFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasProcessFtsCPUUsageDataPoint attempts to parse and add a data point to mongodbatlas.process.fts.cpu.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessFtsCPUUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessFtsCPUUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessFtsCPUUsage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessGlobalLockDataPoint adds a data point to mongodbatlas.process.global_lock metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessGlobalLockDataPoint(ts pcommon.Timestamp, val float64, globalLockStateAttributeValue string) {
 	mb.metricMongodbatlasProcessGlobalLock.recordDataPoint(mb.startTime, ts, val, globalLockStateAttributeValue)
-}
-
-// ParseMongodbatlasProcessGlobalLockDataPoint attempts to parse and add a data point to mongodbatlas.process.global_lock metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessGlobalLockDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, globalLockStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessGlobalLock, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessGlobalLock.recordDataPoint(mb.startTime, ts, f, globalLockStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint adds a data point to mongodbatlas.process.index.btree_miss_ratio metric.
@@ -4322,29 +3978,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(
 	mb.metricMongodbatlasProcessIndexBtreeMissRatio.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseMongodbatlasProcessIndexBtreeMissRatioDataPoint attempts to parse and add a data point to mongodbatlas.process.index.btree_miss_ratio metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessIndexBtreeMissRatio, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessIndexBtreeMissRatio.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordMongodbatlasProcessIndexCountersDataPoint adds a data point to mongodbatlas.process.index.counters metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessIndexCountersDataPoint(ts pcommon.Timestamp, val float64, btreeCounterTypeAttributeValue string) {
 	mb.metricMongodbatlasProcessIndexCounters.recordDataPoint(mb.startTime, ts, val, btreeCounterTypeAttributeValue)
-}
-
-// ParseMongodbatlasProcessIndexCountersDataPoint attempts to parse and add a data point to mongodbatlas.process.index.counters metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessIndexCountersDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, btreeCounterTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessIndexCounters, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessIndexCounters.recordDataPoint(mb.startTime, ts, f, btreeCounterTypeAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessJournalingCommitsDataPoint adds a data point to mongodbatlas.process.journaling.commits metric.
@@ -4352,29 +3988,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessJournalingCommitsDataPoint(ts
 	mb.metricMongodbatlasProcessJournalingCommits.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseMongodbatlasProcessJournalingCommitsDataPoint attempts to parse and add a data point to mongodbatlas.process.journaling.commits metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessJournalingCommitsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessJournalingCommits, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessJournalingCommits.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordMongodbatlasProcessJournalingDataFilesDataPoint adds a data point to mongodbatlas.process.journaling.data_files metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbatlasProcessJournalingDataFiles.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseMongodbatlasProcessJournalingDataFilesDataPoint attempts to parse and add a data point to mongodbatlas.process.journaling.data_files metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessJournalingDataFilesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessJournalingDataFiles, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessJournalingDataFiles.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordMongodbatlasProcessJournalingWrittenDataPoint adds a data point to mongodbatlas.process.journaling.written metric.
@@ -4382,29 +3998,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessJournalingWrittenDataPoint(ts
 	mb.metricMongodbatlasProcessJournalingWritten.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseMongodbatlasProcessJournalingWrittenDataPoint attempts to parse and add a data point to mongodbatlas.process.journaling.written metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessJournalingWrittenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessJournalingWritten, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessJournalingWritten.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordMongodbatlasProcessMemoryUsageDataPoint adds a data point to mongodbatlas.process.memory.usage metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
 	mb.metricMongodbatlasProcessMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue)
-}
-
-// ParseMongodbatlasProcessMemoryUsageDataPoint attempts to parse and add a data point to mongodbatlas.process.memory.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, memoryStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessMemoryUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessMemoryUsage.recordDataPoint(mb.startTime, ts, f, memoryStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessNetworkIoDataPoint adds a data point to mongodbatlas.process.network.io metric.
@@ -4412,29 +4008,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessNetworkIoDataPoint(ts pcommon
 	mb.metricMongodbatlasProcessNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
-// ParseMongodbatlasProcessNetworkIoDataPoint attempts to parse and add a data point to mongodbatlas.process.network.io metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessNetworkIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessNetworkIo, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessNetworkIo.recordDataPoint(mb.startTime, ts, f, directionAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessNetworkRequestsDataPoint adds a data point to mongodbatlas.process.network.requests metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessNetworkRequestsDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbatlasProcessNetworkRequests.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseMongodbatlasProcessNetworkRequestsDataPoint attempts to parse and add a data point to mongodbatlas.process.network.requests metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessNetworkRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessNetworkRequests, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessNetworkRequests.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordMongodbatlasProcessOplogRateDataPoint adds a data point to mongodbatlas.process.oplog.rate metric.
@@ -4442,29 +4018,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessOplogRateDataPoint(ts pcommon
 	mb.metricMongodbatlasProcessOplogRate.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseMongodbatlasProcessOplogRateDataPoint attempts to parse and add a data point to mongodbatlas.process.oplog.rate metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessOplogRateDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessOplogRate, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessOplogRate.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordMongodbatlasProcessOplogTimeDataPoint adds a data point to mongodbatlas.process.oplog.time metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessOplogTimeDataPoint(ts pcommon.Timestamp, val float64, oplogTypeAttributeValue string) {
 	mb.metricMongodbatlasProcessOplogTime.recordDataPoint(mb.startTime, ts, val, oplogTypeAttributeValue)
-}
-
-// ParseMongodbatlasProcessOplogTimeDataPoint attempts to parse and add a data point to mongodbatlas.process.oplog.time metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessOplogTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, oplogTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessOplogTime, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessOplogTime.recordDataPoint(mb.startTime, ts, f, oplogTypeAttributeValue)
-	}
 }
 
 // RecordMongodbatlasProcessPageFaultsDataPoint adds a data point to mongodbatlas.process.page_faults metric.
@@ -4472,29 +4028,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessPageFaultsDataPoint(ts pcommo
 	mb.metricMongodbatlasProcessPageFaults.recordDataPoint(mb.startTime, ts, val, memoryIssueTypeAttributeValue)
 }
 
-// ParseMongodbatlasProcessPageFaultsDataPoint attempts to parse and add a data point to mongodbatlas.process.page_faults metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessPageFaultsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, memoryIssueTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessPageFaults, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessPageFaults.recordDataPoint(mb.startTime, ts, f, memoryIssueTypeAttributeValue)
-	}
-}
-
 // RecordMongodbatlasProcessRestartsDataPoint adds a data point to mongodbatlas.process.restarts metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessRestartsDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbatlasProcessRestarts.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseMongodbatlasProcessRestartsDataPoint attempts to parse and add a data point to mongodbatlas.process.restarts metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessRestartsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessRestarts, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessRestarts.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordMongodbatlasProcessTicketsDataPoint adds a data point to mongodbatlas.process.tickets metric.
@@ -4502,29 +4038,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessTicketsDataPoint(ts pcommon.T
 	mb.metricMongodbatlasProcessTickets.recordDataPoint(mb.startTime, ts, val, ticketTypeAttributeValue)
 }
 
-// ParseMongodbatlasProcessTicketsDataPoint attempts to parse and add a data point to mongodbatlas.process.tickets metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasProcessTicketsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, ticketTypeAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasProcessTickets, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasProcessTickets.recordDataPoint(mb.startTime, ts, f, ticketTypeAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.system.cpu.normalized.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
-}
-
-// ParseMongodbatlasSystemCPUNormalizedUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.system.cpu.normalized.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemCPUNormalizedUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.system.cpu.normalized.usage.max metric.
@@ -4532,29 +4048,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint
 	mb.metricMongodbatlasSystemCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasSystemCPUNormalizedUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.system.cpu.normalized.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemCPUNormalizedUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemCPUUsageAverageDataPoint adds a data point to mongodbatlas.system.cpu.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	mb.metricMongodbatlasSystemCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
-}
-
-// ParseMongodbatlasSystemCPUUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.system.cpu.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemCPUUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemCPUUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemCPUUsageAverage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasSystemCPUUsageMaxDataPoint adds a data point to mongodbatlas.system.cpu.usage.max metric.
@@ -4562,29 +4058,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts pcommo
 	mb.metricMongodbatlasSystemCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasSystemCPUUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.system.cpu.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemCPUUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemCPUUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemCPUUsageMax.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint adds a data point to mongodbatlas.system.fts.cpu.normalized.usage metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
 	mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
-}
-
-// ParseMongodbatlasSystemFtsCPUNormalizedUsageDataPoint attempts to parse and add a data point to mongodbatlas.system.fts.cpu.normalized.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemFtsCPUNormalizedUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
 }
 
 // RecordMongodbatlasSystemFtsCPUUsageDataPoint adds a data point to mongodbatlas.system.fts.cpu.usage metric.
@@ -4592,29 +4068,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts pcommo
 	mb.metricMongodbatlasSystemFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
 }
 
-// ParseMongodbatlasSystemFtsCPUUsageDataPoint attempts to parse and add a data point to mongodbatlas.system.fts.cpu.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemFtsCPUUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemFtsCPUUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemFtsCPUUsage.recordDataPoint(mb.startTime, ts, f, cpuStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemFtsDiskUsedDataPoint adds a data point to mongodbatlas.system.fts.disk.used metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbatlasSystemFtsDiskUsed.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseMongodbatlasSystemFtsDiskUsedDataPoint attempts to parse and add a data point to mongodbatlas.system.fts.disk.used metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemFtsDiskUsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemFtsDiskUsed, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemFtsDiskUsed.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // RecordMongodbatlasSystemFtsMemoryUsageDataPoint adds a data point to mongodbatlas.system.fts.memory.usage metric.
@@ -4622,29 +4078,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts pco
 	mb.metricMongodbatlasSystemFtsMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue)
 }
 
-// ParseMongodbatlasSystemFtsMemoryUsageDataPoint attempts to parse and add a data point to mongodbatlas.system.fts.memory.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemFtsMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, memoryStateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemFtsMemoryUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemFtsMemoryUsage.recordDataPoint(mb.startTime, ts, f, memoryStateAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemMemoryUsageAverageDataPoint adds a data point to mongodbatlas.system.memory.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue string) {
 	mb.metricMongodbatlasSystemMemoryUsageAverage.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue)
-}
-
-// ParseMongodbatlasSystemMemoryUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.system.memory.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemMemoryUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, memoryStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemMemoryUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemMemoryUsageAverage.recordDataPoint(mb.startTime, ts, f, memoryStatusAttributeValue)
-	}
 }
 
 // RecordMongodbatlasSystemMemoryUsageMaxDataPoint adds a data point to mongodbatlas.system.memory.usage.max metric.
@@ -4652,29 +4088,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts pco
 	mb.metricMongodbatlasSystemMemoryUsageMax.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue)
 }
 
-// ParseMongodbatlasSystemMemoryUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.system.memory.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemMemoryUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, memoryStatusAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemMemoryUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemMemoryUsageMax.recordDataPoint(mb.startTime, ts, f, memoryStatusAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemNetworkIoAverageDataPoint adds a data point to mongodbatlas.system.network.io.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	mb.metricMongodbatlasSystemNetworkIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
-}
-
-// ParseMongodbatlasSystemNetworkIoAverageDataPoint attempts to parse and add a data point to mongodbatlas.system.network.io.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemNetworkIoAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemNetworkIoAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemNetworkIoAverage.recordDataPoint(mb.startTime, ts, f, directionAttributeValue)
-	}
 }
 
 // RecordMongodbatlasSystemNetworkIoMaxDataPoint adds a data point to mongodbatlas.system.network.io.max metric.
@@ -4682,29 +4098,9 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts pcomm
 	mb.metricMongodbatlasSystemNetworkIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
-// ParseMongodbatlasSystemNetworkIoMaxDataPoint attempts to parse and add a data point to mongodbatlas.system.network.io.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemNetworkIoMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemNetworkIoMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemNetworkIoMax.recordDataPoint(mb.startTime, ts, f, directionAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemPagingIoAverageDataPoint adds a data point to mongodbatlas.system.paging.io.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	mb.metricMongodbatlasSystemPagingIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
-}
-
-// ParseMongodbatlasSystemPagingIoAverageDataPoint attempts to parse and add a data point to mongodbatlas.system.paging.io.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemPagingIoAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemPagingIoAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemPagingIoAverage.recordDataPoint(mb.startTime, ts, f, directionAttributeValue)
-	}
 }
 
 // RecordMongodbatlasSystemPagingIoMaxDataPoint adds a data point to mongodbatlas.system.paging.io.max metric.
@@ -4712,44 +4108,14 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoMaxDataPoint(ts pcommo
 	mb.metricMongodbatlasSystemPagingIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
-// ParseMongodbatlasSystemPagingIoMaxDataPoint attempts to parse and add a data point to mongodbatlas.system.paging.io.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemPagingIoMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemPagingIoMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemPagingIoMax.recordDataPoint(mb.startTime, ts, f, directionAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemPagingUsageAverageDataPoint adds a data point to mongodbatlas.system.paging.usage.average metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	mb.metricMongodbatlasSystemPagingUsageAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
-// ParseMongodbatlasSystemPagingUsageAverageDataPoint attempts to parse and add a data point to mongodbatlas.system.paging.usage.average metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemPagingUsageAverageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemPagingUsageAverage, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemPagingUsageAverage.recordDataPoint(mb.startTime, ts, f, directionAttributeValue)
-	}
-}
-
 // RecordMongodbatlasSystemPagingUsageMaxDataPoint adds a data point to mongodbatlas.system.paging.usage.max metric.
 func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
 	mb.metricMongodbatlasSystemPagingUsageMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
-}
-
-// ParseMongodbatlasSystemPagingUsageMaxDataPoint attempts to parse and add a data point to mongodbatlas.system.paging.usage.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMongodbatlasSystemPagingUsageMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for MongodbatlasSystemPagingUsageMax, value was %s: %w", val, err))
-	} else {
-		mb.metricMongodbatlasSystemPagingUsageMax.recordDataPoint(mb.startTime, ts, f, directionAttributeValue)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -3,15 +3,11 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -226,29 +222,9 @@ func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val
 	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue)
 }
 
-// ParseSystemCPUTimeDataPoint attempts to parse and add a data point to system.cpu.time metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemCPUTime, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, f, cpuAttributeValue, stateAttributeValue)
-	}
-}
-
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue)
-}
-
-// ParseSystemCPUUtilizationDataPoint attempts to parse and add a data point to system.cpu.utilization metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPUUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemCPUUtilization, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, f, cpuAttributeValue, stateAttributeValue)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

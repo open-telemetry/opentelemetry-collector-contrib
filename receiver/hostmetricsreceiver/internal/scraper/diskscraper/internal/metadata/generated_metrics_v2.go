@@ -3,15 +3,11 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -530,29 +526,9 @@ func (mb *MetricsBuilder) RecordSystemDiskIoDataPoint(ts pcommon.Timestamp, val 
 	mb.metricSystemDiskIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
-// ParseSystemDiskIoDataPoint attempts to parse and add a data point to system.disk.io metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemDiskIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemDiskIo, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemDiskIo.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
-	}
-}
-
 // RecordSystemDiskIoTimeDataPoint adds a data point to system.disk.io_time metric.
 func (mb *MetricsBuilder) RecordSystemDiskIoTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
 	mb.metricSystemDiskIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
-}
-
-// ParseSystemDiskIoTimeDataPoint attempts to parse and add a data point to system.disk.io_time metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemDiskIoTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemDiskIoTime, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemDiskIoTime.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue)
-	}
 }
 
 // RecordSystemDiskMergedDataPoint adds a data point to system.disk.merged metric.
@@ -560,29 +536,9 @@ func (mb *MetricsBuilder) RecordSystemDiskMergedDataPoint(ts pcommon.Timestamp, 
 	mb.metricSystemDiskMerged.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
-// ParseSystemDiskMergedDataPoint attempts to parse and add a data point to system.disk.merged metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemDiskMergedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemDiskMerged, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemDiskMerged.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
-	}
-}
-
 // RecordSystemDiskOperationTimeDataPoint adds a data point to system.disk.operation_time metric.
 func (mb *MetricsBuilder) RecordSystemDiskOperationTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemDiskOperationTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
-}
-
-// ParseSystemDiskOperationTimeDataPoint attempts to parse and add a data point to system.disk.operation_time metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemDiskOperationTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemDiskOperationTime, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemDiskOperationTime.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue, directionAttributeValue)
-	}
 }
 
 // RecordSystemDiskOperationsDataPoint adds a data point to system.disk.operations metric.
@@ -590,44 +546,14 @@ func (mb *MetricsBuilder) RecordSystemDiskOperationsDataPoint(ts pcommon.Timesta
 	mb.metricSystemDiskOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
-// ParseSystemDiskOperationsDataPoint attempts to parse and add a data point to system.disk.operations metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemDiskOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemDiskOperations, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemDiskOperations.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
-	}
-}
-
 // RecordSystemDiskPendingOperationsDataPoint adds a data point to system.disk.pending_operations metric.
 func (mb *MetricsBuilder) RecordSystemDiskPendingOperationsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
 	mb.metricSystemDiskPendingOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
-// ParseSystemDiskPendingOperationsDataPoint attempts to parse and add a data point to system.disk.pending_operations metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemDiskPendingOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemDiskPendingOperations, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemDiskPendingOperations.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue)
-	}
-}
-
 // RecordSystemDiskWeightedIoTimeDataPoint adds a data point to system.disk.weighted_io_time metric.
 func (mb *MetricsBuilder) RecordSystemDiskWeightedIoTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
 	mb.metricSystemDiskWeightedIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
-}
-
-// ParseSystemDiskWeightedIoTimeDataPoint attempts to parse and add a data point to system.disk.weighted_io_time metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemDiskWeightedIoTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemDiskWeightedIoTime, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemDiskWeightedIoTime.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

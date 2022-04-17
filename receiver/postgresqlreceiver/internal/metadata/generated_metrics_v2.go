@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -530,29 +526,9 @@ func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp
 	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
 }
 
-// ParsePostgresqlBackendsDataPoint attempts to parse and add a data point to postgresql.backends metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParsePostgresqlBackendsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for PostgresqlBackends, value was %s: %w", val, err))
-	} else {
-		mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
-	}
-}
-
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
 func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
 	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue)
-}
-
-// ParsePostgresqlBlocksReadDataPoint attempts to parse and add a data point to postgresql.blocks_read metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParsePostgresqlBlocksReadDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for PostgresqlBlocksRead, value was %s: %w", val, err))
-	} else {
-		mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, tableAttributeValue, sourceAttributeValue)
-	}
 }
 
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
@@ -560,29 +536,9 @@ func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp,
 	mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
 }
 
-// ParsePostgresqlCommitsDataPoint attempts to parse and add a data point to postgresql.commits metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParsePostgresqlCommitsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for PostgresqlCommits, value was %s: %w", val, err))
-	} else {
-		mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
-	}
-}
-
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
 func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
 	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
-}
-
-// ParsePostgresqlDbSizeDataPoint attempts to parse and add a data point to postgresql.db_size metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParsePostgresqlDbSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for PostgresqlDbSize, value was %s: %w", val, err))
-	} else {
-		mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
-	}
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
@@ -590,44 +546,14 @@ func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timesta
 	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue)
 }
 
-// ParsePostgresqlOperationsDataPoint attempts to parse and add a data point to postgresql.operations metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParsePostgresqlOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for PostgresqlOperations, value was %s: %w", val, err))
-	} else {
-		mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, tableAttributeValue, operationAttributeValue)
-	}
-}
-
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.
 func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
 	mb.metricPostgresqlRollbacks.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
 }
 
-// ParsePostgresqlRollbacksDataPoint attempts to parse and add a data point to postgresql.rollbacks metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParsePostgresqlRollbacksDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for PostgresqlRollbacks, value was %s: %w", val, err))
-	} else {
-		mb.metricPostgresqlRollbacks.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
-	}
-}
-
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
 func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
 	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue)
-}
-
-// ParsePostgresqlRowsDataPoint attempts to parse and add a data point to postgresql.rows metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParsePostgresqlRowsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for PostgresqlRows, value was %s: %w", val, err))
-	} else {
-		mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, tableAttributeValue, stateAttributeValue)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

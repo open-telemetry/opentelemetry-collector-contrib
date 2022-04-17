@@ -7,10 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -462,33 +460,23 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
-func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
-}
-
-// ParseApacheCurrentConnectionsDataPoint attempts to parse and add a data point to apache.current_connections metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheCurrentConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ApacheCurrentConnections, value was %s: %w", val, err))
+		return fmt.Errorf("failed to parse int for ApacheCurrentConnections, value was %s: %w", val, err)
 	} else {
 		mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
 	}
+	return nil
 }
 
 // RecordApacheRequestsDataPoint adds a data point to apache.requests metric.
-func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
-}
-
-// ParseApacheRequestsDataPoint attempts to parse and add a data point to apache.requests metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ApacheRequests, value was %s: %w", val, err))
+		return fmt.Errorf("failed to parse int for ApacheRequests, value was %s: %w", val, err)
 	} else {
 		mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
 	}
+	return nil
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
@@ -496,59 +484,29 @@ func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pcommon.Timestamp, 
 	mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, scoreboardStateAttributeValue)
 }
 
-// ParseApacheScoreboardDataPoint attempts to parse and add a data point to apache.scoreboard metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheScoreboardDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string, scoreboardStateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ApacheScoreboard, value was %s: %w", val, err))
-	} else {
-		mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue, scoreboardStateAttributeValue)
-	}
-}
-
 // RecordApacheTrafficDataPoint adds a data point to apache.traffic metric.
 func (mb *MetricsBuilder) RecordApacheTrafficDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
 	mb.metricApacheTraffic.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
 }
 
-// ParseApacheTrafficDataPoint attempts to parse and add a data point to apache.traffic metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheTrafficDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ApacheTraffic, value was %s: %w", val, err))
-	} else {
-		mb.metricApacheTraffic.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
-	}
-}
-
 // RecordApacheUptimeDataPoint adds a data point to apache.uptime metric.
-func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
-}
-
-// ParseApacheUptimeDataPoint attempts to parse and add a data point to apache.uptime metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheUptimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ApacheUptime, value was %s: %w", val, err))
+		return fmt.Errorf("failed to parse int for ApacheUptime, value was %s: %w", val, err)
 	} else {
 		mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
 	}
+	return nil
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
-func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string, workersStateAttributeValue string) {
-	mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, workersStateAttributeValue)
-}
-
-// ParseApacheWorkersDataPoint attempts to parse and add a data point to apache.workers metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheWorkersDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string, workersStateAttributeValue string) {
+func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string, workersStateAttributeValue string) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ApacheWorkers, value was %s: %w", val, err))
+		return fmt.Errorf("failed to parse int for ApacheWorkers, value was %s: %w", val, err)
 	} else {
 		mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue, workersStateAttributeValue)
 	}
+	return nil
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

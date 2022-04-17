@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -984,29 +980,9 @@ func (mb *MetricsBuilder) RecordZookeeperConnectionActiveDataPoint(ts pcommon.Ti
 	mb.metricZookeeperConnectionActive.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseZookeeperConnectionActiveDataPoint attempts to parse and add a data point to zookeeper.connection.active metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperConnectionActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperConnectionActive, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperConnectionActive.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordZookeeperDataTreeEphemeralNodeCountDataPoint adds a data point to zookeeper.data_tree.ephemeral_node.count metric.
 func (mb *MetricsBuilder) RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseZookeeperDataTreeEphemeralNodeCountDataPoint attempts to parse and add a data point to zookeeper.data_tree.ephemeral_node.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperDataTreeEphemeralNodeCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperDataTreeEphemeralNodeCount, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordZookeeperDataTreeSizeDataPoint adds a data point to zookeeper.data_tree.size metric.
@@ -1014,29 +990,9 @@ func (mb *MetricsBuilder) RecordZookeeperDataTreeSizeDataPoint(ts pcommon.Timest
 	mb.metricZookeeperDataTreeSize.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseZookeeperDataTreeSizeDataPoint attempts to parse and add a data point to zookeeper.data_tree.size metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperDataTreeSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperDataTreeSize, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperDataTreeSize.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordZookeeperFileDescriptorLimitDataPoint adds a data point to zookeeper.file_descriptor.limit metric.
 func (mb *MetricsBuilder) RecordZookeeperFileDescriptorLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperFileDescriptorLimit.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseZookeeperFileDescriptorLimitDataPoint attempts to parse and add a data point to zookeeper.file_descriptor.limit metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFileDescriptorLimitDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperFileDescriptorLimit, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperFileDescriptorLimit.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordZookeeperFileDescriptorOpenDataPoint adds a data point to zookeeper.file_descriptor.open metric.
@@ -1044,29 +1000,9 @@ func (mb *MetricsBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pcommon.
 	mb.metricZookeeperFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseZookeeperFileDescriptorOpenDataPoint attempts to parse and add a data point to zookeeper.file_descriptor.open metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperFileDescriptorOpen, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperFileDescriptorOpen.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordZookeeperFollowerCountDataPoint adds a data point to zookeeper.follower.count metric.
 func (mb *MetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue string) {
 	mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
-}
-
-// ParseZookeeperFollowerCountDataPoint attempts to parse and add a data point to zookeeper.follower.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperFollowerCount, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
-	}
 }
 
 // RecordZookeeperFsyncExceededThresholdCountDataPoint adds a data point to zookeeper.fsync.exceeded_threshold.count metric.
@@ -1074,29 +1010,9 @@ func (mb *MetricsBuilder) RecordZookeeperFsyncExceededThresholdCountDataPoint(ts
 	mb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseZookeeperFsyncExceededThresholdCountDataPoint attempts to parse and add a data point to zookeeper.fsync.exceeded_threshold.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFsyncExceededThresholdCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperFsyncExceededThresholdCount, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordZookeeperLatencyAvgDataPoint adds a data point to zookeeper.latency.avg metric.
 func (mb *MetricsBuilder) RecordZookeeperLatencyAvgDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperLatencyAvg.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseZookeeperLatencyAvgDataPoint attempts to parse and add a data point to zookeeper.latency.avg metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperLatencyAvgDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperLatencyAvg, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperLatencyAvg.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordZookeeperLatencyMaxDataPoint adds a data point to zookeeper.latency.max metric.
@@ -1104,29 +1020,9 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMaxDataPoint(ts pcommon.Timestam
 	mb.metricZookeeperLatencyMax.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseZookeeperLatencyMaxDataPoint attempts to parse and add a data point to zookeeper.latency.max metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperLatencyMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperLatencyMax, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperLatencyMax.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordZookeeperLatencyMinDataPoint adds a data point to zookeeper.latency.min metric.
 func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperLatencyMin.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseZookeeperLatencyMinDataPoint attempts to parse and add a data point to zookeeper.latency.min metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperLatencyMinDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperLatencyMin, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperLatencyMin.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
@@ -1134,29 +1030,9 @@ func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pcommon.Timesta
 	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
-// ParseZookeeperPacketCountDataPoint attempts to parse and add a data point to zookeeper.packet.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperPacketCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperPacketCount, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
-	}
-}
-
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
 func (mb *MetricsBuilder) RecordZookeeperRequestActiveDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperRequestActive.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseZookeeperRequestActiveDataPoint attempts to parse and add a data point to zookeeper.request.active metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperRequestActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperRequestActive, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperRequestActive.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordZookeeperSyncPendingDataPoint adds a data point to zookeeper.sync.pending metric.
@@ -1164,44 +1040,14 @@ func (mb *MetricsBuilder) RecordZookeeperSyncPendingDataPoint(ts pcommon.Timesta
 	mb.metricZookeeperSyncPending.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseZookeeperSyncPendingDataPoint attempts to parse and add a data point to zookeeper.sync.pending metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperSyncPendingDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperSyncPending, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperSyncPending.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordZookeeperWatchCountDataPoint adds a data point to zookeeper.watch.count metric.
 func (mb *MetricsBuilder) RecordZookeeperWatchCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperWatchCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseZookeeperWatchCountDataPoint attempts to parse and add a data point to zookeeper.watch.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperWatchCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperWatchCount, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperWatchCount.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordZookeeperZnodeCountDataPoint adds a data point to zookeeper.znode.count metric.
 func (mb *MetricsBuilder) RecordZookeeperZnodeCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperZnodeCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseZookeeperZnodeCountDataPoint attempts to parse and add a data point to zookeeper.znode.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperZnodeCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for ZookeeperZnodeCount, value was %s: %w", val, err))
-	} else {
-		mb.metricZookeeperZnodeCount.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

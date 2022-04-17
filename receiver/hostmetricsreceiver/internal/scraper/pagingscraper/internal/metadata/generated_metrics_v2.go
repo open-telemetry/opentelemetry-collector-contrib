@@ -3,15 +3,11 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -347,29 +343,9 @@ func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pcommon.Timestamp
 	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue)
 }
 
-// ParseSystemPagingFaultsDataPoint attempts to parse and add a data point to system.paging.faults metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingFaultsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, typeAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemPagingFaults, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, i, typeAttributeValue)
-	}
-}
-
 // RecordSystemPagingOperationsDataPoint adds a data point to system.paging.operations metric.
 func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string, typeAttributeValue string) {
 	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue, typeAttributeValue)
-}
-
-// ParseSystemPagingOperationsDataPoint attempts to parse and add a data point to system.paging.operations metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string, typeAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemPagingOperations, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, i, directionAttributeValue, typeAttributeValue)
-	}
 }
 
 // RecordSystemPagingUsageDataPoint adds a data point to system.paging.usage metric.
@@ -377,29 +353,9 @@ func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pcommon.Timestamp,
 	mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
 }
 
-// ParseSystemPagingUsageDataPoint attempts to parse and add a data point to system.paging.usage metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemPagingUsage, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, stateAttributeValue)
-	}
-}
-
 // RecordSystemPagingUtilizationDataPoint adds a data point to system.paging.utilization metric.
 func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
-}
-
-// ParseSystemPagingUtilizationDataPoint attempts to parse and add a data point to system.paging.utilization metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemPagingUtilization, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue, stateAttributeValue)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

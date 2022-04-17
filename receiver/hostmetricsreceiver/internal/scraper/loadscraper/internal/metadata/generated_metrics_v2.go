@@ -3,15 +3,11 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -274,44 +270,14 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage15mDataPoint(ts pcommon.Time
 	mb.metricSystemCPULoadAverage15m.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSystemCPULoadAverage15mDataPoint attempts to parse and add a data point to system.cpu.load_average.15m metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage15mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemCPULoadAverage15m, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemCPULoadAverage15m.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSystemCPULoadAverage1mDataPoint adds a data point to system.cpu.load_average.1m metric.
 func (mb *MetricsBuilder) RecordSystemCPULoadAverage1mDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSystemCPULoadAverage1m.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseSystemCPULoadAverage1mDataPoint attempts to parse and add a data point to system.cpu.load_average.1m metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage1mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemCPULoadAverage1m, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemCPULoadAverage1m.recordDataPoint(mb.startTime, ts, f)
-	}
-}
-
 // RecordSystemCPULoadAverage5mDataPoint adds a data point to system.cpu.load_average.5m metric.
 func (mb *MetricsBuilder) RecordSystemCPULoadAverage5mDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSystemCPULoadAverage5m.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseSystemCPULoadAverage5mDataPoint attempts to parse and add a data point to system.cpu.load_average.5m metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage5mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemCPULoadAverage5m, value was %s: %w", val, err))
-	} else {
-		mb.metricSystemCPULoadAverage5m.recordDataPoint(mb.startTime, ts, f)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

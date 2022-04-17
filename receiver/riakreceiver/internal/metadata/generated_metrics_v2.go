@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -465,29 +461,9 @@ func (mb *MetricsBuilder) RecordRiakMemoryLimitDataPoint(ts pcommon.Timestamp, v
 	mb.metricRiakMemoryLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseRiakMemoryLimitDataPoint attempts to parse and add a data point to riak.memory.limit metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRiakMemoryLimitDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RiakMemoryLimit, value was %s: %w", val, err))
-	} else {
-		mb.metricRiakMemoryLimit.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordRiakNodeOperationCountDataPoint adds a data point to riak.node.operation.count metric.
 func (mb *MetricsBuilder) RecordRiakNodeOperationCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue string) {
 	mb.metricRiakNodeOperationCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
-}
-
-// ParseRiakNodeOperationCountDataPoint attempts to parse and add a data point to riak.node.operation.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRiakNodeOperationCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, requestAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RiakNodeOperationCount, value was %s: %w", val, err))
-	} else {
-		mb.metricRiakNodeOperationCount.recordDataPoint(mb.startTime, ts, i, requestAttributeValue)
-	}
 }
 
 // RecordRiakNodeOperationTimeMeanDataPoint adds a data point to riak.node.operation.time.mean metric.
@@ -495,29 +471,9 @@ func (mb *MetricsBuilder) RecordRiakNodeOperationTimeMeanDataPoint(ts pcommon.Ti
 	mb.metricRiakNodeOperationTimeMean.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
 }
 
-// ParseRiakNodeOperationTimeMeanDataPoint attempts to parse and add a data point to riak.node.operation.time.mean metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRiakNodeOperationTimeMeanDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, requestAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RiakNodeOperationTimeMean, value was %s: %w", val, err))
-	} else {
-		mb.metricRiakNodeOperationTimeMean.recordDataPoint(mb.startTime, ts, i, requestAttributeValue)
-	}
-}
-
 // RecordRiakNodeReadRepairCountDataPoint adds a data point to riak.node.read_repair.count metric.
 func (mb *MetricsBuilder) RecordRiakNodeReadRepairCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRiakNodeReadRepairCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseRiakNodeReadRepairCountDataPoint attempts to parse and add a data point to riak.node.read_repair.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRiakNodeReadRepairCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RiakNodeReadRepairCount, value was %s: %w", val, err))
-	} else {
-		mb.metricRiakNodeReadRepairCount.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordRiakVnodeIndexOperationCountDataPoint adds a data point to riak.vnode.index.operation.count metric.
@@ -525,29 +481,9 @@ func (mb *MetricsBuilder) RecordRiakVnodeIndexOperationCountDataPoint(ts pcommon
 	mb.metricRiakVnodeIndexOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
-// ParseRiakVnodeIndexOperationCountDataPoint attempts to parse and add a data point to riak.vnode.index.operation.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRiakVnodeIndexOperationCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RiakVnodeIndexOperationCount, value was %s: %w", val, err))
-	} else {
-		mb.metricRiakVnodeIndexOperationCount.recordDataPoint(mb.startTime, ts, i, operationAttributeValue)
-	}
-}
-
 // RecordRiakVnodeOperationCountDataPoint adds a data point to riak.vnode.operation.count metric.
 func (mb *MetricsBuilder) RecordRiakVnodeOperationCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue string) {
 	mb.metricRiakVnodeOperationCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
-}
-
-// ParseRiakVnodeOperationCountDataPoint attempts to parse and add a data point to riak.vnode.operation.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRiakVnodeOperationCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, requestAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RiakVnodeOperationCount, value was %s: %w", val, err))
-	} else {
-		mb.metricRiakVnodeOperationCount.recordDataPoint(mb.startTime, ts, i, requestAttributeValue)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

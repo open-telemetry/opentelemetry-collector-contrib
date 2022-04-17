@@ -3,18 +3,14 @@
 package {{ .Package }}
 
 import (
-	{{- if gt (len .Metrics) 0 }}
+	{{- if .Metrics | parseImportsRequired }}
 	"strconv"
 	"fmt"
 	{{- end }}
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	{{- if gt (len .Metrics) 0 }}
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	{{- end }}
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/collector/model/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
@@ -206,22 +202,17 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
-	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{ end }}
-	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }}) {
-	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
-		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
-		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
-}
-
-// Parse{{ $name.Render }}DataPoint attempts to parse and add a data point to {{ $name }} metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) Parse{{ $name.Render }}DataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors
-	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }}) {
-
+	{{- if $metric.Data.HasMetricInputType }}, val {{ $metric.Data.MetricInputType.String }}
+	{{- else }}
+	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{- end }}
+	{{- end -}}
+	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }})
+	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
+	{{- if $metric.Data.HasMetricInputType }}
 	{{- if $metric.Data.HasMetricValueType }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse float for {{ $name.Render }}, value was %s: %w", val, err))
+		return fmt.Errorf("failed to parse float for {{ $name.Render }}, value was %s: %w", val, err)
 	} else {
 		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, f {{ end }}
@@ -230,13 +221,19 @@ func (mb *MetricsBuilder) Parse{{ $name.Render }}DataPoint(ts pdata.Timestamp, v
 	{{- end }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "int64" }}
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for {{ $name.Render }}, value was %s: %w", val, err))
+		return fmt.Errorf("failed to parse int for {{ $name.Render }}, value was %s: %w", val, err)
 	} else {
 		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, i {{ end }}
 		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
 	}
 	{{- end }}
+	return nil
+	{{- end }}
+	{{- else }}
+	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
+		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
+		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
 	{{- end }}
 }
 {{ end }}

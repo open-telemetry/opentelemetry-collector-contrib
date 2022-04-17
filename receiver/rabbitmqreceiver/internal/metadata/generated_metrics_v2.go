@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -475,29 +471,9 @@ func (mb *MetricsBuilder) RecordRabbitmqConsumerCountDataPoint(ts pcommon.Timest
 	mb.metricRabbitmqConsumerCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseRabbitmqConsumerCountDataPoint attempts to parse and add a data point to rabbitmq.consumer.count metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqConsumerCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RabbitmqConsumerCount, value was %s: %w", val, err))
-	} else {
-		mb.metricRabbitmqConsumerCount.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordRabbitmqMessageAcknowledgedDataPoint adds a data point to rabbitmq.message.acknowledged metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessageAcknowledgedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRabbitmqMessageAcknowledged.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseRabbitmqMessageAcknowledgedDataPoint attempts to parse and add a data point to rabbitmq.message.acknowledged metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageAcknowledgedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RabbitmqMessageAcknowledged, value was %s: %w", val, err))
-	} else {
-		mb.metricRabbitmqMessageAcknowledged.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordRabbitmqMessageCurrentDataPoint adds a data point to rabbitmq.message.current metric.
@@ -505,29 +481,9 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageCurrentDataPoint(ts pcommon.Times
 	mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, val, messageStateAttributeValue)
 }
 
-// ParseRabbitmqMessageCurrentDataPoint attempts to parse and add a data point to rabbitmq.message.current metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, messageStateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RabbitmqMessageCurrent, value was %s: %w", val, err))
-	} else {
-		mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, i, messageStateAttributeValue)
-	}
-}
-
 // RecordRabbitmqMessageDeliveredDataPoint adds a data point to rabbitmq.message.delivered metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessageDeliveredDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRabbitmqMessageDelivered.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseRabbitmqMessageDeliveredDataPoint attempts to parse and add a data point to rabbitmq.message.delivered metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageDeliveredDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RabbitmqMessageDelivered, value was %s: %w", val, err))
-	} else {
-		mb.metricRabbitmqMessageDelivered.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // RecordRabbitmqMessageDroppedDataPoint adds a data point to rabbitmq.message.dropped metric.
@@ -535,29 +491,9 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageDroppedDataPoint(ts pcommon.Times
 	mb.metricRabbitmqMessageDropped.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseRabbitmqMessageDroppedDataPoint attempts to parse and add a data point to rabbitmq.message.dropped metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RabbitmqMessageDropped, value was %s: %w", val, err))
-	} else {
-		mb.metricRabbitmqMessageDropped.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordRabbitmqMessagePublishedDataPoint adds a data point to rabbitmq.message.published metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessagePublishedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRabbitmqMessagePublished.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseRabbitmqMessagePublishedDataPoint attempts to parse and add a data point to rabbitmq.message.published metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessagePublishedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for RabbitmqMessagePublished, value was %s: %w", val, err))
-	} else {
-		mb.metricRabbitmqMessagePublished.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -3,14 +3,10 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -336,29 +332,9 @@ func (mb *MetricsBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pcommon.Tim
 	mb.metricNginxConnectionsAccepted.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseNginxConnectionsAcceptedDataPoint attempts to parse and add a data point to nginx.connections_accepted metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxConnectionsAccepted, value was %s: %w", val, err))
-	} else {
-		mb.metricNginxConnectionsAccepted.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordNginxConnectionsCurrentDataPoint adds a data point to nginx.connections_current metric.
 func (mb *MetricsBuilder) RecordNginxConnectionsCurrentDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue string) {
 	mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
-}
-
-// ParseNginxConnectionsCurrentDataPoint attempts to parse and add a data point to nginx.connections_current metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxConnectionsCurrent, value was %s: %w", val, err))
-	} else {
-		mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
-	}
 }
 
 // RecordNginxConnectionsHandledDataPoint adds a data point to nginx.connections_handled metric.
@@ -366,29 +342,9 @@ func (mb *MetricsBuilder) RecordNginxConnectionsHandledDataPoint(ts pcommon.Time
 	mb.metricNginxConnectionsHandled.recordDataPoint(mb.startTime, ts, val)
 }
 
-// ParseNginxConnectionsHandledDataPoint attempts to parse and add a data point to nginx.connections_handled metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxConnectionsHandled, value was %s: %w", val, err))
-	} else {
-		mb.metricNginxConnectionsHandled.recordDataPoint(mb.startTime, ts, i)
-	}
-}
-
 // RecordNginxRequestsDataPoint adds a data point to nginx.requests metric.
 func (mb *MetricsBuilder) RecordNginxRequestsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricNginxRequests.recordDataPoint(mb.startTime, ts, val)
-}
-
-// ParseNginxRequestsDataPoint attempts to parse and add a data point to nginx.requests metric.
-// Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxRequests, value was %s: %w", val, err))
-	} else {
-		mb.metricNginxRequests.recordDataPoint(mb.startTime, ts, i)
-	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
