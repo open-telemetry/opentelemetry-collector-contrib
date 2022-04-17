@@ -139,15 +139,6 @@ func parseStats(resp string) map[string]string {
 	return metrics
 }
 
-func (r *apacheScraper) logInvalid(expectedType, key, value string) {
-	r.settings.Logger.Info(
-		"invalid value",
-		zap.String("expectedType", expectedType),
-		zap.String("key", key),
-		zap.String("value", value),
-	)
-}
-
 type scoreboardCountsByLabel map[string]int64
 
 // parseScoreboard quantifies the symbolic mapping of the scoreboard.
