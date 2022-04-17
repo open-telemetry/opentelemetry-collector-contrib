@@ -499,7 +499,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.aggregateChildMetrics)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -507,14 +507,14 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.aggregateChildMetrics)
 				assert.Equal(t, expectedFailures, err.(scrapererror.PartialScrapeError).Failed)
 			}
 		})
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError error, aggregateChildMetrics bool) (int, int) {
 	if nameError != nil || exeError != nil {
 		return 0, 0
 	}
@@ -529,6 +529,9 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if diskError == nil {
 		expectedLen += diskMetricsLen
 	}
+	if aggregateChildMetrics {
+		expectedLen += aggregateChildMetricsLen
+	}
 
 	if expectedLen == 0 {
 		return 0, 0
@@ -536,13 +539,18 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError error, aggregateChildMetrics bool) int {
 	if nameError != nil || exeError != nil {
 		return 1
 	}
 
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
-	return metricsLen - expectedMetricsLen
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError, aggregateChildMetrics)
+
+	metricsLength := metricsLen
+	if aggregateChildMetrics {
+		metricsLength += 1
+	}
+	return metricsLength - expectedMetricsLen
 }
 
 func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {

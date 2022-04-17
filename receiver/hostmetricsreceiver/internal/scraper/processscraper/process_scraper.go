@@ -32,9 +32,10 @@ import (
 )
 
 const (
-	cpuMetricsLen    = 1
-	memoryMetricsLen = 2
-	diskMetricsLen   = 1
+	cpuMetricsLen            = 1
+	memoryMetricsLen         = 2
+	diskMetricsLen           = 1
+	aggregateChildMetricsLen = 1
 
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen
 )
@@ -94,7 +95,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	for pid, md := range metadata {
 		// sanity test, this should never happen
 		if md.parent == nil {
-			errs.AddPartial(cpuMetricsLen+memoryMetricsLen+diskMetricsLen, fmt.Errorf("error reading child metrics, parent %d not found", pid))
+			errLen := cpuMetricsLen + memoryMetricsLen + diskMetricsLen
+			if s.config.AggregateChildMetrics {
+				errLen += aggregateChildMetricsLen
+			}
+			errs.AddPartial(errLen, fmt.Errorf("error reading child metrics, parent %d not found", pid))
 			continue
 		}
 
