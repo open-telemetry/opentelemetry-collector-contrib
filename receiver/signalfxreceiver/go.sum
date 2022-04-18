@@ -144,8 +144,8 @@ github.com/hashicorp/vault/sdk v0.1.13/go.mod h1:B+hVj7TpuQY1Y/GPbCpffmgd+tSEwvh
 github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/jaegertracing/jaeger v1.15.1/go.mod h1:LUWPSnzNPGRubM8pk0inANGitpiMOOxihXx0+53llXI=
-github.com/jaegertracing/jaeger v1.32.0 h1:aKtCeFMWsJ/TuNx+5mMscOCcGhnkG7ZSYx3zsCpDVAQ=
-github.com/jaegertracing/jaeger v1.32.0/go.mod h1:2bCBxuy0Pdb+wGRL5YhjSyrp6Wpz1vvfL4hEYbLfrCc=
+github.com/jaegertracing/jaeger v1.33.0 h1:dQlFIzMjcKrLCPeqMrHYIzzooQndjgxQIMTbfv0URRM=
+github.com/jaegertracing/jaeger v1.33.0/go.mod h1:e+VRpxSeRWWwlVN1ORhlG4Kv7IVmXkp6z80jtYsjtDU=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
 github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
