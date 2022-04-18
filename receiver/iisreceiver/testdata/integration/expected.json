@@ -13,8 +13,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ]
                      },
@@ -27,9 +27,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "1",
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "asInt": "5",
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ],
                         "isMonotonic": true
@@ -43,14 +43,30 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "1",
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "asInt": "3",
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ],
                         "isMonotonic": true
                      },
                      "unit": "{attempts}"
+                  },
+                  {
+                     "description": "Number of bytes blocked due to bandwidth throttling.",
+                     "name": "iis.network.blocked",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
                   },
                   {
                      "description": "Number of transmitted files.",
@@ -68,11 +84,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
-                              "asInt": "1",
+                              "asInt": "4",
                               "attributes": [
                                  {
                                     "key": "direction",
@@ -81,8 +97,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ],
                         "isMonotonic": true
@@ -96,7 +112,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "57",
+                              "asInt": "1934",
                               "attributes": [
                                  {
                                     "key": "direction",
@@ -105,11 +121,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
-                              "asInt": "940",
+                              "asInt": "106804",
                               "attributes": [
                                  {
                                     "key": "direction",
@@ -118,8 +134,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ],
                         "isMonotonic": true
@@ -142,11 +158,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
-                              "asInt": "1",
+                              "asInt": "5",
                               "attributes": [
                                  {
                                     "key": "request",
@@ -155,8 +171,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
                               "asInt": "0",
@@ -168,8 +184,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
                               "asInt": "0",
@@ -181,8 +197,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
                               "asInt": "0",
@@ -194,8 +210,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
                               "asInt": "0",
@@ -207,8 +223,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            },
                            {
                               "asInt": "0",
@@ -220,8 +236,39 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{requests}"
+                  },
+                  {
+                     "description": "Current number of requests in the queue.",
+                     "name": "iis.request.queue.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
+                           }
+                        ]
+                     },
+                     "unit": "{requests}"
+                  },
+                  {
+                     "description": "Total number of requests rejected.",
+                     "name": "iis.request.rejected",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ],
                         "isMonotonic": true
@@ -235,9 +282,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "4659",
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "asInt": "4724",
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ]
                      },
@@ -248,9 +295,9 @@
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asInt": "525146",
-                              "startTimeUnixNano": "1649790968352648900",
-                              "timeUnixNano": "1649790968352648900"
+                              "asInt": "1029516",
+                              "startTimeUnixNano": "1650295321014331300",
+                              "timeUnixNano": "1650295321456400500"
                            }
                         ]
                      },
