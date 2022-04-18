@@ -14,8 +14,6 @@
 
 package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"time"
