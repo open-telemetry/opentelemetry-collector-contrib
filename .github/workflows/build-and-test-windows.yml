@@ -41,6 +41,9 @@ jobs:
         run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
       - name: Run IIS Unit Tests
         run: cd receiver/iisreceiver && go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...        
+      - name: Run Active Directory DS Unit & Integration Tests
+        run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper,integration ./...        
+        working-directory: ./receiver/activedirectorydsreceiver
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/main' }}
         run: |
