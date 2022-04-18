@@ -6,12 +6,12 @@ require (
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.49.0
 	go.uber.org/zap v1.21.0
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
+	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
 	google.golang.org/grpc v1.45.0
 )
 
 require (
-	cloud.google.com/go/compute v1.5.0 // indirect
+	cloud.google.com/go/compute v1.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
