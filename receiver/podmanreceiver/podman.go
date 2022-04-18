@@ -78,11 +78,6 @@ EVENT_LOOP:
 			case <-ctx.Done():
 				return
 			case event := <-eventCh:
-				pc.logger.Info(
-					"Podman container update:",
-					zap.String("id", event.ID),
-					zap.String("status", event.Status),
-				)
 				switch event.Status {
 				case "died":
 					pc.logger.Debug("Podman container died:", zap.String("id", event.ID))
@@ -149,9 +144,7 @@ func (pc *ContainerScraper) FetchContainerStats(ctx context.Context) ([]containe
 	params := url.Values{}
 	params.Add("stream", "false")
 
-	pc.logger.Info("Podman loaded containers", zap.Int("size", len(pc.containers)))
 	for cid, _ := range pc.containers {
-		pc.logger.Info("Podman fetching container", zap.String("id", cid))
 		params.Add("containers", cid)
 	}
 

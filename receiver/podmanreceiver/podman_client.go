@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -140,9 +139,6 @@ func (c *libpodClient) events(ctx context.Context, options url.Values) (<-chan E
 			default:
 				err := dec.Decode(&e)
 				if err != nil {
-					if err == io.EOF {
-						continue
-					}
 					errs <- err
 				} else {
 					events <- e
