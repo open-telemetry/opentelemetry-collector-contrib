@@ -16,7 +16,6 @@ package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component"
 	"strconv"
 	"time"
 
@@ -42,12 +41,8 @@ func newMemcachedScraper(
 		logger:    logger,
 		config:    config,
 		newClient: newMemcachedClient,
+		mb:        metadata.NewMetricsBuilder(config.Metrics),
 	}
-}
-
-func (r *memcachedScraper) start(context.Context, component.Host) error {
-	r.mb = metadata.NewMetricsBuilder(r.config.Metrics)
-	return nil
 }
 
 func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
