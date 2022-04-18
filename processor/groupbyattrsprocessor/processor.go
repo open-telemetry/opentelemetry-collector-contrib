@@ -275,6 +275,6 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResource, ilm.Scope())
 
 	// Return the metric in this resource
-	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric)
+	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric, gap)
 
 }
