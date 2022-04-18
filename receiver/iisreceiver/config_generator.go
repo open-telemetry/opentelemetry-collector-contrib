@@ -158,7 +158,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 						Name: "iis.network.blocked",
 					},
 
-					Name: "Total blocked bandwidth bytes",
+					Name: "Total blocked bandwidth bytes.",
 				},
 				{
 					MetricRep: windowsapi.MetricRep{
@@ -170,7 +170,8 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 			},
 		},
 		{
-			Object: "HTTP Service Request Queues",
+			Object:    "HTTP Service Request Queues",
+			Instances: []string{"*"},
 			Counters: []windowsapi.CounterConfig{
 				{
 					MetricRep: windowsapi.MetricRep{
