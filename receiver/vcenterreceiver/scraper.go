@@ -85,10 +85,11 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error
 	return v.mb.Emit(), errs.Combine()
 }
 
-func (v *vcenterMetricScraper) collectClusters(ctx context.Context, errs *scrapererror.ScrapeErrors) error {
+func (v *vcenterMetricScraper) collectClusters(ctx context.Context, errs *scrapererror.ScrapeErrors) {
 	clusters, err := v.client.Clusters(ctx)
 	if err != nil {
-		return err
+		errs.AddPartial(1, err)
+		return
 	}
 	now := pdata.NewTimestampFromTime(time.Now())
 
@@ -99,8 +100,6 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, errs *scrape
 		v.collectCluster(ctx, now, c, errs)
 	}
 	v.collectResourcePools(ctx, now, errs)
-
-	return nil
 }
 
 func (v *vcenterMetricScraper) collectCluster(
