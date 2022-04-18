@@ -21,7 +21,8 @@ import (
 
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -77,25 +78,25 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
 
 	metadata, err := s.getProcessMetadata()
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
-			return pdata.NewMetrics(), err
+			return pmetric.NewMetrics(), err
 		}
 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
 	for _, md := range metadata {
-		now := pdata.NewTimestampFromTime(time.Now())
+		now := pcommon.NewTimestampFromTime(time.Now())
 
 		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
@@ -170,7 +171,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return metadata, errs.Combine()
 }
 
-func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle) error {
 	times, err := handle.Times()
 	if err != nil {
 		return err
@@ -180,7 +181,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, handle proce
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
 		return err
@@ -191,7 +192,7 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle 
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle processHandle) error {
 	io, err := handle.IOCounters()
 	if err != nil {
 		return err

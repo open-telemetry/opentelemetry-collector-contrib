@@ -19,11 +19,11 @@ import (
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.MetricAggregationTemporality, dp pdata.HistogramDataPoint) (string, error) {
-	if t == pdata.MetricAggregationTemporalityCumulative {
+func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.MetricAggregationTemporality, dp pmetric.HistogramDataPoint) (string, error) {
+	if t == pmetric.MetricAggregationTemporalityCumulative {
 		// convert to delta histogram
 		// skip first point because there is nothing to calculate a delta from
 		// what if bucket bounds change
@@ -59,7 +59,7 @@ func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimension
 }
 
 // estimateHistMinMax returns the estimated minimum and maximum value in the histogram by using the min and max non-empty buckets.
-func estimateHistMinMax(dp pdata.HistogramDataPoint) (float64, float64) {
+func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 	bounds := dp.ExplicitBounds()
 	counts := dp.BucketCounts()
 

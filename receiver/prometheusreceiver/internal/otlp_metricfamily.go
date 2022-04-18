@@ -23,12 +23,13 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
 type metricFamilyPdata struct {
-	mtype             pdata.MetricDataType
+	mtype             pmetric.MetricDataType
 	groups            map[string]*metricGroupPdata
 	name              string
 	mc                MetadataCache
@@ -54,12 +55,12 @@ type metricGroupPdata struct {
 	complexValue []*dataPoint
 }
 
-var pdataStaleFlags = pdata.NewMetricDataPointFlags(pdata.MetricDataPointFlagNoRecordedValue)
+var pdataStaleFlags = pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)
 
 func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamilyPdata {
 	metadata, familyName := metadataForMetric(metricName, mc)
 	mtype := convToPdataMetricType(metadata.Type)
-	if mtype == pdata.MetricDataTypeNone {
+	if mtype == pmetric.MetricDataTypeNone {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
@@ -118,7 +119,7 @@ func (mg *metricGroupPdata) sortPoints() {
 	})
 }
 
-func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest *pdata.HistogramDataPointSlice) bool {
+func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest *pmetric.HistogramDataPointSlice) bool {
 	if !mg.hasCount || len(mg.complexValue) == 0 {
 		return false
 	}
@@ -172,12 +173,12 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	return true
 }
 
-func pdataTimestampFromMs(timeAtMs int64) pdata.Timestamp {
+func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
 	secs, ns := timeAtMs/1e3, (timeAtMs%1e3)*1e6
-	return pdata.NewTimestampFromTime(time.Unix(secs, ns))
+	return pcommon.NewTimestampFromTime(time.Unix(secs, ns))
 }
 
-func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdata.SummaryDataPointSlice) bool {
+func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pmetric.SummaryDataPointSlice) bool {
 	// expecting count to be provided, however, in the following two cases, they can be missed.
 	// 1. data is corrupted
 	// 2. ignored by startValue evaluation
@@ -223,8 +224,8 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	return true
 }
 
-func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *pdata.NumberDataPointSlice) bool {
-	var startTsNanos pdata.Timestamp
+func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *pmetric.NumberDataPointSlice) bool {
+	var startTsNanos pcommon.Timestamp
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
 	if mg.family.isCumulativeTypePdata() {
@@ -244,7 +245,7 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	return true
 }
 
-func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.Map) {
+func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pcommon.Map) {
 	src := ls.Map()
 	for _, key := range orderedKeys {
 		if src[key] == "" {
@@ -259,9 +260,9 @@ func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.
 var _ = (*metricFamilyPdata)(nil).updateLabelKeys
 
 func (mf *metricFamilyPdata) isCumulativeTypePdata() bool {
-	return mf.mtype == pdata.MetricDataTypeSum ||
-		mf.mtype == pdata.MetricDataTypeHistogram ||
-		mf.mtype == pdata.MetricDataTypeSummary
+	return mf.mtype == pmetric.MetricDataTypeSum ||
+		mf.mtype == pmetric.MetricDataTypeHistogram ||
+		mf.mtype == pmetric.MetricDataTypeSummary
 }
 
 func (mf *metricFamilyPdata) loadMetricGroupOrCreate(groupKey string, ls labels.Labels, ts int64) *metricGroupPdata {
@@ -284,7 +285,7 @@ func (mf *metricFamilyPdata) Add(metricName string, ls labels.Labels, t int64, v
 	groupKey := mf.getGroupKey(ls)
 	mg := mf.loadMetricGroupOrCreate(groupKey, ls, t)
 	switch mf.mtype {
-	case pdata.MetricDataTypeHistogram, pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeHistogram, pmetric.MetricDataTypeSummary:
 		switch {
 		case strings.HasSuffix(metricName, metricsSuffixSum):
 			// always use the timestamp from sum (count is ok too), because the startTs from quantiles won't be reliable
@@ -319,8 +320,8 @@ func (mf *metricFamilyPdata) getGroups() []*metricGroupPdata {
 	return groups
 }
 
-func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int) {
-	metric := pdata.NewMetric()
+func (mf *metricFamilyPdata) ToMetricPdata(metrics *pmetric.MetricSlice) (int, int) {
+	metric := pmetric.NewMetric()
 	metric.SetDataType(mf.mtype)
 	metric.SetName(mf.name)
 	metric.SetDescription(mf.metadata.Help)
@@ -329,9 +330,9 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 	pointCount := 0
 
 	switch mf.mtype {
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		histogram := metric.Histogram()
-		histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.getGroups() {
 			if !mg.toDistributionPoint(mf.labelKeysOrdered, &hdpL) {
@@ -340,7 +341,7 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 		}
 		pointCount = hdpL.Len()
 
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		summary := metric.Summary()
 		sdpL := summary.DataPoints()
 		for _, mg := range mf.getGroups() {
@@ -350,9 +351,9 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 		}
 		pointCount = sdpL.Len()
 
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		sum := metric.Sum()
-		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		sum.SetIsMonotonic(true)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.getGroups() {
@@ -363,7 +364,7 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 		pointCount = sdpL.Len()
 
 	default: // Everything else should be set to a Gauge.
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		gauge := metric.Gauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.getGroups() {

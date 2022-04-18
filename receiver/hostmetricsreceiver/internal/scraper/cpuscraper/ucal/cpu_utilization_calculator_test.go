@@ -19,14 +19,14 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type inMemoryRecorder struct {
 	cpuUtilizations []CPUUtilization
 }
 
-func (r *inMemoryRecorder) record(_ pdata.Timestamp, utilization CPUUtilization) {
+func (r *inMemoryRecorder) record(_ pcommon.Timestamp, utilization CPUUtilization) {
 	r.cpuUtilizations = append(r.cpuUtilizations, utilization)
 }
 
@@ -34,7 +34,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		name                 string
-		now                  pdata.Timestamp
+		now                  pcommon.Timestamp
 		cpuTimes             []cpu.TimesStat
 		previousCPUTimes     []cpu.TimesStat
 		expectedUtilizations []CPUUtilization

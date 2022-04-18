@@ -15,7 +15,8 @@
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func exampleIntMetric() metricPair {
@@ -23,10 +24,10 @@ func exampleIntMetric() metricPair {
 }
 
 func buildExampleIntMetric(fillData bool) metricPair {
-	metric := pdata.NewMetric()
+	metric := pmetric.NewMetric()
 	metric.SetName("test.metric.data")
 	metric.SetUnit("bytes")
-	metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.SetDataType(pmetric.MetricDataTypeSum)
 
 	if fillData {
 		dp := metric.Sum().DataPoints().AppendEmpty()
@@ -34,7 +35,7 @@ func buildExampleIntMetric(fillData bool) metricPair {
 		dp.SetIntVal(14500)
 	}
 
-	attributes := pdata.NewMap()
+	attributes := pcommon.NewMap()
 	attributes.InsertString("test", "test_value")
 	attributes.InsertString("test2", "second_value")
 
@@ -50,11 +51,11 @@ func exampleIntGaugeMetric() metricPair {
 
 func buildExampleIntGaugeMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewMap(),
-		metric:     pdata.NewMetric(),
+		attributes: pcommon.NewMap(),
+		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.metric.SetName("gauge_metric_name")
 
 	metric.attributes.InsertString("foo", "bar")
@@ -82,11 +83,11 @@ func exampleDoubleGaugeMetric() metricPair {
 
 func buildExampleDoubleGaugeMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewMap(),
-		metric:     pdata.NewMetric(),
+		attributes: pcommon.NewMap(),
+		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.metric.SetName("gauge_metric_name_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
@@ -114,11 +115,11 @@ func exampleIntSumMetric() metricPair {
 
 func buildExampleIntSumMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewMap(),
-		metric:     pdata.NewMetric(),
+		attributes: pcommon.NewMap(),
+		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.metric.SetDataType(pmetric.MetricDataTypeSum)
 	metric.metric.SetName("sum_metric_int_test")
 
 	metric.attributes.InsertString("foo", "bar")
@@ -146,11 +147,11 @@ func exampleDoubleSumMetric() metricPair {
 
 func buildExampleDoubleSumMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewMap(),
-		metric:     pdata.NewMetric(),
+		attributes: pcommon.NewMap(),
+		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.metric.SetDataType(pmetric.MetricDataTypeSum)
 	metric.metric.SetName("sum_metric_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
@@ -178,11 +179,11 @@ func exampleSummaryMetric() metricPair {
 
 func buildExampleSummaryMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewMap(),
-		metric:     pdata.NewMetric(),
+		attributes: pcommon.NewMap(),
+		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeSummary)
+	metric.metric.SetDataType(pmetric.MetricDataTypeSummary)
 	metric.metric.SetName("summary_metric_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
@@ -220,11 +221,11 @@ func exampleHistogramMetric() metricPair {
 
 func buildExampleHistogramMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewMap(),
-		metric:     pdata.NewMetric(),
+		attributes: pcommon.NewMap(),
+		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeHistogram)
+	metric.metric.SetDataType(pmetric.MetricDataTypeHistogram)
 	metric.metric.SetName("histogram_metric_double_test")
 
 	metric.attributes.InsertString("bar", "foo")
@@ -255,8 +256,8 @@ func buildExampleHistogramMetric(fillData bool) metricPair {
 	return metric
 }
 
-func metricPairToMetrics(mp []metricPair) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func metricPairToMetrics(mp []metricPair) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(len(mp))
 	for num, record := range mp {
 		record.attributes.CopyTo(metrics.ResourceMetrics().AppendEmpty().Resource().Attributes())
@@ -268,7 +269,7 @@ func metricPairToMetrics(mp []metricPair) pdata.Metrics {
 }
 
 func fieldsFromMap(s map[string]string) fields {
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	for k, v := range s {
 		attrMap.InsertString(k, v)
 	}

@@ -20,7 +20,7 @@ import (
 
 	"github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/libhoney-go/transmission"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -101,7 +101,7 @@ func newHoneycombTracesExporter(cfg *Config, logger *zap.Logger) (*honeycombExpo
 
 // pushTraceData is the method called when trace data is available. It will be
 // responsible for sending a batch of events.
-func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *honeycombExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 
 	// Run the error logger. This just listens for messages in the error
@@ -172,19 +172,19 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 	return errs
 }
 
-func getSpanKind(kind pdata.SpanKind) string {
+func getSpanKind(kind ptrace.SpanKind) string {
 	switch kind {
-	case pdata.SpanKindClient:
+	case ptrace.SpanKindClient:
 		return "client"
-	case pdata.SpanKindServer:
+	case ptrace.SpanKindServer:
 		return "server"
-	case pdata.SpanKindProducer:
+	case ptrace.SpanKindProducer:
 		return "producer"
-	case pdata.SpanKindConsumer:
+	case ptrace.SpanKindConsumer:
 		return "consumer"
-	case pdata.SpanKindInternal:
+	case ptrace.SpanKindInternal:
 		return "internal"
-	case pdata.SpanKindUnspecified:
+	case ptrace.SpanKindUnspecified:
 		fallthrough
 	default:
 		return "unspecified"
@@ -193,7 +193,7 @@ func getSpanKind(kind pdata.SpanKind) string {
 
 // sendSpanLinks gets the list of links associated with this span and sends them as
 // separate events to Honeycomb, with a span type "link".
-func (e *honeycombExporter) sendSpanLinks(span pdata.Span) {
+func (e *honeycombExporter) sendSpanLinks(span ptrace.Span) {
 	links := span.Links()
 
 	for i := 0; i < links.Len(); i++ {
@@ -221,7 +221,7 @@ func (e *honeycombExporter) sendSpanLinks(span pdata.Span) {
 
 // sendMessageEvents gets the list of timeevents from the span and sends them as
 // separate events to Honeycomb, with a span type "span_event".
-func (e *honeycombExporter) sendMessageEvents(span pdata.Span, resourceAttrs map[string]interface{}) {
+func (e *honeycombExporter) sendMessageEvents(span ptrace.Span, resourceAttrs map[string]interface{}) {
 	timeEvents := span.Events()
 
 	for i := 0; i < timeEvents.Len(); i++ {

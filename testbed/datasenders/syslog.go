@@ -23,7 +23,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -75,7 +76,7 @@ func (f *SyslogWriter) Start() (err error) {
 	return err
 }
 
-func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -98,13 +99,13 @@ func (f *SyslogWriter) GenConfigYAMLStr() string {
       listen_address: "%s"
 `, f.network, f.GetEndpoint())
 }
-func (f *SyslogWriter) Send(lr pdata.LogRecord) error {
+func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1000000000), int64(lr.Timestamp()%100000000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
-	lr.Attributes().Range(func(k string, v pdata.Value) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
 		return true
 	})

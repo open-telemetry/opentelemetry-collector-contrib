@@ -22,14 +22,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON.
-var tracesMarshaler = otlp.NewJSONTracesMarshaler()
-var metricsMarshaler = otlp.NewJSONMetricsMarshaler()
-var logsMarshaler = otlp.NewJSONLogsMarshaler()
+var tracesMarshaler = ptrace.NewJSONMarshaler()
+var metricsMarshaler = pmetric.NewJSONMarshaler()
+var logsMarshaler = plog.NewJSONMarshaler()
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 // in Protobuf-JSON format.
@@ -43,7 +44,7 @@ func (e *fileExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	buf, err := tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return err
@@ -51,7 +52,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	return exportMessageAsLine(e, buf)
 }
 
-func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	buf, err := metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
@@ -59,7 +60,7 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error
 	return exportMessageAsLine(e, buf)
 }
 
-func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	buf, err := logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err

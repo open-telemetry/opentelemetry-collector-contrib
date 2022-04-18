@@ -15,12 +15,13 @@
 package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.Metrics {
-	md := pdata.NewMetrics()
+func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, timestamp pcommon.Timestamp) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	r.CopyTo(rm.Resource())
@@ -61,8 +62,8 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	return md
 }
 
-func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.Timestamp, duration float64) pdata.Metrics {
-	md := pdata.NewMetrics()
+func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pcommon.Resource, timestamp pcommon.Timestamp, duration float64) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	containerResource.CopyTo(rm.Resource())
 	ilms := rm.ScopeMetrics()
@@ -72,41 +73,41 @@ func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pda
 	return md
 }
 
-func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.ScopeMetrics) {
+func appendIntGauge(metricName string, unit string, value int64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGauge := metric.Gauge()
 
 	appendIntDataPoint(intGauge.DataPoints(), value, ts)
 }
 
-func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.ScopeMetrics) {
+func appendIntSum(metricName string, unit string, value int64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pdata.MetricDataTypeSum)
+	metric.SetDataType(pmetric.MetricDataTypeSum)
 	intSum := metric.Sum()
-	intSum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	intSum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }
 
-func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp, ilm pdata.ScopeMetrics) {
+func appendDoubleGauge(metricName string, unit string, value float64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	doubleGauge := metric.Gauge()
 	dataPoint := doubleGauge.DataPoints().AppendEmpty()
 	dataPoint.SetDoubleVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 
-func appendIntDataPoint(dataPoints pdata.NumberDataPointSlice, value int64, ts pdata.Timestamp) {
+func appendIntDataPoint(dataPoints pmetric.NumberDataPointSlice, value int64, ts pcommon.Timestamp) {
 	dataPoint := dataPoints.AppendEmpty()
 	dataPoint.SetIntVal(value)
 	dataPoint.SetTimestamp(ts)
 }
 
-func appendMetric(ilm pdata.ScopeMetrics, name, unit string) pdata.Metric {
+func appendMetric(ilm pmetric.ScopeMetrics, name, unit string) pmetric.Metric {
 	metric := ilm.Metrics().AppendEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)
