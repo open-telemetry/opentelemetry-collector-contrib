@@ -18,8 +18,6 @@ jobs:
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - name: Install SQL Server 2019 Dev
         run: ./.github/workflows/scripts/sqlserver_install.ps1
-      - name: Install Active Directory Domain Services
-        run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -41,8 +39,8 @@ jobs:
         run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
       - name: Run IIS Unit Tests
         run: cd receiver/iisreceiver && go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...        
-      - name: Run Active Directory DS Unit & Integration Tests
-        run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper,integration ./...        
+      - name: Run Active Directory DS Unit Tests
+        run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...        
         working-directory: ./receiver/activedirectorydsreceiver
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/main' }}
