@@ -15,6 +15,7 @@
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 
 ### 💡 Enhancements 💡
+- `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 
 ### 🧰 Bug fixes 🧰
 
