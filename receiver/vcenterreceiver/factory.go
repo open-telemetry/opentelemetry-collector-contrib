@@ -36,6 +36,7 @@ type vcenterReceiverFactory struct {
 	receivers map[*Config]*vcenterReceiver
 }
 
+// NewFactory returns the receiver factory for the vcenterreceiver
 func NewFactory() component.ReceiverFactory {
 	f := &vcenterReceiverFactory{
 		receivers: make(map[*Config]*vcenterReceiver),

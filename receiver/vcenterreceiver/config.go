@@ -27,11 +27,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
+// Config is the configuration of the receiver
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	MetricsConfig           *MetricsConfig `mapstructure:"metrics,omitempty"`
 }
 
+// MetricsConfig is the metrics configuration of the receiver
 type MetricsConfig struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
@@ -41,7 +43,7 @@ type MetricsConfig struct {
 	Password                                string                   `mapstructure:"password"`
 }
 
-// Validate checks to see if the supplied config will work for the vmwarevcenterreceiver
+// Validate checks to see if the supplied config will work for the receiver
 func (c *Config) Validate() error {
 	var err error
 	metricsErr := c.validateMetricsConfig()
