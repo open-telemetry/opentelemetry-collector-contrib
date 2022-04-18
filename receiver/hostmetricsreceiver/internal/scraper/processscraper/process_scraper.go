@@ -24,7 +24,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -42,6 +44,13 @@ type scraper struct {
 	mb        *metadata.MetricsBuilder
 	filterSet *processFilterSet
 
+	// Deprecated in place of filterSet
+	includeFS filterset.FilterSet
+	excludeFS filterset.FilterSet
+	// only used to log deprecated warning for includeFS/exclludeFs.
+	// Can be removed once deprecated code is removed
+	logger *zap.Logger
+
 	// for mocking
 	bootTime             func() (uint64, error)
 	getProcessHandles    func() (processHandles, error)
@@ -50,13 +59,33 @@ type scraper struct {
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, getProcessHandles: getProcessHandlesInternal}
+func newProcessScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
+	scraper := &scraper{
+		config:            cfg,
+		bootTime:          host.BootTime,
+		getProcessHandles: getProcessHandlesInternal,
+		logger:            logger}
 	var err error
 
 	scraper.filterSet, err = createFilters(cfg.Filters)
 	if err != nil {
 		return nil, fmt.Errorf("error creating process filters: %w", err)
+	}
+
+	if len(cfg.Include.Names) > 0 {
+		logger.Warn("Use of 'include' config setting for process filtering is deprecated.")
+		scraper.includeFS, err = filterset.CreateFilterSet(cfg.Include.Names, &cfg.Include.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating process include filters: %w", err)
+		}
+	}
+
+	if len(cfg.Exclude.Names) > 0 {
+		logger.Warn("Use of 'exclude' config setting for process filtering is deprecated.")
+		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Names, &cfg.Exclude.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
+		}
 	}
 
 	scraper.getProcessExecutable = getProcessExecutable
@@ -139,6 +168,13 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			}
 			continue
 		}
+
+		// Deprecated filter processes by name
+		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||
+			(s.excludeFS != nil && s.excludeFS.Matches(executable.name)) {
+			continue
+		}
+
 		// filter by executable
 		matches = s.filterSet.includeExecutable(executable.name, executable.path, matches)
 		if len(matches) == 0 {

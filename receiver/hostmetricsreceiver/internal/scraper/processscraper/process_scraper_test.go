@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -48,7 +49,7 @@ func TestScrape(t *testing.T) {
 	const bootTime = 100
 	const expectedStartTime = 100 * 1e9
 
-	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
+	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()}, zap.NewNop())
 	scraper.bootTime = func() (uint64, error) { return bootTime, nil }
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
@@ -162,7 +163,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 			ExecutableNames: []string{"test"},
 		},
 	}
-	_, err := newProcessScraper(&Config{Filters: []FilterConfig{includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err := newProcessScraper(&Config{Filters: []FilterConfig{includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()}, zap.NewNop())
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process filters:", err.Error())
 
@@ -171,7 +172,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 			ExecutableNames: []string{"test"},
 		},
 	}
-	_, err = newProcessScraper(&Config{Filters: []FilterConfig{excludeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err = newProcessScraper(&Config{Filters: []FilterConfig{excludeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()}, zap.NewNop())
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process filters:", err.Error())
 }
@@ -179,7 +180,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
+	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()}, zap.NewNop())
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
 	scraper.getProcessHandles = func() (processHandles, error) { return nil, errors.New("err1") }
@@ -337,7 +338,101 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				}
 			}
 
-			scraper, err := newProcessScraper(config)
+			scraper, err := newProcessScraper(config, zap.NewNop())
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			handles := make([]*processHandleMock, 0, len(test.names))
+			for _, name := range test.names {
+				handleMock := newDefaultHandleMock()
+				handleMock.On("Name").Return(name, nil)
+				handleMock.On("Exe").Return(name, nil)
+				handles = append(handles, handleMock)
+			}
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: handles}, nil
+			}
+
+			md, err := scraper.scrape(context.Background())
+			require.NoError(t, err)
+
+			assert.Equal(t, len(test.expectedNames), md.ResourceMetrics().Len())
+			for i, expectedName := range test.expectedNames {
+				rm := md.ResourceMetrics().At(i)
+				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
+				assert.Equal(t, expectedName, name.StringVal())
+			}
+		})
+	}
+}
+
+func TestScrapeMetrics_DeprecatedFiltered(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	type testCase struct {
+		name          string
+		names         []string
+		include       []string
+		exclude       []string
+		expectedNames []string
+	}
+
+	testCases := []testCase{
+		{
+			name:          "No Filter",
+			names:         []string{"test1", "test2"},
+			include:       []string{"test*"},
+			expectedNames: []string{"test1", "test2"},
+		},
+		{
+			name:          "Include All",
+			names:         []string{"test1", "test2"},
+			include:       []string{"test*"},
+			expectedNames: []string{"test1", "test2"},
+		},
+		{
+			name:          "Include One",
+			names:         []string{"test1", "test2"},
+			include:       []string{"test1"},
+			expectedNames: []string{"test1"},
+		},
+		{
+			name:          "Exclude All",
+			names:         []string{"test1", "test2"},
+			exclude:       []string{"test*"},
+			expectedNames: []string{},
+		},
+		{
+			name:          "Include & Exclude",
+			names:         []string{"test1", "test2"},
+			include:       []string{"test*"},
+			exclude:       []string{"test2"},
+			expectedNames: []string{"test1"},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			}
+
+			if len(test.include) > 0 {
+				config.Include = MatchConfig{
+					Names:  test.include,
+					Config: filterset.Config{MatchType: filterset.Regexp},
+				}
+			}
+			if len(test.exclude) > 0 {
+				config.Exclude = MatchConfig{
+					Names:  test.exclude,
+					Config: filterset.Config{MatchType: filterset.Regexp},
+				}
+			}
+
+			scraper, err := newProcessScraper(config, zap.NewNop())
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -441,7 +536,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
 			}
 
-			scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
+			scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()}, zap.NewNop())
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -548,7 +643,7 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
 			}
-			scraper, err := newProcessScraper(config)
+			scraper, err := newProcessScraper(config, zap.NewNop())
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)

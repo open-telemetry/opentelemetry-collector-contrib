@@ -128,6 +128,14 @@ process:
       <create as many filters as desired>:
 ```
 
+The below filter format has been deprecated. 
+```yaml
+process:
+  <include|exclude>:
+    names: [ <process name>, ... ]
+    match_type: <strict|regexp>
+  mute_process_name_error: <true|false>
+```
 ## Advanced Configuration
 
 ### Filtering

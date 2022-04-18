@@ -27,6 +27,13 @@ type Config struct {
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 
+	// Deprecated in place of Filters
+	// Include specifies a filter on the process names that should be included from the generated metrics.
+	// Exclude specifies a filter on the process names that should be excluded from the generated metrics.
+	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.
+	Include MatchConfig `mapstructure:"include"`
+	Exclude MatchConfig `mapstructure:"exclude"`
+
 	// MuteProcessNameError is a flag that will mute the error encountered when trying to read a process the
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
@@ -84,4 +91,11 @@ type FilterConfig struct {
 	ExcludeOwners          OwnerMatchConfig          `mapstructure:"exclude_process_owner"`
 	IncludePids            []int32                   `mapstructure:"include_process_pid"`
 	ExcludePids            []int32                   `mapstructure:"exclude_process_pid"`
+}
+
+// Deprecated in place of FilterConfig
+type MatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+
+	Names []string `mapstructure:"names"`
 }

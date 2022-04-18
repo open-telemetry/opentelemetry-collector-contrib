@@ -47,14 +47,14 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a resource scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
-	_ *zap.Logger,
+	logger *zap.Logger,
 	cfg internal.Config,
 ) (scraperhelper.Scraper, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		return nil, errors.New("process scraper only available on Linux or Windows")
 	}
 
-	s, err := newProcessScraper(cfg.(*Config))
+	s, err := newProcessScraper(cfg.(*Config), logger)
 	if err != nil {
 		return nil, err
 	}
