@@ -18,6 +18,8 @@ jobs:
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - name: Install SQL Server 2019 Dev
         run: ./.github/workflows/scripts/sqlserver_install.ps1
+      - name: Install Active Directory Domain Services
+        run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
