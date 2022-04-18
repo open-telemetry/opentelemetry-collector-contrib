@@ -19,6 +19,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `fluentforwardreceiver`: Release port on shutdown (#9111)
+
 ## v0.49.0
 
 ### 🛑 Breaking changes 🛑
