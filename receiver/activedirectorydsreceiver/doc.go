@@ -14,4 +14,4 @@
 
 //go:generate mdatagen --experimental-gen metadata.yaml
 
-package activedirectorydsreceiver
+package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"

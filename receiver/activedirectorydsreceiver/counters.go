@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package activedirectorydsreceiver
+package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
 import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
