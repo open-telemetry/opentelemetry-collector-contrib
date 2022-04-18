@@ -102,7 +102,9 @@ func TestLogsTransformProcessor(t *testing.T) {
 					severity:     plog.SeverityNumberINFO,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pdata.Value{
-						"msg": pcommon.NewValueString("this is a test"),
+						"msg":  pcommon.NewValueString("this is a test"),
+						"time": pcommon.NewValueString("2022-01-01"),
+						"sev":  pcommon.NewValueString("INFO"),
 					},
 					spanID:  &spanID,
 					traceID: &traceID,
