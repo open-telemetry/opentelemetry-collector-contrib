@@ -74,7 +74,6 @@ The client response hook is called with the internal span and an ASGI event whic
 
    FastAPIInstrumentor().instrument(server_request_hook=server_request_hook, client_request_hook=client_request_hook, client_response_hook=client_response_hook)
 
-
 Capture HTTP request and response headers
 *****************************************
 You can configure the agent to capture predefined HTTP headers as span attributes, according to the `semantic convention <https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-request-and-response-headers>`_.
@@ -93,7 +92,7 @@ For example,
 will extract ``content-type`` and ``custom_request_header`` from request headers and add them as span attributes.
 
 It is recommended that you should give the correct names of the headers to be captured in the environment variable.
-Request header names in FastAPI are case insensitive. So, giving header name as ``CUStom-Header`` in environment variable will be able capture header with name ``custom-header``.
+Request header names in fastapi are case insensitive. So, giving header name as ``CUStom-Header`` in environment variable will be able capture header with name ``custom-header``.
 
 The name of the added span attribute will follow the format ``http.request.header.<header_name>`` where ``<header_name>`` being the normalized HTTP header name (lowercase, with - characters replaced by _ ).
 The value of the attribute will be single item list containing all the header values.
@@ -115,7 +114,7 @@ For example,
 will extract ``content-type`` and ``custom_response_header`` from response headers and add them as span attributes.
 
 It is recommended that you should give the correct names of the headers to be captured in the environment variable.
-Response header names captured in FastAPI are case insensitive. So, giving header name as ``CUStomHeader`` in environment variable will be able capture header with name ``customheader``.
+Response header names captured in fastapi are case insensitive. So, giving header name as ``CUStomHeader`` in environment variable will be able capture header with name ``customheader``.
 
 The name of the added span attribute will follow the format ``http.response.header.<header_name>`` where ``<header_name>`` being the normalized HTTP header name (lowercase, with - characters replaced by _ ).
 The value of the attribute will be single item list containing all the header values.

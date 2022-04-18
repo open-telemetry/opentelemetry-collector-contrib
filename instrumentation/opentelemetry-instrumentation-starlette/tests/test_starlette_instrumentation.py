@@ -19,13 +19,24 @@ from starlette import applications
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 from starlette.testclient import TestClient
+from starlette.websockets import WebSocket
 
 import opentelemetry.instrumentation.starlette as otel_starlette
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.test.globals_test import reset_trace_globals
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace import SpanKind, get_tracer
-from opentelemetry.util.http import get_excluded_urls
+from opentelemetry.trace import (
+    NoOpTracerProvider,
+    SpanKind,
+    get_tracer,
+    set_tracer_provider,
+)
+from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
+    get_excluded_urls,
+)
 
 
 class TestStarletteManualInstrumentation(TestBase):
@@ -244,3 +255,272 @@ class TestConditonalServerSpanCreation(TestStarletteManualInstrumentation):
             self.assertEqual(
                 parent_span.context.span_id, starlette_span.parent.span_id
             )
+
+
+class TestBaseWithCustomHeaders(TestBase):
+    def create_app(self):
+        app = self.create_starlette_app()
+        self._instrumentor.instrument_app(app=app)
+        return app
+
+    def setUp(self):
+        super().setUp()
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
+                OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
+            },
+        )
+        self.env_patch.start()
+        self._instrumentor = otel_starlette.StarletteInstrumentor()
+        self._app = self.create_app()
+        self._client = TestClient(self._app)
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.env_patch.stop()
+        with self.disable_logging():
+            self._instrumentor.uninstrument()
+
+    @staticmethod
+    def create_starlette_app():
+        app = applications.Starlette()
+
+        @app.route("/foobar")
+        def _(request):
+            return PlainTextResponse(
+                content="hi",
+                headers={
+                    "custom-test-header-1": "test-header-value-1",
+                    "custom-test-header-2": "test-header-value-2",
+                },
+            )
+
+        @app.websocket_route("/foobar_web")
+        async def _(websocket: WebSocket) -> None:
+            message = await websocket.receive()
+            if message.get("type") == "websocket.connect":
+                await websocket.send(
+                    {
+                        "type": "websocket.accept",
+                        "headers": [
+                            (b"custom-test-header-1", b"test-header-value-1"),
+                            (b"custom-test-header-2", b"test-header-value-2"),
+                        ],
+                    }
+                )
+                await websocket.send_json({"message": "hello world"})
+                await websocket.close()
+            if message.get("type") == "websocket.disconnect":
+                pass
+
+        return app
+
+
+class TestHTTPAppWithCustomHeaders(TestBaseWithCustomHeaders):
+    def test_custom_request_headers_in_span_attributes(self):
+        expected = {
+            "http.request.header.custom_test_header_1": (
+                "test-header-value-1",
+            ),
+            "http.request.header.custom_test_header_2": (
+                "test-header-value-2",
+            ),
+        }
+        resp = self._client.get(
+            "/foobar",
+            headers={
+                "custom-test-header-1": "test-header-value-1",
+                "custom-test-header-2": "test-header-value-2",
+            },
+        )
+        self.assertEqual(200, resp.status_code)
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 3)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+
+        self.assertSpanHasAttributes(server_span, expected)
+
+    def test_custom_request_headers_not_in_span_attributes(self):
+        not_expected = {
+            "http.request.header.custom_test_header_3": (
+                "test-header-value-3",
+            ),
+        }
+        resp = self._client.get(
+            "/foobar",
+            headers={
+                "custom-test-header-1": "test-header-value-1",
+                "custom-test-header-2": "test-header-value-2",
+            },
+        )
+        self.assertEqual(200, resp.status_code)
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 3)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+
+        for key in not_expected:
+            self.assertNotIn(key, server_span.attributes)
+
+    def test_custom_response_headers_in_span_attributes(self):
+        expected = {
+            "http.response.header.custom_test_header_1": (
+                "test-header-value-1",
+            ),
+            "http.response.header.custom_test_header_2": (
+                "test-header-value-2",
+            ),
+        }
+        resp = self._client.get("/foobar")
+        self.assertEqual(200, resp.status_code)
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 3)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+
+        self.assertSpanHasAttributes(server_span, expected)
+
+    def test_custom_response_headers_not_in_span_attributes(self):
+        not_expected = {
+            "http.response.header.custom_test_header_3": (
+                "test-header-value-3",
+            ),
+        }
+        resp = self._client.get("/foobar")
+        self.assertEqual(200, resp.status_code)
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 3)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+
+        for key in not_expected:
+            self.assertNotIn(key, server_span.attributes)
+
+
+class TestWebSocketAppWithCustomHeaders(TestBaseWithCustomHeaders):
+    def test_custom_request_headers_in_span_attributes(self):
+        expected = {
+            "http.request.header.custom_test_header_1": (
+                "test-header-value-1",
+            ),
+            "http.request.header.custom_test_header_2": (
+                "test-header-value-2",
+            ),
+        }
+        with self._client.websocket_connect(
+            "/foobar_web",
+            headers={
+                "custom-test-header-1": "test-header-value-1",
+                "custom-test-header-2": "test-header-value-2",
+            },
+        ) as websocket:
+            data = websocket.receive_json()
+            self.assertEqual(data, {"message": "hello world"})
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 5)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+        self.assertSpanHasAttributes(server_span, expected)
+
+    def test_custom_request_headers_not_in_span_attributes(self):
+        not_expected = {
+            "http.request.header.custom_test_header_3": (
+                "test-header-value-3",
+            ),
+        }
+        with self._client.websocket_connect(
+            "/foobar_web",
+            headers={
+                "custom-test-header-1": "test-header-value-1",
+                "custom-test-header-2": "test-header-value-2",
+            },
+        ) as websocket:
+            data = websocket.receive_json()
+            self.assertEqual(data, {"message": "hello world"})
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 5)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+
+        for key, _ in not_expected.items():
+            self.assertNotIn(key, server_span.attributes)
+
+    def test_custom_response_headers_in_span_attributes(self):
+        expected = {
+            "http.response.header.custom_test_header_1": (
+                "test-header-value-1",
+            ),
+            "http.response.header.custom_test_header_2": (
+                "test-header-value-2",
+            ),
+        }
+        with self._client.websocket_connect("/foobar_web") as websocket:
+            data = websocket.receive_json()
+            self.assertEqual(data, {"message": "hello world"})
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 5)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+
+        self.assertSpanHasAttributes(server_span, expected)
+
+    def test_custom_response_headers_not_in_span_attributes(self):
+        not_expected = {
+            "http.response.header.custom_test_header_3": (
+                "test-header-value-3",
+            ),
+        }
+        with self._client.websocket_connect("/foobar_web") as websocket:
+            data = websocket.receive_json()
+            self.assertEqual(data, {"message": "hello world"})
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 5)
+
+        server_span = [
+            span for span in span_list if span.kind == SpanKind.SERVER
+        ][0]
+
+        for key, _ in not_expected.items():
+            self.assertNotIn(key, server_span.attributes)
+
+
+class TestNonRecordingSpanWithCustomHeaders(TestBaseWithCustomHeaders):
+    def setUp(self):
+        super().setUp()
+        reset_trace_globals()
+        set_tracer_provider(tracer_provider=NoOpTracerProvider())
+
+        self._app = self.create_app()
+        self._client = TestClient(self._app)
+
+    def test_custom_header_not_present_in_non_recording_span(self):
+        resp = self._client.get(
+            "/foobar",
+            headers={
+                "custom-test-header-1": "test-header-value-1",
+            },
+        )
+        self.assertEqual(200, resp.status_code)
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 0)
