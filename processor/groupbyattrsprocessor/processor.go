@@ -204,7 +204,7 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map)
 }
 
 // Searches for metric with same name in the specified InstrumentationLibrary and returns it. If nothing is found, create it.
-func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric pmetric.Metric) pmetric.Metric {
+func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric pmetric.Metric, gap *groupByAttrsProcessor) pmetric.Metric {
 
 	// Loop through all metrics and try to find the one that matches with the one we search for
 	// (name and type)
@@ -225,15 +225,24 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	// Move other special type specific values
 	switch metric.DataType() {
 
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		metric.Histogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
 
-	case pdata.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricDataTypeExponentialHistogram:
 		metric.ExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
 
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
 
+	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeSummary:
+
+	default:
+		gap.logger.Error("Unhandled metric data type.",
+			zap.String("DataType", metric.DataType().String()),
+			zap.String("Name", metric.Name()),
+			zap.String("Unit", metric.Unit()),
+		)
 	}
 
 	return metric
