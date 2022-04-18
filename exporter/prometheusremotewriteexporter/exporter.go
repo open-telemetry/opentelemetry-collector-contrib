@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
@@ -125,7 +125,7 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 

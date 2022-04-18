@@ -26,8 +26,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -101,15 +100,15 @@ func getLogPacker() *logPacker {
 	return newLogPacker(zap.NewNop())
 }
 
-func getTestLogs(tb testing.TB) pdata.Logs {
-	logsMarshaler := otlp.NewJSONLogsUnmarshaler()
+func getTestLogs(tb testing.TB) plog.Logs {
+	logsMarshaler := plog.NewJSONUnmarshaler()
 	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
 	assert.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
 	return logs
 }
 
-func getTestLogRecord(tb testing.TB) pdata.LogRecord {
-	var logRecord pdata.LogRecord
+func getTestLogRecord(tb testing.TB) plog.LogRecord {
+	var logRecord plog.LogRecord
 	logs := getTestLogs(tb)
 	resourceLogs := logs.ResourceLogs()
 	scopeLogs := resourceLogs.At(0).ScopeLogs()

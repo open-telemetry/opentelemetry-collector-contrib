@@ -27,9 +27,11 @@ import (
 	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
@@ -49,9 +51,9 @@ type pubsubReceiver struct {
 	userAgent          string
 	config             *Config
 	client             *pubsub.SubscriberClient
-	tracesUnmarshaler  pdata.TracesUnmarshaler
-	metricsUnmarshaler pdata.MetricsUnmarshaler
-	logsUnmarshaler    pdata.LogsUnmarshaler
+	tracesUnmarshaler  ptrace.Unmarshaler
+	metricsUnmarshaler pmetric.Unmarshaler
+	logsUnmarshaler    plog.Unmarshaler
 	handler            *internal.StreamHandler
 	startOnce          sync.Once
 }
@@ -113,9 +115,9 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 			return
 		}
 	})
-	receiver.tracesUnmarshaler = otlp.NewProtobufTracesUnmarshaler()
-	receiver.metricsUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
-	receiver.logsUnmarshaler = otlp.NewProtobufLogsUnmarshaler()
+	receiver.tracesUnmarshaler = ptrace.NewProtoUnmarshaler()
+	receiver.metricsUnmarshaler = pmetric.NewProtoUnmarshaler()
+	receiver.logsUnmarshaler = plog.NewProtoUnmarshaler()
 	return startErr
 }
 
@@ -133,7 +135,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	data := string(message.Message.Data)
 	timestamp := message.GetMessage().PublishTime
 
-	out := pdata.NewLogs()
+	out := plog.NewLogs()
 	logs := out.ResourceLogs()
 	rls := logs.AppendEmpty()
 
@@ -141,7 +143,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	lr := ills.LogRecords().AppendEmpty()
 
 	lr.Body().SetStringVal(data)
-	lr.SetTimestamp(pdata.NewTimestampFromTime(timestamp.AsTime()))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp.AsTime()))
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
 }
 

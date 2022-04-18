@@ -15,7 +15,7 @@
 package unmarshalertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 )
@@ -25,21 +25,21 @@ const typeStr = "nop"
 // NopMetricsUnmarshaler is a MetricsUnmarshaler that doesn't do anything
 // with the inputs and just returns the metrics and error passed in.
 type NopMetricsUnmarshaler struct {
-	metrics pdata.Metrics
+	metrics pmetric.Metrics
 	err     error
 }
 
 var _ unmarshaler.MetricsUnmarshaler = (*NopMetricsUnmarshaler)(nil)
 
 // NewNopMetrics provides a nop metrics unmarshaler with the default
-// pdata.Metrics and no error.
+// pmetric.Metrics and no error.
 func NewNopMetrics() *NopMetricsUnmarshaler {
 	return &NopMetricsUnmarshaler{}
 }
 
 // NewWithMetrics provides a nop metrics unmarshaler with the passed
 // in metrics as the result of the Unmarshal and no error.
-func NewWithMetrics(metrics pdata.Metrics) *NopMetricsUnmarshaler {
+func NewWithMetrics(metrics pmetric.Metrics) *NopMetricsUnmarshaler {
 	return &NopMetricsUnmarshaler{metrics: metrics}
 }
 
@@ -50,7 +50,7 @@ func NewErrMetrics(err error) *NopMetricsUnmarshaler {
 }
 
 // Unmarshal deserializes the records into metrics.
-func (u *NopMetricsUnmarshaler) Unmarshal([][]byte) (pdata.Metrics, error) {
+func (u *NopMetricsUnmarshaler) Unmarshal([][]byte) (pmetric.Metrics, error) {
 	return u.metrics, u.err
 }
 

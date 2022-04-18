@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -101,13 +101,13 @@ func newSAPMTracesExporter(cfg *Config, set component.ExporterCreateSettings) (c
 
 // pushTraceData exports traces in SAPM proto by associated SFx access token and returns number of dropped spans
 // and the last experienced error if any translation or export failed
-func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	rss := td.ResourceSpans()
 	if rss.Len() == 0 {
 		return nil
 	}
 
-	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
+	// All metrics in the pmetric.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	accessToken := se.retrieveAccessToken(rss.At(0))
 	batches, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
@@ -129,7 +129,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) erro
 	return nil
 }
 
-func (se *sapmExporter) retrieveAccessToken(md pdata.ResourceSpans) string {
+func (se *sapmExporter) retrieveAccessToken(md ptrace.ResourceSpans) string {
 	if !se.config.AccessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""

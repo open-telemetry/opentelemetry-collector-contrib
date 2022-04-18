@@ -18,7 +18,7 @@ import (
 	"hash/crc32"
 	"sort"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const maxPositions uint32 = 36000 // 360 degrees with two decimal places
@@ -49,7 +49,7 @@ func newHashRing(endpoints []string) *hashRing {
 }
 
 // endpointFor calculates which backend is responsible for the given traceID
-func (h *hashRing) endpointFor(traceID pdata.TraceID) string {
+func (h *hashRing) endpointFor(traceID pcommon.TraceID) string {
 	b := traceID.Bytes()
 	hasher := crc32.NewIEEE()
 	hasher.Write(b[:])

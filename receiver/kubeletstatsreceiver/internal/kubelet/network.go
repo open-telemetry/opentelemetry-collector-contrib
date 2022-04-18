@@ -15,13 +15,14 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addNetworkMetrics(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func addNetworkMetrics(dest pmetric.MetricSlice, prefix string, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
@@ -29,7 +30,7 @@ func addNetworkMetrics(dest pdata.MetricSlice, prefix string, s *stats.NetworkSt
 	addNetworkErrorsMetric(dest, prefix, s, startTime, currentTime)
 }
 
-func addNetworkIOMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func addNetworkIOMetric(dest pmetric.MetricSlice, prefix string, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s.RxBytes == nil && s.TxBytes == nil {
 		return
 	}
@@ -42,7 +43,7 @@ func addNetworkIOMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkS
 	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxBytes, startTime, currentTime)
 }
 
-func addNetworkErrorsMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func addNetworkErrorsMetric(dest pmetric.MetricSlice, prefix string, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s.RxBytes == nil && s.TxBytes == nil {
 		return
 	}
@@ -55,7 +56,7 @@ func addNetworkErrorsMetric(dest pdata.MetricSlice, prefix string, s *stats.Netw
 	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxErrors, startTime, currentTime)
 }
 
-func fillNetworkDataPoint(dps pdata.NumberDataPointSlice, interfaceName string, direction string, value *uint64, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func fillNetworkDataPoint(dps pmetric.NumberDataPointSlice, interfaceName string, direction string, value *uint64, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if value == nil {
 		return
 	}
