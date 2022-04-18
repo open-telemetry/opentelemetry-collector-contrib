@@ -23,12 +23,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 var goldenScrapePath = filepath.Join("testdata", "golden_scrape.json")
