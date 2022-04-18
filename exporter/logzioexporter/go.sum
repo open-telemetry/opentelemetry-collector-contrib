@@ -477,8 +477,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/jaegertracing/jaeger v1.24.0/go.mod h1:mqdtFDA447va5j0UewDaAWyNlGreGQyhGxXVhbF58gQ=
-github.com/jaegertracing/jaeger v1.32.0 h1:aKtCeFMWsJ/TuNx+5mMscOCcGhnkG7ZSYx3zsCpDVAQ=
-github.com/jaegertracing/jaeger v1.32.0/go.mod h1:2bCBxuy0Pdb+wGRL5YhjSyrp6Wpz1vvfL4hEYbLfrCc=
+github.com/jaegertracing/jaeger v1.33.0 h1:dQlFIzMjcKrLCPeqMrHYIzzooQndjgxQIMTbfv0URRM=
+github.com/jaegertracing/jaeger v1.33.0/go.mod h1:e+VRpxSeRWWwlVN1ORhlG4Kv7IVmXkp6z80jtYsjtDU=
 github.com/jcmturner/aescts/v2 v2.0.0/go.mod h1:AiaICIRyfYg35RUkr8yESTqvSy7csK90qZ5xfvvsoNs=
 github.com/jcmturner/dnsutils/v2 v2.0.0/go.mod h1:b0TnjGOvI/n42bZa+hmXL+kFJZsFT7G4t3HTlQ184QM=
 github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
