@@ -174,7 +174,7 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 // To be used in a stateless setting like tests where ease of use is more
 // important than performance or throughput.
 func ConvertFrom(pLogs pdata.Logs) []*entry.Entry {
-	result := []*entry.Entry{}
+	result := make([]*entry.Entry, 0, pLogs.LogRecordCount())
 	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
 		rls := pLogs.ResourceLogs().At(i)
 		for j := 0; j < rls.ScopeLogs().Len(); j++ {
