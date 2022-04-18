@@ -20,38 +20,38 @@ package activedirectorydsreceiver // import "github.com/open-telemetry/opentelem
 import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
 type watchers struct {
-	DRAInboundBytesCompressed winperfcounters.PerfCounterWatcher
-	DRAInboundBytesNotCompressed winperfcounters.PerfCounterWatcher
-	DRAOutboundBytesCompressed winperfcounters.PerfCounterWatcher
-	DRAOutboundBytesNotCompressed winperfcounters.PerfCounterWatcher
-	DRAInboundFullSyncObjectsRemaining winperfcounters.PerfCounterWatcher
-	DRAInboundObjects winperfcounters.PerfCounterWatcher
-	DRAOutboundObjects winperfcounters.PerfCounterWatcher
-	DRAInboundProperties winperfcounters.PerfCounterWatcher
-	DRAOutboundProperties winperfcounters.PerfCounterWatcher
-	DRAInboundValuesDNs winperfcounters.PerfCounterWatcher
-	DRAInboundValuesTotal winperfcounters.PerfCounterWatcher
-	DRAOutboundValuesDNs winperfcounters.PerfCounterWatcher
-	DRAOutboundValuesTotal winperfcounters.PerfCounterWatcher
-	DRAPendingReplicationOperations winperfcounters.PerfCounterWatcher
-	DRASyncFailuresSchemaMismatch winperfcounters.PerfCounterWatcher
-	DRASyncRequestsSuccessful winperfcounters.PerfCounterWatcher
-	DRASyncRequestsMade winperfcounters.PerfCounterWatcher
-	DSDirectoryReads winperfcounters.PerfCounterWatcher
-	DSDirectoryWrites winperfcounters.PerfCounterWatcher
-	DSDirectorySearches winperfcounters.PerfCounterWatcher
-	DSClientBinds winperfcounters.PerfCounterWatcher
-	DSServerBinds winperfcounters.PerfCounterWatcher
-	DSNameCacheHitRate winperfcounters.PerfCounterWatcher
-	DSNotifyQueueSize winperfcounters.PerfCounterWatcher
+	DRAInboundBytesCompressed              winperfcounters.PerfCounterWatcher
+	DRAInboundBytesNotCompressed           winperfcounters.PerfCounterWatcher
+	DRAOutboundBytesCompressed             winperfcounters.PerfCounterWatcher
+	DRAOutboundBytesNotCompressed          winperfcounters.PerfCounterWatcher
+	DRAInboundFullSyncObjectsRemaining     winperfcounters.PerfCounterWatcher
+	DRAInboundObjects                      winperfcounters.PerfCounterWatcher
+	DRAOutboundObjects                     winperfcounters.PerfCounterWatcher
+	DRAInboundProperties                   winperfcounters.PerfCounterWatcher
+	DRAOutboundProperties                  winperfcounters.PerfCounterWatcher
+	DRAInboundValuesDNs                    winperfcounters.PerfCounterWatcher
+	DRAInboundValuesTotal                  winperfcounters.PerfCounterWatcher
+	DRAOutboundValuesDNs                   winperfcounters.PerfCounterWatcher
+	DRAOutboundValuesTotal                 winperfcounters.PerfCounterWatcher
+	DRAPendingReplicationOperations        winperfcounters.PerfCounterWatcher
+	DRASyncFailuresSchemaMismatch          winperfcounters.PerfCounterWatcher
+	DRASyncRequestsSuccessful              winperfcounters.PerfCounterWatcher
+	DRASyncRequestsMade                    winperfcounters.PerfCounterWatcher
+	DSDirectoryReads                       winperfcounters.PerfCounterWatcher
+	DSDirectoryWrites                      winperfcounters.PerfCounterWatcher
+	DSDirectorySearches                    winperfcounters.PerfCounterWatcher
+	DSClientBinds                          winperfcounters.PerfCounterWatcher
+	DSServerBinds                          winperfcounters.PerfCounterWatcher
+	DSNameCacheHitRate                     winperfcounters.PerfCounterWatcher
+	DSNotifyQueueSize                      winperfcounters.PerfCounterWatcher
 	DSSecurityDescriptorPropagationsEvents winperfcounters.PerfCounterWatcher
-	DSSearchSubOperations winperfcounters.PerfCounterWatcher
-	DSSecurityDescripterSubOperations winperfcounters.PerfCounterWatcher
-	DSThreadsInUse winperfcounters.PerfCounterWatcher
-	LDAPClientSessions winperfcounters.PerfCounterWatcher
-	LDAPBindTime winperfcounters.PerfCounterWatcher
-	LDAPSuccessfulBinds winperfcounters.PerfCounterWatcher
-	LDAPSearches winperfcounters.PerfCounterWatcher
+	DSSearchSubOperations                  winperfcounters.PerfCounterWatcher
+	DSSecurityDescripterSubOperations      winperfcounters.PerfCounterWatcher
+	DSThreadsInUse                         winperfcounters.PerfCounterWatcher
+	LDAPClientSessions                     winperfcounters.PerfCounterWatcher
+	LDAPBindTime                           winperfcounters.PerfCounterWatcher
+	LDAPSuccessfulBinds                    winperfcounters.PerfCounterWatcher
+	LDAPSearches                           winperfcounters.PerfCounterWatcher
 }
 
 func getWatchers() (*watchers, error) {
@@ -214,51 +214,51 @@ func getWatchers() (*watchers, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &watchers{
-		DRAInboundBytesCompressed: DRAInboundBytesCompressed,
-		DRAInboundBytesNotCompressed: DRAInboundBytesNotCompressed,
-		DRAOutboundBytesCompressed: DRAOutboundBytesCompressed,
-		DRAOutboundBytesNotCompressed: DRAOutboundBytesNotCompressed,
-		DRAInboundFullSyncObjectsRemaining: DRAInboundFullSyncObjectsRemaining,
-		DRAInboundObjects: DRAInboundObjects,
-		DRAOutboundObjects: DRAOutboundObjects,
-		DRAInboundProperties: DRAInboundProperties,
-		DRAOutboundProperties: DRAOutboundProperties,
-		DRAInboundValuesDNs: DRAInboundValuesDNs,
-		DRAInboundValuesTotal: DRAInboundValuesTotal,
-		DRAOutboundValuesDNs: DRAOutboundValuesDNs,
-		DRAOutboundValuesTotal: DRAOutboundValuesTotal,
-		DRAPendingReplicationOperations: DRAPendingReplicationOperations,
-		DRASyncFailuresSchemaMismatch: DRASyncFailuresSchemaMismatch,
-		DRASyncRequestsSuccessful: DRASyncRequestsSuccessful,
-		DRASyncRequestsMade: DRASyncRequestsMade,
-		DSDirectoryReads: DSDirectoryReads,
-		DSDirectoryWrites: DSDirectoryWrites,
-		DSDirectorySearches: DSDirectorySearches,
-		DSClientBinds: DSClientBinds,
-		DSServerBinds: DSServerBinds,
-		DSNameCacheHitRate: DSNameCacheHitRate,
-		DSNotifyQueueSize: DSNotifyQueueSize,
+		DRAInboundBytesCompressed:              DRAInboundBytesCompressed,
+		DRAInboundBytesNotCompressed:           DRAInboundBytesNotCompressed,
+		DRAOutboundBytesCompressed:             DRAOutboundBytesCompressed,
+		DRAOutboundBytesNotCompressed:          DRAOutboundBytesNotCompressed,
+		DRAInboundFullSyncObjectsRemaining:     DRAInboundFullSyncObjectsRemaining,
+		DRAInboundObjects:                      DRAInboundObjects,
+		DRAOutboundObjects:                     DRAOutboundObjects,
+		DRAInboundProperties:                   DRAInboundProperties,
+		DRAOutboundProperties:                  DRAOutboundProperties,
+		DRAInboundValuesDNs:                    DRAInboundValuesDNs,
+		DRAInboundValuesTotal:                  DRAInboundValuesTotal,
+		DRAOutboundValuesDNs:                   DRAOutboundValuesDNs,
+		DRAOutboundValuesTotal:                 DRAOutboundValuesTotal,
+		DRAPendingReplicationOperations:        DRAPendingReplicationOperations,
+		DRASyncFailuresSchemaMismatch:          DRASyncFailuresSchemaMismatch,
+		DRASyncRequestsSuccessful:              DRASyncRequestsSuccessful,
+		DRASyncRequestsMade:                    DRASyncRequestsMade,
+		DSDirectoryReads:                       DSDirectoryReads,
+		DSDirectoryWrites:                      DSDirectoryWrites,
+		DSDirectorySearches:                    DSDirectorySearches,
+		DSClientBinds:                          DSClientBinds,
+		DSServerBinds:                          DSServerBinds,
+		DSNameCacheHitRate:                     DSNameCacheHitRate,
+		DSNotifyQueueSize:                      DSNotifyQueueSize,
 		DSSecurityDescriptorPropagationsEvents: DSSecurityDescriptorPropagationsEvents,
-		DSSearchSubOperations: DSSearchSubOperations,
-		DSSecurityDescripterSubOperations: DSSecurityDescripterSubOperations,
-		DSThreadsInUse: DSThreadsInUse,
-		LDAPClientSessions: LDAPClientSessions,
-		LDAPBindTime: LDAPBindTime,
-		LDAPSuccessfulBinds: LDAPSuccessfulBinds,
-		LDAPSearches: LDAPSearches,
+		DSSearchSubOperations:                  DSSearchSubOperations,
+		DSSecurityDescripterSubOperations:      DSSecurityDescripterSubOperations,
+		DSThreadsInUse:                         DSThreadsInUse,
+		LDAPClientSessions:                     LDAPClientSessions,
+		LDAPBindTime:                           LDAPBindTime,
+		LDAPSuccessfulBinds:                    LDAPSuccessfulBinds,
+		LDAPSearches:                           LDAPSearches,
 	}, nil
 }
 
 const (
 	instanceName = "NTDS"
-	object  = "DirectoryServices"
+	object       = "DirectoryServices"
 )
 
 func createWatcher(counterName string) (winperfcounters.PerfCounterWatcher, error) {
 	conf := winperfcounters.ObjectConfig{
-		Object: object,
+		Object:    object,
 		Instances: []string{instanceName},
 		Counters: []winperfcounters.CounterConfig{
 			{

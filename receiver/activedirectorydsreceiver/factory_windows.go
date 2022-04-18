@@ -42,16 +42,16 @@ func createMetricsReceiver(
 
 	adds := newActiveDirectoryDSScraper(c.Metrics)
 	scraper, err := scraperhelper.NewScraper(
-		typeStr, 
-		adds.scrape, 
-		scraperhelper.WithStart(adds.start), 
+		typeStr,
+		adds.scrape,
+		scraperhelper.WithStart(adds.start),
 		scraperhelper.WithShutdown(adds.shutdown),
 	)
 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return scraperhelper.NewScraperControllerReceiver(
 		&c.ScraperControllerSettings,
 		params,

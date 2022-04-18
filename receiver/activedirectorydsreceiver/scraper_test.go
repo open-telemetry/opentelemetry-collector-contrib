@@ -208,7 +208,7 @@ func TestScrape(t *testing.T) {
 
 	t.Run("Double shutdown does not error", func(t *testing.T) {
 		t.Parallel()
-		
+
 		mockWatchers := &watchers{
 			DRAInboundBytesCompressed:              mockPerfCounterWatcher{val: 0},
 			DRAInboundBytesNotCompressed:           mockPerfCounterWatcher{val: 1},

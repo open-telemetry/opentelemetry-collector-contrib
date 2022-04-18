@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-
 var errReceiverNotSupported = fmt.Errorf("The '%s' receiver is only supported on Windows", typeStr)
 
 func createMetricsReceiver(

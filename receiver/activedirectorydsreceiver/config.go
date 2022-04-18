@@ -22,5 +22,5 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }

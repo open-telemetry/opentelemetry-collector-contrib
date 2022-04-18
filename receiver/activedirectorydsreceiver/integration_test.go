@@ -33,16 +33,16 @@ import (
 	TestIntegration test scraping metrics from a running Active Directory domain controller.
 	The domain controller must be set up locally outside of this test in order for it to pass.
 */
-func TestIntegration(t *testing.T){
+func TestIntegration(t *testing.T) {
 	t.Parallel()
-	
+
 	fact := NewFactory()
 
 	consumer := &consumertest.MetricsSink{}
 	recv, err := fact.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), fact.CreateDefaultConfig(), consumer)
 
 	require.NoError(t, err)
-	
+
 	err = recv.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 

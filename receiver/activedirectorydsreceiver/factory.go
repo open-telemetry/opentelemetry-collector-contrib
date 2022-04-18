@@ -26,7 +26,7 @@ import (
 
 const (
 	defaultCollectionInterval = 10 * time.Second
-	typeStr = "active_directory_ds"
+	typeStr                   = "active_directory_ds"
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -36,7 +36,6 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver),
 	)
 }
-
 
 func createDefaultConfig() config.Receiver {
 	return &Config{

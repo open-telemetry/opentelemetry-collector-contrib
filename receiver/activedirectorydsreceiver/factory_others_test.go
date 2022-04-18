@@ -28,7 +28,7 @@ import (
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	t.Parallel()
-	
+
 	recv, err := createMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, &Config{}, &consumertest.MetricsSink{})
 	require.Nil(t, recv)
 	require.ErrorIs(t, err, errReceiverNotSupported)
