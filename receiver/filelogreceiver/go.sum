@@ -150,8 +150,8 @@ github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYhe
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc h1:49ewVBwLcy+eYqI4R0ICilCI4dPjddpFXWv3liXzUxM=
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc/go.mod h1:WXIHwGy+c7/IK2PiJ4oxuTHkpnkSut7TNFpKnI5llPU=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-log-collection v0.29.0 h1:8P3dU3fuuUkdzkCvfMJyaqpvD1Hf4nnno6PlLjq3t50=
-github.com/open-telemetry/opentelemetry-log-collection v0.29.0/go.mod h1:jc765D8x90g+kMfDSSb0MxoEURxoCxz1fV0dutvzlrc=
+github.com/open-telemetry/opentelemetry-log-collection v0.29.1 h1:/Norji0OWQelS2sruZwjckJiKWrP9LO0LZd23KhWXfQ=
+github.com/open-telemetry/opentelemetry-log-collection v0.29.1/go.mod h1:jc765D8x90g+kMfDSSb0MxoEURxoCxz1fV0dutvzlrc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=
 github.com/pelletier/go-toml v1.9.4 h1:tjENF6MfZAg8e4ZmZTeWaWiT2vXtsoO6+iuOjFhECwM=
