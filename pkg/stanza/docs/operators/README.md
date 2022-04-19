@@ -1,21 +1,14 @@
-## What is an operator?
-An operator is the most basic unit of log processing. Each operator fulfills a single responsibility, such as reading lines from a file, or parsing JSON from a field. Operators are then chained together in a pipeline to achieve a desired result.
+## Status
 
-For instance, a user may read lines from a file using the `file_input` operator. From there, the results of this operation may be sent to a `regex_parser` operator that creates fields based on a regex pattern. And then finally, these results may be sent to a `elastic_output` operator that writes each line to Elasticsearch.
+This library is in the process of being transferred from the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) repository. The code is not yet being used by the collector.
+
+## What is an operator?
+An operator is a step in a log processing pipeline. It is used to perform a single action on a log entry, such as reading lines from a file, or parsing JSON from a field. Operators are used in log receivers to interpret logs into OpenTelemetry's log data model.
+
+For instance, a user may read lines from a file using the `file_input` operator. From there, the results of this operation may be sent to a `regex_parser` operator that isolate fields based on a regex pattern. Finally, it is common to convert fields into the log data model's top-level fields, such as timestamp, severity, scope, and trace.
 
 
 ## What operators are available?
-
-Inputs:
-- [file_input](/docs/operators/file_input.md)
-- [generate_input](/docs/operators/generate_input.md)
-- [journald_input](/docs/operators/journald_input.md)
-- [k8s_event_input](/docs/operators/k8s_event_input.md)
-- [stdin](/docs/operators/stdin.md)
-- [syslog_input](/docs/operators/syslog_input.md)
-- [tcp_input](/docs/operators/tcp_input.md)
-- [udp_input](/docs/operators/udp_input.md)
-- [windows_eventlog_input](/docs/operators/windows_eventlog_input.md)
 
 Parsers:
 - [csv_parser](/docs/operators/csv_parser.md)
@@ -27,11 +20,7 @@ Parsers:
 - [trace_parser](/docs/operators/trace_parser.md)
 - [uri_parser](/docs/operators/uri_parser.md)
 
-Outputs:
-- [file_output](docs/operators/file_output.md)
-- [stdout](/docs/operators/stdout.md)
-
-General purpose:
+Transformers:
 - [add](/docs/operators/add.md)
 - [copy](/docs/operators/copy.md)
 - [filter](/docs/operators/filter.md)
@@ -43,4 +32,6 @@ General purpose:
 - [retain](/docs/operators/retain.md)
 - [router](/docs/operators/router.md)
 
-Or create your own [plugins](/docs/plugins.md) for a technology-specific use case.
+Outputs (Useful for debugging):
+- [file_output](docs/operators/file_output.md)
+- [stdout](/docs/operators/stdout.md)
