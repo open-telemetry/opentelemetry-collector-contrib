@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	errNoCredentialSource    = errors.New("no credential source provided")
+	errNoCredentialSource     = errors.New("no credential source provided")
 	errMultipleAuthenticators = errors.New("only one of `htpasswd` or `client_auth` can be specified")
 )
 
