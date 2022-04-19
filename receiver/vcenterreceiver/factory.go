@@ -53,13 +53,10 @@ func createDefaultConfig() config.Receiver {
 		MetricsConfig: &MetricsConfig{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				CollectionInterval: 5 * time.Minute,
+				CollectionInterval: 2 * time.Minute,
 			},
 			TLSClientSetting: configtls.TLSClientSetting{},
 			Metrics:          metadata.DefaultMetricsSettings(),
-			Endpoint:         "",
-			Username:         "",
-			Password:         "",
 		},
 	}
 }

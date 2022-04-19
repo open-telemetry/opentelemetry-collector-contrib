@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+// +build integration
+
 package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
 import (
@@ -20,19 +23,19 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/vmware/govmomi"
+	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vim25"
+	_ "github.com/vmware/govmomi/vsan/simulator"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
 func TestEndtoEnd_ESX(t *testing.T) {
-	sim := simulator.ESX()
-	defer sim.Remove()
-
-	sim.Run(func(ctx context.Context, c *vim25.Client) error {
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		cfg := &Config{
 			MetricsConfig: &MetricsConfig{
 				TLSClientSetting: configtls.TLSClientSetting{
@@ -47,6 +50,11 @@ func TestEndtoEnd_ESX(t *testing.T) {
 			Client:         c,
 			SessionManager: s,
 		}
+		scraper.client.vimDriver = c
+		scraper.client.finder = find.NewFinder(c)
+		// TODO: reenable after this is resolved => https://github.com/vmware/govmomi/issues/2813
+		scraper.vsanEnabled = false
+
 		rcvr := &vcenterReceiver{
 			config:  cfg,
 			scraper: scraper,
@@ -55,8 +63,13 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		err := rcvr.Start(ctx, componenttest.NewNopHost())
 		require.NoError(t, err)
 
+		sc, ok := rcvr.scraper.(*vcenterMetricScraper)
+		require.True(t, ok)
+		metrics, err := sc.scrape(ctx)
+		require.NoError(t, err)
+		require.NotEmpty(t, metrics)
+
 		err = rcvr.Shutdown(ctx)
 		require.NoError(t, err)
-		return nil
 	})
 }

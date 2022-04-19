@@ -84,11 +84,13 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 }
 
 func (vc *vcenterClient) ConnectVSAN(ctx context.Context) error {
-	vsanDriver, err := vsan.NewClient(ctx, vc.vimDriver)
-	if err != nil {
-		return err
+	if vc.vsanDriver == nil {
+		vsanDriver, err := vsan.NewClient(ctx, vc.vimDriver)
+		if err != nil {
+			return err
+		}
+		vc.vsanDriver = vsanDriver
 	}
-	vc.vsanDriver = vsanDriver
 	return nil
 }
 

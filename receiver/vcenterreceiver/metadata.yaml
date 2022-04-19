@@ -84,7 +84,7 @@ attributes:
       - write
 
 metrics:
-  vcenter.cluster.cpu.available:
+  vcenter.cluster.cpu.limit:
     enabled: true
     description: The amount of CPU available to the cluster
     unit: "{MHz}"
@@ -95,7 +95,7 @@ metrics:
     attributes: []
   vcenter.cluster.cpu.effective:
     enabled: true
-    description: The effective CPU available to the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+    description: The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
     unit: "{MHz}"
     sum:
       monotonic: false
@@ -104,14 +104,14 @@ metrics:
     attributes: []
   vcenter.cluster.cpu.used:
     enabled: true
-    description: The amount of CPU used by the cluster
+    description: The amount of CPU used by the cluster.
     unit: "{MHz}"
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
     attributes: []
-  vcenter.cluster.memory.available:
+  vcenter.cluster.memory.limit:
     enabled: true
     description: The available memory of the cluster.
     unit: By
@@ -122,7 +122,7 @@ metrics:
     attributes: []
   vcenter.cluster.memory.effective:
     enabled: true
-    description: The available memory of the cluster.
+    description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
     unit: By
     sum:
       monotonic: false
@@ -247,20 +247,16 @@ metrics:
     enabled: true
     description: The latency of operations to the host system's disk.
     unit: ms
-    sum:
-      monotonic: false
+    gauge:
       value_type: int
-      aggregation: cumulative
     attributes: [latency_direction, latency_type]
     extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
   vcenter.host.disk.latency.total:
     enabled: true
     description: The total reported total latency (device and kernel times)
     unit: ms
-    sum:
-      monotonic: false
+    gauge:
       value_type: int
-      aggregation: cumulative
     attributes: [latency_direction]
   vcenter.host.memory.utilization:
     enabled: true
@@ -456,20 +452,16 @@ metrics:
     enabled: true
     description: The latency of operations to the virtual machine's disk
     unit: µs
-    sum:
-      monotonic: false
+    gauge:
       value_type: int
-      aggregation: cumulative
     attributes: [latency_direction]
     extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
   vcenter.vm.disk.latency.max:
     enabled: true
-    description: The highest reported total latency (device and kernel times)
+    description: The highest reported total latency (device and kernel times) over an interval of 20 seconds.
     unit: ms
-    sum:
-      monotonic: false
+    gauge:
       value_type: int
-      aggregation: cumulative
     attributes: []
   vcenter.vm.disk.throughput:
     enabled: true
@@ -521,8 +513,10 @@ metrics:
     enabled: true
     description: The VSAN throughput of a virtual machine
     unit: By/s
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation: cumulative
     attributes: [vsan_throughput_direction]
   vcenter.vm.vsan.latency.avg:
     enabled: true

@@ -8,12 +8,12 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **vcenter.cluster.cpu.available** | The amount of CPU available to the cluster | {MHz} | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.cpu.effective** | The effective CPU available to the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive. | {MHz} | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.cpu.used** | The amount of CPU used by the cluster | {MHz} | Sum(Int) | <ul> </ul> |
+| **vcenter.cluster.cpu.effective** | The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive. | {MHz} | Sum(Int) | <ul> </ul> |
+| **vcenter.cluster.cpu.limit** | The amount of CPU available to the cluster | {MHz} | Sum(Int) | <ul> </ul> |
+| **vcenter.cluster.cpu.used** | The amount of CPU used by the cluster. | {MHz} | Sum(Int) | <ul> </ul> |
 | **vcenter.cluster.host.count** | The number of hosts in the cluster | {hosts} | Sum(Int) | <ul> <li>host_effective</li> </ul> |
-| **vcenter.cluster.memory.available** | The available memory of the cluster. | By | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.memory.effective** | The available memory of the cluster. | By | Sum(Int) | <ul> </ul> |
+| **vcenter.cluster.memory.effective** | The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive. | By | Sum(Int) | <ul> </ul> |
+| **vcenter.cluster.memory.limit** | The available memory of the cluster. | By | Sum(Int) | <ul> </ul> |
 | **vcenter.cluster.memory.used** | The memory that is currently used by the cluster | By | Sum(Int) | <ul> </ul> |
 | **vcenter.cluster.vm.count** | the number of virtual machines in the cluster | {virtual_machines} | Sum(Int) | <ul> <li>vm_count_power_state</li> </ul> |
 | **vcenter.cluster.vsan.congestions** | Congestions consumed by all vSAN clients in the cluster, such as virtual machines, stats objects, etc. | {congestions/sec} | Sum(Int) | <ul> </ul> |
@@ -25,8 +25,8 @@ These are the metrics available for this scraper.
 | **vcenter.datastore.disk.utilization** | The utilization of the datastore | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.host.cpu.usage** | The amount of CPU in Hz used by the host | MHz | Sum(Int) | <ul> </ul> |
 | **vcenter.host.cpu.utilization** | The CPU utilization of the host system | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Sum(Int) | <ul> <li>latency_direction</li> <li>latency_type</li> </ul> |
-| **vcenter.host.disk.latency.total** | The total reported total latency (device and kernel times) | ms | Sum(Int) | <ul> <li>latency_direction</li> </ul> |
+| **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> <li>latency_direction</li> <li>latency_type</li> </ul> |
+| **vcenter.host.disk.latency.total** | The total reported total latency (device and kernel times) | ms | Gauge(Int) | <ul> <li>latency_direction</li> </ul> |
 | **vcenter.host.disk.throughput** | The throughput to the host system's disk | By/s | Sum(Int) | <ul> </ul> |
 | **vcenter.host.memory.usage** | The amount of memory the host system is using | MBy | Sum(Int) | <ul> </ul> |
 | **vcenter.host.memory.utilization** | The percentage of the host system's memory capacity that is being utilized | % | Gauge(Double) | <ul> </ul> |
@@ -46,8 +46,8 @@ These are the metrics available for this scraper.
 | **vcenter.resource_pool.memory.shares** | The amount of shares of memory in the resource pool | {shares} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.memory.usage** | The usage of the memory by the resource pool | MBy | Sum(Int) | <ul> </ul> |
 | **vcenter.vm.cpu.utilization** | The CPU utilization of the virtual machine | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.vm.disk.latency.avg** | The latency of operations to the virtual machine's disk This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | µs | Sum(Int) | <ul> <li>latency_direction</li> </ul> |
-| **vcenter.vm.disk.latency.max** | The highest reported total latency (device and kernel times) | ms | Sum(Int) | <ul> </ul> |
+| **vcenter.vm.disk.latency.avg** | The latency of operations to the virtual machine's disk This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | µs | Gauge(Int) | <ul> <li>latency_direction</li> </ul> |
+| **vcenter.vm.disk.latency.max** | The highest reported total latency (device and kernel times) over an interval of 20 seconds. | ms | Gauge(Int) | <ul> </ul> |
 | **vcenter.vm.disk.throughput** | The throughput of the virtual machine's disk | By/sec | Sum(Int) | <ul> </ul> |
 | **vcenter.vm.disk.usage** | The amount of storage space the virtual machine is using | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
 | **vcenter.vm.disk.utilization** | The utilization of storage on the virtual machine | % | Gauge(Double) | <ul> </ul> |
@@ -58,7 +58,7 @@ These are the metrics available for this scraper.
 | **vcenter.vm.network.usage** | The network utilization combined transmit and receive rates during an interval. | {KBy/s} | Sum(Int) | <ul> </ul> |
 | **vcenter.vm.vsan.latency.avg** | The latency while accessing VSAN storage | us | Gauge(Int) | <ul> <li>vsan_latency_type</li> </ul> |
 | **vcenter.vm.vsan.operations** | Virtual Machine vSAN IOPs | {operations/sec} | Sum(Int) | <ul> <li>vsan_operation_type</li> </ul> |
-| **vcenter.vm.vsan.throughput** | The VSAN throughput of a virtual machine | By/s | Gauge(Int) | <ul> <li>vsan_throughput_direction</li> </ul> |
+| **vcenter.vm.vsan.throughput** | The VSAN throughput of a virtual machine | By/s | Sum(Int) | <ul> <li>vsan_throughput_direction</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:

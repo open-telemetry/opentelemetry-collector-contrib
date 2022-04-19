@@ -16,12 +16,12 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for vmwarevcenterreceiver metrics.
 type MetricsSettings struct {
-	VcenterClusterCPUAvailable      MetricSettings `mapstructure:"vcenter.cluster.cpu.available"`
 	VcenterClusterCPUEffective      MetricSettings `mapstructure:"vcenter.cluster.cpu.effective"`
+	VcenterClusterCPULimit          MetricSettings `mapstructure:"vcenter.cluster.cpu.limit"`
 	VcenterClusterCPUUsed           MetricSettings `mapstructure:"vcenter.cluster.cpu.used"`
 	VcenterClusterHostCount         MetricSettings `mapstructure:"vcenter.cluster.host.count"`
-	VcenterClusterMemoryAvailable   MetricSettings `mapstructure:"vcenter.cluster.memory.available"`
 	VcenterClusterMemoryEffective   MetricSettings `mapstructure:"vcenter.cluster.memory.effective"`
+	VcenterClusterMemoryLimit       MetricSettings `mapstructure:"vcenter.cluster.memory.limit"`
 	VcenterClusterMemoryUsed        MetricSettings `mapstructure:"vcenter.cluster.memory.used"`
 	VcenterClusterVMCount           MetricSettings `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterClusterVsanCongestions   MetricSettings `mapstructure:"vcenter.cluster.vsan.congestions"`
@@ -71,10 +71,10 @@ type MetricsSettings struct {
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
-		VcenterClusterCPUAvailable: MetricSettings{
+		VcenterClusterCPUEffective: MetricSettings{
 			Enabled: true,
 		},
-		VcenterClusterCPUEffective: MetricSettings{
+		VcenterClusterCPULimit: MetricSettings{
 			Enabled: true,
 		},
 		VcenterClusterCPUUsed: MetricSettings{
@@ -83,10 +83,10 @@ func DefaultMetricsSettings() MetricsSettings {
 		VcenterClusterHostCount: MetricSettings{
 			Enabled: true,
 		},
-		VcenterClusterMemoryAvailable: MetricSettings{
+		VcenterClusterMemoryEffective: MetricSettings{
 			Enabled: true,
 		},
-		VcenterClusterMemoryEffective: MetricSettings{
+		VcenterClusterMemoryLimit: MetricSettings{
 			Enabled: true,
 		},
 		VcenterClusterMemoryUsed: MetricSettings{
@@ -227,57 +227,6 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-type metricVcenterClusterCPUAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.cpu.available metric with initial data.
-func (m *metricVcenterClusterCPUAvailable) init() {
-	m.data.SetName("vcenter.cluster.cpu.available")
-	m.data.SetDescription("The amount of CPU available to the cluster")
-	m.data.SetUnit("{MHz}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterClusterCPUAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterCPUAvailable) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterCPUAvailable) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterCPUAvailable(settings MetricSettings) metricVcenterClusterCPUAvailable {
-	m := metricVcenterClusterCPUAvailable{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricVcenterClusterCPUEffective struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -287,7 +236,7 @@ type metricVcenterClusterCPUEffective struct {
 // init fills vcenter.cluster.cpu.effective metric with initial data.
 func (m *metricVcenterClusterCPUEffective) init() {
 	m.data.SetName("vcenter.cluster.cpu.effective")
-	m.data.SetDescription("The effective CPU available to the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.")
+	m.data.SetDescription("The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.")
 	m.data.SetUnit("{MHz}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -329,6 +278,57 @@ func newMetricVcenterClusterCPUEffective(settings MetricSettings) metricVcenterC
 	return m
 }
 
+type metricVcenterClusterCPULimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.cluster.cpu.limit metric with initial data.
+func (m *metricVcenterClusterCPULimit) init() {
+	m.data.SetName("vcenter.cluster.cpu.limit")
+	m.data.SetDescription("The amount of CPU available to the cluster")
+	m.data.SetUnit("{MHz}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterClusterCPULimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterClusterCPULimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterClusterCPULimit) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterClusterCPULimit(settings MetricSettings) metricVcenterClusterCPULimit {
+	m := metricVcenterClusterCPULimit{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterClusterCPUUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -338,7 +338,7 @@ type metricVcenterClusterCPUUsed struct {
 // init fills vcenter.cluster.cpu.used metric with initial data.
 func (m *metricVcenterClusterCPUUsed) init() {
 	m.data.SetName("vcenter.cluster.cpu.used")
-	m.data.SetDescription("The amount of CPU used by the cluster")
+	m.data.SetDescription("The amount of CPU used by the cluster.")
 	m.data.SetUnit("{MHz}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -433,57 +433,6 @@ func newMetricVcenterClusterHostCount(settings MetricSettings) metricVcenterClus
 	return m
 }
 
-type metricVcenterClusterMemoryAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.memory.available metric with initial data.
-func (m *metricVcenterClusterMemoryAvailable) init() {
-	m.data.SetName("vcenter.cluster.memory.available")
-	m.data.SetDescription("The available memory of the cluster.")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterClusterMemoryAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterMemoryAvailable) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterMemoryAvailable) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterMemoryAvailable(settings MetricSettings) metricVcenterClusterMemoryAvailable {
-	m := metricVcenterClusterMemoryAvailable{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricVcenterClusterMemoryEffective struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -493,7 +442,7 @@ type metricVcenterClusterMemoryEffective struct {
 // init fills vcenter.cluster.memory.effective metric with initial data.
 func (m *metricVcenterClusterMemoryEffective) init() {
 	m.data.SetName("vcenter.cluster.memory.effective")
-	m.data.SetDescription("The available memory of the cluster.")
+	m.data.SetDescription("The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -528,6 +477,57 @@ func (m *metricVcenterClusterMemoryEffective) emit(metrics pmetric.MetricSlice) 
 
 func newMetricVcenterClusterMemoryEffective(settings MetricSettings) metricVcenterClusterMemoryEffective {
 	m := metricVcenterClusterMemoryEffective{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterClusterMemoryLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.cluster.memory.limit metric with initial data.
+func (m *metricVcenterClusterMemoryLimit) init() {
+	m.data.SetName("vcenter.cluster.memory.limit")
+	m.data.SetDescription("The available memory of the cluster.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterClusterMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterClusterMemoryLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterClusterMemoryLimit) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterClusterMemoryLimit(settings MetricSettings) metricVcenterClusterMemoryLimit {
+	m := metricVcenterClusterMemoryLimit{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1113,17 +1113,15 @@ func (m *metricVcenterHostDiskLatencyAvg) init() {
 	m.data.SetName("vcenter.host.disk.latency.avg")
 	m.data.SetDescription("The latency of operations to the host system's disk.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string, latencyTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -1133,14 +1131,14 @@ func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestam
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterHostDiskLatencyAvg) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterHostDiskLatencyAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1167,17 +1165,15 @@ func (m *metricVcenterHostDiskLatencyTotal) init() {
 	m.data.SetName("vcenter.host.disk.latency.total")
 	m.data.SetDescription("The total reported total latency (device and kernel times)")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricVcenterHostDiskLatencyTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -1186,14 +1182,14 @@ func (m *metricVcenterHostDiskLatencyTotal) recordDataPoint(start pcommon.Timest
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterHostDiskLatencyTotal) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterHostDiskLatencyTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2195,17 +2191,15 @@ func (m *metricVcenterVMDiskLatencyAvg) init() {
 	m.data.SetName("vcenter.vm.disk.latency.avg")
 	m.data.SetDescription("The latency of operations to the virtual machine's disk")
 	m.data.SetUnit("µs")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -2214,14 +2208,14 @@ func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp,
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterVMDiskLatencyAvg) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterVMDiskLatencyAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2246,18 +2240,16 @@ type metricVcenterVMDiskLatencyMax struct {
 // init fills vcenter.vm.disk.latency.max metric with initial data.
 func (m *metricVcenterVMDiskLatencyMax) init() {
 	m.data.SetName("vcenter.vm.disk.latency.max")
-	m.data.SetDescription("The highest reported total latency (device and kernel times)")
+	m.data.SetDescription("The highest reported total latency (device and kernel times) over an interval of 20 seconds.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
 func (m *metricVcenterVMDiskLatencyMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -2265,14 +2257,14 @@ func (m *metricVcenterVMDiskLatencyMax) recordDataPoint(start pcommon.Timestamp,
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterVMDiskLatencyMax) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterVMDiskLatencyMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2815,15 +2807,17 @@ func (m *metricVcenterVMVsanThroughput) init() {
 	m.data.SetName("vcenter.vm.vsan.throughput")
 	m.data.SetDescription("The VSAN throughput of a virtual machine")
 	m.data.SetUnit("By/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricVcenterVMVsanThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanThroughputDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -2832,14 +2826,14 @@ func (m *metricVcenterVMVsanThroughput) recordDataPoint(start pcommon.Timestamp,
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterVMVsanThroughput) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterVMVsanThroughput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2862,12 +2856,12 @@ type MetricsBuilder struct {
 	metricsCapacity                       int               // maximum observed number of metrics per resource.
 	resourceCapacity                      int               // maximum observed number of resource attributes.
 	metricsBuffer                         pmetric.Metrics   // accumulates metrics data before emitting.
-	metricVcenterClusterCPUAvailable      metricVcenterClusterCPUAvailable
 	metricVcenterClusterCPUEffective      metricVcenterClusterCPUEffective
+	metricVcenterClusterCPULimit          metricVcenterClusterCPULimit
 	metricVcenterClusterCPUUsed           metricVcenterClusterCPUUsed
 	metricVcenterClusterHostCount         metricVcenterClusterHostCount
-	metricVcenterClusterMemoryAvailable   metricVcenterClusterMemoryAvailable
 	metricVcenterClusterMemoryEffective   metricVcenterClusterMemoryEffective
+	metricVcenterClusterMemoryLimit       metricVcenterClusterMemoryLimit
 	metricVcenterClusterMemoryUsed        metricVcenterClusterMemoryUsed
 	metricVcenterClusterVMCount           metricVcenterClusterVMCount
 	metricVcenterClusterVsanCongestions   metricVcenterClusterVsanCongestions
@@ -2929,12 +2923,12 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	mb := &MetricsBuilder{
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                         pmetric.NewMetrics(),
-		metricVcenterClusterCPUAvailable:      newMetricVcenterClusterCPUAvailable(settings.VcenterClusterCPUAvailable),
 		metricVcenterClusterCPUEffective:      newMetricVcenterClusterCPUEffective(settings.VcenterClusterCPUEffective),
+		metricVcenterClusterCPULimit:          newMetricVcenterClusterCPULimit(settings.VcenterClusterCPULimit),
 		metricVcenterClusterCPUUsed:           newMetricVcenterClusterCPUUsed(settings.VcenterClusterCPUUsed),
 		metricVcenterClusterHostCount:         newMetricVcenterClusterHostCount(settings.VcenterClusterHostCount),
-		metricVcenterClusterMemoryAvailable:   newMetricVcenterClusterMemoryAvailable(settings.VcenterClusterMemoryAvailable),
 		metricVcenterClusterMemoryEffective:   newMetricVcenterClusterMemoryEffective(settings.VcenterClusterMemoryEffective),
+		metricVcenterClusterMemoryLimit:       newMetricVcenterClusterMemoryLimit(settings.VcenterClusterMemoryLimit),
 		metricVcenterClusterMemoryUsed:        newMetricVcenterClusterMemoryUsed(settings.VcenterClusterMemoryUsed),
 		metricVcenterClusterVMCount:           newMetricVcenterClusterVMCount(settings.VcenterClusterVMCount),
 		metricVcenterClusterVsanCongestions:   newMetricVcenterClusterVsanCongestions(settings.VcenterClusterVsanCongestions),
@@ -3055,12 +3049,12 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/vmwarevcenterreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricVcenterClusterCPUAvailable.emit(ils.Metrics())
 	mb.metricVcenterClusterCPUEffective.emit(ils.Metrics())
+	mb.metricVcenterClusterCPULimit.emit(ils.Metrics())
 	mb.metricVcenterClusterCPUUsed.emit(ils.Metrics())
 	mb.metricVcenterClusterHostCount.emit(ils.Metrics())
-	mb.metricVcenterClusterMemoryAvailable.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryEffective.emit(ils.Metrics())
+	mb.metricVcenterClusterMemoryLimit.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryUsed.emit(ils.Metrics())
 	mb.metricVcenterClusterVMCount.emit(ils.Metrics())
 	mb.metricVcenterClusterVsanCongestions.emit(ils.Metrics())
@@ -3122,14 +3116,14 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordVcenterClusterCPUAvailableDataPoint adds a data point to vcenter.cluster.cpu.available metric.
-func (mb *MetricsBuilder) RecordVcenterClusterCPUAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterCPUAvailable.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordVcenterClusterCPUEffectiveDataPoint adds a data point to vcenter.cluster.cpu.effective metric.
 func (mb *MetricsBuilder) RecordVcenterClusterCPUEffectiveDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterClusterCPUEffective.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterClusterCPULimitDataPoint adds a data point to vcenter.cluster.cpu.limit metric.
+func (mb *MetricsBuilder) RecordVcenterClusterCPULimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterClusterCPULimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterClusterCPUUsedDataPoint adds a data point to vcenter.cluster.cpu.used metric.
@@ -3142,14 +3136,14 @@ func (mb *MetricsBuilder) RecordVcenterClusterHostCountDataPoint(ts pcommon.Time
 	mb.metricVcenterClusterHostCount.recordDataPoint(mb.startTime, ts, val, hostEffectiveAttributeValue)
 }
 
-// RecordVcenterClusterMemoryAvailableDataPoint adds a data point to vcenter.cluster.memory.available metric.
-func (mb *MetricsBuilder) RecordVcenterClusterMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordVcenterClusterMemoryEffectiveDataPoint adds a data point to vcenter.cluster.memory.effective metric.
 func (mb *MetricsBuilder) RecordVcenterClusterMemoryEffectiveDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterClusterMemoryEffective.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterClusterMemoryLimitDataPoint adds a data point to vcenter.cluster.memory.limit metric.
+func (mb *MetricsBuilder) RecordVcenterClusterMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterClusterMemoryLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterClusterMemoryUsedDataPoint adds a data point to vcenter.cluster.memory.used metric.

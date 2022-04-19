@@ -2,7 +2,7 @@
 
 This receiver fetches metrics from a vCenter or ESXi host running VMware vSphere APIs.
 
-Supported pipeline types: `metrics` and `logs`
+Supported pipeline types: `metrics` and `logs`(not implemented quite yet)
 
 > :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 
@@ -18,13 +18,13 @@ A “Read Only” user assigned to a vSphere with permissions to the vCenter ser
 
 ## Configuration
 
-Configuration is split up into `metrics` and `logging`
+Configuration is split up into `metrics` and `logs`
 
 ```yaml
 receivers:
     vcenter:
       metrics:
-      logging:
+      logs:
 ```
 
 ### Metrics Configuration
@@ -35,7 +35,7 @@ receivers:
 | username |  | String | Required |
 | password |  | String | Required |
 | tls | | TLSClientSetting | Not Required. Will use defaults for [configtls.TLSClientSetting](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). By default insecure settings are rejected and certificate verification is on. |
-| collection_interval | 5m | Duration | This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h` |
+| collection_interval | 2m | Duration | This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h` |
 
 ### Example Configuration
 

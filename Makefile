@@ -28,6 +28,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/postgresqlreceiver \
 	receiver/redisreceiver \
 	receiver/riakreceiver \
+	receiver/vcenterreceiver \
 	receiver/zookeeperreceiver \
 	extension/observer/dockerobserver
 
