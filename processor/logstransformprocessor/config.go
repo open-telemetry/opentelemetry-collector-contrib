@@ -39,4 +39,5 @@ func (cfg *Config) Validate() error {
 	if len(operators) == 0 {
 		return errors.New("no operators were configured for this logs transform processor")
 	}
+	return nil
 }
