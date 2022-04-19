@@ -91,7 +91,7 @@
 // RBAC
 //
 //The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters.
-//Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions:
+//Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods and namespaces in the cluster:
 //
 //      apiVersion: v1
 //      kind: ServiceAccount
