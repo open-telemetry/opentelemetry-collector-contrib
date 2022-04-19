@@ -16,7 +16,7 @@ DISTDIR=dist
   mkdir -p $DISTDIR
   rm -rf $DISTDIR/*
 
- for d in exporter/*/ opentelemetry-instrumentation/ opentelemetry-distro/ instrumentation/*/ propagator/*/ sdk-extension/*/ util/*/ ; do
+ for d in exporter/*/ opentelemetry-instrumentation/ opentelemetry-contrib-instrumentations/ opentelemetry-distro/ instrumentation/*/ propagator/*/ sdk-extension/*/ util/*/ ; do
    (
      echo "building $d"
      cd "$d"
