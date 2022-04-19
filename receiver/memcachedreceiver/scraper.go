@@ -177,8 +177,6 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	// What do I emit? The generated code expects ResourceOptions but the metadata specified no resources
-
 	return r.mb.Emit(), nil
 }
 
