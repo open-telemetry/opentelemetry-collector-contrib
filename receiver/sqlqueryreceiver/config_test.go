@@ -15,6 +15,7 @@
 package sqlqueryreceiver
 
 import (
+	"fmt"
 	"path"
 	"testing"
 	"time"
@@ -27,9 +28,8 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	cfg := createDefaultConfig()
-	sqlCfg := cfg.(*Config)
-	assert.Equal(t, 10*time.Second, sqlCfg.ScraperControllerSettings.CollectionInterval)
+	cfg := createDefaultConfig().(*Config)
+	assert.Equal(t, 10*time.Second, cfg.ScraperControllerSettings.CollectionInterval)
 }
 
 func TestParseConfig(t *testing.T) {
@@ -47,4 +47,34 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, "val.count", metric.MetricName)
 	assert.Equal(t, "count", metric.ValueColumn)
 	assert.Equal(t, "type", metric.AttributeColumns[0])
+	assert.Equal(t, false, metric.Monotonic)
+	assert.Equal(t, MetricDataTypeGauge, metric.DataType)
+	assert.Equal(t, MetricValueTypeInt, metric.ValueType)
+	assert.Equal(t, MetricAggregationCumulative, metric.Aggregation)
+}
+
+func TestConfig_Validate_Invalid(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factories.Receivers[typeStr] = NewFactory()
+	cfgFiles := []string{
+		"config-invalid-datatype.yaml",
+		"config-invalid-valuetype.yaml",
+		"config-invalid-aggregation.yaml",
+		"config-invalid-missing-metricname.yaml",
+		"config-invalid-missing-valuecolumn.yaml",
+		"config-invalid-missing-sql.yaml",
+		"config-invalid-missing-queries.yaml",
+		"config-invalid-missing-driver.yaml",
+		"config-invalid-missing-metrics.yaml",
+		"config-invalid-missing-datasource.yaml",
+	}
+	for _, cfgFile := range cfgFiles {
+		_, err = servicetest.LoadConfigAndValidate(
+			path.Join("testdata", cfgFile),
+			factories,
+		)
+		fmt.Printf("err: ->%v<-\n", err)
+		require.Error(t, err)
+	}
 }

@@ -12,7 +12,7 @@ receivers:
             data_type: gauge
             value_type: int
             monotonic: false
-            aggregation: cumulative
+            aggregation: xyzcumulative
 exporters:
   nop:
 service:

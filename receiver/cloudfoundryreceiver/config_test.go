@@ -80,7 +80,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalid.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalid-datatype.yaml"), factories)
 
 	require.Error(t, err)
 }
