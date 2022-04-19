@@ -4,15 +4,15 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.48.1-0.20220412005140-8eb68f40028d
+	go.opentelemetry.io/collector v0.49.0
 	go.uber.org/multierr v1.8.0
 )
 
 require (
 	github.com/hashicorp/go-version v1.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
 	go.mongodb.org/mongo-driver v1.9.0
-	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/pdata v0.49.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -51,5 +51,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
-
-replace go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v0.0.0-20220412005140-8eb68f40028d
