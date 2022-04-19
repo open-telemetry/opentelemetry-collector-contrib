@@ -144,6 +144,7 @@ func (c *FromPdataConverter) Batch(pLogs pdata.Logs) error {
 			scope := rls.ScopeLogs().At(j)
 			item := fromConverterWorkerItem{
 				Resource:       rls.Resource(),
+				Scope:          scope,
 				LogRecordSlice: scope.LogRecords(),
 			}
 			select {
@@ -165,7 +166,9 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 		record := workerItem.LogRecordSlice.At(i)
 		entry := entry.Entry{}
 
-		entry.ScopeName = workerItem.Scope.Scope().Name()
+		if workerItem.Scope.Scope() != nil {
+			entry.ScopeName = workerItem.Scope.Scope().Name()
+		}
 		entry.Resource = valueToMap(workerItem.Resource.Attributes())
 		convertFrom(record, &entry)
 		result = append(result, &entry)
