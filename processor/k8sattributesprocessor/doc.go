@@ -90,7 +90,36 @@
 //
 // RBAC
 //
-// TODO: mention the required RBAC rules.
+//The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, across the entire cluster.
+//Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions:
+//
+//      apiVersion: v1
+//      kind: ServiceAccount
+//      metadata:
+//        name: collector
+//        namespace: tracing
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRole
+//      metadata:
+//        name: otel-collector
+//      rules:
+//      - apiGroups: [""]
+//        resources: ["pods", "namespaces"]
+//        verbs: ["get", "watch", "list"]
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRoleBinding
+//      metadata:
+//        name: otel-collector
+//      subjects:
+//      - kind: ServiceAccount
+//        name: collector
+//        namespace: tracing
+//      roleRef:
+//        kind: ClusterRole
+//        name: otel-collector
+//        apiGroup: rbac.authorization.k8s.io
 //
 // Config
 //
