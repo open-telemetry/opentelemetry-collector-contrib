@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -142,8 +141,8 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
-func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int, histogramSize int) pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int, histogramSize int) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 
 	for i := 0; i < rmCount; i++ {
 		rm := metrics.ResourceMetrics().AppendEmpty()
@@ -154,12 +153,12 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 		for j := 0; j < ilmCount; j++ {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
-			metric.SetDataType(pdata.MetricDataTypeHistogram)
-			metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.SetDataType(pmetric.MetricDataTypeHistogram)
+			metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 			for k := 0; k < dataPointCount; k++ {
 				dataPoint := metric.Histogram().DataPoints().AppendEmpty()
-				dataPoint.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
+				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				buckets := randUIntArr(histogramSize)
 				sort.Slice(buckets, func(i, j int) bool { return buckets[i] < buckets[j] })
 				dataPoint.SetBucketCounts(buckets)
@@ -383,7 +382,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					metrics := rm.ScopeMetrics().At(j).Metrics()
 					for k := 0; k < metrics.Len(); k++ {
 						metric := metrics.At(k)
-						assert.Equal(t, metric.Histogram().AggregationTemporality(), pdata.MetricAggregationTemporalityCumulative)
+						assert.Equal(t, metric.Histogram().AggregationTemporality(), pmetric.MetricAggregationTemporalityCumulative)
 						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
 							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}
