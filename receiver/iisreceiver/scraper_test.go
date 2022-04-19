@@ -26,6 +26,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -49,7 +52,6 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-	golden.WriteMetrics(expectedFile, actualMetrics)
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -59,8 +61,13 @@ func TestScrape(t *testing.T) {
 func TestScrapeFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
+	core, obs := observer.New(zapcore.WarnLevel)
+	logger := zap.New(core)
+	rcvrSettings := componenttest.NewNopReceiverCreateSettings()
+	rcvrSettings.Logger = logger
+
 	scraper := newIisReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		rcvrSettings,
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -70,8 +77,13 @@ func TestScrapeFailure(t *testing.T) {
 		newMockPerfCounter(fmt.Errorf(expectedError), 1, winperfcounters.MetricRep{Name: "iis.uptime"}),
 	}
 
-	_, err := scraper.scrape(context.Background())
-	require.EqualError(t, err, expectedError)
+	scraper.scrape(context.Background())
+
+	require.Equal(t, 1, obs.Len())
+	log := obs.All()[0]
+	require.Equal(t, log.Level, zapcore.WarnLevel)
+	require.Equal(t, "error", log.Context[0].Key)
+	require.EqualError(t, log.Context[0].Interface.(error), expectedError)
 }
 
 type mockPerfCounter struct {
