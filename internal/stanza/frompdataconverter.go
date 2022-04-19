@@ -166,9 +166,7 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 		record := workerItem.LogRecordSlice.At(i)
 		entry := entry.Entry{}
 
-		if workerItem.Scope.Scope() != nil {
-			entry.ScopeName = workerItem.Scope.Scope().Name()
-		}
+		entry.ScopeName = workerItem.Scope.Scope().Name()
 		entry.Resource = valueToMap(workerItem.Resource.Attributes())
 		convertFrom(record, &entry)
 		result = append(result, &entry)
