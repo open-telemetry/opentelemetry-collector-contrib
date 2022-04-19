@@ -53,8 +53,8 @@ func newClientAuthExtension(cfg *Config) (configauth.ClientAuthenticator, error)
 		clientAuth: cfg.ClientAuth,
 	}
 	return configauth.NewClientAuthenticator(
-		configauth.WithClientRoundTripper(ba.RoundTripper),
-		configauth.WithPerRPCCredentials(ba.PerRPCCredentials),
+		configauth.WithClientRoundTripper(ba.roundTripper),
+		configauth.WithPerRPCCredentials(ba.perRPCCredentials),
 	), nil
 }
 
@@ -199,6 +199,7 @@ func (*authData) GetAttributeNames() []string {
 	return []string{"username", "raw"}
 }
 
+// perRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
 type perRPCAuth struct {
 	metadata map[string]string
 }
@@ -224,7 +225,7 @@ func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response
 	return b.base.RoundTrip(newRequest)
 }
 
-func (ba *basicAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (ba *basicAuth) roundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	if strings.Contains(ba.clientAuth.Username, ":") {
 		return nil, errInvalidFormat
 	}
@@ -234,7 +235,7 @@ func (ba *basicAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
 	}, nil
 }
 
-func (ba *basicAuth) PerRPCCredentials() (creds.PerRPCCredentials, error) {
+func (ba *basicAuth) perRPCCredentials() (creds.PerRPCCredentials, error) {
 	if strings.Contains(ba.clientAuth.Username, ":") {
 		return nil, errInvalidFormat
 	}

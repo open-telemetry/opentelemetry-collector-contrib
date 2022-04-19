@@ -22,7 +22,7 @@ import (
 
 var (
 	errNoCredentialSource    = errors.New("no credential source provided")
-	errMultipleAuthenticator = errors.New("only one of `htpasswd` or `client_auth` can be specified")
+	errMultipleAuthenticators = errors.New("only one of `htpasswd` or `client_auth` can be specified")
 )
 
 type HtpasswdSettings struct {
@@ -53,7 +53,7 @@ func (cfg *Config) Validate() error {
 	clientCondition := cfg.ClientAuth != nil
 
 	if serverCondition && clientCondition {
-		return errMultipleAuthenticator
+		return errMultipleAuthenticators
 	}
 
 	if !serverCondition && !clientCondition {
