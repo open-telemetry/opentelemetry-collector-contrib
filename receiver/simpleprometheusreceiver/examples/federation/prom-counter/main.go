@@ -63,7 +63,7 @@ func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	logger.Info("Start Prometheus metrics app")
-	meter := global.MeterProvider().Meter("federation/prom-counter")
+	meter := global.Meter("federation/prom-counter")
 	valueRecorder, err := meter.SyncInt64().Histogram("prom_counter")
 	if err != nil {
 		log.Panicf("failed to initialize histogram %v", err)
