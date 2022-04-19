@@ -19,6 +19,7 @@ import (
 	"math"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -108,6 +109,7 @@ func (c *FromPdataConverter) OutChannel() <-chan []*entry.Entry {
 type fromConverterWorkerItem struct {
 	Resource       pdata.Resource
 	LogRecordSlice pdata.LogRecordSlice
+	Scope          pdata.ScopeLogs
 }
 
 // workerLoop is responsible for obtaining pdata logs from Batch() calls,
@@ -163,6 +165,7 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 		record := workerItem.LogRecordSlice.At(i)
 		entry := entry.Entry{}
 
+		entry.ScopeName = workerItem.Scope.Scope().Name()
 		entry.Resource = valueToMap(workerItem.Resource.Attributes())
 		convertFrom(record, &entry)
 		result = append(result, &entry)
@@ -179,7 +182,7 @@ func ConvertFrom(pLogs pdata.Logs) []*entry.Entry {
 		rls := pLogs.ResourceLogs().At(i)
 		for j := 0; j < rls.ScopeLogs().Len(); j++ {
 			scope := rls.ScopeLogs().At(j)
-			result = append(result, convertFromLogs(fromConverterWorkerItem{Resource: rls.Resource(), LogRecordSlice: scope.LogRecords()})...)
+			result = append(result, convertFromLogs(fromConverterWorkerItem{Resource: rls.Resource(), Scope: scope, LogRecordSlice: scope.LogRecords()})...)
 		}
 	}
 	return result
@@ -187,8 +190,19 @@ func ConvertFrom(pLogs pdata.Logs) []*entry.Entry {
 
 // convertFrom converts pdata.LogRecord into provided entry.Entry.
 func convertFrom(src pdata.LogRecord, ent *entry.Entry) {
-	ent.Timestamp = src.Timestamp().AsTime()
+	// if src.Timestamp == 0, then leave ent.Timestamp as nil
+	if src.Timestamp() != 0 {
+		ent.Timestamp = src.Timestamp().AsTime()
+	}
+
+	if src.ObservedTimestamp() == 0 {
+		ent.ObservedTimestamp = time.Now()
+	} else {
+		ent.ObservedTimestamp = src.ObservedTimestamp().AsTime()
+	}
+
 	ent.Severity = fromPdataSevMap[src.SeverityNumber()]
+	ent.SeverityText = src.SeverityText()
 
 	ent.Attributes = valueToMap(src.Attributes())
 	ent.Body = valueToInterface(src.Body())

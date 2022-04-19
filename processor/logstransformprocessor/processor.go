@@ -60,10 +60,6 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 		return err
 	}
 
-	if len(operators) == 0 {
-		return errors.New("no operators were configured for this logs transform processor")
-	}
-
 	emitterOpts := []stanza.LogEmitterOption{
 		stanza.LogEmitterWithLogger(ltp.logger.Sugar()),
 	}

@@ -65,6 +65,15 @@ func createLogsProcessor(
 	if !ok {
 		return nil, errors.New("could not initialize logs transform processor")
 	}
+
+	operators, err := pCfg.BaseConfig.DecodeOperatorConfigs()
+	if err != nil {
+		return nil, err
+	}
+	if len(operators) == 0 {
+		return nil, errors.New("no operators were configured for this logs transform processor")
+	}
+
 	proc := &logsTransformProcessor{
 		id:     cfg.ID(),
 		logger: params.Logger,
