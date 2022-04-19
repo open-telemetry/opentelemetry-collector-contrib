@@ -34,6 +34,9 @@
 - `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 - `attributesprocessor`: Remove log names from filters (#9131)
+- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
+  - Users may have to update monitoring for a few Kubernetes cpu metrics, for 
+    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
 
