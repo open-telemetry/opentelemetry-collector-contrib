@@ -65,7 +65,7 @@ func (s *consumerScraper) setupClient() error {
 }
 
 func (s *consumerScraper) shutdown(_ context.Context) error {
-	if !s.client.Closed() {
+	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
 	}
 	return nil

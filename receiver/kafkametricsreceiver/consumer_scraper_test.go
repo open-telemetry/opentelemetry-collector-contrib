@@ -77,6 +77,18 @@ func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
+	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+		return nil, fmt.Errorf("new client failed")
+	}
+	sc := sarama.NewConfig()
+	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, cs)
+	err = cs.Shutdown(context.Background())
+	assert.NoError(t, err)
+}
+
 func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
 	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
 		client := newMockClient()
