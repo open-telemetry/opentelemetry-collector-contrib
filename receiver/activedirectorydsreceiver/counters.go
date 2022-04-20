@@ -54,163 +54,163 @@ type watchers struct {
 	LDAPSearches                           winperfcounters.PerfCounterWatcher
 }
 
-func getWatchers() (*watchers, error) {
-	DRAInboundBytesCompressed, err := createWatcher("DRA Inbound Bytes Compressed (Between Sites, After Compression) Since Boot")
+func getWatchers(wc watcherCreater) (*watchers, error) {
+	DRAInboundBytesCompressed, err := wc.Create("DRA Inbound Bytes Compressed (Between Sites, After Compression) Since Boot")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAInboundBytesNotCompressed, err := createWatcher("DRA Inbound Bytes Not Compressed (Within Site) Since Boot")
+	DRAInboundBytesNotCompressed, err := wc.Create("DRA Inbound Bytes Not Compressed (Within Site) Since Boot")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAOutboundBytesCompressed, err := createWatcher("DRA Outbound Bytes Compressed (Between Sites, After Compression) Since Boot")
+	DRAOutboundBytesCompressed, err := wc.Create("DRA Outbound Bytes Compressed (Between Sites, After Compression) Since Boot")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAOutboundBytesNotCompressed, err := createWatcher("DRA Outbound Bytes Not Compressed (Within Site) Since Boot")
+	DRAOutboundBytesNotCompressed, err := wc.Create("DRA Outbound Bytes Not Compressed (Within Site) Since Boot")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAInboundFullSyncObjectsRemaining, err := createWatcher("DRA Inbound Full Sync Objects Remaining")
+	DRAInboundFullSyncObjectsRemaining, err := wc.Create("DRA Inbound Full Sync Objects Remaining")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAInboundObjects, err := createWatcher("DRA Inbound Objects/sec")
+	DRAInboundObjects, err := wc.Create("DRA Inbound Objects/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAOutboundObjects, err := createWatcher("DRA Outbound Objects/sec")
+	DRAOutboundObjects, err := wc.Create("DRA Outbound Objects/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAInboundProperties, err := createWatcher("DRA Inbound Properties Total/sec")
+	DRAInboundProperties, err := wc.Create("DRA Inbound Properties Total/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAOutboundProperties, err := createWatcher("DRA Outbound Properties/sec")
+	DRAOutboundProperties, err := wc.Create("DRA Outbound Properties/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAInboundValuesDNs, err := createWatcher("DRA Inbound Values (DNs only)/sec")
+	DRAInboundValuesDNs, err := wc.Create("DRA Inbound Values (DNs only)/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAInboundValuesTotal, err := createWatcher("DRA Inbound Values Total/sec")
+	DRAInboundValuesTotal, err := wc.Create("DRA Inbound Values Total/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAOutboundValuesDNs, err := createWatcher("DRA Outbound Values (DNs only)/sec")
+	DRAOutboundValuesDNs, err := wc.Create("DRA Outbound Values (DNs only)/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAOutboundValuesTotal, err := createWatcher("DRA Outbound Values Total/sec")
+	DRAOutboundValuesTotal, err := wc.Create("DRA Outbound Values Total/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DRAPendingReplicationOperations, err := createWatcher("DRA Pending Replication Operations")
+	DRAPendingReplicationOperations, err := wc.Create("DRA Pending Replication Operations")
 	if err != nil {
 		return nil, err
 	}
 
-	DRASyncFailuresSchemaMismatch, err := createWatcher("DRA Sync Failures on Schema Mismatch")
+	DRASyncFailuresSchemaMismatch, err := wc.Create("DRA Sync Failures on Schema Mismatch")
 	if err != nil {
 		return nil, err
 	}
 
-	DRASyncRequestsSuccessful, err := createWatcher("DRA Sync Requests Successful")
+	DRASyncRequestsSuccessful, err := wc.Create("DRA Sync Requests Successful")
 	if err != nil {
 		return nil, err
 	}
 
-	DRASyncRequestsMade, err := createWatcher("DRA Sync Requests Made")
+	DRASyncRequestsMade, err := wc.Create("DRA Sync Requests Made")
 	if err != nil {
 		return nil, err
 	}
 
-	DSDirectoryReads, err := createWatcher("DS Directory Reads/sec")
+	DSDirectoryReads, err := wc.Create("DS Directory Reads/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DSDirectoryWrites, err := createWatcher("DS Directory Writes/sec")
+	DSDirectoryWrites, err := wc.Create("DS Directory Writes/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DSDirectorySearches, err := createWatcher("DS Directory Searches/sec")
+	DSDirectorySearches, err := wc.Create("DS Directory Searches/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DSClientBinds, err := createWatcher("DS Client Binds/sec")
+	DSClientBinds, err := wc.Create("DS Client Binds/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DSServerBinds, err := createWatcher("DS Server Binds/sec")
+	DSServerBinds, err := wc.Create("DS Server Binds/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DSNameCacheHitRate, err := createWatcher("DS Name Cache hit rate")
+	DSNameCacheHitRate, err := wc.Create("DS Name Cache hit rate")
 	if err != nil {
 		return nil, err
 	}
 
-	DSNotifyQueueSize, err := createWatcher("DS Notify Queue Size")
+	DSNotifyQueueSize, err := wc.Create("DS Notify Queue Size")
 	if err != nil {
 		return nil, err
 	}
 
-	DSSecurityDescriptorPropagationsEvents, err := createWatcher("DS Security Descriptor Propagations Events")
+	DSSecurityDescriptorPropagationsEvents, err := wc.Create("DS Security Descriptor Propagations Events")
 	if err != nil {
 		return nil, err
 	}
 
-	DSSearchSubOperations, err := createWatcher("DS Search sub-operations/sec")
+	DSSearchSubOperations, err := wc.Create("DS Search sub-operations/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DSSecurityDescripterSubOperations, err := createWatcher("DS Security Descriptor sub-operations/sec")
+	DSSecurityDescripterSubOperations, err := wc.Create("DS Security Descriptor sub-operations/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	DSThreadsInUse, err := createWatcher("DS Threads in Use")
+	DSThreadsInUse, err := wc.Create("DS Threads in Use")
 	if err != nil {
 		return nil, err
 	}
 
-	LDAPClientSessions, err := createWatcher("LDAP Client Sessions")
+	LDAPClientSessions, err := wc.Create("LDAP Client Sessions")
 	if err != nil {
 		return nil, err
 	}
 
-	LDAPBindTime, err := createWatcher("LDAP Bind Time")
+	LDAPBindTime, err := wc.Create("LDAP Bind Time")
 	if err != nil {
 		return nil, err
 	}
 
-	LDAPSuccessfulBinds, err := createWatcher("LDAP Successful Binds/sec")
+	LDAPSuccessfulBinds, err := wc.Create("LDAP Successful Binds/sec")
 	if err != nil {
 		return nil, err
 	}
 
-	LDAPSearches, err := createWatcher("LDAP Searches/sec")
+	LDAPSearches, err := wc.Create("LDAP Searches/sec")
 	if err != nil {
 		return nil, err
 	}
@@ -251,12 +251,18 @@ func getWatchers() (*watchers, error) {
 	}, nil
 }
 
+type watcherCreater interface {
+	Create(counterName string) (winperfcounters.PerfCounterWatcher, error)
+}
+
 const (
 	instanceName = "NTDS"
 	object       = "DirectoryServices"
 )
 
-func createWatcher(counterName string) (winperfcounters.PerfCounterWatcher, error) {
+type defaultWatcherCreater struct {}
+
+func (defaultWatcherCreater) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
 	conf := winperfcounters.ObjectConfig{
 		Object:    object,
 		Instances: []string{instanceName},

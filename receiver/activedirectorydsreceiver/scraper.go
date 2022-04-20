@@ -43,7 +43,7 @@ func newActiveDirectoryDSScraper(ms metadata.MetricsSettings) *activeDirectoryDS
 }
 
 func (a *activeDirectoryDSScraper) start(ctx context.Context, host component.Host) error {
-	watchers, err := getWatchers()
+	watchers, err := getWatchers(defaultWatcherCreater{})
 	if err != nil {
 		return fmt.Errorf("failed to create performance counter watchers: %w", err)
 	}
