@@ -147,7 +147,7 @@ metrics:
     attributes: [double_writes]
   mysql.log_operations:
     enabled: true
-    description: The number of InndoDB log operations.
+    description: The number of InnoDB log operations.
     unit: 1
     sum:
       value_type: int
@@ -157,7 +157,7 @@ metrics:
     attributes: [log_operations]
   mysql.operations:
     enabled: true
-    description: The number of InndoDB operations.
+    description: The number of InnoDB operations.
     unit: 1
     sum:
       value_type: int
@@ -167,7 +167,7 @@ metrics:
     attributes: [operations]
   mysql.page_operations:
     enabled: true
-    description: The number of InndoDB page operations.
+    description: The number of InnoDB page operations.
     unit: 1
     sum:
       value_type: int
@@ -177,7 +177,7 @@ metrics:
     attributes: [page_operations]
   mysql.row_locks:
     enabled: true
-    description: The number of InndoDB row locks.
+    description: The number of InnoDB row locks.
     unit: 1
     sum:
       value_type: int
@@ -187,7 +187,7 @@ metrics:
     attributes: [row_locks]
   mysql.row_operations:
     enabled: true
-    description: The number of InndoDB row operations.
+    description: The number of InnoDB row operations.
     unit: 1
     sum:
       value_type: int
