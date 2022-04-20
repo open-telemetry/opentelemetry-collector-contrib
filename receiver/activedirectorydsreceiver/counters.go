@@ -17,238 +17,217 @@
 
 package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+import (
+	"fmt"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+	"go.uber.org/multierr"
+)
+
+const (
+	draInboundBytesCompressed = "DRA Inbound Bytes Compressed (Between Sites, After Compression) Since Boot"
+	draInboundBytesNotCompressed = "DRA Inbound Bytes Not Compressed (Within Site) Since Boot"
+	draOutboundBytesCompressed = "DRA Outbound Bytes Compressed (Between Sites, After Compression) Since Boot"
+	draOutboundBytesNotCompressed = "DRA Outbound Bytes Not Compressed (Within Site) Since Boot"
+	draInboundFullSyncObjectsRemaining = "DRA Inbound Full Sync Objects Remaining"
+	draInboundObjects = "DRA Inbound Objects/sec"
+	draOutboundObjects = "DRA Outbound Objects/sec"
+	draInboundProperties = "DRA Inbound Properties Total/sec"
+	draOutboundProperties = "DRA Outbound Properties/sec"
+	draInboundValuesDNs = "DRA Inbound Values (DNs only)/sec"
+	draInboundValuesTotal = "DRA Inbound Values Total/sec"
+	draOutboundValuesDNs = "DRA Outbound Values (DNs only)/sec"
+	draOutboundValuesTotal = "DRA Outbound Values Total/sec"
+	draPendingReplicationOperations = "DRA Pending Replication Operations"
+	draSyncFailuresSchemaMismatch = "DRA Sync Failures on Schema Mismatch"
+	draSyncRequestsSuccessful = "DRA Sync Requests Successful"
+	draSyncRequestsMade = "DRA Sync Requests Made"
+	dsDirectoryReads = "DS Directory Reads/sec"
+	dsDirectoryWrites = "DS Directory Writes/sec"
+	dsDirectorySearches = "DS Directory Searches/sec"
+	dsClientBinds = "DS Client Binds/sec"
+	dsServerBinds = "DS Server Binds/sec"
+	dsNameCacheHitRate = "DS Name Cache hit rate"
+	dsNotifyQueueSize = "DS Notify Queue Size"
+	dsSecurityDescriptorPropagationsEvents = "DS Security Descriptor Propagations Events"
+	dsSearchSubOperations = "DS Search sub-operations/sec"
+	dsSecurityDescripterSubOperations = "DS Security Descriptor sub-operations/sec"
+	dsThreadsInUse = "DS Threads in Use"
+	ldapClientSessions = "LDAP Client Sessions"
+	ldapBindTime = "LDAP Bind Time"
+	ldapSuccessfulBinds = "LDAP Successful Binds/sec"
+	ldapSearches = "LDAP Searches/sec"
+)
 
 type watchers struct {
-	DRAInboundBytesCompressed              winperfcounters.PerfCounterWatcher
-	DRAInboundBytesNotCompressed           winperfcounters.PerfCounterWatcher
-	DRAOutboundBytesCompressed             winperfcounters.PerfCounterWatcher
-	DRAOutboundBytesNotCompressed          winperfcounters.PerfCounterWatcher
-	DRAInboundFullSyncObjectsRemaining     winperfcounters.PerfCounterWatcher
-	DRAInboundObjects                      winperfcounters.PerfCounterWatcher
-	DRAOutboundObjects                     winperfcounters.PerfCounterWatcher
-	DRAInboundProperties                   winperfcounters.PerfCounterWatcher
-	DRAOutboundProperties                  winperfcounters.PerfCounterWatcher
-	DRAInboundValuesDNs                    winperfcounters.PerfCounterWatcher
-	DRAInboundValuesTotal                  winperfcounters.PerfCounterWatcher
-	DRAOutboundValuesDNs                   winperfcounters.PerfCounterWatcher
-	DRAOutboundValuesTotal                 winperfcounters.PerfCounterWatcher
-	DRAPendingReplicationOperations        winperfcounters.PerfCounterWatcher
-	DRASyncFailuresSchemaMismatch          winperfcounters.PerfCounterWatcher
-	DRASyncRequestsSuccessful              winperfcounters.PerfCounterWatcher
-	DRASyncRequestsMade                    winperfcounters.PerfCounterWatcher
-	DSDirectoryReads                       winperfcounters.PerfCounterWatcher
-	DSDirectoryWrites                      winperfcounters.PerfCounterWatcher
-	DSDirectorySearches                    winperfcounters.PerfCounterWatcher
-	DSClientBinds                          winperfcounters.PerfCounterWatcher
-	DSServerBinds                          winperfcounters.PerfCounterWatcher
-	DSNameCacheHitRate                     winperfcounters.PerfCounterWatcher
-	DSNotifyQueueSize                      winperfcounters.PerfCounterWatcher
-	DSSecurityDescriptorPropagationsEvents winperfcounters.PerfCounterWatcher
-	DSSearchSubOperations                  winperfcounters.PerfCounterWatcher
-	DSSecurityDescripterSubOperations      winperfcounters.PerfCounterWatcher
-	DSThreadsInUse                         winperfcounters.PerfCounterWatcher
-	LDAPClientSessions                     winperfcounters.PerfCounterWatcher
-	LDAPBindTime                           winperfcounters.PerfCounterWatcher
-	LDAPSuccessfulBinds                    winperfcounters.PerfCounterWatcher
-	LDAPSearches                           winperfcounters.PerfCounterWatcher
+	closed bool
+
+	counterNameToWatcher map[string]winperfcounters.PerfCounterWatcher
+}
+
+func (w *watchers) Scrape(name string) (float64, error) {
+	v, ok := w.counterNameToWatcher[name]
+	if !ok {
+		return 0, fmt.Errorf("counter \"%s\" was not initialized", name)
+	}
+
+	cv, err := v.ScrapeData()
+	if err != nil {
+		return 0, err
+	}
+
+	return cv[0].Value, nil
+}
+
+func (w *watchers) Close() error {
+	if w.closed {
+		return nil
+	}
+
+	var err error
+	for _, v := range w.counterNameToWatcher {
+		err = multierr.Append(err, v.Close())
+	}
+	
+	return err
 }
 
 func getWatchers(wc watcherCreater) (*watchers, error) {
-	DRAInboundBytesCompressed, err := wc.Create("DRA Inbound Bytes Compressed (Between Sites, After Compression) Since Boot")
-	if err != nil {
+	var err error
+
+	w := &watchers{
+		counterNameToWatcher: make(map[string]winperfcounters.PerfCounterWatcher),
+	}
+
+	if w.counterNameToWatcher[draInboundBytesCompressed], err = wc.Create(draInboundBytesCompressed); err != nil {
 		return nil, err
 	}
 
-	DRAInboundBytesNotCompressed, err := wc.Create("DRA Inbound Bytes Not Compressed (Within Site) Since Boot")
-	if err != nil {
+	if w.counterNameToWatcher[draInboundBytesNotCompressed], err = wc.Create(draInboundBytesNotCompressed); err != nil {
 		return nil, err
 	}
 
-	DRAOutboundBytesCompressed, err := wc.Create("DRA Outbound Bytes Compressed (Between Sites, After Compression) Since Boot")
-	if err != nil {
+	if w.counterNameToWatcher[draOutboundBytesCompressed], err = wc.Create(draOutboundBytesCompressed); err != nil {
 		return nil, err
 	}
 
-	DRAOutboundBytesNotCompressed, err := wc.Create("DRA Outbound Bytes Not Compressed (Within Site) Since Boot")
-	if err != nil {
+	if w.counterNameToWatcher[draOutboundBytesNotCompressed], err = wc.Create(draOutboundBytesNotCompressed); err != nil {
 		return nil, err
 	}
 
-	DRAInboundFullSyncObjectsRemaining, err := wc.Create("DRA Inbound Full Sync Objects Remaining")
-	if err != nil {
+	if w.counterNameToWatcher[draInboundFullSyncObjectsRemaining], err = wc.Create(draInboundFullSyncObjectsRemaining); err != nil {
 		return nil, err
 	}
 
-	DRAInboundObjects, err := wc.Create("DRA Inbound Objects/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draInboundObjects], err = wc.Create(draInboundObjects); err != nil {
 		return nil, err
 	}
 
-	DRAOutboundObjects, err := wc.Create("DRA Outbound Objects/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draOutboundObjects], err = wc.Create(draOutboundObjects); err != nil {
 		return nil, err
 	}
 
-	DRAInboundProperties, err := wc.Create("DRA Inbound Properties Total/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draInboundProperties], err = wc.Create(draInboundProperties); err != nil {
 		return nil, err
 	}
 
-	DRAOutboundProperties, err := wc.Create("DRA Outbound Properties/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draOutboundProperties], err = wc.Create(draOutboundProperties); err != nil {
 		return nil, err
 	}
 
-	DRAInboundValuesDNs, err := wc.Create("DRA Inbound Values (DNs only)/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draInboundValuesDNs], err = wc.Create(draInboundValuesDNs); err != nil {
 		return nil, err
 	}
 
-	DRAInboundValuesTotal, err := wc.Create("DRA Inbound Values Total/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draInboundValuesTotal], err = wc.Create(draInboundValuesTotal); err != nil {
 		return nil, err
 	}
 
-	DRAOutboundValuesDNs, err := wc.Create("DRA Outbound Values (DNs only)/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draOutboundValuesDNs], err = wc.Create(draOutboundValuesDNs); err != nil {
 		return nil, err
 	}
 
-	DRAOutboundValuesTotal, err := wc.Create("DRA Outbound Values Total/sec")
-	if err != nil {
+	if w.counterNameToWatcher[draOutboundValuesTotal], err = wc.Create(draOutboundValuesTotal); err != nil {
 		return nil, err
 	}
 
-	DRAPendingReplicationOperations, err := wc.Create("DRA Pending Replication Operations")
-	if err != nil {
+	if w.counterNameToWatcher[draPendingReplicationOperations], err = wc.Create(draPendingReplicationOperations); err != nil {
 		return nil, err
 	}
 
-	DRASyncFailuresSchemaMismatch, err := wc.Create("DRA Sync Failures on Schema Mismatch")
-	if err != nil {
+	if w.counterNameToWatcher[draSyncFailuresSchemaMismatch], err = wc.Create(draSyncFailuresSchemaMismatch); err != nil {
 		return nil, err
 	}
 
-	DRASyncRequestsSuccessful, err := wc.Create("DRA Sync Requests Successful")
-	if err != nil {
+	if w.counterNameToWatcher[draSyncRequestsSuccessful], err = wc.Create(draSyncRequestsSuccessful); err != nil {
 		return nil, err
 	}
 
-	DRASyncRequestsMade, err := wc.Create("DRA Sync Requests Made")
-	if err != nil {
+	if w.counterNameToWatcher[draSyncRequestsMade], err = wc.Create(draSyncRequestsMade); err != nil {
 		return nil, err
 	}
 
-	DSDirectoryReads, err := wc.Create("DS Directory Reads/sec")
-	if err != nil {
+	if w.counterNameToWatcher[dsDirectoryReads], err = wc.Create(dsDirectoryReads); err != nil {
 		return nil, err
 	}
 
-	DSDirectoryWrites, err := wc.Create("DS Directory Writes/sec")
-	if err != nil {
+	if w.counterNameToWatcher[dsDirectoryWrites], err = wc.Create(dsDirectoryWrites); err != nil {
 		return nil, err
 	}
 
-	DSDirectorySearches, err := wc.Create("DS Directory Searches/sec")
-	if err != nil {
+	if w.counterNameToWatcher[dsDirectorySearches], err = wc.Create(dsDirectorySearches); err != nil {
 		return nil, err
 	}
 
-	DSClientBinds, err := wc.Create("DS Client Binds/sec")
-	if err != nil {
+	if w.counterNameToWatcher[dsClientBinds], err = wc.Create(dsClientBinds); err != nil {
 		return nil, err
 	}
 
-	DSServerBinds, err := wc.Create("DS Server Binds/sec")
-	if err != nil {
+	if w.counterNameToWatcher[dsServerBinds], err = wc.Create(dsServerBinds); err != nil {
 		return nil, err
 	}
 
-	DSNameCacheHitRate, err := wc.Create("DS Name Cache hit rate")
-	if err != nil {
+	if w.counterNameToWatcher[dsNameCacheHitRate], err = wc.Create(dsNameCacheHitRate); err != nil {
 		return nil, err
 	}
 
-	DSNotifyQueueSize, err := wc.Create("DS Notify Queue Size")
-	if err != nil {
+	if w.counterNameToWatcher[dsNotifyQueueSize], err = wc.Create(dsNotifyQueueSize); err != nil {
 		return nil, err
 	}
 
-	DSSecurityDescriptorPropagationsEvents, err := wc.Create("DS Security Descriptor Propagations Events")
-	if err != nil {
+	if w.counterNameToWatcher[dsSecurityDescriptorPropagationsEvents], err = wc.Create(dsSecurityDescriptorPropagationsEvents); err != nil {
 		return nil, err
 	}
 
-	DSSearchSubOperations, err := wc.Create("DS Search sub-operations/sec")
-	if err != nil {
+	if w.counterNameToWatcher[dsSearchSubOperations], err = wc.Create(dsSearchSubOperations); err != nil {
 		return nil, err
 	}
 
-	DSSecurityDescripterSubOperations, err := wc.Create("DS Security Descriptor sub-operations/sec")
-	if err != nil {
+	if w.counterNameToWatcher[dsSecurityDescripterSubOperations], err = wc.Create(dsSecurityDescripterSubOperations); err != nil {
 		return nil, err
 	}
 
-	DSThreadsInUse, err := wc.Create("DS Threads in Use")
-	if err != nil {
+	if w.counterNameToWatcher[dsThreadsInUse], err = wc.Create(dsThreadsInUse); err != nil {
 		return nil, err
 	}
 
-	LDAPClientSessions, err := wc.Create("LDAP Client Sessions")
-	if err != nil {
+	if w.counterNameToWatcher[ldapClientSessions], err = wc.Create(ldapClientSessions); err != nil {
 		return nil, err
 	}
 
-	LDAPBindTime, err := wc.Create("LDAP Bind Time")
-	if err != nil {
+	if w.counterNameToWatcher[ldapBindTime], err = wc.Create(ldapBindTime); err != nil {
 		return nil, err
 	}
 
-	LDAPSuccessfulBinds, err := wc.Create("LDAP Successful Binds/sec")
-	if err != nil {
+	if w.counterNameToWatcher[ldapSuccessfulBinds], err = wc.Create(ldapSuccessfulBinds); err != nil {
 		return nil, err
 	}
 
-	LDAPSearches, err := wc.Create("LDAP Searches/sec")
-	if err != nil {
+	if w.counterNameToWatcher[ldapSearches], err = wc.Create(ldapSearches); err != nil {
 		return nil, err
 	}
 
-	return &watchers{
-		DRAInboundBytesCompressed:              DRAInboundBytesCompressed,
-		DRAInboundBytesNotCompressed:           DRAInboundBytesNotCompressed,
-		DRAOutboundBytesCompressed:             DRAOutboundBytesCompressed,
-		DRAOutboundBytesNotCompressed:          DRAOutboundBytesNotCompressed,
-		DRAInboundFullSyncObjectsRemaining:     DRAInboundFullSyncObjectsRemaining,
-		DRAInboundObjects:                      DRAInboundObjects,
-		DRAOutboundObjects:                     DRAOutboundObjects,
-		DRAInboundProperties:                   DRAInboundProperties,
-		DRAOutboundProperties:                  DRAOutboundProperties,
-		DRAInboundValuesDNs:                    DRAInboundValuesDNs,
-		DRAInboundValuesTotal:                  DRAInboundValuesTotal,
-		DRAOutboundValuesDNs:                   DRAOutboundValuesDNs,
-		DRAOutboundValuesTotal:                 DRAOutboundValuesTotal,
-		DRAPendingReplicationOperations:        DRAPendingReplicationOperations,
-		DRASyncFailuresSchemaMismatch:          DRASyncFailuresSchemaMismatch,
-		DRASyncRequestsSuccessful:              DRASyncRequestsSuccessful,
-		DRASyncRequestsMade:                    DRASyncRequestsMade,
-		DSDirectoryReads:                       DSDirectoryReads,
-		DSDirectoryWrites:                      DSDirectoryWrites,
-		DSDirectorySearches:                    DSDirectorySearches,
-		DSClientBinds:                          DSClientBinds,
-		DSServerBinds:                          DSServerBinds,
-		DSNameCacheHitRate:                     DSNameCacheHitRate,
-		DSNotifyQueueSize:                      DSNotifyQueueSize,
-		DSSecurityDescriptorPropagationsEvents: DSSecurityDescriptorPropagationsEvents,
-		DSSearchSubOperations:                  DSSearchSubOperations,
-		DSSecurityDescripterSubOperations:      DSSecurityDescripterSubOperations,
-		DSThreadsInUse:                         DSThreadsInUse,
-		LDAPClientSessions:                     LDAPClientSessions,
-		LDAPBindTime:                           LDAPBindTime,
-		LDAPSuccessfulBinds:                    LDAPSuccessfulBinds,
-		LDAPSearches:                           LDAPSearches,
-	}, nil
+	return w, nil
 }
 
 type watcherCreater interface {
