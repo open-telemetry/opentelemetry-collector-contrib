@@ -51,8 +51,6 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		}
 		scraper.client.vimDriver = c
 		scraper.client.finder = find.NewFinder(c)
-		// TODO: reenable after this is resolved => https://github.com/vmware/govmomi/issues/2813
-		scraper.vsanEnabled = false
 
 		rcvr := &vcenterReceiver{
 			config:  cfg,
