@@ -2,11 +2,7 @@ processors:
   transform:
     logs:
       queries:
-        - set(body, "bear") where attributes["http.path"] == "/animal"
-        - keep_keys(attributes, "http.method", "http.path")
-    traces:
-      queries:
-        - set(name, "bear") where attributes["http.path"] == "/animal"
+        - set(body, "bear" where attributes["http.path"] == "/animal"
         - keep_keys(attributes, "http.method", "http.path")
 
 receivers:
