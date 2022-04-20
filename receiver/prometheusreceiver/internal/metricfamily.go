@@ -17,6 +17,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -113,6 +114,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		if i != len(mg.complexValue)-1 {
 			// not need to add +inf as OTLP assumes it
 			bounds[i] = mg.complexValue[i].boundary
+		} else if mg.complexValue[i].boundary != math.Inf(1) {
+			// This histogram is missing the +Inf bucket, and isn't a complete prometheus histogram.
+			return
 		}
 		adjustedCount := mg.complexValue[i].value
 		// Buckets still need to be sent to know to set them as stale,
