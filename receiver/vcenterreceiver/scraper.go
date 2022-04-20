@@ -17,12 +17,10 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/mo"
-	"github.com/vmware/govmomi/vsan/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -111,14 +109,6 @@ func (v *vcenterMetricScraper) collectCluster(
 	v.mb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), "false")
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), "true")
-
-	mor := c.Reference()
-	csvs, err := v.client.VSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
-	if err != nil {
-		errs.AddPartial(1, err)
-	}
-	v.addVSANMetrics(csvs, "*", clusterType, errs)
-
 	v.mb.EmitForResource(
 		metadata.WithVcenterClusterName(c.Name()),
 	)
@@ -167,14 +157,8 @@ func (v *vcenterMetricScraper) collectHosts(
 		return
 	}
 
-	clusterRef := cluster.Reference()
-	hostVsanCSVs, err := v.client.VSANHosts(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
-	if err != nil {
-		errs.AddPartial(1, err)
-	}
-
 	for _, h := range hosts {
-		v.collectHost(ctx, colTime, h, cluster, hostVsanCSVs, errs)
+		v.collectHost(ctx, colTime, h, cluster, errs)
 	}
 }
 
@@ -183,7 +167,6 @@ func (v *vcenterMetricScraper) collectHost(
 	now pdata.Timestamp,
 	host *object.HostSystem,
 	cluster *object.ClusterComputeResource,
-	vsanCsvs []types.VsanPerfEntityMetricCSV,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	var hwSum mo.HostSystem
@@ -200,12 +183,6 @@ func (v *vcenterMetricScraper) collectHost(
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
-	if vsanCsvs != nil {
-		entityRef := fmt.Sprintf("host-domclient:%v",
-			hwSum.Config.VsanHostConfig.ClusterInfo.NodeUuid,
-		)
-		v.addVSANMetrics(vsanCsvs, entityRef, hostType, errs)
-	}
 	v.mb.EmitForResource(
 		metadata.WithVcenterHostName(host.Name()),
 		metadata.WithVcenterClusterName(cluster.Name()),
@@ -245,14 +222,6 @@ func (v *vcenterMetricScraper) collectVMs(
 		errs.AddPartial(1, err)
 		return
 	}
-
-	var vsanCsvs []types.VsanPerfEntityMetricCSV
-	clusterRef := cluster.Reference()
-	vsanCsvs, err = v.client.VSANVirtualMachines(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
-	if err != nil {
-		errs.AddPartial(1, err)
-	}
-
 	poweredOffVMs := 0
 	for _, vm := range vms {
 		var moVM mo.VirtualMachine
@@ -285,7 +254,7 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
-		v.collectVM(ctx, colTime, moVM, entityRefID, vsanCsvs, errs)
+		v.collectVM(ctx, colTime, moVM, entityRefID, errs)
 		v.mb.EmitForResource(
 			metadata.WithVcenterVMName(vm.Name()),
 			metadata.WithVcenterVMID(vmUUID),
@@ -303,57 +272,8 @@ func (v *vcenterMetricScraper) collectVM(
 	colTime pdata.Timestamp,
 	vm mo.VirtualMachine,
 	entityRefID string,
-	vsanCsvs []types.VsanPerfEntityMetricCSV,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.recordVMUsages(colTime, vm)
 	v.recordVMPerformance(ctx, vm, errs)
-	v.addVSANMetrics(vsanCsvs, entityRefID, vmType, errs)
-}
-
-type vsanType int
-
-const (
-	clusterType vsanType = iota
-	hostType
-	vmType
-)
-
-func (v *vcenterMetricScraper) addVSANMetrics(
-	csvs []types.VsanPerfEntityMetricCSV,
-	entityID string,
-	vsanType vsanType,
-	errs *scrapererror.ScrapeErrors,
-) {
-	for _, r := range csvs {
-		// can't correlate this point to a timestamp so just skip it
-		if r.SampleInfo == "" {
-			continue
-		}
-		// If not this entity ID, then skip it
-		if vsanType != clusterType && r.EntityRefId != entityID {
-			continue
-		}
-
-		time, err := time.Parse(timeFormat, r.SampleInfo)
-		if err != nil {
-			errs.AddPartial(1, err)
-			continue
-		}
-
-		ts := pdata.NewTimestampFromTime(time)
-		for _, val := range r.Value {
-			values := strings.Split(val.Values, ",")
-			for _, value := range values {
-				switch vsanType {
-				case clusterType:
-					v.recordClusterVsanMetric(ts, val.MetricId.Label, value, errs)
-				case hostType:
-					v.recordHostVsanMetric(ts, val.MetricId.Label, value, errs)
-				case vmType:
-					v.recordVMVsanMetric(ts, val.MetricId.Label, value, errs)
-				}
-			}
-		}
-	}
 }

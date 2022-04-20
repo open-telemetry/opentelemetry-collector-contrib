@@ -24,11 +24,6 @@ type MetricsSettings struct {
 	VcenterClusterMemoryLimit       MetricSettings `mapstructure:"vcenter.cluster.memory.limit"`
 	VcenterClusterMemoryUsed        MetricSettings `mapstructure:"vcenter.cluster.memory.used"`
 	VcenterClusterVMCount           MetricSettings `mapstructure:"vcenter.cluster.vm.count"`
-	VcenterClusterVsanCongestions   MetricSettings `mapstructure:"vcenter.cluster.vsan.congestions"`
-	VcenterClusterVsanLatencyAvg    MetricSettings `mapstructure:"vcenter.cluster.vsan.latency.avg"`
-	VcenterClusterVsanOperations    MetricSettings `mapstructure:"vcenter.cluster.vsan.operations"`
-	VcenterClusterVsanOutstandingIo MetricSettings `mapstructure:"vcenter.cluster.vsan.outstanding_io"`
-	VcenterClusterVsanThroughput    MetricSettings `mapstructure:"vcenter.cluster.vsan.throughput"`
 	VcenterDatastoreDiskUsage       MetricSettings `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization MetricSettings `mapstructure:"vcenter.datastore.disk.utilization"`
 	VcenterHostCPUUsage             MetricSettings `mapstructure:"vcenter.host.cpu.usage"`
@@ -42,13 +37,6 @@ type MetricsSettings struct {
 	VcenterHostNetworkPackets       MetricSettings `mapstructure:"vcenter.host.network.packets"`
 	VcenterHostNetworkThroughput    MetricSettings `mapstructure:"vcenter.host.network.throughput"`
 	VcenterHostNetworkUsage         MetricSettings `mapstructure:"vcenter.host.network.usage"`
-	VcenterHostVsanCacheHitRate     MetricSettings `mapstructure:"vcenter.host.vsan.cache.hit_rate"`
-	VcenterHostVsanCacheReads       MetricSettings `mapstructure:"vcenter.host.vsan.cache.reads"`
-	VcenterHostVsanCongestions      MetricSettings `mapstructure:"vcenter.host.vsan.congestions"`
-	VcenterHostVsanLatencyAvg       MetricSettings `mapstructure:"vcenter.host.vsan.latency.avg"`
-	VcenterHostVsanOperations       MetricSettings `mapstructure:"vcenter.host.vsan.operations"`
-	VcenterHostVsanOutstandingIo    MetricSettings `mapstructure:"vcenter.host.vsan.outstanding_io"`
-	VcenterHostVsanThroughput       MetricSettings `mapstructure:"vcenter.host.vsan.throughput"`
 	VcenterResourcePoolCPUShares    MetricSettings `mapstructure:"vcenter.resource_pool.cpu.shares"`
 	VcenterResourcePoolCPUUsage     MetricSettings `mapstructure:"vcenter.resource_pool.cpu.usage"`
 	VcenterResourcePoolMemoryShares MetricSettings `mapstructure:"vcenter.resource_pool.memory.shares"`
@@ -64,9 +52,6 @@ type MetricsSettings struct {
 	VcenterVMNetworkPackets         MetricSettings `mapstructure:"vcenter.vm.network.packets"`
 	VcenterVMNetworkThroughput      MetricSettings `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage           MetricSettings `mapstructure:"vcenter.vm.network.usage"`
-	VcenterVMVsanLatencyAvg         MetricSettings `mapstructure:"vcenter.vm.vsan.latency.avg"`
-	VcenterVMVsanOperations         MetricSettings `mapstructure:"vcenter.vm.vsan.operations"`
-	VcenterVMVsanThroughput         MetricSettings `mapstructure:"vcenter.vm.vsan.throughput"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -93,21 +78,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		VcenterClusterVMCount: MetricSettings{
-			Enabled: true,
-		},
-		VcenterClusterVsanCongestions: MetricSettings{
-			Enabled: true,
-		},
-		VcenterClusterVsanLatencyAvg: MetricSettings{
-			Enabled: true,
-		},
-		VcenterClusterVsanOperations: MetricSettings{
-			Enabled: true,
-		},
-		VcenterClusterVsanOutstandingIo: MetricSettings{
-			Enabled: true,
-		},
-		VcenterClusterVsanThroughput: MetricSettings{
 			Enabled: true,
 		},
 		VcenterDatastoreDiskUsage: MetricSettings{
@@ -147,27 +117,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		VcenterHostNetworkUsage: MetricSettings{
-			Enabled: true,
-		},
-		VcenterHostVsanCacheHitRate: MetricSettings{
-			Enabled: true,
-		},
-		VcenterHostVsanCacheReads: MetricSettings{
-			Enabled: true,
-		},
-		VcenterHostVsanCongestions: MetricSettings{
-			Enabled: true,
-		},
-		VcenterHostVsanLatencyAvg: MetricSettings{
-			Enabled: true,
-		},
-		VcenterHostVsanOperations: MetricSettings{
-			Enabled: true,
-		},
-		VcenterHostVsanOutstandingIo: MetricSettings{
-			Enabled: true,
-		},
-		VcenterHostVsanThroughput: MetricSettings{
 			Enabled: true,
 		},
 		VcenterResourcePoolCPUShares: MetricSettings{
@@ -213,15 +162,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		VcenterVMNetworkUsage: MetricSettings{
-			Enabled: true,
-		},
-		VcenterVMVsanLatencyAvg: MetricSettings{
-			Enabled: true,
-		},
-		VcenterVMVsanOperations: MetricSettings{
-			Enabled: true,
-		},
-		VcenterVMVsanThroughput: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -632,267 +572,6 @@ func (m *metricVcenterClusterVMCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterVMCount(settings MetricSettings) metricVcenterClusterVMCount {
 	m := metricVcenterClusterVMCount{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterClusterVsanCongestions struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.vsan.congestions metric with initial data.
-func (m *metricVcenterClusterVsanCongestions) init() {
-	m.data.SetName("vcenter.cluster.vsan.congestions")
-	m.data.SetDescription("Congestions consumed by all vSAN clients in the cluster, such as virtual machines, stats objects, etc.")
-	m.data.SetUnit("{congestions/sec}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterClusterVsanCongestions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterVsanCongestions) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterVsanCongestions) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterVsanCongestions(settings MetricSettings) metricVcenterClusterVsanCongestions {
-	m := metricVcenterClusterVsanCongestions{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterClusterVsanLatencyAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.vsan.latency.avg metric with initial data.
-func (m *metricVcenterClusterVsanLatencyAvg) init() {
-	m.data.SetName("vcenter.cluster.vsan.latency.avg")
-	m.data.SetDescription("Average latency of IOs generated by all vSAN clients in the cluster.")
-	m.data.SetUnit("µs")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterClusterVsanLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanLatencyType, pcommon.NewValueString(vsanLatencyTypeAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterVsanLatencyAvg) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterVsanLatencyAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterVsanLatencyAvg(settings MetricSettings) metricVcenterClusterVsanLatencyAvg {
-	m := metricVcenterClusterVsanLatencyAvg{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterClusterVsanOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.vsan.operations metric with initial data.
-func (m *metricVcenterClusterVsanOperations) init() {
-	m.data.SetName("vcenter.cluster.vsan.operations")
-	m.data.SetDescription("IOPS consumed by all vSAN clients in the cluster.")
-	m.data.SetUnit("{operations/sec}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterClusterVsanOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanOperationType, pcommon.NewValueString(vsanOperationTypeAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterVsanOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterVsanOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterVsanOperations(settings MetricSettings) metricVcenterClusterVsanOperations {
-	m := metricVcenterClusterVsanOperations{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterClusterVsanOutstandingIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.vsan.outstanding_io metric with initial data.
-func (m *metricVcenterClusterVsanOutstandingIo) init() {
-	m.data.SetName("vcenter.cluster.vsan.outstanding_io")
-	m.data.SetDescription("Outstanding IO from all vSAN clients in the cluster.")
-	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterClusterVsanOutstandingIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterVsanOutstandingIo) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterVsanOutstandingIo) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterVsanOutstandingIo(settings MetricSettings) metricVcenterClusterVsanOutstandingIo {
-	m := metricVcenterClusterVsanOutstandingIo{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterClusterVsanThroughput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.vsan.throughput metric with initial data.
-func (m *metricVcenterClusterVsanThroughput) init() {
-	m.data.SetName("vcenter.cluster.vsan.throughput")
-	m.data.SetDescription("Throughput consumed by all vSAN clients in the cluster.")
-	m.data.SetUnit("By/sec")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterClusterVsanThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanThroughputDirectionAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanThroughputDirection, pcommon.NewValueString(vsanThroughputDirectionAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterVsanThroughput) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterVsanThroughput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterVsanThroughput(settings MetricSettings) metricVcenterClusterVsanThroughput {
-	m := metricVcenterClusterVsanThroughput{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1559,367 +1238,6 @@ func (m *metricVcenterHostNetworkUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostNetworkUsage(settings MetricSettings) metricVcenterHostNetworkUsage {
 	m := metricVcenterHostNetworkUsage{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostVsanCacheHitRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.vsan.cache.hit_rate metric with initial data.
-func (m *metricVcenterHostVsanCacheHitRate) init() {
-	m.data.SetName("vcenter.host.vsan.cache.hit_rate")
-	m.data.SetDescription("Percentage of read IOs which could be satisfied by the local client cache.")
-	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-}
-
-func (m *metricVcenterHostVsanCacheHitRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostVsanCacheHitRate) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostVsanCacheHitRate) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostVsanCacheHitRate(settings MetricSettings) metricVcenterHostVsanCacheHitRate {
-	m := metricVcenterHostVsanCacheHitRate{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostVsanCacheReads struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.vsan.cache.reads metric with initial data.
-func (m *metricVcenterHostVsanCacheReads) init() {
-	m.data.SetName("vcenter.host.vsan.cache.reads")
-	m.data.SetDescription("Average latency of IOs generated by all vSAN clients on the host.")
-	m.data.SetUnit("{operations/sec}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterHostVsanCacheReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostVsanCacheReads) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostVsanCacheReads) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostVsanCacheReads(settings MetricSettings) metricVcenterHostVsanCacheReads {
-	m := metricVcenterHostVsanCacheReads{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostVsanCongestions struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.vsan.congestions metric with initial data.
-func (m *metricVcenterHostVsanCongestions) init() {
-	m.data.SetName("vcenter.host.vsan.congestions")
-	m.data.SetDescription("Congestions of IOs generated by all vSAN clients on the host.")
-	m.data.SetUnit("{congestions/sec}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterHostVsanCongestions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostVsanCongestions) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostVsanCongestions) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostVsanCongestions(settings MetricSettings) metricVcenterHostVsanCongestions {
-	m := metricVcenterHostVsanCongestions{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostVsanLatencyAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.vsan.latency.avg metric with initial data.
-func (m *metricVcenterHostVsanLatencyAvg) init() {
-	m.data.SetName("vcenter.host.vsan.latency.avg")
-	m.data.SetDescription("Average latency of IOs generated by all vSAN clients on the host.")
-	m.data.SetUnit("µs")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterHostVsanLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanLatencyType, pcommon.NewValueString(vsanLatencyTypeAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostVsanLatencyAvg) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostVsanLatencyAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostVsanLatencyAvg(settings MetricSettings) metricVcenterHostVsanLatencyAvg {
-	m := metricVcenterHostVsanLatencyAvg{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostVsanOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.vsan.operations metric with initial data.
-func (m *metricVcenterHostVsanOperations) init() {
-	m.data.SetName("vcenter.host.vsan.operations")
-	m.data.SetDescription("IOPs consumed by all vSAN clients on the host.")
-	m.data.SetUnit("{operations/sec}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterHostVsanOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanOperationType, pcommon.NewValueString(vsanOperationTypeAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostVsanOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostVsanOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostVsanOperations(settings MetricSettings) metricVcenterHostVsanOperations {
-	m := metricVcenterHostVsanOperations{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostVsanOutstandingIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.vsan.outstanding_io metric with initial data.
-func (m *metricVcenterHostVsanOutstandingIo) init() {
-	m.data.SetName("vcenter.host.vsan.outstanding_io")
-	m.data.SetDescription("Outstanding IO from all vSAN clients in the host, such as virtual machines, stats object, etc.")
-	m.data.SetUnit("{operations/sec}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterHostVsanOutstandingIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostVsanOutstandingIo) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostVsanOutstandingIo) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostVsanOutstandingIo(settings MetricSettings) metricVcenterHostVsanOutstandingIo {
-	m := metricVcenterHostVsanOutstandingIo{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostVsanThroughput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.vsan.throughput metric with initial data.
-func (m *metricVcenterHostVsanThroughput) init() {
-	m.data.SetName("vcenter.host.vsan.throughput")
-	m.data.SetDescription("Throughput consumed by all vSAN clients on the host.")
-	m.data.SetUnit("By/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterHostVsanThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanThroughputDirectionAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanThroughputDirection, pcommon.NewValueString(vsanThroughputDirectionAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostVsanThroughput) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostVsanThroughput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostVsanThroughput(settings MetricSettings) metricVcenterHostVsanThroughput {
-	m := metricVcenterHostVsanThroughput{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2692,163 +2010,6 @@ func newMetricVcenterVMNetworkUsage(settings MetricSettings) metricVcenterVMNetw
 	return m
 }
 
-type metricVcenterVMVsanLatencyAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.vm.vsan.latency.avg metric with initial data.
-func (m *metricVcenterVMVsanLatencyAvg) init() {
-	m.data.SetName("vcenter.vm.vsan.latency.avg")
-	m.data.SetDescription("The latency while accessing VSAN storage.")
-	m.data.SetUnit("us")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterVMVsanLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanLatencyType, pcommon.NewValueString(vsanLatencyTypeAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterVMVsanLatencyAvg) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterVMVsanLatencyAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterVMVsanLatencyAvg(settings MetricSettings) metricVcenterVMVsanLatencyAvg {
-	m := metricVcenterVMVsanLatencyAvg{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterVMVsanOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.vm.vsan.operations metric with initial data.
-func (m *metricVcenterVMVsanOperations) init() {
-	m.data.SetName("vcenter.vm.vsan.operations")
-	m.data.SetDescription("Virtual Machine vSAN IOPs.")
-	m.data.SetUnit("{operations/sec}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterVMVsanOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanOperationType, pcommon.NewValueString(vsanOperationTypeAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterVMVsanOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterVMVsanOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterVMVsanOperations(settings MetricSettings) metricVcenterVMVsanOperations {
-	m := metricVcenterVMVsanOperations{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterVMVsanThroughput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.vm.vsan.throughput metric with initial data.
-func (m *metricVcenterVMVsanThroughput) init() {
-	m.data.SetName("vcenter.vm.vsan.throughput")
-	m.data.SetDescription("The VSAN throughput of a virtual machine.")
-	m.data.SetUnit("By/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterVMVsanThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanThroughputDirectionAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.VsanThroughputDirection, pcommon.NewValueString(vsanThroughputDirectionAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterVMVsanThroughput) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterVMVsanThroughput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterVMVsanThroughput(settings MetricSettings) metricVcenterVMVsanThroughput {
-	m := metricVcenterVMVsanThroughput{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2864,11 +2025,6 @@ type MetricsBuilder struct {
 	metricVcenterClusterMemoryLimit       metricVcenterClusterMemoryLimit
 	metricVcenterClusterMemoryUsed        metricVcenterClusterMemoryUsed
 	metricVcenterClusterVMCount           metricVcenterClusterVMCount
-	metricVcenterClusterVsanCongestions   metricVcenterClusterVsanCongestions
-	metricVcenterClusterVsanLatencyAvg    metricVcenterClusterVsanLatencyAvg
-	metricVcenterClusterVsanOperations    metricVcenterClusterVsanOperations
-	metricVcenterClusterVsanOutstandingIo metricVcenterClusterVsanOutstandingIo
-	metricVcenterClusterVsanThroughput    metricVcenterClusterVsanThroughput
 	metricVcenterDatastoreDiskUsage       metricVcenterDatastoreDiskUsage
 	metricVcenterDatastoreDiskUtilization metricVcenterDatastoreDiskUtilization
 	metricVcenterHostCPUUsage             metricVcenterHostCPUUsage
@@ -2882,13 +2038,6 @@ type MetricsBuilder struct {
 	metricVcenterHostNetworkPackets       metricVcenterHostNetworkPackets
 	metricVcenterHostNetworkThroughput    metricVcenterHostNetworkThroughput
 	metricVcenterHostNetworkUsage         metricVcenterHostNetworkUsage
-	metricVcenterHostVsanCacheHitRate     metricVcenterHostVsanCacheHitRate
-	metricVcenterHostVsanCacheReads       metricVcenterHostVsanCacheReads
-	metricVcenterHostVsanCongestions      metricVcenterHostVsanCongestions
-	metricVcenterHostVsanLatencyAvg       metricVcenterHostVsanLatencyAvg
-	metricVcenterHostVsanOperations       metricVcenterHostVsanOperations
-	metricVcenterHostVsanOutstandingIo    metricVcenterHostVsanOutstandingIo
-	metricVcenterHostVsanThroughput       metricVcenterHostVsanThroughput
 	metricVcenterResourcePoolCPUShares    metricVcenterResourcePoolCPUShares
 	metricVcenterResourcePoolCPUUsage     metricVcenterResourcePoolCPUUsage
 	metricVcenterResourcePoolMemoryShares metricVcenterResourcePoolMemoryShares
@@ -2904,9 +2053,6 @@ type MetricsBuilder struct {
 	metricVcenterVMNetworkPackets         metricVcenterVMNetworkPackets
 	metricVcenterVMNetworkThroughput      metricVcenterVMNetworkThroughput
 	metricVcenterVMNetworkUsage           metricVcenterVMNetworkUsage
-	metricVcenterVMVsanLatencyAvg         metricVcenterVMVsanLatencyAvg
-	metricVcenterVMVsanOperations         metricVcenterVMVsanOperations
-	metricVcenterVMVsanThroughput         metricVcenterVMVsanThroughput
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -2931,11 +2077,6 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricVcenterClusterMemoryLimit:       newMetricVcenterClusterMemoryLimit(settings.VcenterClusterMemoryLimit),
 		metricVcenterClusterMemoryUsed:        newMetricVcenterClusterMemoryUsed(settings.VcenterClusterMemoryUsed),
 		metricVcenterClusterVMCount:           newMetricVcenterClusterVMCount(settings.VcenterClusterVMCount),
-		metricVcenterClusterVsanCongestions:   newMetricVcenterClusterVsanCongestions(settings.VcenterClusterVsanCongestions),
-		metricVcenterClusterVsanLatencyAvg:    newMetricVcenterClusterVsanLatencyAvg(settings.VcenterClusterVsanLatencyAvg),
-		metricVcenterClusterVsanOperations:    newMetricVcenterClusterVsanOperations(settings.VcenterClusterVsanOperations),
-		metricVcenterClusterVsanOutstandingIo: newMetricVcenterClusterVsanOutstandingIo(settings.VcenterClusterVsanOutstandingIo),
-		metricVcenterClusterVsanThroughput:    newMetricVcenterClusterVsanThroughput(settings.VcenterClusterVsanThroughput),
 		metricVcenterDatastoreDiskUsage:       newMetricVcenterDatastoreDiskUsage(settings.VcenterDatastoreDiskUsage),
 		metricVcenterDatastoreDiskUtilization: newMetricVcenterDatastoreDiskUtilization(settings.VcenterDatastoreDiskUtilization),
 		metricVcenterHostCPUUsage:             newMetricVcenterHostCPUUsage(settings.VcenterHostCPUUsage),
@@ -2949,13 +2090,6 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricVcenterHostNetworkPackets:       newMetricVcenterHostNetworkPackets(settings.VcenterHostNetworkPackets),
 		metricVcenterHostNetworkThroughput:    newMetricVcenterHostNetworkThroughput(settings.VcenterHostNetworkThroughput),
 		metricVcenterHostNetworkUsage:         newMetricVcenterHostNetworkUsage(settings.VcenterHostNetworkUsage),
-		metricVcenterHostVsanCacheHitRate:     newMetricVcenterHostVsanCacheHitRate(settings.VcenterHostVsanCacheHitRate),
-		metricVcenterHostVsanCacheReads:       newMetricVcenterHostVsanCacheReads(settings.VcenterHostVsanCacheReads),
-		metricVcenterHostVsanCongestions:      newMetricVcenterHostVsanCongestions(settings.VcenterHostVsanCongestions),
-		metricVcenterHostVsanLatencyAvg:       newMetricVcenterHostVsanLatencyAvg(settings.VcenterHostVsanLatencyAvg),
-		metricVcenterHostVsanOperations:       newMetricVcenterHostVsanOperations(settings.VcenterHostVsanOperations),
-		metricVcenterHostVsanOutstandingIo:    newMetricVcenterHostVsanOutstandingIo(settings.VcenterHostVsanOutstandingIo),
-		metricVcenterHostVsanThroughput:       newMetricVcenterHostVsanThroughput(settings.VcenterHostVsanThroughput),
 		metricVcenterResourcePoolCPUShares:    newMetricVcenterResourcePoolCPUShares(settings.VcenterResourcePoolCPUShares),
 		metricVcenterResourcePoolCPUUsage:     newMetricVcenterResourcePoolCPUUsage(settings.VcenterResourcePoolCPUUsage),
 		metricVcenterResourcePoolMemoryShares: newMetricVcenterResourcePoolMemoryShares(settings.VcenterResourcePoolMemoryShares),
@@ -2971,9 +2105,6 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricVcenterVMNetworkPackets:         newMetricVcenterVMNetworkPackets(settings.VcenterVMNetworkPackets),
 		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(settings.VcenterVMNetworkThroughput),
 		metricVcenterVMNetworkUsage:           newMetricVcenterVMNetworkUsage(settings.VcenterVMNetworkUsage),
-		metricVcenterVMVsanLatencyAvg:         newMetricVcenterVMVsanLatencyAvg(settings.VcenterVMVsanLatencyAvg),
-		metricVcenterVMVsanOperations:         newMetricVcenterVMVsanOperations(settings.VcenterVMVsanOperations),
-		metricVcenterVMVsanThroughput:         newMetricVcenterVMVsanThroughput(settings.VcenterVMVsanThroughput),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3057,11 +2188,6 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricVcenterClusterMemoryLimit.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryUsed.emit(ils.Metrics())
 	mb.metricVcenterClusterVMCount.emit(ils.Metrics())
-	mb.metricVcenterClusterVsanCongestions.emit(ils.Metrics())
-	mb.metricVcenterClusterVsanLatencyAvg.emit(ils.Metrics())
-	mb.metricVcenterClusterVsanOperations.emit(ils.Metrics())
-	mb.metricVcenterClusterVsanOutstandingIo.emit(ils.Metrics())
-	mb.metricVcenterClusterVsanThroughput.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUsage.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostCPUUsage.emit(ils.Metrics())
@@ -3075,13 +2201,6 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricVcenterHostNetworkPackets.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkUsage.emit(ils.Metrics())
-	mb.metricVcenterHostVsanCacheHitRate.emit(ils.Metrics())
-	mb.metricVcenterHostVsanCacheReads.emit(ils.Metrics())
-	mb.metricVcenterHostVsanCongestions.emit(ils.Metrics())
-	mb.metricVcenterHostVsanLatencyAvg.emit(ils.Metrics())
-	mb.metricVcenterHostVsanOperations.emit(ils.Metrics())
-	mb.metricVcenterHostVsanOutstandingIo.emit(ils.Metrics())
-	mb.metricVcenterHostVsanThroughput.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolCPUShares.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolCPUUsage.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryShares.emit(ils.Metrics())
@@ -3097,9 +2216,6 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricVcenterVMNetworkPackets.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
-	mb.metricVcenterVMVsanLatencyAvg.emit(ils.Metrics())
-	mb.metricVcenterVMVsanOperations.emit(ils.Metrics())
-	mb.metricVcenterVMVsanThroughput.emit(ils.Metrics())
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -3154,31 +2270,6 @@ func (mb *MetricsBuilder) RecordVcenterClusterMemoryUsedDataPoint(ts pcommon.Tim
 // RecordVcenterClusterVMCountDataPoint adds a data point to vcenter.cluster.vm.count metric.
 func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue string) {
 	mb.metricVcenterClusterVMCount.recordDataPoint(mb.startTime, ts, val, vmCountPowerStateAttributeValue)
-}
-
-// RecordVcenterClusterVsanCongestionsDataPoint adds a data point to vcenter.cluster.vsan.congestions metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVsanCongestionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterVsanCongestions.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterClusterVsanLatencyAvgDataPoint adds a data point to vcenter.cluster.vsan.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVsanLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue string) {
-	mb.metricVcenterClusterVsanLatencyAvg.recordDataPoint(mb.startTime, ts, val, vsanLatencyTypeAttributeValue)
-}
-
-// RecordVcenterClusterVsanOperationsDataPoint adds a data point to vcenter.cluster.vsan.operations metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVsanOperationsDataPoint(ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue string) {
-	mb.metricVcenterClusterVsanOperations.recordDataPoint(mb.startTime, ts, val, vsanOperationTypeAttributeValue)
-}
-
-// RecordVcenterClusterVsanOutstandingIoDataPoint adds a data point to vcenter.cluster.vsan.outstanding_io metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVsanOutstandingIoDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterVsanOutstandingIo.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterClusterVsanThroughputDataPoint adds a data point to vcenter.cluster.vsan.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVsanThroughputDataPoint(ts pcommon.Timestamp, val int64, vsanThroughputDirectionAttributeValue string) {
-	mb.metricVcenterClusterVsanThroughput.recordDataPoint(mb.startTime, ts, val, vsanThroughputDirectionAttributeValue)
 }
 
 // RecordVcenterDatastoreDiskUsageDataPoint adds a data point to vcenter.datastore.disk.usage metric.
@@ -3244,41 +2335,6 @@ func (mb *MetricsBuilder) RecordVcenterHostNetworkThroughputDataPoint(ts pcommon
 // RecordVcenterHostNetworkUsageDataPoint adds a data point to vcenter.host.network.usage metric.
 func (mb *MetricsBuilder) RecordVcenterHostNetworkUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterHostNetworkUsage.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterHostVsanCacheHitRateDataPoint adds a data point to vcenter.host.vsan.cache.hit_rate metric.
-func (mb *MetricsBuilder) RecordVcenterHostVsanCacheHitRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterHostVsanCacheHitRate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterHostVsanCacheReadsDataPoint adds a data point to vcenter.host.vsan.cache.reads metric.
-func (mb *MetricsBuilder) RecordVcenterHostVsanCacheReadsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostVsanCacheReads.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterHostVsanCongestionsDataPoint adds a data point to vcenter.host.vsan.congestions metric.
-func (mb *MetricsBuilder) RecordVcenterHostVsanCongestionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostVsanCongestions.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterHostVsanLatencyAvgDataPoint adds a data point to vcenter.host.vsan.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterHostVsanLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue string) {
-	mb.metricVcenterHostVsanLatencyAvg.recordDataPoint(mb.startTime, ts, val, vsanLatencyTypeAttributeValue)
-}
-
-// RecordVcenterHostVsanOperationsDataPoint adds a data point to vcenter.host.vsan.operations metric.
-func (mb *MetricsBuilder) RecordVcenterHostVsanOperationsDataPoint(ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue string) {
-	mb.metricVcenterHostVsanOperations.recordDataPoint(mb.startTime, ts, val, vsanOperationTypeAttributeValue)
-}
-
-// RecordVcenterHostVsanOutstandingIoDataPoint adds a data point to vcenter.host.vsan.outstanding_io metric.
-func (mb *MetricsBuilder) RecordVcenterHostVsanOutstandingIoDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostVsanOutstandingIo.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterHostVsanThroughputDataPoint adds a data point to vcenter.host.vsan.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterHostVsanThroughputDataPoint(ts pcommon.Timestamp, val int64, vsanThroughputDirectionAttributeValue string) {
-	mb.metricVcenterHostVsanThroughput.recordDataPoint(mb.startTime, ts, val, vsanThroughputDirectionAttributeValue)
 }
 
 // RecordVcenterResourcePoolCPUSharesDataPoint adds a data point to vcenter.resource_pool.cpu.shares metric.
@@ -3354,21 +2410,6 @@ func (mb *MetricsBuilder) RecordVcenterVMNetworkThroughputDataPoint(ts pcommon.T
 // RecordVcenterVMNetworkUsageDataPoint adds a data point to vcenter.vm.network.usage metric.
 func (mb *MetricsBuilder) RecordVcenterVMNetworkUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterVMNetworkUsage.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterVMVsanLatencyAvgDataPoint adds a data point to vcenter.vm.vsan.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterVMVsanLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue string) {
-	mb.metricVcenterVMVsanLatencyAvg.recordDataPoint(mb.startTime, ts, val, vsanLatencyTypeAttributeValue)
-}
-
-// RecordVcenterVMVsanOperationsDataPoint adds a data point to vcenter.vm.vsan.operations metric.
-func (mb *MetricsBuilder) RecordVcenterVMVsanOperationsDataPoint(ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue string) {
-	mb.metricVcenterVMVsanOperations.recordDataPoint(mb.startTime, ts, val, vsanOperationTypeAttributeValue)
-}
-
-// RecordVcenterVMVsanThroughputDataPoint adds a data point to vcenter.vm.vsan.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterVMVsanThroughputDataPoint(ts pcommon.Timestamp, val int64, vsanThroughputDirectionAttributeValue string) {
-	mb.metricVcenterVMVsanThroughput.recordDataPoint(mb.startTime, ts, val, vsanThroughputDirectionAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

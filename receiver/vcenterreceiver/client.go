@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
@@ -27,18 +26,15 @@ import (
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
 	vt "github.com/vmware/govmomi/vim25/types"
-	"github.com/vmware/govmomi/vsan"
-	"github.com/vmware/govmomi/vsan/types"
 )
 
 // vcenterClient is a client that
 type vcenterClient struct {
-	moClient   *govmomi.Client
-	vimDriver  *vim25.Client
-	vsanDriver *vsan.Client
-	finder     *find.Finder
-	pc         *property.Collector
-	cfg        *Config
+	moClient  *govmomi.Client
+	vimDriver *vim25.Client
+	finder    *find.Finder
+	pc        *property.Collector
+	cfg       *Config
 }
 
 func newVmwarevcenterClient(c *Config) *vcenterClient {
@@ -75,9 +71,6 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	vc.vimDriver = client.Client
 	vc.pc = property.DefaultCollector(vc.vimDriver)
 	vc.finder = find.NewFinder(vc.vimDriver)
-	// swallowing error because not all vCenters need vSAN API enabled
-	_ = vc.connectVSAN(ctx)
-
 	return nil
 }
 
@@ -85,19 +78,6 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	if vc.moClient != nil {
 		return vc.moClient.Logout(ctx)
-	}
-	return nil
-}
-
-// connectVSAN ensures that the underlying vSAN client is initialized if the vCenter supports vSAN storage
-// Not all vCenter environments will have vSAN storage enabled.
-func (vc *vcenterClient) connectVSAN(ctx context.Context) error {
-	if vc.vsanDriver == nil {
-		vsanDriver, err := vsan.NewClient(ctx, vc.vimDriver)
-		if err != nil {
-			return err
-		}
-		vc.vsanDriver = vsanDriver
 	}
 	return nil
 }
@@ -126,72 +106,6 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, err
 		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
 	}
 	return rps, err
-}
-
-// VSANCluster returns back vSAN performance metrics for a cluster reference
-func (vc *vcenterClient) VSANCluster(
-	ctx context.Context,
-	clusterRef *vt.ManagedObjectReference,
-	startTime time.Time,
-	endTime time.Time,
-) ([]types.VsanPerfEntityMetricCSV, error) {
-	// not all vCenters support vSAN so just return an empty result
-	if vc.vsanDriver == nil {
-		return []types.VsanPerfEntityMetricCSV{}, nil
-	}
-
-	querySpec := []types.VsanPerfQuerySpec{
-		{
-			EntityRefId: "cluster-domclient:*",
-			StartTime:   &startTime,
-			EndTime:     &endTime,
-		},
-	}
-	return vc.queryVsan(ctx, clusterRef, querySpec)
-}
-
-// VSANHosts returns back vSAN performance metrics for a host reference
-// will return nil
-func (vc *vcenterClient) VSANHosts(
-	ctx context.Context,
-	clusterRef *vt.ManagedObjectReference,
-	startTime time.Time,
-	endTime time.Time,
-) ([]types.VsanPerfEntityMetricCSV, error) {
-	// not all vCenters support vSAN so just return an empty result
-	if vc.vsanDriver == nil {
-		return []types.VsanPerfEntityMetricCSV{}, nil
-	}
-	querySpec := []types.VsanPerfQuerySpec{
-		{
-			EntityRefId: "host-domclient:*",
-			StartTime:   &startTime,
-			EndTime:     &endTime,
-		},
-	}
-	return vc.queryVsan(ctx, clusterRef, querySpec)
-}
-
-// VSANHosts returns back vSAN performance metrics for a virtual machine reference
-func (vc *vcenterClient) VSANVirtualMachines(
-	ctx context.Context,
-	clusterRef *vt.ManagedObjectReference,
-	startTime time.Time,
-	endTime time.Time,
-) ([]types.VsanPerfEntityMetricCSV, error) {
-	// not all vCenters support vSAN so just return an empty result
-	if vc.vsanDriver == nil {
-		return []types.VsanPerfEntityMetricCSV{}, nil
-	}
-
-	querySpec := []types.VsanPerfQuerySpec{
-		{
-			EntityRefId: "virtual-machine:*",
-			StartTime:   &startTime,
-			EndTime:     &endTime,
-		},
-	}
-	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
 type perfSampleResult struct {
@@ -223,12 +137,4 @@ func (vc *vcenterClient) performanceQuery(
 		counters: counterInfoByName,
 		results:  result,
 	}, nil
-}
-
-func (vc *vcenterClient) queryVsan(
-	ctx context.Context,
-	ref *vt.ManagedObjectReference,
-	qs []types.VsanPerfQuerySpec,
-) ([]types.VsanPerfEntityMetricCSV, error) {
-	return vc.vsanDriver.VsanPerfQueryPerf(ctx, ref, qs)
 }
