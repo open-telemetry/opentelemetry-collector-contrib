@@ -49,32 +49,35 @@ func newVmwarevcenterClient(c *Config) *vcenterClient {
 
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
-	if vc.moClient == nil {
-		sdkURL, err := vc.cfg.SDKUrl()
-		if err != nil {
-			return err
-		}
-		client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.MetricsConfig.Insecure)
-		if err != nil {
-			return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
-		}
-		tlsCfg, err := vc.cfg.MetricsConfig.LoadTLSConfig()
-		if err != nil {
-			return err
-		}
-		client.DefaultTransport().TLSClientConfig = tlsCfg
-		user := url.UserPassword(vc.cfg.MetricsConfig.Username, vc.cfg.MetricsConfig.Password)
-		err = client.Login(ctx, user)
-		if err != nil {
-			return fmt.Errorf("unable to login to vcenter sdk: %w", err)
-		}
-		vc.moClient = client
-		vc.vimDriver = client.Client
-		vc.pc = property.DefaultCollector(vc.vimDriver)
-		vc.finder = find.NewFinder(vc.vimDriver)
-		// swallowing error because not all vCenters need vSAN API enabled
-		_ = vc.connectVSAN(ctx)
+	if vc.moClient != nil {
+		return nil
 	}
+
+	sdkURL, err := vc.cfg.SDKUrl()
+	if err != nil {
+		return err
+	}
+	client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.MetricsConfig.Insecure)
+	if err != nil {
+		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
+	}
+	tlsCfg, err := vc.cfg.MetricsConfig.LoadTLSConfig()
+	if err != nil {
+		return err
+	}
+	client.DefaultTransport().TLSClientConfig = tlsCfg
+	user := url.UserPassword(vc.cfg.MetricsConfig.Username, vc.cfg.MetricsConfig.Password)
+	err = client.Login(ctx, user)
+	if err != nil {
+		return fmt.Errorf("unable to login to vcenter sdk: %w", err)
+	}
+	vc.moClient = client
+	vc.vimDriver = client.Client
+	vc.pc = property.DefaultCollector(vc.vimDriver)
+	vc.finder = find.NewFinder(vc.vimDriver)
+	// swallowing error because not all vCenters need vSAN API enabled
+	_ = vc.connectVSAN(ctx)
+
 	return nil
 }
 
@@ -131,10 +134,10 @@ func (vc *vcenterClient) VSANCluster(
 	clusterRef *vt.ManagedObjectReference,
 	startTime time.Time,
 	endTime time.Time,
-) (*[]types.VsanPerfEntityMetricCSV, error) {
+) ([]types.VsanPerfEntityMetricCSV, error) {
 	// not all vCenters support vSAN so just return an empty result
 	if vc.vsanDriver == nil {
-		return &[]types.VsanPerfEntityMetricCSV{}, nil
+		return []types.VsanPerfEntityMetricCSV{}, nil
 	}
 
 	querySpec := []types.VsanPerfQuerySpec{
@@ -154,10 +157,10 @@ func (vc *vcenterClient) VSANHosts(
 	clusterRef *vt.ManagedObjectReference,
 	startTime time.Time,
 	endTime time.Time,
-) (*[]types.VsanPerfEntityMetricCSV, error) {
+) ([]types.VsanPerfEntityMetricCSV, error) {
 	// not all vCenters support vSAN so just return an empty result
 	if vc.vsanDriver == nil {
-		return &[]types.VsanPerfEntityMetricCSV{}, nil
+		return []types.VsanPerfEntityMetricCSV{}, nil
 	}
 	querySpec := []types.VsanPerfQuerySpec{
 		{
@@ -175,10 +178,10 @@ func (vc *vcenterClient) VSANVirtualMachines(
 	clusterRef *vt.ManagedObjectReference,
 	startTime time.Time,
 	endTime time.Time,
-) (*[]types.VsanPerfEntityMetricCSV, error) {
+) ([]types.VsanPerfEntityMetricCSV, error) {
 	// not all vCenters support vSAN so just return an empty result
 	if vc.vsanDriver == nil {
-		return &[]types.VsanPerfEntityMetricCSV{}, nil
+		return []types.VsanPerfEntityMetricCSV{}, nil
 	}
 
 	querySpec := []types.VsanPerfQuerySpec{
@@ -226,10 +229,6 @@ func (vc *vcenterClient) queryVsan(
 	ctx context.Context,
 	ref *vt.ManagedObjectReference,
 	qs []types.VsanPerfQuerySpec,
-) (*[]types.VsanPerfEntityMetricCSV, error) {
-	CSVs, err := vc.vsanDriver.VsanPerfQueryPerf(ctx, ref, qs)
-	if err != nil {
-		return nil, err
-	}
-	return &CSVs, nil
+) ([]types.VsanPerfEntityMetricCSV, error) {
+	return vc.vsanDriver.VsanPerfQueryPerf(ctx, ref, qs)
 }

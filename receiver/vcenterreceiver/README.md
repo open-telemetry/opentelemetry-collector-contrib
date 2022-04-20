@@ -47,7 +47,7 @@ receivers:
       username: otelu
       password: $VCENTER_PASSWORD
       collection_interval: 5m
-      metrics: []
+      settings: []
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).

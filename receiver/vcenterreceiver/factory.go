@@ -59,7 +59,7 @@ func createDefaultConfig() config.Receiver {
 				CollectionInterval: 2 * time.Minute,
 			},
 			TLSClientSetting: configtls.TLSClientSetting{},
-			Metrics:          metadata.DefaultMetricsSettings(),
+			Settings:         metadata.DefaultMetricsSettings(),
 		},
 	}
 }

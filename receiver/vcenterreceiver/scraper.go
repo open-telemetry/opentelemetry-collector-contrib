@@ -52,7 +52,7 @@ func newVmwareVcenterScraper(
 		client: client,
 		config: config,
 		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.MetricsConfig.Metrics),
+		mb:     metadata.NewMetricsBuilder(config.MetricsConfig.Settings),
 	}
 }
 
@@ -117,9 +117,7 @@ func (v *vcenterMetricScraper) collectCluster(
 	if err != nil {
 		errs.AddPartial(1, err)
 	}
-	if csvs != nil {
-		v.addVSANMetrics(*csvs, "*", clusterType, errs)
-	}
+	v.addVSANMetrics(csvs, "*", clusterType, errs)
 
 	v.mb.EmitForResource(
 		metadata.WithVcenterClusterName(c.Name()),
@@ -170,8 +168,7 @@ func (v *vcenterMetricScraper) collectHosts(
 	}
 
 	clusterRef := cluster.Reference()
-	var hostVsanCSVs *[]types.VsanPerfEntityMetricCSV
-	hostVsanCSVs, err = v.client.VSANHosts(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
+	hostVsanCSVs, err := v.client.VSANHosts(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		errs.AddPartial(1, err)
 	}
@@ -186,7 +183,7 @@ func (v *vcenterMetricScraper) collectHost(
 	now pdata.Timestamp,
 	host *object.HostSystem,
 	cluster *object.ClusterComputeResource,
-	vsanCsvs *[]types.VsanPerfEntityMetricCSV,
+	vsanCsvs []types.VsanPerfEntityMetricCSV,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	var hwSum mo.HostSystem
@@ -207,7 +204,7 @@ func (v *vcenterMetricScraper) collectHost(
 		entityRef := fmt.Sprintf("host-domclient:%v",
 			hwSum.Config.VsanHostConfig.ClusterInfo.NodeUuid,
 		)
-		v.addVSANMetrics(*vsanCsvs, entityRef, hostType, errs)
+		v.addVSANMetrics(vsanCsvs, entityRef, hostType, errs)
 	}
 	v.mb.EmitForResource(
 		metadata.WithVcenterHostName(host.Name()),
@@ -249,7 +246,7 @@ func (v *vcenterMetricScraper) collectVMs(
 		return
 	}
 
-	var vsanCsvs *[]types.VsanPerfEntityMetricCSV
+	var vsanCsvs []types.VsanPerfEntityMetricCSV
 	clusterRef := cluster.Reference()
 	vsanCsvs, err = v.client.VSANVirtualMachines(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
 	if err != nil {
@@ -306,15 +303,12 @@ func (v *vcenterMetricScraper) collectVM(
 	colTime pdata.Timestamp,
 	vm mo.VirtualMachine,
 	entityRefID string,
-	vsanCsvs *[]types.VsanPerfEntityMetricCSV,
+	vsanCsvs []types.VsanPerfEntityMetricCSV,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.recordVMUsages(colTime, vm)
 	v.recordVMPerformance(ctx, vm, errs)
-
-	if vsanCsvs != nil {
-		v.addVSANMetrics(*vsanCsvs, entityRefID, vmType, errs)
-	}
+	v.addVSANMetrics(vsanCsvs, entityRefID, vmType, errs)
 }
 
 type vsanType int

@@ -37,7 +37,7 @@ type Config struct {
 type MetricsConfig struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	Settings                                metadata.MetricsSettings `mapstructure:"settings"`
 	Endpoint                                string                   `mapstructure:"endpoint"`
 	Username                                string                   `mapstructure:"username"`
 	Password                                string                   `mapstructure:"password"`
