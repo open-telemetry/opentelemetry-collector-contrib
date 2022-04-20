@@ -18,6 +18,7 @@ run:
   # from this option's value (see skip-dirs-use-default).
   skip-dirs:
     - third_party
+    - pkg/stanza
 
   # default is true. Enables skipping of directories:
   #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
