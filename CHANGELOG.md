@@ -14,6 +14,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
+- `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
 
 ### 💡 Enhancements 💡
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
@@ -79,6 +80,7 @@
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
+- `dynatraceexporter`: Continue processing data points after a serialization error. (#9330)
 
 ## v0.48.0
 

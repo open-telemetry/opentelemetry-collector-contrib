@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-// +build !windows
+package activedirectorydsreceiver
 
-//go:generate mdatagen --experimental-gen metadata.yaml
+import (
+	"testing"
 
-package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
+	"github.com/stretchr/testify/require"
+)
+
+func TestNewFactory(t *testing.T) {
+	t.Parallel()
+
+	fact := NewFactory()
+	require.NotNil(t, fact)
+}
+
+func TestDefaultConfig(t *testing.T) {
+	t.Parallel()
+
+	conf := createDefaultConfig()
+	require.NotNil(t, conf)
+}

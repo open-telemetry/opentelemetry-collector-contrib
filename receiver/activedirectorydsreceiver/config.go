@@ -1,10 +1,10 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,24 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
+package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
 import (
-	"time"
-
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.NetAddr                       `mapstructure:",squash"`
-
-	// Timeout for the memcache stats request
-	Timeout time.Duration `mapstructure:"timeout"`
-
-	// Metrics allows customizing scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }
