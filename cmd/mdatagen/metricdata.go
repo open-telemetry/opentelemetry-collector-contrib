@@ -32,6 +32,7 @@ type MetricData interface {
 	HasMonotonic() bool
 	HasAggregated() bool
 	HasMetricValueType() bool
+	HasMetricInputType() bool
 }
 
 // Aggregated defines a metric aggregation type.
@@ -57,6 +58,17 @@ func (agg Aggregated) Type() string {
 type Mono struct {
 	// Monotonic is true if the sum is monotonic.
 	Monotonic bool `mapstructure:"monotonic"`
+}
+
+// MetricInputType defines the metric input value type
+type MetricInputType struct {
+	// InputType is the type the metric needs to be parsed from, options are "string"
+	InputType string `mapstructure:"input_type" validate:"omitempty,oneof=string"`
+}
+
+// Type returns name of the datapoint type.
+func (mit MetricInputType) String() string {
+	return mit.InputType
 }
 
 // MetricValueType defines the metric number type.
@@ -97,6 +109,7 @@ func (mvt MetricValueType) BasicType() string {
 
 type gauge struct {
 	MetricValueType `mapstructure:"value_type"`
+	MetricInputType `mapstructure:",squash"`
 }
 
 func (d gauge) Type() string {
@@ -115,10 +128,15 @@ func (d gauge) HasMetricValueType() bool {
 	return true
 }
 
+func (d gauge) HasMetricInputType() bool {
+	return d.InputType != ""
+}
+
 type sum struct {
 	Aggregated      `mapstructure:",squash"`
 	Mono            `mapstructure:",squash"`
 	MetricValueType `mapstructure:"value_type"`
+	MetricInputType `mapstructure:",squash"`
 }
 
 func (d sum) Type() string {
@@ -135,6 +153,10 @@ func (d sum) HasAggregated() bool {
 
 func (d sum) HasMetricValueType() bool {
 	return true
+}
+
+func (d sum) HasMetricInputType() bool {
+	return d.InputType != ""
 }
 
 type histogram struct {
@@ -154,5 +176,9 @@ func (d histogram) HasAggregated() bool {
 }
 
 func (d histogram) HasMetricValueType() bool {
+	return false
+}
+
+func (d histogram) HasMetricInputType() bool {
 	return false
 }

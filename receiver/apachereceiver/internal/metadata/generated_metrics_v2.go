@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -458,13 +460,23 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
-func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string) error {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		return fmt.Errorf("failed to parse int for ApacheCurrentConnections, value was %s: %w", val, err)
+	} else {
+		mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
+	}
+	return nil
 }
 
 // RecordApacheRequestsDataPoint adds a data point to apache.requests metric.
-func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string) error {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		return fmt.Errorf("failed to parse int for ApacheRequests, value was %s: %w", val, err)
+	} else {
+		mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
+	}
+	return nil
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
@@ -478,13 +490,23 @@ func (mb *MetricsBuilder) RecordApacheTrafficDataPoint(ts pcommon.Timestamp, val
 }
 
 // RecordApacheUptimeDataPoint adds a data point to apache.uptime metric.
-func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string) error {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		return fmt.Errorf("failed to parse int for ApacheUptime, value was %s: %w", val, err)
+	} else {
+		mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
+	}
+	return nil
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
-func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, val int64, serverNameAttributeValue string, workersStateAttributeValue string) {
-	mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, workersStateAttributeValue)
+func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, val string, serverNameAttributeValue string, workersStateAttributeValue string) error {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		return fmt.Errorf("failed to parse int for ApacheWorkers, value was %s: %w", val, err)
+	} else {
+		mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue, workersStateAttributeValue)
+	}
+	return nil
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

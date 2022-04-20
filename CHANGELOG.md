@@ -19,6 +19,8 @@
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
 
+- `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
+
 ### 🧰 Bug fixes 🧰
 
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
