@@ -59,7 +59,7 @@ func newVmwareVcenterScraper(
 }
 
 func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) error {
-	return v.client.Connect(ctx)
+	return v.client.EnsureConnection(ctx)
 }
 
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
@@ -72,25 +72,26 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error
 	}
 
 	// ensure connection before scraping
-	if err := v.client.Connect(ctx); err != nil {
+	if err := v.client.EnsureConnection(ctx); err != nil {
 		return pdata.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
 
-	errs := &scrapererror.ScrapeErrors{}
 	err := v.client.ConnectVSAN(ctx)
 	if err != nil {
 		// vsan is not required for a proper collection
 		v.vsanEnabled = false
 	}
-	v.collectClusters(ctx, errs)
-	return v.mb.Emit(), errs.Combine()
+	err = v.collectClusters(ctx)
+	return v.mb.Emit(), err
 }
 
-func (v *vcenterMetricScraper) collectClusters(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+func (v *vcenterMetricScraper) collectClusters(ctx context.Context) error {
+	errs := &scrapererror.ScrapeErrors{}
+
 	clusters, err := v.client.Clusters(ctx)
 	if err != nil {
-		errs.AddPartial(1, err)
-		return
+		errs.Add(err)
+		return errs.Combine()
 	}
 	now := pdata.NewTimestampFromTime(time.Now())
 
@@ -101,6 +102,8 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, errs *scrape
 		v.collectCluster(ctx, now, c, errs)
 	}
 	v.collectResourcePools(ctx, now, errs)
+
+	return errs.Combine()
 }
 
 func (v *vcenterMetricScraper) collectCluster(
@@ -185,11 +188,7 @@ func (v *vcenterMetricScraper) collectHosts(
 	}
 
 	for _, h := range hosts {
-		v.collectHost(ctx, colTime, h, hostVsanCSVs, errs)
-		v.mb.EmitForResource(
-			metadata.WithVcenterHostName(h.Name()),
-			metadata.WithVcenterClusterName(cluster.Name()),
-		)
+		v.collectHost(ctx, colTime, h, cluster, hostVsanCSVs, errs)
 	}
 }
 
@@ -197,6 +196,7 @@ func (v *vcenterMetricScraper) collectHost(
 	ctx context.Context,
 	now pdata.Timestamp,
 	host *object.HostSystem,
+	cluster *object.ClusterComputeResource,
 	vsanCsvs *[]types.VsanPerfEntityMetricCSV,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -220,6 +220,10 @@ func (v *vcenterMetricScraper) collectHost(
 		)
 		v.addVSANMetrics(*vsanCsvs, entityRef, hostType, errs)
 	}
+	v.mb.EmitForResource(
+		metadata.WithVcenterHostName(host.Name()),
+		metadata.WithVcenterClusterName(cluster.Name()),
+	)
 }
 
 func (v *vcenterMetricScraper) collectResourcePools(

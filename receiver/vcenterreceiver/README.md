@@ -35,7 +35,7 @@ receivers:
 | username |  | String | Required |
 | password |  | String | Required |
 | tls | | TLSClientSetting | Not Required. Will use defaults for [configtls.TLSClientSetting](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). By default insecure settings are rejected and certificate verification is on. |
-| collection_interval | 2m | Duration | This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h` |
+| collection_interval | 2m | Duration | This receiver collects metrics on an interval. If the vCenter is fairly large, this value may need to be increased. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h` |
 
 ### Example Configuration
 

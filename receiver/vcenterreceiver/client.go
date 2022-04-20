@@ -48,7 +48,7 @@ func newVmwarevcenterClient(c *Config) *vcenterClient {
 	}
 }
 
-func (vc *vcenterClient) Connect(ctx context.Context) error {
+func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.moClient == nil {
 		sdkURL, err := vc.cfg.SDKUrl()
 		if err != nil {
