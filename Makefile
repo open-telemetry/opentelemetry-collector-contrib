@@ -108,10 +108,10 @@ add-tag:
 push-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Pushing tag ${TAG}"
-	@git push upstream ${TAG}
+	@git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git ${TAG}
 	@set -e; for dir in $(ALL_MODULES); do \
 	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
-	 	git push upstream "$${dir:2}/$${TAG}"); \
+	 	git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git "$${dir:2}/$${TAG}"); \
 	done
 
 .PHONY: delete-tag
