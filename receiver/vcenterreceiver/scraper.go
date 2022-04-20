@@ -29,9 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-// example 2022-03-10 14:15:00
-const timeFormat = "2006-01-02 15:04:05"
-
 var _ component.Receiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
@@ -90,7 +87,7 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context) error {
 		v.collectHosts(ctx, now, c, errs)
 		v.collectDatastores(ctx, now, c, errs)
 		v.collectVMs(ctx, now, c, errs)
-		v.collectCluster(ctx, now, c, errs)
+		v.collectCluster(ctx, now, c)
 	}
 	v.collectResourcePools(ctx, now, errs)
 
@@ -101,7 +98,6 @@ func (v *vcenterMetricScraper) collectCluster(
 	ctx context.Context,
 	now pdata.Timestamp,
 	c *object.ClusterComputeResource,
-	errs *scrapererror.ScrapeErrors,
 ) {
 	var moCluster mo.ClusterComputeResource
 	c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
@@ -237,7 +233,6 @@ func (v *vcenterMetricScraper) collectVMs(
 		}
 
 		vmUUID := moVM.Config.InstanceUuid
-		entityRefID := fmt.Sprintf("virtual-machine:%s", vmUUID)
 
 		if string(moVM.Runtime.PowerState) == "poweredOff" {
 			poweredOffVMs++
@@ -254,7 +249,7 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
-		v.collectVM(ctx, colTime, moVM, entityRefID, errs)
+		v.collectVM(ctx, colTime, moVM, errs)
 		v.mb.EmitForResource(
 			metadata.WithVcenterVMName(vm.Name()),
 			metadata.WithVcenterVMID(vmUUID),
@@ -271,7 +266,6 @@ func (v *vcenterMetricScraper) collectVM(
 	ctx context.Context,
 	colTime pdata.Timestamp,
 	vm mo.VirtualMachine,
-	entityRefID string,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.recordVMUsages(colTime, vm)
