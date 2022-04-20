@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/vmware/govmomi"
@@ -41,7 +40,6 @@ type vcenterClient struct {
 	finder     *find.Finder
 	pc         *property.Collector
 	cfg        *Config
-	clientLock *sync.RWMutex
 }
 
 func newVmwarevcenterClient(c *Config) *vcenterClient {
