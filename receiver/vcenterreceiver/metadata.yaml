@@ -2,22 +2,22 @@ name: vmwarevcenterreceiver
 
 resource_attributes:
   vcenter.cluster.name:
-    description: The name of the vCenter Cluster
+    description: The name of the vCenter Cluster.
     type: string
   vcenter.host.name:
-    description: The hostname of the vCenter ESXi host
+    description: The hostname of the vCenter ESXi host.
     type: string
   vcenter.resource_pool.name:
-    description: The name of the resource pool
+    description: The name of the resource pool.
     type: string
   vcenter.datastore.name:
-    description: The name of the vCenter datastore
+    description: The name of the vCenter datastore.
     type: string
   vcenter.vm.name:
-    description: The name of the virtual machine
+    description: The name of the virtual machine.
     type: string
   vcenter.vm.id:
-    description: The instance UUID of the virtual machine
+    description: The instance UUID of the virtual machine.
     type: string
 
 attributes:
@@ -29,7 +29,7 @@ attributes:
       - used
   host_effective:
     value: effective
-    description: Whether the host is effective in the vCenter cluster
+    description: Whether the host is effective in the vCenter cluster.
     type: bool
     enum:
       - "true"
@@ -55,7 +55,7 @@ attributes:
       - received
   vm_count_power_state:
     value: power_state
-    description: Whether the virtual machines are powered on or off
+    description: Whether the virtual machines are powered on or off.
     type: string
     enum:
       - "on"
@@ -86,7 +86,7 @@ attributes:
 metrics:
   vcenter.cluster.cpu.limit:
     enabled: true
-    description: The amount of CPU available to the cluster
+    description: The amount of CPU available to the cluster.
     unit: "{MHz}"
     sum:
       monotonic: false
@@ -131,7 +131,7 @@ metrics:
     attributes: []
   vcenter.cluster.memory.used:
     enabled: true
-    description: The memory that is currently used by the cluster
+    description: The memory that is currently used by the cluster.
     unit: By
     sum:
       monotonic: false
@@ -149,7 +149,7 @@ metrics:
     attributes: [vsan_latency_type]
   vcenter.cluster.vsan.operations:
     enabled: true
-    description: IOPS consumed by all vSAN clients in the cluster
+    description: IOPS consumed by all vSAN clients in the cluster.
     unit: "{operations/sec}"
     sum:
       monotonic: false
@@ -167,7 +167,7 @@ metrics:
     attributes: []
   vcenter.cluster.vsan.outstanding_io:
     enabled: true
-    description: Outstanding IO from all vSAN clients in the cluster
+    description: Outstanding IO from all vSAN clients in the cluster.
     unit: "{operations}"
     sum:
       monotonic: false
@@ -185,7 +185,7 @@ metrics:
     attributes: [vsan_throughput_direction]
   vcenter.cluster.vm.count:
     enabled: true
-    description: the number of virtual machines in the cluster
+    description: the number of virtual machines in the cluster.
     unit: "{virtual_machines}"
     sum:
       monotonic: false
@@ -194,7 +194,7 @@ metrics:
     attributes: [vm_count_power_state]
   vcenter.cluster.host.count:
     enabled: true
-    description: The number of hosts in the cluster
+    description: The number of hosts in the cluster.
     unit: "{hosts}"
     sum:
       monotonic: false
@@ -213,21 +213,21 @@ metrics:
     attributes: [disk_state]
   vcenter.datastore.disk.utilization:
     enabled: true
-    description: The utilization of the datastore
+    description: The utilization of the datastore.
     unit: "%"
     gauge:
       value_type: double
     attributes: []
   vcenter.host.cpu.utilization:
     enabled: true
-    description: The CPU utilization of the host system
+    description: The CPU utilization of the host system.
     unit: "%"
     gauge:
       value_type: double
     attributes: []
   vcenter.host.cpu.usage:
     enabled: true
-    description: The amount of CPU in Hz used by the host
+    description: The amount of CPU in Hz used by the host.
     unit: "MHz"
     sum:
       monotonic: false
@@ -236,7 +236,7 @@ metrics:
     attributes: []
   vcenter.host.disk.throughput:
     enabled: true
-    description: The throughput to the host system's disk
+    description: The throughput to the host system's disk.
     unit: By/s
     sum:
       monotonic: false
@@ -260,14 +260,14 @@ metrics:
     attributes: [latency_direction]
   vcenter.host.memory.utilization:
     enabled: true
-    description: The percentage of the host system's memory capacity that is being utilized
+    description: The percentage of the host system's memory capacity that is being utilized.
     unit: "%"
     gauge:
       value_type: double
     attributes: []
   vcenter.host.memory.usage:
     enabled: true
-    description: The amount of memory the host system is using
+    description: The amount of memory the host system is using.
     unit: MBy
     sum:
       monotonic: false
@@ -276,7 +276,7 @@ metrics:
     attributes: []
   vcenter.host.network.throughput:
     enabled: true
-    description: The amount of data that was sent or received over the network by the host
+    description: The amount of data that was sent or received over the network by the host.
     unit: "{KBy/s}"
     sum:
       monotonic: false
@@ -303,7 +303,7 @@ metrics:
     attributes: [throughput_direction]
   vcenter.host.network.packets:
     enabled: true
-    description: The number of packets sent over an interval
+    description: The number of packets sent over an interval.
     unit: "{packets/sec}"
     sum:
       monotonic: false
@@ -330,7 +330,7 @@ metrics:
     attributes: [vsan_operation_type]
   vcenter.host.vsan.congestions:
     enabled: true
-    description: Congestions of IOs generated by all vSAN clients on the host
+    description: Congestions of IOs generated by all vSAN clients on the host.
     unit: "{congestions/sec}"
     sum:
       monotonic: false
@@ -348,7 +348,7 @@ metrics:
     attributes: [vsan_latency_type]
   vcenter.host.vsan.cache.reads:
     enabled: true
-    description: Average latency of IOs generated by all vSAN clients on the host
+    description: Average latency of IOs generated by all vSAN clients on the host.
     unit: "{operations/sec}"
     sum:
       monotonic: false
@@ -357,7 +357,7 @@ metrics:
     attributes: []
   vcenter.host.vsan.cache.hit_rate:
     enabled: true
-    description: Percentage of read IOs which could be satisfied by the local client cache
+    description: Percentage of read IOs which could be satisfied by the local client cache.
     unit: "%"
     gauge:
       value_type: double
@@ -373,7 +373,7 @@ metrics:
     attributes: []
   vcenter.resource_pool.memory.usage:
     enabled: true
-    description: The usage of the memory by the resource pool
+    description: The usage of the memory by the resource pool.
     unit: MBy
     sum:
       monotonic: false
@@ -382,7 +382,7 @@ metrics:
     attributes: []
   vcenter.resource_pool.memory.shares:
     enabled: true
-    description: The amount of shares of memory in the resource pool
+    description: The amount of shares of memory in the resource pool.
     unit: "{shares}"
     sum:
       monotonic: false
@@ -391,7 +391,7 @@ metrics:
     attributes: []
   vcenter.resource_pool.cpu.usage:
     enabled: true
-    description: The usage of the CPU used by the resource pool
+    description: The usage of the CPU used by the resource pool.
     unit: "{MHz}"
     sum:
       monotonic: false
@@ -400,7 +400,7 @@ metrics:
     attributes: []
   vcenter.resource_pool.cpu.shares:
     enabled: true
-    description: The amount of shares of CPU in the resource pool
+    description: The amount of shares of CPU in the resource pool.
     unit: "{shares}"
     sum:
       monotonic: false
@@ -418,7 +418,7 @@ metrics:
     attributes: []
   vcenter.vm.memory.usage:
     enabled: true
-    description: The amount of memory that is used by the virtual machine
+    description: The amount of memory that is used by the virtual machine.
     unit: MBy
     sum:
       monotonic: false
@@ -427,14 +427,14 @@ metrics:
     attributes: []
   vcenter.vm.cpu.utilization:
     enabled: true
-    description: The CPU utilization of the virtual machine
+    description: The CPU utilization of the virtual machine.
     unit: "%"
     gauge:
       value_type: double
     attributes: []
   vcenter.vm.disk.usage:
     enabled: true
-    description: The amount of storage space the virtual machine is using
+    description: The amount of storage space used by the virtual machine.
     unit: By
     sum:
       monotonic: false
@@ -443,14 +443,14 @@ metrics:
     attributes: [disk_state]
   vcenter.vm.disk.utilization:
     enabled: true
-    description: The utilization of storage on the virtual machine
+    description: The utilization of storage on the virtual machine.
     unit: "%"
     gauge:
       value_type: double
     attributes: []
   vcenter.vm.disk.latency.avg:
     enabled: true
-    description: The latency of operations to the virtual machine's disk
+    description: The latency of operations to the virtual machine's disk.
     unit: µs
     gauge:
       value_type: int
@@ -465,7 +465,7 @@ metrics:
     attributes: []
   vcenter.vm.disk.throughput:
     enabled: true
-    description: The throughput of the virtual machine's disk
+    description: The throughput of the virtual machine's disk.
     unit: By/sec
     sum:
       monotonic: false

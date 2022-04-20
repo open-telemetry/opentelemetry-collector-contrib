@@ -287,7 +287,7 @@ type metricVcenterClusterCPULimit struct {
 // init fills vcenter.cluster.cpu.limit metric with initial data.
 func (m *metricVcenterClusterCPULimit) init() {
 	m.data.SetName("vcenter.cluster.cpu.limit")
-	m.data.SetDescription("The amount of CPU available to the cluster")
+	m.data.SetDescription("The amount of CPU available to the cluster.")
 	m.data.SetUnit("{MHz}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -389,7 +389,7 @@ type metricVcenterClusterHostCount struct {
 // init fills vcenter.cluster.host.count metric with initial data.
 func (m *metricVcenterClusterHostCount) init() {
 	m.data.SetName("vcenter.cluster.host.count")
-	m.data.SetDescription("The number of hosts in the cluster")
+	m.data.SetDescription("The number of hosts in the cluster.")
 	m.data.SetUnit("{hosts}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -544,7 +544,7 @@ type metricVcenterClusterMemoryUsed struct {
 // init fills vcenter.cluster.memory.used metric with initial data.
 func (m *metricVcenterClusterMemoryUsed) init() {
 	m.data.SetName("vcenter.cluster.memory.used")
-	m.data.SetDescription("The memory that is currently used by the cluster")
+	m.data.SetDescription("The memory that is currently used by the cluster.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -595,7 +595,7 @@ type metricVcenterClusterVMCount struct {
 // init fills vcenter.cluster.vm.count metric with initial data.
 func (m *metricVcenterClusterVMCount) init() {
 	m.data.SetName("vcenter.cluster.vm.count")
-	m.data.SetDescription("the number of virtual machines in the cluster")
+	m.data.SetDescription("the number of virtual machines in the cluster.")
 	m.data.SetUnit("{virtual_machines}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -752,7 +752,7 @@ type metricVcenterClusterVsanOperations struct {
 // init fills vcenter.cluster.vsan.operations metric with initial data.
 func (m *metricVcenterClusterVsanOperations) init() {
 	m.data.SetName("vcenter.cluster.vsan.operations")
-	m.data.SetDescription("IOPS consumed by all vSAN clients in the cluster")
+	m.data.SetDescription("IOPS consumed by all vSAN clients in the cluster.")
 	m.data.SetUnit("{operations/sec}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -805,7 +805,7 @@ type metricVcenterClusterVsanOutstandingIo struct {
 // init fills vcenter.cluster.vsan.outstanding_io metric with initial data.
 func (m *metricVcenterClusterVsanOutstandingIo) init() {
 	m.data.SetName("vcenter.cluster.vsan.outstanding_io")
-	m.data.SetDescription("Outstanding IO from all vSAN clients in the cluster")
+	m.data.SetDescription("Outstanding IO from all vSAN clients in the cluster.")
 	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -962,7 +962,7 @@ type metricVcenterDatastoreDiskUtilization struct {
 // init fills vcenter.datastore.disk.utilization metric with initial data.
 func (m *metricVcenterDatastoreDiskUtilization) init() {
 	m.data.SetName("vcenter.datastore.disk.utilization")
-	m.data.SetDescription("The utilization of the datastore")
+	m.data.SetDescription("The utilization of the datastore.")
 	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -1011,7 +1011,7 @@ type metricVcenterHostCPUUsage struct {
 // init fills vcenter.host.cpu.usage metric with initial data.
 func (m *metricVcenterHostCPUUsage) init() {
 	m.data.SetName("vcenter.host.cpu.usage")
-	m.data.SetDescription("The amount of CPU in Hz used by the host")
+	m.data.SetDescription("The amount of CPU in Hz used by the host.")
 	m.data.SetUnit("MHz")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1062,7 +1062,7 @@ type metricVcenterHostCPUUtilization struct {
 // init fills vcenter.host.cpu.utilization metric with initial data.
 func (m *metricVcenterHostCPUUtilization) init() {
 	m.data.SetName("vcenter.host.cpu.utilization")
-	m.data.SetDescription("The CPU utilization of the host system")
+	m.data.SetDescription("The CPU utilization of the host system.")
 	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -1214,7 +1214,7 @@ type metricVcenterHostDiskThroughput struct {
 // init fills vcenter.host.disk.throughput metric with initial data.
 func (m *metricVcenterHostDiskThroughput) init() {
 	m.data.SetName("vcenter.host.disk.throughput")
-	m.data.SetDescription("The throughput to the host system's disk")
+	m.data.SetDescription("The throughput to the host system's disk.")
 	m.data.SetUnit("By/s")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1265,7 +1265,7 @@ type metricVcenterHostMemoryUsage struct {
 // init fills vcenter.host.memory.usage metric with initial data.
 func (m *metricVcenterHostMemoryUsage) init() {
 	m.data.SetName("vcenter.host.memory.usage")
-	m.data.SetDescription("The amount of memory the host system is using")
+	m.data.SetDescription("The amount of memory the host system is using.")
 	m.data.SetUnit("MBy")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1316,7 +1316,7 @@ type metricVcenterHostMemoryUtilization struct {
 // init fills vcenter.host.memory.utilization metric with initial data.
 func (m *metricVcenterHostMemoryUtilization) init() {
 	m.data.SetName("vcenter.host.memory.utilization")
-	m.data.SetDescription("The percentage of the host system's memory capacity that is being utilized")
+	m.data.SetDescription("The percentage of the host system's memory capacity that is being utilized.")
 	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -1418,7 +1418,7 @@ type metricVcenterHostNetworkPackets struct {
 // init fills vcenter.host.network.packets metric with initial data.
 func (m *metricVcenterHostNetworkPackets) init() {
 	m.data.SetName("vcenter.host.network.packets")
-	m.data.SetDescription("The number of packets sent over an interval")
+	m.data.SetDescription("The number of packets sent over an interval.")
 	m.data.SetUnit("{packets/sec}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1471,7 +1471,7 @@ type metricVcenterHostNetworkThroughput struct {
 // init fills vcenter.host.network.throughput metric with initial data.
 func (m *metricVcenterHostNetworkThroughput) init() {
 	m.data.SetName("vcenter.host.network.throughput")
-	m.data.SetDescription("The amount of data that was sent or received over the network by the host")
+	m.data.SetDescription("The amount of data that was sent or received over the network by the host.")
 	m.data.SetUnit("{KBy/s}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1575,7 +1575,7 @@ type metricVcenterHostVsanCacheHitRate struct {
 // init fills vcenter.host.vsan.cache.hit_rate metric with initial data.
 func (m *metricVcenterHostVsanCacheHitRate) init() {
 	m.data.SetName("vcenter.host.vsan.cache.hit_rate")
-	m.data.SetDescription("Percentage of read IOs which could be satisfied by the local client cache")
+	m.data.SetDescription("Percentage of read IOs which could be satisfied by the local client cache.")
 	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -1624,7 +1624,7 @@ type metricVcenterHostVsanCacheReads struct {
 // init fills vcenter.host.vsan.cache.reads metric with initial data.
 func (m *metricVcenterHostVsanCacheReads) init() {
 	m.data.SetName("vcenter.host.vsan.cache.reads")
-	m.data.SetDescription("Average latency of IOs generated by all vSAN clients on the host")
+	m.data.SetDescription("Average latency of IOs generated by all vSAN clients on the host.")
 	m.data.SetUnit("{operations/sec}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1675,7 +1675,7 @@ type metricVcenterHostVsanCongestions struct {
 // init fills vcenter.host.vsan.congestions metric with initial data.
 func (m *metricVcenterHostVsanCongestions) init() {
 	m.data.SetName("vcenter.host.vsan.congestions")
-	m.data.SetDescription("Congestions of IOs generated by all vSAN clients on the host")
+	m.data.SetDescription("Congestions of IOs generated by all vSAN clients on the host.")
 	m.data.SetUnit("{congestions/sec}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1936,7 +1936,7 @@ type metricVcenterResourcePoolCPUShares struct {
 // init fills vcenter.resource_pool.cpu.shares metric with initial data.
 func (m *metricVcenterResourcePoolCPUShares) init() {
 	m.data.SetName("vcenter.resource_pool.cpu.shares")
-	m.data.SetDescription("The amount of shares of CPU in the resource pool")
+	m.data.SetDescription("The amount of shares of CPU in the resource pool.")
 	m.data.SetUnit("{shares}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1987,7 +1987,7 @@ type metricVcenterResourcePoolCPUUsage struct {
 // init fills vcenter.resource_pool.cpu.usage metric with initial data.
 func (m *metricVcenterResourcePoolCPUUsage) init() {
 	m.data.SetName("vcenter.resource_pool.cpu.usage")
-	m.data.SetDescription("The usage of the CPU used by the resource pool")
+	m.data.SetDescription("The usage of the CPU used by the resource pool.")
 	m.data.SetUnit("{MHz}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2038,7 +2038,7 @@ type metricVcenterResourcePoolMemoryShares struct {
 // init fills vcenter.resource_pool.memory.shares metric with initial data.
 func (m *metricVcenterResourcePoolMemoryShares) init() {
 	m.data.SetName("vcenter.resource_pool.memory.shares")
-	m.data.SetDescription("The amount of shares of memory in the resource pool")
+	m.data.SetDescription("The amount of shares of memory in the resource pool.")
 	m.data.SetUnit("{shares}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2089,7 +2089,7 @@ type metricVcenterResourcePoolMemoryUsage struct {
 // init fills vcenter.resource_pool.memory.usage metric with initial data.
 func (m *metricVcenterResourcePoolMemoryUsage) init() {
 	m.data.SetName("vcenter.resource_pool.memory.usage")
-	m.data.SetDescription("The usage of the memory by the resource pool")
+	m.data.SetDescription("The usage of the memory by the resource pool.")
 	m.data.SetUnit("MBy")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2140,7 +2140,7 @@ type metricVcenterVMCPUUtilization struct {
 // init fills vcenter.vm.cpu.utilization metric with initial data.
 func (m *metricVcenterVMCPUUtilization) init() {
 	m.data.SetName("vcenter.vm.cpu.utilization")
-	m.data.SetDescription("The CPU utilization of the virtual machine")
+	m.data.SetDescription("The CPU utilization of the virtual machine.")
 	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -2189,7 +2189,7 @@ type metricVcenterVMDiskLatencyAvg struct {
 // init fills vcenter.vm.disk.latency.avg metric with initial data.
 func (m *metricVcenterVMDiskLatencyAvg) init() {
 	m.data.SetName("vcenter.vm.disk.latency.avg")
-	m.data.SetDescription("The latency of operations to the virtual machine's disk")
+	m.data.SetDescription("The latency of operations to the virtual machine's disk.")
 	m.data.SetUnit("µs")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -2289,7 +2289,7 @@ type metricVcenterVMDiskThroughput struct {
 // init fills vcenter.vm.disk.throughput metric with initial data.
 func (m *metricVcenterVMDiskThroughput) init() {
 	m.data.SetName("vcenter.vm.disk.throughput")
-	m.data.SetDescription("The throughput of the virtual machine's disk")
+	m.data.SetDescription("The throughput of the virtual machine's disk.")
 	m.data.SetUnit("By/sec")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2340,7 +2340,7 @@ type metricVcenterVMDiskUsage struct {
 // init fills vcenter.vm.disk.usage metric with initial data.
 func (m *metricVcenterVMDiskUsage) init() {
 	m.data.SetName("vcenter.vm.disk.usage")
-	m.data.SetDescription("The amount of storage space the virtual machine is using")
+	m.data.SetDescription("The amount of storage space used by the virtual machine.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2393,7 +2393,7 @@ type metricVcenterVMDiskUtilization struct {
 // init fills vcenter.vm.disk.utilization metric with initial data.
 func (m *metricVcenterVMDiskUtilization) init() {
 	m.data.SetName("vcenter.vm.disk.utilization")
-	m.data.SetDescription("The utilization of storage on the virtual machine")
+	m.data.SetDescription("The utilization of storage on the virtual machine.")
 	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -2493,7 +2493,7 @@ type metricVcenterVMMemoryUsage struct {
 // init fills vcenter.vm.memory.usage metric with initial data.
 func (m *metricVcenterVMMemoryUsage) init() {
 	m.data.SetName("vcenter.vm.memory.usage")
-	m.data.SetDescription("The amount of memory that is used by the virtual machine")
+	m.data.SetDescription("The amount of memory that is used by the virtual machine.")
 	m.data.SetUnit("MBy")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -3384,7 +3384,7 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 var Attributes = struct {
 	// DiskState (The state of storage and whether it is already allocated or free.)
 	DiskState string
-	// HostEffective (Whether the host is effective in the vCenter cluster)
+	// HostEffective (Whether the host is effective in the vCenter cluster.)
 	HostEffective string
 	// LatencyDirection (The direction of disk latency.)
 	LatencyDirection string
@@ -3392,7 +3392,7 @@ var Attributes = struct {
 	LatencyType string
 	// ThroughputDirection (The direction of network throughput.)
 	ThroughputDirection string
-	// VMCountPowerState (Whether the virtual machines are powered on or off)
+	// VMCountPowerState (Whether the virtual machines are powered on or off.)
 	VMCountPowerState string
 	// VsanLatencyType (The type of vSAN latency.)
 	VsanLatencyType string
