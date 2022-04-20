@@ -84,7 +84,7 @@ type DataCollector struct {
 
 var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
 	ID:      reportCPUMetricsAsDoubleFeatureGateID,
-	Enabled: false,
+	Enabled: true,
 	Description: "The k8s container and node cpu metrics being reported by the k8sclusterreceiver are transitioning " +
 		"from being reported as integer millicpu units to being reported as double cpu units to adhere to " +
 		"opentelemetry cpu metric specifications. You can control whether the k8sclusterreceiver reports container " +
