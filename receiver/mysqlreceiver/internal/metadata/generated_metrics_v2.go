@@ -628,7 +628,7 @@ type metricMysqlLogOperations struct {
 // init fills mysql.log_operations metric with initial data.
 func (m *metricMysqlLogOperations) init() {
 	m.data.SetName("mysql.log_operations")
-	m.data.SetDescription("The number of InndoDB log operations.")
+	m.data.SetDescription("The number of InnoDB log operations.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -681,7 +681,7 @@ type metricMysqlOperations struct {
 // init fills mysql.operations metric with initial data.
 func (m *metricMysqlOperations) init() {
 	m.data.SetName("mysql.operations")
-	m.data.SetDescription("The number of InndoDB operations.")
+	m.data.SetDescription("The number of InnoDB operations.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -734,7 +734,7 @@ type metricMysqlPageOperations struct {
 // init fills mysql.page_operations metric with initial data.
 func (m *metricMysqlPageOperations) init() {
 	m.data.SetName("mysql.page_operations")
-	m.data.SetDescription("The number of InndoDB page operations.")
+	m.data.SetDescription("The number of InnoDB page operations.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -787,7 +787,7 @@ type metricMysqlRowLocks struct {
 // init fills mysql.row_locks metric with initial data.
 func (m *metricMysqlRowLocks) init() {
 	m.data.SetName("mysql.row_locks")
-	m.data.SetDescription("The number of InndoDB row locks.")
+	m.data.SetDescription("The number of InnoDB row locks.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -840,7 +840,7 @@ type metricMysqlRowOperations struct {
 // init fills mysql.row_operations metric with initial data.
 func (m *metricMysqlRowOperations) init() {
 	m.data.SetName("mysql.row_operations")
-	m.data.SetDescription("The number of InndoDB row operations.")
+	m.data.SetDescription("The number of InnoDB row operations.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
