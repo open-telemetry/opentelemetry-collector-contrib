@@ -37,11 +37,10 @@ const timeFormat = "2006-01-02 15:04:05"
 var _ component.Receiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
-	client      *vcenterClient
-	config      *Config
-	mb          *metadata.MetricsBuilder
-	logger      *zap.Logger
-	vsanEnabled bool
+	client *vcenterClient
+	config *Config
+	mb     *metadata.MetricsBuilder
+	logger *zap.Logger
 }
 
 func newVmwareVcenterScraper(
@@ -50,11 +49,10 @@ func newVmwareVcenterScraper(
 ) *vcenterMetricScraper {
 	client := newVmwarevcenterClient(config)
 	return &vcenterMetricScraper{
-		client:      client,
-		config:      config,
-		logger:      logger,
-		mb:          metadata.NewMetricsBuilder(config.MetricsConfig.Metrics),
-		vsanEnabled: true,
+		client: client,
+		config: config,
+		logger: logger,
+		mb:     metadata.NewMetricsBuilder(config.MetricsConfig.Metrics),
 	}
 }
 
@@ -76,12 +74,7 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error
 		return pdata.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
 
-	err := v.client.ConnectVSAN(ctx)
-	if err != nil {
-		// vsan is not required for a proper collection
-		v.vsanEnabled = false
-	}
-	err = v.collectClusters(ctx)
+	err := v.collectClusters(ctx)
 	return v.mb.Emit(), err
 }
 
@@ -119,15 +112,13 @@ func (v *vcenterMetricScraper) collectCluster(
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), "false")
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), "true")
 
-	if v.vsanEnabled {
-		mor := c.Reference()
-		csvs, err := v.client.VSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
-		if err != nil {
-			errs.AddPartial(1, err)
-		}
-		if csvs != nil {
-			v.addVSANMetrics(*csvs, "*", clusterType, errs)
-		}
+	mor := c.Reference()
+	csvs, err := v.client.VSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
+	if err != nil {
+		errs.AddPartial(1, err)
+	}
+	if csvs != nil {
+		v.addVSANMetrics(*csvs, "*", clusterType, errs)
 	}
 
 	v.mb.EmitForResource(
@@ -180,11 +171,9 @@ func (v *vcenterMetricScraper) collectHosts(
 
 	clusterRef := cluster.Reference()
 	var hostVsanCSVs *[]types.VsanPerfEntityMetricCSV
-	if v.vsanEnabled {
-		hostVsanCSVs, err = v.client.VSANHosts(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
-		if err != nil {
-			errs.AddPartial(1, err)
-		}
+	hostVsanCSVs, err = v.client.VSANHosts(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
+	if err != nil {
+		errs.AddPartial(1, err)
 	}
 
 	for _, h := range hosts {
@@ -261,12 +250,10 @@ func (v *vcenterMetricScraper) collectVMs(
 	}
 
 	var vsanCsvs *[]types.VsanPerfEntityMetricCSV
-	if v.vsanEnabled {
-		clusterRef := cluster.Reference()
-		vsanCsvs, err = v.client.VSANVirtualMachines(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
-		if err != nil {
-			errs.AddPartial(1, err)
-		}
+	clusterRef := cluster.Reference()
+	vsanCsvs, err = v.client.VSANVirtualMachines(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
+	if err != nil {
+		errs.AddPartial(1, err)
 	}
 
 	poweredOffVMs := 0

@@ -16,7 +16,6 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -48,6 +47,7 @@ func newVmwarevcenterClient(c *Config) *vcenterClient {
 	}
 }
 
+// EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.moClient == nil {
 		sdkURL, err := vc.cfg.SDKUrl()
@@ -72,10 +72,13 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 		vc.vimDriver = client.Client
 		vc.pc = property.DefaultCollector(vc.vimDriver)
 		vc.finder = find.NewFinder(vc.vimDriver)
+		// swallowing error because not all vCenters need vSAN API enabled
+		_ = vc.connectVSAN(ctx)
 	}
 	return nil
 }
 
+// Disconnect will logout of the autenticated session
 func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	if vc.moClient != nil {
 		return vc.moClient.Logout(ctx)
@@ -83,7 +86,9 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-func (vc *vcenterClient) ConnectVSAN(ctx context.Context) error {
+// connectVSAN ensures that the underlying vSAN client is initialized if the vCenter supports vSAN storage
+// Not all vCenter environments will have vSAN storage enabled.
+func (vc *vcenterClient) connectVSAN(ctx context.Context) error {
 	if vc.vsanDriver == nil {
 		vsanDriver, err := vsan.NewClient(ctx, vc.vimDriver)
 		if err != nil {
@@ -94,6 +99,7 @@ func (vc *vcenterClient) ConnectVSAN(ctx context.Context) error {
 	return nil
 }
 
+// Clusters returns the clusterComputeResources of the vSphere SDK
 func (vc *vcenterClient) Clusters(ctx context.Context) ([]*object.ClusterComputeResource, error) {
 	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
 	if err != nil {
@@ -102,6 +108,7 @@ func (vc *vcenterClient) Clusters(ctx context.Context) ([]*object.ClusterCompute
 	return clusters, nil
 }
 
+// ResourcePools returns the resourcePools in the vSphere SDK
 func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
 	rps, err := vc.finder.ResourcePoolList(ctx, "*")
 	if err != nil {
@@ -118,15 +125,18 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, err
 	return rps, err
 }
 
+// VSANCluster returns back vSAN performance metrics for a cluster reference
 func (vc *vcenterClient) VSANCluster(
 	ctx context.Context,
 	clusterRef *vt.ManagedObjectReference,
 	startTime time.Time,
 	endTime time.Time,
 ) (*[]types.VsanPerfEntityMetricCSV, error) {
+	// not all vCenters support vSAN so just return an empty result
 	if vc.vsanDriver == nil {
-		return nil, errors.New("vsan client not instantiated")
+		return &[]types.VsanPerfEntityMetricCSV{}, nil
 	}
+
 	querySpec := []types.VsanPerfQuerySpec{
 		{
 			EntityRefId: "cluster-domclient:*",
@@ -137,9 +147,17 @@ func (vc *vcenterClient) VSANCluster(
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *vcenterClient) VSANHosts(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
+// VSANHosts returns back vSAN performance metrics for a host reference
+// will return nil
+func (vc *vcenterClient) VSANHosts(
+	ctx context.Context,
+	clusterRef *vt.ManagedObjectReference,
+	startTime time.Time,
+	endTime time.Time,
+) (*[]types.VsanPerfEntityMetricCSV, error) {
+	// not all vCenters support vSAN so just return an empty result
 	if vc.vsanDriver == nil {
-		return nil, errors.New("vsan client not instantiated")
+		return &[]types.VsanPerfEntityMetricCSV{}, nil
 	}
 	querySpec := []types.VsanPerfQuerySpec{
 		{
@@ -151,14 +169,16 @@ func (vc *vcenterClient) VSANHosts(ctx context.Context, clusterRef *vt.ManagedOb
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
+// VSANHosts returns back vSAN performance metrics for a virtual machine reference
 func (vc *vcenterClient) VSANVirtualMachines(
 	ctx context.Context,
 	clusterRef *vt.ManagedObjectReference,
 	startTime time.Time,
 	endTime time.Time,
 ) (*[]types.VsanPerfEntityMetricCSV, error) {
+	// not all vCenters support vSAN so just return an empty result
 	if vc.vsanDriver == nil {
-		return nil, errors.New("vsan client not instantiated")
+		return &[]types.VsanPerfEntityMetricCSV{}, nil
 	}
 
 	querySpec := []types.VsanPerfQuerySpec{
@@ -202,7 +222,11 @@ func (vc *vcenterClient) performanceQuery(
 	}, nil
 }
 
-func (vc *vcenterClient) queryVsan(ctx context.Context, ref *vt.ManagedObjectReference, qs []types.VsanPerfQuerySpec) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *vcenterClient) queryVsan(
+	ctx context.Context,
+	ref *vt.ManagedObjectReference,
+	qs []types.VsanPerfQuerySpec,
+) (*[]types.VsanPerfEntityMetricCSV, error) {
 	CSVs, err := vc.vsanDriver.VsanPerfQueryPerf(ctx, ref, qs)
 	if err != nil {
 		return nil, err
