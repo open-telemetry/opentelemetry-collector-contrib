@@ -56,9 +56,9 @@ These are the metrics available for this scraper.
 | **vcenter.vm.network.packets** | The amount of packets that was received or transmitted over the instance's network. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
 | **vcenter.vm.network.throughput** | The amount of data that was received or sent over the network of the virtual machine. | By/sec | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
 | **vcenter.vm.network.usage** | The network utilization combined transmit and receive rates during an interval. | {KBy/s} | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.vsan.latency.avg** | The latency while accessing VSAN storage | us | Gauge(Int) | <ul> <li>vsan_latency_type</li> </ul> |
-| **vcenter.vm.vsan.operations** | Virtual Machine vSAN IOPs | {operations/sec} | Sum(Int) | <ul> <li>vsan_operation_type</li> </ul> |
-| **vcenter.vm.vsan.throughput** | The VSAN throughput of a virtual machine | By/s | Sum(Int) | <ul> <li>vsan_throughput_direction</li> </ul> |
+| **vcenter.vm.vsan.latency.avg** | The latency while accessing VSAN storage. | us | Gauge(Int) | <ul> <li>vsan_latency_type</li> </ul> |
+| **vcenter.vm.vsan.operations** | Virtual Machine vSAN IOPs. | {operations/sec} | Sum(Int) | <ul> <li>vsan_operation_type</li> </ul> |
+| **vcenter.vm.vsan.throughput** | The VSAN throughput of a virtual machine. | By/s | Sum(Int) | <ul> <li>vsan_throughput_direction</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:

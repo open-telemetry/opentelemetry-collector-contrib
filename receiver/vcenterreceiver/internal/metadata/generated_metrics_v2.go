@@ -2701,7 +2701,7 @@ type metricVcenterVMVsanLatencyAvg struct {
 // init fills vcenter.vm.vsan.latency.avg metric with initial data.
 func (m *metricVcenterVMVsanLatencyAvg) init() {
 	m.data.SetName("vcenter.vm.vsan.latency.avg")
-	m.data.SetDescription("The latency while accessing VSAN storage")
+	m.data.SetDescription("The latency while accessing VSAN storage.")
 	m.data.SetUnit("us")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -2752,7 +2752,7 @@ type metricVcenterVMVsanOperations struct {
 // init fills vcenter.vm.vsan.operations metric with initial data.
 func (m *metricVcenterVMVsanOperations) init() {
 	m.data.SetName("vcenter.vm.vsan.operations")
-	m.data.SetDescription("Virtual Machine vSAN IOPs")
+	m.data.SetDescription("Virtual Machine vSAN IOPs.")
 	m.data.SetUnit("{operations/sec}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2805,7 +2805,7 @@ type metricVcenterVMVsanThroughput struct {
 // init fills vcenter.vm.vsan.throughput metric with initial data.
 func (m *metricVcenterVMVsanThroughput) init() {
 	m.data.SetName("vcenter.vm.vsan.throughput")
-	m.data.SetDescription("The VSAN throughput of a virtual machine")
+	m.data.SetDescription("The VSAN throughput of a virtual machine.")
 	m.data.SetUnit("By/s")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)

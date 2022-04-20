@@ -502,7 +502,7 @@ metrics:
     attributes: []
   vcenter.vm.vsan.operations:
     enabled: true
-    description: Virtual Machine vSAN IOPs
+    description: Virtual Machine vSAN IOPs.
     unit: "{operations/sec}"
     sum:
       monotonic: false
@@ -511,7 +511,7 @@ metrics:
     attributes: [vsan_operation_type]
   vcenter.vm.vsan.throughput:
     enabled: true
-    description: The VSAN throughput of a virtual machine
+    description: The VSAN throughput of a virtual machine.
     unit: By/s
     sum:
       monotonic: false
@@ -520,7 +520,7 @@ metrics:
     attributes: [vsan_throughput_direction]
   vcenter.vm.vsan.latency.avg:
     enabled: true
-    description: The latency while accessing VSAN storage
+    description: The latency while accessing VSAN storage.
     unit: us
     gauge:
       value_type: int
