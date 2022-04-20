@@ -87,6 +87,7 @@ func (f *vcenterReceiverFactory) createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotVcenter
 	}
+	r := f.ensureReceiver(params, cfg)
 	vr := newVmwareVcenterScraper(params.Logger, cfg)
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
@@ -107,8 +108,6 @@ func (f *vcenterReceiverFactory) createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-
-	r := f.ensureReceiver(params, cfg)
 	r.scraper = rcvr
 	return r, nil
 }
