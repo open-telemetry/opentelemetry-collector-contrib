@@ -300,6 +300,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("Message")
+				logRecord.SetObservedTimestamp(nanoTs)
 				return logRecord
 			},
 			pcommon.NewResource,

@@ -36,35 +36,56 @@ const (
 )
 
 var (
-	testLogs = []byte(`{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"dotnet"}}]},"scopeLogs":[{"scope":{},"logRecords":[{"timeUnixNano":"1643240673066096200","severityText":"Information","name":"FilterModule.Program","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"}]}]}]}`)
+	testLogs = []byte(`{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"dotnet"}}]},"scopeLogs":[{"scope":{},"logRecords":[{"timeUnixNano":"1643240673066096200","severityText":"Information","name":"FilterModule.Program","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"},{"timeUnixNano":"0","observedTimeUnixNano":"1643240673066096200","severityText":"Information","name":"FilterModule.Program","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"}]}]}]}`)
 )
 
 // Tests proper wrapping of a log record to an envelope
 func TestLogRecordToEnvelope(t *testing.T) {
-	logRecord := getTestLogRecord(t)
-	logPacker := getLogPacker()
-	envelope := logPacker.LogRecordToEnvelope(logRecord)
+	tests := []struct {
+		name      string
+		logRecord plog.LogRecord
+	}{
+		{
+			name:      "timestamp is correct",
+			logRecord: getTestLogRecord(t, 0),
+		},
+		{
+			name:      "timestamp is empty",
+			logRecord: getTestLogRecord(t, 1),
+		},
+	}
 
-	require.NotNil(t, envelope)
-	assert.Equal(t, defaultEnvelopeName, envelope.Name)
-	assert.Equal(t, toTime(logRecord.Timestamp()).Format(time.RFC3339Nano), envelope.Time)
-	require.NotNil(t, envelope.Data)
-	envelopeData := envelope.Data.(*contracts.Data)
-	assert.Equal(t, defaultdBaseType, envelopeData.BaseType)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logRecord := tt.logRecord
+			logPacker := getLogPacker()
+			envelope := logPacker.LogRecordToEnvelope(logRecord)
 
-	require.NotNil(t, envelopeData.BaseData)
+			require.NotNil(t, envelope)
+			assert.Equal(t, defaultEnvelopeName, envelope.Name)
+			timestamp := logRecord.Timestamp()
+			if timestamp == 0 {
+				timestamp = logRecord.ObservedTimestamp()
+			}
+			assert.Equal(t, toTime(timestamp).Format(time.RFC3339Nano), envelope.Time)
+			require.NotNil(t, envelope.Data)
+			envelopeData := envelope.Data.(*contracts.Data)
+			assert.Equal(t, defaultdBaseType, envelopeData.BaseType)
 
-	messageData := envelopeData.BaseData.(*contracts.MessageData)
-	assert.Equal(t, messageData.Message, logRecord.Body().StringVal())
-	assert.Equal(t, messageData.SeverityLevel, contracts.Information)
+			require.NotNil(t, envelopeData.BaseData)
 
-	hexTraceID := logRecord.TraceID().HexString()
-	assert.Equal(t, messageData.Properties[traceIDTag], hexTraceID)
-	assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceID)
+			messageData := envelopeData.BaseData.(*contracts.MessageData)
+			assert.Equal(t, messageData.Message, logRecord.Body().StringVal())
+			assert.Equal(t, messageData.SeverityLevel, contracts.Information)
 
-	assert.Equal(t, messageData.Properties[spanIDTag], logRecord.SpanID().HexString())
-	assert.Equal(t, messageData.Properties[categoryNameTag], logRecord.Name())
+			hexTraceID := logRecord.TraceID().HexString()
+			assert.Equal(t, messageData.Properties[traceIDTag], hexTraceID)
+			assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceID)
 
+			assert.Equal(t, messageData.Properties[spanIDTag], logRecord.SpanID().HexString())
+			assert.Equal(t, messageData.Properties[categoryNameTag], logRecord.Name())
+		})
+	}
 }
 
 // Test conversion from logRecord.SeverityText() to contracts.SeverityLevel()
@@ -85,7 +106,7 @@ func TestExporterLogDataCallback(t *testing.T) {
 
 	assert.NoError(t, exporter.onLogData(context.Background(), logs))
 
-	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 2)
 }
 
 func getLogsExporter(config *Config, transportChannel transportChannel) *logExporter {
@@ -107,13 +128,13 @@ func getTestLogs(tb testing.TB) plog.Logs {
 	return logs
 }
 
-func getTestLogRecord(tb testing.TB) plog.LogRecord {
+func getTestLogRecord(tb testing.TB, index int) plog.LogRecord {
 	var logRecord plog.LogRecord
 	logs := getTestLogs(tb)
 	resourceLogs := logs.ResourceLogs()
 	scopeLogs := resourceLogs.At(0).ScopeLogs()
 	logRecords := scopeLogs.At(0).LogRecords()
-	logRecord = logRecords.At(0)
+	logRecord = logRecords.At(index)
 
 	return logRecord
 }

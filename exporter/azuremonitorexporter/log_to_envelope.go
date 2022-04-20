@@ -43,7 +43,11 @@ type logPacker struct {
 func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contracts.Envelope {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
-	envelope.Time = toTime(logRecord.Timestamp()).Format(time.RFC3339Nano)
+	timestamp := logRecord.Timestamp()
+	if timestamp == 0 {
+		timestamp = logRecord.ObservedTimestamp()
+	}
+	envelope.Time = toTime(timestamp).Format(time.RFC3339Nano)
 
 	data := contracts.NewData()
 

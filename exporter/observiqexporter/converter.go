@@ -126,7 +126,7 @@ func resourceAndInstrumentationLogToEntry(resMap map[string]interface{}, log plo
 
 func timestampFromRecord(log plog.LogRecord) string {
 	if log.Timestamp() == 0 {
-		return timeNow().UTC().Format(timestampFieldOutputLayout)
+		return log.ObservedTimestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
 	}
 	return log.Timestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
 }
