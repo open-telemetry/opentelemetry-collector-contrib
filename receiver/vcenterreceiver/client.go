@@ -46,8 +46,7 @@ type vcenterClient struct {
 
 func newVmwarevcenterClient(c *Config) *vcenterClient {
 	return &vcenterClient{
-		cfg:        c,
-		clientLock: &sync.RWMutex{},
+		cfg: c,
 	}
 }
 
@@ -57,9 +56,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		vc.clientLock.Lock()
 		client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.MetricsConfig.Insecure)
-		vc.clientLock.Unlock()
 		if err != nil {
 			return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
 		}
