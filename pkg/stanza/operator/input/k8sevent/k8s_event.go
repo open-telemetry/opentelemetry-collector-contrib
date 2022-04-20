@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sevent
+package k8sevent // import "github.com/open-telemetry/opentelemetry-log-collection/operator/input/k8sevent"
 
 import (
 	"context"

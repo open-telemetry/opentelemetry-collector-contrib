@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package testutil // import "github.com/open-telemetry/opentelemetry-log-collection/testutil"
 
 import (
 	context "context"

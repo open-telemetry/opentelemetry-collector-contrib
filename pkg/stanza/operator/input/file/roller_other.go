@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package file
+package file // import "github.com/open-telemetry/opentelemetry-log-collection/operator/input/file"
 
 import (
 	"context"

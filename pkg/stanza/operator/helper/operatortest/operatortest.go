@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operatortest
+package operatortest // import "github.com/open-telemetry/opentelemetry-log-collection/operator/helper/operatortest"
 
 import (
 	"fmt"
