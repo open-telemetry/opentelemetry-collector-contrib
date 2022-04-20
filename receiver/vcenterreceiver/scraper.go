@@ -16,7 +16,6 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -39,6 +38,7 @@ var _ component.Receiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
 	client      *vcenterClient
+	config      *Config
 	mb          *metadata.MetricsBuilder
 	logger      *zap.Logger
 	vsanEnabled bool
@@ -51,6 +51,7 @@ func newVmwareVcenterScraper(
 	client := newVmwarevcenterClient(config)
 	return &vcenterMetricScraper{
 		client:      client,
+		config:      config,
 		logger:      logger,
 		mb:          metadata.NewMetricsBuilder(config.MetricsConfig.Metrics),
 		vsanEnabled: true,
@@ -67,7 +68,7 @@ func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	if v.client == nil {
-		return pdata.NewMetrics(), errors.New("no SDK client instantiated")
+		v.client = newVmwarevcenterClient(v.config)
 	}
 
 	// ensure connection before scraping

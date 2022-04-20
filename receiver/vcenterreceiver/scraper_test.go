@@ -65,11 +65,14 @@ func TestScrape_NoClient(t *testing.T) {
 	ctx := context.Background()
 	scraper := &vcenterMetricScraper{
 		client: nil,
+		config: &Config{
+			MetricsConfig: &MetricsConfig{Endpoint: "http://vcsa.localnet"},
+		},
 		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)
-	require.ErrorContains(t, err, "no SDK client instantiated")
+	require.ErrorContains(t, err, "unable to connect to vSphere SDK")
 	require.Equal(t, metrics.MetricCount(), 0)
 }
 
