@@ -396,6 +396,13 @@ func compareMetricType(typ pmetric.MetricDataType) metricTypeComparator {
 	}
 }
 
+func compareMetricIsMonotonic(isMonotonic bool) metricTypeComparator {
+	return func(t *testing.T, metric *pmetric.Metric) {
+		assert.Equal(t, pmetric.MetricDataTypeSum.String(), metric.DataType().String(), "IsMonotonic only exists for sums")
+		assert.Equal(t, isMonotonic, metric.Sum().IsMonotonic(), "IsMonotonic does not match")
+	}
+}
+
 func compareAttributes(attributes map[string]string) numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pmetric.NumberDataPoint) {
 		req := assert.Equal(t, len(attributes), numberDataPoint.Attributes().Len(), "Attributes length do not match")

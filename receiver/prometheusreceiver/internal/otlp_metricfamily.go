@@ -29,7 +29,9 @@ import (
 )
 
 type metricFamily struct {
-	mtype             pmetric.MetricDataType
+	mtype pmetric.MetricDataType
+	// isMonotonic only applies to sums
+	isMonotonic       bool
 	groups            map[string]*metricGroup
 	name              string
 	mc                MetadataCache
@@ -59,13 +61,14 @@ var pdataStaleFlags = pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFla
 
 func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
-	mtype := convToMetricType(metadata.Type)
+	mtype, isMonotonic := convToMetricType(metadata.Type)
 	if mtype == pmetric.MetricDataTypeNone {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
 	return &metricFamily{
 		mtype:             mtype,
+		isMonotonic:       isMonotonic,
 		groups:            make(map[string]*metricGroup),
 		name:              familyName,
 		mc:                mc,
@@ -354,7 +357,7 @@ func (mf *metricFamily) ToMetric(metrics *pmetric.MetricSlice) (int, int) {
 	case pmetric.MetricDataTypeSum:
 		sum := metric.Sum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-		sum.SetIsMonotonic(true)
+		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.getGroups() {
 			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &sdpL) {

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -150,4 +151,116 @@ func readTestCase(testName string) (string, error) {
 		return "", err
 	}
 	return string(content), nil
+}
+
+// info and stateset metrics are converted to non-monotonic sums
+var infoAndStatesetMetrics = `# TYPE foo info
+foo_info{entity="controller",name="prettyname",version="8.2.7"} 1.0
+foo_info{entity="replica",name="prettiername",version="8.1.9"} 1.0
+# TYPE bar stateset
+bar{entity="controller",foo="a"} 1.0
+bar{entity="controller",foo="bb"} 0.0
+bar{entity="controller",foo="ccc"} 0.0
+bar{entity="replica",foo="a"} 1.0
+bar{entity="replica",foo="bb"} 0.0
+bar{entity="replica",foo="ccc"} 1.0
+# EOF
+`
+
+// TestInfoStatesetMetrics validates the translation of info and stateset
+// metrics
+func TestInfoStatesetMetrics(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: infoAndStatesetMetrics, useOpenMetrics: true},
+			},
+			validateFunc:    verifyInfoStatesetMetrics,
+			validateScrapes: true,
+		},
+	}
+
+	testComponent(t, targets, false, "")
+
+}
+
+func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, resourceMetrics)
+	m1 := resourceMetrics[0]
+
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
+
+	wantAttributes := td.attributes
+
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
+	ts1 := getTS(metrics1)
+	e1 := []testExpectation{
+		assertMetricPresent("foo",
+			compareMetricIsMonotonic(false),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "controller", "name": "prettyname", "version": "8.2.7"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "replica", "name": "prettiername", "version": "8.1.9"}),
+					},
+				},
+			}),
+		assertMetricPresent("bar",
+			compareMetricIsMonotonic(false),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "controller", "foo": "a"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0.0),
+						compareAttributes(map[string]string{"entity": "controller", "foo": "bb"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0.0),
+						compareAttributes(map[string]string{"entity": "controller", "foo": "ccc"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "replica", "foo": "a"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0.0),
+						compareAttributes(map[string]string{"entity": "replica", "foo": "bb"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "replica", "foo": "ccc"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
 }

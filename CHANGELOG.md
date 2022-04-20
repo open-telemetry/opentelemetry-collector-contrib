@@ -84,6 +84,7 @@
 - `transformprocessor`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 - `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
+- `prometheusreceiver`: Support OpenMetrics Info and Stateset metrics (#9378)
 
 ### 🧰 Bug fixes 🧰
 
