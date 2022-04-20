@@ -60,28 +60,6 @@ attributes:
     enum:
       - "on"
       - "off"
-  vsan_latency_type:
-    value: type
-    description: The type of vSAN latency.
-    type: string
-    enum:
-      - read
-      - write
-  vsan_operation_type:
-    value: type
-    description: The type of vSAN operation.
-    type: string
-    enum:
-      - read
-      - write
-      - unmap
-  vsan_throughput_direction:
-    value: direction
-    description: The type of vSAN throughput.
-    type: string
-    enum:
-      - read
-      - write
 
 metrics:
   vcenter.cluster.cpu.limit:

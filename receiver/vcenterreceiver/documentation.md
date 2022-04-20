@@ -75,6 +75,3 @@ metrics:
 | latency_type (type) | The type of disk latency being reported. | kernel, device |
 | throughput_direction (direction) | The direction of network throughput. | transmitted, received |
 | vm_count_power_state (power_state) | Whether the virtual machines are powered on or off. | on, off |
-| vsan_latency_type (type) | The type of vSAN latency. | read, write |
-| vsan_operation_type (type) | The type of vSAN operation. | read, write, unmap |
-| vsan_throughput_direction (direction) | The type of vSAN throughput. | read, write |

@@ -2435,12 +2435,6 @@ var Attributes = struct {
 	ThroughputDirection string
 	// VMCountPowerState (Whether the virtual machines are powered on or off.)
 	VMCountPowerState string
-	// VsanLatencyType (The type of vSAN latency.)
-	VsanLatencyType string
-	// VsanOperationType (The type of vSAN operation.)
-	VsanOperationType string
-	// VsanThroughputDirection (The type of vSAN throughput.)
-	VsanThroughputDirection string
 }{
 	"disk_state",
 	"effective",
@@ -2448,9 +2442,6 @@ var Attributes = struct {
 	"type",
 	"direction",
 	"power_state",
-	"type",
-	"type",
-	"direction",
 }
 
 // A is an alias for Attributes.
@@ -2508,33 +2499,4 @@ var AttributeVMCountPowerState = struct {
 }{
 	"on",
 	"off",
-}
-
-// AttributeVsanLatencyType are the possible values that the attribute "vsan_latency_type" can have.
-var AttributeVsanLatencyType = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}
-
-// AttributeVsanOperationType are the possible values that the attribute "vsan_operation_type" can have.
-var AttributeVsanOperationType = struct {
-	Read  string
-	Write string
-	Unmap string
-}{
-	"read",
-	"write",
-	"unmap",
-}
-
-// AttributeVsanThroughputDirection are the possible values that the attribute "vsan_throughput_direction" can have.
-var AttributeVsanThroughputDirection = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
 }
