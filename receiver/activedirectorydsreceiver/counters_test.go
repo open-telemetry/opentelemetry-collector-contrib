@@ -22,17 +22,17 @@ func TestGetWatchers(t *testing.T) {
 
 	watchers, err := getWatchers(creater)
 	require.NoError(t, err)
-	require.NotNil(t, watchers)	
+	require.NotNil(t, watchers)
 }
 
-func getAvailableCounters(t *testing.T) []string {	
+func getAvailableCounters(t *testing.T) []string {
 	prefix := fmt.Sprintf(`\%s(*)\`, object)
 
 	f, err := ioutil.ReadFile(filepath.Join("testdata", "counters.txt"))
 	require.NoError(t, err)
 
 	lines := regexp.MustCompile("\r?\n").Split(string(f), -1)
-	
+
 	linesOut := make([]string, 0, len(lines))
 	for _, line := range lines {
 		if line != "" {
@@ -43,8 +43,8 @@ func getAvailableCounters(t *testing.T) []string {
 	return linesOut
 }
 
-type mockCounterCreater struct{
-	created int
+type mockCounterCreater struct {
+	created               int
 	availableCounterNames []string
 }
 

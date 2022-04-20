@@ -25,38 +25,38 @@ import (
 )
 
 const (
-	draInboundBytesCompressed = "DRA Inbound Bytes Compressed (Between Sites, After Compression) Since Boot"
-	draInboundBytesNotCompressed = "DRA Inbound Bytes Not Compressed (Within Site) Since Boot"
-	draOutboundBytesCompressed = "DRA Outbound Bytes Compressed (Between Sites, After Compression) Since Boot"
-	draOutboundBytesNotCompressed = "DRA Outbound Bytes Not Compressed (Within Site) Since Boot"
-	draInboundFullSyncObjectsRemaining = "DRA Inbound Full Sync Objects Remaining"
-	draInboundObjects = "DRA Inbound Objects/sec"
-	draOutboundObjects = "DRA Outbound Objects/sec"
-	draInboundProperties = "DRA Inbound Properties Total/sec"
-	draOutboundProperties = "DRA Outbound Properties/sec"
-	draInboundValuesDNs = "DRA Inbound Values (DNs only)/sec"
-	draInboundValuesTotal = "DRA Inbound Values Total/sec"
-	draOutboundValuesDNs = "DRA Outbound Values (DNs only)/sec"
-	draOutboundValuesTotal = "DRA Outbound Values Total/sec"
-	draPendingReplicationOperations = "DRA Pending Replication Operations"
-	draSyncFailuresSchemaMismatch = "DRA Sync Failures on Schema Mismatch"
-	draSyncRequestsSuccessful = "DRA Sync Requests Successful"
-	draSyncRequestsMade = "DRA Sync Requests Made"
-	dsDirectoryReads = "DS Directory Reads/sec"
-	dsDirectoryWrites = "DS Directory Writes/sec"
-	dsDirectorySearches = "DS Directory Searches/sec"
-	dsClientBinds = "DS Client Binds/sec"
-	dsServerBinds = "DS Server Binds/sec"
-	dsNameCacheHitRate = "DS Name Cache hit rate"
-	dsNotifyQueueSize = "DS Notify Queue Size"
+	draInboundBytesCompressed              = "DRA Inbound Bytes Compressed (Between Sites, After Compression) Since Boot"
+	draInboundBytesNotCompressed           = "DRA Inbound Bytes Not Compressed (Within Site) Since Boot"
+	draOutboundBytesCompressed             = "DRA Outbound Bytes Compressed (Between Sites, After Compression) Since Boot"
+	draOutboundBytesNotCompressed          = "DRA Outbound Bytes Not Compressed (Within Site) Since Boot"
+	draInboundFullSyncObjectsRemaining     = "DRA Inbound Full Sync Objects Remaining"
+	draInboundObjects                      = "DRA Inbound Objects/sec"
+	draOutboundObjects                     = "DRA Outbound Objects/sec"
+	draInboundProperties                   = "DRA Inbound Properties Total/sec"
+	draOutboundProperties                  = "DRA Outbound Properties/sec"
+	draInboundValuesDNs                    = "DRA Inbound Values (DNs only)/sec"
+	draInboundValuesTotal                  = "DRA Inbound Values Total/sec"
+	draOutboundValuesDNs                   = "DRA Outbound Values (DNs only)/sec"
+	draOutboundValuesTotal                 = "DRA Outbound Values Total/sec"
+	draPendingReplicationOperations        = "DRA Pending Replication Operations"
+	draSyncFailuresSchemaMismatch          = "DRA Sync Failures on Schema Mismatch"
+	draSyncRequestsSuccessful              = "DRA Sync Requests Successful"
+	draSyncRequestsMade                    = "DRA Sync Requests Made"
+	dsDirectoryReads                       = "DS Directory Reads/sec"
+	dsDirectoryWrites                      = "DS Directory Writes/sec"
+	dsDirectorySearches                    = "DS Directory Searches/sec"
+	dsClientBinds                          = "DS Client Binds/sec"
+	dsServerBinds                          = "DS Server Binds/sec"
+	dsNameCacheHitRate                     = "DS Name Cache hit rate"
+	dsNotifyQueueSize                      = "DS Notify Queue Size"
 	dsSecurityDescriptorPropagationsEvents = "DS Security Descriptor Propagations Events"
-	dsSearchSubOperations = "DS Search sub-operations/sec"
-	dsSecurityDescripterSubOperations = "DS Security Descriptor sub-operations/sec"
-	dsThreadsInUse = "DS Threads in Use"
-	ldapClientSessions = "LDAP Client Sessions"
-	ldapBindTime = "LDAP Bind Time"
-	ldapSuccessfulBinds = "LDAP Successful Binds/sec"
-	ldapSearches = "LDAP Searches/sec"
+	dsSearchSubOperations                  = "DS Search sub-operations/sec"
+	dsSecurityDescripterSubOperations      = "DS Security Descriptor sub-operations/sec"
+	dsThreadsInUse                         = "DS Threads in Use"
+	ldapClientSessions                     = "LDAP Client Sessions"
+	ldapBindTime                           = "LDAP Bind Time"
+	ldapSuccessfulBinds                    = "LDAP Successful Binds/sec"
+	ldapSearches                           = "LDAP Searches/sec"
 )
 
 type watchers struct {
@@ -88,7 +88,7 @@ func (w *watchers) Close() error {
 	for _, v := range w.counterNameToWatcher {
 		err = multierr.Append(err, v.Close())
 	}
-	
+
 	return err
 }
 
@@ -239,7 +239,7 @@ const (
 	object       = "DirectoryServices"
 )
 
-type defaultWatcherCreater struct {}
+type defaultWatcherCreater struct{}
 
 func (defaultWatcherCreater) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
 	conf := winperfcounters.ObjectConfig{
