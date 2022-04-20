@@ -24,6 +24,14 @@
 
 ## v0.49.0
 
+### ⚠️ Warning  ⚠️
+
+This release contains an issue in
+[Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver)
+causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being 
+investigated and will be fixed in one of the new releases. More details:
+https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
+
 ### 🛑 Breaking changes 🛑
 
 - `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
