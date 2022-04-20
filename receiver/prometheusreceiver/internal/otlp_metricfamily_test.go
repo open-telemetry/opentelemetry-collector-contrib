@@ -114,9 +114,9 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 11, value: 66, metric: "histogram_count"},
 				{at: 11, value: 1004.78, metric: "histogram_sum"},
-				{at: 13, value: 33, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}},
-				{at: 13, value: 55, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}},
-				{at: 13, value: 66, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
+				{at: 11, value: 33, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}},
+				{at: 11, value: 55, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}},
+				{at: 11, value: 66, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
@@ -140,9 +140,9 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
 				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
-				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}},
-				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}},
-				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
@@ -215,12 +215,19 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			labelsScrapes: []*labelsScrapes{
 				{
 					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 14, value: 10, metric: "summary_count"},
+						{at: 14, value: 15, metric: "summary_sum"},
+					},
+				},
+				{
+					labels: labels.Labels{
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 10, value: 10, metric: "summary_count"},
-						{at: 10, value: 12, metric: "summary_sum"},
-						{at: 10, value: 8, metric: "value"},
+						{at: 14, value: 8, metric: "value"},
 					},
 				},
 				{
@@ -228,9 +235,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 11, value: 10, metric: "summary_count"},
-						{at: 11, value: 1004.78, metric: "summary_sum"},
-						{at: 11, value: 33.7, metric: "value"},
+						{at: 14, value: 33.7, metric: "value"},
 					},
 				},
 				{
@@ -238,9 +243,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 12, value: 10, metric: "summary_count"},
-						{at: 12, value: 13, metric: "summary_sum"},
-						{at: 12, value: 27, metric: "value"},
+						{at: 14, value: 27, metric: "value"},
 					},
 				},
 				{
@@ -248,9 +251,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 13, value: 10, metric: "summary_count"},
-						{at: 13, value: 14, metric: "summary_sum"},
-						{at: 13, value: 56, metric: "value"},
+						{at: 14, value: 56, metric: "value"},
 					},
 				},
 				{
@@ -258,8 +259,6 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 14, value: 10, metric: "summary_count"},
-						{at: 14, value: 15, metric: "summary_sum"},
 						{at: 14, value: 82, metric: "value"},
 					},
 				},
@@ -300,9 +299,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 10, value: 10, metric: "summary_stale_count"},
-						{at: 10, value: 12, metric: "summary_stale_sum"},
-						{at: 10, value: 8, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 12, metric: "summary_stale_sum"},
+						{at: 14, value: 8, metric: "value"},
 					},
 				},
 				{
@@ -310,9 +309,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 11, value: 10, metric: "summary_stale_count"},
-						{at: 11, value: 1004.78, metric: "summary_stale_sum"},
-						{at: 11, value: 33.7, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 1004.78, metric: "summary_stale_sum"},
+						{at: 14, value: 33.7, metric: "value"},
 					},
 				},
 				{
@@ -320,9 +319,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 12, value: 10, metric: "summary_stale_count"},
-						{at: 12, value: 13, metric: "summary_stale_sum"},
-						{at: 12, value: 27, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 13, metric: "summary_stale_sum"},
+						{at: 14, value: 27, metric: "value"},
 					},
 				},
 				{
@@ -330,9 +329,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 13, value: 10, metric: "summary_stale_count"},
-						{at: 13, value: 14, metric: "summary_stale_sum"},
-						{at: 13, value: 56, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 14, metric: "summary_stale_sum"},
+						{at: 14, value: 56, metric: "value"},
 					},
 				},
 				{

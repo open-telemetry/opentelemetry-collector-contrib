@@ -26,6 +26,7 @@
 - `datadogexporter`: add error checks for datadog exporter (#9964)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
+- `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
 
 ## v0.51.0
 
