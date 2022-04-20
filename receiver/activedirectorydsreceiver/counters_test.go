@@ -25,16 +25,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 func TestGetWatchers(t *testing.T) {
-	creater := &mockCounterCreater{
+	c := &mockCounterCreater{
 		availableCounterNames: getAvailableCounters(t),
 	}
 
-	watchers, err := getWatchers(creater)
+	watchers, err := getWatchers(c)
 	require.NoError(t, err)
 	require.NotNil(t, watchers)
 }
