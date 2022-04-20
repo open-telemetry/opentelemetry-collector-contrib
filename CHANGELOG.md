@@ -20,6 +20,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
+- `resourcedetectionprocessor`: Wire docker detector (#9372)
 
 ## v0.49.0
 
