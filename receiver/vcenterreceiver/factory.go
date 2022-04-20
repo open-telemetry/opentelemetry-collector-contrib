@@ -17,6 +17,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,13 +34,15 @@ const (
 )
 
 type vcenterReceiverFactory struct {
-	receivers map[*Config]*vcenterReceiver
+	receivers    map[*Config]*vcenterReceiver
+	receiverLock *sync.RWMutex
 }
 
 // NewFactory returns the receiver factory for the vcenterreceiver
 func NewFactory() component.ReceiverFactory {
 	f := &vcenterReceiverFactory{
-		receivers: make(map[*Config]*vcenterReceiver),
+		receivers:    make(map[*Config]*vcenterReceiver),
+		receiverLock: &sync.RWMutex{},
 	}
 	return component.NewReceiverFactory(
 		typeStr,
@@ -62,7 +65,9 @@ func createDefaultConfig() config.Receiver {
 }
 
 func (f *vcenterReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config config.Receiver) *vcenterReceiver {
+	f.receiverLock.RLock()
 	receiver := f.receivers[config.(*Config)]
+	f.receiverLock.RUnlock()
 	if receiver != nil {
 		return receiver
 	}
@@ -71,7 +76,9 @@ func (f *vcenterReceiverFactory) ensureReceiver(params component.ReceiverCreateS
 		logger: params.Logger,
 		config: rconfig,
 	}
+	f.receiverLock.Lock()
 	f.receivers[config.(*Config)] = receiver
+	f.receiverLock.Unlock()
 	return receiver
 }
 
