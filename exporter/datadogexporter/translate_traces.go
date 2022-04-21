@@ -24,9 +24,9 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 	"go.opentelemetry.io/collector/component"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
