@@ -1,6 +1,6 @@
-# SQL Receiver (Alpha)
+# SQL Query Receiver (Alpha)
 
-The SQL Receiver uses custom SQL queries to generate metrics from a database connection.
+The SQL Query Receiver uses custom SQL queries to generate metrics from a database connection.
 
 > :construction: This receiver is in **ALPHA**. Behavior, configuration fields, and metric data model are subject to change.
 
@@ -30,7 +30,7 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 
 ```yaml
 receivers:
-  sql:
+  sqlquery:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     queries:

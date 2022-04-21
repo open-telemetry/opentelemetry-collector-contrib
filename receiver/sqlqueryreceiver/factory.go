@@ -12,29 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlreceiver
+package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
 import (
 	"context"
-	"testing"
 
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 )
 
-func TestNewFactory(t *testing.T) {
-	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
-		context.Background(),
-		component.ReceiverCreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				TracerProvider: trace.NewNoopTracerProvider(),
-			},
-		},
-		factory.CreateDefaultConfig(),
-		consumertest.NewNop(),
+const typeStr = "sqlquery"
+
+func NewFactory() component.ReceiverFactory {
+	return component.NewReceiverFactory(
+		typeStr,
+		createDefaultConfig,
+		component.WithMetricsReceiver(nilReceiver),
 	)
-	require.NoError(t, err)
+}
+
+func nilReceiver(
+	context.Context,
+	component.ReceiverCreateSettings,
+	config.Receiver,
+	consumer.Metrics,
+) (component.MetricsReceiver, error) {
+	return nil, nil
 }

@@ -12,14 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlreceiver
+package sqlqueryreceiver
 
-import "context"
+import (
+	"context"
+	"testing"
 
-type fakeDBClient struct {
-	rows []metricRow
-}
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/otel/trace"
+)
 
-func (c fakeDBClient) metricRows(context.Context) ([]metricRow, error) {
-	return c.rows, nil
+func TestNewFactory(t *testing.T) {
+	factory := NewFactory()
+	_, err := factory.CreateMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
+				TracerProvider: trace.NewNoopTracerProvider(),
+			},
+		},
+		factory.CreateDefaultConfig(),
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
 }
