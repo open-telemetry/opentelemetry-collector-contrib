@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.49.0
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.49.0
-	go.opentelemetry.io/collector/pdata v0.49.0
+	go.opentelemetry.io/collector v0.49.1-0.20220421154122-427f7dde5a8f
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220421154122-427f7dde5a8f
 	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
 	google.golang.org/api v0.74.0
 	google.golang.org/genproto v0.0.0-20220413183235-5e96e2839df9
@@ -62,3 +62,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
