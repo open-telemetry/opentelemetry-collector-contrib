@@ -25,21 +25,21 @@ import (
 )
 
 func TestBuildValid(t *testing.T) {
-	cfg := NewDropOutputConfig("test")
+	cfg := Config("test")
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	require.IsType(t, &DropOutput{}, op)
+	require.IsType(t, &Output{}, op)
 }
 
 func TestBuildIvalid(t *testing.T) {
-	cfg := NewDropOutputConfig("test")
+	cfg := Config("test")
 	_, err := cfg.Build(nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "build context is missing a logger")
 }
 
 func TestProcess(t *testing.T) {
-	cfg := NewDropOutputConfig("test")
+	cfg := Config("test")
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
