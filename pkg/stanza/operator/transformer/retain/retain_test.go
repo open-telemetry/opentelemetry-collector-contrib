@@ -29,7 +29,7 @@ import (
 type testCase struct {
 	name      string
 	expectErr bool
-	op        *RetainOperatorConfig
+	op        *Config
 	input     func() *entry.Entry
 	output    func() *entry.Entry
 }
@@ -53,7 +53,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_single",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				return cfg
@@ -70,7 +70,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_multi",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2"))
@@ -103,7 +103,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_multilevel",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("foo"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("one", "two"))
@@ -179,7 +179,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_nest",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2"))
 				return cfg
@@ -210,7 +210,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_nested_value",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2", "nestedkey2"))
 				return cfg
@@ -241,7 +241,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_single_attribute",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key"))
 				return cfg
@@ -264,7 +264,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_multi_attribute",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key2"))
@@ -291,7 +291,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_single_resource",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key"))
 				return cfg
@@ -314,7 +314,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_multi_resource",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key2"))
@@ -341,7 +341,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_one_of_each",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key3"))
@@ -377,7 +377,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"retain_a_non_existent_key",
 			false,
-			func() *RetainOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("aNonExsistentKey"))
 				return cfg
@@ -398,7 +398,7 @@ func TestBuildAndProcess(t *testing.T) {
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
-			retain := op.(*RetainOperator)
+			retain := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
 			retain.SetOutputs([]operator.Operator{fake})
 			val := tc.input()

@@ -25,7 +25,7 @@ func TestGoldenConfigs(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name: "retain_single",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				return cfg
@@ -33,7 +33,7 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 		{
 			Name: "retain_multi",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2"))
@@ -42,7 +42,7 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 		{
 			Name: "retain_multilevel",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("foo"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("one", "two"))
@@ -55,7 +55,7 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 		{
 			Name: "retain_single_attribute",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key"))
 				return cfg
@@ -63,7 +63,7 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 		{
 			Name: "retain_multi_attribute",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key2"))
@@ -72,7 +72,7 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 		{
 			Name: "retain_single_resource",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key"))
 				return cfg
@@ -80,7 +80,7 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 		{
 			Name: "retain_multi_resource",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key2"))
@@ -89,7 +89,7 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 		{
 			Name: "retain_one_of_each",
-			Expect: func() *RetainOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key3"))
@@ -105,6 +105,6 @@ func TestGoldenConfigs(t *testing.T) {
 	}
 }
 
-func defaultCfg() *RetainOperatorConfig {
-	return NewRetainOperatorConfig("retain")
+func defaultCfg() *Config {
+	return NewConfig("retain")
 }
