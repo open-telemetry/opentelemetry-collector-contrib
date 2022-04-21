@@ -28,46 +28,46 @@ import (
 )
 
 func init() {
-	operator.Register("router", func() operator.Builder { return NewRouterOperatorConfig("") })
+	operator.Register("router", func() operator.Builder { return NewConfig("") })
 }
 
-// NewRouterOperatorConfig config creates a new router operator config with default values
-func NewRouterOperatorConfig(operatorID string) *RouterOperatorConfig {
-	return &RouterOperatorConfig{
+// NewConfig config creates a new router operator config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		BasicConfig: helper.NewBasicConfig(operatorID, "router"),
 	}
 }
 
-// RouterOperatorConfig is the configuration of a router operator
-type RouterOperatorConfig struct {
+// Config is the configuration of a router operator
+type Config struct {
 	helper.BasicConfig `mapstructure:",squash" yaml:",inline"`
-	Routes             []*RouterOperatorRouteConfig `mapstructure:"routes" json:"routes" yaml:"routes"`
-	Default            helper.OutputIDs             `mapstructure:"default" json:"default" yaml:"default"`
+	Routes             []*TransformerRouteConfig `mapstructure:"routes" json:"routes" yaml:"routes"`
+	Default            helper.OutputIDs          `mapstructure:"default" json:"default" yaml:"default"`
 }
 
-// RouterOperatorRouteConfig is the configuration of a route on a router operator
-type RouterOperatorRouteConfig struct {
+// TransformerRouteConfig is the configuration of a route on a router operator
+type TransformerRouteConfig struct {
 	helper.AttributerConfig `mapstructure:",squash" yaml:",inline"`
 	Expression              string           `mapstructure:"expr" json:"expr"   yaml:"expr"`
 	OutputIDs               helper.OutputIDs `mapstructure:"output" json:"output" yaml:"output"`
 }
 
 // Build will build a router operator from the supplied configuration
-func (c RouterOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	basicOperator, err := c.BasicConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
 	if c.Default != nil {
-		defaultRoute := &RouterOperatorRouteConfig{
+		defaultRoute := &TransformerRouteConfig{
 			Expression: "true",
 			OutputIDs:  c.Default,
 		}
 		c.Routes = append(c.Routes, defaultRoute)
 	}
 
-	routes := make([]*RouterOperatorRoute, 0, len(c.Routes))
+	routes := make([]*TransformerRoute, 0, len(c.Routes))
 	for _, routeConfig := range c.Routes {
 		compiled, err := expr.Compile(routeConfig.Expression, expr.AsBool(), expr.AllowUndefinedVariables())
 		if err != nil {
@@ -79,7 +79,7 @@ func (c RouterOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 			return nil, fmt.Errorf("failed to build attributer for route '%s': %w", routeConfig.Expression, err)
 		}
 
-		route := RouterOperatorRoute{
+		route := TransformerRoute{
 			Attributer: attributer,
 			Expression: compiled,
 			OutputIDs:  routeConfig.OutputIDs,
@@ -87,20 +87,20 @@ func (c RouterOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 		routes = append(routes, &route)
 	}
 
-	return &RouterOperator{
+	return &Transformer{
 		BasicOperator: basicOperator,
 		routes:        routes,
 	}, nil
 }
 
-// RouterOperator is an operator that routes entries based on matching expressions
-type RouterOperator struct {
+// Transformer is an operator that routes entries based on matching expressions
+type Transformer struct {
 	helper.BasicOperator
-	routes []*RouterOperatorRoute
+	routes []*TransformerRoute
 }
 
-// RouterOperatorRoute is a route on a router operator
-type RouterOperatorRoute struct {
+// TransformerRoute is a route on a router operator
+type TransformerRoute struct {
 	helper.Attributer
 	Expression      *vm.Program
 	OutputIDs       helper.OutputIDs
@@ -108,12 +108,12 @@ type RouterOperatorRoute struct {
 }
 
 // CanProcess will always return true for a router operator
-func (p *RouterOperator) CanProcess() bool {
+func (p *Transformer) CanProcess() bool {
 	return true
 }
 
 // Process will route incoming entries based on matching expressions
-func (p *RouterOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 
@@ -142,12 +142,12 @@ func (p *RouterOperator) Process(ctx context.Context, entry *entry.Entry) error 
 }
 
 // CanOutput will always return true for a router operator
-func (p *RouterOperator) CanOutput() bool {
+func (p *Transformer) CanOutput() bool {
 	return true
 }
 
 // Outputs will return all connected operators.
-func (p *RouterOperator) Outputs() []operator.Operator {
+func (p *Transformer) Outputs() []operator.Operator {
 	outputs := make([]operator.Operator, 0, len(p.routes))
 	for _, route := range p.routes {
 		outputs = append(outputs, route.OutputOperators...)
@@ -156,7 +156,7 @@ func (p *RouterOperator) Outputs() []operator.Operator {
 }
 
 // GetOutputIDs will return all connected operators.
-func (p *RouterOperator) GetOutputIDs() []string {
+func (p *Transformer) GetOutputIDs() []string {
 	outputs := make([]string, 0, len(p.routes))
 	for _, route := range p.routes {
 		outputs = append(outputs, route.OutputIDs...)
@@ -165,7 +165,7 @@ func (p *RouterOperator) GetOutputIDs() []string {
 }
 
 // SetOutputs will set the outputs of the router operator.
-func (p *RouterOperator) SetOutputs(operators []operator.Operator) error {
+func (p *Transformer) SetOutputs(operators []operator.Operator) error {
 	for _, route := range p.routes {
 		outputOperators, err := p.findOperators(operators, route.OutputIDs)
 		if err != nil {
@@ -178,10 +178,10 @@ func (p *RouterOperator) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will do nothing.
-func (p *RouterOperator) SetOutputIDs(opIDs []string) {}
+func (p *Transformer) SetOutputIDs(opIDs []string) {}
 
 // findOperators will find a subset of operators from a collection.
-func (p *RouterOperator) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
+func (p *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
 	result := make([]operator.Operator, 0)
 	for _, operatorID := range operatorIDs {
 		operator, err := p.findOperator(operators, operatorID)
@@ -194,7 +194,7 @@ func (p *RouterOperator) findOperators(operators []operator.Operator, operatorID
 }
 
 // findOperator will find an operator from a collection.
-func (p *RouterOperator) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
+func (p *Transformer) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
 	for _, operator := range operators {
 		if operator.ID() == operatorID {
 			return operator, nil

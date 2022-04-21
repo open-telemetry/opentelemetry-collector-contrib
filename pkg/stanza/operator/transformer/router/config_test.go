@@ -28,9 +28,9 @@ func TestRouterGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "routes_one",
-			Expect: func() *RouterOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
-				newRoute := &RouterOperatorRouteConfig{
+				newRoute := &TransformerRouteConfig{
 					Expression: `body.format == "json"`,
 					OutputIDs:  []string{"my_json_parser"},
 				}
@@ -40,9 +40,9 @@ func TestRouterGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "routes_multi",
-			Expect: func() *RouterOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
-				newRoute := []*RouterOperatorRouteConfig{
+				newRoute := []*TransformerRouteConfig{
 					{
 						Expression: `body.format == "json"`,
 						OutputIDs:  []string{"my_json_parser"},
@@ -62,7 +62,7 @@ func TestRouterGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "routes_attributes",
-			Expect: func() *RouterOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 
 				attVal := helper.NewAttributerConfig()
@@ -70,7 +70,7 @@ func TestRouterGoldenConfig(t *testing.T) {
 					"key1": "val1",
 				}
 
-				cfg.Routes = []*RouterOperatorRouteConfig{
+				cfg.Routes = []*TransformerRouteConfig{
 					{
 						Expression:       `body.format == "json"`,
 						OutputIDs:        []string{"my_json_parser"},
@@ -82,9 +82,9 @@ func TestRouterGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "routes_default",
-			Expect: func() *RouterOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
-				newRoute := &RouterOperatorRouteConfig{
+				newRoute := &TransformerRouteConfig{
 					Expression: `body.format == "json"`,
 					OutputIDs:  []string{"my_json_parser"},
 				}
@@ -102,6 +102,6 @@ func TestRouterGoldenConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *RouterOperatorConfig {
-	return NewRouterOperatorConfig("router")
+func defaultCfg() *Config {
+	return NewConfig("router")
 }

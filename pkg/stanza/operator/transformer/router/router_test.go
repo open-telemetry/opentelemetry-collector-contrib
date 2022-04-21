@@ -28,12 +28,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func TestRouterOperator(t *testing.T) {
+func TestTransformer(t *testing.T) {
 	os.Setenv("TEST_ROUTER_OPERATOR_ENV", "foo")
 	defer os.Unsetenv("TEST_ROUTER_OPERATOR_ENV")
 
-	basicConfig := func() *RouterOperatorConfig {
-		return &RouterOperatorConfig{
+	basicConfig := func() *Config {
+		return &Config{
 			BasicConfig: helper.BasicConfig{
 				OperatorID:   "test_operator_id",
 				OperatorType: "router",
@@ -44,7 +44,7 @@ func TestRouterOperator(t *testing.T) {
 	cases := []struct {
 		name               string
 		input              *entry.Entry
-		routes             []*RouterOperatorRouteConfig
+		routes             []*TransformerRouteConfig
 		defaultOutput      helper.OutputIDs
 		expectedCounts     map[string]int
 		expectedAttributes map[string]interface{}
@@ -52,7 +52,7 @@ func TestRouterOperator(t *testing.T) {
 		{
 			"DefaultRoute",
 			entry.New(),
-			[]*RouterOperatorRouteConfig{
+			[]*TransformerRouteConfig{
 				{
 					helper.NewAttributerConfig(),
 					"true",
@@ -66,7 +66,7 @@ func TestRouterOperator(t *testing.T) {
 		{
 			"NoMatch",
 			entry.New(),
-			[]*RouterOperatorRouteConfig{
+			[]*TransformerRouteConfig{
 				{
 					helper.NewAttributerConfig(),
 					`false`,
@@ -84,7 +84,7 @@ func TestRouterOperator(t *testing.T) {
 					"message": "test_message",
 				},
 			},
-			[]*RouterOperatorRouteConfig{
+			[]*TransformerRouteConfig{
 				{
 					helper.NewAttributerConfig(),
 					`body.message == "non_match"`,
@@ -107,7 +107,7 @@ func TestRouterOperator(t *testing.T) {
 					"message": "test_message",
 				},
 			},
-			[]*RouterOperatorRouteConfig{
+			[]*TransformerRouteConfig{
 				{
 					helper.NewAttributerConfig(),
 					`body.message == "non_match"`,
@@ -136,7 +136,7 @@ func TestRouterOperator(t *testing.T) {
 					"message": "test_message",
 				},
 			},
-			[]*RouterOperatorRouteConfig{
+			[]*TransformerRouteConfig{
 				{
 					helper.NewAttributerConfig(),
 					`env("TEST_ROUTER_OPERATOR_ENV") == "foo"`,
@@ -159,7 +159,7 @@ func TestRouterOperator(t *testing.T) {
 					"message": "test_message",
 				},
 			},
-			[]*RouterOperatorRouteConfig{
+			[]*TransformerRouteConfig{
 				{
 					helper.NewAttributerConfig(),
 					`false`,
@@ -177,7 +177,7 @@ func TestRouterOperator(t *testing.T) {
 					"message": "test_message",
 				},
 			},
-			[]*RouterOperatorRouteConfig{
+			[]*TransformerRouteConfig{
 				{
 					helper.NewAttributerConfig(),
 					`true`,
@@ -218,7 +218,7 @@ func TestRouterOperator(t *testing.T) {
 				}
 			})
 
-			routerOperator := op.(*RouterOperator)
+			routerOperator := op.(*Transformer)
 			err = routerOperator.SetOutputs([]operator.Operator{mock1, mock2})
 			require.NoError(t, err)
 
