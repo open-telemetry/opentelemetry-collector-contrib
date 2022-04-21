@@ -3,6 +3,8 @@ receivers:
 
 processors:
   cumulativetodelta:
+    metrics:
+      - metric0
     include:
       match_type: strict
       metrics:
@@ -13,7 +15,6 @@ processors:
       metrics:
         - metric3
         - metric4
-    max_staleness: 10s
 
 exporters:
   nop:
