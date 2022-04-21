@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
 go 1.17
 
 require (
+	github.com/go-test/deep v1.0.2-0.20181118220953-042da051cf31
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.49.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.29.1
 	github.com/stretchr/testify v1.7.1

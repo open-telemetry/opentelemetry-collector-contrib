@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,11 +50,15 @@ func BenchmarkConvertFromPdataComplex(b *testing.B) {
 
 func baseMap() pdata.Map {
 	obj := pcommon.NewMap()
+	arr := pcommon.NewValueSlice()
+	arr.SliceVal().AppendEmpty().SetStringVal("666")
+	arr.SliceVal().AppendEmpty().SetStringVal("777")
+	obj.Insert("slice", arr)
 	obj.InsertBool("bool", true)
 	obj.InsertInt("int", 123)
 	obj.InsertDouble("double", 12.34)
 	obj.InsertString("string", "hello")
-	obj.InsertBytes("bytes", []byte("asdf"))
+	obj.InsertBytes("bytes", []byte{0xa1, 0xf0, 0x02, 0xff})
 	return obj
 }
 
@@ -87,6 +92,9 @@ func complexPdataForNDifferentHosts(count int, n int) pdata.Logs {
 		lr.SetSeverityNumber(plog.SeverityNumberERROR)
 		lr.SetSeverityText("Error")
 
+		t, _ := time.ParseInLocation("2006-01-02", "2022-01-01", time.Local)
+		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
+
 		attr.Remove("double")
 		attr.Remove("host")
 		attr.CopyTo(lr.Attributes())
@@ -102,6 +110,24 @@ func complexPdataForNDifferentHosts(count int, n int) pdata.Logs {
 	return pLogs
 }
 
+func TestRoundTrip(t *testing.T) {
+	initialLogs := complexPdataForNDifferentHosts(1, 1)
+	entries := ConvertFrom(initialLogs)
+	require.Equal(t, 1, len(entries))
+
+	pLogs := Convert(entries[0])
+	initialLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
+	initialLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Sort()
+	initialLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
+	pLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
+	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Sort()
+	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
+	if diff := deep.Equal(initialLogs, pLogs); diff != nil {
+		t.Error(diff)
+	}
+	require.Equal(t, initialLogs, pLogs)
+}
+
 func TestConvertFrom(t *testing.T) {
 	entries := ConvertFrom(complexPdataForNDifferentHosts(2, 1))
 	require.Equal(t, 2, len(entries))
@@ -114,13 +140,13 @@ func TestConvertFrom(t *testing.T) {
 				"int":    int64(123),
 				"double": 12.34,
 				"string": "hello",
-				"bytes":  []byte("asdf"),
+				"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				"object": map[string]interface{}{
 					"bool":   true,
 					"int":    int64(123),
 					"double": 12.34,
 					"string": "hello",
-					"bytes":  []byte("asdf"),
+					"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				},
 			},
 			e.Resource,
@@ -131,13 +157,13 @@ func TestConvertFrom(t *testing.T) {
 				"bool":   true,
 				"int":    int64(123),
 				"string": "hello",
-				"bytes":  []byte("asdf"),
+				"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				"object": map[string]interface{}{
 					"bool":   true,
 					"int":    int64(123),
 					"double": 12.34,
 					"string": "hello",
-					"bytes":  []byte("asdf"),
+					"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				},
 			},
 			e.Attributes,
@@ -149,13 +175,13 @@ func TestConvertFrom(t *testing.T) {
 				"int":    int64(123),
 				"double": 12.34,
 				"string": "hello",
-				"bytes":  []byte("asdf"),
+				"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				"object": map[string]interface{}{
 					"bool":   true,
 					"int":    int64(123),
 					"double": 12.34,
 					"string": "hello",
-					"bytes":  []byte("asdf"),
+					"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 					"object": map[string]interface{}{
 						"bool":   true,
 						"int":    int64(123),

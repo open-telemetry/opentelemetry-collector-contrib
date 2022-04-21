@@ -372,7 +372,7 @@ func insertToAttributeVal(value interface{}, dest pcommon.Value) {
 	case string:
 		dest.SetStringVal(t)
 	case []byte:
-		dest.SetStringVal(string(t))
+		dest.SetBytesVal(t)
 	case int64:
 		dest.SetIntVal(t)
 	case int32:
@@ -422,7 +422,7 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pcommon.Map) {
 		case string:
 			dest.InsertString(k, t)
 		case []byte:
-			dest.InsertString(k, string(t))
+			dest.InsertBytes(k, t)
 		case int64:
 			dest.InsertInt(k, t)
 		case int32:
