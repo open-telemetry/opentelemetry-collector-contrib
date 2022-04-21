@@ -32,8 +32,8 @@ import (
 )
 
 func TestSyslogInput(t *testing.T) {
-	basicConfig := func() *syslog.SyslogParserConfig {
-		cfg := syslog.NewSyslogParserConfig("test_syslog_parser")
+	basicConfig := func() *syslog.Config {
+		cfg := syslog.NewConfig("test_syslog_parser")
 		return cfg
 	}
 
@@ -42,10 +42,10 @@ func TestSyslogInput(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-			SyslogInputTest(t, NewConfigWithTCP(&tc.Config.SyslogBaseConfig), tc)
+			SyslogInputTest(t, NewConfigWithTCP(&tc.Config.BaseConfig), tc)
 		})
 		t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-			SyslogInputTest(t, NewConfigWithUDP(&tc.Config.SyslogBaseConfig), tc)
+			SyslogInputTest(t, NewConfigWithUDP(&tc.Config.BaseConfig), tc)
 		})
 	}
 }
@@ -95,10 +95,10 @@ func SyslogInputTest(t *testing.T, cfg *Config, tc syslog.Case) {
 }
 
 func TestSyslogIDs(t *testing.T) {
-	basicConfig := func() *syslog.SyslogBaseConfig {
-		cfg := syslog.NewSyslogParserConfig("test_syslog_parser")
+	basicConfig := func() *syslog.BaseConfig {
+		cfg := syslog.NewConfig("test_syslog_parser")
 		cfg.Protocol = "RFC3164"
-		return &cfg.SyslogBaseConfig
+		return &cfg.BaseConfig
 	}
 
 	t.Run("TCP", func(t *testing.T) {
@@ -125,18 +125,18 @@ func TestSyslogIDs(t *testing.T) {
 	})
 }
 
-func NewConfigWithTCP(syslogCfg *syslog.SyslogBaseConfig) *Config {
+func NewConfigWithTCP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg := NewConfig("test_syslog")
-	cfg.SyslogBaseConfig = *syslogCfg
+	cfg.BaseConfig = *syslogCfg
 	cfg.TCP = &tcp.NewConfig("test_syslog_tcp").BaseConfig
 	cfg.TCP.ListenAddress = ":14201"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 
-func NewConfigWithUDP(syslogCfg *syslog.SyslogBaseConfig) *Config {
+func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg := NewConfig("test_syslog")
-	cfg.SyslogBaseConfig = *syslogCfg
+	cfg.BaseConfig = *syslogCfg
 	cfg.UDP = &udp.NewConfig("test_syslog_udp").BaseConfig
 	cfg.UDP.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}

@@ -33,30 +33,30 @@ const RFC3164 = "rfc3164"
 const RFC5424 = "rfc5424"
 
 func init() {
-	operator.Register("syslog_parser", func() operator.Builder { return NewSyslogParserConfig("") })
+	operator.Register("syslog_parser", func() operator.Builder { return NewConfig("") })
 }
 
-// NewSyslogParserConfig creates a new syslog parser config with default values
-func NewSyslogParserConfig(operatorID string) *SyslogParserConfig {
-	return &SyslogParserConfig{
+// NewConfig creates a new syslog parser config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		ParserConfig: helper.NewParserConfig(operatorID, "syslog_parser"),
 	}
 }
 
-// SyslogParserConfig is the configuration of a syslog parser operator.
-type SyslogParserConfig struct {
+// Config is the configuration of a syslog parser operator.
+type Config struct {
 	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
-	SyslogBaseConfig    `mapstructure:",squash" yaml:",inline"`
+	BaseConfig          `mapstructure:",squash" yaml:",inline"`
 }
 
-// SyslogBaseConfig is the detailed configuration of a syslog parser.
-type SyslogBaseConfig struct {
+// BaseConfig is the detailed configuration of a syslog parser.
+type BaseConfig struct {
 	Protocol string `mapstructure:"protocol,omitempty" json:"protocol,omitempty" yaml:"protocol,omitempty"`
 	Location string `mapstructure:"location,omitempty" json:"location,omitempty" yaml:"location,omitempty"`
 }
 
 // Build will build a JSON parser operator.
-func (c SyslogParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if c.ParserConfig.TimeParser == nil {
 		parseFromField := entry.NewAttributeField("timestamp")
 		c.ParserConfig.TimeParser = &helper.TimeParser{
@@ -83,7 +83,7 @@ func (c SyslogParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator,
 		return nil, fmt.Errorf("failed to load location %s: %w", c.Location, err)
 	}
 
-	return &SyslogParser{
+	return &Parser{
 		ParserOperator: parserOperator,
 		protocol:       c.Protocol,
 		location:       location,
@@ -101,20 +101,20 @@ func buildMachine(protocol string, location *time.Location) (sl.Machine, error) 
 	}
 }
 
-// SyslogParser is an operator that parses syslog.
-type SyslogParser struct {
+// Parser is an operator that parses syslog.
+type Parser struct {
 	helper.ParserOperator
 	protocol string
 	location *time.Location
 }
 
 // Process will parse an entry field as syslog.
-func (s *SyslogParser) Process(ctx context.Context, entry *entry.Entry) error {
+func (s *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return s.ParserOperator.ProcessWithCallback(ctx, entry, s.parse, postprocess)
 }
 
 // parse will parse a value as syslog.
-func (s *SyslogParser) parse(value interface{}) (interface{}, error) {
+func (s *Parser) parse(value interface{}) (interface{}, error) {
 	bytes, err := toBytes(value)
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (s *SyslogParser) parse(value interface{}) (interface{}, error) {
 }
 
 // parseRFC3164 will parse an RFC3164 syslog message.
-func (s *SyslogParser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]interface{}, error) {
+func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]interface{}, error) {
 	value := map[string]interface{}{
 		"timestamp": syslogMessage.Timestamp,
 		"priority":  syslogMessage.Priority,
@@ -157,7 +157,7 @@ func (s *SyslogParser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[s
 }
 
 // parseRFC5424 will parse an RFC5424 syslog message.
-func (s *SyslogParser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]interface{}, error) {
+func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]interface{}, error) {
 	value := map[string]interface{}{
 		"timestamp":       syslogMessage.Timestamp,
 		"priority":        syslogMessage.Priority,
@@ -175,7 +175,7 @@ func (s *SyslogParser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[s
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
-func (s *SyslogParser) toSafeMap(message map[string]interface{}) (map[string]interface{}, error) {
+func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface{}, error) {
 	for key, val := range message {
 		switch v := val.(type) {
 		case *string:

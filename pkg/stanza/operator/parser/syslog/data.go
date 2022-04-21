@@ -22,7 +22,7 @@ import (
 
 type Case struct {
 	Name   string
-	Config *SyslogParserConfig
+	Config *Config
 	Input  *entry.Entry
 	Expect *entry.Entry
 }
@@ -44,7 +44,7 @@ func testLocations() (map[string]*time.Location, error) {
 	return l, nil
 }
 
-func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
+func CreateCases(basicConfig func() *Config) ([]Case, error) {
 	location, err := testLocations()
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 	var cases = []Case{
 		{
 			"RFC3164",
-			func() *SyslogParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Protocol = RFC3164
 				cfg.Location = location["utc"].String()
@@ -78,7 +78,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 		},
 		{
 			"RFC3164Detroit",
-			func() *SyslogParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Protocol = RFC3164
 				cfg.Location = location["detroit"].String()
@@ -103,7 +103,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 		},
 		{
 			"RFC3164Athens",
-			func() *SyslogParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Protocol = RFC3164
 				cfg.Location = location["athens"].String()
@@ -128,7 +128,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 		},
 		{
 			"RFC5424",
-			func() *SyslogParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Protocol = RFC5424
 				return cfg

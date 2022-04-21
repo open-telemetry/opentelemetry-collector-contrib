@@ -28,13 +28,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func basicConfig() *SyslogParserConfig {
-	cfg := NewSyslogParserConfig("test_operator_id")
+func basicConfig() *Config {
+	cfg := NewConfig("test_operator_id")
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 
-func TestSyslogParser(t *testing.T) {
+func TestParser(t *testing.T) {
 	cases, err := CreateCases(basicConfig)
 	require.NoError(t, err)
 
@@ -91,8 +91,8 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	}
 }
 
-func TestSyslogParserConfig(t *testing.T) {
-	expect := NewSyslogParserConfig("test")
+func TestConfig(t *testing.T) {
+	expect := NewConfig("test")
 	expect.Protocol = RFC3164
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.NewBodyField("to")
@@ -106,7 +106,7 @@ func TestSyslogParserConfig(t *testing.T) {
 			"parse_to":   "body.to",
 			"on_error":   "send",
 		}
-		var actual SyslogParserConfig
+		var actual Config
 		err := helper.UnmarshalMapstructure(input, &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
@@ -120,15 +120,15 @@ on_error: "send"
 protocol: rfc3164
 parse_from: body.from
 parse_to: body.to`
-		var actual SyslogParserConfig
+		var actual Config
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
 	})
 }
 
-func TestSyslogParserInvalidLocation(t *testing.T) {
-	config := NewSyslogParserConfig("test")
+func TestParserInvalidLocation(t *testing.T) {
+	config := NewConfig("test")
 	config.Location = "not_a_location"
 	config.Protocol = RFC3164
 
