@@ -81,8 +81,9 @@ func complexPdataForNDifferentHosts(count int, n int) pdata.Logs {
 		attr.InsertString("host", fmt.Sprintf("host-%d", i%n))
 		attr.CopyTo(resource.Attributes())
 
-		ills := rls.ScopeLogs().AppendEmpty()
-		lr := ills.LogRecords().AppendEmpty()
+		scopeLog := rls.ScopeLogs().AppendEmpty()
+		scopeLog.Scope().SetName("myScope")
+		lr := scopeLog.LogRecords().AppendEmpty()
 
 		lr.SetSpanID(pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
 		lr.SetTraceID(pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
@@ -111,6 +112,9 @@ func complexPdataForNDifferentHosts(count int, n int) pdata.Logs {
 
 func TestRoundTrip(t *testing.T) {
 	initialLogs := complexPdataForNDifferentHosts(1, 1)
+	// Converter does not properly aggregate by Scope, until
+	// it does so the Round Trip cannot expect it
+	initialLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().SetName("")
 	entries := ConvertFrom(initialLogs)
 	require.Equal(t, 1, len(entries))
 
@@ -139,6 +143,7 @@ func TestConvertFrom(t *testing.T) {
 	require.Equal(t, 2, len(entries))
 
 	for _, e := range entries {
+		assert.Equal(t, e.ScopeName, "myScope")
 		assert.EqualValues(t,
 			map[string]interface{}{
 				"host":   "host-0",
