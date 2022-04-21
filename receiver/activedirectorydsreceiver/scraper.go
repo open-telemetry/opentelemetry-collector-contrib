@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 
@@ -55,7 +55,7 @@ func (a *activeDirectoryDSScraper) start(ctx context.Context, host component.Hos
 	return nil
 }
 
-func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var multiErr error
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -255,10 +255,10 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pdata.Metrics, e
 	}
 
 	if multiErr != nil {
-		return pdata.Metrics(a.mb.Emit()), scrapererror.NewPartialScrapeError(multiErr, len(multierr.Errors(multiErr)))
+		return pmetric.Metrics(a.mb.Emit()), scrapererror.NewPartialScrapeError(multiErr, len(multierr.Errors(multiErr)))
 	}
 
-	return pdata.Metrics(a.mb.Emit()), nil
+	return pmetric.Metrics(a.mb.Emit()), nil
 }
 
 func (a *activeDirectoryDSScraper) shutdown(ctx context.Context) error {
