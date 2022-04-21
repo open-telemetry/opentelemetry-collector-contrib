@@ -506,8 +506,8 @@ func TestScrapeMetrics_EnforceUTF8(t *testing.T) {
 		expectedCmdLines   []string
 	}
 
-	invalidUtf8_2octet := string([]byte{0xc3, 0x28})     // Invalid 2-octet sequence
-	invalidUtf8_sequenceId := string([]byte{0xa0, 0xa1}) // Invalid sequence identifier
+	invalidUtf8TwoOctet := string([]byte{0xc3, 0x28})     // Invalid 2-octet sequence
+	invalidUtf8SequenceId := string([]byte{0xa0, 0xa1}) // Invalid sequence identifier
 
 	testCases := []testCase{
 		{
@@ -524,8 +524,8 @@ func TestScrapeMetrics_EnforceUTF8(t *testing.T) {
 			name:        "Invalid UTF-8 Characters Sanitized",
 			enforceUtf8: true,
 			inputCmdlineSlices: [][]string{
-				{invalidUtf8_2octet, "b", "c"},
-				{invalidUtf8_sequenceId, "b", "c"},
+				{invalidUtf8TwoOctet, "b", "c"},
+				{invalidUtf8SequenceId, "b", "c"},
 			},
 			expectedCmdLines: []string{
 				"�( b c",
@@ -536,24 +536,24 @@ func TestScrapeMetrics_EnforceUTF8(t *testing.T) {
 			name:        "Invalid UTF-8 Characters Unchanged",
 			enforceUtf8: false,
 			inputCmdlineSlices: [][]string{
-				{invalidUtf8_2octet, "b", "c"},
-				{invalidUtf8_sequenceId, "b", "c"},
+				{invalidUtf8TwoOctet, "b", "c"},
+				{invalidUtf8SequenceId, "b", "c"},
 			},
 			expectedCmdLines: []string{
-				invalidUtf8_2octet + " b c",
-				invalidUtf8_sequenceId + " b c",
+				invalidUtf8TwoOctet + " b c",
+				invalidUtf8SequenceId + " b c",
 			},
 		},
 		{
 			name:            "Invalid UTF-8 Characters Default (Unchanged)",
 			omitConfigField: true,
 			inputCmdlineSlices: [][]string{
-				{invalidUtf8_2octet, "b", "c"},
-				{invalidUtf8_sequenceId, "b", "c"},
+				{invalidUtf8TwoOctet, "b", "c"},
+				{invalidUtf8SequenceId, "b", "c"},
 			},
 			expectedCmdLines: []string{
-				invalidUtf8_2octet + " b c",
-				invalidUtf8_sequenceId + " b c",
+				invalidUtf8TwoOctet + " b c",
+				invalidUtf8SequenceId + " b c",
 			},
 		},
 	}
