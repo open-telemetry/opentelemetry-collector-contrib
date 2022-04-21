@@ -25,7 +25,7 @@ func TestGoldenConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name: "add_value",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = "randomMessage"
@@ -34,7 +34,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_expr",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = `EXPR(body.key + "_suffix")`
@@ -43,7 +43,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_nest",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = map[interface{}]interface{}{
@@ -54,7 +54,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_attribute",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("new")
 				cfg.Value = "newVal"
@@ -63,7 +63,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_nested_attribute",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("one", "two")
 				cfg.Value = "newVal"
@@ -72,7 +72,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_nested_obj_attribute",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("one", "two")
 				cfg.Value = map[interface{}]interface{}{
@@ -83,7 +83,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_resource",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = "newVal"
@@ -92,7 +92,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_nested_resource",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("one", "two")
 				cfg.Value = "newVal"
@@ -101,7 +101,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_nested_obj_resource",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("one", "two")
 				cfg.Value = map[interface{}]interface{}{
@@ -112,7 +112,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_resource_expr",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = `EXPR(body.key + "_suffix")`
@@ -121,7 +121,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_array_to_body",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = []interface{}{1, 2, 3, 4}
@@ -130,7 +130,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "add_array_to_attributes",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("new")
 				cfg.Value = []interface{}{1, 2, 3, 4}
@@ -140,7 +140,7 @@ func TestGoldenConfig(t *testing.T) {
 
 		{
 			Name: "add_array_to_resource",
-			Expect: func() *AddOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = []interface{}{1, 2, 3, 4}
@@ -155,6 +155,6 @@ func TestGoldenConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *AddOperatorConfig {
-	return NewAddOperatorConfig("add")
+func defaultCfg() *Config {
+	return NewConfig("add")
 }

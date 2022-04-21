@@ -27,7 +27,7 @@ import (
 
 type testCase struct {
 	name      string
-	op        *AddOperatorConfig
+	op        *Config
 	input     func() *entry.Entry
 	output    func() *entry.Entry
 	expectErr bool
@@ -51,7 +51,7 @@ func TestProcessAndBuild(t *testing.T) {
 	cases := []testCase{
 		{
 			"add_value",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = "randomMessage"
@@ -67,7 +67,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_expr",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = `EXPR(body.key + "_suffix")`
@@ -83,7 +83,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_nest",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = map[interface{}]interface{}{
@@ -113,7 +113,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_attribute",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("new")
 				cfg.Value = "some.attribute"
@@ -129,7 +129,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_resource",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = "some.resource"
@@ -145,7 +145,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_resource_expr",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = `EXPR(body.key + "_suffix")`
@@ -161,7 +161,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_int_to_body",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = 1
@@ -183,7 +183,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_array_to_body",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
 				cfg.Value = []int{1, 2, 3, 4}
@@ -205,7 +205,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"overwrite",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("key")
 				cfg.Value = []int{1, 2, 3, 4}
@@ -226,7 +226,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_int_to_resource",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
 				cfg.Value = 1
@@ -244,7 +244,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_int_to_attributes",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("new")
 				cfg.Value = 1
@@ -262,7 +262,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_nested_to_attributes",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("one", "two")
 				cfg.Value = map[string]interface{}{
@@ -286,7 +286,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"add_nested_to_resource",
-			func() *AddOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("one", "two")
 				cfg.Value = map[string]interface{}{
@@ -317,7 +317,7 @@ func TestProcessAndBuild(t *testing.T) {
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
-			add := op.(*AddOperator)
+			add := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
 			add.SetOutputs([]operator.Operator{fake})
 			val := tc.input()

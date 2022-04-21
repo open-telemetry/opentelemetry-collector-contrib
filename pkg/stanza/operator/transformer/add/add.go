@@ -29,31 +29,31 @@ import (
 )
 
 func init() {
-	operator.Register("add", func() operator.Builder { return NewAddOperatorConfig("") })
+	operator.Register("add", func() operator.Builder { return NewConfig("") })
 }
 
-// NewAddOperatorConfig creates a new add operator config with default values
-func NewAddOperatorConfig(operatorID string) *AddOperatorConfig {
-	return &AddOperatorConfig{
+// NewConfig creates a new add operator config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "add"),
 	}
 }
 
-// AddOperatorConfig is the configuration of an add operator
-type AddOperatorConfig struct {
+// Config is the configuration of an add operator
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
 	Field                    entry.Field `mapstructure:"field" json:"field" yaml:"field"`
 	Value                    interface{} `mapstructure:"value,omitempty" json:"value,omitempty" yaml:"value,omitempty"`
 }
 
 // Build will build an add operator from the supplied configuration
-func (c AddOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	addOperator := &AddOperator{
+	addOperator := &Transformer{
 		TransformerOperator: transformerOperator,
 		Field:               c.Field,
 	}
@@ -74,8 +74,8 @@ func (c AddOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 	return addOperator, nil
 }
 
-// AddOperator is an operator that adds a string value or an expression value
-type AddOperator struct {
+// Transformer is an operator that adds a string value or an expression value
+type Transformer struct {
 	helper.TransformerOperator
 
 	Field   entry.Field
@@ -84,12 +84,12 @@ type AddOperator struct {
 }
 
 // Process will process an entry with a add transformation.
-func (p *AddOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply the add operations to an entry
-func (p *AddOperator) Transform(e *entry.Entry) error {
+func (p *Transformer) Transform(e *entry.Entry) error {
 	if p.Value != nil {
 		return e.Set(p.Field, p.Value)
 	}
