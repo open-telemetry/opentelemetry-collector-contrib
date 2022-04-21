@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+package file // import "github.com/open-telemetry/opentelemetry-log-collection/operator/input/file"
 
 import (
 	"bufio"
@@ -21,13 +21,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/transform"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/transform"
 )
 
 // File attributes contains information about file paths
@@ -40,7 +39,7 @@ type fileAttributes struct {
 
 // resolveFileAttributes resolves file attributes
 // and sets it to empty string in case of error
-func (f *InputOperator) resolveFileAttributes(path string) *fileAttributes {
+func (f *Input) resolveFileAttributes(path string) *fileAttributes {
 	resolved, err := filepath.EvalSymlinks(path)
 	if err != nil {
 		f.Error(err)
@@ -65,7 +64,7 @@ type Reader struct {
 	Offset      int64
 
 	generation     int
-	fileInput      *InputOperator
+	fileInput      *Input
 	file           *os.File
 	fileAttributes *fileAttributes
 
@@ -78,7 +77,7 @@ type Reader struct {
 }
 
 // NewReader creates a new file reader
-func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
+func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
 	r := &Reader{
 		Fingerprint:    fp,
 		file:           file,

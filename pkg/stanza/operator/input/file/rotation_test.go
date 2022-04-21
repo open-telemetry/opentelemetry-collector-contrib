@@ -244,7 +244,7 @@ func (rt rotationTest) expectEphemeralLines() bool {
 func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(t *testing.T) {
 	return func(t *testing.T) {
 		operator, logReceived, tempDir := newTestFileOperator(t,
-			func(cfg *InputConfig) {
+			func(cfg *Config) {
 				cfg.PollInterval = helper.NewDuration(tc.pollInterval)
 			},
 			func(out *testutil.FakeOutput) {

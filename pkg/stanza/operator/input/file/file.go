@@ -30,8 +30,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-// InputOperator is an operator that monitors files for entries
-type InputOperator struct {
+// Input is an operator that monitors files for entries
+type Input struct {
 	helper.InputOperator
 
 	finder                Finder
@@ -64,7 +64,7 @@ type InputOperator struct {
 }
 
 // Start will start the file monitoring process
-func (f *InputOperator) Start(persister operator.Persister) error {
+func (f *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	f.cancel = cancel
 	f.firstCheck = true
@@ -83,7 +83,7 @@ func (f *InputOperator) Start(persister operator.Persister) error {
 }
 
 // Stop will stop the file monitoring process
-func (f *InputOperator) Stop() error {
+func (f *Input) Stop() error {
 	f.cancel()
 	f.wg.Wait()
 	f.roller.cleanup()
@@ -97,7 +97,7 @@ func (f *InputOperator) Stop() error {
 
 // startPoller kicks off a goroutine that will poll the filesystem periodically,
 // checking if there are new files or new logs in the watched files
-func (f *InputOperator) startPoller(ctx context.Context) {
+func (f *Input) startPoller(ctx context.Context) {
 	f.wg.Add(1)
 	go func() {
 		defer f.wg.Done()
@@ -117,7 +117,7 @@ func (f *InputOperator) startPoller(ctx context.Context) {
 }
 
 // poll checks all the watched paths for new entries
-func (f *InputOperator) poll(ctx context.Context) {
+func (f *Input) poll(ctx context.Context) {
 	f.maxBatchFiles = f.MaxConcurrentFiles / 2
 	var matches []string
 	if len(f.queuedMatches) > f.maxBatchFiles {
@@ -165,7 +165,7 @@ func (f *InputOperator) poll(ctx context.Context) {
 // makeReaders takes a list of paths, then creates readers from each of those paths,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (f *InputOperator) makeReaders(filesPaths []string) []*Reader {
+func (f *Input) makeReaders(filesPaths []string) []*Reader {
 	// Open the files first to minimize the time between listing and opening
 	files := make([]*os.File, 0, len(filesPaths))
 	for _, path := range filesPaths {
@@ -241,7 +241,7 @@ OUTER:
 // saveCurrent adds the readers from this polling interval to this list of
 // known files, then increments the generation of all tracked old readers
 // before clearing out readers that have existed for 3 generations.
-func (f *InputOperator) saveCurrent(readers []*Reader) {
+func (f *Input) saveCurrent(readers []*Reader) {
 	// Add readers from the current, completed poll interval to the list of known files
 	f.knownFiles = append(f.knownFiles, readers...)
 
@@ -257,7 +257,7 @@ func (f *InputOperator) saveCurrent(readers []*Reader) {
 	}
 }
 
-func (f *InputOperator) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Reader, error) {
+func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Reader, error) {
 	// Check if the new path has the same fingerprint as an old path
 	if oldReader, ok := f.findFingerprintMatch(fp); ok {
 		newReader, err := oldReader.Copy(file)
@@ -284,7 +284,7 @@ func (f *InputOperator) newReader(file *os.File, fp *Fingerprint, firstCheck boo
 	return newReader, nil
 }
 
-func (f *InputOperator) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
+func (f *Input) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 	// Iterate backwards to match newest first
 	for i := len(f.knownFiles) - 1; i >= 0; i-- {
 		oldReader := f.knownFiles[i]
@@ -298,7 +298,7 @@ func (f *InputOperator) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 const knownFilesKey = "knownFiles"
 
 // syncLastPollFiles syncs the most recent set of files to the database
-func (f *InputOperator) syncLastPollFiles(ctx context.Context) {
+func (f *Input) syncLastPollFiles(ctx context.Context) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
@@ -321,7 +321,7 @@ func (f *InputOperator) syncLastPollFiles(ctx context.Context) {
 }
 
 // syncLastPollFiles loads the most recent set of files to the database
-func (f *InputOperator) loadLastPollFiles(ctx context.Context) error {
+func (f *Input) loadLastPollFiles(ctx context.Context) error {
 	encoded, err := f.persister.Get(ctx, knownFilesKey)
 	if err != nil {
 		return err
@@ -361,6 +361,6 @@ func (f *InputOperator) loadLastPollFiles(ctx context.Context) error {
 }
 
 // getMultiline returns helper.Splitter structure and error eventually
-func (f *InputOperator) getMultiline() (*helper.Splitter, error) {
+func (f *Input) getMultiline() (*helper.Splitter, error) {
 	return f.Splitter.Build(f.encoding.Encoding, false, f.MaxLogSize)
 }
