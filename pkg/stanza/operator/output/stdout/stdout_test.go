@@ -28,7 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func TestStdoutOperator(t *testing.T) {
+func TestOutput(t *testing.T) {
 	cfg := StdoutConfig{
 		OutputConfig: helper.OutputConfig{
 			BasicConfig: helper.BasicConfig{
@@ -42,7 +42,7 @@ func TestStdoutOperator(t *testing.T) {
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	op.(*StdoutOperator).encoder = json.NewEncoder(&buf)
+	op.(*Output).encoder = json.NewEncoder(&buf)
 
 	ots := time.Unix(1591043864, 0)
 	ts := time.Unix(1591042864, 0)

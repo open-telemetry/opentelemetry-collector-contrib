@@ -32,11 +32,11 @@ import (
 var Stdout io.Writer = os.Stdout
 
 func init() {
-	operator.Register("stdout", func() operator.Builder { return NewStdoutConfig("") })
+	operator.Register("stdout", func() operator.Builder { return Config("") })
 }
 
-// NewStdoutConfig creates a new stdout config with default values
-func NewStdoutConfig(operatorID string) *StdoutConfig {
+// Config creates a new stdout config with default values
+func Config(operatorID string) *StdoutConfig {
 	return &StdoutConfig{
 		OutputConfig: helper.NewOutputConfig(operatorID, "stdout"),
 	}
@@ -54,21 +54,21 @@ func (c StdoutConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error
 		return nil, err
 	}
 
-	return &StdoutOperator{
+	return &Output{
 		OutputOperator: outputOperator,
 		encoder:        json.NewEncoder(Stdout),
 	}, nil
 }
 
-// StdoutOperator is an operator that logs entries using stdout.
-type StdoutOperator struct {
+// Output is an operator that logs entries using stdout.
+type Output struct {
 	helper.OutputOperator
 	encoder *json.Encoder
 	mux     sync.Mutex
 }
 
 // Process will log entries received.
-func (o *StdoutOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (o *Output) Process(ctx context.Context, entry *entry.Entry) error {
 	o.mux.Lock()
 	err := o.encoder.Encode(entry)
 	if err != nil {
