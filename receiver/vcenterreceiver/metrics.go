@@ -57,10 +57,13 @@ func (v *vcenterMetricScraper) recordVMUsages(
 
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted
-	diskUtilization := float64(diskUsed) / float64(diskFree) * 100
+
 	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskUsed, "used")
 	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskFree, "total")
-	v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
+	if diskFree != 0 {
+		diskUtilization := float64(diskUsed) / float64(diskFree) * 100
+		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
+	}
 }
 
 func (v *vcenterMetricScraper) recordDatastoreProperties(

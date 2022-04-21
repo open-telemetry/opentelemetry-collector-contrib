@@ -19,8 +19,12 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 	"github.com/stretchr/testify/require"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
@@ -40,6 +44,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 				TLSClientSetting: configtls.TLSClientSetting{
 					Insecure: true,
 				},
+				Settings: metadata.DefaultMetricsSettings(),
 			},
 		}
 		s := session.NewManager(c)
@@ -65,6 +70,11 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		metrics, err := sc.scrape(ctx)
 		require.NoError(t, err)
 		require.NotEmpty(t, metrics)
+
+		goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+		expectedMetrics, err := golden.ReadMetrics(goldenPath)
+		err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+		require.NoError(t, err)
 
 		err = rcvr.Shutdown(ctx)
 		require.NoError(t, err)
