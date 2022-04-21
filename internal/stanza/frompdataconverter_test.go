@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-test/deep"
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -116,16 +115,23 @@ func TestRoundTrip(t *testing.T) {
 	require.Equal(t, 1, len(entries))
 
 	pLogs := Convert(entries[0])
-	initialLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
-	initialLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Sort()
-	initialLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
-	pLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
-	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Sort()
-	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
-	if diff := deep.Equal(initialLogs, pLogs); diff != nil {
-		t.Error(diff)
-	}
+	sortComplexData(initialLogs)
+	sortComplexData(pLogs)
 	require.Equal(t, initialLogs, pLogs)
+}
+
+func sortComplexData(pLogs pdata.Logs) {
+	pLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
+	attrObject, _ := pLogs.ResourceLogs().At(0).Resource().Attributes().Get("object")
+	attrObject.MapVal().Sort()
+	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Sort()
+	level1, _ := pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().MapVal().Get("object")
+	level1.MapVal().Sort()
+	level2, _ := level1.MapVal().Get("object")
+	level2.MapVal().Sort()
+	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
+	attrObject, _ = pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("object")
+	attrObject.MapVal().Sort()
 }
 
 func TestConvertFrom(t *testing.T) {
@@ -141,11 +147,13 @@ func TestConvertFrom(t *testing.T) {
 				"double": 12.34,
 				"string": "hello",
 				"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
+				"slice":  []interface{}{"666", "777"},
 				"object": map[string]interface{}{
 					"bool":   true,
 					"int":    int64(123),
 					"double": 12.34,
 					"string": "hello",
+					"slice":  []interface{}{"666", "777"},
 					"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				},
 			},
@@ -157,12 +165,14 @@ func TestConvertFrom(t *testing.T) {
 				"bool":   true,
 				"int":    int64(123),
 				"string": "hello",
+				"slice":  []interface{}{"666", "777"},
 				"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				"object": map[string]interface{}{
 					"bool":   true,
 					"int":    int64(123),
 					"double": 12.34,
 					"string": "hello",
+					"slice":  []interface{}{"666", "777"},
 					"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				},
 			},
@@ -175,18 +185,21 @@ func TestConvertFrom(t *testing.T) {
 				"int":    int64(123),
 				"double": 12.34,
 				"string": "hello",
+				"slice":  []interface{}{"666", "777"},
 				"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 				"object": map[string]interface{}{
 					"bool":   true,
 					"int":    int64(123),
 					"double": 12.34,
 					"string": "hello",
+					"slice":  []interface{}{"666", "777"},
 					"bytes":  []byte{0xa1, 0xf0, 0x02, 0xff},
 					"object": map[string]interface{}{
 						"bool":   true,
 						"int":    int64(123),
 						"double": 12.34,
 						"string": "hello",
+						"slice":  []interface{}{"666", "777"},
 					},
 				},
 			},

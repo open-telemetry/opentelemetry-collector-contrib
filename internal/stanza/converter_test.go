@@ -220,7 +220,7 @@ func TestConvert(t *testing.T) {
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.InsertString("bytes", "asdf")
+		m.InsertBytes("bytes", []byte("asdf"))
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }
