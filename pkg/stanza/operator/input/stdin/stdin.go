@@ -29,36 +29,36 @@ import (
 )
 
 func init() {
-	operator.Register("stdin", func() operator.Builder { return NewStdinInputConfig("") })
+	operator.Register("stdin", func() operator.Builder { return NewConfig("") })
 }
 
-// NewStdinInputConfig creates a new stdin input config with default values
-func NewStdinInputConfig(operatorID string) *StdinInputConfig {
-	return &StdinInputConfig{
+// NewConfig creates a new stdin input config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, "stdin"),
 	}
 }
 
-// StdinInputConfig is the configuration of a stdin input operator.
-type StdinInputConfig struct {
+// Config is the configuration of a stdin input operator.
+type Config struct {
 	helper.InputConfig `yaml:",inline"`
 }
 
 // Build will build a stdin input operator.
-func (c *StdinInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &StdinInput{
+	return &Input{
 		InputOperator: inputOperator,
 		stdin:         os.Stdin,
 	}, nil
 }
 
-// StdinInput is an operator that reads input from stdin
-type StdinInput struct {
+// Input is an operator that reads input from stdin
+type Input struct {
 	helper.InputOperator
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
@@ -66,7 +66,7 @@ type StdinInput struct {
 }
 
 // Start will start generating log entries.
-func (g *StdinInput) Start(_ operator.Persister) error {
+func (g *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	g.cancel = cancel
 
@@ -110,7 +110,7 @@ func (g *StdinInput) Start(_ operator.Persister) error {
 }
 
 // Stop will stop generating logs.
-func (g *StdinInput) Stop() error {
+func (g *Input) Stop() error {
 	g.cancel()
 	g.wg.Wait()
 	return nil

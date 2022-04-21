@@ -25,7 +25,7 @@ import (
 )
 
 func TestStdin(t *testing.T) {
-	cfg := NewStdinInputConfig("")
+	cfg := NewConfig("")
 	cfg.OutputIDs = []string{"fake"}
 
 	op, err := cfg.Build(testutil.Logger(t))
@@ -37,7 +37,7 @@ func TestStdin(t *testing.T) {
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
-	stdin := op.(*StdinInput)
+	stdin := op.(*Input)
 	stdin.stdin = r
 
 	require.NoError(t, stdin.Start(testutil.NewMockPersister("test")))
