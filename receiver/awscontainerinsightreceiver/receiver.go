@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -36,7 +36,7 @@ import (
 var _ component.MetricsReceiver = (*awsContainerInsightReceiver)(nil)
 
 type metricsProvider interface {
-	GetMetrics() []pdata.Metrics
+	GetMetrics() []pmetric.Metrics
 }
 
 // awsContainerInsightReceiver implements the component.MetricsReceiver
@@ -138,7 +138,7 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 
 // collectData collects container stats from Amazon ECS Task Metadata Endpoint
 func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error {
-	var mds []pdata.Metrics
+	var mds []pmetric.Metrics
 	if acir.cadvisor == nil && acir.k8sapiserver == nil {
 		err := errors.New("both cadvisor and k8sapiserver failed to start")
 		acir.settings.Logger.Error("Failed to collect stats", zap.Error(err))

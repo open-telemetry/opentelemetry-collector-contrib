@@ -25,7 +25,9 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
@@ -121,14 +123,14 @@ func (e exporter) extractAPIKeyFromHeader(ctx context.Context) string {
 	return values[0]
 }
 
-func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (outputErr error) {
+func (e exporter) pushTraceData(ctx context.Context, td ptrace.Traces) (outputErr error) {
 	details := newTraceMetadata(ctx)
 	details.dataInputCount = td.SpanCount()
 	builder := func() ([]telemetry.Batch, error) { return e.buildTraceBatch(&details, td) }
 	return e.export(ctx, &details, builder)
 }
 
-func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]telemetry.Batch, error) {
+func (e exporter) buildTraceBatch(details *exportMetadata, td ptrace.Traces) ([]telemetry.Batch, error) {
 	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
@@ -165,7 +167,7 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 	return batches, errs
 }
 
-func calcSpanBatches(td pdata.Traces) int {
+func calcSpanBatches(td ptrace.Traces) int {
 	rss := td.ResourceSpans()
 	batchCount := 0
 	for i := 0; i < rss.Len(); i++ {
@@ -174,14 +176,14 @@ func calcSpanBatches(td pdata.Traces) int {
 	return batchCount
 }
 
-func (e exporter) pushLogData(ctx context.Context, ld pdata.Logs) (outputErr error) {
+func (e exporter) pushLogData(ctx context.Context, ld plog.Logs) (outputErr error) {
 	details := newLogMetadata(ctx)
 	details.dataInputCount = ld.LogRecordCount()
 	builder := func() ([]telemetry.Batch, error) { return e.buildLogBatch(&details, ld) }
 	return e.export(ctx, &details, builder)
 }
 
-func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telemetry.Batch, error) {
+func (e exporter) buildLogBatch(details *exportMetadata, ld plog.Logs) ([]telemetry.Batch, error) {
 	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
@@ -218,7 +220,7 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 	return batches, errs
 }
 
-func calcLogBatches(ld pdata.Logs) int {
+func calcLogBatches(ld plog.Logs) int {
 	rss := ld.ResourceLogs()
 	batchCount := 0
 	for i := 0; i < rss.Len(); i++ {
@@ -227,14 +229,14 @@ func calcLogBatches(ld pdata.Logs) int {
 	return batchCount
 }
 
-func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (outputErr error) {
+func (e exporter) pushMetricData(ctx context.Context, md pmetric.Metrics) (outputErr error) {
 	details := newMetricMetadata(ctx)
 	details.dataInputCount = md.DataPointCount()
 	builder := func() ([]telemetry.Batch, error) { return e.buildMetricBatch(&details, md) }
 	return e.export(ctx, &details, builder)
 }
 
-func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([]telemetry.Batch, error) {
+func (e exporter) buildMetricBatch(details *exportMetadata, md pmetric.Metrics) ([]telemetry.Batch, error) {
 	var errs error
 
 	transform := newTransformer(e.logger, e.buildInfo, details)
@@ -278,7 +280,7 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 	return batches, errs
 }
 
-func calcMetricBatches(md pdata.Metrics) int {
+func calcMetricBatches(md pmetric.Metrics) int {
 	rss := md.ResourceMetrics()
 	batchCount := 0
 	for i := 0; i < rss.Len(); i++ {

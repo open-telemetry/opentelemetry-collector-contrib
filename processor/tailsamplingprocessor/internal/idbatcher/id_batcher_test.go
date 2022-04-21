@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestBatcherNew(t *testing.T) {
@@ -119,7 +119,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	wg := &sync.WaitGroup{}
 	for i := 0; i < len(ids); i++ {
 		wg.Add(1)
-		go func(id pdata.TraceID) {
+		go func(id pcommon.TraceID) {
 			batcher.AddToCurrentBatch(id)
 			wg.Done()
 		}(ids[i])
@@ -151,13 +151,13 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	}
 }
 
-func generateSequentialIds(numIds uint64) []pdata.TraceID {
-	ids := make([]pdata.TraceID, numIds)
+func generateSequentialIds(numIds uint64) []pcommon.TraceID {
+	ids := make([]pcommon.TraceID, numIds)
 	for i := uint64(0); i < numIds; i++ {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 0)
 		binary.BigEndian.PutUint64(traceID[8:], i)
-		ids[i] = pdata.NewTraceID(traceID)
+		ids[i] = pcommon.NewTraceID(traceID)
 	}
 	return ids
 }

@@ -24,7 +24,9 @@ import (
 	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
@@ -42,11 +44,11 @@ type pubsubExporter struct {
 	ceSource             string
 	ceCompression        compression
 	config               *Config
-	tracesMarshaler      pdata.TracesMarshaler
+	tracesMarshaler      ptrace.Marshaler
 	tracesWatermarkFunc  tracesWatermarkFunc
-	metricsMarshaler     pdata.MetricsMarshaler
+	metricsMarshaler     pmetric.Marshaler
 	metricsWatermarkFunc metricsWatermarkFunc
-	logsMarshaler        pdata.LogsMarshaler
+	logsMarshaler        plog.Marshaler
 	logsWatermarkFunc    logsWatermarkFunc
 }
 
@@ -183,7 +185,7 @@ func (ex *pubsubExporter) compress(payload []byte) ([]byte, error) {
 	return payload, nil
 }
 
-func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces pdata.Traces) error {
+func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	buffer, err := ex.tracesMarshaler.MarshalTraces(traces)
 	if err != nil {
 		return err
@@ -191,7 +193,7 @@ func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces pdata.Traces
 	return ex.publishMessage(ctx, otlpProtoTrace, buffer, ex.tracesWatermarkFunc(traces, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
 }
 
-func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pdata.Metrics) error {
+func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pmetric.Metrics) error {
 	buffer, err := ex.metricsMarshaler.MarshalMetrics(metrics)
 	if err != nil {
 		return err
@@ -199,7 +201,7 @@ func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pdata.Metr
 	return ex.publishMessage(ctx, otlpProtoMetric, buffer, ex.metricsWatermarkFunc(metrics, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
 }
 
-func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs pdata.Logs) error {
+func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs plog.Logs) error {
 	buffer, err := ex.logsMarshaler.MarshalLogs(logs)
 	if err != nil {
 		return err

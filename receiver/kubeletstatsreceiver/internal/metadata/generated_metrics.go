@@ -4,7 +4,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Type is the component type name.
@@ -13,14 +13,14 @@ const Type config.Type = "kubeletstatsreceiver"
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
 	Name() string
-	New() pdata.Metric
-	Init(metric pdata.Metric)
+	New() pmetric.Metric
+	Init(metric pmetric.Metric)
 }
 
 // Intentionally not exposing this so that it is opaque and can change freely.
 type metricImpl struct {
 	name     string
-	initFunc func(pdata.Metric)
+	initFunc func(pmetric.Metric)
 }
 
 // Name returns the metric name.
@@ -29,14 +29,14 @@ func (m *metricImpl) Name() string {
 }
 
 // New creates a metric object preinitialized.
-func (m *metricImpl) New() pdata.Metric {
-	metric := pdata.NewMetric()
+func (m *metricImpl) New() pmetric.Metric {
+	metric := pmetric.NewMetric()
 	m.Init(metric)
 	return metric
 }
 
 // Init initializes the provided metric object.
-func (m *metricImpl) Init(metric pdata.Metric) {
+func (m *metricImpl) Init(metric pmetric.Metric) {
 	m.initFunc(metric)
 }
 
@@ -115,170 +115,170 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 var Metrics = &metricStruct{
 	&metricImpl{
 		"cpu.time",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("cpu.time")
 			metric.SetDescription("CPU time")
 			metric.SetUnit("s")
-			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.SetDataType(pmetric.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
 		"cpu.utilization",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("cpu.utilization")
 			metric.SetDescription("CPU utilization")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"filesystem.available",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("filesystem.available")
 			metric.SetDescription("Filesystem available")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"filesystem.capacity",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("filesystem.capacity")
 			metric.SetDescription("Filesystem capacity")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"filesystem.usage",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("filesystem.usage")
 			metric.SetDescription("Filesystem usage")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"memory.available",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("memory.available")
 			metric.SetDescription("Memory available")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"memory.major_page_faults",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("memory.major_page_faults")
 			metric.SetDescription("Memory major_page_faults")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"memory.page_faults",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("memory.page_faults")
 			metric.SetDescription("Memory page_faults")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"memory.rss",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("memory.rss")
 			metric.SetDescription("Memory rss")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"memory.usage",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("memory.usage")
 			metric.SetDescription("Memory usage")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"memory.working_set",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("memory.working_set")
 			metric.SetDescription("Memory working_set")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"network.errors",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("network.errors")
 			metric.SetDescription("Network errors")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.SetDataType(pmetric.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
 		"network.io",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("network.io")
 			metric.SetDescription("Network IO")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.SetDataType(pmetric.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
 		"volume.available",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("volume.available")
 			metric.SetDescription("The number of available bytes in the volume.")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"volume.capacity",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("volume.capacity")
 			metric.SetDescription("The total capacity in bytes of the volume.")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"volume.inodes",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("volume.inodes")
 			metric.SetDescription("The total inodes in the filesystem.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"volume.inodes.free",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("volume.inodes.free")
 			metric.SetDescription("The free inodes in the filesystem.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"volume.inodes.used",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("volume.inodes.used")
 			metric.SetDescription("The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 }

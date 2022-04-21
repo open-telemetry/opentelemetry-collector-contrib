@@ -15,18 +15,36 @@
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 )
+
+// getHostTags gets the host tags extracted from the configuration.
+func getHostTags(c *config.Config) []string {
+	tags := c.HostMetadata.Tags
+
+	if len(tags) == 0 {
+		//lint:ignore SA1019 Will be removed when environment variable detection is removed
+		tags = strings.Split(c.EnvVarTags, " ") //nolint
+	}
+
+	if c.Env != "none" {
+		tags = append(tags, fmt.Sprintf("env:%s", c.Env))
+	}
+	return tags
+}
 
 // newMetadataConfigfromConfig creates a new metadata pusher config from the main config.
 func newMetadataConfigfromConfig(cfg *config.Config) metadata.PusherConfig {
 	return metadata.PusherConfig{
 		ConfigHostname:      cfg.Hostname,
-		ConfigTags:          cfg.GetHostTags(),
+		ConfigTags:          getHostTags(cfg),
 		MetricsEndpoint:     cfg.Metrics.Endpoint,
 		APIKey:              cfg.API.Key,
-		UseResourceMetadata: cfg.UseResourceMetadata,
+		UseResourceMetadata: cfg.HostMetadata.HostnameSource == config.HostnameSourceFirstResource,
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
 		TimeoutSettings:     cfg.TimeoutSettings,
 		RetrySettings:       cfg.RetrySettings,

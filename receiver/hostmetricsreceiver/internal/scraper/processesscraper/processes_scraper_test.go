@@ -20,11 +20,13 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -36,15 +38,13 @@ var (
 	expectProcessesCreatedMetric = runtime.GOOS == "linux" || runtime.GOOS == "openbsd"
 )
 
-const startTime = 100 * 1e9
-
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name         string
 		getMiscStats func() (*load.MiscStat, error)
 		getProcesses func() ([]proc, error)
 		expectedErr  string
-		validate     func(*testing.T, pdata.MetricSlice)
+		validate     func(*testing.T, pmetric.MetricSlice)
 	}
 
 	testCases := []testCase{{
@@ -74,7 +74,9 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
-			scraper := newProcessesScraper(context.Background(), &Config{})
+			scraper := newProcessesScraper(context.Background(), &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(err, "Failed to initialize processes scraper: %v", err)
 
@@ -85,7 +87,6 @@ func TestScrape(t *testing.T) {
 			if test.getProcesses != nil {
 				scraper.getProcesses = test.getProcesses
 			}
-			scraper.startTime = startTime
 
 			md, err := scraper.scrape(context.Background())
 
@@ -125,14 +126,14 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func validateRealData(t *testing.T, metrics pdata.MetricSlice) {
+func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 	assert := assert.New(t)
 
 	metricIndex := 0
 	if expectProcessesCountMetric {
 		countMetric := metrics.At(metricIndex)
 		metricIndex++
-		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), countMetric)
+		assert.Equal("system.processes.count", countMetric.Name())
 
 		assertContainsStatus := func(statusVal string) {
 			points := countMetric.Sum().DataPoints()
@@ -150,17 +151,19 @@ func validateRealData(t *testing.T, metrics pdata.MetricSlice) {
 
 	if expectProcessesCreatedMetric {
 		createdMetric := metrics.At(metricIndex)
-		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCreated.New(), createdMetric)
+		assert.Equal("system.processes.created", createdMetric.Name())
 		createdMetric = metrics.At(1)
-		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCreated.New(), createdMetric)
+		assert.Equal("system.processes.created", createdMetric.Name())
 		assert.Equal(1, createdMetric.Sum().DataPoints().Len())
 		assert.Equal(0, createdMetric.Sum().DataPoints().At(0).Attributes().Len())
 	}
 }
 
-func validateStartTime(t *testing.T, metrics pdata.MetricSlice) {
+func validateStartTime(t *testing.T, metrics pmetric.MetricSlice) {
+	startTime, err := host.BootTime()
+	assert.NoError(t, err)
 	for i := 0; i < metricsLength; i++ {
-		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), startTime)
+		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), pcommon.Timestamp(startTime*1e9))
 	}
 }
 
@@ -192,13 +195,13 @@ func (f fakeProcess) Status() ([]string, error) {
 	return []string{string(f)}, nil
 }
 
-func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {
+func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 	assert := assert.New(t)
 	metricIndex := 0
 	if expectProcessesCountMetric {
 		countMetric := metrics.At(metricIndex)
 		metricIndex++
-		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), countMetric)
+		assert.Equal("system.processes.count", countMetric.Name())
 
 		points := countMetric.Sum().DataPoints()
 		attrs := map[string]int64{}
@@ -223,7 +226,7 @@ func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {
 
 	if expectProcessesCreatedMetric {
 		createdMetric := metrics.At(metricIndex)
-		internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCreated.New(), createdMetric)
+		assert.Equal("system.processes.created", createdMetric.Name())
 		assert.Equal(1, createdMetric.Sum().DataPoints().Len())
 		assert.Equal(0, createdMetric.Sum().DataPoints().At(0).Attributes().Len())
 	}

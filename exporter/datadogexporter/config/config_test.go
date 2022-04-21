@@ -161,18 +161,6 @@ func TestInvalidHostname(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCensorAPIKey(t *testing.T) {
-	cfg := APIConfig{
-		Key: "ddog_32_characters_long_api_key1",
-	}
-
-	assert.Equal(
-		t,
-		"***************************_key1",
-		cfg.GetCensoredKey(),
-	)
-}
-
 func TestIgnoreResourcesValidation(t *testing.T) {
 	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
 	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
@@ -192,16 +180,44 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestInvalidSumMode(t *testing.T) {
-	cfgMap := config.NewMapFromStringMap(map[string]interface{}{
-		"metrics": map[string]interface{}{
-			"sums": map[string]interface{}{
-				"cumulative_monotonic_mode": "invalid_mode",
-			},
+func TestUnmarshal(t *testing.T) {
+	tests := []struct {
+		name      string
+		configMap *config.Map
+		cfg       Config
+		err       string
+	}{
+		{
+			name: "invalid cumulative monotonic mode",
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"cumulative_monotonic_mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"",
 		},
-	})
+		{
+			name: "invalid host metadata hostname source",
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
+				"host_metadata": map[string]interface{}{
+					"hostname_source": "invalid_source",
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'host_metadata.hostname_source': invalid host metadata hostname source \"invalid_source\"",
+		},
+	}
 
-	cfg := futureDefaultConfig()
-	err := cfg.Unmarshal(cfgMap)
-	assert.EqualError(t, err, "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"")
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			cfg := futureDefaultConfig()
+			err := cfg.Unmarshal(testInstance.configMap)
+			if err != nil || testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
+			} else {
+				assert.Equal(t, testInstance.cfg, cfg)
+			}
+		})
+	}
 }

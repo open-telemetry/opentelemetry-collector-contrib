@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
@@ -65,11 +65,11 @@ func TestMetricBuilder(t *testing.T) {
 		}
 		mb := newMetricBuilder(metric.MetricName, metric.Unit)
 		mb.AddDataPoint(metric)
-		got := pdata.NewMetric()
+		got := pmetric.NewMetric()
 		mb.Build(got)
 		require.Equal(t, metric.MetricName, got.Name())
 		require.Equal(t, metric.Unit, got.Unit())
-		require.Equal(t, pdata.MetricDataTypeSummary, got.DataType())
+		require.Equal(t, pmetric.MetricDataTypeSummary, got.DataType())
 		gotDps := got.Summary().DataPoints()
 		require.Equal(t, 1, gotDps.Len())
 		gotDp := gotDps.At(0)
@@ -106,7 +106,7 @@ func TestMetricBuilder(t *testing.T) {
 		for _, metric := range metrics {
 			mb.AddDataPoint(metric)
 		}
-		got := pdata.NewMetric()
+		got := pmetric.NewMetric()
 		mb.Build(got)
 		gotDps := got.Summary().DataPoints()
 		require.Equal(t, 1, gotDps.Len())
@@ -160,7 +160,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 			}
 			rmb := newResourceMetricsBuilder(attrs)
 			rmb.AddMetric(metric)
-			got := pdata.NewResourceMetrics()
+			got := pmetric.NewResourceMetrics()
 			rmb.Build(got)
 			gotAttrs := got.Resource().Attributes()
 			for wantKey, wantValue := range testCase.wantAttributes {
@@ -203,7 +203,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 		for _, metric := range metrics {
 			rmb.AddMetric(metric)
 		}
-		got := pdata.NewResourceMetrics()
+		got := pmetric.NewResourceMetrics()
 		rmb.Build(got)
 		require.Equal(t, 1, got.ScopeMetrics().Len())
 		gotMetrics := got.ScopeMetrics().At(0).Metrics()

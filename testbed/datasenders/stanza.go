@@ -25,7 +25,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -63,7 +64,7 @@ func (f *FileLogWriter) Start() error {
 	return nil
 }
 
-func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -78,7 +79,7 @@ func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	return nil
 }
 
-func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
+func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -89,22 +90,22 @@ func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pdata.ValueTypeString {
+	if lr.Body().Type() == pcommon.ValueTypeString {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
-	lr.Attributes().Range(func(k string, v pdata.Value) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pdata.ValueTypeString:
+		case pcommon.ValueTypeString:
 			sb.WriteString(v.StringVal())
-		case pdata.ValueTypeInt:
+		case pcommon.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
-		case pdata.ValueTypeDouble:
+		case pcommon.ValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
-		case pdata.ValueTypeBool:
+		case pcommon.ValueTypeBool:
 			sb.WriteString(strconv.FormatBool(v.BoolVal()))
 		default:
 			panic("missing case")
@@ -130,10 +131,10 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
       - type: regex_parser
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z0-9]*) (?P<msg>.*)$'
         timestamp:
-          parse_from: time
+          parse_from: body.time
           layout: '%%Y-%%m-%%d'
         severity:
-          parse_from: sev
+          parse_from: body.sev
 `, f.file.Name())
 }
 

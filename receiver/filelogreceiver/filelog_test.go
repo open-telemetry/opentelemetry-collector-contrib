@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
@@ -221,7 +221,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	converter.Stop()
 }
 
-func consumeNLogsFromConverter(ch <-chan pdata.Logs, count int, wg *sync.WaitGroup) {
+func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	n := 0
@@ -275,11 +275,11 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
 					"severity": map[string]interface{}{
-						"parse_from": "sev",
+						"parse_from": "body.sev",
 					},
 					"timestamp": map[string]interface{}{
 						"layout":     "%Y-%m-%d",
-						"parse_from": "time",
+						"parse_from": "body.time",
 					},
 				},
 			},
@@ -307,7 +307,7 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
 					"timestamp": map[interface{}]interface{}{
 						"layout":     "%Y-%m-%d",
-						"parse_from": "ts",
+						"parse_from": "body.ts",
 					},
 				},
 			},

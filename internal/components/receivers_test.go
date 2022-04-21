@@ -52,6 +52,10 @@ func TestDefaultReceivers(t *testing.T) {
 		getConfigFn  getReceiverConfigFn
 	}{
 		{
+			receiver:     "active_directory_ds",
+			skipLifecyle: true, // Requires a running windows service
+		},
+		{
 			receiver: "awscontainerinsightreceiver",
 			// TODO: skipped since it will only function in a container environment with procfs in expected location.
 			skipLifecyle: true,
@@ -114,6 +118,10 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "influxdb",
+		},
+		{
+			receiver:     "iis",
+			skipLifecyle: true, // Requires a running windows process
 		},
 		{
 			receiver: "jaeger",
@@ -191,6 +199,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "redis",
 		},
 		{
+			receiver: "riak",
+		},
+		{
 			receiver: "sapm",
 		},
 		{
@@ -204,6 +215,10 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "splunk_hec",
+		},
+		{
+			receiver:     "sqlserver",
+			skipLifecyle: true, // Requires a running windows process
 		},
 		{
 			receiver: "statsd",

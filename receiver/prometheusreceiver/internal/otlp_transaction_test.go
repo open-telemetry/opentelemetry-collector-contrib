@@ -52,17 +52,15 @@ func Test_transaction_pdata(t *testing.T) {
 		},
 	)
 
-	ms := &metadataService{
-		sm: &mockScrapeManager{targets: map[string][]*scrape.Target{
-			"test": {scrape.NewTarget(processedLabels, discoveredLabels, nil)},
-		}},
-	}
+	target := scrape.NewTarget(processedLabels, discoveredLabels, nil)
+	scrapeCtx := scrape.ContextWithTarget(context.Background(), target)
+	scrapeCtx = scrape.ContextWithMetricMetadataStore(scrapeCtx, noopMetricMetadataStore{})
 
 	rID := config.NewComponentID("prometheus")
 
 	t.Run("Commit Without Adding", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransactionPdata(context.Background(), &txConfig{nil, true, "", rID, ms, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
+		tr := newTransactionPdata(scrapeCtx, &txConfig{nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
@@ -70,7 +68,7 @@ func Test_transaction_pdata(t *testing.T) {
 
 	t.Run("Rollback does nothing", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransactionPdata(context.Background(), &txConfig{nil, true, "", rID, ms, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
+		tr := newTransactionPdata(scrapeCtx, &txConfig{nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
 		if got := tr.Rollback(); got != nil {
 			t.Errorf("expecting nil from Rollback() but got err %v", got)
 		}
@@ -79,7 +77,7 @@ func Test_transaction_pdata(t *testing.T) {
 	badLabels := labels.Labels([]labels.Label{{Name: "foo", Value: "bar"}})
 	t.Run("Add One No Target", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransactionPdata(context.Background(), &txConfig{nil, true, "", rID, ms, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
+		tr := newTransactionPdata(scrapeCtx, &txConfig{nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
 		if _, got := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -91,7 +89,7 @@ func Test_transaction_pdata(t *testing.T) {
 		{Name: "foo", Value: "bar"}})
 	t.Run("Add One Job not found", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransactionPdata(context.Background(), &txConfig{nil, true, "", rID, ms, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
+		tr := newTransactionPdata(scrapeCtx, &txConfig{nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings()})
 		if _, got := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -102,7 +100,7 @@ func Test_transaction_pdata(t *testing.T) {
 		{Name: "__name__", Value: "foo"}})
 	t.Run("Add One Good", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransactionPdata(context.Background(), &txConfig{nil, true, "", rID, ms, sink, nil, componenttest.NewNopReceiverCreateSettings()})
+		tr := newTransactionPdata(scrapeCtx, &txConfig{nil, true, "", rID, sink, nil, componenttest.NewNopReceiverCreateSettings()})
 		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
@@ -123,7 +121,7 @@ func Test_transaction_pdata(t *testing.T) {
 
 	t.Run("Error when start time is zero", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransactionPdata(context.Background(), &txConfig{nil, true, "", rID, ms, sink, nil, componenttest.NewNopReceiverCreateSettings()})
+		tr := newTransactionPdata(scrapeCtx, &txConfig{nil, true, "", rID, sink, nil, componenttest.NewNopReceiverCreateSettings()})
 		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}

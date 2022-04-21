@@ -23,7 +23,8 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -51,8 +52,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		}
 	}
 
-	buildDefaultLogs := func() pdata.Logs {
-		logs := pdata.NewLogs()
+	buildDefaultLogs := func() plog.Logs {
+		logs := plog.NewLogs()
 		resourceLogs := logs.ResourceLogs()
 		resourceLog := resourceLogs.AppendEmpty()
 		resourceLog.Resource().Attributes().InsertString("k0", "should use ILL attr value instead")
@@ -63,14 +64,14 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		logSlice := ilLogs.AppendEmpty().LogRecords()
 
 		l := logSlice.AppendEmpty()
-		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
+		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
 		attrs.InsertString("k0", "v0")
 		attrs.InsertString("k1", "v1")
 		attrs.InsertString("k2", "v2")
 
-		propMapVal := pdata.NewValueMap()
+		propMapVal := pcommon.NewValueMap()
 		propMap := propMapVal.MapVal()
 		propMap.InsertString("env", "prod")
 		propMap.InsertBool("isActive", true)
@@ -78,8 +79,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		propMap.InsertDouble("temp", 40.5)
 		propMap.Sort()
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
-		attrs.Insert("com.splunk.signalfx.event_type", pdata.NewValueString("shutdown"))
+		attrs.Insert("com.splunk.signalfx.event_category", pcommon.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+		attrs.Insert("com.splunk.signalfx.event_type", pcommon.NewValueString("shutdown"))
 
 		l.Attributes().Sort()
 
@@ -89,7 +90,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 	tests := []struct {
 		name       string
 		sfxEvents  []*sfxpb.Event
-		logData    pdata.Logs
+		logData    plog.Logs
 		numDropped int
 	}{
 		{
@@ -104,10 +105,10 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 				e.Category = nil
 				return []*sfxpb.Event{e}
 			}(),
-			logData: func() pdata.Logs {
+			logData: func() plog.Logs {
 				logs := buildDefaultLogs()
 				lrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewValueEmpty())
+				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
 				return logs
 			}(),
 		},
