@@ -48,7 +48,7 @@ func (f *fakeJournaldCmd) StdoutPipe() (io.ReadCloser, error) {
 }
 
 func TestInputJournald(t *testing.T) {
-	cfg := NewJournaldInputConfig("my_journald_input")
+	cfg := NewConfig("my_journald_input")
 	cfg.OutputIDs = []string{"output"}
 
 	op, err := cfg.Build(testutil.Logger(t))
@@ -117,7 +117,7 @@ func TestInputJournald(t *testing.T) {
 }
 
 func TestJournaldInputConfig(t *testing.T) {
-	expect := NewJournaldInputConfig("my_journald_input")
+	expect := NewConfig("my_journald_input")
 
 	input := map[string]interface{}{
 		"id":         "my_journald_input",

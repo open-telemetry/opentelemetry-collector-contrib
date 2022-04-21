@@ -37,19 +37,19 @@ import (
 )
 
 func init() {
-	operator.Register("journald_input", func() operator.Builder { return NewJournaldInputConfig("") })
+	operator.Register("journald_input", func() operator.Builder { return NewConfig("") })
 }
 
-func NewJournaldInputConfig(operatorID string) *JournaldInputConfig {
-	return &JournaldInputConfig{
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, "journald_input"),
 		StartAt:     "end",
 		Priority:    "info",
 	}
 }
 
-// JournaldInputConfig is the configuration of a journald input operator
-type JournaldInputConfig struct {
+// Config is the configuration of a journald input operator
+type Config struct {
 	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
 
 	Directory *string  `mapstructure:"directory,omitempty" json:"directory,omitempty" yaml:"directory,omitempty"`
@@ -60,7 +60,7 @@ type JournaldInputConfig struct {
 }
 
 // Build will build a journald input operator from the supplied configuration
-func (c JournaldInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (c JournaldInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator
 		}
 	}
 
-	return &JournaldInput{
+	return &Input{
 		InputOperator: inputOperator,
 		newCmd: func(ctx context.Context, cursor []byte) cmd {
 			if cursor != nil {
@@ -113,8 +113,8 @@ func (c JournaldInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator
 	}, nil
 }
 
-// JournaldInput is an operator that process logs using journald
-type JournaldInput struct {
+// Input is an operator that process logs using journald
+type Input struct {
 	helper.InputOperator
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
@@ -133,7 +133,7 @@ type cmd interface {
 var lastReadCursorKey = "lastReadCursor"
 
 // Start will start generating log entries.
-func (operator *JournaldInput) Start(persister operator.Persister) error {
+func (operator *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	operator.cancel = cancel
 
@@ -187,7 +187,7 @@ func (operator *JournaldInput) Start(persister operator.Persister) error {
 	return nil
 }
 
-func (operator *JournaldInput) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
+func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
 	var body map[string]interface{}
 	err := operator.json.Unmarshal(line, &body)
 	if err != nil {
@@ -231,7 +231,7 @@ func (operator *JournaldInput) parseJournalEntry(line []byte) (*entry.Entry, str
 }
 
 // Stop will stop generating logs.
-func (operator *JournaldInput) Stop() error {
+func (operator *Input) Stop() error {
 	operator.cancel()
 	operator.wg.Wait()
 	return nil
