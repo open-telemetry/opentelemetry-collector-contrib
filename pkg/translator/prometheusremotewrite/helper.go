@@ -32,9 +32,12 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 const (
+	dropSanitization = "pkg.translator.prometheusremotewrite.PermissiveLabelSanitization"
+
 	nameStr     = "__name__"
 	sumStr      = "_sum"
 	countStr    = "_count"
@@ -54,6 +57,16 @@ const (
 	infoType         = "info"
 	targetMetricName = "target"
 )
+
+var dropSanitizationGate = featuregate.Gate{
+	ID:          dropSanitization,
+	Enabled:     false,
+	Description: "Controls whether to change labels starting with '_' to 'key_'",
+}
+
+func init() {
+	featuregate.Register(dropSanitizationGate)
+}
 
 type bucketBoundsData struct {
 	sig   string
@@ -167,12 +180,13 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	// collide when sanitized.
 	attributes.Sort()
 	attributes.Range(func(key string, value pcommon.Value) bool {
-		if existingLabel, alreadyExists := l[sanitize(key)]; alreadyExists {
+		var finalKey = sanitize(key)
+		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
-			l[sanitize(key)] = existingLabel
+			l[finalKey] = existingLabel
 		} else {
-			l[sanitize(key)] = prompb.Label{
-				Name:  sanitize(key),
+			l[finalKey] = prompb.Label{
+				Name:  finalKey,
 				Value: value.AsString(),
 			}
 		}
@@ -539,7 +553,7 @@ func sanitize(s string) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = keyStr + "_" + s
 	}
-	if s[0] == '_' {
+	if !featuregate.IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
 		s = keyStr + s
 	}
 	return s

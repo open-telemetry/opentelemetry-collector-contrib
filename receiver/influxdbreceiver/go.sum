@@ -113,10 +113,10 @@ github.com/hashicorp/vault/api v1.0.4/go.mod h1:gDcqh3WGcR1cpF5AJz/B1UFheUEneMoI
 github.com/hashicorp/vault/sdk v0.1.13/go.mod h1:B+hVj7TpuQY1Y/GPbCpffmgd+tSEwvhkWnjtSYCaS2M=
 github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
-github.com/influxdata/influxdb-observability/common v0.2.17 h1:nl1BpGcs00mctFo4FzuB3jZKIoCEEuNr9SNBvmbijss=
-github.com/influxdata/influxdb-observability/common v0.2.17/go.mod h1:fuVPmy5B3kp9xKiUhqAtsAd9s+7CXafOCdR/AkxVG/4=
-github.com/influxdata/influxdb-observability/influx2otel v0.2.17 h1:kiWPPbAyzUTatUb2QCZPThY6yvwRZyvYU+WSDoWjREo=
-github.com/influxdata/influxdb-observability/influx2otel v0.2.17/go.mod h1:JmAH/hVWjdvSEd9EjtYeX8K8Z4OOjPrjEI9SoHjMuNo=
+github.com/influxdata/influxdb-observability/common v0.2.18 h1:M+49hbNmZ5/bbUDMgtsbY4qqR/xtWEc3VnNAw/oa+Pk=
+github.com/influxdata/influxdb-observability/common v0.2.18/go.mod h1:5wAWFtOFjmYo2tgi/S0wWC4z+inxFzOeAxEpYqIdcWg=
+github.com/influxdata/influxdb-observability/influx2otel v0.2.18 h1:4pWyw6Jan9TTlSnc7N/sgfOSCSD/5fDtd/FP12uw7lE=
+github.com/influxdata/influxdb-observability/influx2otel v0.2.18/go.mod h1:bU6jIF+uxOC0S3G2i9ilPFIQS0GJFSgUqVVqfJ7JzLA=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210519164801-ca6fa5da0184/go.mod h1:03nmhxzZ7Xk2pdG+lmMd7mHDfeVOYFyhOgwO61qWU98=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210922080147-aa28ccfb8937 h1:MHJNQ+p99hFATQm6ORoLmpUCF7ovjwEFshs/NHzAbig=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210922080147-aa28ccfb8937/go.mod h1:BKR9c0uHSmRgM/se9JhFHtTT7JTO67X23MtKMHtZcpo=
@@ -195,7 +195,6 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 go.opentelemetry.io/collector v0.49.0 h1:brKMIUwlL1bt0Faxqqxvj7549KWm9FEN77Z4i4RAlDE=
 go.opentelemetry.io/collector v0.49.0/go.mod h1:ErYGC1VzzrpK/uM134DJIbARX3jl9vtTqgIXsiWxjGE=
-go.opentelemetry.io/collector/model v0.48.0/go.mod h1:1QVYv8TqsTMt9wVC5BUF9fqMVtk2C5EclWDnuVqdKoU=
 go.opentelemetry.io/collector/model v0.49.0 h1:mbUSNgpaBE3GWmzGsRb5t0xILpXIVYv7scPTTfoMt6c=
 go.opentelemetry.io/collector/model v0.49.0/go.mod h1:nOYQv9KoFPs6ihJwOi24qB209EOhS9HkwhGj54YiEAw=
 go.opentelemetry.io/collector/pdata v0.49.0 h1:aYj5rOlRC0x7lGXbc185LMsMMoY/pjOTXr5s1O2SzXs=

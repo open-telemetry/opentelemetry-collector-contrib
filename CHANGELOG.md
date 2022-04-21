@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
+- `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
 
 ### 🚩 Deprecations 🚩
 
@@ -12,25 +13,42 @@
 
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
+- `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
 
 ### 💡 Enhancements 💡
+- `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
+- `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
+
+- `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
 
 ### 🧰 Bug fixes 🧰
 
+- `fluentforwardreceiver`: Release port on shutdown (#9111)
 - `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 
 ## v0.49.0
+
+### ⚠️ Warning  ⚠️
+
+This release contains an issue in
+[Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver)
+causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being 
+investigated and will be fixed in one of the new releases. More details:
+https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 ### 🛑 Breaking changes 🛑
 
 - `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
   - Updated data model to align with stable logs data model, which includes various breaking changes. (#9139, #8835)
-    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.29.0 release notes. 
+    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.29.0 release notes.
 - `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
 - `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
 - `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 - `attributesprocessor`: Remove log names from filters (#9131)
+- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
+  - Users may have to update monitoring for a few Kubernetes cpu metrics, for 
+    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
 
@@ -61,7 +79,7 @@
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 - `splunkheceporter`: Add an option to disable log or profiling data (#9065)
-- `windowsperfcountersreceiver`: Move code into separate package for use in other windowsperfcounter receivers (#9108) 
+- `windowsperfcountersreceiver`: Move code into separate package for use in other windowsperfcounter receivers (#9108)
 - `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
 - `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
 - `routingprocessor`: add option to drop resource attribute used for routing (#8990)
@@ -75,6 +93,7 @@
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
+- `dynatraceexporter`: Continue processing data points after a serialization error. (#9330)
 
 ## v0.48.0
 
@@ -248,9 +267,9 @@
 - Use go mod compat, drops support for reproducibility with go 1.16 (#7915)
 - `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
 - `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
-- `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has 
+- `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has
   been removed.
-  - The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
+  - The `receiver.prometheus.OTLPDirect` feature gate has been removed as
     the direct pipeline is the only remaining pipeline.
 - `translator/jaeger`: Cleanup jaeger translator function names (#7775)
   - Deprecate old funcs with Internal word.
@@ -271,7 +290,7 @@
 
 ### 🧰 Bug fixes 🧰
 
- - `tailsamplingprocessor`: "And" policy only works as a sub policy under a composite policy (#7590) 
+ - `tailsamplingprocessor`: "And" policy only works as a sub policy under a composite policy (#7590)
  - `prometheusreceiver`: Correctly map description and units when converting
   Prometheus metadata directly to pdata. (#7748)
  - `sumologicexporter`: fix exporter panics on malformed histogram (#7548)
@@ -359,7 +378,7 @@
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 - `receiver_creator`: Log added and removed endpoint env structs (#7248)
 - `prometheusreceiver`: Use the OTLP data conversion path by default. (#7282)
-  - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
+  - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the
     OpenCensus conversion path.
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
@@ -376,7 +395,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `tanzuobservabilityexporter`: Remove status.code
-- `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
+- `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126)
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
 - `k8sattributesprocessor`: Unexport processor `Option`s (#7311)
 - `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. (#7280)
@@ -397,7 +416,7 @@
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
 - `prometheusremotewriteexporter`: Fix index out of range panic caused by expiring metrics (#7149)
-- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
+- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296)
 
 ## v0.42.0
 
@@ -458,7 +477,7 @@
 - `skywalkingexporter`: add skywalking metrics exporter (#6528)
 - `deltatorateprocessor`: add int counter support (#6982)
 - `filestorageextension`: document default values (#7022)
-- `redisreceiver`: Migrate the scraper to the mdatagen metrics builder (#6938)  
+- `redisreceiver`: Migrate the scraper to the mdatagen metrics builder (#6938)
 
 ## v0.41.0
 
@@ -529,7 +548,7 @@
 - `k8sclusterreceiver`: Add allocatable type of metrics (#6113)
 - `observiqexporter`: Allow Dialer timeout to be configured (#5906)
 - `routingprocessor`: remove broken debug log fields (#6373)
-- `prometheusremotewriteexporter`: Add exemplars support (#5578) 
+- `prometheusremotewriteexporter`: Add exemplars support (#5578)
 - `fluentforwardreceiver`: Convert attributes with nil value to AttributeValueTypeEmpty (#6630)
 
 ## v0.39.0
@@ -691,7 +710,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
-- `splunk_hec` receiver: 
+- `splunk_hec` receiver:
   - `source_key`, `sourcetype_key`, `host_key` and `index_key` have now moved under `hec_metadata_to_otel_attrs` (#4726)
   - `path` field on splunkhecreceiver configuration is removed: We removed the `path` attribute as any request going to the Splunk HEC receiver port should be accepted, and added the `raw_path` field to explicitly map the path accepting raw HEC data. (#4951)
 - feat(dynatrace): tags is deprecated in favor of default_dimensions (#5055)
@@ -858,11 +877,11 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### 🚀 New components 🚀
 - `oauth2clientauth` extension: ported from core (#3848)
-- `metrics-generation` processor: is now enabled and available (#4047) 
+- `metrics-generation` processor: is now enabled and available (#4047)
 
 ### 🛑 Breaking changes 🛑
 
-- Removed `jaegerthrifthttp` exporter (#4089) 
+- Removed `jaegerthrifthttp` exporter (#4089)
 
 ### 💡 Enhancements 💡
 
@@ -870,9 +889,9 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
   - Add new policy `status_code` (#3754)
   - Add new tail sampling processor policy: status_code (#3754)
 - `awscontainerinsights` receiver:
-  - Integrate components and fix bugs for EKS Container Insights (#3846) 
+  - Integrate components and fix bugs for EKS Container Insights (#3846)
   - Add Cgroup to collect ECS instance metrics for container insights receiver #3875
-- `spanmetrics` processor: Support sub-millisecond latency buckets (#4091) 
+- `spanmetrics` processor: Support sub-millisecond latency buckets (#4091)
 - `sentry` exporter: Add exception event capture in sentry (#3854)
 
 ## v0.29.0
@@ -1833,18 +1852,18 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ### 🚀 New components 🚀
 
 - Receivers
-  - `receiver_creator` to create receivers at runtime (#145), add observer support to receiver_creator (#173), add rules support (#207), add dynamic configuration values (#235) 
-  - `kubeletstats` receiver (#237) 
-  - `prometheus_simple` receiver (#184) 
-  - `kubernetes-cluster` receiver (#175) 
+  - `receiver_creator` to create receivers at runtime (#145), add observer support to receiver_creator (#173), add rules support (#207), add dynamic configuration values (#235)
+  - `kubeletstats` receiver (#237)
+  - `prometheus_simple` receiver (#184)
+  - `kubernetes-cluster` receiver (#175)
   - `redis` receiver (#138)
 - Exporters
-  - `alibabacloudlogservice` exporter (#259) 
+  - `alibabacloudlogservice` exporter (#259)
   - `SplunkHEC` metrics exporter (#246)
   - `elastic` APM exporter (#240)
-  - `newrelic` exporter (#229) 
+  - `newrelic` exporter (#229)
 - Extensions
-  - `k8s` observer (#185) 
+  - `k8s` observer (#185)
 
 ### 💡 Enhancements 💡
 
@@ -1880,10 +1899,10 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 | Traces | Metrics |
 |:-------:|:-------:|
 | Jaeger Legacy | Carbon |
-| SAPM (SignalFx APM) | Collectd | 
+| SAPM (SignalFx APM) | Collectd |
 | Zipkin Scribe | K8s Cluster |
 | | Redis |
-| |  SignalFx | 
+| |  SignalFx |
 | | Simple Prometheus |
 | | Wavefront |
 
@@ -1901,7 +1920,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 | Honeycomb | Kinesis |
 | Lightstep |
 | New Relic |
-| SAPM (SignalFx APM) | 
+| SAPM (SignalFx APM) |
 | SignalFx (Metrics) |
 | Splunk HEC |
 | Stackdriver (Google) |
@@ -1917,14 +1936,14 @@ Released 2020-03-30
 
 ### Breaking changes
 
--  Make prometheus receiver config loading strict. #697 
+-  Make prometheus receiver config loading strict. #697
 Prometheus receiver will now fail fast if the config contains unused keys in it.
 
 ### Changes and fixes
 
 - Enable best effort serve by default of Prometheus Exporter (https://github.com/orijtech/prometheus-go-metrics-exporter/pull/6)
-- Fix null pointer exception in the logging exporter #743 
-- Remove unnecessary condition to have at least one processor #744 
+- Fix null pointer exception in the logging exporter #743
+- Remove unnecessary condition to have at least one processor #744
 - Updated Honeycomb exported to `honeycombio/opentelemetry-exporter-go v0.3.1`
 
 ### Features
