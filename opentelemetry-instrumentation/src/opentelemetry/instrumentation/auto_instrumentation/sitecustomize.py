@@ -110,6 +110,13 @@ def _load_configurators():
 
 
 def initialize():
+    # prevents auto-instrumentation of subprocesses if code execs another python process
+    environ["PYTHONPATH"] = sub(
+        rf"{dirname(abspath(__file__))}{pathsep}?",
+        "",
+        environ["PYTHONPATH"],
+    )
+
     try:
         distro = _load_distros()
         distro.configure()
@@ -117,12 +124,6 @@ def initialize():
         _load_instrumentors(distro)
     except Exception:  # pylint: disable=broad-except
         logger.exception("Failed to auto initialize opentelemetry")
-    finally:
-        environ["PYTHONPATH"] = sub(
-            rf"{dirname(abspath(__file__))}{pathsep}?",
-            "",
-            environ["PYTHONPATH"],
-        )
 
 
 initialize()
