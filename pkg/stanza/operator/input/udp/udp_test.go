@@ -181,7 +181,7 @@ func TestFailToBind(t *testing.T) {
 		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
 	}
 
-	var startUDP func(port int) (*UDPInput, error) = func(int) (*UDPInput, error) {
+	var startUDP = func(int) (*UDPInput, error) {
 		cfg := NewUDPInputConfig("test_input")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 

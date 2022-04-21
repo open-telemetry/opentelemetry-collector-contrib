@@ -395,7 +395,7 @@ func TestFailToBind(t *testing.T) {
 		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
 	}
 
-	var startTCP func(port int) (*TCPInput, error) = func(int) (*TCPInput, error) {
+	var startTCP = func(int) (*TCPInput, error) {
 		cfg := NewTCPInputConfig("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 		op, err := cfg.Build(testutil.Logger(t))

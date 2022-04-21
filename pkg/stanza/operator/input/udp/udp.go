@@ -93,7 +93,7 @@ func (c UDPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 		return nil, err
 	}
 
-	var resolver *helper.IPResolver = nil
+	var resolver *helper.IPResolver
 	if c.AddAttributes {
 		resolver = helper.NewIpResolver()
 	}
