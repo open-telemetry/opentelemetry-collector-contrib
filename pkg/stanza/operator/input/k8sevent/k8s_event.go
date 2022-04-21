@@ -35,12 +35,12 @@ import (
 )
 
 func init() {
-	operator.Register("k8s_event_input", func() operator.Builder { return NewK8sEventsConfig("") })
+	operator.Register("k8s_event_input", func() operator.Builder { return NewConfig("") })
 }
 
-// NewK8sEventsConfig creates a default K8sEventsConfig
-func NewK8sEventsConfig(operatorID string) *K8sEventsConfig {
-	return &K8sEventsConfig{
+// NewConfig creates a default Config
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig:        helper.NewInputConfig(operatorID, "k8s_event_input"),
 		Namespaces:         []string{},
 		DiscoverNamespaces: true,
@@ -48,8 +48,8 @@ func NewK8sEventsConfig(operatorID string) *K8sEventsConfig {
 	}
 }
 
-// K8sEventsConfig is the configuration of K8sEvents operator
-type K8sEventsConfig struct {
+// Config is the configuration of Input operator
+type Config struct {
 	helper.InputConfig `yaml:",inline"`
 	Namespaces         []string        `json:"namespaces" yaml:"namespaces"`
 	DiscoverNamespaces bool            `json:"discover_namespaces" yaml:"discover_namespaces"`
@@ -57,7 +57,7 @@ type K8sEventsConfig struct {
 }
 
 // Build will build a k8s_event_input operator from the supplied configuration
-func (c K8sEventsConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	input, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "build transformer")
@@ -67,7 +67,7 @@ func (c K8sEventsConfig) Build(logger *zap.SugaredLogger) (operator.Operator, er
 		return nil, fmt.Errorf("`namespaces` must be specified or `discover_namespaces` enabled")
 	}
 
-	return &K8sEvents{
+	return &Input{
 		InputOperator:      input,
 		namespaces:         c.Namespaces,
 		discoverNamespaces: c.DiscoverNamespaces,
@@ -75,8 +75,8 @@ func (c K8sEventsConfig) Build(logger *zap.SugaredLogger) (operator.Operator, er
 	}, nil
 }
 
-// K8sEvents is an operator for generating logs from k8s events
-type K8sEvents struct {
+// Input is an operator for generating logs from k8s events
+type Input struct {
 	helper.InputOperator
 	client             corev1.CoreV1Interface
 	discoverNamespaces bool
@@ -89,7 +89,7 @@ type K8sEvents struct {
 }
 
 // Start implements the operator.Operator interface
-func (k *K8sEvents) Start(_ operator.Persister) error {
+func (k *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	k.cancel = cancel
 
@@ -144,7 +144,7 @@ func (k *K8sEvents) Start(_ operator.Persister) error {
 }
 
 // Stop implements operator.Operator
-func (k *K8sEvents) Stop() error {
+func (k *Input) Stop() error {
 	k.cancel()
 	k.wg.Wait()
 	return nil
@@ -166,7 +166,7 @@ func listNamespaces(ctx context.Context, client corev1.CoreV1Interface) ([]strin
 }
 
 // startFindingNamespaces creates a goroutine that looks for namespaces to watch
-func (k *K8sEvents) startFindingNamespaces(ctx context.Context, client corev1.CoreV1Interface) {
+func (k *Input) startFindingNamespaces(ctx context.Context, client corev1.CoreV1Interface) {
 	k.wg.Add(1)
 	go func() {
 		defer k.wg.Done()
@@ -197,7 +197,7 @@ func (k *K8sEvents) startFindingNamespaces(ctx context.Context, client corev1.Co
 
 // startWatchingNamespace creates a goroutine that watches the events for a
 // specific namespace
-func (k *K8sEvents) startWatchingNamespace(ctx context.Context, ns string) {
+func (k *Input) startWatchingNamespace(ctx context.Context, ns string) {
 	k.wg.Add(1)
 	go func() {
 		defer k.wg.Done()
@@ -221,14 +221,14 @@ func (k *K8sEvents) startWatchingNamespace(ctx context.Context, ns string) {
 }
 
 // addNamespace will add a namespace.
-func (k *K8sEvents) addNamespace(namespace string) {
+func (k *Input) addNamespace(namespace string) {
 	k.namespaceMux.Lock()
 	k.namespaces = append(k.namespaces, namespace)
 	k.namespaceMux.Unlock()
 }
 
 // hasNamespace returns a boolean indicating if the namespace is being watched.
-func (k *K8sEvents) hasNamespace(namespace string) bool {
+func (k *Input) hasNamespace(namespace string) bool {
 	k.namespaceMux.Lock()
 	defer k.namespaceMux.Unlock()
 
@@ -241,7 +241,7 @@ func (k *K8sEvents) hasNamespace(namespace string) bool {
 }
 
 // removeNamespace removes a namespace.
-func (k *K8sEvents) removeNamespace(namespace string) {
+func (k *Input) removeNamespace(namespace string) {
 	k.namespaceMux.Lock()
 	defer k.namespaceMux.Unlock()
 
@@ -256,7 +256,7 @@ func (k *K8sEvents) removeNamespace(namespace string) {
 
 // consumeWatchEvents will read events from the watcher channel until the channel is closed
 // or the context is canceled
-func (k *K8sEvents) consumeWatchEvents(ctx context.Context, events <-chan watch.Event) {
+func (k *Input) consumeWatchEvents(ctx context.Context, events <-chan watch.Event) {
 	for {
 		select {
 		case event, ok := <-events:
@@ -298,7 +298,7 @@ func (k *K8sEvents) consumeWatchEvents(ctx context.Context, events <-chan watch.
 }
 
 // populateResource uses the keys from Event.ObjectMeta to populate the resource of the entry
-func (k *K8sEvents) populateResource(event *apiv1.Event, entry *entry.Entry) {
+func (k *Input) populateResource(event *apiv1.Event, entry *entry.Entry) {
 	io := event.InvolvedObject
 
 	entry.AddResourceKey("k8s.cluster.name", event.ClusterName)
