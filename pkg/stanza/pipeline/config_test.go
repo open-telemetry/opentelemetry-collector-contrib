@@ -402,5 +402,5 @@ func newDummyJSON(dummyID string) operator.Config {
 }
 
 func newDummyCopy(dummyID string) operator.Config {
-	return operator.Config{Builder: copy.NewCopyOperatorConfig(dummyID)}
+	return operator.Config{Builder: copy.NewConfig(dummyID)}
 }

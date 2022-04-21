@@ -28,12 +28,12 @@ import (
 type testCase struct {
 	name      string
 	expectErr bool
-	op        *CopyOperatorConfig
+	op        *Config
 	input     func() *entry.Entry
 	output    func() *entry.Entry
 }
 
-// Test building and processing a CopyOperatorConfig
+// Test building and processing a Config
 func TestBuildAndProcess(t *testing.T) {
 	now := time.Now()
 	newTestEntry := func() *entry.Entry {
@@ -53,7 +53,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"body_to_body",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("key2")
@@ -75,7 +75,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"nested_to_body",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested", "nestedkey")
 				cfg.To = entry.NewBodyField("key2")
@@ -97,7 +97,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"body_to_nested",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("nested", "key2")
@@ -119,7 +119,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"body_to_attribute",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField("key2")
@@ -141,7 +141,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"body_to_nested_attribute",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField()
 				cfg.To = entry.NewAttributeField("one", "two")
@@ -166,7 +166,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"body_to_nested_resource",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField()
 				cfg.To = entry.NewResourceField("one", "two")
@@ -191,7 +191,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"attribute_to_body",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("key")
 				cfg.To = entry.NewBodyField("key2")
@@ -218,7 +218,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"attribute_to_resource",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("key")
 				cfg.To = entry.NewResourceField("key2")
@@ -239,7 +239,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"overwrite",
 			false,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("nested")
@@ -258,7 +258,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"invalid_copy_to_attribute_root",
 			true,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField()
@@ -270,7 +270,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"invalid_copy_to_resource_root",
 			true,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewResourceField()
@@ -282,7 +282,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"invalid_key",
 			true,
-			func() *CopyOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("nonexistentkey")
 				cfg.To = entry.NewResourceField("key2")
@@ -301,7 +301,7 @@ func TestBuildAndProcess(t *testing.T) {
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
-			copy := op.(*CopyOperator)
+			copy := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
 			copy.SetOutputs([]operator.Operator{fake})
 			val := tc.input()
