@@ -27,7 +27,7 @@ import (
 
 type testCase struct {
 	name      string
-	op        *RemoveOperatorConfig
+	op        *Config
 	input     func() *entry.Entry
 	output    func() *entry.Entry
 	expectErr bool
@@ -52,7 +52,7 @@ func TestProcessAndBuild(t *testing.T) {
 	cases := []testCase{
 		{
 			"remove_one",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = newBodyField("key")
 				return cfg
@@ -71,7 +71,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_nestedkey",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = newBodyField("nested", "nestedkey")
 				return cfg
@@ -89,7 +89,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_nested_attribute",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = newAttributeField("nested", "nestedkey")
 				return cfg
@@ -116,7 +116,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_nested_resource",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = newResourceField("nested", "nestedkey")
 				return cfg
@@ -143,7 +143,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_obj",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = newBodyField("nested")
 				return cfg
@@ -160,7 +160,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_single_attribute",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = newAttributeField("key")
 				return cfg
@@ -181,7 +181,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_single_resource",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = newResourceField("key")
 				return cfg
@@ -202,7 +202,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_body",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field.Field = entry.NewBodyField()
 				return cfg
@@ -217,7 +217,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_resource",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field.allResource = true
 				return cfg
@@ -238,7 +238,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"remove_attributes",
-			func() *RemoveOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field.allAttributes = true
 				return cfg
@@ -266,7 +266,7 @@ func TestProcessAndBuild(t *testing.T) {
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
-			remove := op.(*RemoveOperator)
+			remove := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
 			remove.SetOutputs([]operator.Operator{fake})
 			val := tc.input()
