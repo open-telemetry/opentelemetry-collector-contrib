@@ -28,43 +28,43 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func newTestParser(t *testing.T) *JSONParser {
-	config := NewJSONParserConfig("test")
+func newTestParser(t *testing.T) *Parser {
+	config := NewConfig("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	return op.(*JSONParser)
+	return op.(*Parser)
 }
 
-func TestJSONParserConfigBuild(t *testing.T) {
-	config := NewJSONParserConfig("test")
+func TestParserConfigBuild(t *testing.T) {
+	config := NewConfig("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	require.IsType(t, &JSONParser{}, op)
+	require.IsType(t, &Parser{}, op)
 }
 
-func TestJSONParserConfigBuildFailure(t *testing.T) {
-	config := NewJSONParserConfig("test")
+func TestParserConfigBuildFailure(t *testing.T) {
+	config := NewConfig("test")
 	config.OnError = "invalid_on_error"
 	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
-func TestJSONParserStringFailure(t *testing.T) {
+func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "error found in #1 byte")
 }
 
-func TestJSONParserByteFailure(t *testing.T) {
+func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type []uint8 cannot be parsed as JSON")
 }
 
-func TestJSONParserInvalidType(t *testing.T) {
+func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
@@ -72,19 +72,19 @@ func TestJSONParserInvalidType(t *testing.T) {
 }
 
 func TestJSONImplementations(t *testing.T) {
-	require.Implements(t, (*operator.Operator)(nil), new(JSONParser))
+	require.Implements(t, (*operator.Operator)(nil), new(Parser))
 }
 
-func TestJSONParser(t *testing.T) {
+func TestParser(t *testing.T) {
 	cases := []struct {
 		name      string
-		configure func(*JSONParserConfig)
+		configure func(*Config)
 		input     *entry.Entry
 		expect    *entry.Entry
 	}{
 		{
 			"simple",
-			func(p *JSONParserConfig) {},
+			func(p *Config) {},
 			&entry.Entry{
 				Body: `{}`,
 			},
@@ -95,7 +95,7 @@ func TestJSONParser(t *testing.T) {
 		},
 		{
 			"nested",
-			func(p *JSONParserConfig) {},
+			func(p *Config) {},
 			&entry.Entry{
 				Body: `{"superkey":"superval"}`,
 			},
@@ -108,7 +108,7 @@ func TestJSONParser(t *testing.T) {
 		},
 		{
 			"with_timestamp",
-			func(p *JSONParserConfig) {
+			func(p *Config) {
 				parseFrom := entry.NewAttributeField("timestamp")
 				p.TimeParser = &helper.TimeParser{
 					ParseFrom:  &parseFrom,
@@ -130,7 +130,7 @@ func TestJSONParser(t *testing.T) {
 		},
 		{
 			"with_scope",
-			func(p *JSONParserConfig) {
+			func(p *Config) {
 				p.ScopeNameParser = &helper.ScopeNameParser{
 					ParseFrom: entry.NewAttributeField("logger_name"),
 				}
@@ -151,7 +151,7 @@ func TestJSONParser(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewJSONParserConfig("test")
+			cfg := NewConfig("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -173,7 +173,7 @@ func TestJSONParser(t *testing.T) {
 }
 
 func TestJsonParserConfig(t *testing.T) {
-	expect := NewJSONParserConfig("test")
+	expect := NewConfig("test")
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.NewBodyField("to")
 
@@ -185,7 +185,7 @@ func TestJsonParserConfig(t *testing.T) {
 			"parse_to":   "body.to",
 			"on_error":   "send",
 		}
-		var actual JSONParserConfig
+		var actual Config
 		err := helper.UnmarshalMapstructure(input, &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
@@ -197,7 +197,7 @@ id: test
 on_error: "send"
 parse_from: body.from
 parse_to: body.to`
-		var actual JSONParserConfig
+		var actual Config
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
