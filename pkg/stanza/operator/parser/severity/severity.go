@@ -25,25 +25,25 @@ import (
 )
 
 func init() {
-	operator.Register("severity_parser", func() operator.Builder { return NewSeverityParserConfig("") })
+	operator.Register("severity_parser", func() operator.Builder { return NewConfig("") })
 }
 
-// NewSeverityParserConfig creates a new severity parser config with default values
-func NewSeverityParserConfig(operatorID string) *SeverityParserConfig {
-	return &SeverityParserConfig{
+// NewConfig creates a new severity parser config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig:    helper.NewTransformerConfig(operatorID, "severity_parser"),
 		SeverityParserConfig: helper.NewSeverityParserConfig(),
 	}
 }
 
-// SeverityParserConfig is the configuration of a severity parser operator.
-type SeverityParserConfig struct {
+// Config is the configuration of a severity parser operator.
+type Config struct {
 	helper.TransformerConfig    `mapstructure:",squash" yaml:",inline"`
 	helper.SeverityParserConfig `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
 // Build will build a severity parser operator.
-func (c SeverityParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -54,19 +54,19 @@ func (c SeverityParserConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 		return nil, err
 	}
 
-	return &SeverityParserOperator{
+	return &Parser{
 		TransformerOperator: transformerOperator,
 		SeverityParser:      severityParser,
 	}, nil
 }
 
-// SeverityParserOperator is an operator that parses severity from a field to an entry.
-type SeverityParserOperator struct {
+// Parser is an operator that parses severity from a field to an entry.
+type Parser struct {
 	helper.TransformerOperator
 	helper.SeverityParser
 }
 
 // Process will parse severity from an entry.
-func (p *SeverityParserOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Parse)
 }
