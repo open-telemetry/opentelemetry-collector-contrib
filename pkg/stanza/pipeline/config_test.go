@@ -31,7 +31,7 @@ func TestBuildPipelineSuccess(t *testing.T) {
 	cfg := Config{
 		Operators: []operator.Config{
 			{
-				Builder: noop.NewNoopOperatorConfig("noop"),
+				Builder: noop.NewConfig("noop"),
 			},
 		},
 	}
@@ -45,7 +45,7 @@ func TestBuildPipelineNoLogger(t *testing.T) {
 	cfg := Config{
 		Operators: []operator.Config{
 			{
-				Builder: noop.NewNoopOperatorConfig("noop"),
+				Builder: noop.NewConfig("noop"),
 			},
 		},
 	}
@@ -77,10 +77,10 @@ func TestBuildAPipelineDefaultOperator(t *testing.T) {
 	cfg := Config{
 		Operators: []operator.Config{
 			{
-				Builder: noop.NewNoopOperatorConfig("noop"),
+				Builder: noop.NewConfig("noop"),
 			},
 			{
-				Builder: noop.NewNoopOperatorConfig("noop1"),
+				Builder: noop.NewConfig("noop1"),
 			},
 		},
 		DefaultOutput: testutil.NewFakeOutput(t),
