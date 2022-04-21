@@ -340,7 +340,7 @@ func TestBuild(t *testing.T) {
 				TCPBaseConfig: TCPBaseConfig{
 					MaxLogSize:    65536,
 					ListenAddress: "10.0.0.1:9000",
-					TLS:           createTlsConfig("/tmp/cert/missing", "/tmp/key/missing"),
+					TLS:           createTLSConfig("/tmp/cert/missing", "/tmp/key/missing"),
 				},
 			},
 			true,
@@ -466,7 +466,7 @@ func BenchmarkTcpInput(b *testing.B) {
 	defer close(done)
 }
 
-func createTlsConfig(cert string, key string) *helper.TLSServerConfig {
+func createTLSConfig(cert string, key string) *helper.TLSServerConfig {
 	return helper.NewTLSServerConfig(&configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
 			CertFile: cert,

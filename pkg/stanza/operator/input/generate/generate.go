@@ -123,11 +123,11 @@ func recursiveMapInterfaceToMapString(m interface{}) interface{} {
 	case map[interface{}]interface{}:
 		newMap := make(map[string]interface{})
 		for k, v := range m {
-			kStr, ok := k.(string)
+			str, ok := k.(string)
 			if !ok {
-				kStr = fmt.Sprintf("%v", k)
+				str = fmt.Sprintf("%v", k)
 			}
-			newMap[kStr] = recursiveMapInterfaceToMapString(v)
+			newMap[str] = recursiveMapInterfaceToMapString(v)
 		}
 		return newMap
 	default:
