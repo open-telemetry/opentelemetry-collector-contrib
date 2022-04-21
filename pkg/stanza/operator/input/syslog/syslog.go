@@ -38,8 +38,8 @@ func NewConfig(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig      `yaml:",inline"`
 	syslog.SyslogBaseConfig `yaml:",inline"`
-	TCP                     *tcp.BaseConfig    `json:"tcp" yaml:"tcp"`
-	UDP                     *udp.UDPBaseConfig `json:"udp" yaml:"udp"`
+	TCP                     *tcp.BaseConfig `json:"tcp" yaml:"tcp"`
+	UDP                     *udp.BaseConfig `json:"udp" yaml:"udp"`
 }
 
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
@@ -79,8 +79,8 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.UDP != nil {
-		udpInputCfg := udp.NewUDPInputConfig(inputBase.ID() + "_internal_udp")
-		udpInputCfg.UDPBaseConfig = *c.UDP
+		udpInputCfg := udp.NewConfig(inputBase.ID() + "_internal_udp")
+		udpInputCfg.BaseConfig = *c.UDP
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
@@ -94,7 +94,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 		return &Input{
 			InputOperator: inputBase,
-			udp:           udpInput.(*udp.UDPInput),
+			udp:           udpInput.(*udp.Input),
 			parser:        syslogParser.(*syslog.SyslogParser),
 		}, nil
 	}
@@ -106,7 +106,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 type Input struct {
 	helper.InputOperator
 	tcp    *tcp.Input
-	udp    *udp.UDPInput
+	udp    *udp.Input
 	parser *syslog.SyslogParser
 }
 

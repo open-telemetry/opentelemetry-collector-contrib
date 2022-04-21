@@ -31,14 +31,14 @@ import (
 
 func udpInputTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewUDPInputConfig("test_input")
+		cfg := NewConfig("test_input")
 		cfg.ListenAddress = ":0"
 
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
-		udpInput, ok := op.(*UDPInput)
+		udpInput, ok := op.(*Input)
 		require.True(t, ok)
 
 		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
@@ -82,7 +82,7 @@ func udpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewUDPInputConfig("test_input")
+		cfg := NewConfig("test_input")
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
 
@@ -90,7 +90,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
-		udpInput, ok := op.(*UDPInput)
+		udpInput, ok := op.(*Input)
 		require.True(t, ok)
 
 		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
@@ -150,14 +150,14 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 	}
 }
 
-func TestUDPInput(t *testing.T) {
+func TestInput(t *testing.T) {
 	t.Run("Simple", udpInputTest([]byte("message1"), []string{"message1"}))
 	t.Run("TrailingNewlines", udpInputTest([]byte("message1\n"), []string{"message1"}))
 	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}))
 	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}))
 }
 
-func TestUDPInputAttributes(t *testing.T) {
+func TestInputAttributes(t *testing.T) {
 	t.Run("Simple", udpInputAttributesTest([]byte("message1"), []string{"message1"}))
 	t.Run("TrailingNewlines", udpInputAttributesTest([]byte("message1\n"), []string{"message1"}))
 	t.Run("TrailingCRNewlines", udpInputAttributesTest([]byte("message1\r\n"), []string{"message1"}))
@@ -181,15 +181,15 @@ func TestFailToBind(t *testing.T) {
 		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
 	}
 
-	var startUDP = func(int) (*UDPInput, error) {
-		cfg := NewUDPInputConfig("test_input")
+	var startUDP = func(int) (*Input, error) {
+		cfg := NewConfig("test_input")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
-		udpInput, ok := op.(*UDPInput)
+		udpInput, ok := op.(*Input)
 		require.True(t, ok)
 
 		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
@@ -215,14 +215,14 @@ func TestFailToBind(t *testing.T) {
 }
 
 func BenchmarkUdpInput(b *testing.B) {
-	cfg := NewUDPInputConfig("test_id")
+	cfg := NewConfig("test_id")
 	cfg.ListenAddress = ":0"
 
 	op, err := cfg.Build(testutil.Logger(b))
 	require.NoError(b, err)
 
 	fakeOutput := testutil.NewFakeOutput(b)
-	udpInput := op.(*UDPInput)
+	udpInput := op.(*Input)
 	udpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
 	err = udpInput.Start(testutil.NewMockPersister("test"))

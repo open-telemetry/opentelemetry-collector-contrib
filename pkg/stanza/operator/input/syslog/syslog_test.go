@@ -137,7 +137,7 @@ func NewConfigWithTCP(syslogCfg *syslog.SyslogBaseConfig) *Config {
 func NewConfigWithUDP(syslogCfg *syslog.SyslogBaseConfig) *Config {
 	cfg := NewConfig("test_syslog")
 	cfg.SyslogBaseConfig = *syslogCfg
-	cfg.UDP = &udp.NewUDPInputConfig("test_syslog_udp").UDPBaseConfig
+	cfg.UDP = &udp.NewConfig("test_syslog_udp").BaseConfig
 	cfg.UDP.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg

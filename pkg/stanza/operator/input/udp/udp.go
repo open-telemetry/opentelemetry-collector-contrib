@@ -35,14 +35,14 @@ const (
 )
 
 func init() {
-	operator.Register("udp_input", func() operator.Builder { return NewUDPInputConfig("") })
+	operator.Register("udp_input", func() operator.Builder { return NewConfig("") })
 }
 
-// NewUDPInputConfig creates a new UDP input config with default values
-func NewUDPInputConfig(operatorID string) *UDPInputConfig {
-	return &UDPInputConfig{
+// NewConfig creates a new UDP input config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, "udp_input"),
-		UDPBaseConfig: UDPBaseConfig{
+		BaseConfig: BaseConfig{
 			Encoding: helper.NewEncodingConfig(),
 			Multiline: helper.MultilineConfig{
 				LineStartPattern: "",
@@ -52,14 +52,14 @@ func NewUDPInputConfig(operatorID string) *UDPInputConfig {
 	}
 }
 
-// UDPInputConfig is the configuration of a udp input operator.
-type UDPInputConfig struct {
+// Config is the configuration of a udp input operator.
+type Config struct {
 	helper.InputConfig `yaml:",inline"`
-	UDPBaseConfig      `yaml:",inline"`
+	BaseConfig         `yaml:",inline"`
 }
 
-// UDPBaseConfig is the details configuration of a udp input operator.
-type UDPBaseConfig struct {
+// BaseConfig is the details configuration of a udp input operator.
+type BaseConfig struct {
 	ListenAddress string                 `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
 	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
 	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
@@ -67,7 +67,7 @@ type UDPBaseConfig struct {
 }
 
 // Build will build a udp input operator.
-func (c UDPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (c UDPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 		resolver = helper.NewIPResolver()
 	}
 
-	udpInput := &UDPInput{
+	udpInput := &Input{
 		InputOperator: inputOperator,
 		address:       address,
 		buffer:        make([]byte, MaxUDPSize),
@@ -110,8 +110,8 @@ func (c UDPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 	return udpInput, nil
 }
 
-// UDPInput is an operator that listens to a socket for log entries.
-type UDPInput struct {
+// Input is an operator that listens to a socket for log entries.
+type Input struct {
 	buffer []byte
 	helper.InputOperator
 	address       *net.UDPAddr
@@ -127,7 +127,7 @@ type UDPInput struct {
 }
 
 // Start will start listening for messages on a socket.
-func (u *UDPInput) Start(persister operator.Persister) error {
+func (u *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	u.cancel = cancel
 
@@ -142,7 +142,7 @@ func (u *UDPInput) Start(persister operator.Persister) error {
 }
 
 // goHandleMessages will handle messages from a udp connection.
-func (u *UDPInput) goHandleMessages(ctx context.Context) {
+func (u *Input) goHandleMessages(ctx context.Context) {
 	u.wg.Add(1)
 
 	go func() {
@@ -206,7 +206,7 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 }
 
 // readMessage will read log messages from the connection.
-func (u *UDPInput) readMessage() ([]byte, net.Addr, error) {
+func (u *Input) readMessage() ([]byte, net.Addr, error) {
 	n, addr, err := u.connection.ReadFrom(u.buffer)
 	if err != nil {
 		return nil, nil, err
@@ -220,7 +220,7 @@ func (u *UDPInput) readMessage() ([]byte, net.Addr, error) {
 }
 
 // Stop will stop listening for udp messages.
-func (u *UDPInput) Stop() error {
+func (u *Input) Stop() error {
 	u.cancel()
 	if u.connection != nil {
 		if err := u.connection.Close(); err != nil {
