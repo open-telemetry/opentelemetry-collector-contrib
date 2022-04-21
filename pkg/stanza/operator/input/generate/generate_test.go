@@ -25,7 +25,7 @@ import (
 )
 
 func TestInputGenerate(t *testing.T) {
-	cfg := NewGenerateInputConfig("test_operator_id")
+	cfg := NewConfig("test_operator_id")
 	cfg.OutputIDs = []string{"fake"}
 	cfg.Count = 5
 	cfg.Entry = entry.Entry{
