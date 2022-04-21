@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.0
-	go.opentelemetry.io/collector/pdata v0.49.0
+	go.opentelemetry.io/collector v0.49.1-0.20220421154122-427f7dde5a8f
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220421154122-427f7dde5a8f
 )
 
 require (
@@ -30,4 +30,15 @@ require (
 
 require go.uber.org/zap v1.21.0
 
+require (
+	github.com/golang/protobuf v1.5.2 // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/text v0.3.7 // indirect
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
+	google.golang.org/grpc v1.45.0 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
+)
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ../../pkg/winperfcounters
+
+replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f

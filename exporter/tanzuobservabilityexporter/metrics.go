@@ -220,9 +220,9 @@ func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings
 // getValue gets the floating point value out of a NumberDataPoint
 func getValue(numberDataPoint pmetric.NumberDataPoint) (float64, error) {
 	switch numberDataPoint.ValueType() {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return float64(numberDataPoint.IntVal()), nil
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return numberDataPoint.DoubleVal(), nil
 	default:
 		return 0.0, errors.New("unsupported metric value type")
