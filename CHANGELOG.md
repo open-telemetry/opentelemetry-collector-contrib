@@ -17,6 +17,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
+
 ## v0.49.0
 
 ### 🛑 Breaking changes 🛑
@@ -73,7 +75,6 @@
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
-- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 
 ## v0.48.0
 
