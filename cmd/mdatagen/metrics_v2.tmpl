@@ -3,6 +3,10 @@
 package {{ .Package }}
 
 import (
+	{{- if .Metrics | parseImportsRequired }}
+	"strconv"
+	"fmt"
+	{{- end }}
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -198,11 +202,39 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
-	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{ end }}
-	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }}) {
+	{{- if $metric.Data.HasMetricInputType }}, val {{ $metric.Data.MetricInputType.String }}
+	{{- else }}
+	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{- end }}
+	{{- end -}}
+	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }})
+	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
+	{{- if $metric.Data.HasMetricInputType }}
+	{{- if $metric.Data.HasMetricValueType }}
+	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		return fmt.Errorf("failed to parse float for {{ $name.Render }}, value was %s: %w", val, err)
+	} else {
+		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
+		{{- if $metric.Data.HasMetricValueType }}, f {{ end }}
+		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
+	}
+	{{- end }}
+	{{- if eq $metric.Data.MetricValueType.BasicType "int64" }}
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		return fmt.Errorf("failed to parse int for {{ $name.Render }}, value was %s: %w", val, err)
+	} else {
+		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
+		{{- if $metric.Data.HasMetricValueType }}, i {{ end }}
+		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
+	}
+	{{- end }}
+	return nil
+	{{- end }}
+	{{- else }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
 		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
+	{{- end }}
 }
 {{ end }}
 
