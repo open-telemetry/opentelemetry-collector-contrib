@@ -47,7 +47,6 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 	collector := newCollector(config, set.Logger)
 	registry := prometheus.NewRegistry()
 	_ = registry.Register(collector)
-
 	return &prometheusExporter{
 		name:         config.ID().String(),
 		endpoint:     addr,
@@ -58,6 +57,7 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 			registry,
 			promhttp.HandlerOpts{
 				ErrorHandling: promhttp.ContinueOnError,
+				ErrorLog:      newPromLogger(set.Logger),
 			},
 		),
 	}, nil

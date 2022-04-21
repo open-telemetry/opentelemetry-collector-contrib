@@ -28,6 +28,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
+- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 
 
 ## v0.49.0
