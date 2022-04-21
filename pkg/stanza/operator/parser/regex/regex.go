@@ -28,18 +28,18 @@ import (
 )
 
 func init() {
-	operator.Register("regex_parser", func() operator.Builder { return NewRegexParserConfig("") })
+	operator.Register("regex_parser", func() operator.Builder { return NewConfig("") })
 }
 
-// NewRegexParserConfig creates a new regex parser config with default values
-func NewRegexParserConfig(operatorID string) *RegexParserConfig {
-	return &RegexParserConfig{
+// NewConfig creates a new regex parser config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		ParserConfig: helper.NewParserConfig(operatorID, "regex_parser"),
 	}
 }
 
-// RegexParserConfig is the configuration of a regex parser operator.
-type RegexParserConfig struct {
+// Config is the configuration of a regex parser operator.
+type Config struct {
 	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
 
 	Regex string `mapstructure:"regex" json:"regex" yaml:"regex"`
@@ -50,7 +50,7 @@ type RegexParserConfig struct {
 }
 
 // Build will build a regex parser operator.
-func (c RegexParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c RegexParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 		)
 	}
 
-	op := &RegexParser{
+	op := &Parser{
 		ParserOperator: parserOperator,
 		regexp:         r,
 	}
@@ -91,20 +91,20 @@ func (c RegexParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 	return op, nil
 }
 
-// RegexParser is an operator that parses regex in an entry.
-type RegexParser struct {
+// Parser is an operator that parses regex in an entry.
+type Parser struct {
 	helper.ParserOperator
 	regexp *regexp.Regexp
 	cache  cache
 }
 
 // Process will parse an entry for regex.
-func (r *RegexParser) Process(ctx context.Context, entry *entry.Entry) error {
+func (r *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return r.ParserOperator.ProcessWith(ctx, entry, r.parse)
 }
 
 // parse will parse a value using the supplied regex.
-func (r *RegexParser) parse(value interface{}) (interface{}, error) {
+func (r *Parser) parse(value interface{}) (interface{}, error) {
 	var raw string
 	switch m := value.(type) {
 	case string:
@@ -115,7 +115,7 @@ func (r *RegexParser) parse(value interface{}) (interface{}, error) {
 	return r.match(raw)
 }
 
-func (r *RegexParser) match(value string) (interface{}, error) {
+func (r *Parser) match(value string) (interface{}, error) {
 	if r.cache != nil {
 		if x := r.cache.get(value); x != nil {
 			return x, nil

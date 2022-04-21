@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestRegexParserGoldenConfig(t *testing.T) {
+func TestParserGoldenConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name:   "default",
@@ -29,7 +29,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "cache",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Cache.Size = 50
 				return cfg
@@ -37,7 +37,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_from_simple",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
@@ -45,7 +45,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_to_simple",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
@@ -53,7 +53,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "on_error_drop",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
@@ -61,7 +61,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "timestamp",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
@@ -75,7 +75,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "severity",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
 				severityParser := helper.NewSeverityParserConfig()
@@ -93,7 +93,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "regex",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Regex = "^Host=(?P<host>[^,]+), Type=(?P<type>.*)$"
 				return cfg
@@ -101,7 +101,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "scope_name",
-			Expect: func() *RegexParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Regex = "^Host=(?P<host>[^,]+), Logger=(?P<logger_name_field>.*)$"
 				parseField := entry.NewBodyField("logger_name_field")
@@ -120,6 +120,6 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *RegexParserConfig {
-	return NewRegexParserConfig("regex_parser")
+func defaultCfg() *Config {
+	return NewConfig("regex_parser")
 }
