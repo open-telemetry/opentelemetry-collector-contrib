@@ -12,6 +12,7 @@ ignore=CVS,gen,Dockerfile,docker-compose.yml,README.md,requirements.txt
 # Add files or directories matching the regex patterns to be excluded. The
 # regex matches against base names, not paths.
 ignore-patterns=
+ignore-paths=exporter/opentelemetry-exporter-datadog/.*$
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
