@@ -11,8 +11,8 @@ require (
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.49.0
-	go.opentelemetry.io/collector/model v0.49.0
 	go.opentelemetry.io/collector/pdata v0.49.0
+	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
 	google.golang.org/api v0.74.0
 	google.golang.org/genproto v0.0.0-20220413183235-5e96e2839df9
 	google.golang.org/grpc v1.45.0
@@ -41,6 +41,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.opentelemetry.io/collector/model v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.6.3 // indirect
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.6.3 // indirect

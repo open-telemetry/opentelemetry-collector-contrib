@@ -22,9 +22,9 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -657,7 +657,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 
 func TestMostRecentTimestampInMetric(t *testing.T) {
 	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
-	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// the first datapoint timestamp is at testdata.TestMetricTime
 	metricMultipleTimestamps.Sum().DataPoints().At(1).SetTimestamp(laterTimestamp)
 	for _, tc := range []struct {
