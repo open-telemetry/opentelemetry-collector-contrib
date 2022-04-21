@@ -38,8 +38,8 @@ func NewSyslogInputConfig(operatorID string) *SyslogInputConfig {
 type SyslogInputConfig struct {
 	helper.InputConfig      `yaml:",inline"`
 	syslog.SyslogBaseConfig `yaml:",inline"`
-	Tcp                     *tcp.TCPBaseConfig `json:"tcp" yaml:"tcp"`
-	Udp                     *udp.UDPBaseConfig `json:"udp" yaml:"udp"`
+	TCP                     *tcp.TCPBaseConfig `json:"tcp" yaml:"tcp"`
+	UDP                     *udp.UDPBaseConfig `json:"udp" yaml:"udp"`
 }
 
 func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
@@ -57,9 +57,9 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 		return nil, fmt.Errorf("failed to resolve syslog config: %s", err)
 	}
 
-	if c.Tcp != nil {
+	if c.TCP != nil {
 		tcpInputCfg := tcp.NewTCPInputConfig(inputBase.ID() + "_internal_tcp")
-		tcpInputCfg.TCPBaseConfig = *c.Tcp
+		tcpInputCfg.TCPBaseConfig = *c.TCP
 
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
@@ -78,9 +78,9 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 		}, nil
 	}
 
-	if c.Udp != nil {
+	if c.UDP != nil {
 		udpInputCfg := udp.NewUDPInputConfig(inputBase.ID() + "_internal_udp")
-		udpInputCfg.UDPBaseConfig = *c.Udp
+		udpInputCfg.UDPBaseConfig = *c.UDP
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {

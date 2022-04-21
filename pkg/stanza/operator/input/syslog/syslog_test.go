@@ -42,10 +42,10 @@ func TestSyslogInput(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-			SyslogInputTest(t, NewSyslogInputConfigWithTcp(&tc.Config.SyslogBaseConfig), tc)
+			SyslogInputTest(t, NewSyslogInputConfigWithTCP(&tc.Config.SyslogBaseConfig), tc)
 		})
 		t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-			SyslogInputTest(t, NewSyslogInputConfigWithUdp(&tc.Config.SyslogBaseConfig), tc)
+			SyslogInputTest(t, NewSyslogInputConfigWithUDP(&tc.Config.SyslogBaseConfig), tc)
 		})
 	}
 }
@@ -63,12 +63,12 @@ func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
 	require.NoError(t, err)
 
 	var conn net.Conn
-	if cfg.Tcp != nil {
-		conn, err = net.Dial("tcp", cfg.Tcp.ListenAddress)
+	if cfg.TCP != nil {
+		conn, err = net.Dial("tcp", cfg.TCP.ListenAddress)
 		require.NoError(t, err)
 	}
-	if cfg.Udp != nil {
-		conn, err = net.Dial("udp", cfg.Udp.ListenAddress)
+	if cfg.UDP != nil {
+		conn, err = net.Dial("udp", cfg.UDP.ListenAddress)
 		require.NoError(t, err)
 	}
 
@@ -102,7 +102,7 @@ func TestSyslogIDs(t *testing.T) {
 	}
 
 	t.Run("TCP", func(t *testing.T) {
-		cfg := NewSyslogInputConfigWithTcp(basicConfig())
+		cfg := NewSyslogInputConfigWithTCP(basicConfig())
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		syslogInputOp := op.(*SyslogInput)
@@ -113,7 +113,7 @@ func TestSyslogIDs(t *testing.T) {
 		require.Equal(t, []string{"fake"}, syslogInputOp.GetOutputIDs())
 	})
 	t.Run("UDP", func(t *testing.T) {
-		cfg := NewSyslogInputConfigWithUdp(basicConfig())
+		cfg := NewSyslogInputConfigWithUDP(basicConfig())
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		syslogInputOp := op.(*SyslogInput)
@@ -125,20 +125,20 @@ func TestSyslogIDs(t *testing.T) {
 	})
 }
 
-func NewSyslogInputConfigWithTcp(syslogCfg *syslog.SyslogBaseConfig) *SyslogInputConfig {
+func NewSyslogInputConfigWithTCP(syslogCfg *syslog.SyslogBaseConfig) *SyslogInputConfig {
 	cfg := NewSyslogInputConfig("test_syslog")
 	cfg.SyslogBaseConfig = *syslogCfg
-	cfg.Tcp = &tcp.NewTCPInputConfig("test_syslog_tcp").TCPBaseConfig
-	cfg.Tcp.ListenAddress = ":14201"
+	cfg.TCP = &tcp.NewTCPInputConfig("test_syslog_tcp").TCPBaseConfig
+	cfg.TCP.ListenAddress = ":14201"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 
-func NewSyslogInputConfigWithUdp(syslogCfg *syslog.SyslogBaseConfig) *SyslogInputConfig {
+func NewSyslogInputConfigWithUDP(syslogCfg *syslog.SyslogBaseConfig) *SyslogInputConfig {
 	cfg := NewSyslogInputConfig("test_syslog")
 	cfg.SyslogBaseConfig = *syslogCfg
-	cfg.Udp = &udp.NewUDPInputConfig("test_syslog_udp").UDPBaseConfig
-	cfg.Udp.ListenAddress = ":12032"
+	cfg.UDP = &udp.NewUDPInputConfig("test_syslog_udp").UDPBaseConfig
+	cfg.UDP.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
@@ -153,9 +153,9 @@ udp:
 	err := yaml.Unmarshal([]byte(base), &cfg)
 	require.NoError(t, err)
 	require.Equal(t, syslog.RFC5424, cfg.Protocol)
-	require.Nil(t, cfg.Tcp)
-	require.NotNil(t, cfg.Udp)
-	require.Equal(t, "localhost:1234", cfg.Udp.ListenAddress)
+	require.Nil(t, cfg.TCP)
+	require.NotNil(t, cfg.UDP)
+	require.Equal(t, "localhost:1234", cfg.UDP.ListenAddress)
 }
 
 func TestConfigYamlUnmarshalTCP(t *testing.T) {
@@ -170,8 +170,8 @@ tcp:
 	err := yaml.Unmarshal([]byte(base), &cfg)
 	require.NoError(t, err)
 	require.Equal(t, syslog.RFC5424, cfg.Protocol)
-	require.Nil(t, cfg.Udp)
-	require.NotNil(t, cfg.Tcp)
-	require.Equal(t, "localhost:1234", cfg.Tcp.ListenAddress)
-	require.Equal(t, "/tmp/test.ca", cfg.Tcp.TLS.CAFile)
+	require.Nil(t, cfg.UDP)
+	require.NotNil(t, cfg.TCP)
+	require.Equal(t, "localhost:1234", cfg.TCP.ListenAddress)
+	require.Equal(t, "/tmp/test.ca", cfg.TCP.TLS.CAFile)
 }

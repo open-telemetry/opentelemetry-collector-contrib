@@ -32,10 +32,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-const WINDOWS_OS = "windows"
+const windowsOS = "windows"
 
 func TestMultiFileRotate(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
@@ -89,7 +89,7 @@ func TestMultiFileRotate(t *testing.T) {
 }
 
 func TestMultiFileRotateSlow(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
@@ -329,7 +329,7 @@ func TestRotation(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		if runtime.GOOS != WINDOWS_OS {
+		if runtime.GOOS != windowsOS {
 			// Windows has very poor support for moving active files, so rotation is less commonly used
 			// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 			t.Run(fmt.Sprintf("%s/MoveCreateTimestamped", tc.name), tc.run(tc, false, false))
@@ -341,7 +341,7 @@ func TestRotation(t *testing.T) {
 }
 
 func TestMoveFile(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
@@ -367,7 +367,7 @@ func TestMoveFile(t *testing.T) {
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()

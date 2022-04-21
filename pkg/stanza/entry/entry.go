@@ -29,8 +29,8 @@ type Entry struct {
 	Attributes        map[string]interface{} `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
 	Resource          map[string]interface{} `json:"resource,omitempty"      yaml:"resource,omitempty"`
 	SeverityText      string                 `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
-	SpanId            []byte                 `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
-	TraceId           []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
+	SpanID            []byte                 `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
+	TraceID           []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
 	TraceFlags        []byte                 `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
 	Severity          Severity               `json:"severity"                yaml:"severity"`
 	ScopeName         string                 `json:"scope_name"              yaml:"scope_name"`
@@ -183,8 +183,8 @@ func (entry *Entry) Copy() *Entry {
 		Attributes:        copyInterfaceMap(entry.Attributes),
 		Resource:          copyInterfaceMap(entry.Resource),
 		Body:              copyValue(entry.Body),
-		TraceId:           copyByteArray(entry.TraceId),
-		SpanId:            copyByteArray(entry.SpanId),
+		TraceID:           copyByteArray(entry.TraceID),
+		SpanID:            copyByteArray(entry.SpanID),
 		TraceFlags:        copyByteArray(entry.TraceFlags),
 		ScopeName:         entry.ScopeName,
 	}

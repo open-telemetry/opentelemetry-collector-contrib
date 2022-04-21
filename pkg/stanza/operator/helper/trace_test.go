@@ -23,15 +23,15 @@ import (
 )
 
 func TestValidateDoesntChangeFields(t *testing.T) {
-	traceId := entry.NewBodyField("traceId")
-	spanId := entry.NewBodyField("spanId")
+	traceID := entry.NewBodyField("traceId")
+	spanID := entry.NewBodyField("spanId")
 	traceFlags := entry.NewBodyField("traceFlags")
 	parser := TraceParser{
-		TraceId: &TraceIdConfig{
-			ParseFrom: &traceId,
+		TraceID: &TraceIDConfig{
+			ParseFrom: &traceID,
 		},
-		SpanId: &SpanIdConfig{
-			ParseFrom: &spanId,
+		SpanID: &SpanIDConfig{
+			ParseFrom: &spanID,
 		},
 		TraceFlags: &TraceFlagsConfig{
 			ParseFrom: &traceFlags,
@@ -39,19 +39,19 @@ func TestValidateDoesntChangeFields(t *testing.T) {
 	}
 	err := parser.Validate()
 	require.NoError(t, err)
-	require.Equal(t, &traceId, parser.TraceId.ParseFrom)
-	require.Equal(t, &spanId, parser.SpanId.ParseFrom)
+	require.Equal(t, &traceID, parser.TraceID.ParseFrom)
+	require.Equal(t, &spanID, parser.SpanID.ParseFrom)
 	require.Equal(t, &traceFlags, parser.TraceFlags.ParseFrom)
 }
 
 func TestValidateSetsDefaultFields(t *testing.T) {
-	traceId := entry.NewBodyField("trace_id")
-	spanId := entry.NewBodyField("span_id")
+	traceID := entry.NewBodyField("trace_id")
+	spanID := entry.NewBodyField("span_id")
 	traceFlags := entry.NewBodyField("trace_flags")
 	parser := TraceParser{}
 	err := parser.Validate()
 	require.NoError(t, err)
-	require.Equal(t, &traceId, parser.TraceId.ParseFrom)
-	require.Equal(t, &spanId, parser.SpanId.ParseFrom)
+	require.Equal(t, &traceID, parser.TraceID.ParseFrom)
+	require.Equal(t, &spanID, parser.SpanID.ParseFrom)
 	require.Equal(t, &traceFlags, parser.TraceFlags.ParseFrom)
 }

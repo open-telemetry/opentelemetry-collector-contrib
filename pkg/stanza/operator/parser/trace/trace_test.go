@@ -63,7 +63,7 @@ func TestBuild(t *testing.T) {
 			func() (*TraceParserConfig, error) {
 				parseFrom := entry.NewBodyField("app_span_id")
 				cfg := NewTraceParserConfig("test_id")
-				cfg.SpanId.ParseFrom = &parseFrom
+				cfg.SpanID.ParseFrom = &parseFrom
 				return cfg, nil
 			},
 			false,
@@ -73,7 +73,7 @@ func TestBuild(t *testing.T) {
 			func() (*TraceParserConfig, error) {
 				parseFrom := entry.NewBodyField("app_trace_id")
 				cfg := NewTraceParserConfig("test_id")
-				cfg.TraceId.ParseFrom = &parseFrom
+				cfg.TraceID.ParseFrom = &parseFrom
 				return cfg, nil
 			},
 			false,
@@ -136,8 +136,8 @@ func TestProcess(t *testing.T) {
 				spanFrom := entry.NewBodyField("app_span_id")
 				traceFrom := entry.NewBodyField("app_trace_id")
 				flagsFrom := entry.NewBodyField("trace_flags_field")
-				cfg.SpanId.ParseFrom = &spanFrom
-				cfg.TraceId.ParseFrom = &traceFrom
+				cfg.SpanID.ParseFrom = &spanFrom
+				cfg.TraceID.ParseFrom = &traceFrom
 				cfg.TraceFlags.ParseFrom = &flagsFrom
 				return cfg.Build(testutil.Logger(t))
 			},
@@ -149,8 +149,8 @@ func TestProcess(t *testing.T) {
 				},
 			},
 			&entry.Entry{
-				SpanId:     testSpanIDBytes,
-				TraceId:    testTraceIDBytes,
+				SpanID:     testSpanIDBytes,
+				TraceID:    testTraceIDBytes,
 				TraceFlags: testTraceFlagsBytes,
 				Body: map[string]interface{}{
 					"app_span_id":       "480140f3d770a5ae32f0a22b6a812cff",
@@ -179,8 +179,8 @@ func TestTraceParserParse(t *testing.T) {
 		inputRecord    map[string]interface{}
 		expectedRecord map[string]interface{}
 		expectErr      bool
-		traceId        string
-		spanId         string
+		traceID        string
+		spanID         string
 		traceFlags     string
 	}{
 		{
@@ -279,17 +279,17 @@ func TestTraceParserParse(t *testing.T) {
 				require.NoError(t, err)
 			}
 			require.Equal(t, tc.expectedRecord, e.Body)
-			traceId, _ := hex.DecodeString(tc.traceId)
-			if len(tc.traceId) == 0 {
-				require.Nil(t, e.TraceId)
+			traceID, _ := hex.DecodeString(tc.traceID)
+			if len(tc.traceID) == 0 {
+				require.Nil(t, e.TraceID)
 			} else {
-				require.Equal(t, traceId, e.TraceId)
+				require.Equal(t, traceID, e.TraceID)
 			}
-			spanId, _ := hex.DecodeString(tc.spanId)
-			if len(tc.spanId) == 0 {
-				require.Nil(t, e.SpanId)
+			spanID, _ := hex.DecodeString(tc.spanID)
+			if len(tc.spanID) == 0 {
+				require.Nil(t, e.SpanID)
 			} else {
-				require.Equal(t, spanId, e.SpanId)
+				require.Equal(t, spanID, e.SpanID)
 			}
 			traceFlags, _ := hex.DecodeString(tc.traceFlags)
 			if len(tc.traceFlags) == 0 {
