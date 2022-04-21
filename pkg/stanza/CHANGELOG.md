@@ -295,7 +295,7 @@ operators:
 
 ### Update `filelog` attribute references
 
-The `filelog` receiver has adopted slightly different attribute names in order to match newly established semantic conventions. Configurations that previously refered to the `file.*` attributes should be updated.
+The `filelog` receiver has adopted slightly different attribute names in order to match newly established semantic conventions. Configurations that previously referred to the `file.*` attributes should be updated.
 
 <table>
 <tr><th>Deprecated Attribute</th><th>Updated Equivalent</th></tr>
@@ -483,7 +483,7 @@ This release contains a few minor updates as well as a major cleanup of the code
 ### Fixed
 - Issue in `file_input` where doublestar globbing could only be used at a single level ([PR268](https://github.com/open-telemetry/opentelemetry-log-collection/pull/268))
 - Bug in `tcp_input`, `udp_input`, and `syslog_input` which could cause a panic ([PR273](https://github.com/open-telemetry/opentelemetry-log-collection/pull/273))
-- Made `windows_event_log_input` compatibile with Windows Server 2022 ([PR283](https://github.com/open-telemetry/opentelemetry-log-collection/pull/283))
+- Made `windows_event_log_input` compatible with Windows Server 2022 ([PR283](https://github.com/open-telemetry/opentelemetry-log-collection/pull/283))
 
 ### Changed
 - `file_input` will now emit bytes when `encoding = nop` ([PR262](https://github.com/open-telemetry/opentelemetry-log-collection/pull/262))
@@ -500,7 +500,7 @@ This release contains a few minor updates as well as a major cleanup of the code
 - Updated to go version 1.17 ([PR248](https://github.com/open-telemetry/opentelemetry-log-collection/pull/248))
 
 ### Fixed
-- `file_input`'s `force_flush_period` now defaults to `500ms`, ensuring that the use of `multiline.line_start_regex` does not cause ommision of the last line of each file ([PR261](https://github.com/open-telemetry/opentelemetry-log-collection/pull/261))
+- `file_input`'s `force_flush_period` now defaults to `500ms`, ensuring that the use of `multiline.line_start_regex` does not cause omission of the last line of each file ([PR261](https://github.com/open-telemetry/opentelemetry-log-collection/pull/261))
 
 ## [0.20.0] - 2021-07-27
 
