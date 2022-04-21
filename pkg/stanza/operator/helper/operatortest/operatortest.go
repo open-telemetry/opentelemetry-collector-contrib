@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operatortest // import "github.com/open-telemetry/opentelemetry-log-collection/operator/helper/operatortest"
+package operatortest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 // ConfigUnmarshalTest is used for testing golden configs

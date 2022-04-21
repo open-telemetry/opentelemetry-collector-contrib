@@ -23,7 +23,7 @@ linters:
     - ineffassign
 linters-settings:
   gci:
-    local-prefixes: github.com/open-telemetry/opentelemetry-log-collection
+    local-prefixes: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
   goconst:
     min-occurrences: 5
   revive:
