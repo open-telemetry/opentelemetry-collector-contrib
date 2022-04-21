@@ -1,0 +1,17 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  mezmo:
+    endpoint: "https://logdna.com/log/ingest"
+    ingestion_key: "00000000000000000000000000000000"
+
+service:
+  pipelines:
+    logs:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ mezmo ]
