@@ -33,8 +33,8 @@ func init() {
 	operator.Register("windows_eventlog_input", func() operator.Builder { return NewDefaultConfig() })
 }
 
-// EventLogConfig is the configuration of a windows event log operator.
-type EventLogConfig struct {
+// Config is the configuration of a windows event log operator.
+type Config struct {
 	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
 	Channel            string          `mapstructure:"channel" json:"channel" yaml:"channel"`
 	MaxReads           int             `mapstructure:"max_reads,omitempty" json:"max_reads,omitempty" yaml:"max_reads,omitempty"`
@@ -43,7 +43,7 @@ type EventLogConfig struct {
 }
 
 // Build will build a windows event log operator.
-func (c *EventLogConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (c *EventLogConfig) Build(logger *zap.SugaredLogger) (operator.Operator, er
 		return nil, fmt.Errorf("the `start_at` field must be set to `beginning` or `end`")
 	}
 
-	return &EventLogInput{
+	return &Input{
 		InputOperator: inputOperator,
 		buffer:        NewBuffer(),
 		channel:       c.Channel,
@@ -72,8 +72,8 @@ func (c *EventLogConfig) Build(logger *zap.SugaredLogger) (operator.Operator, er
 }
 
 // NewDefaultConfig will return an event log config with default values.
-func NewDefaultConfig() *EventLogConfig {
-	return &EventLogConfig{
+func NewDefaultConfig() *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig("", "windows_eventlog_input"),
 		MaxReads:    100,
 		StartAt:     "end",
@@ -83,8 +83,8 @@ func NewDefaultConfig() *EventLogConfig {
 	}
 }
 
-// EventLogInput is an operator that creates entries using the windows event log api.
-type EventLogInput struct {
+// Input is an operator that creates entries using the windows event log api.
+type Input struct {
 	helper.InputOperator
 	bookmark     Bookmark
 	subscription Subscription
@@ -99,7 +99,7 @@ type EventLogInput struct {
 }
 
 // Start will start reading events from a subscription.
-func (e *EventLogInput) Start(persister operator.Persister) error {
+func (e *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 
@@ -129,7 +129,7 @@ func (e *EventLogInput) Start(persister operator.Persister) error {
 }
 
 // Stop will stop reading events from a subscription.
-func (e *EventLogInput) Stop() error {
+func (e *Input) Stop() error {
 	e.cancel()
 	e.wg.Wait()
 
@@ -145,7 +145,7 @@ func (e *EventLogInput) Stop() error {
 }
 
 // readOnInterval will read events with respect to the polling interval.
-func (e *EventLogInput) readOnInterval(ctx context.Context) {
+func (e *Input) readOnInterval(ctx context.Context) {
 	defer e.wg.Done()
 
 	ticker := time.NewTicker(e.pollInterval.Raw())
@@ -162,7 +162,7 @@ func (e *EventLogInput) readOnInterval(ctx context.Context) {
 }
 
 // readToEnd will read events from the subscription until it reaches the end of the channel.
-func (e *EventLogInput) readToEnd(ctx context.Context) {
+func (e *Input) readToEnd(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -176,7 +176,7 @@ func (e *EventLogInput) readToEnd(ctx context.Context) {
 }
 
 // read will read events from the subscription.
-func (e *EventLogInput) read(ctx context.Context) int {
+func (e *Input) read(ctx context.Context) int {
 	events, err := e.subscription.Read(e.maxReads)
 	if err != nil {
 		e.Errorf("Failed to read events from subscription: %s", err)
@@ -195,7 +195,7 @@ func (e *EventLogInput) read(ctx context.Context) int {
 }
 
 // processEvent will process and send an event retrieved from windows event log.
-func (e *EventLogInput) processEvent(ctx context.Context, event Event) {
+func (e *Input) processEvent(ctx context.Context, event Event) {
 	simpleEvent, err := event.RenderSimple(e.buffer)
 	if err != nil {
 		e.Errorf("Failed to render simple event: %s", err)
@@ -221,7 +221,7 @@ func (e *EventLogInput) processEvent(ctx context.Context, event Event) {
 }
 
 // sendEvent will send EventXML as an entry to the operator's output.
-func (e *EventLogInput) sendEvent(ctx context.Context, eventXML EventXML) {
+func (e *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 	body := eventXML.parseBody()
 	entry, err := e.NewEntry(body)
 	if err != nil {
@@ -235,13 +235,13 @@ func (e *EventLogInput) sendEvent(ctx context.Context, eventXML EventXML) {
 }
 
 // getBookmarkXML will get the bookmark xml from the offsets database.
-func (e *EventLogInput) getBookmarkOffset(ctx context.Context) (string, error) {
+func (e *Input) getBookmarkOffset(ctx context.Context) (string, error) {
 	bytes, err := e.persister.Get(ctx, e.channel)
 	return string(bytes), err
 }
 
 // updateBookmark will update the bookmark xml and save it in the offsets database.
-func (e *EventLogInput) updateBookmarkOffset(ctx context.Context, event Event) {
+func (e *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 	if err := e.bookmark.Update(event); err != nil {
 		e.Errorf("Failed to update bookmark from event: %s", err)
 		return

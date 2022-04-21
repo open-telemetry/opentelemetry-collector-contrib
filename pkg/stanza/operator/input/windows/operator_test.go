@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-func TestEventLogConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	expect := NewDefaultConfig()
 
 	input := map[string]interface{}{
@@ -38,7 +38,7 @@ func TestEventLogConfig(t *testing.T) {
 		"resource":      map[string]interface{}{},
 	}
 
-	var actual EventLogConfig
+	var actual Config
 	err := helper.UnmarshalMapstructure(input, &actual)
 	require.NoError(t, err)
 	require.Equal(t, expect, &actual)
