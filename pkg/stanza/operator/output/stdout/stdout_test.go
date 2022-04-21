@@ -29,7 +29,7 @@ import (
 )
 
 func TestOutput(t *testing.T) {
-	cfg := StdoutConfig{
+	cfg := Config{
 		OutputConfig: helper.OutputConfig{
 			BasicConfig: helper.BasicConfig{
 				OperatorID:   "test_operator_id",
