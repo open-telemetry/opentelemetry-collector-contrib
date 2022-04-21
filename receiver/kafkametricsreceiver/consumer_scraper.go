@@ -44,26 +44,6 @@ func (s *consumerScraper) Name() string {
 	return consumersScraperName
 }
 
-func (s *consumerScraper) setupClient() error {
-	if s.client != nil {
-		return nil
-	}
-	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client in consumer scraper: %w", err)
-	}
-	clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		if client != nil {
-			_ = client.Close()
-		}
-		return fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
-	}
-	s.client = client
-	s.clusterAdmin = clusterAdmin
-	return nil
-}
-
 func (s *consumerScraper) shutdown(_ context.Context) error {
 	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
@@ -72,9 +52,22 @@ func (s *consumerScraper) shutdown(_ context.Context) error {
 }
 
 func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
-	if err := s.setupClient(); err != nil {
-		return pmetric.Metrics{}, err
+	if s.client == nil {
+		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
+		}
+		clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			if client != nil {
+				_ = client.Close()
+			}
+			return pmetric.Metrics{}, fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
+		}
+		s.client = client
+		s.clusterAdmin = clusterAdmin
 	}
+
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
 	if listErr != nil {
 		return pmetric.Metrics{}, listErr

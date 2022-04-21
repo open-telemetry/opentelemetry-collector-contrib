@@ -42,18 +42,6 @@ func (s *topicScraper) Name() string {
 	return topicsScraperName
 }
 
-func (s *topicScraper) setupClient() error {
-	if s.client != nil {
-		return nil
-	}
-	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client in topics scraper: %w", err)
-	}
-	s.client = client
-	return nil
-}
-
 func (s *topicScraper) shutdown(context.Context) error {
 	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
@@ -62,8 +50,12 @@ func (s *topicScraper) shutdown(context.Context) error {
 }
 
 func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
-	if err := s.setupClient(); err != nil {
-		return pmetric.Metrics{}, err
+	if s.client == nil {
+		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in topics scraper: %w", err)
+		}
+		s.client = client
 	}
 
 	topics, err := s.client.Topics()
