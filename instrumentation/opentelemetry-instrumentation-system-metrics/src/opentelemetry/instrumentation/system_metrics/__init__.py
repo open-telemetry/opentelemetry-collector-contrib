@@ -77,7 +77,10 @@ from typing import Collection, Dict, Iterable, List, Optional
 import psutil
 
 from opentelemetry._metrics import get_meter
-from opentelemetry._metrics.measurement import Measurement
+
+# FIXME Remove this pyling disabling line when Github issue is cleared
+# pylint: disable=no-name-in-module
+from opentelemetry._metrics.observation import Observation
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.system_metrics.package import _instruments
 from opentelemetry.instrumentation.system_metrics.version import __version__
@@ -318,18 +321,18 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
     def _uninstrument(self, **__):
         pass
 
-    def _get_system_cpu_time(self) -> Iterable[Measurement]:
+    def _get_system_cpu_time(self) -> Iterable[Observation]:
         """Observer callback for system CPU time"""
         for cpu, times in enumerate(psutil.cpu_times(percpu=True)):
             for metric in self._config["system.cpu.time"]:
                 if hasattr(times, metric):
                     self._system_cpu_time_labels["state"] = metric
                     self._system_cpu_time_labels["cpu"] = cpu + 1
-                    yield Measurement(
+                    yield Observation(
                         getattr(times, metric), self._system_cpu_time_labels
                     )
 
-    def _get_system_cpu_utilization(self) -> Iterable[Measurement]:
+    def _get_system_cpu_utilization(self) -> Iterable[Observation]:
         """Observer callback for system CPU utilization"""
 
         for cpu, times_percent in enumerate(
@@ -339,95 +342,95 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 if hasattr(times_percent, metric):
                     self._system_cpu_utilization_labels["state"] = metric
                     self._system_cpu_utilization_labels["cpu"] = cpu + 1
-                    yield Measurement(
+                    yield Observation(
                         getattr(times_percent, metric) / 100,
                         self._system_cpu_utilization_labels,
                     )
 
-    def _get_system_memory_usage(self) -> Iterable[Measurement]:
+    def _get_system_memory_usage(self) -> Iterable[Observation]:
         """Observer callback for memory usage"""
         virtual_memory = psutil.virtual_memory()
         for metric in self._config["system.memory.usage"]:
             self._system_memory_usage_labels["state"] = metric
             if hasattr(virtual_memory, metric):
-                yield Measurement(
+                yield Observation(
                     getattr(virtual_memory, metric),
                     self._system_memory_usage_labels,
                 )
 
-    def _get_system_memory_utilization(self) -> Iterable[Measurement]:
+    def _get_system_memory_utilization(self) -> Iterable[Observation]:
         """Observer callback for memory utilization"""
         system_memory = psutil.virtual_memory()
 
         for metric in self._config["system.memory.utilization"]:
             self._system_memory_utilization_labels["state"] = metric
             if hasattr(system_memory, metric):
-                yield Measurement(
+                yield Observation(
                     getattr(system_memory, metric) / system_memory.total,
                     self._system_memory_utilization_labels,
                 )
 
-    def _get_system_swap_usage(self) -> Iterable[Measurement]:
+    def _get_system_swap_usage(self) -> Iterable[Observation]:
         """Observer callback for swap usage"""
         system_swap = psutil.swap_memory()
 
         for metric in self._config["system.swap.usage"]:
             self._system_swap_usage_labels["state"] = metric
             if hasattr(system_swap, metric):
-                yield Measurement(
+                yield Observation(
                     getattr(system_swap, metric),
                     self._system_swap_usage_labels,
                 )
 
-    def _get_system_swap_utilization(self) -> Iterable[Measurement]:
+    def _get_system_swap_utilization(self) -> Iterable[Observation]:
         """Observer callback for swap utilization"""
         system_swap = psutil.swap_memory()
 
         for metric in self._config["system.swap.utilization"]:
             if hasattr(system_swap, metric):
                 self._system_swap_utilization_labels["state"] = metric
-                yield Measurement(
+                yield Observation(
                     getattr(system_swap, metric) / system_swap.total,
                     self._system_swap_utilization_labels,
                 )
 
-    def _get_system_disk_io(self) -> Iterable[Measurement]:
+    def _get_system_disk_io(self) -> Iterable[Observation]:
         """Observer callback for disk IO"""
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
             for metric in self._config["system.disk.io"]:
                 if hasattr(counters, f"{metric}_bytes"):
                     self._system_disk_io_labels["device"] = device
                     self._system_disk_io_labels["direction"] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"{metric}_bytes"),
                         self._system_disk_io_labels,
                     )
 
-    def _get_system_disk_operations(self) -> Iterable[Measurement]:
+    def _get_system_disk_operations(self) -> Iterable[Observation]:
         """Observer callback for disk operations"""
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
             for metric in self._config["system.disk.operations"]:
                 if hasattr(counters, f"{metric}_count"):
                     self._system_disk_operations_labels["device"] = device
                     self._system_disk_operations_labels["direction"] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"{metric}_count"),
                         self._system_disk_operations_labels,
                     )
 
-    def _get_system_disk_time(self) -> Iterable[Measurement]:
+    def _get_system_disk_time(self) -> Iterable[Observation]:
         """Observer callback for disk time"""
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
             for metric in self._config["system.disk.time"]:
                 if hasattr(counters, f"{metric}_time"):
                     self._system_disk_time_labels["device"] = device
                     self._system_disk_time_labels["direction"] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"{metric}_time") / 1000,
                         self._system_disk_time_labels,
                     )
 
-    def _get_system_disk_merged(self) -> Iterable[Measurement]:
+    def _get_system_disk_merged(self) -> Iterable[Observation]:
         """Observer callback for disk merged operations"""
 
         # FIXME The units in the spec is 1, it seems like it should be
@@ -438,12 +441,12 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 if hasattr(counters, f"{metric}_merged_count"):
                     self._system_disk_merged_labels["device"] = device
                     self._system_disk_merged_labels["direction"] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"{metric}_merged_count"),
                         self._system_disk_merged_labels,
                     )
 
-    def _get_system_network_dropped_packets(self) -> Iterable[Measurement]:
+    def _get_system_network_dropped_packets(self) -> Iterable[Observation]:
         """Observer callback for network dropped packets"""
 
         for device, counters in psutil.net_io_counters(pernic=True).items():
@@ -456,12 +459,12 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_network_dropped_packets_labels[
                         "direction"
                     ] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"drop{in_out}"),
                         self._system_network_dropped_packets_labels,
                     )
 
-    def _get_system_network_packets(self) -> Iterable[Measurement]:
+    def _get_system_network_packets(self) -> Iterable[Observation]:
         """Observer callback for network packets"""
 
         for device, counters in psutil.net_io_counters(pernic=True).items():
@@ -470,12 +473,12 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 if hasattr(counters, f"packets_{recv_sent}"):
                     self._system_network_packets_labels["device"] = device
                     self._system_network_packets_labels["direction"] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"packets_{recv_sent}"),
                         self._system_network_packets_labels,
                     )
 
-    def _get_system_network_errors(self) -> Iterable[Measurement]:
+    def _get_system_network_errors(self) -> Iterable[Observation]:
         """Observer callback for network errors"""
         for device, counters in psutil.net_io_counters(pernic=True).items():
             for metric in self._config["system.network.errors"]:
@@ -483,12 +486,12 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 if hasattr(counters, f"err{in_out}"):
                     self._system_network_errors_labels["device"] = device
                     self._system_network_errors_labels["direction"] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"err{in_out}"),
                         self._system_network_errors_labels,
                     )
 
-    def _get_system_network_io(self) -> Iterable[Measurement]:
+    def _get_system_network_io(self) -> Iterable[Observation]:
         """Observer callback for network IO"""
 
         for device, counters in psutil.net_io_counters(pernic=True).items():
@@ -497,12 +500,12 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 if hasattr(counters, f"bytes_{recv_sent}"):
                     self._system_network_io_labels["device"] = device
                     self._system_network_io_labels["direction"] = metric
-                    yield Measurement(
+                    yield Observation(
                         getattr(counters, f"bytes_{recv_sent}"),
                         self._system_network_io_labels,
                     )
 
-    def _get_system_network_connections(self) -> Iterable[Measurement]:
+    def _get_system_network_connections(self) -> Iterable[Observation]:
         """Observer callback for network connections"""
         # TODO How to find the device identifier for a particular
         # connection?
@@ -535,35 +538,35 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 }
 
         for connection_counter in connection_counters.values():
-            yield Measurement(
+            yield Observation(
                 connection_counter["counter"],
                 connection_counter["labels"],
             )
 
-    def _get_runtime_memory(self) -> Iterable[Measurement]:
+    def _get_runtime_memory(self) -> Iterable[Observation]:
         """Observer callback for runtime memory"""
         proc_memory = self._proc.memory_info()
         for metric in self._config["runtime.memory"]:
             if hasattr(proc_memory, metric):
                 self._runtime_memory_labels["type"] = metric
-                yield Measurement(
+                yield Observation(
                     getattr(proc_memory, metric),
                     self._runtime_memory_labels,
                 )
 
-    def _get_runtime_cpu_time(self) -> Iterable[Measurement]:
+    def _get_runtime_cpu_time(self) -> Iterable[Observation]:
         """Observer callback for runtime CPU time"""
         proc_cpu = self._proc.cpu_times()
         for metric in self._config["runtime.cpu.time"]:
             if hasattr(proc_cpu, metric):
                 self._runtime_cpu_time_labels["type"] = metric
-                yield Measurement(
+                yield Observation(
                     getattr(proc_cpu, metric),
                     self._runtime_cpu_time_labels,
                 )
 
-    def _get_runtime_gc_count(self) -> Iterable[Measurement]:
+    def _get_runtime_gc_count(self) -> Iterable[Observation]:
         """Observer callback for garbage collection"""
         for index, count in enumerate(gc.get_count()):
             self._runtime_gc_count_labels["count"] = str(index)
-            yield Measurement(count, self._runtime_gc_count_labels)
+            yield Observation(count, self._runtime_gc_count_labels)
