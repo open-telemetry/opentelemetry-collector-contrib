@@ -506,52 +506,52 @@ func TestScrapeMetrics_EnforceUTF8(t *testing.T) {
 		expectedCmdLines   []string
 	}
 
-	invalidUtf8_2octet := string([]byte{0xc3, 0x28}) // Invalid 2-octet sequence
+	invalidUtf8_2octet := string([]byte{0xc3, 0x28})     // Invalid 2-octet sequence
 	invalidUtf8_sequenceId := string([]byte{0xa0, 0xa1}) // Invalid sequence identifier
 
 	testCases := []testCase{
 		{
-			name:               "Valid UTF-8 Characters Unchanged",
-			enforceUtf8:        true,
+			name:        "Valid UTF-8 Characters Unchanged",
+			enforceUtf8: true,
 			inputCmdlineSlices: [][]string{
-				[]string{"a", "b", "c"},
+				{"a", "b", "c"},
 			},
-			expectedCmdLines:   []string{
+			expectedCmdLines: []string{
 				"a b c",
 			},
 		},
 		{
-			name:               "Invalid UTF-8 Characters Sanitized",
-			enforceUtf8:        true,
+			name:        "Invalid UTF-8 Characters Sanitized",
+			enforceUtf8: true,
 			inputCmdlineSlices: [][]string{
-				[]string{invalidUtf8_2octet, "b", "c"},
-				[]string{invalidUtf8_sequenceId, "b", "c"},
+				{invalidUtf8_2octet, "b", "c"},
+				{invalidUtf8_sequenceId, "b", "c"},
 			},
-			expectedCmdLines:   []string{
+			expectedCmdLines: []string{
 				"�( b c",
 				"� b c",
 			},
 		},
 		{
-			name:               "Invalid UTF-8 Characters Unchanged",
-			enforceUtf8:        false,
+			name:        "Invalid UTF-8 Characters Unchanged",
+			enforceUtf8: false,
 			inputCmdlineSlices: [][]string{
-				[]string{invalidUtf8_2octet, "b", "c"},
-				[]string{invalidUtf8_sequenceId, "b", "c"},
+				{invalidUtf8_2octet, "b", "c"},
+				{invalidUtf8_sequenceId, "b", "c"},
 			},
-			expectedCmdLines:   []string{
+			expectedCmdLines: []string{
 				invalidUtf8_2octet + " b c",
 				invalidUtf8_sequenceId + " b c",
 			},
 		},
 		{
-			name:               "Invalid UTF-8 Characters Default (Unchanged)",
-			omitConfigField:    true,
+			name:            "Invalid UTF-8 Characters Default (Unchanged)",
+			omitConfigField: true,
 			inputCmdlineSlices: [][]string{
-				[]string{invalidUtf8_2octet, "b", "c"},
-				[]string{invalidUtf8_sequenceId, "b", "c"},
+				{invalidUtf8_2octet, "b", "c"},
+				{invalidUtf8_sequenceId, "b", "c"},
 			},
-			expectedCmdLines:   []string{
+			expectedCmdLines: []string{
 				invalidUtf8_2octet + " b c",
 				invalidUtf8_sequenceId + " b c",
 			},
