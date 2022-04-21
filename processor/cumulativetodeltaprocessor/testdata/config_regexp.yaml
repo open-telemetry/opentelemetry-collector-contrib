@@ -4,15 +4,13 @@ receivers:
 processors:
   cumulativetodelta:
     include:
-      match_type: strict
+      match_type: regexp
       metrics:
-        - metric1
-        - metric2
+        - a*
     exclude:
-      match_type: strict
+      match_type: regexp
       metrics:
-        - metric3
-        - metric4
+        - b*
     max_staleness: 10s
 
 exporters:

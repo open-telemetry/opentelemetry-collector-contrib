@@ -9,6 +9,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
+
 ### 🚀 New components 🚀
 
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
@@ -16,14 +18,17 @@
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
 
 ### 💡 Enhancements 💡
+
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
+- `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
 
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
 
 ### 🧰 Bug fixes 🧰
 
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
+
 
 ## v0.49.0
 
