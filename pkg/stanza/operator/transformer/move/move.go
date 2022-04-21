@@ -26,25 +26,25 @@ import (
 )
 
 func init() {
-	operator.Register("move", func() operator.Builder { return NewMoveOperatorConfig("") })
+	operator.Register("move", func() operator.Builder { return NewConfig("") })
 }
 
-// NewMoveOperatorConfig creates a new move operator config with default values
-func NewMoveOperatorConfig(operatorID string) *MoveOperatorConfig {
-	return &MoveOperatorConfig{
+// NewConfig creates a new move operator config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "move"),
 	}
 }
 
-// MoveOperatorConfig is the configuration of a move operator
-type MoveOperatorConfig struct {
+// Config is the configuration of a move operator
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
 	From                     entry.Field `mapstructure:"from" yaml:"from"`
 	To                       entry.Field `mapstructure:"to" yaml:"to"`
 }
 
 // Build will build a Move operator from the supplied configuration
-func (c MoveOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -54,27 +54,27 @@ func (c MoveOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator,
 		return nil, fmt.Errorf("move: missing to or from field")
 	}
 
-	return &MoveOperator{
+	return &Transformer{
 		TransformerOperator: transformerOperator,
 		From:                c.From,
 		To:                  c.To,
 	}, nil
 }
 
-// MoveOperator is an operator that moves a field's value to a new field
-type MoveOperator struct {
+// Transformer is an operator that moves a field's value to a new field
+type Transformer struct {
 	helper.TransformerOperator
 	From entry.Field
 	To   entry.Field
 }
 
 // Process will process an entry with a move transformation.
-func (p *MoveOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply the move operation to an entry
-func (p *MoveOperator) Transform(e *entry.Entry) error {
+func (p *Transformer) Transform(e *entry.Entry) error {
 	val, exist := p.From.Delete(e)
 	if !exist {
 		return fmt.Errorf("move: field does not exist")
