@@ -31,12 +31,12 @@ import (
 )
 
 func init() {
-	operator.Register("recombine", func() operator.Builder { return NewRecombineOperatorConfig("") })
+	operator.Register("recombine", func() operator.Builder { return NewConfig("") })
 }
 
-// NewRecombineOperatorConfig creates a new recombine config with default values
-func NewRecombineOperatorConfig(operatorID string) *RecombineOperatorConfig {
-	return &RecombineOperatorConfig{
+// NewConfig creates a new recombine config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "recombine"),
 		MaxBatchSize:      1000,
 		MaxSources:        1000,
@@ -47,8 +47,8 @@ func NewRecombineOperatorConfig(operatorID string) *RecombineOperatorConfig {
 	}
 }
 
-// RecombineOperatorConfig is the configuration of a recombine operator
-type RecombineOperatorConfig struct {
+// Config is the configuration of a recombine operator
+type Config struct {
 	helper.TransformerConfig `yaml:",inline"`
 	IsFirstEntry             string        `json:"is_first_entry"     yaml:"is_first_entry"`
 	IsLastEntry              string        `json:"is_last_entry"      yaml:"is_last_entry"`
@@ -61,8 +61,8 @@ type RecombineOperatorConfig struct {
 	MaxSources               int           `json:"max_sources"        yaml:"max_sources"`
 }
 
-// Build creates a new RecombineOperator from a config
-func (c *RecombineOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+// Build creates a new Transformer from a config
+func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformer, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build transformer config: %s", err)
@@ -106,7 +106,7 @@ func (c *RecombineOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Ope
 		return nil, fmt.Errorf("invalid value '%s' for parameter 'overwrite_with'", c.OverwriteWith)
 	}
 
-	return &RecombineOperator{
+	return &Transformer{
 		TransformerOperator: transformer,
 		matchFirstLine:      matchesFirst,
 		prog:                prog,
@@ -123,9 +123,9 @@ func (c *RecombineOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Ope
 	}, nil
 }
 
-// RecombineOperator is an operator that combines a field from consecutive log entries
+// Transformer is an operator that combines a field from consecutive log entries
 // into a single
-type RecombineOperator struct {
+type Transformer struct {
 	helper.TransformerOperator
 	matchFirstLine      bool
 	prog                *vm.Program
@@ -143,13 +143,13 @@ type RecombineOperator struct {
 	batchMap map[string][]*entry.Entry
 }
 
-func (r *RecombineOperator) Start(_ operator.Persister) error {
+func (r *Transformer) Start(_ operator.Persister) error {
 	go r.flushLoop()
 
 	return nil
 }
 
-func (r *RecombineOperator) flushLoop() {
+func (r *Transformer) flushLoop() {
 	for {
 		select {
 		case <-r.ticker.C:
@@ -175,7 +175,7 @@ func (r *RecombineOperator) flushLoop() {
 	}
 }
 
-func (r *RecombineOperator) Stop() error {
+func (r *Transformer) Stop() error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -190,7 +190,7 @@ func (r *RecombineOperator) Stop() error {
 
 const DefaultSourceIdentifier = "DefaultSourceIdentifier"
 
-func (r *RecombineOperator) Process(ctx context.Context, e *entry.Entry) error {
+func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// Lock the recombine operator because process can't run concurrently
 	r.Lock()
 	defer r.Unlock()
@@ -247,16 +247,16 @@ func (r *RecombineOperator) Process(ctx context.Context, e *entry.Entry) error {
 	return nil
 }
 
-func (r *RecombineOperator) matchIndicatesFirst() bool {
+func (r *Transformer) matchIndicatesFirst() bool {
 	return r.matchFirstLine
 }
 
-func (r *RecombineOperator) matchIndicatesLast() bool {
+func (r *Transformer) matchIndicatesLast() bool {
 	return !r.matchFirstLine
 }
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
-func (r *RecombineOperator) addToBatch(_ context.Context, e *entry.Entry, source string) {
+func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source string) {
 	if _, ok := r.batchMap[source]; !ok {
 		r.batchMap[source] = []*entry.Entry{e}
 		if len(r.batchMap) >= r.maxSources {
@@ -277,7 +277,7 @@ func (r *RecombineOperator) addToBatch(_ context.Context, e *entry.Entry, source
 // flushUncombined flushes all the logs in the batch individually to the
 // next output in the pipeline. This is only used when there is an error
 // or at shutdown to avoid dropping the logs.
-func (r *RecombineOperator) flushUncombined(ctx context.Context) {
+func (r *Transformer) flushUncombined(ctx context.Context) {
 	for source := range r.batchMap {
 		for _, entry := range r.batchMap[source] {
 			r.Write(ctx, entry)
@@ -289,7 +289,7 @@ func (r *RecombineOperator) flushUncombined(ctx context.Context) {
 
 // flushSource combines the entries currently in the batch into a single entry,
 // then forwards them to the next operator in the pipeline
-func (r *RecombineOperator) flushSource(source string) error {
+func (r *Transformer) flushSource(source string) error {
 	// Skip flushing a combined log if the batch is empty
 	if len(r.batchMap[source]) == 0 {
 		return nil

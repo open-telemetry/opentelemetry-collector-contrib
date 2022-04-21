@@ -30,7 +30,7 @@ const (
 	MatchAll string = "true"
 )
 
-func TestRecombineOperator(t *testing.T) {
+func TestTransformer(t *testing.T) {
 	now := time.Now()
 	t1 := time.Date(2020, time.April, 11, 21, 34, 01, 0, time.UTC)
 	t2 := time.Date(2020, time.April, 11, 21, 34, 02, 0, time.UTC)
@@ -53,14 +53,14 @@ func TestRecombineOperator(t *testing.T) {
 
 	cases := []struct {
 		name           string
-		config         *RecombineOperatorConfig
+		config         *Config
 		input          []*entry.Entry
 		expectedOutput []*entry.Entry
 	}{
 		{
 			"NoEntriesFirst",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -71,8 +71,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"NoEntriesLast",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -83,8 +83,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"OneEntryFirst",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -95,8 +95,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"OneEntryLast",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -107,8 +107,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"TwoEntriesLast",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'test2'"
 				cfg.OutputIDs = []string{"fake"}
@@ -122,8 +122,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"ThreeEntriesFirstNewest",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -141,8 +141,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"EntriesNonMatchingForFirstEntry",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -162,8 +162,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"EntriesMatchingForFirstEntryOneFileOnly",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'file1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -188,8 +188,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"CombineWithEmptyString",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body == 'test2'"
@@ -204,8 +204,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"TestDefaultSourceIdentifier",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -224,8 +224,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"TestCustomSourceIdentifier",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -245,8 +245,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"TestMaxSources",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -264,8 +264,8 @@ func TestRecombineOperator(t *testing.T) {
 		},
 		{
 			"TestMaxBatchSize",
-			func() *RecombineOperatorConfig {
-				cfg := NewRecombineOperatorConfig("")
+			func() *Config {
+				cfg := NewConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -291,7 +291,7 @@ func TestRecombineOperator(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
-			recombine := op.(*RecombineOperator)
+			recombine := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)
 			err = recombine.SetOutputs([]operator.Operator{fake})
@@ -314,13 +314,13 @@ func TestRecombineOperator(t *testing.T) {
 	}
 
 	t.Run("FlushesOnShutdown", func(t *testing.T) {
-		cfg := NewRecombineOperatorConfig("")
+		cfg := NewConfig("")
 		cfg.CombineField = entry.NewBodyField()
 		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
-		recombine := op.(*RecombineOperator)
+		recombine := op.(*Transformer)
 
 		fake := testutil.NewFakeOutput(t)
 		err = recombine.SetOutputs([]operator.Operator{fake})
@@ -349,13 +349,13 @@ func TestRecombineOperator(t *testing.T) {
 }
 
 func BenchmarkRecombine(b *testing.B) {
-	cfg := NewRecombineOperatorConfig("")
+	cfg := NewConfig("")
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = "false"
 	cfg.OutputIDs = []string{"fake"}
 	op, err := cfg.Build(testutil.Logger(b))
 	require.NoError(b, err)
-	recombine := op.(*RecombineOperator)
+	recombine := op.(*Transformer)
 
 	fake := testutil.NewFakeOutput(b)
 	require.NoError(b, recombine.SetOutputs([]operator.Operator{fake}))
@@ -386,14 +386,14 @@ func BenchmarkRecombine(b *testing.B) {
 func TestTimeout(t *testing.T) {
 	t.Parallel()
 
-	cfg := NewRecombineOperatorConfig("")
+	cfg := NewConfig("")
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = MatchAll
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	recombine := op.(*RecombineOperator)
+	recombine := op.(*Transformer)
 
 	fake := testutil.NewFakeOutput(t)
 	require.NoError(t, recombine.SetOutputs([]operator.Operator{fake}))

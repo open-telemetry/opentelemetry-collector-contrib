@@ -30,7 +30,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name:      "custom_id",
 			ExpectErr: false,
-			Expect: func() *RecombineOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OperatorID = "merge-split-lines"
 				return cfg
@@ -39,7 +39,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name:      "combine_with_custom_string",
 			ExpectErr: false,
-			Expect: func() *RecombineOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.CombineWith = "ABC"
 				return cfg
@@ -48,7 +48,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name:      "combine_with_empty_string",
 			ExpectErr: false,
-			Expect: func() *RecombineOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.CombineWith = ""
 				return cfg
@@ -57,7 +57,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name:      "combine_with_tab",
 			ExpectErr: false,
-			Expect: func() *RecombineOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.CombineWith = "\t"
 				return cfg
@@ -66,7 +66,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name:      "combine_with_backslash_t",
 			ExpectErr: false,
-			Expect: func() *RecombineOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.CombineWith = "\\t"
 				return cfg
@@ -75,7 +75,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name:      "combine_with_multiline_string",
 			ExpectErr: false,
-			Expect: func() *RecombineOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.CombineWith = "line1\nLINE2"
 				return cfg
@@ -89,6 +89,6 @@ func TestConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *RecombineOperatorConfig {
-	return NewRecombineOperatorConfig("recombine")
+func defaultCfg() *Config {
+	return NewConfig("recombine")
 }
