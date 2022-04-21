@@ -657,7 +657,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 
 func TestMostRecentTimestampInMetric(t *testing.T) {
 	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
-	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// the first datapoint timestamp is at testdata.TestMetricTime
 	metricMultipleTimestamps.Sum().DataPoints().At(1).SetTimestamp(laterTimestamp)
 	for _, tc := range []struct {
