@@ -227,14 +227,12 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 				case "net.errorsTx.summation":
 					v.mb.RecordVcenterHostNetworkErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
 
-				case "disk.kernelReadLatency.average":
-					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "read", "kernel")
-				case "disk.kernelWriteLatency.average":
-					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write", "device")
 				case "disk.totalWriteLatency.average":
-					v.mb.RecordVcenterHostDiskLatencyTotalDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
 				case "disk.totalReadLatency.average":
-					v.mb.RecordVcenterHostDiskLatencyTotalDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "read")
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
+				case "disk.maxTotalLatency.latest":
+					v.mb.RecordVcenterHostDiskLatencyMaxDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}
 			}
 		}

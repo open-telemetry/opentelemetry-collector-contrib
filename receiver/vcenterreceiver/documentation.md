@@ -20,13 +20,13 @@ These are the metrics available for this scraper.
 | **vcenter.datastore.disk.utilization** | The utilization of the datastore. | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.host.cpu.usage** | The amount of CPU in Hz used by the host. | MHz | Sum(Int) | <ul> </ul> |
 | **vcenter.host.cpu.utilization** | The CPU utilization of the host system. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> <li>latency_direction</li> <li>latency_type</li> </ul> |
-| **vcenter.host.disk.latency.total** | The total reported total latency (device and kernel times) | ms | Gauge(Int) | <ul> <li>latency_direction</li> </ul> |
+| **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> <li>latency_direction</li> </ul> |
+| **vcenter.host.disk.latency.max** | Highest latency value across all disks used by the host, as measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> </ul> |
 | **vcenter.host.disk.throughput** | The throughput to the host system's disk. | By/s | Sum(Int) | <ul> </ul> |
 | **vcenter.host.memory.usage** | The amount of memory the host system is using. | MBy | Sum(Int) | <ul> </ul> |
 | **vcenter.host.memory.utilization** | The percentage of the host system's memory capacity that is being utilized. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.host.network.errors** | The summation of errors on the host network. | {errors} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
-| **vcenter.host.network.packets** | The number of packets sent over an interval. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
+| **vcenter.host.network.packet.count** | The number of packets sent and received, as measured over the most recent 20s interval. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
+| **vcenter.host.network.packet.errors** | The summation of packet errors on the host network, as measured over the most recent 20s interval. | {errors} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
 | **vcenter.host.network.throughput** | The amount of data that was sent or received over the network by the host. | {KBy/s} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
 | **vcenter.host.network.usage** | The sum of the data transmitted and received for all the NIC instances of the host. | {KBy/s} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.cpu.shares** | The amount of shares of CPU in the resource pool. | {shares} | Sum(Int) | <ul> </ul> |
@@ -41,7 +41,7 @@ These are the metrics available for this scraper.
 | **vcenter.vm.disk.utilization** | The utilization of storage on the virtual machine. | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.vm.memory.ballooned** | The amount of memory that is ballooned due to virtualization. | By | Sum(Int) | <ul> </ul> |
 | **vcenter.vm.memory.usage** | The amount of memory that is used by the virtual machine. | MBy | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.network.packets** | The amount of packets that was received or transmitted over the instance's network. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
+| **vcenter.vm.network.packet.count** | The amount of packets that was received or transmitted over the instance's network. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
 | **vcenter.vm.network.throughput** | The amount of data that was received or sent over the network of the virtual machine. | By/sec | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
 | **vcenter.vm.network.usage** | The network utilization combined transmit and receive rates during an interval. | {KBy/s} | Sum(Int) | <ul> </ul> |
 

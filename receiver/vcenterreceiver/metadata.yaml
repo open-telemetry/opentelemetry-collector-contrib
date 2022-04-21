@@ -134,7 +134,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [host_effective]
-
   vcenter.datastore.disk.usage:
     enabled: true
     description: The amount of space in the datastore.
@@ -182,15 +181,15 @@ metrics:
     unit: ms
     gauge:
       value_type: int
-    attributes: [latency_direction, latency_type]
+    attributes: [latency_direction]
     extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
-  vcenter.host.disk.latency.total:
+  vcenter.host.disk.latency.max:
     enabled: true
-    description: The total reported total latency (device and kernel times)
+    description: Highest latency value across all disks used by the host, as measured over the most recent 20s interval.
     unit: ms
     gauge:
       value_type: int
-    attributes: [latency_direction]
+    attributes: []
   vcenter.host.memory.utilization:
     enabled: true
     description: The percentage of the host system's memory capacity that is being utilized.
@@ -225,18 +224,18 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-  vcenter.host.network.errors:
+  vcenter.host.network.packet.errors:
     enabled: true
-    description: The summation of errors on the host network.
+    description: The summation of packet errors on the host network, as measured over the most recent 20s interval.
     unit: "{errors}"
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
     attributes: [throughput_direction]
-  vcenter.host.network.packets:
+  vcenter.host.network.packet.count:
     enabled: true
-    description: The number of packets sent over an interval.
+    description: The number of packets sent and received, as measured over the most recent 20s interval.
     unit: "{packets/sec}"
     sum:
       monotonic: false
@@ -354,7 +353,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [throughput_direction]
-  vcenter.vm.network.packets:
+  vcenter.vm.network.packet.count:
     enabled: true
     description: The amount of packets that was received or transmitted over the instance's network.
     unit: "{packets/sec}"

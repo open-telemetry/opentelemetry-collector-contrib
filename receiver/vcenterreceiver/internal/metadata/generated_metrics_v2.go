@@ -29,12 +29,12 @@ type MetricsSettings struct {
 	VcenterHostCPUUsage             MetricSettings `mapstructure:"vcenter.host.cpu.usage"`
 	VcenterHostCPUUtilization       MetricSettings `mapstructure:"vcenter.host.cpu.utilization"`
 	VcenterHostDiskLatencyAvg       MetricSettings `mapstructure:"vcenter.host.disk.latency.avg"`
-	VcenterHostDiskLatencyTotal     MetricSettings `mapstructure:"vcenter.host.disk.latency.total"`
+	VcenterHostDiskLatencyMax       MetricSettings `mapstructure:"vcenter.host.disk.latency.max"`
 	VcenterHostDiskThroughput       MetricSettings `mapstructure:"vcenter.host.disk.throughput"`
 	VcenterHostMemoryUsage          MetricSettings `mapstructure:"vcenter.host.memory.usage"`
 	VcenterHostMemoryUtilization    MetricSettings `mapstructure:"vcenter.host.memory.utilization"`
-	VcenterHostNetworkErrors        MetricSettings `mapstructure:"vcenter.host.network.errors"`
-	VcenterHostNetworkPackets       MetricSettings `mapstructure:"vcenter.host.network.packets"`
+	VcenterHostNetworkPacketCount   MetricSettings `mapstructure:"vcenter.host.network.packet.count"`
+	VcenterHostNetworkPacketErrors  MetricSettings `mapstructure:"vcenter.host.network.packet.errors"`
 	VcenterHostNetworkThroughput    MetricSettings `mapstructure:"vcenter.host.network.throughput"`
 	VcenterHostNetworkUsage         MetricSettings `mapstructure:"vcenter.host.network.usage"`
 	VcenterResourcePoolCPUShares    MetricSettings `mapstructure:"vcenter.resource_pool.cpu.shares"`
@@ -49,7 +49,7 @@ type MetricsSettings struct {
 	VcenterVMDiskUtilization        MetricSettings `mapstructure:"vcenter.vm.disk.utilization"`
 	VcenterVMMemoryBallooned        MetricSettings `mapstructure:"vcenter.vm.memory.ballooned"`
 	VcenterVMMemoryUsage            MetricSettings `mapstructure:"vcenter.vm.memory.usage"`
-	VcenterVMNetworkPackets         MetricSettings `mapstructure:"vcenter.vm.network.packets"`
+	VcenterVMNetworkPacketCount     MetricSettings `mapstructure:"vcenter.vm.network.packet.count"`
 	VcenterVMNetworkThroughput      MetricSettings `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage           MetricSettings `mapstructure:"vcenter.vm.network.usage"`
 }
@@ -95,7 +95,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		VcenterHostDiskLatencyAvg: MetricSettings{
 			Enabled: true,
 		},
-		VcenterHostDiskLatencyTotal: MetricSettings{
+		VcenterHostDiskLatencyMax: MetricSettings{
 			Enabled: true,
 		},
 		VcenterHostDiskThroughput: MetricSettings{
@@ -107,10 +107,10 @@ func DefaultMetricsSettings() MetricsSettings {
 		VcenterHostMemoryUtilization: MetricSettings{
 			Enabled: true,
 		},
-		VcenterHostNetworkErrors: MetricSettings{
+		VcenterHostNetworkPacketCount: MetricSettings{
 			Enabled: true,
 		},
-		VcenterHostNetworkPackets: MetricSettings{
+		VcenterHostNetworkPacketErrors: MetricSettings{
 			Enabled: true,
 		},
 		VcenterHostNetworkThroughput: MetricSettings{
@@ -155,7 +155,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		VcenterVMMemoryUsage: MetricSettings{
 			Enabled: true,
 		},
-		VcenterVMNetworkPackets: MetricSettings{
+		VcenterVMNetworkPacketCount: MetricSettings{
 			Enabled: true,
 		},
 		VcenterVMNetworkThroughput: MetricSettings{
@@ -796,7 +796,7 @@ func (m *metricVcenterHostDiskLatencyAvg) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string, latencyTypeAttributeValue string) {
+func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -805,7 +805,6 @@ func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.LatencyDirection, pcommon.NewValueString(latencyDirectionAttributeValue))
-	dp.Attributes().Insert(A.LatencyType, pcommon.NewValueString(latencyTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -833,22 +832,21 @@ func newMetricVcenterHostDiskLatencyAvg(settings MetricSettings) metricVcenterHo
 	return m
 }
 
-type metricVcenterHostDiskLatencyTotal struct {
+type metricVcenterHostDiskLatencyMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills vcenter.host.disk.latency.total metric with initial data.
-func (m *metricVcenterHostDiskLatencyTotal) init() {
-	m.data.SetName("vcenter.host.disk.latency.total")
-	m.data.SetDescription("The total reported total latency (device and kernel times)")
+// init fills vcenter.host.disk.latency.max metric with initial data.
+func (m *metricVcenterHostDiskLatencyMax) init() {
+	m.data.SetName("vcenter.host.disk.latency.max")
+	m.data.SetDescription("Highest latency value across all disks used by the host, as measured over the most recent 20s interval.")
 	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterHostDiskLatencyTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
+func (m *metricVcenterHostDiskLatencyMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -856,18 +854,17 @@ func (m *metricVcenterHostDiskLatencyTotal) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.LatencyDirection, pcommon.NewValueString(latencyDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostDiskLatencyTotal) updateCapacity() {
+func (m *metricVcenterHostDiskLatencyMax) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostDiskLatencyTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcenterHostDiskLatencyMax) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -875,8 +872,8 @@ func (m *metricVcenterHostDiskLatencyTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricVcenterHostDiskLatencyTotal(settings MetricSettings) metricVcenterHostDiskLatencyTotal {
-	m := metricVcenterHostDiskLatencyTotal{settings: settings}
+func newMetricVcenterHostDiskLatencyMax(settings MetricSettings) metricVcenterHostDiskLatencyMax {
+	m := metricVcenterHostDiskLatencyMax{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1035,69 +1032,16 @@ func newMetricVcenterHostMemoryUtilization(settings MetricSettings) metricVcente
 	return m
 }
 
-type metricVcenterHostNetworkErrors struct {
+type metricVcenterHostNetworkPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills vcenter.host.network.errors metric with initial data.
-func (m *metricVcenterHostNetworkErrors) init() {
-	m.data.SetName("vcenter.host.network.errors")
-	m.data.SetDescription("The summation of errors on the host network.")
-	m.data.SetUnit("{errors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcenterHostNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThroughputDirection, pcommon.NewValueString(throughputDirectionAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostNetworkErrors) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostNetworkErrors) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterHostNetworkErrors(settings MetricSettings) metricVcenterHostNetworkErrors {
-	m := metricVcenterHostNetworkErrors{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterHostNetworkPackets struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.host.network.packets metric with initial data.
-func (m *metricVcenterHostNetworkPackets) init() {
-	m.data.SetName("vcenter.host.network.packets")
-	m.data.SetDescription("The number of packets sent over an interval.")
+// init fills vcenter.host.network.packet.count metric with initial data.
+func (m *metricVcenterHostNetworkPacketCount) init() {
+	m.data.SetName("vcenter.host.network.packet.count")
+	m.data.SetDescription("The number of packets sent and received, as measured over the most recent 20s interval.")
 	m.data.SetUnit("{packets/sec}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1105,7 +1049,7 @@ func (m *metricVcenterHostNetworkPackets) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterHostNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
+func (m *metricVcenterHostNetworkPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1117,14 +1061,14 @@ func (m *metricVcenterHostNetworkPackets) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostNetworkPackets) updateCapacity() {
+func (m *metricVcenterHostNetworkPacketCount) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostNetworkPackets) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcenterHostNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1132,8 +1076,61 @@ func (m *metricVcenterHostNetworkPackets) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricVcenterHostNetworkPackets(settings MetricSettings) metricVcenterHostNetworkPackets {
-	m := metricVcenterHostNetworkPackets{settings: settings}
+func newMetricVcenterHostNetworkPacketCount(settings MetricSettings) metricVcenterHostNetworkPacketCount {
+	m := metricVcenterHostNetworkPacketCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterHostNetworkPacketErrors struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.host.network.packet.errors metric with initial data.
+func (m *metricVcenterHostNetworkPacketErrors) init() {
+	m.data.SetName("vcenter.host.network.packet.errors")
+	m.data.SetDescription("The summation of packet errors on the host network, as measured over the most recent 20s interval.")
+	m.data.SetUnit("{errors}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterHostNetworkPacketErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.ThroughputDirection, pcommon.NewValueString(throughputDirectionAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostNetworkPacketErrors) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostNetworkPacketErrors) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostNetworkPacketErrors(settings MetricSettings) metricVcenterHostNetworkPacketErrors {
+	m := metricVcenterHostNetworkPacketErrors{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1853,15 +1850,15 @@ func newMetricVcenterVMMemoryUsage(settings MetricSettings) metricVcenterVMMemor
 	return m
 }
 
-type metricVcenterVMNetworkPackets struct {
+type metricVcenterVMNetworkPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills vcenter.vm.network.packets metric with initial data.
-func (m *metricVcenterVMNetworkPackets) init() {
-	m.data.SetName("vcenter.vm.network.packets")
+// init fills vcenter.vm.network.packet.count metric with initial data.
+func (m *metricVcenterVMNetworkPacketCount) init() {
+	m.data.SetName("vcenter.vm.network.packet.count")
 	m.data.SetDescription("The amount of packets that was received or transmitted over the instance's network.")
 	m.data.SetUnit("{packets/sec}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -1870,7 +1867,7 @@ func (m *metricVcenterVMNetworkPackets) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
+func (m *metricVcenterVMNetworkPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1882,14 +1879,14 @@ func (m *metricVcenterVMNetworkPackets) recordDataPoint(start pcommon.Timestamp,
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterVMNetworkPackets) updateCapacity() {
+func (m *metricVcenterVMNetworkPacketCount) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterVMNetworkPackets) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcenterVMNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1897,8 +1894,8 @@ func (m *metricVcenterVMNetworkPackets) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricVcenterVMNetworkPackets(settings MetricSettings) metricVcenterVMNetworkPackets {
-	m := metricVcenterVMNetworkPackets{settings: settings}
+func newMetricVcenterVMNetworkPacketCount(settings MetricSettings) metricVcenterVMNetworkPacketCount {
+	m := metricVcenterVMNetworkPacketCount{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2030,12 +2027,12 @@ type MetricsBuilder struct {
 	metricVcenterHostCPUUsage             metricVcenterHostCPUUsage
 	metricVcenterHostCPUUtilization       metricVcenterHostCPUUtilization
 	metricVcenterHostDiskLatencyAvg       metricVcenterHostDiskLatencyAvg
-	metricVcenterHostDiskLatencyTotal     metricVcenterHostDiskLatencyTotal
+	metricVcenterHostDiskLatencyMax       metricVcenterHostDiskLatencyMax
 	metricVcenterHostDiskThroughput       metricVcenterHostDiskThroughput
 	metricVcenterHostMemoryUsage          metricVcenterHostMemoryUsage
 	metricVcenterHostMemoryUtilization    metricVcenterHostMemoryUtilization
-	metricVcenterHostNetworkErrors        metricVcenterHostNetworkErrors
-	metricVcenterHostNetworkPackets       metricVcenterHostNetworkPackets
+	metricVcenterHostNetworkPacketCount   metricVcenterHostNetworkPacketCount
+	metricVcenterHostNetworkPacketErrors  metricVcenterHostNetworkPacketErrors
 	metricVcenterHostNetworkThroughput    metricVcenterHostNetworkThroughput
 	metricVcenterHostNetworkUsage         metricVcenterHostNetworkUsage
 	metricVcenterResourcePoolCPUShares    metricVcenterResourcePoolCPUShares
@@ -2050,7 +2047,7 @@ type MetricsBuilder struct {
 	metricVcenterVMDiskUtilization        metricVcenterVMDiskUtilization
 	metricVcenterVMMemoryBallooned        metricVcenterVMMemoryBallooned
 	metricVcenterVMMemoryUsage            metricVcenterVMMemoryUsage
-	metricVcenterVMNetworkPackets         metricVcenterVMNetworkPackets
+	metricVcenterVMNetworkPacketCount     metricVcenterVMNetworkPacketCount
 	metricVcenterVMNetworkThroughput      metricVcenterVMNetworkThroughput
 	metricVcenterVMNetworkUsage           metricVcenterVMNetworkUsage
 }
@@ -2082,12 +2079,12 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricVcenterHostCPUUsage:             newMetricVcenterHostCPUUsage(settings.VcenterHostCPUUsage),
 		metricVcenterHostCPUUtilization:       newMetricVcenterHostCPUUtilization(settings.VcenterHostCPUUtilization),
 		metricVcenterHostDiskLatencyAvg:       newMetricVcenterHostDiskLatencyAvg(settings.VcenterHostDiskLatencyAvg),
-		metricVcenterHostDiskLatencyTotal:     newMetricVcenterHostDiskLatencyTotal(settings.VcenterHostDiskLatencyTotal),
+		metricVcenterHostDiskLatencyMax:       newMetricVcenterHostDiskLatencyMax(settings.VcenterHostDiskLatencyMax),
 		metricVcenterHostDiskThroughput:       newMetricVcenterHostDiskThroughput(settings.VcenterHostDiskThroughput),
 		metricVcenterHostMemoryUsage:          newMetricVcenterHostMemoryUsage(settings.VcenterHostMemoryUsage),
 		metricVcenterHostMemoryUtilization:    newMetricVcenterHostMemoryUtilization(settings.VcenterHostMemoryUtilization),
-		metricVcenterHostNetworkErrors:        newMetricVcenterHostNetworkErrors(settings.VcenterHostNetworkErrors),
-		metricVcenterHostNetworkPackets:       newMetricVcenterHostNetworkPackets(settings.VcenterHostNetworkPackets),
+		metricVcenterHostNetworkPacketCount:   newMetricVcenterHostNetworkPacketCount(settings.VcenterHostNetworkPacketCount),
+		metricVcenterHostNetworkPacketErrors:  newMetricVcenterHostNetworkPacketErrors(settings.VcenterHostNetworkPacketErrors),
 		metricVcenterHostNetworkThroughput:    newMetricVcenterHostNetworkThroughput(settings.VcenterHostNetworkThroughput),
 		metricVcenterHostNetworkUsage:         newMetricVcenterHostNetworkUsage(settings.VcenterHostNetworkUsage),
 		metricVcenterResourcePoolCPUShares:    newMetricVcenterResourcePoolCPUShares(settings.VcenterResourcePoolCPUShares),
@@ -2102,7 +2099,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricVcenterVMDiskUtilization:        newMetricVcenterVMDiskUtilization(settings.VcenterVMDiskUtilization),
 		metricVcenterVMMemoryBallooned:        newMetricVcenterVMMemoryBallooned(settings.VcenterVMMemoryBallooned),
 		metricVcenterVMMemoryUsage:            newMetricVcenterVMMemoryUsage(settings.VcenterVMMemoryUsage),
-		metricVcenterVMNetworkPackets:         newMetricVcenterVMNetworkPackets(settings.VcenterVMNetworkPackets),
+		metricVcenterVMNetworkPacketCount:     newMetricVcenterVMNetworkPacketCount(settings.VcenterVMNetworkPacketCount),
 		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(settings.VcenterVMNetworkThroughput),
 		metricVcenterVMNetworkUsage:           newMetricVcenterVMNetworkUsage(settings.VcenterVMNetworkUsage),
 	}
@@ -2193,12 +2190,12 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricVcenterHostCPUUsage.emit(ils.Metrics())
 	mb.metricVcenterHostCPUUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostDiskLatencyAvg.emit(ils.Metrics())
-	mb.metricVcenterHostDiskLatencyTotal.emit(ils.Metrics())
+	mb.metricVcenterHostDiskLatencyMax.emit(ils.Metrics())
 	mb.metricVcenterHostDiskThroughput.emit(ils.Metrics())
 	mb.metricVcenterHostMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterHostMemoryUtilization.emit(ils.Metrics())
-	mb.metricVcenterHostNetworkErrors.emit(ils.Metrics())
-	mb.metricVcenterHostNetworkPackets.emit(ils.Metrics())
+	mb.metricVcenterHostNetworkPacketCount.emit(ils.Metrics())
+	mb.metricVcenterHostNetworkPacketErrors.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkUsage.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolCPUShares.emit(ils.Metrics())
@@ -2213,7 +2210,7 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricVcenterVMDiskUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryBallooned.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
-	mb.metricVcenterVMNetworkPackets.emit(ils.Metrics())
+	mb.metricVcenterVMNetworkPacketCount.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
 	if ils.Metrics().Len() > 0 {
@@ -2293,13 +2290,13 @@ func (mb *MetricsBuilder) RecordVcenterHostCPUUtilizationDataPoint(ts pcommon.Ti
 }
 
 // RecordVcenterHostDiskLatencyAvgDataPoint adds a data point to vcenter.host.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string, latencyTypeAttributeValue string) {
-	mb.metricVcenterHostDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue, latencyTypeAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
+	mb.metricVcenterHostDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue)
 }
 
-// RecordVcenterHostDiskLatencyTotalDataPoint adds a data point to vcenter.host.disk.latency.total metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyTotalDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
-	mb.metricVcenterHostDiskLatencyTotal.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue)
+// RecordVcenterHostDiskLatencyMaxDataPoint adds a data point to vcenter.host.disk.latency.max metric.
+func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterHostDiskLatencyMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterHostDiskThroughputDataPoint adds a data point to vcenter.host.disk.throughput metric.
@@ -2317,14 +2314,14 @@ func (mb *MetricsBuilder) RecordVcenterHostMemoryUtilizationDataPoint(ts pcommon
 	mb.metricVcenterHostMemoryUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordVcenterHostNetworkErrorsDataPoint adds a data point to vcenter.host.network.errors metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterHostNetworkErrors.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+// RecordVcenterHostNetworkPacketCountDataPoint adds a data point to vcenter.host.network.packet.count metric.
+func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
+	mb.metricVcenterHostNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
 }
 
-// RecordVcenterHostNetworkPacketsDataPoint adds a data point to vcenter.host.network.packets metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterHostNetworkPackets.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+// RecordVcenterHostNetworkPacketErrorsDataPoint adds a data point to vcenter.host.network.packet.errors metric.
+func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketErrorsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
+	mb.metricVcenterHostNetworkPacketErrors.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
 }
 
 // RecordVcenterHostNetworkThroughputDataPoint adds a data point to vcenter.host.network.throughput metric.
@@ -2397,9 +2394,9 @@ func (mb *MetricsBuilder) RecordVcenterVMMemoryUsageDataPoint(ts pcommon.Timesta
 	mb.metricVcenterVMMemoryUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordVcenterVMNetworkPacketsDataPoint adds a data point to vcenter.vm.network.packets metric.
-func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterVMNetworkPackets.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+// RecordVcenterVMNetworkPacketCountDataPoint adds a data point to vcenter.vm.network.packet.count metric.
+func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
+	mb.metricVcenterVMNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
 }
 
 // RecordVcenterVMNetworkThroughputDataPoint adds a data point to vcenter.vm.network.throughput metric.
