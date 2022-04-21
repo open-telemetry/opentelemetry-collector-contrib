@@ -689,7 +689,11 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 }
 
 func TestExporter_timestampFromLogRecord(t *testing.T) {
-	timeNow := time.Now()
+	ts := time.Date(2021, 12, 11, 10, 9, 8, 1, time.UTC)
+	timeNow = func() time.Time {
+		return ts
+	}
+
 	tests := []struct {
 		name              string
 		timestamp         time.Time
@@ -698,13 +702,17 @@ func TestExporter_timestampFromLogRecord(t *testing.T) {
 	}{
 		{
 			name:              "timestamp is correct",
-			timestamp:         timeNow,
-			expectedTimestamp: timeNow,
+			timestamp:         timeNow(),
+			expectedTimestamp: timeNow(),
 		},
 		{
 			name:              "timestamp is empty",
-			observedTimestamp: timeNow,
-			expectedTimestamp: timeNow,
+			observedTimestamp: timeNow(),
+			expectedTimestamp: timeNow(),
+		},
+		{
+			name:              "timestamp is empty and observed timestamp is empty",
+			expectedTimestamp: timeNow(),
 		},
 	}
 

@@ -336,8 +336,13 @@ func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Reso
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {
-	if lr.Timestamp() == 0 {
+	if lr.Timestamp() != 0 {
+		return time.Unix(0, int64(lr.Timestamp()))
+	}
+
+	if lr.ObservedTimestamp() != 0 {
 		return time.Unix(0, int64(lr.ObservedTimestamp()))
 	}
-	return time.Unix(0, int64(lr.Timestamp()))
+
+	return time.Unix(0, int64(pcommon.NewTimestampFromTime(timeNow())))
 }
