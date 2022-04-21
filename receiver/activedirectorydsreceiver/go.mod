@@ -3,16 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/active
 go 1.17
 
 require (
-	go.opentelemetry.io/collector v0.49.0
-	go.opentelemetry.io/collector/model v0.49.0
-)
-
-require github.com/stretchr/testify v1.7.1
-
-require github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
-
-require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.0.0-00010101000000-000000000000
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.49.0
 	go.opentelemetry.io/collector/pdata v0.49.0
 	go.uber.org/multierr v1.8.0
 )
