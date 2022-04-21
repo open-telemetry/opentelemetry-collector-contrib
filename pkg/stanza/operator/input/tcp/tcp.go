@@ -94,7 +94,7 @@ func (c TCPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 	}
 
 	// validate the input address
-	if _, err := net.ResolveTCPAddr("tcp", c.ListenAddress); err != nil {
+	if _, err = net.ResolveTCPAddr("tcp", c.ListenAddress); err != nil {
 		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
 	}
 

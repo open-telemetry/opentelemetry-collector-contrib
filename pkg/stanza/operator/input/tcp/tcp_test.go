@@ -105,8 +105,8 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
 		defer func() {
-			err := tcpInput.Stop()
-			require.NoError(t, err, "expected to stop tcp input operator without error")
+			stopErr := tcpInput.Stop()
+			require.NoError(t, stopErr, "expected to stop tcp input operator without error")
 		}()
 
 		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
@@ -155,8 +155,8 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
 		defer func() {
-			err := tcpInput.Stop()
-			require.NoError(t, err, "expected to stop tcp input operator without error")
+			stopErr := tcpInput.Stop()
+			require.NoError(t, stopErr, "expected to stop tcp input operator without error")
 		}()
 
 		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
@@ -242,8 +242,8 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
 		defer func() {
-			err := tcpInput.Stop()
-			require.NoError(t, err, "expected to stop tcp input operator without error")
+			stopErr := tcpInput.Stop()
+			require.NoError(t, stopErr, "expected to stop tcp input operator without error")
 		}()
 
 		conn, err := tls.Dial("tcp", tcpInput.listener.Addr().String(), &tls.Config{InsecureSkipVerify: true})
@@ -414,8 +414,8 @@ func TestFailToBind(t *testing.T) {
 	first, err := startTCP(port)
 	require.NoError(t, err, "expected first tcp operator to start")
 	defer func() {
-		err := first.Stop()
-		require.NoError(t, err, "expected to stop tcp input operator without error")
+		stopErr := first.Stop()
+		require.NoError(t, stopErr, "expected to stop tcp input operator without error")
 		require.NoError(t, first.Stop(), "expected stopping an already stopped operator to not return an error")
 	}()
 	_, err = startTCP(port)

@@ -113,7 +113,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 		return nil
 	}
 
-	if err := p.ParseWith(ctx, entry, parse); err != nil {
+	if err = p.ParseWith(ctx, entry, parse); err != nil {
 		return err
 	}
 	if cb != nil {

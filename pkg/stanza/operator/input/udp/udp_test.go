@@ -51,8 +51,8 @@ func udpInputTest(input []byte, expected []string) func(t *testing.T) {
 		err = udpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
 		defer func() {
-			err := udpInput.Stop()
-			require.NoError(t, err, "expected to stop udp input operator without error")
+			stopErr := udpInput.Stop()
+			require.NoError(t, stopErr, "expected to stop udp input operator without error")
 		}()
 
 		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
@@ -103,8 +103,8 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		err = udpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
 		defer func() {
-			err := udpInput.Stop()
-			require.NoError(t, err, "expected to stop udp input operator without error")
+			stopErr := udpInput.Stop()
+			require.NoError(t, stopErr, "expected to stop udp input operator without error")
 		}()
 
 		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
@@ -206,8 +206,8 @@ func TestFailToBind(t *testing.T) {
 	first, err := startUDP(port)
 	require.NoError(t, err, "expected first udp operator to start")
 	defer func() {
-		err := first.Stop()
-		require.NoError(t, err, "expected to stop udp input operator without error")
+		stopErr := first.Stop()
+		require.NoError(t, stopErr, "expected to stop udp input operator without error")
 		require.NoError(t, first.Stop(), "expected stopping an already stopped operator to not return an error")
 	}()
 	_, err = startUDP(port)
