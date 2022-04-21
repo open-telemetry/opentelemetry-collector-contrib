@@ -27,22 +27,22 @@ import (
 )
 
 func init() {
-	operator.Register("syslog_input", func() operator.Builder { return NewSyslogInputConfig("") })
+	operator.Register("syslog_input", func() operator.Builder { return NewConfig("") })
 }
-func NewSyslogInputConfig(operatorID string) *SyslogInputConfig {
-	return &SyslogInputConfig{
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, "syslog_input"),
 	}
 }
 
-type SyslogInputConfig struct {
+type Config struct {
 	helper.InputConfig      `yaml:",inline"`
 	syslog.SyslogBaseConfig `yaml:",inline"`
 	TCP                     *tcp.TCPBaseConfig `json:"tcp" yaml:"tcp"`
 	UDP                     *udp.UDPBaseConfig `json:"udp" yaml:"udp"`
 }
 
-func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputBase, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 			return nil, fmt.Errorf("failed to set outputs")
 		}
 
-		return &SyslogInput{
+		return &Input{
 			InputOperator: inputBase,
 			tcp:           tcpInput.(*tcp.TCPInput),
 			parser:        syslogParser.(*syslog.SyslogParser),
@@ -92,7 +92,7 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 			return nil, fmt.Errorf("failed to set outputs")
 		}
 
-		return &SyslogInput{
+		return &Input{
 			InputOperator: inputBase,
 			udp:           udpInput.(*udp.UDPInput),
 			parser:        syslogParser.(*syslog.SyslogParser),
@@ -102,8 +102,8 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 	return nil, fmt.Errorf("need tcp config or udp config")
 }
 
-// SyslogInput is an operator that listens for log entries over tcp.
-type SyslogInput struct {
+// Input is an operator that listens for log entries over tcp.
+type Input struct {
 	helper.InputOperator
 	tcp    *tcp.TCPInput
 	udp    *udp.UDPInput
@@ -111,7 +111,7 @@ type SyslogInput struct {
 }
 
 // Start will start listening for log entries over tcp or udp.
-func (t *SyslogInput) Start(p operator.Persister) error {
+func (t *Input) Start(p operator.Persister) error {
 	if t.tcp != nil {
 		return t.tcp.Start(p)
 	}
@@ -119,7 +119,7 @@ func (t *SyslogInput) Start(p operator.Persister) error {
 }
 
 // Stop will stop listening for messages.
-func (t *SyslogInput) Stop() error {
+func (t *Input) Stop() error {
 	if t.tcp != nil {
 		return t.tcp.Stop()
 	}
@@ -127,7 +127,7 @@ func (t *SyslogInput) Stop() error {
 }
 
 // SetOutputs will set the outputs of the internal syslog parser.
-func (t *SyslogInput) SetOutputs(operators []operator.Operator) error {
+func (t *Input) SetOutputs(operators []operator.Operator) error {
 	t.parser.SetOutputIDs(t.GetOutputIDs())
 	return t.parser.SetOutputs(operators)
 }
