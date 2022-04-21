@@ -47,7 +47,6 @@ type metricDataAccumulator struct {
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
 	time                  time.Time
-	typeStr               string
 }
 
 const (
