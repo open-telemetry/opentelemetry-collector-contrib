@@ -25,7 +25,7 @@ func TestJSONParserConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name: "basic",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *ParserConfig {
 				p := defaultCfg()
 				p.Header = "id,severity,message"
 				p.ParseFrom = entry.NewBodyField("message")
@@ -34,7 +34,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "lazy_quotes",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *ParserConfig {
 				p := defaultCfg()
 				p.Header = "id,severity,message"
 				p.LazyQuotes = true
@@ -44,7 +44,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "delimiter",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *ParserConfig {
 				p := defaultCfg()
 				p.Header = "id,severity,message"
 				p.ParseFrom = entry.NewBodyField("message")
@@ -54,7 +54,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "header_attribute",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *ParserConfig {
 				p := defaultCfg()
 				p.HeaderAttribute = "header_field"
 				p.ParseFrom = entry.NewBodyField("message")
@@ -64,7 +64,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "timestamp",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *ParserConfig {
 				p := defaultCfg()
 				p.Header = "timestamp_field,severity,message"
 				newTime := helper.NewTimeParser()
@@ -85,6 +85,6 @@ func TestJSONParserConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *CSVParserConfig {
-	return NewCSVParserConfig("json_parser")
+func defaultCfg() *ParserConfig {
+	return Config("json_parser")
 }

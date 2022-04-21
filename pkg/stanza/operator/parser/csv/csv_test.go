@@ -27,24 +27,24 @@ import (
 
 var testHeader = "name,sev,msg"
 
-func newTestParser(t *testing.T) *CSVParser {
-	cfg := NewCSVParserConfig("test")
+func newTestParser(t *testing.T) *Parser {
+	cfg := Config("test")
 	cfg.Header = testHeader
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	return op.(*CSVParser)
+	return op.(*Parser)
 }
 
-func TestCSVParserBuildFailure(t *testing.T) {
-	cfg := NewCSVParserConfig("test")
+func TestParserBuildFailure(t *testing.T) {
+	cfg := Config("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
-func TestCSVParserBuildFailureInvalidDelimiter(t *testing.T) {
-	cfg := NewCSVParserConfig("test")
+func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
+	cfg := Config("test")
 	cfg.Header = testHeader
 	cfg.FieldDelimiter = ";;"
 	_, err := cfg.Build(testutil.Logger(t))
@@ -52,8 +52,8 @@ func TestCSVParserBuildFailureInvalidDelimiter(t *testing.T) {
 	require.Contains(t, err.Error(), "invalid 'delimiter': ';;'")
 }
 
-func TestCSVParserBuildFailureBadHeaderConfig(t *testing.T) {
-	cfg := NewCSVParserConfig("test")
+func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
+	cfg := Config("test")
 	cfg.Header = "testheader"
 	cfg.HeaderAttribute = "testheader"
 	_, err := cfg.Build(testutil.Logger(t))
@@ -61,21 +61,21 @@ func TestCSVParserBuildFailureBadHeaderConfig(t *testing.T) {
 	require.Contains(t, err.Error(), "only one header parameter can be set: 'header' or 'header_attribute'")
 }
 
-func TestCSVParserByteFailure(t *testing.T) {
+func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong number of fields")
 }
 
-func TestCSVParserStringFailure(t *testing.T) {
+func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong number of fields")
 }
 
-func TestCSVParserInvalidType(t *testing.T) {
+func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
@@ -85,7 +85,7 @@ func TestCSVParserInvalidType(t *testing.T) {
 func TestParserCSV(t *testing.T) {
 	cases := []struct {
 		name             string
-		configure        func(*CSVParserConfig)
+		configure        func(*ParserConfig)
 		inputEntries     []entry.Entry
 		expectedEntries  []entry.Entry
 		expectBuildErr   bool
@@ -93,7 +93,7 @@ func TestParserCSV(t *testing.T) {
 	}{
 		{
 			"basic",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = testHeader
 			},
 			[]entry.Entry{
@@ -116,7 +116,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"basic-multiple-static-bodies",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = testHeader
 			},
 			[]entry.Entry{
@@ -161,7 +161,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"advanced",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name;address;age;phone;position"
 				p.FieldDelimiter = ";"
 			},
@@ -187,7 +187,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"dynamic-fields",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.HeaderAttribute = "Fields"
 				p.FieldDelimiter = ","
 			},
@@ -216,7 +216,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"dynamic-fields-multiple-entries",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.HeaderAttribute = "Fields"
 				p.FieldDelimiter = ","
 			},
@@ -277,7 +277,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"dynamic-fields-tab",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.HeaderAttribute = "columns"
 				p.FieldDelimiter = "\t"
 			},
@@ -306,7 +306,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"dynamic-fields-label-missing",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.HeaderAttribute = "Fields"
 				p.FieldDelimiter = ","
 			},
@@ -330,7 +330,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"missing-header-field",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.FieldDelimiter = ","
 			},
 			[]entry.Entry{
@@ -353,7 +353,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"mariadb-audit-log",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "timestamp,serverhost,username,host,connectionid,queryid,operation,database,object,retcode"
 			},
 			[]entry.Entry{
@@ -383,7 +383,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"empty field",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name,address,age,phone,position"
 			},
 			[]entry.Entry{
@@ -408,7 +408,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"tab delimiter",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name	address	age	phone	position"
 				p.FieldDelimiter = "\t"
 			},
@@ -434,7 +434,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"comma in quotes",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name,address,age,phone,position"
 			},
 			[]entry.Entry{
@@ -459,7 +459,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"quotes in quotes",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name,address,age,phone,position"
 			},
 			[]entry.Entry{
@@ -484,7 +484,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"missing-header-delimiter-in-header",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name:age:height:number"
 				p.FieldDelimiter = ","
 			},
@@ -509,7 +509,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"invalid-delimiter",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				// expect []rune of length 1
 				p.Header = "name,,age,,height,,number"
 				p.FieldDelimiter = ",,"
@@ -535,7 +535,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"parse-failure-num-fields-mismatch",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name,age,height,number"
 				p.FieldDelimiter = ","
 			},
@@ -560,7 +560,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"parse-failure-wrong-field-delimiter",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name,age,height,number"
 				p.FieldDelimiter = ","
 			},
@@ -584,7 +584,7 @@ func TestParserCSV(t *testing.T) {
 		},
 		{
 			"parse-with-lazy-quotes",
-			func(p *CSVParserConfig) {
+			func(p *ParserConfig) {
 				p.Header = "name,age,height,number"
 				p.FieldDelimiter = ","
 				p.LazyQuotes = true
@@ -612,7 +612,7 @@ func TestParserCSV(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewCSVParserConfig("test")
+			cfg := Config("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -855,7 +855,7 @@ cc""",dddd,eeee`,
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewCSVParserConfig("test")
+			cfg := Config("test")
 			cfg.ParseTo = entry.NewBodyField()
 			cfg.OutputIDs = []string{"fake"}
 			cfg.Header = "A,B,C,D,E"
@@ -878,7 +878,7 @@ cc""",dddd,eeee`,
 
 func TestParserCSVInvalidJSONInput(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		cfg := NewCSVParserConfig("test")
+		cfg := Config("test")
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Header = testHeader
 
@@ -897,8 +897,8 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 }
 
 func TestBuildParserCSV(t *testing.T) {
-	newBasicCSVParser := func() *CSVParserConfig {
-		cfg := NewCSVParserConfig("test")
+	newBasicParser := func() *ParserConfig {
+		cfg := Config("test")
 		cfg.OutputIDs = []string{"test"}
 		cfg.Header = "name,position,number"
 		cfg.FieldDelimiter = ","
@@ -906,20 +906,20 @@ func TestBuildParserCSV(t *testing.T) {
 	}
 
 	t.Run("BasicConfig", func(t *testing.T) {
-		c := newBasicCSVParser()
+		c := newBasicParser()
 		_, err := c.Build(testutil.Logger(t))
 		require.NoError(t, err)
 	})
 
 	t.Run("MissingHeaderField", func(t *testing.T) {
-		c := newBasicCSVParser()
+		c := newBasicParser()
 		c.Header = ""
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 	})
 
 	t.Run("InvalidHeaderFieldMissingDelimiter", func(t *testing.T) {
-		c := newBasicCSVParser()
+		c := newBasicParser()
 		c.Header = "name"
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
@@ -927,14 +927,14 @@ func TestBuildParserCSV(t *testing.T) {
 	})
 
 	t.Run("InvalidHeaderFieldWrongDelimiter", func(t *testing.T) {
-		c := newBasicCSVParser()
+		c := newBasicParser()
 		c.Header = "name;position;number"
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 	})
 
 	t.Run("InvalidDelimiter", func(t *testing.T) {
-		c := newBasicCSVParser()
+		c := newBasicParser()
 		c.Header = "name,position,number"
 		c.FieldDelimiter = ":"
 		_, err := c.Build(testutil.Logger(t))
