@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestTraceParserConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name:   "default",
@@ -29,7 +29,7 @@ func TestTraceParserConfig(t *testing.T) {
 		},
 		{
 			Name: "on_error_drop",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
@@ -37,7 +37,7 @@ func TestTraceParserConfig(t *testing.T) {
 		},
 		{
 			Name: "spanid",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				parseFrom := entry.NewBodyField("app_span_id")
 				cfg := helper.SpanIDConfig{}
 				cfg.ParseFrom = &parseFrom
@@ -49,7 +49,7 @@ func TestTraceParserConfig(t *testing.T) {
 		},
 		{
 			Name: "traceid",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				parseFrom := entry.NewBodyField("app_trace_id")
 				cfg := helper.TraceIDConfig{}
 				cfg.ParseFrom = &parseFrom
@@ -61,7 +61,7 @@ func TestTraceParserConfig(t *testing.T) {
 		},
 		{
 			Name: "trace_flags",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				parseFrom := entry.NewBodyField("app_trace_flags_id")
 				cfg := helper.TraceFlagsConfig{}
 				cfg.ParseFrom = &parseFrom
@@ -80,6 +80,6 @@ func TestTraceParserConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *TraceParserConfig {
-	return NewTraceParserConfig("trace_parser")
+func defaultCfg() *Config {
+	return NewConfig("trace_parser")
 }
