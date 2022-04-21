@@ -185,11 +185,12 @@ metrics:
     extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
   vcenter.host.disk.latency.max:
     enabled: true
-    description: Highest latency value across all disks used by the host, as measured over the most recent 20s interval.
+    description: Highest latency value across all disks used by the host.
     unit: ms
     gauge:
       value_type: int
     attributes: []
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.memory.utilization:
     enabled: true
     description: The percentage of the host system's memory capacity that is being utilized.
@@ -215,6 +216,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [throughput_direction]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.usage:
     enabled: true
     description: The sum of the data transmitted and received for all the NIC instances of the host.
@@ -226,13 +228,14 @@ metrics:
     attributes: []
   vcenter.host.network.packet.errors:
     enabled: true
-    description: The summation of packet errors on the host network, as measured over the most recent 20s interval.
+    description: The summation of packet errors on the host network.
     unit: "{errors}"
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
     attributes: [throughput_direction]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.packet.count:
     enabled: true
     description: The number of packets sent and received, as measured over the most recent 20s interval.
@@ -326,7 +329,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [latency_direction]
-    extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
+    extended_documentation: Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
   vcenter.vm.disk.latency.max:
     enabled: true
     description: The highest reported total latency (device and kernel times) over an interval of 20 seconds.
@@ -343,7 +346,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was received or sent over the network of the virtual machine.
@@ -353,6 +355,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [throughput_direction]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.packet.count:
     enabled: true
     description: The amount of packets that was received or transmitted over the instance's network.
@@ -371,3 +374,4 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
+    extended_documentation: As measured over the most recent 20s interval.
