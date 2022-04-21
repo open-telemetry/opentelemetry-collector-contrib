@@ -147,7 +147,7 @@ func TestMetricsFromFile(t *testing.T) {
 	tc.Sleep(tc.Duration)
 
 	tc.StopLoad()
-
+	//test
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 		"all data items received")
