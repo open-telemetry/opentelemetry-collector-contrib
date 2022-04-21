@@ -44,20 +44,20 @@ func TestInit(t *testing.T) {
 func TestBuild(t *testing.T) {
 	testCases := []struct {
 		name      string
-		input     func() (*TimeParserConfig, error)
+		input     func() (*Config, error)
 		expectErr bool
 	}{
 		{
 			"empty",
-			func() (*TimeParserConfig, error) {
-				return &TimeParserConfig{}, nil
+			func() (*Config, error) {
+				return &Config{}, nil
 			},
 			true,
 		},
 		{
 			"basic",
-			func() (*TimeParserConfig, error) {
-				cfg := NewTimeParserConfig("test_id")
+			func() (*Config, error) {
+				cfg := NewConfig("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return cfg, err
@@ -91,14 +91,14 @@ func TestProcess(t *testing.T) {
 
 	testCases := []struct {
 		name   string
-		config func() (*TimeParserConfig, error)
+		config func() (*Config, error)
 		input  *entry.Entry
 		expect *entry.Entry
 	}{
 		{
 			name: "promote",
-			config: func() (*TimeParserConfig, error) {
-				cfg := NewTimeParserConfig("test_id")
+			config: func() (*Config, error) {
+				cfg := NewConfig("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return nil, err
@@ -507,11 +507,11 @@ func makeTestEntry(field entry.Field, value interface{}) *entry.Entry {
 	return e
 }
 
-func runTimeParseTest(t *testing.T, cfg *TimeParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time) func(*testing.T) {
+func runTimeParseTest(t *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time) func(*testing.T) {
 	return runLossyTimeParseTest(t, cfg, ent, buildErr, parseErr, expected, time.Duration(0))
 }
 
-func runLossyTimeParseTest(_ *testing.T, cfg *TimeParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
+func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
 		op, err := cfg.Build(testutil.Logger(t))
 		if buildErr {
@@ -526,7 +526,7 @@ func runLossyTimeParseTest(_ *testing.T, cfg *TimeParserConfig, ent *entry.Entry
 			resultChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		timeParser := op.(*TimeParserOperator)
+		timeParser := op.(*Parser)
 		timeParser.OutputOperators = []operator.Operator{mockOutput}
 
 		ots := ent.ObservedTimestamp
@@ -543,8 +543,8 @@ func runLossyTimeParseTest(_ *testing.T, cfg *TimeParserConfig, ent *entry.Entry
 	}
 }
 
-func parseTimeTestConfig(layoutType, layout string, parseFrom entry.Field) *TimeParserConfig {
-	cfg := NewTimeParserConfig("test_operator_id")
+func parseTimeTestConfig(layoutType, layout string, parseFrom entry.Field) *Config {
+	cfg := NewConfig("test_operator_id")
 	cfg.OutputIDs = []string{"output1"}
 	cfg.TimeParser = helper.TimeParser{
 		LayoutType: layoutType,
@@ -554,7 +554,7 @@ func parseTimeTestConfig(layoutType, layout string, parseFrom entry.Field) *Time
 	return cfg
 }
 
-func TestTimeParserConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	expect := parseTimeTestConfig(helper.GotimeKey, "Mon Jan 2 15:04:05 MST 2006", entry.NewBodyField("from"))
 	t.Run("mapstructure", func(t *testing.T) {
 		input := map[string]interface{}{
@@ -566,7 +566,7 @@ func TestTimeParserConfig(t *testing.T) {
 			"layout_type": "gotime",
 			"parse_from":  "body.from",
 		}
-		var actual TimeParserConfig
+		var actual Config
 		err := helper.UnmarshalMapstructure(input, &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
@@ -583,7 +583,7 @@ layout: "Mon Jan 2 15:04:05 MST 2006"
 output:
   - output1
 `
-		var actual TimeParserConfig
+		var actual Config
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
