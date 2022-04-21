@@ -30,18 +30,18 @@ import (
 )
 
 func init() {
-	operator.Register("file_output", func() operator.Builder { return NewFileOutputConfig("") })
+	operator.Register("file_output", func() operator.Builder { return Config("") })
 }
 
-// NewFileOutputConfig creates a new file output config with default values
-func NewFileOutputConfig(operatorID string) *FileOutputConfig {
-	return &FileOutputConfig{
+// Config creates a new file output config with default values
+func Config(operatorID string) *OutputConfig {
+	return &OutputConfig{
 		OutputConfig: helper.NewOutputConfig(operatorID, "file_output"),
 	}
 }
 
-// FileOutputConfig is the configuration of a file output operatorn.
-type FileOutputConfig struct {
+// OutputConfig is the configuration of a file output operatorn.
+type OutputConfig struct {
 	helper.OutputConfig `yaml:",inline"`
 
 	Path   string `json:"path" yaml:"path"`
@@ -49,7 +49,7 @@ type FileOutputConfig struct {
 }
 
 // Build will build a file output operator.
-func (c FileOutputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c OutputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	outputOperator, err := c.OutputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -67,15 +67,15 @@ func (c FileOutputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, e
 		return nil, fmt.Errorf("must provide a path to output to")
 	}
 
-	return &FileOutput{
+	return &Output{
 		OutputOperator: outputOperator,
 		path:           c.Path,
 		tmpl:           tmpl,
 	}, nil
 }
 
-// FileOutput is an operator that writes logs to a file.
-type FileOutput struct {
+// Output is an operator that writes logs to a file.
+type Output struct {
 	helper.OutputOperator
 
 	path    string
@@ -86,7 +86,7 @@ type FileOutput struct {
 }
 
 // Start will open the output file.
-func (fo *FileOutput) Start(_ operator.Persister) error {
+func (fo *Output) Start(_ operator.Persister) error {
 	var err error
 	fo.file, err = os.OpenFile(fo.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
 	if err != nil {
@@ -100,7 +100,7 @@ func (fo *FileOutput) Start(_ operator.Persister) error {
 }
 
 // Stop will close the output file.
-func (fo *FileOutput) Stop() error {
+func (fo *Output) Stop() error {
 	if fo.file != nil {
 		if err := fo.file.Close(); err != nil {
 			fo.Errorf(err.Error())
@@ -110,7 +110,7 @@ func (fo *FileOutput) Stop() error {
 }
 
 // Process will write an entry to the output file.
-func (fo *FileOutput) Process(ctx context.Context, entry *entry.Entry) error {
+func (fo *Output) Process(ctx context.Context, entry *entry.Entry) error {
 	fo.mux.Lock()
 	defer fo.mux.Unlock()
 
