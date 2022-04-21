@@ -128,7 +128,7 @@ func TestSyslogIDs(t *testing.T) {
 func NewConfigWithTCP(syslogCfg *syslog.SyslogBaseConfig) *Config {
 	cfg := NewConfig("test_syslog")
 	cfg.SyslogBaseConfig = *syslogCfg
-	cfg.TCP = &tcp.NewTCPInputConfig("test_syslog_tcp").TCPBaseConfig
+	cfg.TCP = &tcp.NewConfig("test_syslog_tcp").BaseConfig
 	cfg.TCP.ListenAddress = ":14201"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg

@@ -38,7 +38,7 @@ func NewConfig(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig      `yaml:",inline"`
 	syslog.SyslogBaseConfig `yaml:",inline"`
-	TCP                     *tcp.TCPBaseConfig `json:"tcp" yaml:"tcp"`
+	TCP                     *tcp.BaseConfig    `json:"tcp" yaml:"tcp"`
 	UDP                     *udp.UDPBaseConfig `json:"udp" yaml:"udp"`
 }
 
@@ -58,8 +58,8 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.TCP != nil {
-		tcpInputCfg := tcp.NewTCPInputConfig(inputBase.ID() + "_internal_tcp")
-		tcpInputCfg.TCPBaseConfig = *c.TCP
+		tcpInputCfg := tcp.NewConfig(inputBase.ID() + "_internal_tcp")
+		tcpInputCfg.BaseConfig = *c.TCP
 
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
@@ -73,7 +73,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 		return &Input{
 			InputOperator: inputBase,
-			tcp:           tcpInput.(*tcp.TCPInput),
+			tcp:           tcpInput.(*tcp.Input),
 			parser:        syslogParser.(*syslog.SyslogParser),
 		}, nil
 	}
@@ -105,7 +105,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 // Input is an operator that listens for log entries over tcp.
 type Input struct {
 	helper.InputOperator
-	tcp    *tcp.TCPInput
+	tcp    *tcp.Input
 	udp    *udp.UDPInput
 	parser *syslog.SyslogParser
 }

@@ -43,28 +43,28 @@ const (
 )
 
 func init() {
-	operator.Register("tcp_input", func() operator.Builder { return NewTCPInputConfig("") })
+	operator.Register("tcp_input", func() operator.Builder { return NewConfig("") })
 }
 
-// NewTCPInputConfig creates a new TCP input config with default values
-func NewTCPInputConfig(operatorID string) *TCPInputConfig {
-	return &TCPInputConfig{
+// NewConfig creates a new TCP input config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, "tcp_input"),
-		TCPBaseConfig: TCPBaseConfig{
+		BaseConfig: BaseConfig{
 			Multiline: helper.NewMultilineConfig(),
 			Encoding:  helper.NewEncodingConfig(),
 		},
 	}
 }
 
-// TCPInputConfig is the configuration of a tcp input operator.
-type TCPInputConfig struct {
+// Config is the configuration of a tcp input operator.
+type Config struct {
 	helper.InputConfig `yaml:",inline"`
-	TCPBaseConfig      `yaml:",inline"`
+	BaseConfig         `yaml:",inline"`
 }
 
-// TCPBaseConfig is the detailed configuration of a tcp input operator.
-type TCPBaseConfig struct {
+// BaseConfig is the detailed configuration of a tcp input operator.
+type BaseConfig struct {
 	MaxLogSize    helper.ByteSize         `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
 	ListenAddress string                  `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
 	TLS           *helper.TLSServerConfig `mapstructure:"tls,omitempty"                   json:"tls,omitempty"                  yaml:"tls,omitempty"`
@@ -74,7 +74,7 @@ type TCPBaseConfig struct {
 }
 
 // Build will build a tcp input operator.
-func (c TCPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c TCPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 		resolver = helper.NewIPResolver()
 	}
 
-	tcpInput := &TCPInput{
+	tcpInput := &Input{
 		InputOperator: inputOperator,
 		address:       c.ListenAddress,
 		MaxLogSize:    int(c.MaxLogSize),
@@ -137,8 +137,8 @@ func (c TCPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 	return tcpInput, nil
 }
 
-// TCPInput is an operator that listens for log entries over tcp.
-type TCPInput struct {
+// Input is an operator that listens for log entries over tcp.
+type Input struct {
 	helper.InputOperator
 	address       string
 	MaxLogSize    int
@@ -156,7 +156,7 @@ type TCPInput struct {
 }
 
 // Start will start listening for log entries over tcp.
-func (t *TCPInput) Start(_ operator.Persister) error {
+func (t *Input) Start(_ operator.Persister) error {
 	if err := t.configureListener(); err != nil {
 		return fmt.Errorf("failed to listen on interface: %w", err)
 	}
@@ -167,7 +167,7 @@ func (t *TCPInput) Start(_ operator.Persister) error {
 	return nil
 }
 
-func (t *TCPInput) configureListener() error {
+func (t *Input) configureListener() error {
 	if t.tls == nil {
 		listener, err := net.Listen("tcp", t.address)
 		if err != nil {
@@ -190,7 +190,7 @@ func (t *TCPInput) configureListener() error {
 }
 
 // goListenn will listen for tcp connections.
-func (t *TCPInput) goListen(ctx context.Context) {
+func (t *Input) goListen(ctx context.Context) {
 	t.wg.Add(1)
 
 	go func() {
@@ -219,7 +219,7 @@ func (t *TCPInput) goListen(ctx context.Context) {
 }
 
 // goHandleClose will wait for the context to finish before closing a connection.
-func (t *TCPInput) goHandleClose(ctx context.Context, conn net.Conn) {
+func (t *Input) goHandleClose(ctx context.Context, conn net.Conn) {
 	t.wg.Add(1)
 
 	go func() {
@@ -233,7 +233,7 @@ func (t *TCPInput) goHandleClose(ctx context.Context, conn net.Conn) {
 }
 
 // goHandleMessages will handles messages from a tcp connection.
-func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel context.CancelFunc) {
+func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel context.CancelFunc) {
 	t.wg.Add(1)
 
 	go func() {
@@ -285,7 +285,7 @@ func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel c
 }
 
 // Stop will stop listening for log entries over TCP.
-func (t *TCPInput) Stop() error {
+func (t *Input) Stop() error {
 	t.cancel()
 
 	if t.listener != nil {
