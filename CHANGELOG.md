@@ -9,21 +9,38 @@
 
 ### 🚩 Deprecations 🚩
 
+- `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
+
 ### 🚀 New components 🚀
 
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
+- `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
 
 ### 💡 Enhancements 💡
+
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
+- `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
+- `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
+- `attributesprocessor`: Support filter by severity (#9132)
 - `processor/transform`: Add transformation of logs (#9368)
 
 ### 🧰 Bug fixes 🧰
 
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
+- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
+- `resourcedetectionprocessor`: Wire docker detector (#9372)
 
 ## v0.49.0
+
+### ⚠️ Warning  ⚠️
+
+This release contains an issue in
+[Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver)
+causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being 
+investigated and will be fixed in one of the new releases. More details:
+https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 ### 🛑 Breaking changes 🛑
 
@@ -35,6 +52,9 @@
 - `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 - `attributesprocessor`: Remove log names from filters (#9131)
+- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
+  - Users may have to update monitoring for a few Kubernetes cpu metrics, for 
+    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
 
@@ -79,6 +99,7 @@
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
+- `dynatraceexporter`: Continue processing data points after a serialization error. (#9330)
 
 ## v0.48.0
 
