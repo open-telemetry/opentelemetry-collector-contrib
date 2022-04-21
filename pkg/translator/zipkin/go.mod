@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.49.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/model v0.49.0
 	go.opentelemetry.io/collector/pdata v0.49.0
+	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
 	google.golang.org/protobuf v1.28.0
 
 )

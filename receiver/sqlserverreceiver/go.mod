@@ -3,6 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlser
 go 1.17
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.49.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.49.0
 	go.opentelemetry.io/collector/pdata v0.49.0
@@ -27,13 +29,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-)
-
-require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.49.0
-	go.opentelemetry.io/collector/model v0.49.0
 	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

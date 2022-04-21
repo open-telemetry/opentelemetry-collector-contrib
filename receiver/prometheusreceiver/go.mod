@@ -11,8 +11,8 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20220324155304-4d8bbfd4164c
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.49.0
-	go.opentelemetry.io/collector/model v0.49.0
 	go.opentelemetry.io/collector/pdata v0.49.0
+	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
 	go.uber.org/zap v1.21.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -127,6 +127,7 @@ require (
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
+	go.opentelemetry.io/collector/model v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.31.0 // indirect
 	go.opentelemetry.io/otel v1.6.3 // indirect

@@ -21,9 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
@@ -85,11 +85,11 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	traces.ResourceSpans().AppendEmpty()
 
 	rs := traces.ResourceSpans().At(0)
-	rs.SetSchemaUrl(semconv.SchemaURL)
+	rs.SetSchemaUrl(conventions.SchemaURL)
 	rs.ScopeSpans().AppendEmpty()
 
 	ils := rs.ScopeSpans().At(0)
-	ils.SetSchemaUrl(semconv.SchemaURL)
+	ils.SetSchemaUrl(conventions.SchemaURL)
 	ils.Spans().AppendEmpty()
 
 	span := ils.Spans().At(0)
@@ -132,10 +132,10 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"status":            map[string]interface{}{},
 							},
 						},
-						"schemaUrl": semconv.SchemaURL,
+						"schemaUrl": conventions.SchemaURL,
 					},
 				},
-				"schemaUrl": semconv.SchemaURL,
+				"schemaUrl": conventions.SchemaURL,
 			},
 		},
 	}

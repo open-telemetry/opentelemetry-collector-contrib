@@ -443,6 +443,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/model v0.49.0 // indirect
 	go.opentelemetry.io/collector/pdata v0.49.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.31.0 // indirect

@@ -14,13 +14,13 @@ require (
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.49.0
-	go.opentelemetry.io/collector/model v0.49.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
+	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
 	gopkg.in/yaml.v2 v2.4.0
 )
 
