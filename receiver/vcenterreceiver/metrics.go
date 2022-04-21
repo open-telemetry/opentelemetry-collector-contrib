@@ -185,9 +185,9 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				case "net.usage.average":
 					v.mb.RecordVcenterVMNetworkUsageDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
 				case "net.packetsTx.summation":
-					v.mb.RecordVcenterVMNetworkPacketsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
 				case "net.packetsRx.summation":
-					v.mb.RecordVcenterVMNetworkPacketsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
 
 				// Performance monitoring level 2 metrics required
 				case "disk.totalReadLatency.average", "virtualDisk.totalReadLatency.average":
@@ -217,15 +217,15 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
 				// case "net.bytesTx.average":
 				case "net.packetsTx.summation":
-					v.mb.RecordVcenterHostNetworkPacketsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
 				case "net.packetsRx.summation":
-					v.mb.RecordVcenterHostNetworkPacketsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
 
 				// Following requires performance level 2
 				case "net.errorsRx.summation":
-					v.mb.RecordVcenterHostNetworkErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
 				case "net.errorsTx.summation":
-					v.mb.RecordVcenterHostNetworkErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
 
 				case "disk.totalWriteLatency.average":
 					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")

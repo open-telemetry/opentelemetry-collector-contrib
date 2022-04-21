@@ -841,7 +841,7 @@ type metricVcenterHostDiskLatencyMax struct {
 // init fills vcenter.host.disk.latency.max metric with initial data.
 func (m *metricVcenterHostDiskLatencyMax) init() {
 	m.data.SetName("vcenter.host.disk.latency.max")
-	m.data.SetDescription("Highest latency value across all disks used by the host, as measured over the most recent 20s interval.")
+	m.data.SetDescription("Highest latency value across all disks used by the host.")
 	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -1094,7 +1094,7 @@ type metricVcenterHostNetworkPacketErrors struct {
 // init fills vcenter.host.network.packet.errors metric with initial data.
 func (m *metricVcenterHostNetworkPacketErrors) init() {
 	m.data.SetName("vcenter.host.network.packet.errors")
-	m.data.SetDescription("The summation of packet errors on the host network, as measured over the most recent 20s interval.")
+	m.data.SetDescription("The summation of packet errors on the host network.")
 	m.data.SetUnit("{errors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
