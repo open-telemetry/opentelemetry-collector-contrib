@@ -627,7 +627,8 @@ func TestParserCSV(t *testing.T) {
 			op.SetOutputs([]operator.Operator{fake})
 
 			ots := time.Now()
-			for i, inputEntry := range tc.inputEntries {
+			for i := range tc.inputEntries {
+				inputEntry := tc.inputEntries[i]
 				inputEntry.ObservedTimestamp = ots
 				err = op.Process(context.Background(), &inputEntry)
 				if tc.expectProcessErr {
