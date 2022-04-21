@@ -192,4 +192,4 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
-  - github.com/open-telemetry/opentelemetry-log-collection
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
