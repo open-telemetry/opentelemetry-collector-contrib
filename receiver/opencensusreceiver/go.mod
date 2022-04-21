@@ -42,7 +42,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.16 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.49.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f // indirect
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect

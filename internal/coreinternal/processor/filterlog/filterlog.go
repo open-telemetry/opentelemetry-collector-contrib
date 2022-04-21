@@ -39,6 +39,9 @@ type propertiesMatcher struct {
 
 	// log bodies to compare to.
 	bodyFilters filterset.FilterSet
+
+	// log severity texts to compare to
+	severityTextFilters filterset.FilterSet
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
@@ -63,10 +66,18 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 			return nil, fmt.Errorf("error creating log record body filters: %v", err)
 		}
 	}
+	var severitytextFS filterset.FilterSet
+	if len(mp.LogSeverityTexts) > 0 {
+		severitytextFS, err = filterset.CreateFilterSet(mp.LogSeverityTexts, &mp.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating log record severity text filters: %v", err)
+		}
+	}
 
 	return &propertiesMatcher{
-		PropertiesMatcher: rm,
-		bodyFilters:       bodyFS,
+		PropertiesMatcher:   rm,
+		bodyFilters:         bodyFS,
+		severityTextFilters: severitytextFS,
 	}, nil
 }
 
@@ -80,6 +91,9 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
 	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && mp.bodyFilters.Matches(lr.Body().StringVal()) {
+		return true
+	}
+	if mp.severityTextFilters != nil && mp.severityTextFilters.Matches(lr.SeverityText()) {
 		return true
 	}
 
