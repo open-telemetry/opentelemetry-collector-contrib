@@ -20,18 +20,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestSpanStartTimeIsConvertedToMilliseconds(t *testing.T) {
 	inNanos := int64(50000000)
-	att := pdata.NewMap()
+	att := pcommon.NewMap()
 	transform := transformerFromAttributes(att)
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err := transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -42,13 +43,13 @@ func TestSpanStartTimeIsConvertedToMilliseconds(t *testing.T) {
 func TestSpanDurationIsCalculatedFromStartAndEndTimes(t *testing.T) {
 	startNanos := int64(50000000)
 	endNanos := int64(60000000)
-	att := pdata.NewMap()
+	att := pcommon.NewMap()
 	transform := transformerFromAttributes(att)
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	span.SetStartTimestamp(pdata.Timestamp(startNanos))
-	span.SetEndTimestamp(pdata.Timestamp(endNanos))
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pcommon.Timestamp(startNanos))
+	span.SetEndTimestamp(pcommon.Timestamp(endNanos))
 
 	actual, err := transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -58,12 +59,12 @@ func TestSpanDurationIsCalculatedFromStartAndEndTimes(t *testing.T) {
 
 func TestSpanDurationIsZeroIfEndTimeIsUnset(t *testing.T) {
 	startNanos := int64(50000000)
-	att := pdata.NewMap()
+	att := pcommon.NewMap()
 	transform := transformerFromAttributes(att)
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	span.SetStartTimestamp(pdata.Timestamp(startNanos))
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pcommon.Timestamp(startNanos))
 
 	actual, err := transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -72,8 +73,8 @@ func TestSpanDurationIsZeroIfEndTimeIsUnset(t *testing.T) {
 }
 
 func TestSpanStatusCodeErrorAddsErrorTag(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
-	actual, err := transform.Span(spanWithStatus(pdata.StatusCodeError, ""))
+	transform := transformerFromAttributes(pcommon.NewMap())
+	actual, err := transform.Span(spanWithStatus(ptrace.StatusCodeError, ""))
 	require.NoError(t, err, "transforming span to wavefront format")
 
 	errorTag, ok := actual.Tags["error"]
@@ -82,8 +83,8 @@ func TestSpanStatusCodeErrorAddsErrorTag(t *testing.T) {
 }
 
 func TestSpanStatusCodeOkDoesNotAddErrorTag(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
-	actual, err := transform.Span(spanWithStatus(pdata.StatusCodeOk, ""))
+	transform := transformerFromAttributes(pcommon.NewMap())
+	actual, err := transform.Span(spanWithStatus(ptrace.StatusCodeOk, ""))
 	require.NoError(t, err, "transforming span to wavefront format")
 
 	_, ok := actual.Tags["error"]
@@ -91,8 +92,8 @@ func TestSpanStatusCodeOkDoesNotAddErrorTag(t *testing.T) {
 }
 
 func TestSpanStatusCodeUnsetDoesNotAddErrorTag(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
-	actual, err := transform.Span(spanWithStatus(pdata.StatusCodeUnset, ""))
+	transform := transformerFromAttributes(pcommon.NewMap())
+	actual, err := transform.Span(spanWithStatus(ptrace.StatusCodeUnset, ""))
 	require.NoError(t, err, "transforming span to wavefront format")
 
 	_, ok := actual.Tags["error"]
@@ -100,9 +101,9 @@ func TestSpanStatusCodeUnsetDoesNotAddErrorTag(t *testing.T) {
 }
 
 func TestSpanStatusMessageIsConvertedToTag(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
+	transform := transformerFromAttributes(pcommon.NewMap())
 	message := "some error message"
-	actual, err := transform.Span(spanWithStatus(pdata.StatusCodeError, message))
+	actual, err := transform.Span(spanWithStatus(ptrace.StatusCodeError, message))
 
 	require.NoError(t, err, "transforming span to wavefront format")
 
@@ -112,8 +113,8 @@ func TestSpanStatusMessageIsConvertedToTag(t *testing.T) {
 }
 
 func TestSpanStatusMessageIsIgnoredIfStatusIsNotError(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
-	actual, err := transform.Span(spanWithStatus(pdata.StatusCodeOk, "not a real error message"))
+	transform := transformerFromAttributes(pcommon.NewMap())
+	actual, err := transform.Span(spanWithStatus(ptrace.StatusCodeOk, "not a real error message"))
 
 	require.NoError(t, err, "transforming span to wavefront format")
 
@@ -128,11 +129,11 @@ func TestSpanStatusMessageIsTruncatedToValidLength(t *testing.T) {
 	 * Keep the number of distinct time series per metric and host to under 1000.
 	 * -- https://docs.wavefront.com/wavefront_data_format.html
 	 */
-	transform := transformerFromAttributes(pdata.NewMap())
+	transform := transformerFromAttributes(pcommon.NewMap())
 	message := "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 	message += "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 	message += "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
-	actual, err := transform.Span(spanWithStatus(pdata.StatusCodeError, message))
+	actual, err := transform.Span(spanWithStatus(ptrace.StatusCodeError, message))
 
 	require.NoError(t, err, "transforming span to wavefront format")
 
@@ -142,15 +143,15 @@ func TestSpanStatusMessageIsTruncatedToValidLength(t *testing.T) {
 }
 
 func TestSpanEventsAreTranslatedToSpanLogs(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
+	transform := transformerFromAttributes(pcommon.NewMap())
 	now := time.Now()
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	event := pdata.NewSpanEvent()
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	event := ptrace.NewSpanEvent()
 	event.SetName("eventName")
-	event.SetTimestamp(pdata.NewTimestampFromTime(now))
-	eventAttrs := pdata.NewMap()
+	event.SetTimestamp(pcommon.NewTimestampFromTime(now))
+	eventAttrs := pcommon.NewMap()
 	eventAttrs.InsertString("attrKey", "attrVal")
 	eventAttrs.CopyTo(event.Attributes())
 	event.CopyTo(span.Events().AppendEmpty())
@@ -170,39 +171,39 @@ func TestSpanEventsAreTranslatedToSpanLogs(t *testing.T) {
 }
 
 func TestSpanKindIsTranslatedToTag(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
+	transform := transformerFromAttributes(pcommon.NewMap())
 
-	internalSpan, err := transform.Span(spanWithKind(pdata.SpanKindInternal))
+	internalSpan, err := transform.Span(spanWithKind(ptrace.SpanKindInternal))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok := internalSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "internal", kind)
 
-	serverSpan, err := transform.Span(spanWithKind(pdata.SpanKindServer))
+	serverSpan, err := transform.Span(spanWithKind(ptrace.SpanKindServer))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = serverSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "server", kind)
 
-	clientSpan, err := transform.Span(spanWithKind(pdata.SpanKindClient))
+	clientSpan, err := transform.Span(spanWithKind(ptrace.SpanKindClient))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = clientSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "client", kind)
 
-	consumerSpan, err := transform.Span(spanWithKind(pdata.SpanKindConsumer))
+	consumerSpan, err := transform.Span(spanWithKind(ptrace.SpanKindConsumer))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = consumerSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "consumer", kind)
 
-	producerSpan, err := transform.Span(spanWithKind(pdata.SpanKindProducer))
+	producerSpan, err := transform.Span(spanWithKind(ptrace.SpanKindProducer))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = producerSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "producer", kind)
 
-	unspecifiedSpan, err := transform.Span(spanWithKind(pdata.SpanKindUnspecified))
+	unspecifiedSpan, err := transform.Span(spanWithKind(ptrace.SpanKindUnspecified))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = unspecifiedSpan.Tags["span.kind"]
 	assert.True(t, ok)
@@ -210,7 +211,7 @@ func TestSpanKindIsTranslatedToTag(t *testing.T) {
 }
 
 func TestTraceStateTranslatedToTag(t *testing.T) {
-	transform := transformerFromAttributes(pdata.NewMap())
+	transform := transformerFromAttributes(pcommon.NewMap())
 
 	spanWithState, err := transform.Span(spanWithTraceState("key=val"))
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -228,26 +229,26 @@ func TestSpanForSourceTag(t *testing.T) {
 	inNanos := int64(50000000)
 
 	//TestCase1: default value for source
-	resAttrs := pdata.NewMap()
+	resAttrs := pcommon.NewMap()
 	transform := transformerFromAttributes(resAttrs)
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err := transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "", actual.Source)
 
 	//TestCase2: source value from resAttrs.source
-	resAttrs = pdata.NewMap()
+	resAttrs = pcommon.NewMap()
 	resAttrs.InsertString(labelSource, "test_source")
 	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
-	span = pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+	span = ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -259,14 +260,14 @@ func TestSpanForSourceTag(t *testing.T) {
 	}
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
-	resAttrs = pdata.NewMap()
+	resAttrs = pcommon.NewMap()
 	resAttrs.InsertString("hostname", "test_hostname")
 	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
-	span = pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+	span = ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -278,7 +279,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	}
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
-	resAttrs = pdata.NewMap()
+	resAttrs = pcommon.NewMap()
 	span.Attributes().InsertString(labelSource, "source_from_span_attribute")
 	resAttrs.InsertString(labelSource, "test_source")
 	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
@@ -298,12 +299,12 @@ func TestSpanForDroppedCount(t *testing.T) {
 	inNanos := int64(50000000)
 
 	//TestCase: 1 count tags are not set
-	resAttrs := pdata.NewMap()
+	resAttrs := pcommon.NewMap()
 	transform := transformerFromAttributes(resAttrs)
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err := transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
@@ -324,7 +325,7 @@ func TestSpanForDroppedCount(t *testing.T) {
 }
 
 func TestGetSourceAndResourceTags(t *testing.T) {
-	resAttrs := pdata.NewMap()
+	resAttrs := pcommon.NewMap()
 	resAttrs.InsertString(labelSource, "test_source")
 	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
 
@@ -336,33 +337,65 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 	}
 }
 
-func spanWithKind(kind pdata.SpanKind) pdata.Span {
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+func TestGetSourceAndKey(t *testing.T) {
+	resAttrs := pcommon.NewMap()
+	resAttrs.InsertString(labelSource, "some_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+
+	source, sourceKey := getSourceAndKey(resAttrs)
+	assert.Equal(t, "some_source", source)
+	assert.Equal(t, labelSource, sourceKey)
+}
+
+func TestGetSourceAndKeyNotFound(t *testing.T) {
+	resAttrs := pcommon.NewMap()
+	resAttrs.InsertString("foo", "some_source")
+	resAttrs.InsertString("bar", "test_host.name")
+
+	source, sourceKey := getSourceAndKey(resAttrs)
+	assert.Equal(t, "", source)
+	assert.Equal(t, "", sourceKey)
+}
+
+func TestAttributesToTagsReplaceSource(t *testing.T) {
+	attrMap1 := newMap(map[string]string{"customer": "aws", "env": "dev"})
+	attrMap2 := newMap(map[string]string{"env": "prod", "source": "ethernet"})
+	result := attributesToTagsReplaceSource(attrMap1, attrMap2)
+
+	// attrMap2 takes precedence because it is last, so "env"->"prod" not "dev"
+	assert.Equal(
+		t,
+		map[string]string{"env": "prod", "customer": "aws", "_source": "ethernet"},
+		result)
+}
+
+func spanWithKind(kind ptrace.SpanKind) ptrace.Span {
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	span.SetKind(kind)
 	return span
 }
 
-func spanWithTraceState(state pdata.TraceState) pdata.Span {
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+func spanWithTraceState(state ptrace.TraceState) ptrace.Span {
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	span.SetTraceState(state)
 	return span
 }
 
-func transformerFromAttributes(attrs pdata.Map) *traceTransformer {
+func transformerFromAttributes(attrs pcommon.Map) *traceTransformer {
 	return &traceTransformer{
 		resAttrs: attrs,
 	}
 }
 
-func spanWithStatus(statusCode pdata.StatusCode, message string) pdata.Span {
-	span := pdata.NewSpan()
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	status := pdata.NewSpanStatus()
+func spanWithStatus(statusCode ptrace.StatusCode, message string) ptrace.Span {
+	span := ptrace.NewSpan()
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	status := ptrace.NewSpanStatus()
 	status.SetCode(statusCode)
 	if message != "" {
 		status.SetMessage(message)

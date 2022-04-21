@@ -24,8 +24,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type logKeyValuePair struct {
@@ -81,8 +82,8 @@ func loadFromJSON(file string, obj interface{}) error {
 	return err
 }
 
-func constructSpanData() pdata.Traces {
-	traces := pdata.NewTraces()
+func constructSpanData() ptrace.Traces {
+	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rspans := traces.ResourceSpans().AppendEmpty()
 	fillResource(rspans.Resource())
@@ -96,7 +97,7 @@ func constructSpanData() pdata.Traces {
 	return traces
 }
 
-func fillResource(resource pdata.Resource) {
+func fillResource(resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(conventions.AttributeHostName, "xxx.et15")
@@ -109,7 +110,7 @@ func fillResource(resource pdata.Resource) {
 	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 }
 
-func fillHTTPClientSpan(span pdata.Span) {
+func fillHTTPClientSpan(span ptrace.Span) {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -122,9 +123,9 @@ func fillHTTPClientSpan(span pdata.Span) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindClient)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 	span.SetTraceState("x:y")
 
 	event := span.Events().AppendEmpty()
@@ -141,7 +142,7 @@ func fillHTTPClientSpan(span pdata.Span) {
 	status.SetMessage("OK")
 }
 
-func fillHTTPServerSpan(span pdata.Span) {
+func fillHTTPServerSpan(span ptrace.Span) {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -155,17 +156,17 @@ func fillHTTPServerSpan(span pdata.Span) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
 	status := span.Status()
 	status.SetCode(2)
 	status.SetMessage("something error")
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
-	attrs := pdata.NewMap()
+func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
 			attrs.InsertInt(key, int64(cast))
@@ -178,27 +179,27 @@ func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
 	return attrs
 }
 
-func newTraceID() pdata.TraceID {
+func newTraceID() pcommon.TraceID {
 	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pdata.NewTraceID(r)
+	return pcommon.NewTraceID(r)
 }
 
-func newSegmentID() pdata.SpanID {
+func newSegmentID() pcommon.SpanID {
 	r := [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98}
-	return pdata.NewSpanID(r)
+	return pcommon.NewSpanID(r)
 }
 
 func TestSpanKindToShortString(t *testing.T) {
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindConsumer), "consumer")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindProducer), "producer")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindClient), "client")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindServer), "server")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindInternal), "internal")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindUnspecified), "")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindConsumer), "consumer")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindProducer), "producer")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindClient), "client")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindServer), "server")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindInternal), "internal")
+	assert.Equal(t, spanKindToShortString(ptrace.SpanKindUnspecified), "")
 }
 
 func TestStatusCodeToShortString(t *testing.T) {
-	assert.Equal(t, statusCodeToShortString(pdata.StatusCodeOk), "OK")
-	assert.Equal(t, statusCodeToShortString(pdata.StatusCodeError), "ERROR")
-	assert.Equal(t, statusCodeToShortString(pdata.StatusCodeUnset), "UNSET")
+	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeOk), "OK")
+	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeError), "ERROR")
+	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeUnset), "UNSET")
 }

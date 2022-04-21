@@ -33,7 +33,7 @@ import (
 	cInfo "github.com/google/cadvisor/info/v1"
 	"github.com/google/cadvisor/manager"
 	"github.com/google/cadvisor/utils/sysfs"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -315,9 +315,9 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 }
 
 // GetMetrics generates metrics from cadvisor
-func (c *Cadvisor) GetMetrics() []pdata.Metrics {
+func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
 	c.logger.Debug("collect data from cadvisor...")
-	var result []pdata.Metrics
+	var result []pmetric.Metrics
 	var containerinfos []*cInfo.ContainerInfo
 	var err error
 

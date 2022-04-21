@@ -20,7 +20,7 @@ import (
 
 	cxpb "github.com/coralogix/opentelemetry-cx-protobuf-api/coralogixpb"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -60,7 +60,7 @@ func (c *coralogixClient) startConnection(ctx context.Context, host component.Ho
 	return nil
 }
 
-func (c *coralogixClient) newPost(ctx context.Context, td pdata.Traces) error {
+func (c *coralogixClient) newPost(ctx context.Context, td ptrace.Traces) error {
 	batches, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
 		return fmt.Errorf("can't translate to jaeger proto: %w", err)

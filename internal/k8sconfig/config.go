@@ -21,10 +21,16 @@ import (
 	"os"
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
+	k8sruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+func init() {
+	k8sruntime.ReallyCrash = false
+	k8sruntime.PanicHandlers = []func(interface{}){}
+}
 
 // AuthType describes the type of authentication to use for the K8s API
 type AuthType string

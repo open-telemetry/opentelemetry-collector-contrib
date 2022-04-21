@@ -21,7 +21,8 @@ import (
 
 	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -67,20 +68,20 @@ func newRedisScraperWithClient(client client, settings component.ReceiverCreateS
 // defined at startup time. Then builds 'keyspace' metrics if there are any
 // keyspace lines returned by Redis. There should be one keyspace line per
 // active Redis database, of which there can be 16.
-func (rs *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
+func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	inf, err := rs.redisSvc.info()
 	if err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	currentUptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
 	if rs.uptime == time.Duration(0) || rs.uptime > currentUptime {
-		rs.mb.Reset(metadata.WithStartTime(pdata.NewTimestampFromTime(now.AsTime().Add(-currentUptime))))
+		rs.mb.Reset(metadata.WithStartTime(pcommon.NewTimestampFromTime(now.AsTime().Add(-currentUptime))))
 	}
 	rs.uptime = currentUptime
 
@@ -91,7 +92,7 @@ func (rs *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.
-func (rs *redisScraper) recordCommonMetrics(ts pdata.Timestamp, inf info) {
+func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 	recorders := rs.dataPointRecorders()
 	for infoKey, infoVal := range inf {
 		recorder, ok := recorders[infoKey]
@@ -100,14 +101,14 @@ func (rs *redisScraper) recordCommonMetrics(ts pdata.Timestamp, inf info) {
 			continue
 		}
 		switch recordDataPoint := recorder.(type) {
-		case func(pdata.Timestamp, int64):
+		case func(pcommon.Timestamp, int64):
 			val, err := strconv.ParseInt(infoVal, 10, 64)
 			if err != nil {
 				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
 					zap.String("val", infoVal), zap.Error(err))
 			}
 			recordDataPoint(ts, val)
-		case func(pdata.Timestamp, float64):
+		case func(pcommon.Timestamp, float64):
 			val, err := strconv.ParseFloat(infoVal, 64)
 			if err != nil {
 				rs.settings.Logger.Warn("failed to parse info float val", zap.String("key", infoKey),
@@ -120,7 +121,7 @@ func (rs *redisScraper) recordCommonMetrics(ts pdata.Timestamp, inf info) {
 
 // recordKeyspaceMetrics records metrics from 'keyspace' Redis info key-value pairs,
 // e.g. "db0: keys=1,expires=2,avg_ttl=3".
-func (rs *redisScraper) recordKeyspaceMetrics(ts pdata.Timestamp, inf info) {
+func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 	for db := 0; db < redisMaxDbs; db++ {
 		key := "db" + strconv.Itoa(db)
 		str, ok := inf[key]

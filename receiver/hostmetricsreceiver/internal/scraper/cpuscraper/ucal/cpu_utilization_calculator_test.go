@@ -19,14 +19,14 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type inMemoryRecorder struct {
 	cpuUtilizations []CPUUtilization
 }
 
-func (r *inMemoryRecorder) record(_ pdata.Timestamp, utilization CPUUtilization) {
+func (r *inMemoryRecorder) record(_ pcommon.Timestamp, utilization CPUUtilization) {
 	r.cpuUtilizations = append(r.cpuUtilizations, utilization)
 }
 
@@ -34,8 +34,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		name                 string
-		now                  pdata.Timestamp
-		previousTime         pdata.Timestamp
+		now                  pcommon.Timestamp
 		cpuTimes             []cpu.TimesStat
 		previousCPUTimes     []cpu.TimesStat
 		expectedUtilizations []CPUUtilization
@@ -43,7 +42,6 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 	}{
 		{
 			name: "no previous times",
-			now:  1640097435776827000,
 			cpuTimes: []cpu.TimesStat{
 				{
 					CPU:  "cpu0",
@@ -52,9 +50,8 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			},
 		},
 		{
-			name:         "no delta time",
-			previousTime: 1640097430772858000,
-			now:          1640097430772858000,
+			name: "no delta time should return utilization=0",
+			now:  1640097430772858000,
 			previousCPUTimes: []cpu.TimesStat{
 				{
 					CPU:  "cpu0",
@@ -64,15 +61,16 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			cpuTimes: []cpu.TimesStat{
 				{
 					CPU:  "cpu0",
-					User: 8260.4,
+					User: 8259.4,
 				},
 			},
-			expectedError: ErrInvalidElapsed,
+			expectedUtilizations: []CPUUtilization{
+				{CPU: "cpu0"},
+			},
 		},
 		{
-			name:         "invalid TimesStats",
-			previousTime: 1640097430772858000,
-			now:          1640097430772859000,
+			name: "invalid TimesStats",
+			now:  1640097430772859000,
 			previousCPUTimes: []cpu.TimesStat{
 				{
 					CPU:  "cpu5",
@@ -88,9 +86,8 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			expectedError: ErrTimeStatNotFound,
 		},
 		{
-			name:         "one cpu",
-			previousTime: 1640097430772858000,
-			now:          1640097435776827000,
+			name: "one cpu",
+			now:  1640097435776827000,
 			previousCPUTimes: []cpu.TimesStat{
 				{
 					CPU:    "cpu0",
@@ -110,16 +107,15 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			expectedUtilizations: []CPUUtilization{
 				{
 					CPU:    "cpu0",
-					User:   0.19984,
-					System: 0.11990,
-					Idle:   0.69944,
+					User:   0.19607,
+					System: 0.11764,
+					Idle:   0.68627,
 				},
 			},
 		},
 		{
-			name:         "multiple cpus unordered",
-			previousTime: 1640097430772858000,
-			now:          1640097435776827000,
+			name: "multiple cpus unordered",
+			now:  1640097435776827000,
 			previousCPUTimes: []cpu.TimesStat{
 				{
 					CPU:    "cpu1",
@@ -151,15 +147,15 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			expectedUtilizations: []CPUUtilization{
 				{
 					CPU:    "cpu1",
-					User:   0.01998,
+					User:   0.02,
 					System: 0,
-					Idle:   0.97922,
+					Idle:   0.98,
 				},
 				{
 					CPU:    "cpu0",
-					User:   0.19984,
-					System: 0.11990,
-					Idle:   0.69944,
+					User:   0.19607,
+					System: 0.11764,
+					Idle:   0.68627,
 				},
 			},
 		},
@@ -170,7 +166,6 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			t.Parallel()
 			recorder := inMemoryRecorder{}
 			calculator := CPUUtilizationCalculator{
-				previousTime:     test.previousTime,
 				previousCPUTimes: test.previousCPUTimes,
 			}
 			err := calculator.CalculateAndRecord(test.now, test.cpuTimes, recorder.record)
@@ -188,7 +183,6 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 
 func Test_cpuUtilization(t *testing.T) {
 
-	elapsedSeconds := 5.0
 	timeStart := cpu.TimesStat{
 		CPU:    "cpu0",
 		User:   1.5,
@@ -208,7 +202,7 @@ func Test_cpuUtilization(t *testing.T) {
 		Idle:   0.46,
 	}
 
-	actualUtilization := cpuUtilization(timeStart, timeEnd, elapsedSeconds)
+	actualUtilization := cpuUtilization(timeStart, timeEnd)
 	assert.Equal(t, expectedUtilization.CPU, actualUtilization.CPU, 0.00001)
 	assert.InDelta(t, expectedUtilization.User, actualUtilization.User, 0.00001)
 	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)

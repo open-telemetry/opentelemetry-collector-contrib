@@ -19,8 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -204,12 +204,12 @@ func Test_Matching_False(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewMapFromRaw(map[string]interface{}{
+	atts := pcommon.NewMapFromRaw(map[string]interface{}{
 		"keyInt": 123,
 		"keyMap": map[string]interface{}{},
 	})
 
-	library := pdata.NewInstrumentationScope()
+	library := pcommon.NewInstrumentationScope()
 	library.SetName("lib")
 	library.SetVersion("ver")
 
@@ -239,7 +239,7 @@ func Test_MatchingCornerCases(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, mp)
 
-	assert.False(t, mp.Match(pdata.NewMap(), resource("svcA"), pdata.NewInstrumentationScope()))
+	assert.False(t, mp.Match(pcommon.NewMap(), resource("svcA"), pcommon.NewInstrumentationScope()))
 }
 
 func Test_Matching_True(t *testing.T) {
@@ -358,7 +358,7 @@ func Test_Matching_True(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewMapFromRaw(map[string]interface{}{
+	atts := pcommon.NewMapFromRaw(map[string]interface{}{
 		"keyString": "arithmetic",
 		"keyInt":    123,
 		"keyDouble": 3245.6,
@@ -366,11 +366,11 @@ func Test_Matching_True(t *testing.T) {
 		"keyExists": "present",
 	})
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
 	resource.Attributes().InsertString("resString", "arithmetic")
 
-	library := pdata.NewInstrumentationScope()
+	library := pcommon.NewInstrumentationScope()
 	library.SetName("lib")
 	library.SetVersion("ver")
 
@@ -385,8 +385,8 @@ func Test_Matching_True(t *testing.T) {
 	}
 }
 
-func resource(service string) pdata.Resource {
-	r := pdata.NewResource()
+func resource(service string) pcommon.Resource {
+	r := pcommon.NewResource()
 	r.Attributes().InsertString(conventions.AttributeServiceName, service)
 	return r
 }

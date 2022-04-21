@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -70,6 +70,6 @@ func TestUnknownSeverity(t *testing.T) {
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
-	assert.Equal(t, logEntry.SeverityNumber(), pdata.SeverityNumberUNDEFINED)
+	assert.Equal(t, logEntry.SeverityNumber(), plog.SeverityNumberUNDEFINED)
 	assert.Equal(t, logEntry.SeverityText(), "")
 }

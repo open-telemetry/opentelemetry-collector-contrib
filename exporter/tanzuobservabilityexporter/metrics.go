@@ -25,7 +25,8 @@ import (
 	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -58,15 +59,15 @@ var (
 
 // metricsConsumer instances consume OTEL metrics
 type metricsConsumer struct {
-	consumerMap           map[pdata.MetricDataType]typedMetricConsumer
+	consumerMap           map[pmetric.MetricDataType]typedMetricConsumer
 	sender                flushCloser
 	reportInternalMetrics bool
 }
 
 type metricInfo struct {
-	pdata.Metric
-	Source string
-	Tags   map[string]string
+	pmetric.Metric
+	Source    string
+	SourceKey string
 }
 
 // newMetricsConsumer returns a new metricsConsumer. consumers are the
@@ -80,7 +81,7 @@ func newMetricsConsumer(
 	sender flushCloser,
 	reportInternalMetrics bool,
 ) *metricsConsumer {
-	consumerMap := make(map[pdata.MetricDataType]typedMetricConsumer, len(consumers))
+	consumerMap := make(map[pmetric.MetricDataType]typedMetricConsumer, len(consumers))
 	for _, consumer := range consumers {
 		if consumerMap[consumer.Type()] != nil {
 			panic("duplicate consumer type detected: " + consumer.Type().String())
@@ -98,18 +99,18 @@ func newMetricsConsumer(
 // typedMetricConsumer that consumes that type of metric. Once Consume consumes
 // all the metrics, it calls Flush() on the sender passed to
 // newMetricsConsumer.
-func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
+func (c *metricsConsumer) Consume(ctx context.Context, md pmetric.Metrics) error {
 	var errs []error
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i).Resource().Attributes()
-		source, resourceTags := getSourceAndResourceTags(rm)
+		source, sourceKey := getSourceAndKey(rm)
 		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				mi := metricInfo{m, source, resourceTags}
+				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey}
 				select {
 				case <-ctx.Done():
 					return multierr.Combine(append(errs, errors.New("context canceled"))...)
@@ -161,7 +162,7 @@ type typedMetricConsumer interface {
 
 	// Type returns the type of metric this consumer consumes. For example
 	// Gauge, Sum, or Histogram
-	Type() pdata.MetricDataType
+	Type() pmetric.MetricDataType
 
 	// Consume consumes the metric from the metricInfo and appends any errors encountered to errs
 	Consume(mi metricInfo, errs *[]error)
@@ -209,7 +210,7 @@ func (c *counter) Get() int64 {
 // logMissingValue keeps track of metrics with missing values. metric is the
 // metric with the missing value. settings logs the missing value. count counts
 // metrics with missing values.
-func logMissingValue(metric pdata.Metric, settings component.TelemetrySettings, count *counter) {
+func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings, count *counter) {
 	namef := zap.String(metricNameString, metric.Name())
 	typef := zap.String(metricTypeString, metric.DataType().String())
 	settings.Logger.Debug("Metric missing value", namef, typef)
@@ -217,11 +218,11 @@ func logMissingValue(metric pdata.Metric, settings component.TelemetrySettings, 
 }
 
 // getValue gets the floating point value out of a NumberDataPoint
-func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
+func getValue(numberDataPoint pmetric.NumberDataPoint) (float64, error) {
 	switch numberDataPoint.ValueType() {
-	case pdata.MetricValueTypeInt:
+	case pmetric.MetricValueTypeInt:
 		return float64(numberDataPoint.IntVal()), nil
-	case pdata.MetricValueTypeDouble:
+	case pmetric.MetricValueTypeDouble:
 		return numberDataPoint.DoubleVal(), nil
 	default:
 		return 0.0, errors.New("unsupported metric value type")
@@ -235,13 +236,13 @@ func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
 // keeps track of metrics with missing values.
 func pushGaugeNumberDataPoint(
 	mi metricInfo,
-	numberDataPoint pdata.NumberDataPoint,
+	numberDataPoint pmetric.NumberDataPoint,
 	errs *[]error,
 	sender gaugeSender,
 	settings component.TelemetrySettings,
 	missingValues *counter,
 ) {
-	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
+	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
@@ -275,8 +276,8 @@ func newGaugeConsumer(
 	}
 }
 
-func (g *gaugeConsumer) Type() pdata.MetricDataType {
-	return pdata.MetricDataTypeGauge
+func (g *gaugeConsumer) Type() pmetric.MetricDataType {
+	return pmetric.MetricDataTypeGauge
 }
 
 func (g *gaugeConsumer) Consume(mi metricInfo, errs *[]error) {
@@ -313,13 +314,13 @@ func newSumConsumer(
 	}
 }
 
-func (s *sumConsumer) Type() pdata.MetricDataType {
-	return pdata.MetricDataTypeSum
+func (s *sumConsumer) Type() pmetric.MetricDataType {
+	return pmetric.MetricDataTypeSum
 }
 
 func (s *sumConsumer) Consume(mi metricInfo, errs *[]error) {
 	sum := mi.Sum()
-	isDelta := sum.AggregationTemporality() == pdata.MetricAggregationTemporalityDelta
+	isDelta := sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
 	numberDataPoints := sum.DataPoints()
 	for i := 0; i < numberDataPoints.Len(); i++ {
 		// If sum is a delta type, send it to tanzu observability as a
@@ -338,8 +339,8 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 	s.missingValues.Report(missingValueMetricName, typeIsSumTags, s.sender, errs)
 }
 
-func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error) {
-	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
+func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pmetric.NumberDataPoint, errs *[]error) {
+	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
 	value, err := getValue(numberDataPoint)
 	if err != nil {
 		logMissingValue(mi.Metric, s.settings, &s.missingValues)
@@ -375,14 +376,14 @@ func (r *histogramReporting) NoAggregationTemporality() int64 {
 }
 
 // LogMalformed logs seeing one malformed data point.
-func (r *histogramReporting) LogMalformed(metric pdata.Metric) {
+func (r *histogramReporting) LogMalformed(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("Malformed histogram", namef)
 	r.malformedHistograms.Inc()
 }
 
 // LogNoAggregationTemporality logs seeing a histogram metric with no aggregation temporality
-func (r *histogramReporting) LogNoAggregationTemporality(metric pdata.Metric) {
+func (r *histogramReporting) LogNoAggregationTemporality(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("histogram metric missing aggregation temporality", namef)
 	r.noAggregationTemporality.Inc()
@@ -425,7 +426,7 @@ func newHistogramConsumer(
 	}
 }
 
-func (h *histogramConsumer) Type() pdata.MetricDataType {
+func (h *histogramConsumer) Type() pmetric.MetricDataType {
 	return h.spec.Type()
 }
 
@@ -434,9 +435,9 @@ func (h *histogramConsumer) Consume(mi metricInfo, errs *[]error) {
 	aggregationTemporality := aHistogram.AggregationTemporality()
 	var consumer histogramDataPointConsumer
 	switch aggregationTemporality {
-	case pdata.MetricAggregationTemporalityDelta:
+	case pmetric.MetricAggregationTemporalityDelta:
 		consumer = h.delta
-	case pdata.MetricAggregationTemporalityCumulative:
+	case pmetric.MetricAggregationTemporalityCumulative:
 		consumer = h.cumulative
 	default:
 		h.reporting.LogNoAggregationTemporality(mi.Metric)
@@ -484,7 +485,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	reporting *histogramReporting,
 ) {
 	name := mi.Name()
-	tags := attributesToTags(mi.Tags, histogram.Attributes())
+	tags := attributesToTagsForMetrics(histogram.Attributes(), mi.SourceKey)
 	ts := histogram.Timestamp().AsTime().Unix()
 	explicitBounds := histogram.ExplicitBounds()
 	bucketCounts := histogram.BucketCounts()
@@ -530,7 +531,7 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	errs *[]error,
 	reporting *histogramReporting) {
 	name := mi.Name()
-	tags := attributesToTags(mi.Tags, his.Attributes())
+	tags := attributesToTagsForMetrics(his.Attributes(), mi.SourceKey)
 	ts := his.Timestamp().AsTime().Unix()
 	explicitBounds := his.ExplicitBounds()
 	bucketCounts := his.BucketCounts()
@@ -569,15 +570,15 @@ type histogramDataPoint interface {
 	Count() uint64
 	ExplicitBounds() []float64
 	BucketCounts() []uint64
-	Attributes() pdata.Map
-	Timestamp() pdata.Timestamp
+	Attributes() pcommon.Map
+	Timestamp() pcommon.Timestamp
 }
 
 // histogramMetric represents either a regular or exponential histogram
 type histogramMetric interface {
 
 	// AggregationTemporality returns whether the histogram is delta or cumulative
-	AggregationTemporality() pdata.MetricAggregationTemporality
+	AggregationTemporality() pmetric.MetricAggregationTemporality
 
 	// Len returns the number of data points in this histogram
 	Len() int
@@ -590,16 +591,16 @@ type histogramMetric interface {
 type histogramConsumerSpec interface {
 
 	// Type returns either regular or exponential histogram
-	Type() pdata.MetricDataType
+	Type() pmetric.MetricDataType
 
 	// AsHistogram returns given metric as a regular or exponential histogram depending on
 	// what Type returns.
-	AsHistogram(metric pdata.Metric) histogramMetric
+	AsHistogram(metric pmetric.Metric) histogramMetric
 }
 
 type regularHistogramMetric struct {
-	pdata.Histogram
-	pdata.HistogramDataPointSlice
+	pmetric.Histogram
+	pmetric.HistogramDataPointSlice
 }
 
 func (r *regularHistogramMetric) At(i int) histogramDataPoint {
@@ -609,11 +610,11 @@ func (r *regularHistogramMetric) At(i int) histogramDataPoint {
 type regularHistogramConsumerSpec struct {
 }
 
-func (regularHistogramConsumerSpec) Type() pdata.MetricDataType {
-	return pdata.MetricDataTypeHistogram
+func (regularHistogramConsumerSpec) Type() pmetric.MetricDataType {
+	return pmetric.MetricDataTypeHistogram
 }
 
-func (regularHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMetric {
+func (regularHistogramConsumerSpec) AsHistogram(metric pmetric.Metric) histogramMetric {
 	aHistogram := metric.Histogram()
 	return &regularHistogramMetric{
 		Histogram:               aHistogram,
@@ -634,8 +635,8 @@ func newSummaryConsumer(
 	return &summaryConsumer{sender: sender, settings: settings}
 }
 
-func (s *summaryConsumer) Type() pdata.MetricDataType {
-	return pdata.MetricDataTypeSummary
+func (s *summaryConsumer) Type() pmetric.MetricDataType {
+	return pmetric.MetricDataTypeSummary
 }
 
 func (s *summaryConsumer) Consume(mi metricInfo, errs *[]error) {
@@ -652,11 +653,11 @@ func (*summaryConsumer) PushInternalMetrics(*[]error) {
 }
 
 func (s *summaryConsumer) sendSummaryDataPoint(
-	mi metricInfo, summaryDataPoint pdata.SummaryDataPoint, errs *[]error,
+	mi metricInfo, summaryDataPoint pmetric.SummaryDataPoint, errs *[]error,
 ) {
 	name := mi.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
-	tags := attributesToTags(mi.Tags, summaryDataPoint.Attributes())
+	tags := attributesToTagsForMetrics(summaryDataPoint.Attributes(), mi.SourceKey)
 	count := summaryDataPoint.Count()
 	sum := summaryDataPoint.Sum()
 
@@ -687,23 +688,30 @@ func (s *summaryConsumer) sendMetric(
 	}
 }
 
+func attributesToTagsForMetrics(attributes pcommon.Map, sourceKey string) map[string]string {
+	tags := attributesToTags(attributes)
+	delete(tags, sourceKey)
+	replaceSource(tags)
+	return tags
+}
+
 func quantileTagValue(quantile float64) string {
 	return strconv.FormatFloat(quantile, 'f', -1, 64)
 }
 
 type exponentialHistogramDataPoint struct {
-	pdata.ExponentialHistogramDataPoint
+	pmetric.ExponentialHistogramDataPoint
 	bucketCounts   []uint64
 	explicitBounds []float64
 }
 
-// newExponentialHistogram converts a pdata.ExponentialHistogramDataPoint into a histogramDataPoint
+// newExponentialHistogram converts a pmetric.ExponentialHistogramDataPoint into a histogramDataPoint
 // implementation. A regular histogramDataPoint has bucket counts and explicit bounds for each
 // bucket; an ExponentialHistogramDataPoint has only bucket counts because the explicit bounds
 // for each bucket are implied because they grow exponentially from bucket to bucket. The
 // conversion of an ExponentialHistogramDataPoint to a histogramDataPoint is necessary because the
 // code that sends histograms to tanzuobservability expects the histogramDataPoint format.
-func newExponentialHistogramDataPoint(dataPoint pdata.ExponentialHistogramDataPoint) histogramDataPoint {
+func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramDataPoint) histogramDataPoint {
 
 	// Base is the factor by which the explicit bounds increase from bucket to bucket.
 	// This formula comes from the documentation here:
@@ -817,8 +825,8 @@ func (e *exponentialHistogramDataPoint) BucketCounts() []uint64 {
 }
 
 type exponentialHistogramMetric struct {
-	pdata.ExponentialHistogram
-	pdata.ExponentialHistogramDataPointSlice
+	pmetric.ExponentialHistogram
+	pmetric.ExponentialHistogramDataPointSlice
 }
 
 func (e *exponentialHistogramMetric) At(i int) histogramDataPoint {
@@ -828,11 +836,11 @@ func (e *exponentialHistogramMetric) At(i int) histogramDataPoint {
 type exponentialHistogramConsumerSpec struct {
 }
 
-func (exponentialHistogramConsumerSpec) Type() pdata.MetricDataType {
-	return pdata.MetricDataTypeExponentialHistogram
+func (exponentialHistogramConsumerSpec) Type() pmetric.MetricDataType {
+	return pmetric.MetricDataTypeExponentialHistogram
 }
 
-func (exponentialHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMetric {
+func (exponentialHistogramConsumerSpec) AsHistogram(metric pmetric.Metric) histogramMetric {
 	aHistogram := metric.ExponentialHistogram()
 	return &exponentialHistogramMetric{
 		ExponentialHistogram:               aHistogram,

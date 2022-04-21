@@ -5,12 +5,13 @@ go 1.17
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/google/go-cmp v0.5.7
-	github.com/jaegertracing/jaeger v1.32.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.47.0
+	github.com/jaegertracing/jaeger v1.33.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.49.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/model v0.47.1-0.20220330050215-0f07b0bd64d1
+	go.opentelemetry.io/collector/model v0.49.0
+	go.opentelemetry.io/collector/pdata v0.49.0
 	google.golang.org/protobuf v1.28.0
 
 )

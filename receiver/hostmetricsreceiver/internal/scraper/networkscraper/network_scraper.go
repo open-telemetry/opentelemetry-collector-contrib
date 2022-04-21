@@ -22,7 +22,8 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/net"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -38,7 +39,7 @@ const (
 type scraper struct {
 	config    *Config
 	mb        *metadata.MetricsBuilder
-	startTime pdata.Timestamp
+	startTime pcommon.Timestamp
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -77,12 +78,12 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.Timestamp(bootTime * 1e9)
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	s.startTime = pcommon.Timestamp(bootTime * 1e9)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errors scrapererror.ScrapeErrors
 
 	err := s.recordNetworkCounterMetrics()
@@ -99,7 +100,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 }
 
 func (s *scraper) recordNetworkCounterMetrics() error {
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
@@ -120,28 +121,28 @@ func (s *scraper) recordNetworkCounterMetrics() error {
 	return nil
 }
 
-func (s *scraper) recordNetworkPacketsMetric(now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+func (s *scraper) recordNetworkPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
 		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name, metadata.AttributeDirection.Transmit)
 		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name, metadata.AttributeDirection.Receive)
 	}
 }
 
-func (s *scraper) recordNetworkDroppedPacketsMetric(now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+func (s *scraper) recordNetworkDroppedPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
 		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name, metadata.AttributeDirection.Transmit)
 		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name, metadata.AttributeDirection.Receive)
 	}
 }
 
-func (s *scraper) recordNetworkErrorPacketsMetric(now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+func (s *scraper) recordNetworkErrorPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
 		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errout), ioCounters.Name, metadata.AttributeDirection.Transmit)
 		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errin), ioCounters.Name, metadata.AttributeDirection.Receive)
 	}
 }
 
-func (s *scraper) recordNetworkIOMetric(now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
+func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
 		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name, metadata.AttributeDirection.Transmit)
 		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name, metadata.AttributeDirection.Receive)
@@ -149,7 +150,7 @@ func (s *scraper) recordNetworkIOMetric(now pdata.Timestamp, ioCountersSlice []n
 }
 
 func (s *scraper) recordNetworkConnectionsMetrics() error {
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	connections, err := s.connections("tcp")
 	if err != nil {
@@ -174,7 +175,7 @@ func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]i
 	return tcpStatuses
 }
 
-func (s *scraper) recordNetworkConnectionsMetric(now pdata.Timestamp, connectionStateCounts map[string]int64) {
+func (s *scraper) recordNetworkConnectionsMetric(now pcommon.Timestamp, connectionStateCounts map[string]int64) {
 	for connectionState, count := range connectionStateCounts {
 		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocol.Tcp, connectionState)
 	}

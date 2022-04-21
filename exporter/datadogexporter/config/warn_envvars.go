@@ -51,6 +51,10 @@ func futureDefaultConfig() *Config {
 			SampleRate:      1,
 			IgnoreResources: []string{},
 		},
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: HostnameSourceFirstResource,
+		},
 		SendMetadata:        true,
 		UseResourceMetadata: true,
 	}

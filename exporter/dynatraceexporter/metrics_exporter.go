@@ -28,11 +28,11 @@ import (
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
@@ -92,7 +92,7 @@ func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
 	return dimensions.NewNormalizedDimensionList(dims...)
 }
 
-func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (e *exporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	if e.isDisabled {
 		return nil
 	}
@@ -118,7 +118,7 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	return nil
 }
 
-func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
+func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 	lines := make([]string, 0)
 
 	resourceMetrics := md.ResourceMetrics()
@@ -135,11 +135,10 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 				metricLines, err := serialization.SerializeMetric(e.settings.Logger, e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
 
 				if err != nil {
-					e.settings.Logger.Sugar().Errorw(
-						"failed to serialize",
+					e.settings.Logger.Sugar().Warnw("failed to serialize",
 						"datatype", metric.DataType().String(),
 						"name", metric.Name(),
-						zap.Error(err),
+						"error", err,
 					)
 				}
 
@@ -232,7 +231,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 			return nil
 		}
 
-		e.settings.Logger.Sugar().Errorw("Response from Dynatrace",
+		e.settings.Logger.Sugar().Warnw("Response from Dynatrace",
 			"accepted-lines", responseBody.Ok,
 			"rejected-lines", responseBody.Invalid,
 			"error-message", responseBody.Error.Message,

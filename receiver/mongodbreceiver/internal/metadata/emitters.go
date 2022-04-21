@@ -14,9 +14,11 @@
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import (
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
-func (mb *MetricsBuilder) EmitDatabase(metrics pdata.MetricSlice) {
+func (mb *MetricsBuilder) EmitDatabase(metrics pmetric.MetricSlice) {
 	// mb.metricMongodbCacheOperations.emit(metrics)
 	mb.metricMongodbCollectionCount.emit(metrics)
 	mb.metricMongodbConnectionCount.emit(metrics)
@@ -30,7 +32,7 @@ func (mb *MetricsBuilder) EmitDatabase(metrics pdata.MetricSlice) {
 	mb.metricMongodbStorageSize.emit(metrics)
 }
 
-func (mb *MetricsBuilder) EmitAdmin(metrics pdata.MetricSlice) {
+func (mb *MetricsBuilder) EmitAdmin(metrics pmetric.MetricSlice) {
 	mb.metricMongodbGlobalLockTime.emit(metrics)
 	mb.metricMongodbOperationCount.emit(metrics)
 	mb.metricMongodbCacheOperations.emit(metrics)

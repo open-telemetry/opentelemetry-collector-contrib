@@ -121,7 +121,7 @@ func TestOAuthClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			rc, err := newClientCredentialsExtension(test.settings, zap.NewNop())
+			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
 			if test.shouldError {
 				assert.NotNil(t, err)
 				assert.Contains(t, err.Error(), test.expectedError)
@@ -185,7 +185,7 @@ func TestRoundTripper(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			oauth2Authenticator, err := newClientCredentialsExtension(testcase.settings, zap.NewNop())
+			oauth2Authenticator, err := newClientAuthenticator(testcase.settings, zap.NewNop())
 			if testcase.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, oauth2Authenticator)
@@ -193,7 +193,7 @@ func TestRoundTripper(t *testing.T) {
 			}
 
 			assert.NotNil(t, oauth2Authenticator)
-			roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
+			roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
 			assert.Nil(t, err)
 
 			// test roundTripper is an OAuth RoundTripper
@@ -239,44 +239,20 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			oauth2Authenticator, err := newClientCredentialsExtension(testcase.settings, zap.NewNop())
+			oauth2Authenticator, err := newClientAuthenticator(testcase.settings, zap.NewNop())
 			if testcase.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, oauth2Authenticator)
 				return
 			}
 			assert.NoError(t, err)
-			perRPCCredentials, err := oauth2Authenticator.PerRPCCredentials()
+			perRPCCredentials, err := oauth2Authenticator.perRPCCredentials()
 			assert.Nil(t, err)
 			// test perRPCCredentials is an grpc OAuthTokenSource
 			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
 			assert.True(t, ok)
 		})
 	}
-}
-
-func TestOAuthExtensionStart(t *testing.T) {
-	oAuthExtensionAuth, err := newClientCredentialsExtension(
-		&Config{
-			ClientID:     "testclientid",
-			ClientSecret: "testsecret",
-			TokenURL:     "https://example.com/v1/token",
-			Scopes:       []string{"resource.read"},
-		}, nil)
-	assert.Nil(t, err)
-	assert.Nil(t, oAuthExtensionAuth.Start(context.Background(), nil))
-}
-
-func TestOAuthExtensionShutdown(t *testing.T) {
-	oAuthExtensionAuth, err := newClientCredentialsExtension(
-		&Config{
-			ClientID:     "testclientid",
-			ClientSecret: "testsecret",
-			TokenURL:     "https://example.com/v1/token",
-			Scopes:       []string{"resource.read"},
-		}, nil)
-	assert.Nil(t, err)
-	assert.Nil(t, oAuthExtensionAuth.Shutdown(context.Background()))
 }
 
 func TestFailContactingOAuth(t *testing.T) {
@@ -289,7 +265,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(t, err)
 
-	oauth2Authenticator, err := newClientCredentialsExtension(&Config{
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
 		ClientID:     "dummy",
 		ClientSecret: "ABC",
 		TokenURL:     serverURL.String(),
@@ -297,7 +273,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Test for gRPC connections
-	credential, err := oauth2Authenticator.PerRPCCredentials()
+	credential, err := oauth2Authenticator.perRPCCredentials()
 	assert.Nil(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
@@ -308,7 +284,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	setting := confighttp.HTTPClientSettings{
 		Endpoint: "http://example.com/",
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return oauth2Authenticator.RoundTripper(next)
+			return oauth2Authenticator.roundTripper(next)
 		},
 	}
 

@@ -35,7 +35,7 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| direction | Direction of flow of bytes (read or write). |
-| state | Breakdown of CPU usage by type. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | Direction of flow of bytes (read or write). | read, write |
+| state | Breakdown of CPU usage by type. | system, user, wait |

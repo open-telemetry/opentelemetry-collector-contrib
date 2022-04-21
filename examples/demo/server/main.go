@@ -127,7 +127,7 @@ func main() {
 	shutdown := initProvider()
 	defer shutdown()
 
-	meter := global.MeterProvider().Meter("demo-server-meter")
+	meter := global.Meter("demo-server-meter")
 	serverAttribute := attribute.String("server-attribute", "foo")
 	commonLabels := []attribute.KeyValue{serverAttribute}
 	requestCount, _ := meter.SyncInt64().Counter(

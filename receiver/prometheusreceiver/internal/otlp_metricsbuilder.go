@@ -23,28 +23,28 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
-func isUsefulLabelPdata(mType pdata.MetricDataType, labelKey string) bool {
+func isUsefulLabelPdata(mType pmetric.MetricDataType, labelKey string) bool {
 	switch labelKey {
 	case model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel:
 		return false
 	case model.BucketLabel:
-		return mType != pdata.MetricDataTypeHistogram
+		return mType != pmetric.MetricDataTypeHistogram
 	case model.QuantileLabel:
-		return mType != pdata.MetricDataTypeSummary
+		return mType != pmetric.MetricDataTypeSummary
 	}
 	return true
 }
 
-func getBoundaryPdata(metricType pdata.MetricDataType, labels labels.Labels) (float64, error) {
+func getBoundaryPdata(metricType pmetric.MetricDataType, labels labels.Labels) (float64, error) {
 	labelName := ""
 	switch metricType {
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		labelName = model.BucketLabel
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		labelName = model.QuantileLabel
 	default:
 		return 0, errNoBoundaryLabel
@@ -58,30 +58,30 @@ func getBoundaryPdata(metricType pdata.MetricDataType, labels labels.Labels) (fl
 	return strconv.ParseFloat(v, 64)
 }
 
-func convToPdataMetricType(metricType textparse.MetricType) pdata.MetricDataType {
+func convToPdataMetricType(metricType textparse.MetricType) pmetric.MetricDataType {
 	switch metricType {
 	case textparse.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
-		return pdata.MetricDataTypeSum
+		return pmetric.MetricDataTypeSum
 	// textparse.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
 	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
-		return pdata.MetricDataTypeGauge
+		return pmetric.MetricDataTypeGauge
 	case textparse.MetricTypeHistogram:
-		return pdata.MetricDataTypeHistogram
+		return pmetric.MetricDataTypeHistogram
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
 	// case textparse.MetricTypeGaugeHistogram:
 	//	return <pdata gauge histogram type>
 	case textparse.MetricTypeSummary:
-		return pdata.MetricDataTypeSummary
+		return pmetric.MetricDataTypeSummary
 	default:
 		// including: textparse.MetricTypeGaugeHistogram, textparse.MetricTypeInfo, textparse.MetricTypeStateset
-		return pdata.MetricDataTypeNone
+		return pmetric.MetricDataTypeNone
 	}
 }
 
 type metricBuilderPdata struct {
-	metrics              pdata.MetricSlice
+	metrics              pmetric.MetricSlice
 	families             map[string]*metricFamilyPdata
 	hasData              bool
 	hasInternalMetric    bool
@@ -96,7 +96,7 @@ type metricBuilderPdata struct {
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
-// scraped page by calling its AddDataPoint function, and turn them into a pdata.Metrics object.
+// scraped page by calling its AddDataPoint function, and turn them into a pmetric.Metrics object.
 // by calling its Build function
 func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger, intervalStartTimeMs int64) *metricBuilderPdata {
 	var regex *regexp.Regexp
@@ -104,7 +104,7 @@ func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeM
 		regex, _ = regexp.Compile(startTimeMetricRegex)
 	}
 	return &metricBuilderPdata{
-		metrics:              pdata.NewMetricSlice(),
+		metrics:              pmetric.NewMetricSlice(),
 		families:             map[string]*metricFamilyPdata{},
 		mc:                   mc,
 		logger:               logger,
@@ -186,12 +186,12 @@ func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) 
 	return curMF.Add(metricName, ls, t, v)
 }
 
-// Build an pdata.MetricSlice based on all added data complexValue.
+// Build an pmetric.MetricSlice based on all added data complexValue.
 // The only error returned by this function is errNoDataToBuild.
-func (b *metricBuilderPdata) Build() (*pdata.MetricSlice, int, int, error) {
+func (b *metricBuilderPdata) Build() (*pmetric.MetricSlice, int, int, error) {
 	if !b.hasData {
 		if b.hasInternalMetric {
-			metricsL := pdata.NewMetricSlice()
+			metricsL := pmetric.NewMetricSlice()
 			return &metricsL, 0, 0, nil
 		}
 		return nil, 0, 0, errNoDataToBuild

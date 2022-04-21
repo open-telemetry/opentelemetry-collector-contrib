@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -78,7 +78,7 @@ func TestInitializeAttributeMap(t *testing.T) {
 	cases := []struct {
 		name               string
 		encoded            string
-		expectedAttributes pdata.Map
+		expectedAttributes pcommon.Map
 		expectedError      string
 	}{
 		{
@@ -114,7 +114,7 @@ func TestInitializeAttributeMap(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			am := pdata.NewMap()
+			am := pcommon.NewMap()
 			err := initializeAttributeMap(am, c.encoded)
 
 			if c.expectedError != "" {

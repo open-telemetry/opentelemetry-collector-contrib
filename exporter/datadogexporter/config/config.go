@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -32,7 +31,7 @@ import (
 
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
-	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
+	errNoMetadata  = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 )
 
 // TODO: Import these from translator when we eliminate cyclic dependency.
@@ -59,15 +58,6 @@ type APIConfig struct {
 	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
-}
-
-// GetCensoredKey returns the API key censored for logging purposes.
-// Deprecated: [v0.48.0] Will be removed in v0.49.0.
-func (api *APIConfig) GetCensoredKey() string {
-	if len(api.Key) <= 5 {
-		return api.Key
-	}
-	return strings.Repeat("*", len(api.Key)-5) + api.Key[len(api.Key)-5:]
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -217,14 +207,20 @@ type TagsConfig struct {
 	Hostname string `mapstructure:"hostname"`
 
 	// Env is the environment for unified service tagging.
+	// Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
+	// Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
+	// Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Version string `mapstructure:"version"`
 
@@ -232,14 +228,16 @@ type TagsConfig struct {
 	// Superseded by Tags if the latter is set.
 	// Should not be set in the user-provided config.
 	//
-	// Deprecated: [v0.47.0] Use Tags instead.
+	// Deprecated: [v0.47.0] Use `host_metadata::tags` HostMetadataConfig.Tags instead.
 	EnvVarTags string `mapstructure:"envvartags"`
 
 	// Tags is the list of default tags to add to every metric or trace.
+	// Deprecated: [v0.49.0] Use `host_metadata::tags` (HostMetadataConfig.Tags)
 	Tags []string `mapstructure:"tags"`
 }
 
 // GetHostTags gets the host tags extracted from the configuration
+// Deprecated: [v0.49.0] Access fields explicitly instead.
 func (t *TagsConfig) GetHostTags() []string {
 	tags := t.Tags
 
@@ -251,6 +249,64 @@ func (t *TagsConfig) GetHostTags() []string {
 		tags = append(tags, fmt.Sprintf("env:%s", t.Env))
 	}
 	return tags
+}
+
+// HostnameSource is the source for the hostname of host metadata.
+type HostnameSource string
+
+const (
+	// HostnameSourceFirstResource picks the host metadata hostname from the resource
+	// attributes on the first OTLP payload that gets to the exporter. If it is lacking any
+	// hostname-like attributes, it will fallback to 'config_or_system' behavior (see below).
+	//
+	// Do not use this hostname source if receiving data from multiple hosts.
+	HostnameSourceFirstResource HostnameSource = "first_resource"
+
+	// HostnameSourceConfigOrSystem picks the host metadata hostname from the 'hostname' setting,
+	// and if this is empty, from available system APIs and cloud provider endpoints.
+	HostnameSourceConfigOrSystem HostnameSource = "config_or_system"
+)
+
+var _ encoding.TextUnmarshaler = (*HostnameSource)(nil)
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (sm *HostnameSource) UnmarshalText(in []byte) error {
+	switch mode := HostnameSource(in); mode {
+	case HostnameSourceFirstResource,
+		HostnameSourceConfigOrSystem:
+		*sm = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid host metadata hostname source %q", mode)
+	}
+}
+
+// HostMetadataConfig defines the host metadata related configuration.
+// Host metadata is the information used for populating the infrastructure list,
+// the host map and providing host tags functionality.
+//
+// The exporter will send host metadata for a single host, whose name is chosen
+// according to `host_metadata::hostname_source`.
+type HostMetadataConfig struct {
+	// Enabled enables the host metadata functionality.
+	Enabled bool `mapstructure:"enabled"`
+
+	// HostnameSource is the source for the hostname of host metadata.
+	// Valid values are 'first_resource' and 'config_or_system':
+	// - 'first_resource' picks the host metadata hostname from the resource
+	//    attributes on the first OTLP payload that gets to the exporter.
+	//    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system'.
+	//    Do not use this hostname source if receiving data from multiple hosts.
+	// - 'config_or_system' picks the host metadata hostname from the 'hostname' setting,
+	//    If this is empty it will use available system APIs and cloud provider endpoints.
+	//
+	// The current default if 'first_resource'.
+	HostnameSource HostnameSource `mapstructure:"hostname_source"`
+
+	// Tags is a list of host tags.
+	// These tags will be attached to telemetry signals that have the host metadata hostname.
+	// To attach tags to telemetry signals regardless of the host, use a processor instead.
+	Tags []string `mapstructure:"tags"`
 }
 
 // LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientSettings for more details
@@ -284,10 +340,14 @@ type Config struct {
 	// Traces defines the Traces exporter specific configuration
 	Traces TracesConfig `mapstructure:"traces"`
 
+	// HostMetadata defines the host metadata specific configuration
+	HostMetadata HostMetadataConfig `mapstructure:"host_metadata"`
+
 	// SendMetadata defines whether to send host metadata
 	// This is undocumented and only used for unit testing.
 	//
 	// This can't be disabled if `only_metadata` is true.
+	// Deprecated: [v0.49.0] Use `host_metadata::enabled` (HostMetadata.Enabled) instead.
 	SendMetadata bool `mapstructure:"send_metadata"`
 
 	// OnlyMetadata defines whether to only send metadata
@@ -295,8 +355,8 @@ type Config struct {
 	// metadata about a host is sent to the backend even
 	// when telemetry data is reported via a different host.
 	//
-	// This flag is incompatible with disabling `send_metadata`
-	// or `use_resource_metadata`.
+	// This flag is incompatible with disabling host metadata,
+	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 
 	// UseResourceMetadata defines whether to use resource attributes
@@ -305,20 +365,11 @@ type Config struct {
 	// By default this is true: the first resource attribute getting to
 	// the exporter will be used for host metadata.
 	// Disable this in the Collector if you are using an agent-collector setup.
+	// Deprecated: [v0.49.0] Use `host_metadata::hostname_source` (HostMetadata.HostnameSource) instead.
 	UseResourceMetadata bool `mapstructure:"use_resource_metadata"`
-
-	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
-	onceMetadata sync.Once
 
 	// warnings stores non-fatal configuration errors.
 	warnings []error
-}
-
-// OnceMetadata gets a sync.Once instance used for initializing the host metadata.
-// Deprecated: [v0.48.0] do not use, will be removed on v0.49.0.
-// TODO (#8373): Remove this method.
-func (c *Config) OnceMetadata() *sync.Once {
-	return &c.onceMetadata
 }
 
 // Sanitize tries to sanitize a given configuration
@@ -327,7 +378,7 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 		c.TagsConfig.Env = "none"
 	}
 
-	if c.OnlyMetadata && (!c.SendMetadata || !c.UseResourceMetadata) {
+	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
 	}
 
@@ -392,6 +443,10 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) Unmarshal(configMap *config.Map) error {
+	if err := handleRemovedSettings(configMap); err != nil {
+		return err
+	}
+
 	err := configMap.UnmarshalExact(c)
 	if err != nil {
 		return err
@@ -413,6 +468,17 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 
 	// Add warnings about autodetected environment variables.
 	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
+
+	deprecationTemplate := "%q has been deprecated and will be removed in %s. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
+	if c.Service != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.52.0", 8781))
+	}
+	if c.Version != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
+	}
+	if c.Env != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
+	}
 
 	return nil
 }

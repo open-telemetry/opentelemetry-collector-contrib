@@ -36,7 +36,7 @@ func NewSender(next consumer.Metrics, logger *zap.Logger) *Sender {
 	return &Sender{next: next, logger: logger}
 }
 
-// Send accepts a slice of dotnet.Metrics, converts them to pdata.Metrics, and
+// Send accepts a slice of dotnet.Metrics, converts them to pmetric.Metrics, and
 // sends them to the next pdata consumer. Conforms to dotnet.MetricsConsumer.
 func (s *Sender) Send(rawMetrics []dotnet.Metric) {
 	now := time.Now()
