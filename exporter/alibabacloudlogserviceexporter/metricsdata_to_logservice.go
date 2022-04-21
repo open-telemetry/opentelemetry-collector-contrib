@@ -178,7 +178,7 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 			return true
 		})
 		switch dataPoint.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			logs = append(logs,
 				newMetricLogFromRaw(name,
 					labels,
@@ -186,7 +186,7 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 					float64(dataPoint.IntVal()),
 				),
 			)
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			logs = append(logs,
 				newMetricLogFromRaw(name,
 					labels,

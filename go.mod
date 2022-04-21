@@ -128,7 +128,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.49.0
 	github.com/prometheus/prometheus v1.8.2-0.20220324155304-4d8bbfd4164c
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector v0.49.1-0.20220421154122-427f7dde5a8f
 	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886
 )
 
@@ -442,7 +442,7 @@ require (
 	go.mongodb.org/atlas v0.15.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/model v0.49.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.49.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220421154122-427f7dde5a8f // indirect
 	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
@@ -816,3 +816,5 @@ retract v0.37.0 // Contains dependencies on v0.36.0 components, which should hav
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
+
+replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
