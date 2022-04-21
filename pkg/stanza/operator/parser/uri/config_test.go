@@ -29,7 +29,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_from_simple",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
@@ -37,7 +37,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_to_simple",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
@@ -45,7 +45,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "on_error_drop",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
@@ -53,7 +53,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "timestamp",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
@@ -67,7 +67,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "severity",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
 				severityField := helper.NewSeverityParserConfig()
@@ -92,6 +92,6 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *URIParserConfig {
-	return NewURIParserConfig("uri_parser")
+func defaultCfg() *Config {
+	return NewConfig("uri_parser")
 }

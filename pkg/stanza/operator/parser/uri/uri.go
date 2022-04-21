@@ -28,45 +28,45 @@ import (
 )
 
 func init() {
-	operator.Register("uri_parser", func() operator.Builder { return NewURIParserConfig("") })
+	operator.Register("uri_parser", func() operator.Builder { return NewConfig("") })
 }
 
-// NewURIParserConfig creates a new uri parser config with default values.
-func NewURIParserConfig(operatorID string) *URIParserConfig {
-	return &URIParserConfig{
+// NewConfig creates a new uri parser config with default values.
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		ParserConfig: helper.NewParserConfig(operatorID, "uri_parser"),
 	}
 }
 
-// URIParserConfig is the configuration of a uri parser operator.
-type URIParserConfig struct {
+// Config is the configuration of a uri parser operator.
+type Config struct {
 	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
 }
 
 // Build will build a uri parser operator.
-func (c URIParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &URIParser{
+	return &Parser{
 		ParserOperator: parserOperator,
 	}, nil
 }
 
-// URIParser is an operator that parses a uri.
-type URIParser struct {
+// Parser is an operator that parses a uri.
+type Parser struct {
 	helper.ParserOperator
 }
 
 // Process will parse an entry.
-func (u *URIParser) Process(ctx context.Context, entry *entry.Entry) error {
+func (u *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return u.ParserOperator.ProcessWith(ctx, entry, u.parse)
 }
 
 // parse will parse a uri from a field and attach it to an entry.
-func (u *URIParser) parse(value interface{}) (interface{}, error) {
+func (u *Parser) parse(value interface{}) (interface{}, error) {
 	switch m := value.(type) {
 	case string:
 		return parseURI(m)

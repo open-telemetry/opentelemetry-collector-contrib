@@ -28,11 +28,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func newTestParser(t *testing.T) *URIParser {
-	cfg := NewURIParserConfig("test")
+func newTestParser(t *testing.T) *Parser {
+	cfg := NewConfig("test")
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	return op.(*URIParser)
+	return op.(*Parser)
 }
 
 func TestInit(t *testing.T) {
@@ -41,22 +41,22 @@ func TestInit(t *testing.T) {
 	require.Equal(t, "uri_parser", builder().Type())
 }
 
-func TestURIParserBuildFailure(t *testing.T) {
-	cfg := NewURIParserConfig("test")
+func TestParserBuildFailure(t *testing.T) {
+	cfg := NewConfig("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
-func TestURIParserByteFailure(t *testing.T) {
+func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]uint8' cannot be parsed as URI")
 }
 
-func TestURIParserStringFailure(t *testing.T) {
+func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
@@ -80,7 +80,7 @@ func TestProcess(t *testing.T) {
 		{
 			"default",
 			func() (operator.Operator, error) {
-				cfg := NewURIParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
@@ -104,7 +104,7 @@ func TestProcess(t *testing.T) {
 		{
 			"parse-to",
 			func() (operator.Operator, error) {
-				cfg := NewURIParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				cfg.ParseTo = entry.NewBodyField("url2")
 				return cfg.Build(testutil.Logger(t))
@@ -134,7 +134,7 @@ func TestProcess(t *testing.T) {
 		{
 			"parse-from",
 			func() (operator.Operator, error) {
-				cfg := NewURIParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				return cfg.Build(testutil.Logger(t))
 			},
@@ -174,7 +174,7 @@ func TestProcess(t *testing.T) {
 	}
 }
 
-func TestURIParserParse(t *testing.T) {
+func TestParserParse(t *testing.T) {
 	cases := []struct {
 		name       string
 		inputBody  interface{}
@@ -200,7 +200,7 @@ func TestURIParserParse(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			parser := URIParser{}
+			parser := Parser{}
 			x, err := parser.parse(tc.inputBody)
 			if tc.expectErr {
 				require.Error(t, err)
@@ -495,14 +495,14 @@ func TestParseURI(t *testing.T) {
 }
 
 func TestBuildParserURL(t *testing.T) {
-	newBasicURIParser := func() *URIParserConfig {
-		cfg := NewURIParserConfig("test")
+	newBasicParser := func() *Config {
+		cfg := NewConfig("test")
 		cfg.OutputIDs = []string{"test"}
 		return cfg
 	}
 
 	t.Run("BasicConfig", func(t *testing.T) {
-		c := newBasicURIParser()
+		c := newBasicParser()
 		_, err := c.Build(testutil.Logger(t))
 		require.NoError(t, err)
 	})
@@ -664,9 +664,9 @@ func TestQueryParamValuesToMap(t *testing.T) {
 	}
 }
 
-func BenchmarkURIParserParse(b *testing.B) {
+func BenchmarkParserParse(b *testing.B) {
 	v := "https://dev:password@www.golang.org:8443/v1/app/stage?token=d9e28b1d-2c7b-4853-be6a-d94f34a5d4ab&env=prod&env=stage&token=c6fa29f9-a31b-4584-b98d-aa8473b0e18d&region=us-east1b&mode=fast"
-	parser := URIParser{}
+	parser := Parser{}
 	for n := 0; n < b.N; n++ {
 		if _, err := parser.parse(v); err != nil {
 			b.Fatal(err)
@@ -708,8 +708,8 @@ func BenchmarkQueryParamValuesToMap(b *testing.B) {
 	}
 }
 
-func TestURIParserConfig(t *testing.T) {
-	expect := NewURIParserConfig("test")
+func TestConfig(t *testing.T) {
+	expect := NewConfig("test")
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.NewBodyField("to")
 
@@ -721,7 +721,7 @@ func TestURIParserConfig(t *testing.T) {
 			"parse_to":   "body.to",
 			"on_error":   "send",
 		}
-		var actual URIParserConfig
+		var actual Config
 		err := helper.UnmarshalMapstructure(input, &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
@@ -734,7 +734,7 @@ id: test
 on_error: "send"
 parse_from: body.from
 parse_to: body.to`
-		var actual URIParserConfig
+		var actual Config
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
