@@ -29,19 +29,19 @@ import (
 )
 
 func init() {
-	operator.Register("key_value_parser", func() operator.Builder { return NewKVParserConfig("") })
+	operator.Register("key_value_parser", func() operator.Builder { return NewConfig("") })
 }
 
-// NewKVParserConfig creates a new key value parser config with default values
-func NewKVParserConfig(operatorID string) *KVParserConfig {
-	return &KVParserConfig{
+// NewConfig creates a new key value parser config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		ParserConfig: helper.NewParserConfig(operatorID, "key_value_parser"),
 		Delimiter:    "=",
 	}
 }
 
-// KVParserConfig is the configuration of a key value parser operator.
-type KVParserConfig struct {
+// Config is the configuration of a key value parser operator.
+type Config struct {
 	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
 
 	Delimiter     string `mapstructure:"delimiter" yaml:"delimiter"`
@@ -49,7 +49,7 @@ type KVParserConfig struct {
 }
 
 // Build will build a key value parser operator.
-func (c KVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -72,27 +72,27 @@ func (c KVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 		}
 	}
 
-	return &KVParser{
+	return &Parser{
 		ParserOperator: parserOperator,
 		delimiter:      c.Delimiter,
 		pairSplitFunc:  pairSplitFunc,
 	}, nil
 }
 
-// KVParser is an operator that parses key value pairs.
-type KVParser struct {
+// Parser is an operator that parses key value pairs.
+type Parser struct {
 	helper.ParserOperator
 	delimiter     string
 	pairSplitFunc func(input string) []string
 }
 
 // Process will parse an entry for key value pairs.
-func (kv *KVParser) Process(ctx context.Context, entry *entry.Entry) error {
+func (kv *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return kv.ParserOperator.ProcessWith(ctx, entry, kv.parse)
 }
 
 // parse will parse a value as key values.
-func (kv *KVParser) parse(value interface{}) (interface{}, error) {
+func (kv *Parser) parse(value interface{}) (interface{}, error) {
 	switch m := value.(type) {
 	case string:
 		return kv.parser(m, kv.delimiter)
@@ -101,7 +101,7 @@ func (kv *KVParser) parse(value interface{}) (interface{}, error) {
 	}
 }
 
-func (kv *KVParser) parser(input string, delimiter string) (map[string]interface{}, error) {
+func (kv *Parser) parser(input string, delimiter string) (map[string]interface{}, error) {
 	if input == "" {
 		return nil, fmt.Errorf("parse from field %s is empty", kv.ParseFrom.String())
 	}

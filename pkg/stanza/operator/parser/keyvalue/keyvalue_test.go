@@ -27,11 +27,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func newTestParser(t *testing.T) *KVParser {
-	config := NewKVParserConfig("test")
+func newTestParser(t *testing.T) *Parser {
+	config := NewConfig("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	return op.(*KVParser)
+	return op.(*Parser)
 }
 
 func TestInit(t *testing.T) {
@@ -40,15 +40,15 @@ func TestInit(t *testing.T) {
 	require.Equal(t, "key_value_parser", builder().Type())
 }
 
-func TestKVParserConfigBuild(t *testing.T) {
-	config := NewKVParserConfig("test")
+func TestConfigBuild(t *testing.T) {
+	config := NewConfig("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	require.IsType(t, &KVParser{}, op)
+	require.IsType(t, &Parser{}, op)
 }
 
-func TestKVParserConfigBuildFailure(t *testing.T) {
-	config := NewKVParserConfig("test")
+func TestConfigBuildFailure(t *testing.T) {
+	config := NewConfig("test")
 	config.OnError = "invalid_on_error"
 	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
@@ -56,19 +56,19 @@ func TestKVParserConfigBuildFailure(t *testing.T) {
 }
 
 func TestBuild(t *testing.T) {
-	basicConfig := func() *KVParserConfig {
-		cfg := NewKVParserConfig("test_operator_id")
+	basicConfig := func() *Config {
+		cfg := NewConfig("test_operator_id")
 		return cfg
 	}
 
 	cases := []struct {
 		name      string
-		input     *KVParserConfig
+		input     *Config
 		expectErr bool
 	}{
 		{
 			"default",
-			func() *KVParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				return cfg
 			}(),
@@ -76,7 +76,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"delimiter",
-			func() *KVParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Delimiter = "/"
 				return cfg
@@ -85,7 +85,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"missing-delimiter",
-			func() *KVParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Delimiter = ""
 				return cfg
@@ -94,7 +94,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"pair-delimiter",
-			func() *KVParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.PairDelimiter = "|"
 				return cfg
@@ -103,7 +103,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"same-delimiter-and-pair-delimiter",
-			func() *KVParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Delimiter = "|"
 				cfg.PairDelimiter = cfg.Delimiter
@@ -113,7 +113,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"unset-delimiter",
-			func() *KVParserConfig {
+			func() *Config {
 				cfg := basicConfig()
 				cfg.Delimiter = ""
 				cfg.PairDelimiter = "!"
@@ -136,14 +136,14 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func TestKVParserStringFailure(t *testing.T) {
+func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), fmt.Sprintf("expected '%s' to split by '%s' into two items, got", "invalid", parser.delimiter))
 }
 
-func TestKVParserInvalidType(t *testing.T) {
+func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
@@ -151,13 +151,13 @@ func TestKVParserInvalidType(t *testing.T) {
 }
 
 func TestKVImplementations(t *testing.T) {
-	require.Implements(t, (*operator.Operator)(nil), new(KVParser))
+	require.Implements(t, (*operator.Operator)(nil), new(Parser))
 }
 
-func TestKVParser(t *testing.T) {
+func TestParser(t *testing.T) {
 	cases := []struct {
 		name           string
-		configure      func(*KVParserConfig)
+		configure      func(*Config)
 		input          *entry.Entry
 		expect         *entry.Entry
 		expectError    bool
@@ -165,7 +165,7 @@ func TestKVParser(t *testing.T) {
 	}{
 		{
 			"simple",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: "name=stanza age=2",
 			},
@@ -181,7 +181,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"parse-from",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.ParseFrom = entry.NewBodyField("test")
 			},
 			&entry.Entry{
@@ -203,7 +203,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"parse-to",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.ParseTo = entry.NewBodyField("test")
 			},
 			&entry.Entry{
@@ -222,7 +222,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"from-to",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.ParseFrom = entry.NewAttributeField("from")
 				kv.ParseTo = entry.NewBodyField("to")
 			},
@@ -247,7 +247,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"user-agent",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: `requestClientApplication="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"`,
 			},
@@ -262,7 +262,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"double-quotes-removed",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: "name=\"stanza\" age=2",
 			},
@@ -278,7 +278,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"single-quotes-removed",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: "description='stanza deployment number 5' x=y",
 			},
@@ -294,7 +294,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"double-quotes-spaces-removed",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: `name=" stanza " age=2`,
 			},
@@ -310,7 +310,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"leading-and-trailing-space",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: `" name "=" stanza " age=2`,
 			},
@@ -326,7 +326,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"delimiter",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.Delimiter = "|"
 				kv.ParseFrom = entry.NewBodyField("testfield")
 				kv.ParseTo = entry.NewBodyField("testparsed")
@@ -351,7 +351,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"double-delimiter",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.Delimiter = "=="
 			},
 			&entry.Entry{
@@ -370,7 +370,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"pair-delimiter",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.PairDelimiter = "|"
 			},
 			&entry.Entry{
@@ -389,7 +389,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"large",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: "name=stanza age=1 job=\"software engineering\" location=\"grand rapids michigan\" src=\"10.3.3.76\" dst=172.217.0.10 protocol=udp sport=57112 dport=443 translated_src_ip=96.63.176.3 translated_port=57112",
 			},
@@ -414,7 +414,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"dell-sonic-wall",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: `id=LVM_Sonicwall sn=22255555 time="2021-09-22 16:30:31" fw=14.165.177.10 pri=6 c=1024 gcat=2 m=97 msg="Web site hit" srcMac=6c:0b:84:3f:fa:63 src=192.168.50.2:52006:X0 srcZone=LAN natSrc=14.165.177.10:58457 dstMac=08:b2:58:46:30:54 dst=15.159.150.83:443:X1 dstZone=WAN natDst=15.159.150.83:443 proto=tcp/https sent=1422 rcvd=5993 rule="6 (LAN->WAN)" app=48 dstname=example.space.dev.com arg=/ code=27 Category="Information Technology/Computers" note="Policy: a0, Info: 888 " n=3412158`,
 			},
@@ -456,7 +456,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"missing-delimiter",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: `test text`,
 			},
@@ -468,7 +468,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"invalid-pair",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{
 				Body: `test=text=abc`,
 			},
@@ -480,7 +480,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"empty-input",
-			func(kv *KVParserConfig) {},
+			func(kv *Config) {},
 			&entry.Entry{},
 			&entry.Entry{},
 			true,
@@ -488,7 +488,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"same-delimiter-and-pair-delimiter",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.Delimiter = "!"
 				kv.PairDelimiter = kv.Delimiter
 			},
@@ -503,7 +503,7 @@ func TestKVParser(t *testing.T) {
 		},
 		{
 			"unset-delimiter",
-			func(kv *KVParserConfig) {
+			func(kv *Config) {
 				kv.Delimiter = ""
 				kv.PairDelimiter = "!"
 			},
@@ -520,7 +520,7 @@ func TestKVParser(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewKVParserConfig("test")
+			cfg := NewConfig("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
