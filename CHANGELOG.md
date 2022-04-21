@@ -6,6 +6,7 @@
 
 - `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
+- `kubeletstatsreceiver`: instrumentation name updated from `otelcol/kubeletstats` to `otelcol/kubeletstatsreceiver` (#9400)
 
 ### 🚩 Deprecations 🚩
 
