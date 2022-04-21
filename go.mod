@@ -77,6 +77,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.49.0
@@ -701,6 +702,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/span
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ./processor/tailsamplingprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ./processor/transformprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver => ./receiver/activedirectorydsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver => ./receiver/awscontainerinsightreceiver
 

@@ -18,11 +18,11 @@ These are the metrics available for this scraper.
 | **mysql.double_writes** | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
 | **mysql.handlers** | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
 | **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
-| **mysql.log_operations** | The number of InndoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
-| **mysql.operations** | The number of InndoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
-| **mysql.page_operations** | The number of InndoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
-| **mysql.row_locks** | The number of InndoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
-| **mysql.row_operations** | The number of InndoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
+| **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
+| **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
+| **mysql.row_locks** | The number of InnoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
+| **mysql.row_operations** | The number of InnoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
 | **mysql.sorts** | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
 | **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
 
