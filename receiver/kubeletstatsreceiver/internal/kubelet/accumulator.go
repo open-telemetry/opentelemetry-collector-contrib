@@ -47,7 +47,6 @@ type metricDataAccumulator struct {
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
 	time                  time.Time
-	typeStr               string
 }
 
 const (
@@ -55,6 +54,7 @@ const (
 	nodePrefix      = k8sPrefix + "node."
 	podPrefix       = k8sPrefix + "pod."
 	containerPrefix = "container."
+	scopeName       = "otelcol/kubeletstatsreceiver"
 )
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
@@ -67,7 +67,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	fillNodeResource(rm.Resource(), s)
 
 	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(a.typeStr)
+	ilm.Scope().SetName(scopeName)
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
@@ -90,7 +90,7 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	fillPodResource(rm.Resource(), s)
 
 	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(a.typeStr)
+	ilm.Scope().SetName(scopeName)
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
@@ -120,7 +120,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	}
 
 	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(a.typeStr)
+	ilm.Scope().SetName(scopeName)
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
@@ -148,7 +148,7 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 	}
 
 	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(a.typeStr)
+	ilm.Scope().SetName(scopeName)
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addVolumeMetrics(ilm.Metrics(), k8sPrefix, s, currentTime)
