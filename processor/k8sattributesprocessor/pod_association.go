@@ -30,10 +30,7 @@ import (
 func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.Association) kube.PodIdentifier {
 	// If pod association is not set
 	if len(associations) == 0 {
-		id := extractPodIDNoAssociations(ctx, attrs)
-		return kube.PodIdentifier{
-			kube.PodIdentifierAttributeFromConnection(id),
-		}
+		return extractPodIDNoAssociations(ctx, attrs)
 	}
 
 	connectionIP := getConnectionIP(ctx)
@@ -69,29 +66,37 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 }
 
 // extractPodIds returns pod identifier for first association matching all sources
-func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) string {
+func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.PodIdentifier {
 	var podIP, labelIP string
 	podIP = stringAttributeFromMap(attrs, k8sIPLabelName)
 	if podIP != "" {
-		return podIP
+		return kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromConnection(podIP),
+		}
 	}
 
 	labelIP = stringAttributeFromMap(attrs, clientIPLabelName)
 	if labelIP != "" {
-		return labelIP
+		return kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromConnection(labelIP),
+		}
 	}
 
 	connectionIP := getConnectionIP(ctx)
 	if connectionIP != "" {
-		return connectionIP
+		return kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromConnection(connectionIP),
+		}
 	}
 
 	hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
 	if net.ParseIP(hostname) != nil {
-		return hostname
+		return kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromConnection(hostname),
+		}
 	}
 
-	return ""
+	return kube.PodIdentifier{}
 }
 
 func getConnectionIP(ctx context.Context) string {
