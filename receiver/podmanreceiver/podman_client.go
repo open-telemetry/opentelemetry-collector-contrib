@@ -30,6 +30,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	ErrNoStatsFound = fmt.Errorf("No stats found")
+)
+
 type containerStats struct {
 	AvgCPU        float64
 	ContainerID   string
@@ -128,7 +132,7 @@ func (c *podmanClient) stats(ctx context.Context) ([]containerStats, error) {
 	if report.Error.Message != "" {
 		return nil, errors.New(report.Error.Message)
 	} else if report.Stats == nil {
-		return nil, errors.New("No stats found")
+		return nil, ErrNoStatsFound
 	}
 
 	return report.Stats, nil
