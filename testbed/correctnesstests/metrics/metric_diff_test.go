@@ -64,7 +64,7 @@ func TestDifferentNumPts(t *testing.T) {
 func TestDifferentPtValueTypes(t *testing.T) {
 	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()
-	cfg.MetricValueType = pmetric.MetricValueTypeDouble
+	cfg.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 	actual := goldendataset.MetricsFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 1)

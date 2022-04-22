@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -40,23 +39,22 @@ func (s *brokerScraper) Name() string {
 	return brokersScraperName
 }
 
-func (s *brokerScraper) start(context.Context, component.Host) error {
-	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client while starting brokers scraper: %w", err)
-	}
-	s.client = client
-	return nil
-}
-
 func (s *brokerScraper) shutdown(context.Context) error {
-	if !s.client.Closed() {
+	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
 	}
 	return nil
 }
 
 func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if s.client == nil {
+		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)
+		}
+		s.client = client
+	}
+
 	brokers := s.client.Brokers()
 
 	md := pmetric.NewMetrics()
@@ -77,6 +75,5 @@ func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
-		scraperhelper.WithStart(s.start),
 	)
 }

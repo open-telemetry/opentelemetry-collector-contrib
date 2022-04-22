@@ -120,10 +120,10 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, basePoint *sfxpb.D
 		dp.Dimensions = attributesToDimensions(inDp.Attributes(), extraDims)
 
 		switch inDp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val := inDp.IntVal()
 			dp.Value.IntValue = &val
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val := inDp.DoubleVal()
 			dp.Value.DoubleValue = &val
 		}
