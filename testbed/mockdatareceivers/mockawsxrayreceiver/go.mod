@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/gorilla/mux v1.8.0
-	go.opentelemetry.io/collector v0.49.1-0.20220421154122-427f7dde5a8f
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220421154122-427f7dde5a8f
+	go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220422001137-87ab5de64ce4
 	go.uber.org/zap v1.21.0
 
 )
@@ -34,4 +34,4 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 )
 
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
+replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
