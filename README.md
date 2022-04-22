@@ -46,14 +46,27 @@
 
 # OpenTelemetry Collector Contrib
 
-This is a repository for OpenTelemetry Collector contributions that are not
-part of the [core
-distribution](https://github.com/open-telemetry/opentelemetry-collector) of the
-Collector. Typically, these contributions are vendor specific
-receivers/exporters and/or components that are only useful to a relatively
-small number of users.
+This is a repository for OpenTelemetry Collector components that are not suitable for the  [core repository](https://github.com/open-telemetry/opentelemetry-collector) of the collector. Some of these components are part of the core distribution, such as the Jaeger and Prometheus ones, but most of the components here are only available as part of the "contrib" distribution. Users of the OpenTelemetry Collector are also encouraged to build their own custom distributions with the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder), using the components they need from the core repository, the contrib repository, and possibly third-party or internal repositories.
 
-> Please note that this repository and its releases are a superset of the core repository.
+The official distributions, core and contrib, are available as part of the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository.
+
+Each component has its own stability and support levels, as defined in the following sections.
+
+## Stability levels
+
+While we intend to provide high-quality components as part of this repository, we acknowledge that not all of them are ready for prime time. As such, each component should list its current stability level, according to the following definitions:
+
+* **In development**: not all pieces of the component are in place yet and it might not be available as part of any distributions yet. Bugs and performance issues should be reported, but it is likely that the component owners might not give them much attention. Your feedback is still desired, especially when it comes to the user-experience (configuration options, component observability, technical implementation details, ...). Configuration options might break often depending on how things evolve. The component should not be used in production.
+* **Experimental**: the component is ready to be used for limited non-critical workloads and the authors of this component would welcome your feedback. Bugs and performance problems should be reported, but component owners might not work on them right away. The configuration options might change between releases, although component owners should try to minimize breaking changes.
+* **Stable**: the component is ready to be used in production. Bugs and performance problems should be reported and there's an expectation that the component owners will work on them. Breaking changes, including configuration options and the component's output are not expected to happen without prior notice, unless under special circumstances.
+
+## Support levels
+
+Each component is supported either by the community of OpenTelemetry Collector Contrib maintainers, as defined by the GitHub group [@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer), or by specific vendors. See the individual README files for information about the specific components.
+
+The OpenTelemetry Collector Contrib maintainers may at any time downgrade specific components, including vendor-specific ones, if they are deemed unmaintained or if they pose a risk to the repository and/or binary distribution.
+
+Even though the OpenTelemetry Collector Contrib maintainers are ultimately responsible for the components hosted here, actual support will likely be provided by individual contributors, typically a code owner for the specific component.
 
 ## Contributing
 
