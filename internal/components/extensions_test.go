@@ -92,7 +92,7 @@ func TestDefaultExtensions(t *testing.T) {
 				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
 				f := testutil.NewTemporaryFile(t)
 				f.WriteString("username:password")
-				cfg.Htpasswd = basicauthextension.HtpasswdSettings{
+				cfg.Htpasswd = &basicauthextension.HtpasswdSettings{
 					File:   f.Name(),
 					Inline: "username:password",
 				}

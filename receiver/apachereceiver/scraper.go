@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
@@ -69,31 +70,25 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
+	var errors scrapererror.ScrapeErrors
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for metricKey, metricValue := range parseStats(stats) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheUptimeDataPoint(now, i, r.cfg.serverName)
-			}
+			addPartialIfError(errors, r.mb.RecordApacheUptimeDataPoint(now, metricValue, r.cfg.serverName))
 		case "ConnsTotal":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheCurrentConnectionsDataPoint(now, i, r.cfg.serverName)
-			}
+			addPartialIfError(errors, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
 		case "BusyWorkers":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "busy")
-			}
+			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "busy"))
 		case "IdleWorkers":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "idle")
-			}
+			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "idle"))
 		case "Total Accesses":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheRequestsDataPoint(now, i, r.cfg.serverName)
-			}
+			addPartialIfError(errors, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
 		case "Total kBytes":
-			if i, ok := r.parseInt(metricKey, metricValue); ok {
+			i, err := strconv.ParseInt(metricValue, 10, 64)
+			if err != nil {
+				errors.AddPartial(1, err)
+			} else {
 				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
 			}
 		case "Scoreboard":
@@ -104,7 +99,13 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	return r.mb.Emit(), nil
+	return r.mb.Emit(), errors.Combine()
+}
+
+func addPartialIfError(errors scrapererror.ScrapeErrors, err error) {
+	if err != nil {
+		errors.AddPartial(1, err)
+	}
 }
 
 // GetStats collects metric stats by making a get request at an endpoint.
@@ -136,25 +137,6 @@ func parseStats(resp string) map[string]string {
 		metrics[field[:index]] = field[index+2:]
 	}
 	return metrics
-}
-
-// parseInt converts string to int64.
-func (r *apacheScraper) parseInt(key, value string) (int64, bool) {
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		r.logInvalid("int", key, value)
-		return 0, false
-	}
-	return i, true
-}
-
-func (r *apacheScraper) logInvalid(expectedType, key, value string) {
-	r.settings.Logger.Info(
-		"invalid value",
-		zap.String("expectedType", expectedType),
-		zap.String("key", key),
-		zap.String("value", value),
-	)
 }
 
 type scoreboardCountsByLabel map[string]int64

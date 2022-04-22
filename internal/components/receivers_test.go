@@ -52,6 +52,10 @@ func TestDefaultReceivers(t *testing.T) {
 		getConfigFn  getReceiverConfigFn
 	}{
 		{
+			receiver:     "active_directory_ds",
+			skipLifecyle: true, // Requires a running windows service
+		},
+		{
 			receiver: "awscontainerinsightreceiver",
 			// TODO: skipped since it will only function in a container environment with procfs in expected location.
 			skipLifecyle: true,

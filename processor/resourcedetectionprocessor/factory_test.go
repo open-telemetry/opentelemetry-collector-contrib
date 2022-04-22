@@ -16,12 +16,14 @@ package resourcedetectionprocessor
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -45,6 +47,25 @@ func TestCreateProcessor(t *testing.T) {
 	lp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
+}
+
+func TestCreateConfigProcessors(t *testing.T) {
+	factory := NewFactory()
+	factories, _ := componenttest.NopFactories()
+	factories.Processors[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+
+	for k, v := range cfg.Processors {
+		// Check if all processor variations that are defined in test config can be actually created
+		t.Run(k.Name(), func(t *testing.T) {
+			tt, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), v, consumertest.NewNop())
+			assert.NoError(t, err)
+			assert.NotNil(t, tt)
+		})
+	}
 }
 
 func TestInvalidConfig(t *testing.T) {
