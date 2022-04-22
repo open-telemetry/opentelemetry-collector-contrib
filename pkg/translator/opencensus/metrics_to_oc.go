@@ -141,7 +141,7 @@ func collectLabelKeysNumberDataPoints(dps pmetric.NumberDataPointSlice, keySet m
 	allInt := true
 	for i := 0; i < dps.Len(); i++ {
 		addLabelKeys(keySet, dps.At(i).Attributes())
-		if dps.At(i).ValueType() != pmetric.MetricValueTypeInt {
+		if dps.At(i).ValueType() != pmetric.NumberDataPointValueTypeInt {
 			allInt = false
 		}
 	}
@@ -229,11 +229,11 @@ func numberDataPointsToOC(dps pmetric.NumberDataPointSlice, labelKeys *labelKeys
 			Timestamp: timestampAsTimestampPb(dp.Timestamp()),
 		}
 		switch dp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			point.Value = &ocmetrics.Point_Int64Value{
 				Int64Value: dp.IntVal(),
 			}
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			point.Value = &ocmetrics.Point_DoubleValue{
 				DoubleValue: dp.DoubleVal(),
 			}
@@ -366,9 +366,9 @@ func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bu
 		exemplar := exemplars.At(i)
 		var val float64
 		switch exemplar.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.ExemplarValueTypeInt:
 			val = float64(exemplar.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.ExemplarValueTypeDouble:
 			val = exemplar.DoubleVal()
 		}
 		pos := 0

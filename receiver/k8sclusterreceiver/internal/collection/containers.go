@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"

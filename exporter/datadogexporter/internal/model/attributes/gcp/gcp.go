@@ -17,8 +17,8 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"fmt"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // HostInfo holds the GCP host information.

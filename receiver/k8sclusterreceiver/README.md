@@ -67,17 +67,19 @@ with detailed sample configurations [here](./testdata/config.yaml).
     - k8s.node.allocatable_cpu
   - Stages and Timeline
     - Alpha
-      - In this stage the feature is disabled by default and must be enabled by the user.
-      - Target version
-        - v0.47.0
-    - Beta
-      - In this stage the feature enabled by default but can be disabled by the user.
-      - Target version
-        - v0.50.0
+      - In this stage the feature gate is disabled by default and must be enabled by the user. This allows users to preemptively opt in and start using the bug fix by enabling the feature gate.
+      - Collector version: v0.47.0
+      - Release Date: Late March 2022
+    - Beta (current stage)
+      - In this stage the feature gate is enabled by default and can be disabled by the user.
+      - Users could experience some friction in this stage, they may need to update monitoring for the affected metrics or opt out of using the bug fix by disabling the feature gate.
+      - Target Collector version: v0.50.0
+      - Target Release Date: Early May 2022
     - Generally Available
-      - In this stage the feature is permanently enabled and the feature gate is no longer available.
-      - Target version
-        - v0.53.0
+      - In this stage the feature gate is permanently enabled and the feature gate is no longer available for anyone.
+      - Users could experience some friction in this stage, they may have to update monitoring for the affected metrics or be blocked from upgrading the collector to versions v0.53.0 and newer.
+      - Target Collector version: v0.53.0
+      - Target Release Date: Mid June 2022
   - Usage
     - Feature gate identifiers prefixed with - will disable the gate and prefixing with + or with no prefix will enable the gate.
     - Start the otelcol with the feature gate enabled:

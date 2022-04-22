@@ -165,7 +165,7 @@ service:
 		service.ConfigProviderSettings{
 			Locations:    []string{confFile.Name()},
 			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
-			Unmarshaler:  configunmarshaler.NewDefault(),
+			Unmarshaler:  configunmarshaler.NewDefault(), //nolint:staticcheck
 		})
 	require.NoError(t, err)
 

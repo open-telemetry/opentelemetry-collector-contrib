@@ -399,9 +399,9 @@ func getMetricProperties(metric pmetric.Metric) (
 		ts = metric.Gauge().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Gauge().DataPoints().At(0)
 		switch dp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			value = float64(dp.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			value = dp.DoubleVal()
 		}
 		temporality = pmetric.MetricAggregationTemporalityUnspecified
@@ -411,9 +411,9 @@ func getMetricProperties(metric pmetric.Metric) (
 		ts = metric.Sum().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Sum().DataPoints().At(0)
 		switch dp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			value = float64(dp.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			value = dp.DoubleVal()
 		}
 		temporality = metric.Sum().AggregationTemporality()

@@ -22,7 +22,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -62,7 +63,7 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 }
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
-func (s *sqlServerScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	metricsByDatabase, errs := createMetricGroupPerDatabase(s.watchers)
 
 	for key, metricGroup := range metricsByDatabase {
@@ -97,7 +98,7 @@ func createMetricGroupPerDatabase(watchers []windowsapi.PerfCounterWatcher) (map
 }
 
 func (s *sqlServerScraper) emitMetricGroup(metricGroup []winperfcounters.CounterValue, databaseName string) {
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, metric := range metricGroup {
 		s.metricsBuilder.RecordAnyDataPoint(now, metric.Value, metric.MetricRep.Name, metric.MetricRep.Attributes)
