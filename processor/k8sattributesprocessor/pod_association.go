@@ -42,10 +42,10 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 			// If association configured to take IP address from connection
 			switch {
 			case source.From == kube.ConnectionSource:
-				if connectionIP == "" {
+				if connectionIP.Value == "" {
 					skip = true
 				}
-				ret[i] = kube.PodIdentifierAttributeFromSource(source, connectionIP)
+				ret[i] = connectionIP
 			case source.From == kube.ResourceSource:
 				// Extract values based on configured resource_attribute.
 				attributeValue := stringAttributeFromMap(attrs, source.Name)
@@ -83,9 +83,9 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.Pod
 	}
 
 	connectionIP := getConnectionIP(ctx)
-	if connectionIP != "" {
+	if connectionIP.Value != "" {
 		return kube.PodIdentifier{
-			kube.PodIdentifierAttributeFromConnection(connectionIP),
+			connectionIP,
 		}
 	}
 
@@ -99,18 +99,18 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.Pod
 	return kube.PodIdentifier{}
 }
 
-func getConnectionIP(ctx context.Context) string {
+func getConnectionIP(ctx context.Context) kube.PodIdentifierAttribute {
 	c := client.FromContext(ctx)
 	if c.Addr == nil {
-		return ""
+		return kube.PodIdentifierAttribute{}
 	}
 	switch addr := c.Addr.(type) {
 	case *net.UDPAddr:
-		return addr.IP.String()
+		return kube.PodIdentifierAttributeFromConnection(addr.IP.String())
 	case *net.TCPAddr:
-		return addr.IP.String()
+		return kube.PodIdentifierAttributeFromConnection(addr.IP.String())
 	case *net.IPAddr:
-		return addr.IP.String()
+		return kube.PodIdentifierAttributeFromConnection(addr.IP.String())
 	}
 
 	// If this is not a known address type, check for known "untyped" formats.
@@ -121,11 +121,11 @@ func getConnectionIP(ctx context.Context) string {
 		ipString := c.Addr.String()[:lastColonIndex]
 		ip := net.ParseIP(ipString)
 		if ip != nil {
-			return ip.String()
+			return kube.PodIdentifierAttributeFromConnection(ip.String())
 		}
 	}
 
-	return c.Addr.String()
+	return kube.PodIdentifierAttributeFromConnection(c.Addr.String())
 
 }
 
