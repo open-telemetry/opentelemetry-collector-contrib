@@ -26,14 +26,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
-// extractPodIds extracts IP and pod UID from attributes or request context.
-// It returns a value pair containing configured label and IP Address and/or Pod UID.
-// If empty value in return it means that attributes does not contains configured label to match resources for Pod.
-func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.Association) (string, kube.PodIdentifier) {
+// extractPodIds returns pod identifier for first association matching all sources
+func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.Association) kube.PodIdentifier {
 	// If pod association is not set
 	if len(associations) == 0 {
-		_, id := extractPodIDNoAssociations(ctx, attrs)
-		return "", kube.PodIdentifier{
+		id := extractPodIDNoAssociations(ctx, attrs)
+		return kube.PodIdentifier{
 			kube.PodIdentifierAttributeFromConnection(id),
 		}
 	}
@@ -64,35 +62,36 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 
 		// If all association sources has been resolved, return result
 		if !skip {
-			return asso.Name, ret
+			return ret
 		}
 	}
-	return "", kube.PodIdentifier{}
+	return kube.PodIdentifier{}
 }
 
-func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) (string, string) {
+// extractPodIds returns pod identifier for first association matching all sources
+func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) string {
 	var podIP, labelIP string
 	podIP = stringAttributeFromMap(attrs, k8sIPLabelName)
 	if podIP != "" {
-		return k8sIPLabelName, podIP
+		return podIP
 	}
 
 	labelIP = stringAttributeFromMap(attrs, clientIPLabelName)
 	if labelIP != "" {
-		return k8sIPLabelName, labelIP
+		return labelIP
 	}
 
 	connectionIP := getConnectionIP(ctx)
 	if connectionIP != "" {
-		return k8sIPLabelName, connectionIP
+		return connectionIP
 	}
 
 	hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
 	if net.ParseIP(hostname) != nil {
-		return k8sIPLabelName, hostname
+		return hostname
 	}
 
-	return "", ""
+	return ""
 }
 
 func getConnectionIP(ctx context.Context) string {

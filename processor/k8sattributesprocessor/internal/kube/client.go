@@ -59,9 +59,6 @@ type WatchClient struct {
 	Namespaces map[string]*Namespace
 }
 
-// PodIdentifierDelimiter is used to create kubePodIdentifier from list of sources
-const PodIdentifierDelimiter = "."
-
 // Extract deployment name from the pod name. Pod name is created using
 // format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
