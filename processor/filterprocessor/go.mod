@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220421154122-427f7dde5a8f
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220421154122-427f7dde5a8f
+	go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220422001137-87ab5de64ce4
 	go.uber.org/zap v1.21.0
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f // indirect
+	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4 // indirect
 	go.opentelemetry.io/otel v1.6.3 // indirect
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.3 // indirect
@@ -43,4 +43,4 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
+replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
