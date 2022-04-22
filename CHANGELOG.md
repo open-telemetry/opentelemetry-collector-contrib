@@ -21,9 +21,9 @@
 
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
+- `azuremonitorexporter`, `lokiexporter`, `observiqexporter`: Update timestamp processing logic (#9130)
 - `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
-
 - `attributesprocessor`: Support filter by severity (#9132)
 
 ### 🧰 Bug fixes 🧰

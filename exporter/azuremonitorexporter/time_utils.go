@@ -44,3 +44,5 @@ func formatDuration(d time.Duration) string {
 
 	return fmt.Sprintf("%02d.%02d:%02d:%02d.%06d", day, h, m, s, us)
 }
+
+var timeNow = time.Now
