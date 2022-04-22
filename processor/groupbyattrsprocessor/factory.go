@@ -17,6 +17,7 @@ package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"sync"
+	"time"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -64,6 +66,8 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *group
 	var nonEmptyAttributes []string
 	presentAttributes := make(map[string]struct{})
 
+	var sampledLogger = createSampledLogger(logger)
+
 	for _, str := range attributes {
 		if str != "" {
 			_, isPresent := presentAttributes[str]
@@ -76,7 +80,26 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *group
 		}
 	}
 
-	return &groupByAttrsProcessor{logger: logger, groupByKeys: nonEmptyAttributes}
+	return &groupByAttrsProcessor{logger: sampledLogger, groupByKeys: nonEmptyAttributes}
+}
+
+func createSampledLogger(logger *zap.Logger) *zap.Logger {
+	if logger.Core().Enabled(zapcore.DebugLevel) {
+		// Debugging is enabled. Don't do any sampling.
+		return logger
+	}
+
+	// Create a logger that samples all messages to 1 per 10 seconds initially,
+	// and 1/100 of messages after that.
+	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(
+			core,
+			10*time.Second,
+			1,
+			100,
+		)
+	})
+	return logger.WithOptions(opts)
 }
 
 // createTracesProcessor creates a trace processor based on this config.
