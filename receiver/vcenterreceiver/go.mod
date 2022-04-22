@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/vmware/govmomi v0.27.4
-	go.opentelemetry.io/collector v0.49.0
+	go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4
 	go.opentelemetry.io/collector/model v0.49.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/pdata v0.49.0
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220422001137-87ab5de64ce4
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 
