@@ -17,8 +17,8 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"strconv"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 /*

@@ -92,7 +92,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := configunmarshaler.LoadReceiver(mergedConfig, receiver.id, factory)
+	receiverConfig, err := configunmarshaler.LoadReceiver(mergedConfig, receiver.id, factory) //nolint:staticcheck
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}

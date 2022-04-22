@@ -86,6 +86,14 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},
+				"parseImportsRequired": func(metrics map[metricName]metric) bool {
+					for _, m := range metrics {
+						if m.Data().HasMetricInputType() {
+							return true
+						}
+					}
+					return false
+				},
 			}).ParseFiles(path.Join(thisDir, tmplFile)))
 	buf := bytes.Buffer{}
 
