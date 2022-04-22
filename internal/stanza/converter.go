@@ -333,12 +333,10 @@ func Convert(ent *entry.Entry) plog.Logs {
 
 // convertInto converts entry.Entry into provided plog.LogRecord.
 func convertInto(ent *entry.Entry, dest plog.LogRecord) {
-	t := ent.ObservedTimestamp
 	if !ent.Timestamp.IsZero() {
-		t = ent.Timestamp
+		dest.SetTimestamp(pcommon.NewTimestampFromTime(ent.Timestamp))
 	}
-	dest.SetTimestamp(pcommon.NewTimestampFromTime(t))
-
+	dest.SetObservedTimestamp(pcommon.NewTimestampFromTime(ent.ObservedTimestamp))
 	dest.SetSeverityNumber(sevMap[ent.Severity])
 	dest.SetSeverityText(sevTextMap[ent.Severity])
 

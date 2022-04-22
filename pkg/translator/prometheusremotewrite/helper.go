@@ -288,9 +288,9 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}
 	switch pt.ValueType() {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		sample.Value = float64(pt.IntVal())
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		sample.Value = pt.DoubleVal()
 	}
 	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {

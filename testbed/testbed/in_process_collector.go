@@ -75,7 +75,7 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 		service.ConfigProviderSettings{
 			Locations:    []string{ipp.configFile},
 			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
-			Unmarshaler:  configunmarshaler.NewDefault(),
+			Unmarshaler:  configunmarshaler.NewDefault(), //nolint:staticcheck
 		})
 	if err != nil {
 		return err

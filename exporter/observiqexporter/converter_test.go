@@ -300,6 +300,26 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("Message")
+				logRecord.SetObservedTimestamp(nanoTs)
+				return logRecord
+			},
+			pcommon.NewResource,
+			"agent",
+			"agentID",
+			observIQLogEntry{
+				Timestamp: stringTs,
+				Message:   "Message",
+				Severity:  "default",
+				Data:      nil,
+				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
+			},
+			false,
+		},
+		{
+			"No timestamp and no observed timestamp on record",
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStringVal("Message")
 				return logRecord
 			},
 			pcommon.NewResource,
