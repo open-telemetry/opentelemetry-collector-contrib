@@ -6,6 +6,7 @@
 
 - `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
+- `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
 
 ### 🚩 Deprecations 🚩
 
@@ -22,10 +23,11 @@
 
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
+- `azuremonitorexporter`, `lokiexporter`, `observiqexporter`: Update timestamp processing logic (#9130)
 - `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
-
 - `attributesprocessor`: Support filter by severity (#9132)
+- `processor/transform`: Add transformation of logs (#9368)
 
 ### 🧰 Bug fixes 🧰
 

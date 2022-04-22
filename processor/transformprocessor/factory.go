@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
@@ -36,6 +37,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
+		component.WithLogsProcessor(createLogsProcessor),
 		component.WithTracesProcessor(createTracesProcessor),
 	)
 }
@@ -43,12 +45,36 @@ func NewFactory() component.ProcessorFactory {
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		Logs: LogsConfig{
+			Queries: []string{},
+
+			functions: logs.DefaultFunctions(),
+		},
 		Traces: TracesConfig{
 			Queries: []string{},
 
 			functions: traces.DefaultFunctions(),
 		},
 	}
+}
+
+func createLogsProcessor(
+	_ context.Context,
+	settings component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
+) (component.LogsProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := logs.NewProcessor(oCfg.Logs.Queries, oCfg.Logs.functions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return processorhelper.NewLogsProcessor(
+		cfg,
+		nextConsumer,
+		proc.ProcessLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(

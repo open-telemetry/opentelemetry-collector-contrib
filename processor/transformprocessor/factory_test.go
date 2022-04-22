@@ -23,9 +23,11 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -38,10 +40,15 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		Logs: LogsConfig{
+			Queries: []string{},
+
+			functions: logs.DefaultFunctions(),
+		},
 		Traces: TracesConfig{
 			Queries: []string{},
 
-			functions: common.DefaultFunctions(),
+			functions: traces.DefaultFunctions(),
 		},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
@@ -62,6 +69,31 @@ func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	ap, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
+}
+
+func TestFactoryCreateLogsProcessor(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Logs.Queries = []string{`set(attributes["test"], "pass") where body == "operationA"`}
+
+	lp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	assert.NotNil(t, lp)
+	assert.NoError(t, err)
+
+	ld := plog.NewLogs()
+	log := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log.Body().SetStringVal("operationA")
+
+	_, ok := log.Attributes().Get("test")
+	assert.False(t, ok)
+
+	err = lp.ConsumeLogs(context.Background(), ld)
+	assert.NoError(t, err)
+
+	val, ok := log.Attributes().Get("test")
+	assert.True(t, ok)
+	assert.Equal(t, "pass", val.StringVal())
 }
 
 func TestFactoryCreateTracesProcessor(t *testing.T) {
