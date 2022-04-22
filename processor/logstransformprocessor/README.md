@@ -1,5 +1,8 @@
 # Logs Transform Processor
 
+**Status: experimental**
+NOTE - This processor is experimental, with the intention that its functionality will be reimplemented in the [transform processor](../transformprocessor/README.md) in the future.
+
 Supported pipeline types: logs
 
 The logs transform processor can be used to apply [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) [operators](https://github.com/open-telemetry/opentelemetry-log-collection/tree/main/docs/operators) to logs coming from any receiver.
