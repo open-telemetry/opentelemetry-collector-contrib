@@ -13,14 +13,14 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220421154122-427f7dde5a8f
+	go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
-	go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
+	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -73,7 +73,7 @@ require (
 require (
 	github.com/jaegertracing/jaeger v1.33.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.49.0
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220421154122-427f7dde5a8f
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220422001137-87ab5de64ce4
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
 )
 
@@ -89,4 +89,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
 
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220421154122-427f7dde5a8f
+replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

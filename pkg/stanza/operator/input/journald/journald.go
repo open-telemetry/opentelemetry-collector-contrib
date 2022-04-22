@@ -147,7 +147,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 
 	// Start journalctl
 	journalctl := operator.newCmd(ctx, cursor)
-	stdout, err := cmd.StdoutPipe()
+	stdout, err := journalctl.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to get journalctl stdout: %s", err)
 	}
