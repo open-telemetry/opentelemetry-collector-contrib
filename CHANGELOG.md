@@ -9,6 +9,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- `hostmetricsreceiver`: Deprecate `include` and `exclude` settings for process filtering (#8188)
+
 ### 🚀 New components 🚀
 
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
@@ -18,8 +20,8 @@
 ### 💡 Enhancements 💡
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
-
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
+- `hostmetricsreceiver`:  Ability to configure include/exclude filters on any process attribute (#8188)
 
 ### 🧰 Bug fixes 🧰
 
@@ -60,7 +62,6 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `datadogexporter`: Deprecate `use_resource_metadata` setting in favor of `host_metadata::hostname_source` (#9100)
 - `prometheusexecreceiver`: Deprecate prom_exec receiver (#9058)
 - `fluentbitextension`: Deprecate Fluentbit extension (#9062)
-- `hostmetricsreceiver`: Deprecate `include` and `exclude` settings for process filtering (#8188)  
 
 ### 🚀 New components 🚀
 
@@ -104,7 +105,6 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
-- `hostmetricsreceiver`:  Ability to configure include/exclude filters on any process attribute (#8188)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#8555)
 
