@@ -28,6 +28,7 @@ import (
 
 	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
@@ -152,8 +153,9 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		return mp, nil, err
 	}
 	// update attributes value (will use for validation)
+	l := []labels.Label{{Name: "__scheme__", Value: "http"}}
 	for _, t := range tds {
-		t.attributes = internal.CreateNodeAndResourcePdata(t.name, u.Host, "http").Attributes()
+		t.attributes = internal.CreateNodeAndResourcePdata(t.name, u.Host, l).Attributes()
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
 	return mp, pCfg, err

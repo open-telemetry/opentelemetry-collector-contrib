@@ -17,6 +17,8 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"net"
 
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
@@ -41,7 +43,7 @@ func isDiscernibleHost(host string) bool {
 }
 
 // CreateNodeAndResourcePdata creates the resource data added to OTLP payloads.
-func CreateNodeAndResourcePdata(job, instance, scheme string) *pcommon.Resource {
+func CreateNodeAndResourcePdata(job, instance string, serviceDiscoveryLabels labels.Labels) *pcommon.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
@@ -54,7 +56,49 @@ func CreateNodeAndResourcePdata(job, instance, scheme string) *pcommon.Resource 
 	}
 	attrs.UpsertString(conventions.AttributeServiceInstanceID, instance)
 	attrs.UpsertString(conventions.AttributeNetHostPort, port)
-	attrs.UpsertString(conventions.AttributeHTTPScheme, scheme)
+	attrs.UpsertString(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+
+	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
 	return &resource
+}
+
+func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labels) {
+	if podName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_name"); podName != "" {
+		attrs.UpsertString(conventions.AttributeK8SPodName, podName)
+	}
+	if podUID := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_uid"); podUID != "" {
+		attrs.UpsertString(conventions.AttributeK8SPodUID, podUID)
+	}
+	if containerName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_container_name"); containerName != "" {
+		attrs.UpsertString(conventions.AttributeK8SContainerName, containerName)
+	}
+	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_node_name"); nodeName != "" {
+		attrs.UpsertString(conventions.AttributeK8SNodeName, nodeName)
+	}
+	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_node_name"); nodeName != "" {
+		attrs.UpsertString(conventions.AttributeK8SNodeName, nodeName)
+	}
+	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_endpoint_node_name"); nodeName != "" {
+		attrs.UpsertString(conventions.AttributeK8SNodeName, nodeName)
+	}
+	controllerName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_name")
+	controllerKind := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_kind")
+	if controllerKind != "" && controllerName != "" {
+		switch controllerKind {
+		case "ReplicaSet":
+			attrs.UpsertString(conventions.AttributeK8SReplicaSetName, controllerName)
+		case "DaemonSet":
+			attrs.UpsertString(conventions.AttributeK8SDaemonSetName, controllerName)
+		case "StatefulSet":
+			attrs.UpsertString(conventions.AttributeK8SStatefulSetName, controllerName)
+		case "Job":
+			attrs.UpsertString(conventions.AttributeK8SJobName, controllerName)
+		case "CronJob":
+			attrs.UpsertString(conventions.AttributeK8SCronJobName, controllerName)
+		}
+	}
+	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_namespace"); nodeName != "" {
+		attrs.UpsertString(conventions.AttributeK8SNamespaceName, nodeName)
+	}
 }
