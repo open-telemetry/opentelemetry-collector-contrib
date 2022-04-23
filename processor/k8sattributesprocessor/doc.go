@@ -147,6 +147,24 @@
 //           name: k8s.pod.uid
 //         - from: connection
 //
+// RBAC
+//
+// If the processor is configured to watch for all pods in a node, or in a cluster it will require a ClusterRole with at least the following permissions:
+//
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRole
+//      metadata:
+//        name: attributes-role
+//      rules:
+//      - apiGroups:
+//        - ""
+//        resources:
+//        - pods
+//        verbs:
+//        - get
+//        - list
+//        - watch
+//
 // Deployment scenarios
 //
 // The processor supports running both in agent and collector mode.
