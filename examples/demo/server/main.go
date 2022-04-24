@@ -17,6 +17,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"go.opentelemetry.io/otel/baggage"
 	"log"
 	"math/rand"
 	"net/http"
@@ -101,7 +103,7 @@ func initProvider() func() {
 	)
 
 	// set global propagator to tracecontext (the default is no-op).
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	otel.SetTracerProvider(tracerProvider)
 
 	return func() {
@@ -156,6 +158,11 @@ func main() {
 		requestCount.Add(ctx, 1, commonLabels...)
 		span := trace.SpanFromContext(ctx)
 		span.SetAttributes(serverAttribute)
+		bag := baggage.FromContext(ctx)
+		for i, member := range bag.Members() {
+			span.AddEvent(fmt.Sprint("baggage member: ", i), trace.WithAttributes(attribute.String(member.Key(), member.Value())))
+		}
+
 		w.Write([]byte("Hello World"))
 	})
 	wrappedHandler := otelhttp.NewHandler(handler, "/hello")
