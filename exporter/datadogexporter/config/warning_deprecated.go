@@ -84,6 +84,19 @@ var renamedSettings = []renameError{
 			}
 		},
 	},
+	{
+		oldName:      "metrics::report_quantiles",
+		newName:      "metrics::summaries::mode",
+		oldRemovedIn: "v0.53.0",
+		issueNumber:  8845,
+		updateFn: func(c *Config) {
+			if c.Metrics.Quantiles {
+				c.Metrics.SummaryConfig.Mode = SummaryModeGauges
+			} else {
+				c.Metrics.SummaryConfig.Mode = SummaryModeNoQuantiles
+			}
+		},
+	},
 }
 
 // List of settings that have been removed, but for which we keep a custom error.
