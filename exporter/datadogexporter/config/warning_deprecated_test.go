@@ -50,7 +50,7 @@ func TestDeprecationSendMonotonic(t *testing.T) {
 			}),
 			expectedMode: CumulativeMonotonicSumModeToDelta,
 			warnings: []string{
-				"\"metrics::send_monotonic_counter\" has been deprecated in favor of \"metrics::sums::cumulative_monotonic_mode\" and will be removed in v0.50.0. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
+				"\"metrics::send_monotonic_counter\" has been deprecated in favor of \"metrics::sums::cumulative_monotonic_mode\" and will be removed in v0.50.0 or later. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func TestDeprecationSendMonotonic(t *testing.T) {
 			}),
 			expectedMode: CumulativeMonotonicSumModeRawValue,
 			warnings: []string{
-				"\"metrics::send_monotonic_counter\" has been deprecated in favor of \"metrics::sums::cumulative_monotonic_mode\" and will be removed in v0.50.0. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
+				"\"metrics::send_monotonic_counter\" has been deprecated in favor of \"metrics::sums::cumulative_monotonic_mode\" and will be removed in v0.50.0 or later. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
 			},
 		},
 		{
