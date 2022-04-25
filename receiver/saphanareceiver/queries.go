@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -28,54 +27,57 @@ import (
 )
 
 type queryStat struct {
-	key                     string
-	addIntMetricFunction    func(*sapHanaScraper, pdata.Timestamp, int64, map[string]string)
-	addDoubleMetricFunction func(*sapHanaScraper, pdata.Timestamp, float64, map[string]string)
+	key               string
+	addMetricFunction func(*metadata.MetricsBuilder, pdata.Timestamp, string, map[string]string)
 }
 
-func (q *queryStat) collectStat(s *sapHanaScraper, now pdata.Timestamp, row map[string]string) error {
+func (q *queryStat) collectStat(s *sapHanaScraper, m *monitoringQuery, now pdata.Timestamp, row map[string]string) error {
 	if val, ok := row[q.key]; ok {
-		if q.addIntMetricFunction != nil {
-			if i, err := strconv.ParseInt(val, 10, 64); err == nil {
-				q.addIntMetricFunction(s, now, i, row)
-			} else {
-				return fmt.Errorf("unable to parse '%s' as an integer for query key %s: %w", val, q.key, err)
+		resourceAttributes := map[string]string{}
+		for _, attr := range m.orderedResourceLabels {
+			attrValue, ok := row[attr]
+			if !ok {
+				return fmt.Errorf("Unable to parse metric, missing resource attribute '%s'", attr)
 			}
-		} else if q.addDoubleMetricFunction != nil {
-			if f, err := strconv.ParseFloat(val, 64); err == nil {
-				q.addDoubleMetricFunction(s, now, f, row)
-			} else {
-				return fmt.Errorf("unable to parse '%s' as a double for query key %s: %w", val, q.key, err)
-			}
+			resourceAttributes[attr] = attrValue
+		}
+		mb, err := s.getMetricsBuilder(resourceAttributes)
+		if err != nil {
+			return fmt.Errorf("Unable to parse metric: %w", err)
+		}
+
+		if q.addMetricFunction != nil {
+			q.addMetricFunction(mb, now, val, row)
 		} else {
-			return errors.New("incorrectly configured query, either addIntMetricFunction or addDoubleMetricFunction must be provided")
+			return errors.New("incorrectly configured query, addMetricFunction must be provided")
 		}
 	}
 	return nil
 }
 
 type monitoringQuery struct {
-	query         string
-	orderedLabels []string
-	orderedStats  []queryStat
-	Enabled       func(c *Config) bool
+	query                 string
+	orderedResourceLabels []string
+	orderedMetricLabels   []string
+	orderedStats          []queryStat
+	Enabled               func(c *Config) bool
 }
 
 var queries = []monitoringQuery{
 	{
-		query:         "SELECT HOST, SUM(CASE WHEN ACTIVE_STATUS = 'YES' THEN 1 ELSE 0 END) AS active_services, SUM(CASE WHEN ACTIVE_STATUS = 'YES' THEN 0 ELSE 1 END) AS inactive_services FROM SYS.M_SERVICES GROUP BY HOST",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, SUM(CASE WHEN ACTIVE_STATUS = 'YES' THEN 1 ELSE 0 END) AS active_services, SUM(CASE WHEN ACTIVE_STATUS = 'YES' THEN 0 ELSE 1 END) AS inactive_services FROM SYS.M_SERVICES GROUP BY HOST",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "active_services",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceCountDataPoint(now, i, row["host"], metadata.AttributeServiceStatus.Active)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceCountDataPoint(now, val, metadata.AttributeServiceStatus.Active)
 				},
 			},
 			{
 				key: "inactive_services",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceCountDataPoint(now, i, row["host"], metadata.AttributeServiceStatus.Inactive)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceCountDataPoint(now, val, metadata.AttributeServiceStatus.Inactive)
 				},
 			},
 		},
@@ -84,19 +86,19 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SUM(CASE WHEN IS_ACTIVE = 'TRUE' THEN 1 ELSE 0 END) AS active_threads, SUM(CASE WHEN IS_ACTIVE = 'TRUE' THEN 0 ELSE 1 END) AS inactive_threads FROM SYS.M_SERVICE_THREADS GROUP BY HOST",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, SUM(CASE WHEN IS_ACTIVE = 'TRUE' THEN 1 ELSE 0 END) AS active_threads, SUM(CASE WHEN IS_ACTIVE = 'TRUE' THEN 0 ELSE 1 END) AS inactive_threads FROM SYS.M_SERVICE_THREADS GROUP BY HOST",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "active_threads",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceThreadCountDataPoint(now, i, row["host"], metadata.AttributeThreadStatus.Active)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceThreadCountDataPoint(now, val, metadata.AttributeThreadStatus.Active)
 				},
 			},
 			{
 				key: "inactive_threads",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceThreadCountDataPoint(now, i, row["host"], metadata.AttributeThreadStatus.Inactive)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceThreadCountDataPoint(now, val, metadata.AttributeThreadStatus.Inactive)
 				},
 			},
 		},
@@ -105,55 +107,55 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SUM(MAIN_MEMORY_SIZE_IN_DATA) AS \"mem_main_data\", SUM(MAIN_MEMORY_SIZE_IN_DICT) AS \"mem_main_dict\", SUM(MAIN_MEMORY_SIZE_IN_INDEX) AS \"mem_main_index\", SUM(MAIN_MEMORY_SIZE_IN_MISC) AS \"mem_main_misc\", SUM(DELTA_MEMORY_SIZE_IN_DATA) AS \"mem_delta_data\", SUM(DELTA_MEMORY_SIZE_IN_DICT) AS \"mem_delta_dict\", SUM(DELTA_MEMORY_SIZE_IN_INDEX) AS \"mem_delta_index\", SUM(DELTA_MEMORY_SIZE_IN_MISC) AS \"mem_delta_misc\" FROM M_CS_ALL_COLUMNS GROUP BY HOST",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, SUM(MAIN_MEMORY_SIZE_IN_DATA) AS \"mem_main_data\", SUM(MAIN_MEMORY_SIZE_IN_DICT) AS \"mem_main_dict\", SUM(MAIN_MEMORY_SIZE_IN_INDEX) AS \"mem_main_index\", SUM(MAIN_MEMORY_SIZE_IN_MISC) AS \"mem_main_misc\", SUM(DELTA_MEMORY_SIZE_IN_DATA) AS \"mem_delta_data\", SUM(DELTA_MEMORY_SIZE_IN_DICT) AS \"mem_delta_dict\", SUM(DELTA_MEMORY_SIZE_IN_INDEX) AS \"mem_delta_index\", SUM(DELTA_MEMORY_SIZE_IN_MISC) AS \"mem_delta_misc\" FROM M_CS_ALL_COLUMNS GROUP BY HOST",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "main_data",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Data)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Data)
 				},
 			},
 			{
 				key: "main_dict",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Dict)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Dict)
 				},
 			},
 			{
 				key: "main_index",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Index)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Index)
 				},
 			},
 			{
 				key: "main_misc",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Misc)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Misc)
 				},
 			},
 			{
 				key: "delta_data",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Data)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Data)
 				},
 			},
 			{
 				key: "delta_dict",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Dict)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Dict)
 				},
 			},
 			{
 				key: "delta_index",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Index)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Index)
 				},
 			},
 			{
 				key: "delta_misc",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Misc)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Misc)
 				},
 			},
 		},
@@ -162,19 +164,19 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SUM(USED_FIXED_PART_SIZE) fixed, SUM(USED_VARIABLE_PART_SIZE) variable FROM SYS.M_RS_TABLES GROUP BY HOST",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, SUM(USED_FIXED_PART_SIZE) fixed, SUM(USED_VARIABLE_PART_SIZE) variable FROM SYS.M_RS_TABLES GROUP BY HOST",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "fixed",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaRowStoreMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeRowMemoryType.Fixed)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaRowStoreMemoryUsedDataPoint(now, val, metadata.AttributeRowMemoryType.Fixed)
 				},
 			},
 			{
 				key: "variable",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaRowStoreMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeRowMemoryType.Variable)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaRowStoreMemoryUsedDataPoint(now, val, metadata.AttributeRowMemoryType.Variable)
 				},
 			},
 		},
@@ -183,13 +185,13 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, COMPONENT, sum(USED_MEMORY_SIZE) used_mem_size FROM SYS.M_SERVICE_COMPONENT_MEMORY GROUP BY HOST, COMPONENT",
-		orderedLabels: []string{"host", "component"},
+		query:                 "SELECT HOST, COMPONENT, sum(USED_MEMORY_SIZE) used_mem_size FROM SYS.M_SERVICE_COMPONENT_MEMORY GROUP BY HOST, COMPONENT",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "used_mem_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaComponentMemoryUsedDataPoint(now, i, row["host"], row["component"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaComponentMemoryUsedDataPoint(now, val, row["component"])
 				},
 			},
 		},
@@ -198,13 +200,14 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, CONNECTION_STATUS, COUNT(*) AS connections FROM SYS.M_CONNECTIONS WHERE CONNECTION_STATUS != '' GROUP BY HOST, CONNECTION_STATUS",
-		orderedLabels: []string{"host", "connection_status"},
+		query:                 "SELECT HOST, CONNECTION_STATUS, COUNT(*) AS connections FROM SYS.M_CONNECTIONS WHERE CONNECTION_STATUS != '' GROUP BY HOST, CONNECTION_STATUS",
+		orderedResourceLabels: []string{"host"},
+		orderedMetricLabels:   []string{"connection_status"},
 		orderedStats: []queryStat{
 			{
 				key: "connections",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaConnectionCountDataPoint(now, i, row["host"], strings.ToLower(row["connection_status"]))
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaConnectionCountDataPoint(now, val, strings.ToLower(row["connection_status"]))
 				},
 			},
 		},
@@ -213,13 +216,13 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT seconds_between(CURRENT_TIMESTAMP, UTC_START_TIME) age FROM SYS.M_BACKUP_CATALOG WHERE STATE_NAME = 'successful' ORDER BY UTC_START_TIME DESC LIMIT 1",
-		orderedLabels: []string{},
+		query:               "SELECT seconds_between(CURRENT_TIMESTAMP, UTC_START_TIME) age FROM SYS.M_BACKUP_CATALOG WHERE STATE_NAME = 'successful' ORDER BY UTC_START_TIME DESC LIMIT 1",
+		orderedMetricLabels: []string{},
 		orderedStats: []queryStat{
 			{
 				key: "age",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaBackupLatestDataPoint(now, i)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaBackupLatestDataPoint(now, val)
 				},
 			},
 		},
@@ -228,13 +231,14 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SYSTEM_ID, DATABASE_NAME, seconds_between(START_TIME, CURRENT_TIMESTAMP) age FROM SYS.M_DATABASE",
-		orderedLabels: []string{"host", "system", "database"},
+		query:                 "SELECT HOST, SYSTEM_ID, DATABASE_NAME, seconds_between(START_TIME, CURRENT_TIMESTAMP) age FROM SYS.M_DATABASE",
+		orderedResourceLabels: []string{"host"},
+		orderedMetricLabels:   []string{"system", "database"},
 		orderedStats: []queryStat{
 			{
 				key: "age",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaUptimeDataPoint(now, i, row["host"], row["system"], row["database"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaUptimeDataPoint(now, val, row["system"], row["database"])
 				},
 			},
 		},
@@ -243,13 +247,13 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT ALERT_RATING, COUNT(*) AS alerts FROM _SYS_STATISTICS.STATISTICS_CURRENT_ALERTS GROUP BY ALERT_RATING",
-		orderedLabels: []string{"alert_rating"},
+		query:               "SELECT ALERT_RATING, COUNT(*) AS alerts FROM _SYS_STATISTICS.STATISTICS_CURRENT_ALERTS GROUP BY ALERT_RATING",
+		orderedMetricLabels: []string{"alert_rating"},
 		orderedStats: []queryStat{
 			{
 				key: "alerts",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaAlertCountDataPoint(now, i, row["alert_rating"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaAlertCountDataPoint(now, val, row["alert_rating"])
 				},
 			},
 		},
@@ -258,25 +262,25 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SUM(UPDATE_TRANSACTION_COUNT) updates, SUM(COMMIT_COUNT) commits, SUM(ROLLBACK_COUNT) rollbacks FROM SYS.M_WORKLOAD GROUP BY HOST",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, SUM(UPDATE_TRANSACTION_COUNT) updates, SUM(COMMIT_COUNT) commits, SUM(ROLLBACK_COUNT) rollbacks FROM SYS.M_WORKLOAD GROUP BY HOST",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "updates",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaTransactionCountDataPoint(now, i, row["host"], metadata.AttributeTransactionType.Update)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaTransactionCountDataPoint(now, val, metadata.AttributeTransactionType.Update)
 				},
 			},
 			{
 				key: "commits",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaTransactionCountDataPoint(now, i, row["host"], metadata.AttributeTransactionType.Commit)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaTransactionCountDataPoint(now, val, metadata.AttributeTransactionType.Commit)
 				},
 			},
 			{
 				key: "rollbacks",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaTransactionCountDataPoint(now, i, row["host"], metadata.AttributeTransactionType.Rollback)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaTransactionCountDataPoint(now, val, metadata.AttributeTransactionType.Rollback)
 				},
 			},
 		},
@@ -285,13 +289,13 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, COUNT(*) blocks FROM SYS.M_BLOCKED_TRANSACTIONS GROUP BY HOST",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, COUNT(*) blocks FROM SYS.M_BLOCKED_TRANSACTIONS GROUP BY HOST",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "blocks",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaTransactionBlockedDataPoint(now, i, row["host"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaTransactionBlockedDataPoint(now, val)
 				},
 			},
 		},
@@ -300,19 +304,20 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, \"PATH\", USAGE_TYPE, TOTAL_SIZE-USED_SIZE free_size, USED_SIZE FROM SYS.M_DISKS",
-		orderedLabels: []string{"host", "path", "usage_type"},
+		query:                 "SELECT HOST, \"PATH\", USAGE_TYPE, TOTAL_SIZE-USED_SIZE free_size, USED_SIZE FROM SYS.M_DISKS",
+		orderedResourceLabels: []string{"host"},
+		orderedMetricLabels:   []string{"path", "usage_type"},
 		orderedStats: []queryStat{
 			{
 				key: "free_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaDiskSizeCurrentDataPoint(now, i, row["host"], row["path"], row["usage_type"], metadata.AttributeDiskStateUsedFree.Free)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaDiskSizeCurrentDataPoint(now, val, row["path"], row["usage_type"], metadata.AttributeDiskStateUsedFree.Free)
 				},
 			},
 			{
 				key: "used_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaDiskSizeCurrentDataPoint(now, i, row["host"], row["path"], row["usage_type"], metadata.AttributeDiskStateUsedFree.Used)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaDiskSizeCurrentDataPoint(now, val, row["path"], row["usage_type"], metadata.AttributeDiskStateUsedFree.Used)
 				},
 			},
 		},
@@ -321,25 +326,25 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT SYSTEM_ID, PRODUCT_NAME, PRODUCT_LIMIT, PRODUCT_USAGE, seconds_between(CURRENT_TIMESTAMP, EXPIRATION_DATE) expiration FROM SYS.M_LICENSES",
-		orderedLabels: []string{"system", "product"},
+		query:               "SELECT SYSTEM_ID, PRODUCT_NAME, PRODUCT_LIMIT, PRODUCT_USAGE, seconds_between(CURRENT_TIMESTAMP, EXPIRATION_DATE) expiration FROM SYS.M_LICENSES",
+		orderedMetricLabels: []string{"system", "product"},
 		orderedStats: []queryStat{
 			{
 				key: "limit",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaLicenseLimitDataPoint(now, i, row["system"], row["product"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaLicenseLimitDataPoint(now, val, row["system"], row["product"])
 				},
 			},
 			{
 				key: "usage",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaLicensePeakDataPoint(now, i, row["system"], row["product"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaLicensePeakDataPoint(now, val, row["system"], row["product"])
 				},
 			},
 			{
 				key: "expiration",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaLicenseExpirationTimeDataPoint(now, i, row["system"], row["product"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaLicenseExpirationTimeDataPoint(now, val, row["system"], row["product"])
 				},
 			},
 		},
@@ -350,25 +355,25 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, PORT, SECONDARY_HOST, REPLICATION_MODE, BACKLOG_SIZE, BACKLOG_TIME, TO_VARCHAR(TO_DECIMAL(IFNULL(MAP(SHIPPED_LOG_BUFFERS_COUNT, 0, 0, SHIPPED_LOG_BUFFERS_DURATION / SHIPPED_LOG_BUFFERS_COUNT), 0), 10, 2)) avg_replication_time FROM SYS.M_SERVICE_REPLICATION",
-		orderedLabels: []string{"host", "port", "secondary", "mode"},
+		query:               "SELECT HOST, PORT, SECONDARY_HOST, REPLICATION_MODE, BACKLOG_SIZE, BACKLOG_TIME, TO_VARCHAR(TO_DECIMAL(IFNULL(MAP(SHIPPED_LOG_BUFFERS_COUNT, 0, 0, SHIPPED_LOG_BUFFERS_DURATION / SHIPPED_LOG_BUFFERS_COUNT), 0), 10, 2)) avg_replication_time FROM SYS.M_SERVICE_REPLICATION",
+		orderedMetricLabels: []string{"host", "port", "secondary", "mode"},
 		orderedStats: []queryStat{
 			{
 				key: "backlog_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaReplicationBacklogSizeDataPoint(now, i, row["host"], row["secondary"], row["port"], row["mode"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaReplicationBacklogSizeDataPoint(now, val, row["host"], row["secondary"], row["port"], row["mode"])
 				},
 			},
 			{
 				key: "backlog_time",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaReplicationBacklogTimeDataPoint(now, i, row["host"], row["secondary"], row["port"], row["mode"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaReplicationBacklogTimeDataPoint(now, val, row["host"], row["secondary"], row["port"], row["mode"])
 				},
 			},
 			{
 				key: "average_time",
-				addDoubleMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, f float64, row map[string]string) {
-					s.mb.RecordSaphanaReplicationAverageTimeDataPoint(now, f, row["host"], row["secondary"], row["port"], row["mode"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaReplicationAverageTimeDataPoint(now, val, row["host"], row["secondary"], row["port"], row["mode"])
 				},
 			},
 		},
@@ -379,37 +384,37 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SUM(FINISHED_NON_INTERNAL_REQUEST_COUNT) \"external\", SUM(ALL_FINISHED_REQUEST_COUNT-FINISHED_NON_INTERNAL_REQUEST_COUNT) internal, SUM(ACTIVE_REQUEST_COUNT) active, SUM(PENDING_REQUEST_COUNT) pending, TO_VARCHAR(TO_DECIMAL(AVG(RESPONSE_TIME), 10, 2)) avg_time FROM SYS.M_SERVICE_STATISTICS WHERE ACTIVE_REQUEST_COUNT > -1 GROUP BY HOST",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, SUM(FINISHED_NON_INTERNAL_REQUEST_COUNT) \"external\", SUM(ALL_FINISHED_REQUEST_COUNT-FINISHED_NON_INTERNAL_REQUEST_COUNT) internal, SUM(ACTIVE_REQUEST_COUNT) active, SUM(PENDING_REQUEST_COUNT) pending, TO_VARCHAR(TO_DECIMAL(AVG(RESPONSE_TIME), 10, 2)) avg_time FROM SYS.M_SERVICE_STATISTICS WHERE ACTIVE_REQUEST_COUNT > -1 GROUP BY HOST",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "external",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(now, i, row["host"], metadata.AttributeInternalExternalRequestType.External)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(now, val, metadata.AttributeInternalExternalRequestType.External)
 				},
 			},
 			{
 				key: "internal",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(now, i, row["host"], metadata.AttributeInternalExternalRequestType.Internal)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(now, val, metadata.AttributeInternalExternalRequestType.Internal)
 				},
 			},
 			{
 				key: "active",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaNetworkRequestCountDataPoint(now, i, row["host"], metadata.AttributeActivePendingRequestState.Active)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaNetworkRequestCountDataPoint(now, val, metadata.AttributeActivePendingRequestState.Active)
 				},
 			},
 			{
 				key: "pending",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaNetworkRequestCountDataPoint(now, i, row["host"], metadata.AttributeActivePendingRequestState.Pending)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaNetworkRequestCountDataPoint(now, val, metadata.AttributeActivePendingRequestState.Pending)
 				},
 			},
 			{
 				key: "avg_time",
-				addDoubleMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, f float64, row map[string]string) {
-					s.mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(now, f, row["host"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(now, val)
 				},
 			},
 		},
@@ -419,45 +424,45 @@ var queries = []monitoringQuery{
 				c.Metrics.SaphanaNetworkRequestAverageTime.Enabled
 		},
 	},
-	//SELECT HOST, SUM(FINISHED_NON_INTERNAL_REQUEST_COUNT) "external", SUM(ALL_FINISHED_REQUEST_COUNT-FINISHED_NON_INTERNAL_REQUEST_COUNT) internal, SUM(ACTIVE_REQUEST_COUNT) active, SUM(PENDING_REQUEST_COUNT) pending FROM SYS.M_SERVICE_STATISTICS WHERE ACTIVE_REQUEST_COUNT > -1 GROUP BY HOST
 	{
-		query:         "SELECT HOST, \"PATH\", \"TYPE\", SUM(TOTAL_READS) \"reads\", SUM(TOTAL_WRITES) writes, SUM(TOTAL_READ_SIZE) read_size, SUM(TOTAL_WRITE_SIZE) write_size, SUM(TOTAL_READ_TIME) read_time, SUM(TOTAL_WRITE_TIME) write_time FROM SYS.M_VOLUME_IO_TOTAL_STATISTICS GROUP BY HOST, \"PATH\", \"TYPE\"",
-		orderedLabels: []string{"host", "path", "type"},
+		query:                 "SELECT HOST, \"PATH\", \"TYPE\", SUM(TOTAL_READS) \"reads\", SUM(TOTAL_WRITES) writes, SUM(TOTAL_READ_SIZE) read_size, SUM(TOTAL_WRITE_SIZE) write_size, SUM(TOTAL_READ_TIME) read_time, SUM(TOTAL_WRITE_TIME) write_time FROM SYS.M_VOLUME_IO_TOTAL_STATISTICS GROUP BY HOST, \"PATH\", \"TYPE\"",
+		orderedResourceLabels: []string{"host"},
+		orderedMetricLabels:   []string{"path", "type"},
 		orderedStats: []queryStat{
 			{
 				key: "reads",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaVolumeOperationCountDataPoint(now, i, row["host"], row["path"], row["type"], metadata.AttributeVolumeOperationType.Read)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaVolumeOperationCountDataPoint(now, val, row["path"], row["type"], metadata.AttributeVolumeOperationType.Read)
 				},
 			},
 			{
 				key: "writes",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaVolumeOperationCountDataPoint(now, i, row["host"], row["path"], row["type"], metadata.AttributeVolumeOperationType.Write)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaVolumeOperationCountDataPoint(now, val, row["path"], row["type"], metadata.AttributeVolumeOperationType.Write)
 				},
 			},
 			{
 				key: "read_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaVolumeOperationSizeDataPoint(now, i, row["host"], row["path"], row["type"], metadata.AttributeVolumeOperationType.Read)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaVolumeOperationSizeDataPoint(now, val, row["path"], row["type"], metadata.AttributeVolumeOperationType.Read)
 				},
 			},
 			{
 				key: "write_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaVolumeOperationSizeDataPoint(now, i, row["host"], row["path"], row["type"], metadata.AttributeVolumeOperationType.Write)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaVolumeOperationSizeDataPoint(now, val, row["path"], row["type"], metadata.AttributeVolumeOperationType.Write)
 				},
 			},
 			{
 				key: "read_time",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaVolumeOperationTimeDataPoint(now, i, row["host"], row["path"], row["type"], metadata.AttributeVolumeOperationType.Read)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaVolumeOperationTimeDataPoint(now, val, row["path"], row["type"], metadata.AttributeVolumeOperationType.Read)
 				},
 			},
 			{
 				key: "write_time",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaVolumeOperationTimeDataPoint(now, i, row["host"], row["path"], row["type"], metadata.AttributeVolumeOperationType.Write)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaVolumeOperationTimeDataPoint(now, val, row["path"], row["type"], metadata.AttributeVolumeOperationType.Write)
 				},
 			},
 		},
@@ -468,79 +473,80 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SERVICE_NAME, LOGICAL_MEMORY_SIZE, PHYSICAL_MEMORY_SIZE, CODE_SIZE, STACK_SIZE, HEAP_MEMORY_ALLOCATED_SIZE-HEAP_MEMORY_USED_SIZE heap_free, HEAP_MEMORY_USED_SIZE, SHARED_MEMORY_ALLOCATED_SIZE-SHARED_MEMORY_USED_SIZE shared_free, SHARED_MEMORY_USED_SIZE, COMPACTORS_ALLOCATED_SIZE, COMPACTORS_FREEABLE_SIZE, ALLOCATION_LIMIT, EFFECTIVE_ALLOCATION_LIMIT FROM SYS.M_SERVICE_MEMORY",
-		orderedLabels: []string{"host", "service"},
+		query:                 "SELECT HOST, SERVICE_NAME, LOGICAL_MEMORY_SIZE, PHYSICAL_MEMORY_SIZE, CODE_SIZE, STACK_SIZE, HEAP_MEMORY_ALLOCATED_SIZE-HEAP_MEMORY_USED_SIZE heap_free, HEAP_MEMORY_USED_SIZE, SHARED_MEMORY_ALLOCATED_SIZE-SHARED_MEMORY_USED_SIZE shared_free, SHARED_MEMORY_USED_SIZE, COMPACTORS_ALLOCATED_SIZE, COMPACTORS_FREEABLE_SIZE, ALLOCATION_LIMIT, EFFECTIVE_ALLOCATION_LIMIT FROM SYS.M_SERVICE_MEMORY",
+		orderedResourceLabels: []string{"host"},
+		orderedMetricLabels:   []string{"service"},
 		orderedStats: []queryStat{
 			{
 				key: "logical_used",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryUsedDataPoint(now, i, row["host"], row["service"], metadata.AttributeServiceMemoryUsedType.Logical)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryUsedDataPoint(now, val, row["service"], metadata.AttributeServiceMemoryUsedType.Logical)
 				},
 			},
 			{
 				key: "physical_used",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryUsedDataPoint(now, i, row["host"], row["service"], metadata.AttributeServiceMemoryUsedType.Physical)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryUsedDataPoint(now, val, row["service"], metadata.AttributeServiceMemoryUsedType.Physical)
 				},
 			},
 			{
 				key: "code_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceCodeSizeDataPoint(now, i, row["host"], row["service"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceCodeSizeDataPoint(now, val, row["service"])
 				},
 			},
 			{
 				key: "stack_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceStackSizeDataPoint(now, i, row["host"], row["service"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceStackSizeDataPoint(now, val, row["service"])
 				},
 			},
 			{
 				key: "heap_free",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(now, i, row["host"], row["service"], metadata.AttributeMemoryStateUsedFree.Free)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(now, val, row["service"], metadata.AttributeMemoryStateUsedFree.Free)
 				},
 			},
 			{
 				key: "heap_used",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(now, i, row["host"], row["service"], metadata.AttributeMemoryStateUsedFree.Used)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(now, val, row["service"], metadata.AttributeMemoryStateUsedFree.Used)
 				},
 			},
 			{
 				key: "shared_free",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(now, i, row["host"], row["service"], metadata.AttributeMemoryStateUsedFree.Free)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(now, val, row["service"], metadata.AttributeMemoryStateUsedFree.Free)
 				},
 			},
 			{
 				key: "shared_used",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(now, i, row["host"], row["service"], metadata.AttributeMemoryStateUsedFree.Used)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(now, val, row["service"], metadata.AttributeMemoryStateUsedFree.Used)
 				},
 			},
 			{
 				key: "compactors_allocated",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(now, i, row["host"], row["service"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(now, val, row["service"])
 				},
 			},
 			{
 				key: "compactors_freeable",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(now, i, row["host"], row["service"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(now, val, row["service"])
 				},
 			},
 			{
 				key: "allocation_limit",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryLimitDataPoint(now, i, row["host"], row["service"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryLimitDataPoint(now, val, row["service"])
 				},
 			},
 			{
 				key: "effective_limit",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(now, i, row["host"], row["service"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(now, val, row["service"])
 				},
 			},
 		},
@@ -557,85 +563,86 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SCHEMA_NAME, SUM(ESTIMATED_MAX_MEMORY_SIZE_IN_TOTAL) estimated_max, SUM(LAST_COMPRESSED_RECORD_COUNT) last_compressed, SUM(READ_COUNT) \"reads\", SUM(WRITE_COUNT) writes, SUM(MERGE_COUNT) merges, SUM(MEMORY_SIZE_IN_MAIN) mem_main, SUM(MEMORY_SIZE_IN_DELTA) mem_delta, SUM(MEMORY_SIZE_IN_HISTORY_MAIN) mem_hist_main, SUM(MEMORY_SIZE_IN_HISTORY_DELTA) mem_hist_delta, SUM(RAW_RECORD_COUNT_IN_MAIN) records_main, SUM(RAW_RECORD_COUNT_IN_DELTA) records_delta, SUM(RAW_RECORD_COUNT_IN_HISTORY_MAIN) records_hist_main, SUM(RAW_RECORD_COUNT_IN_HISTORY_DELTA) records_hist_delta FROM SYS.M_CS_TABLES GROUP BY HOST, SCHEMA_NAME",
-		orderedLabels: []string{"host", "schema"},
+		query:                 "SELECT HOST, SCHEMA_NAME, SUM(ESTIMATED_MAX_MEMORY_SIZE_IN_TOTAL) estimated_max, SUM(LAST_COMPRESSED_RECORD_COUNT) last_compressed, SUM(READ_COUNT) \"reads\", SUM(WRITE_COUNT) writes, SUM(MERGE_COUNT) merges, SUM(MEMORY_SIZE_IN_MAIN) mem_main, SUM(MEMORY_SIZE_IN_DELTA) mem_delta, SUM(MEMORY_SIZE_IN_HISTORY_MAIN) mem_hist_main, SUM(MEMORY_SIZE_IN_HISTORY_DELTA) mem_hist_delta, SUM(RAW_RECORD_COUNT_IN_MAIN) records_main, SUM(RAW_RECORD_COUNT_IN_DELTA) records_delta, SUM(RAW_RECORD_COUNT_IN_HISTORY_MAIN) records_hist_main, SUM(RAW_RECORD_COUNT_IN_HISTORY_DELTA) records_hist_delta FROM SYS.M_CS_TABLES GROUP BY HOST, SCHEMA_NAME",
+		orderedResourceLabels: []string{"host"},
+		orderedMetricLabels:   []string{"schema"},
 		orderedStats: []queryStat{
 			{
 				key: "estimated_max",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(now, i, row["host"], row["schema"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(now, val, row["schema"])
 				},
 			},
 			{
 				key: "last_compressed",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(now, i, row["host"], row["schema"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(now, val, row["schema"])
 				},
 			},
 			{
 				key: "reads",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaOperationCountDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaOperationType.Read)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaOperationCountDataPoint(now, val, row["schema"], metadata.AttributeSchemaOperationType.Read)
 				},
 			},
 			{
 				key: "writes",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaOperationCountDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaOperationType.Write)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaOperationCountDataPoint(now, val, row["schema"], metadata.AttributeSchemaOperationType.Write)
 				},
 			},
 			{
 				key: "merges",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaOperationCountDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaOperationType.Merge)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaOperationCountDataPoint(now, val, row["schema"], metadata.AttributeSchemaOperationType.Merge)
 				},
 			},
 			{
 				key: "mem_main",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaMemoryType.Main)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, val, row["schema"], metadata.AttributeSchemaMemoryType.Main)
 				},
 			},
 			{
 				key: "mem_delta",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaMemoryType.Delta)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, val, row["schema"], metadata.AttributeSchemaMemoryType.Delta)
 				},
 			},
 			{
 				key: "mem_history_main",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaMemoryType.HistoryMain)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, val, row["schema"], metadata.AttributeSchemaMemoryType.HistoryMain)
 				},
 			},
 			{
 				key: "mem_history_delta",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaMemoryType.HistoryDelta)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(now, val, row["schema"], metadata.AttributeSchemaMemoryType.HistoryDelta)
 				},
 			},
 			{
 				key: "records_main",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaRecordCountDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaRecordType.Main)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaRecordCountDataPoint(now, val, row["schema"], metadata.AttributeSchemaRecordType.Main)
 				},
 			},
 			{
 				key: "records_delta",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaRecordCountDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaRecordType.Delta)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaRecordCountDataPoint(now, val, row["schema"], metadata.AttributeSchemaRecordType.Delta)
 				},
 			},
 			{
 				key: "records_history_main",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaRecordCountDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaRecordType.HistoryMain)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaRecordCountDataPoint(now, val, row["schema"], metadata.AttributeSchemaRecordType.HistoryMain)
 				},
 			},
 			{
 				key: "records_history_delta",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaSchemaRecordCountDataPoint(now, i, row["host"], row["schema"], metadata.AttributeSchemaRecordType.HistoryDelta)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaSchemaRecordCountDataPoint(now, val, row["schema"], metadata.AttributeSchemaRecordType.HistoryDelta)
 				},
 			},
 		},
@@ -648,85 +655,85 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, FREE_PHYSICAL_MEMORY, USED_PHYSICAL_MEMORY, FREE_SWAP_SPACE, USED_SWAP_SPACE, INSTANCE_TOTAL_MEMORY_USED_SIZE, INSTANCE_TOTAL_MEMORY_PEAK_USED_SIZE, INSTANCE_TOTAL_MEMORY_ALLOCATED_SIZE-INSTANCE_TOTAL_MEMORY_USED_SIZE total_free, INSTANCE_CODE_SIZE, INSTANCE_SHARED_MEMORY_ALLOCATED_SIZE, TOTAL_CPU_USER_TIME, TOTAL_CPU_SYSTEM_TIME, TOTAL_CPU_WIO_TIME, TOTAL_CPU_IDLE_TIME FROM SYS.M_HOST_RESOURCE_UTILIZATION",
-		orderedLabels: []string{"host"},
+		query:                 "SELECT HOST, FREE_PHYSICAL_MEMORY, USED_PHYSICAL_MEMORY, FREE_SWAP_SPACE, USED_SWAP_SPACE, INSTANCE_TOTAL_MEMORY_USED_SIZE, INSTANCE_TOTAL_MEMORY_PEAK_USED_SIZE, INSTANCE_TOTAL_MEMORY_ALLOCATED_SIZE-INSTANCE_TOTAL_MEMORY_USED_SIZE total_free, INSTANCE_CODE_SIZE, INSTANCE_SHARED_MEMORY_ALLOCATED_SIZE, TOTAL_CPU_USER_TIME, TOTAL_CPU_SYSTEM_TIME, TOTAL_CPU_WIO_TIME, TOTAL_CPU_IDLE_TIME FROM SYS.M_HOST_RESOURCE_UTILIZATION",
+		orderedResourceLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
 				key: "free_physical_memory",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaHostMemoryCurrentDataPoint(now, i, row["host"], metadata.AttributeMemoryStateUsedFree.Free)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaHostMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFree.Free)
 				},
 			},
 			{
 				key: "used_physical_memory",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaHostMemoryCurrentDataPoint(now, i, row["host"], metadata.AttributeMemoryStateUsedFree.Used)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaHostMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFree.Used)
 				},
 			},
 			{
 				key: "free_swap_space",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaHostSwapCurrentDataPoint(now, i, row["host"], metadata.AttributeHostSwapState.Free)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaHostSwapCurrentDataPoint(now, val, metadata.AttributeHostSwapState.Free)
 				},
 			},
 			{
 				key: "used_swap_space",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaHostSwapCurrentDataPoint(now, i, row["host"], metadata.AttributeHostSwapState.Used)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaHostSwapCurrentDataPoint(now, val, metadata.AttributeHostSwapState.Used)
 				},
 			},
 			{
 				key: "instance_total_used",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaInstanceMemoryCurrentDataPoint(now, i, row["host"], metadata.AttributeMemoryStateUsedFree.Used)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaInstanceMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFree.Used)
 				},
 			},
 			{
 				key: "instance_total_used_peak",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(now, i, row["host"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(now, val)
 				},
 			},
 			{
 				key: "instance_total_free",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaInstanceMemoryCurrentDataPoint(now, i, row["host"], metadata.AttributeMemoryStateUsedFree.Free)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaInstanceMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFree.Free)
 				},
 			},
 			{
 				key: "instance_code_size",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaInstanceCodeSizeDataPoint(now, i, row["host"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaInstanceCodeSizeDataPoint(now, val)
 				},
 			},
 			{
 				key: "instance_shared_memory_allocated",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(now, i, row["host"])
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(now, val)
 				},
 			},
 			{
 				key: "cpu_user",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaCPUUsedDataPoint(now, i, row["host"], metadata.AttributeCPUType.User)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUType.User)
 				},
 			},
 			{
 				key: "cpu_system",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaCPUUsedDataPoint(now, i, row["host"], metadata.AttributeCPUType.System)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUType.System)
 				},
 			},
 			{
 				key: "cpu_io_wait",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaCPUUsedDataPoint(now, i, row["host"], metadata.AttributeCPUType.IoWait)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUType.IoWait)
 				},
 			},
 			{
 				key: "cpu_idle",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaCPUUsedDataPoint(now, i, row["host"], metadata.AttributeCPUType.Idle)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, now pdata.Timestamp, val string, row map[string]string) {
+					mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUType.Idle)
 				},
 			},
 		},
@@ -750,7 +757,7 @@ func (m *monitoringQuery) CollectMetrics(ctx context.Context, s *sapHanaScraper,
 	}
 	for _, data := range rows {
 		for _, stat := range m.orderedStats {
-			if err := stat.collectStat(s, now, data); err != nil {
+			if err := stat.collectStat(s, m, now, data); err != nil {
 				errs.AddPartial(1, err)
 			}
 		}

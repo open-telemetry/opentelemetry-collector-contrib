@@ -1,7 +1,16 @@
 {
    "resourceMetrics": [
       {
-         "resource": {},
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "host1"
+                  }
+               }
+            ]
+         },
          "scopeMetrics": [
             {
                "metrics": [
@@ -15,77 +24,27 @@
                               "asInt": "1",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host1"
-                                    }
-                                 },
-                                 {
                                     "key": "status",
                                     "value": {
                                        "stringValue": "active"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
+                              "startTimeUnixNano": "1650917791313521000",
+                              "timeUnixNano": "1650917791313385000"
                            },
                            {
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host1"
-                                    }
-                                 },
-                                 {
                                     "key": "status",
                                     "value": {
                                        "stringValue": "inactive"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
-                           },
-                           {
-                              "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host2"
-                                    }
-                                 },
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
-                           },
-                           {
-                              "asInt": "8",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host2"
-                                    }
-                                 },
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "inactive"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
+                              "startTimeUnixNano": "1650917791313521000",
+                              "timeUnixNano": "1650917791313385000"
                            }
                         ]
                      },
@@ -101,49 +60,62 @@
                               "asInt": "101",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host1"
-                                    }
-                                 },
-                                 {
                                     "key": "status",
                                     "value": {
                                        "stringValue": "active"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
+                              "startTimeUnixNano": "1650917791313521000",
+                              "timeUnixNano": "1650917791313385000"
                            },
                            {
                               "asInt": "11",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host1"
-                                    }
-                                 },
-                                 {
                                     "key": "status",
                                     "value": {
                                        "stringValue": "inactive"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
-                           },
+                              "startTimeUnixNano": "1650917791313521000",
+                              "timeUnixNano": "1650917791313385000"
+                           }
+                        ]
+                     },
+                     "unit": "{threads}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/saphanareceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "host2"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of services in a given status.",
+                     "name": "saphana.service.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
                            {
-                              "asInt": "12",
+                              "asInt": "4",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host2"
-                                    }
-                                 },
                                  {
                                     "key": "status",
                                     "value": {
@@ -151,18 +123,12 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
+                              "startTimeUnixNano": "1650917791313758000",
+                              "timeUnixNano": "1650917791313385000"
                            },
                            {
-                              "asInt": "1111",
+                              "asInt": "8",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "host2"
-                                    }
-                                 },
                                  {
                                     "key": "status",
                                     "value": {
@@ -170,8 +136,44 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1649428492785868000",
-                              "timeUnixNano": "1649428492798691000"
+                              "startTimeUnixNano": "1650917791313758000",
+                              "timeUnixNano": "1650917791313385000"
+                           }
+                        ]
+                     },
+                     "unit": "{services}"
+                  },
+                  {
+                     "description": "The number of service threads in a given status.",
+                     "name": "saphana.service.thread.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1650917791313758000",
+                              "timeUnixNano": "1650917791313385000"
+                           },
+                           {
+                              "asInt": "1111",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "inactive"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1650917791313758000",
+                              "timeUnixNano": "1650917791313385000"
                            }
                         ]
                      },

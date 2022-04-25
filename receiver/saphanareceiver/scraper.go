@@ -16,10 +16,13 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -31,7 +34,7 @@ import (
 type sapHanaScraper struct {
 	settings component.TelemetrySettings
 	cfg      *Config
-	mb       *metadata.MetricsBuilder
+	mbs      map[string]*metadata.MetricsBuilder
 	factory  sapHanaConnectionFactory
 }
 
@@ -39,10 +42,26 @@ func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config, factor
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		mbs:      make(map[string]*metadata.MetricsBuilder),
 		factory:  factory,
 	}
 	return scraperhelper.NewScraper(typeStr, rs.scrape)
+}
+
+func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string) (*metadata.MetricsBuilder, error) {
+	bytes, err := json.Marshal(resourceAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("Error accessing MetricsBuilder for sap hana collection: %w", err)
+	}
+
+	key := string(bytes)
+	mb, ok := s.mbs[key]
+	if !ok {
+		mb = metadata.NewMetricsBuilder(s.cfg.Metrics)
+		s.mbs[key] = mb
+	}
+
+	return mb, nil
 }
 
 // Scrape is called periodically, querying SAP HANA and building Metrics to send to
@@ -64,5 +83,27 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	return s.mb.Emit(), errs.Combine()
+	metrics := pmetric.NewMetrics()
+	for k, mb := range s.mbs {
+		var resourceAttributes map[string]string
+		err := json.Unmarshal([]byte(k), &resourceAttributes)
+		if err != nil {
+			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for sap hana scraper: %w", err))
+			continue
+		}
+		resourceOptions := []metadata.ResourceOption{}
+		for attribute, value := range resourceAttributes {
+			if attribute == "host" {
+				resourceOptions = append(resourceOptions, metadata.WithHost(value))
+			} else {
+				errs.Add(fmt.Errorf("Unsupported resource attribute: %s", attribute))
+			}
+		}
+		resourceMetrics := mb.Emit(resourceOptions...)
+		resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
+	}
+
+	s.mbs = make(map[string]*metadata.MetricsBuilder)
+
+	return metrics, errs.Combine()
 }

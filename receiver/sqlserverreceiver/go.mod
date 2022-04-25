@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlser
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.49.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4

@@ -21,6 +21,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -140,19 +141,19 @@ func TestSimpleQueryOutput(t *testing.T) {
 	require.NoError(t, client.Connect(context.TODO()))
 
 	query := &monitoringQuery{
-		query:         "SELECT 1=1",
-		orderedLabels: []string{"id", "state"},
+		query:               "SELECT 1=1",
+		orderedMetricLabels: []string{"id", "state"},
 		orderedStats: []queryStat{
 			{
 				key: "value",
-				addIntMetricFunction: func(shs *sapHanaScraper, t pdata.Timestamp, i int64, m map[string]string) {
-					// Function is a no-op as it's just used to know how to parse the value (into int or double)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+					// Function is a no-op as it's not required for this test
 				},
 			},
 			{
 				key: "rate",
-				addDoubleMetricFunction: func(shs *sapHanaScraper, t pdata.Timestamp, f float64, m map[string]string) {
-					// Function is a no-op as it's just used to know how to parse the value (into int or double)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+					// Function is a no-op as it's not required for this test
 				},
 			},
 		},
@@ -192,19 +193,19 @@ func TestNullOutput(t *testing.T) {
 	require.NoError(t, client.Connect(context.TODO()))
 
 	query := &monitoringQuery{
-		query:         "SELECT 1=1",
-		orderedLabels: []string{"id", "state"},
+		query:               "SELECT 1=1",
+		orderedMetricLabels: []string{"id", "state"},
 		orderedStats: []queryStat{
 			{
 				key: "value",
-				addIntMetricFunction: func(shs *sapHanaScraper, t pdata.Timestamp, i int64, m map[string]string) {
-					// Function is a no-op as it's just used to know how to parse the value (into int or double)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+					// Function is a no-op as it's not required for this test
 				},
 			},
 			{
 				key: "rate",
-				addDoubleMetricFunction: func(shs *sapHanaScraper, t pdata.Timestamp, f float64, m map[string]string) {
-					// Function is a no-op as it's just used to know how to parse the value (into int or double)
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+					// Function is a no-op as it's not required for this test
 				},
 			},
 		},
@@ -212,7 +213,7 @@ func TestNullOutput(t *testing.T) {
 
 	results, err := client.collectDataFromQuery(context.TODO(), query)
 	// Error expected for second row, but data is also returned
-	require.Contains(t, err.Error(), "database row NULL value for required label id")
+	require.Contains(t, err.Error(), "database row NULL value for required metric label id")
 	require.Equal(t, []map[string]string{
 		{
 			"id":    "my_id",

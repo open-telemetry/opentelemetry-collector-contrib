@@ -1,8 +1,10 @@
 name: saphanareceiver
+resource_attributes:
+  host:
+    type: string
+    description: The SAP HANA host.
 
 attributes:
-  host:
-    description: The SAP HANA host.
   database:
     description: The SAP HANA database.
   system:
@@ -162,7 +164,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, connection_status]
+      input_type: string
+    attributes: [connection_status]
     enabled: true
   saphana.cpu.used:
     description: Total CPU time spent.
@@ -171,7 +174,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, cpu_type]
+      input_type: string
+    attributes: [cpu_type]
     enabled: true
   saphana.alert.count:
     description: Number of current alerts.
@@ -180,6 +184,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
+      input_type: string
     attributes: [alert_rating]
     enabled: true
   saphana.uptime:
@@ -189,7 +194,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, system, database]
+      input_type: string
+    attributes: [system, database]
     enabled: true
   saphana.replication.backlog.time:
     description: The current replication backlog.
@@ -198,6 +204,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
+      input_type: string
     attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
   saphana.replication.backlog.size:
@@ -207,6 +214,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
+      input_type: string
     attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
   saphana.replication.average_time:
@@ -214,6 +222,7 @@ metrics:
     unit: us
     gauge:
       value_type: double
+      input_type: string
     attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
   saphana.backup.latest:
@@ -221,6 +230,7 @@ metrics:
     unit: s
     gauge:
       value_type: int
+      input_type: string
     attributes: []
     enabled: true
   saphana.transaction.count:
@@ -230,7 +240,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, transaction_type]
+      input_type: string
+    attributes: [transaction_type]
     enabled: true
   saphana.transaction.blocked:
     description: The number of transactions waiting for a lock.
@@ -239,13 +250,15 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host]
+      input_type: string
+    attributes: []
     enabled: true
   saphana.license.expiration.time:
     description: The amount of time remaining before license expiration.
     unit: s
     gauge:
       value_type: int
+      input_type: string
     attributes: [system, product]
     enabled: true
   saphana.license.limit:
@@ -255,6 +268,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
+      input_type: string
     attributes: [system, product]
     enabled: true
   saphana.license.peak:
@@ -264,6 +278,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
+      input_type: string
     attributes: [system, product]
     enabled: true
   saphana.instance.memory.current:
@@ -273,7 +288,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, memory_state_used_free]
+      input_type: string
+    attributes: [memory_state_used_free]
     enabled: true
   saphana.instance.memory.used.peak:
     description: The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
@@ -282,7 +298,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host]
+      input_type: string
+    attributes: []
     enabled: true
   saphana.instance.code_size:
     description: The instance code size, including shared libraries of SAP HANA processes.
@@ -291,7 +308,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host]
+      input_type: string
+    attributes: []
     enabled: true
   saphana.instance.memory.shared.allocated:
     description: The shared memory size of SAP HANA processes.
@@ -300,7 +318,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host]
+      input_type: string
+    attributes: []
     enabled: true
   saphana.host.memory.current:
     description: The amount of physical memory on the host.
@@ -309,7 +328,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, memory_state_used_free]
+      input_type: string
+    attributes: [memory_state_used_free]
     enabled: true
   saphana.host.swap.current:
     description: The amount of swap space on the host.
@@ -318,7 +338,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, host_swap_state]
+      input_type: string
+    attributes: [host_swap_state]
     enabled: true
   saphana.column.memory.used:
     description: The memory used in all columns.
@@ -327,7 +348,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, column_memory_type, column_memory_subtype]
+      input_type: string
+    attributes: [column_memory_type, column_memory_subtype]
     enabled: true
   saphana.row_store.memory.used:
     description: The used memory for all row tables.
@@ -336,7 +358,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, row_memory_type]
+      input_type: string
+    attributes: [row_memory_type]
     enabled: true
   saphana.component.memory.used:
     description: The memory used in components.
@@ -345,7 +368,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, component]
+      input_type: string
+    attributes: [component]
     enabled: true
   saphana.schema.memory.used.current:
     description: The memory size for all tables in schema.
@@ -354,7 +378,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, schema, schema_memory_type]
+      input_type: string
+    attributes: [schema, schema_memory_type]
     enabled: true
   saphana.schema.memory.used.max:
     description: The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).
@@ -363,7 +388,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, schema]
+      input_type: string
+    attributes: [schema]
     enabled: true
   saphana.schema.record.count:
     description: The number of records for all tables in schema.
@@ -372,7 +398,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, schema, schema_record_type]
+      input_type: string
+    attributes: [schema, schema_record_type]
     enabled: true
   saphana.schema.record.compressed.count:
     description: The number of entries in main during the last optimize compression run for all tables in schema.
@@ -381,7 +408,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, schema]
+      input_type: string
+    attributes: [schema]
     enabled: true
   saphana.schema.operation.count:
     description: The number of operations done on all tables in schema.
@@ -390,7 +418,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, schema, schema_operation_type]
+      input_type: string
+    attributes: [schema, schema_operation_type]
     enabled: true
   saphana.service.count:
     description: The number of services in a given status.
@@ -399,7 +428,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service_status]
+      input_type: string
+    attributes: [service_status]
     enabled: true
   saphana.service.thread.count:
     description: The number of service threads in a given status.
@@ -408,7 +438,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, thread_status]
+      input_type: string
+    attributes: [thread_status]
     enabled: true
   saphana.service.memory.used:
     description: The used memory from the operating system perspective.
@@ -417,7 +448,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service, service_memory_used_type]
+      input_type: string
+    attributes: [service, service_memory_used_type]
     enabled: true
   saphana.service.code_size:
     description: The service code size, including shared libraries.
@@ -426,7 +458,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service]
+      input_type: string
+    attributes: [service]
     enabled: true
   saphana.service.stack_size:
     description: The service stack size.
@@ -435,7 +468,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service]
+      input_type: string
+    attributes: [service]
     enabled: true
   saphana.service.memory.heap.current:
     description: The size of the heap portion of the memory pool.
@@ -444,7 +478,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service, memory_state_used_free]
+      input_type: string
+    attributes: [service, memory_state_used_free]
     enabled: true
   saphana.service.memory.shared.current:
     description: The size of the shared portion of the memory pool.
@@ -453,7 +488,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service, memory_state_used_free]
+      input_type: string
+    attributes: [service, memory_state_used_free]
     enabled: true
   saphana.service.memory.compactors.allocated:
     description: The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.
@@ -462,7 +498,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service]
+      input_type: string
+    attributes: [service]
     enabled: true
   saphana.service.memory.compactors.freeable:
     description: The memory that can be freed during a memory shortage.
@@ -471,7 +508,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service]
+      input_type: string
+    attributes: [service]
     enabled: true
   saphana.service.memory.limit:
     description: The configured maximum memory pool size.
@@ -480,7 +518,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service]
+      input_type: string
+    attributes: [service]
     enabled: true
   saphana.service.memory.effective_limit:
     description: The effective maximum memory pool size, calculated considering the pool sizes of other processes.
@@ -489,7 +528,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, service]
+      input_type: string
+    attributes: [service]
     enabled: true
   saphana.disk.size.current:
     description: The disk size.
@@ -498,7 +538,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, path, disk_usage_type, disk_state_used_free]
+      input_type: string
+    attributes: [path, disk_usage_type, disk_state_used_free]
     enabled: true
   saphana.volume.operation.count:
     description: The number of operations executed.
@@ -507,7 +548,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, path, disk_usage_type, volume_operation_type]
+      input_type: string
+    attributes: [path, disk_usage_type, volume_operation_type]
     enabled: true
   saphana.volume.operation.size:
     description: The size of operations executed.
@@ -516,7 +558,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, path, disk_usage_type, volume_operation_type]
+      input_type: string
+    attributes: [path, disk_usage_type, volume_operation_type]
     enabled: true
   saphana.volume.operation.time:
     description: The time spent executing operations.
@@ -525,7 +568,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, path, disk_usage_type, volume_operation_type]
+      input_type: string
+    attributes: [path, disk_usage_type, volume_operation_type]
     enabled: true
   saphana.network.request.count:
     description: The number of active and pending service requests.
@@ -534,7 +578,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, active_pending_request_state]
+      input_type: string
+    attributes: [active_pending_request_state]
     enabled: true
   saphana.network.request.finished.count:
     description: The number of service requests that have completed.
@@ -543,12 +588,14 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, internal_external_request_type]
+      input_type: string
+    attributes: [internal_external_request_type]
     enabled: true
   saphana.network.request.average_time:
     description: The average response time calculated over recent requests
     unit: ms
     gauge:
       value_type: double
-    attributes: [host]
+      input_type: string
+    attributes: []
     enabled: true

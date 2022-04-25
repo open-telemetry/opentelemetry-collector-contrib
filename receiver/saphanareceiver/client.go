@@ -161,7 +161,12 @@ ROW_ITERATOR:
 		rowFields := make([]interface{}, 0)
 
 		// Build a list of addresses that rows.Scan will load column data into
-		for range query.orderedLabels {
+		for range query.orderedResourceLabels {
+			var val sql.NullString
+			rowFields = append(rowFields, &val)
+		}
+
+		for range query.orderedMetricLabels {
 			var val sql.NullString
 			rowFields = append(rowFields, &val)
 		}
@@ -175,7 +180,7 @@ ROW_ITERATOR:
 		}
 
 		values := map[string]string{}
-		for _, label := range query.orderedLabels {
+		for _, label := range query.orderedResourceLabels {
 			v, err := convertInterfaceToString(rowFields[0])
 			if err != nil {
 				errors.AddPartial(0, err)
@@ -183,7 +188,21 @@ ROW_ITERATOR:
 			}
 			// If value was null, we can't use this row
 			if !v.Valid {
-				errors.AddPartial(0, fmt.Errorf("database row NULL value for required label %s", label))
+				errors.AddPartial(0, fmt.Errorf("database row NULL value for required resource label %s", label))
+				continue ROW_ITERATOR
+			}
+			values[label] = v.String
+			rowFields = rowFields[1:]
+		}
+		for _, label := range query.orderedMetricLabels {
+			v, err := convertInterfaceToString(rowFields[0])
+			if err != nil {
+				errors.AddPartial(0, err)
+				continue ROW_ITERATOR
+			}
+			// If value was null, we can't use this row
+			if !v.Valid {
+				errors.AddPartial(0, fmt.Errorf("database row NULL value for required metric label %s", label))
 				continue ROW_ITERATOR
 			}
 			values[label] = v.String
