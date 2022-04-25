@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
-	k8s.io/apimachinery v0.23.5
+	k8s.io/apimachinery v0.23.6
 	k8s.io/client-go v0.23.5
 )
 
