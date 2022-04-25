@@ -108,6 +108,8 @@ def _default_event_context_extractor(lambda_event: Any) -> Context:
     Assumes the Lambda Event is a map with the headers under the 'headers' key.
     This is the mapping to use when the Lambda is invoked by an API Gateway
     REST API where API Gateway is acting as a pure proxy for the request.
+    Protects headers from being something other than dictionary, as this
+    is what downstream propagators expect.
 
     See more:
     https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
@@ -118,12 +120,14 @@ def _default_event_context_extractor(lambda_event: Any) -> Context:
     Returns:
         A Context with configuration found in the event.
     """
+    headers = None
     try:
         headers = lambda_event["headers"]
     except (TypeError, KeyError):
         logger.debug(
             "Extracting context from Lambda Event failed: either enable X-Ray active tracing or configure API Gateway to trigger this Lambda function as a pure proxy. Otherwise, generated spans will have an invalid (empty) parent context."
         )
+    if not isinstance(headers, dict):
         headers = {}
     return get_global_textmap().extract(headers)
 
