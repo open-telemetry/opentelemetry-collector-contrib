@@ -46,6 +46,9 @@ func futureDefaultConfig() *Config {
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
+			},
 		},
 		Traces: TracesConfig{
 			SampleRate:      1,
