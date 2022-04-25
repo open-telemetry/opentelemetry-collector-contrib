@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	ErrNoStatsFound = fmt.Errorf("No stats found")
+	errNoStatsFound = fmt.Errorf("No stats found")
 )
 
 type containerStats struct {
@@ -132,7 +132,7 @@ func (c *podmanClient) stats(ctx context.Context) ([]containerStats, error) {
 	if report.Error.Message != "" {
 		return nil, errors.New(report.Error.Message)
 	} else if report.Stats == nil {
-		return nil, ErrNoStatsFound
+		return nil, errNoStatsFound
 	}
 
 	return report.Stats, nil
