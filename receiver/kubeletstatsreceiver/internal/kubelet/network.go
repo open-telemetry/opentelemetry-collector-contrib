@@ -22,35 +22,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addNetworkMetrics(dest pmetric.MetricSlice, prefix string, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addNetworkMetrics(dest pmetric.MetricSlice, ioMetricInt metadata.MetricIntf, errorsMetricInt metadata.MetricIntf, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
-	addNetworkIOMetric(dest, prefix, s, startTime, currentTime)
-	addNetworkErrorsMetric(dest, prefix, s, startTime, currentTime)
+	addNetworkIOMetric(dest, ioMetricInt, s, startTime, currentTime)
+	addNetworkErrorsMetric(dest, errorsMetricInt, s, startTime, currentTime)
 }
 
-func addNetworkIOMetric(dest pmetric.MetricSlice, prefix string, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addNetworkIOMetric(dest pmetric.MetricSlice, metricInt metadata.MetricIntf, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s.RxBytes == nil && s.TxBytes == nil {
 		return
 	}
 
 	m := dest.AppendEmpty()
-	metadata.M.NetworkIo.Init(m)
-	m.SetName(prefix + m.Name())
+	metricInt.Init(m)
 
 	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Receive, s.RxBytes, startTime, currentTime)
 	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxBytes, startTime, currentTime)
 }
 
-func addNetworkErrorsMetric(dest pmetric.MetricSlice, prefix string, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addNetworkErrorsMetric(dest pmetric.MetricSlice, metricInt metadata.MetricIntf, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s.RxBytes == nil && s.TxBytes == nil {
 		return
 	}
 
 	m := dest.AppendEmpty()
-	metadata.M.NetworkErrors.Init(m)
-	m.SetName(prefix + m.Name())
+	metricInt.Init(m)
 
 	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Receive, s.RxErrors, startTime, currentTime)
 	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxErrors, startTime, currentTime)

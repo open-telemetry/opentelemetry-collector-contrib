@@ -22,12 +22,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addFilesystemMetrics(dest pmetric.MetricSlice, prefix string, s *stats.FsStats, currentTime pcommon.Timestamp) {
+func addFilesystemMetrics(dest pmetric.MetricSlice, availableBytesMetricInt metadata.MetricIntf,
+	capacityBytesMetricInt metadata.MetricIntf, usedBytesMetricInt metadata.MetricIntf, s *stats.FsStats,
+	currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	addIntGauge(dest, prefix, metadata.M.FilesystemAvailable, s.AvailableBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.FilesystemCapacity, s.CapacityBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.FilesystemUsage, s.UsedBytes, currentTime)
+	addIntGauge(dest, availableBytesMetricInt, s.AvailableBytes, currentTime)
+	addIntGauge(dest, capacityBytesMetricInt, s.CapacityBytes, currentTime)
+	addIntGauge(dest, usedBytesMetricInt, s.UsedBytes, currentTime)
 }

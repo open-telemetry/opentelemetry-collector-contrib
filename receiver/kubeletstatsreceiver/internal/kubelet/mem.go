@@ -22,15 +22,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addMemoryMetrics(dest pmetric.MetricSlice, prefix string, s *stats.MemoryStats, currentTime pcommon.Timestamp) {
+func addMemoryMetrics(dest pmetric.MetricSlice, availableMetricInt metadata.MetricIntf,
+	usageMetricInt metadata.MetricIntf, rssMetricInt metadata.MetricIntf, workingSetMetricInt metadata.MetricIntf,
+	pageFaultsMetricInt metadata.MetricIntf, majorPageFaultsMetricInt metadata.MetricIntf,
+	s *stats.MemoryStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	addIntGauge(dest, prefix, metadata.M.MemoryAvailable, s.AvailableBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryUsage, s.UsageBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryRss, s.RSSBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryWorkingSet, s.WorkingSetBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryPageFaults, s.PageFaults, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryMajorPageFaults, s.MajorPageFaults, currentTime)
+	addIntGauge(dest, availableMetricInt, s.AvailableBytes, currentTime)
+	addIntGauge(dest, usageMetricInt, s.UsageBytes, currentTime)
+	addIntGauge(dest, rssMetricInt, s.RSSBytes, currentTime)
+	addIntGauge(dest, workingSetMetricInt, s.WorkingSetBytes, currentTime)
+	addIntGauge(dest, pageFaultsMetricInt, s.PageFaults, currentTime)
+	addIntGauge(dest, majorPageFaultsMetricInt, s.MajorPageFaults, currentTime)
 }

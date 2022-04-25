@@ -2,34 +2,49 @@ name: kubeletstatsreceiver
 
 resource_attributes:
   k8s.node.name:
+    description: "The name of the Node"
     type: string
   k8s.pod.uid:
+    description: "The UID of the Pod"
     type: string
   k8s.pod.name:
+    description: "The name of the Pod"
     type: string
   k8s.namespace.name:
+    description: "The name of the namespace that the pod is running in"
     type: string
-  k8s.container.name:
+  container.name:
+    description: "Container name used by container runtime"
     type: string
   container.id:
+    description: "Container id used to identify container"
     type: string
   k8s.volume.name:
+    description: "The name of the Volume"
     type: string
   k8s.volume.type:
+    description: "The type of the Volume"
     type: string
   k8s.persistentvolumeclaim.name:
+    description: "The name of the Persistent Volume Claim"
     type: string
   aws.volume.id:
+    description: "The id of the AWS Volume"
     type: string
   fs.type:
+    description: "The filesystem type of the Volume"
     type: string
   partition:
+    description: "The partition in the Volume"
     type: string
   gce.pd.name:
+    description: "The name of the persistent disk in GCE"
     type: string
   glusterfs.endpoints.name:
+    description: "The endpoint name that details Glusterfs topology"
     type: string
   glusterfs.path:
+    description: "Glusterfs volume path"
     type: string
 
 attributes:
@@ -315,35 +330,35 @@ metrics:
       value_type: int
     attributes: []
   k8s.volume.available:
-    enabled: true
+    enabled: false
     description: "The number of available bytes in the volume."
     unit: By
     gauge:
       value_type: int
     attributes: []
   k8s.volume.capacity:
-    enabled: true
+    enabled: false
     description: "The total capacity in bytes of the volume."
     unit: By
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes:
-    enabled: true
+    enabled: false
     description: "The total inodes in the filesystem."
     unit: 1
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes.free:
-    enabled: true
+    enabled: false
     description: "The free inodes in the filesystem."
     unit: 1
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes.used:
-    enabled: true
+    enabled: false
     description: "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems."
     unit: 1
     gauge:

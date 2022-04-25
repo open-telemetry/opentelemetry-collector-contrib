@@ -8,26 +8,70 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **cpu.time** | CPU time | s | Sum(Double) | <ul> </ul> |
-| **cpu.utilization** | CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
-| **filesystem.available** | Filesystem available | By | Gauge(Int) | <ul> </ul> |
-| **filesystem.capacity** | Filesystem capacity | By | Gauge(Int) | <ul> </ul> |
-| **filesystem.usage** | Filesystem usage | By | Gauge(Int) | <ul> </ul> |
-| **memory.available** | Memory available | By | Gauge(Int) | <ul> </ul> |
-| **memory.major_page_faults** | Memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **memory.page_faults** | Memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **memory.rss** | Memory rss | By | Gauge(Int) | <ul> </ul> |
-| **memory.usage** | Memory usage | By | Gauge(Int) | <ul> </ul> |
-| **memory.working_set** | Memory working_set | By | Gauge(Int) | <ul> </ul> |
-| **network.errors** | Network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| **network.io** | Network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| **volume.available** | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
-| **volume.capacity** | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
-| **volume.inodes** | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| **volume.inodes.free** | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| **volume.inodes.used** | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
+| **container.cpu.time** | Container CPU time | s | Sum(Double) | <ul> </ul> |
+| **container.cpu.utilization** | Container CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
+| **container.filesystem.available** | Container filesystem available | By | Gauge(Int) | <ul> </ul> |
+| **container.filesystem.capacity** | Container filesystem capacity | By | Gauge(Int) | <ul> </ul> |
+| **container.filesystem.usage** | Container filesystem usage | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.available** | Container memory available | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.major_page_faults** | Container memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **container.memory.page_faults** | Container memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **container.memory.rss** | Container memory rss | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.usage** | Container memory usage | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.working_set** | Container memory working_set | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.cpu.time** | Node CPU time | s | Sum(Double) | <ul> </ul> |
+| **k8s.node.cpu.utilization** | Node CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
+| **k8s.node.filesystem.available** | Node filesystem available | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.filesystem.capacity** | Node filesystem capacity | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.filesystem.usage** | Node filesystem usage | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.memory.available** | Node memory available | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.memory.major_page_faults** | Node memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **k8s.node.memory.page_faults** | Node memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **k8s.node.memory.rss** | Node memory rss | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.memory.usage** | Node memory usage | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.memory.working_set** | Node memory working_set | By | Gauge(Int) | <ul> </ul> |
+| **k8s.node.network.errors** | Node network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **k8s.node.network.io** | Node network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **k8s.pod.cpu.time** | Pod CPU time | s | Sum(Double) | <ul> </ul> |
+| **k8s.pod.cpu.utilization** | Pod CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
+| **k8s.pod.filesystem.available** | Pod filesystem available | By | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.filesystem.capacity** | Pod filesystem capacity | By | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.filesystem.usage** | Pod filesystem usage | By | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.memory.available** | Pod memory available | By | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.memory.major_page_faults** | Pod memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.memory.page_faults** | Pod memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.memory.rss** | Pod memory rss | By | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.memory.usage** | Pod memory usage | By | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.memory.working_set** | Pod memory working_set | By | Gauge(Int) | <ul> </ul> |
+| **k8s.pod.network.errors** | Pod network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **k8s.pod.network.io** | Pod network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| k8s.volume.available | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
+| k8s.volume.capacity | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
+| k8s.volume.inodes | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
+| k8s.volume.inodes.free | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
+| k8s.volume.inodes.used | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default.
+
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| aws.volume.id | The id of the AWS Volume | String |
+| container.id | Container id used to identify container | String |
+| container.name | Container name used by container runtime | String |
+| fs.type | The filesystem type of the Volume | String |
+| gce.pd.name | The name of the persistent disk in GCE | String |
+| glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | String |
+| glusterfs.path | Glusterfs volume path | String |
+| k8s.namespace.name | The name of the namespace that the pod is running in | String |
+| k8s.node.name | The name of the Node | String |
+| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | String |
+| k8s.pod.name | The name of the Pod | String |
+| k8s.pod.uid | The UID of the Pod | String |
+| k8s.volume.name | The name of the Volume | String |
+| k8s.volume.type | The type of the Volume | String |
+| partition | The partition in the Volume | String |
 
 ## Metric attributes
 

@@ -15,6 +15,7 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -50,11 +51,7 @@ type metricDataAccumulator struct {
 }
 
 const (
-	k8sPrefix       = "k8s."
-	nodePrefix      = k8sPrefix + "node."
-	podPrefix       = k8sPrefix + "pod."
-	containerPrefix = "container."
-	scopeName       = "otelcol/kubeletstatsreceiver"
+	scopeName = "otelcol/kubeletstatsreceiver"
 )
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
@@ -71,10 +68,15 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), nodePrefix, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), nodePrefix, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), nodePrefix, s.Fs, currentTime)
-	addNetworkMetrics(ilm.Metrics(), nodePrefix, s.Network, startTime, currentTime)
+	addCPUMetrics(ilm.Metrics(), metadata.M.K8sNodeCPUUtilization, metadata.M.K8sNodeCPUTime, s.CPU, startTime,
+		currentTime)
+	addMemoryMetrics(ilm.Metrics(), metadata.M.K8sNodeMemoryAvailable, metadata.M.K8sNodeMemoryUsage,
+		metadata.M.K8sNodeMemoryRss, metadata.M.K8sNodeMemoryWorkingSet, metadata.M.K8sNodeMemoryPageFaults,
+		metadata.M.K8sNodeMemoryMajorPageFaults, s.Memory, currentTime)
+	addFilesystemMetrics(ilm.Metrics(), metadata.M.K8sNodeFilesystemAvailable, metadata.M.K8sNodeFilesystemCapacity,
+		metadata.M.K8sNodeFilesystemUsage, s.Fs, currentTime)
+	addNetworkMetrics(ilm.Metrics(), metadata.M.K8sNodeNetworkIo, metadata.M.K8sNodeNetworkErrors, s.Network,
+		startTime, currentTime)
 	// todo s.Runtime.ImageFs
 
 	a.m = append(a.m, md)
@@ -94,10 +96,15 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), podPrefix, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), podPrefix, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), podPrefix, s.EphemeralStorage, currentTime)
-	addNetworkMetrics(ilm.Metrics(), podPrefix, s.Network, startTime, currentTime)
+	addCPUMetrics(ilm.Metrics(), metadata.M.K8sPodCPUUtilization, metadata.M.K8sPodCPUTime, s.CPU, startTime,
+		currentTime)
+	addMemoryMetrics(ilm.Metrics(), metadata.M.K8sPodMemoryAvailable, metadata.M.K8sPodMemoryUsage,
+		metadata.M.K8sPodMemoryRss, metadata.M.K8sPodMemoryWorkingSet, metadata.M.K8sPodMemoryPageFaults,
+		metadata.M.K8sPodMemoryMajorPageFaults, s.Memory, currentTime)
+	addFilesystemMetrics(ilm.Metrics(), metadata.M.K8sPodFilesystemAvailable, metadata.M.K8sPodFilesystemCapacity,
+		metadata.M.K8sPodFilesystemUsage, s.EphemeralStorage, currentTime)
+	addNetworkMetrics(ilm.Metrics(), metadata.M.K8sPodNetworkIo, metadata.M.K8sPodNetworkErrors, s.Network,
+		startTime, currentTime)
 
 	a.m = append(a.m, md)
 }
@@ -124,9 +131,13 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), containerPrefix, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), containerPrefix, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), containerPrefix, s.Rootfs, currentTime)
+	addCPUMetrics(ilm.Metrics(), metadata.M.ContainerCPUUtilization, metadata.M.ContainerCPUTime, s.CPU, startTime,
+		currentTime)
+	addMemoryMetrics(ilm.Metrics(), metadata.M.ContainerMemoryAvailable, metadata.M.ContainerMemoryUsage,
+		metadata.M.ContainerMemoryRss, metadata.M.ContainerMemoryWorkingSet, metadata.M.ContainerMemoryPageFaults,
+		metadata.M.ContainerMemoryMajorPageFaults, s.Memory, currentTime)
+	addFilesystemMetrics(ilm.Metrics(), metadata.M.ContainerFilesystemAvailable, metadata.M.ContainerFilesystemCapacity,
+		metadata.M.ContainerFilesystemUsage, s.Rootfs, currentTime)
 	a.m = append(a.m, md)
 }
 
@@ -151,6 +162,7 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 	ilm.Scope().SetName(scopeName)
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addVolumeMetrics(ilm.Metrics(), k8sPrefix, s, currentTime)
+	addVolumeMetrics(ilm.Metrics(), metadata.M.K8sVolumeAvailable, metadata.M.K8sVolumeCapacity,
+		metadata.M.K8sVolumeInodes, metadata.M.K8sVolumeInodesFree, metadata.M.K8sVolumeInodesUsed, s, currentTime)
 	a.m = append(a.m, md)
 }

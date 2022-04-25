@@ -22,26 +22,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addCPUMetrics(dest pmetric.MetricSlice, prefix string, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addCPUMetrics(dest pmetric.MetricSlice, usageMetricInt metadata.MetricIntf, timeMetricInt metadata.MetricIntf, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
-	addCPUUsageMetric(dest, prefix, s, currentTime)
-	addCPUTimeMetric(dest, prefix, s, startTime, currentTime)
+	addCPUUsageMetric(dest, usageMetricInt, s, currentTime)
+	addCPUTimeMetric(dest, timeMetricInt, s, startTime, currentTime)
 }
 
-func addCPUUsageMetric(dest pmetric.MetricSlice, prefix string, s *stats.CPUStats, currentTime pcommon.Timestamp) {
+func addCPUUsageMetric(dest pmetric.MetricSlice, metricInt metadata.MetricIntf, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s.UsageNanoCores == nil {
 		return
 	}
 	value := float64(*s.UsageNanoCores) / 1_000_000_000
-	fillDoubleGauge(dest.AppendEmpty(), prefix, metadata.M.CPUUtilization, value, currentTime)
+	fillDoubleGauge(dest.AppendEmpty(), metricInt, value, currentTime)
 }
 
-func addCPUTimeMetric(dest pmetric.MetricSlice, prefix string, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addCPUTimeMetric(dest pmetric.MetricSlice, metricInt metadata.MetricIntf, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s.UsageCoreNanoSeconds == nil {
 		return
 	}
 	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000
-	fillDoubleSum(dest.AppendEmpty(), prefix, metadata.M.CPUTime, value, startTime, currentTime)
+	fillDoubleSum(dest.AppendEmpty(), metricInt, value, startTime, currentTime)
 }
