@@ -20,8 +20,8 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )

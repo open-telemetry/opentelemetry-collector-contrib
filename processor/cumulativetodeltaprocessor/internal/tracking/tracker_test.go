@@ -37,8 +37,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 		Attributes:             pcommon.NewMap(),
 	}
 	miIntSum := miSum
-	miIntSum.MetricValueType = pmetric.MetricValueTypeInt
-	miSum.MetricValueType = pmetric.MetricValueTypeDouble
+	miIntSum.MetricValueType = pmetric.NumberDataPointValueTypeInt
+	miSum.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 
 	m := NewMetricTracker(context.Background(), zap.NewNop(), 0)
 

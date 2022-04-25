@@ -16,7 +16,7 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	corev1 "k8s.io/api/core/v1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"

@@ -20,9 +20,9 @@ import (
 	"time"
 	"unsafe"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )

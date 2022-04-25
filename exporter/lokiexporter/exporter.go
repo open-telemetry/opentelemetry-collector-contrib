@@ -319,7 +319,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 	b.WriteString(lr.Body().StringVal())
 
 	return &logproto.Entry{
-		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Timestamp: timestampFromLogRecord(lr),
 		Line:      b.String(),
 	}, nil
 }
@@ -330,7 +330,19 @@ func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Reso
 		return nil, err
 	}
 	return &logproto.Entry{
-		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
+}
+
+func timestampFromLogRecord(lr plog.LogRecord) time.Time {
+	if lr.Timestamp() != 0 {
+		return time.Unix(0, int64(lr.Timestamp()))
+	}
+
+	if lr.ObservedTimestamp() != 0 {
+		return time.Unix(0, int64(lr.ObservedTimestamp()))
+	}
+
+	return time.Unix(0, int64(pcommon.NewTimestampFromTime(timeNow())))
 }

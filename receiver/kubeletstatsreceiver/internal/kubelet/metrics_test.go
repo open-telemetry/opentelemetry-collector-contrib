@@ -42,10 +42,10 @@ func TestMetricAccumulator(t *testing.T) {
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
 	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups))
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, metadata, ValidMetricGroups))
 
 	// Disable all groups
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{})))
+	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, map[MetricGroup]bool{})))
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -55,6 +55,7 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 			requireResourceOk(t, rm.Resource())
 			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 				ilm := rm.ScopeMetrics().At(j)
+				require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
 				for k := 0; k < ilm.Metrics().Len(); k++ {
 					requireMetricOk(t, ilm.Metrics().At(k))
 				}
@@ -93,7 +94,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 
 func requirePointOk(t *testing.T, point pmetric.NumberDataPoint) {
 	require.NotZero(t, point.Timestamp())
-	require.NotEqual(t, pmetric.MetricValueTypeNone, point.ValueType())
+	require.NotEqual(t, pmetric.NumberDataPointValueTypeNone, point.ValueType())
 }
 
 func requireResourceOk(t *testing.T, resource pcommon.Resource) {
@@ -165,5 +166,5 @@ func fakeMetrics() []pmetric.Metrics {
 		PodMetricGroup:       true,
 		NodeMetricGroup:      true,
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, "foo", mgs)
+	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs)
 }

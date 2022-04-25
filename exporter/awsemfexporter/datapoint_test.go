@@ -668,9 +668,9 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.NumberDataPointSlice.At(0)
 				switch dp.ValueType() {
-				case pmetric.MetricValueTypeDouble:
+				case pmetric.NumberDataPointValueTypeDouble:
 					assert.Equal(t, 0.1, dp.DoubleVal())
-				case pmetric.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					assert.Equal(t, int64(1), dp.IntVal())
 				}
 				assert.Equal(t, expectedAttributes, dp.Attributes())
