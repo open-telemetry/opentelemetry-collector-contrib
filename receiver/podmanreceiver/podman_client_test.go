@@ -19,7 +19,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,4 +77,96 @@ func TestWatchingTimeouts(t *testing.T) {
 		t, time.Now().UnixNano(), shouldHaveTaken,
 		"Client timeouts don't appear to have been exercised.",
 	)
+}
+
+func TestStats(t *testing.T) {
+	// stats sample
+	statsExample := `{"Error":null,"Stats":[{"AvgCPU":42.04781177856639,"ContainerID":"e6af5805edae6c950003abd5451808b277b67077e400f0a6f69d01af116ef014","Name":"charming_sutherland","PerCPU":null,"CPU":42.04781177856639,"CPUNano":309165846000,"CPUSystemNano":54515674,"SystemNano":1650912926385978706,"MemUsage":27717632,"MemLimit":7942234112,"MemPerc":0.34899036730888044,"NetInput":430,"NetOutput":330,"BlockInput":0,"BlockOutput":0,"PIDs":118,"UpTime":309165846000,"Duration":309165846000}]}`
+
+	listener, addr := tmpSock(t)
+	defer listener.Close()
+	defer os.Remove(addr)
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.Write([]byte(statsExample))
+		} else {
+
+			w.Write([]byte{})
+		}
+	}))
+	srv.Listener = listener
+	srv.Start()
+	defer srv.Close()
+
+	config := &Config{
+		Endpoint: fmt.Sprintf("unix://%s", addr),
+		// default timeout
+		Timeout: 5 * time.Second,
+	}
+
+	cli, err := newPodmanClient(zap.NewNop(), config)
+	assert.NotNil(t, cli)
+	assert.Nil(t, err)
+
+	expectedStats := containerStats{
+		AvgCPU:        42.04781177856639,
+		ContainerID:   "e6af5805edae6c950003abd5451808b277b67077e400f0a6f69d01af116ef014",
+		Name:          "charming_sutherland",
+		PerCPU:        nil,
+		CPU:           42.04781177856639,
+		CPUNano:       309165846000,
+		CPUSystemNano: 54515674,
+		SystemNano:    1650912926385978706,
+		MemUsage:      27717632,
+		MemLimit:      7942234112,
+		MemPerc:       0.34899036730888044,
+		NetInput:      430,
+		NetOutput:     330,
+		BlockInput:    0,
+		BlockOutput:   0,
+		PIDs:          118,
+		UpTime:        309165846000 * time.Nanosecond,
+		Duration:      309165846000,
+	}
+
+	stats, err := cli.stats(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, expectedStats, stats[0])
+}
+
+func TestStatsError(t *testing.T) {
+	// If the stats request fails, the API returns the following Error structure: https://docs.podman.io/en/latest/_static/api.html#operation/ContainersStatsAllLibpod
+	// For example, if we query the stats with an invalid container ID, the API returns the following message
+	statsError := `{"Error":{},"Stats":null}`
+
+	listener, addr := tmpSock(t)
+	defer listener.Close()
+	defer os.Remove(addr)
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.Write([]byte(statsError))
+		} else {
+
+			w.Write([]byte{})
+		}
+	}))
+	srv.Listener = listener
+	srv.Start()
+	defer srv.Close()
+
+	config := &Config{
+		Endpoint: fmt.Sprintf("unix://%s", addr),
+		// default timeout
+		Timeout: 5 * time.Second,
+	}
+
+	cli, err := newPodmanClient(zap.NewNop(), config)
+	assert.NotNil(t, cli)
+	assert.Nil(t, err)
+
+	stats, err := cli.stats(context.Background())
+	assert.Nil(t, stats)
+	assert.EqualError(t, err, errNoStatsFound.Error())
 }
