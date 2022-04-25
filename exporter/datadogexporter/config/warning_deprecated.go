@@ -105,7 +105,7 @@ var removedSettings = []renameError{}
 // Error implements the error interface.
 func (e renameError) Error() string {
 	return fmt.Sprintf(
-		"%q has been deprecated in favor of %q and will be removed in %s. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
+		"%q has been deprecated in favor of %q and will be removed in %s or later. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
 		e.oldName,
 		e.newName,
 		e.oldRemovedIn,

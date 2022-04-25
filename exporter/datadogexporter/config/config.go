@@ -509,7 +509,7 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	// Add warnings about autodetected environment variables.
 	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
 
-	deprecationTemplate := "%q has been deprecated and will be removed in %s. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
+	deprecationTemplate := "%q has been deprecated and will be removed in %s or later. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
 	if c.Service != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.52.0", 8781))
 	}
