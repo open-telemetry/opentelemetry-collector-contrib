@@ -85,7 +85,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
 
-	metadata, err := s.getProcessMetadata()
+	data, err := s.getProcessMetadata()
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
@@ -95,7 +95,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
-	for _, md := range metadata {
+	for _, md := range data {
 		now := pcommon.NewTimestampFromTime(time.Now())
 
 		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
@@ -128,7 +128,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 	var errs scrapererror.ScrapeErrors
 
-	metadata := make([]*processMetadata, 0, handles.Len())
+	data := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
@@ -165,10 +165,10 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			handle:     handle,
 		}
 
-		metadata = append(metadata, md)
+		data = append(data, md)
 	}
 
-	return metadata, errs.Combine()
+	return data, errs.Combine()
 }
 
 func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle) error {

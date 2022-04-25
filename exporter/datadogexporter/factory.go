@@ -100,6 +100,9 @@ func (*factory) createDefaultConfig() config.Exporter {
 			SumConfig: ddconfig.SumConfig{
 				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 			},
+			SummaryConfig: ddconfig.SummaryConfig{
+				Mode: ddconfig.SummaryModeGauges,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
