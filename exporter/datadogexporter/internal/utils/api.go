@@ -28,16 +28,22 @@ func CreateClient(APIKey string, endpoint string) *datadog.Client {
 }
 
 // ValidateAPIKey checks that the provided client was given a correct API key.
-func ValidateAPIKey(logger *zap.Logger, client *datadog.Client) {
+// If `api.fail_on_invalid_key` is enabled,
+func ValidateAPIKey(logger *zap.Logger, client *datadog.Client, failOnInvalidKey bool) {
 	logger.Info("Validating API key.")
-	res, err := client.Validate()
-	if err != nil {
-		logger.Warn("Error while validating API key.", zap.Error(err))
-	}
-
-	if res {
+	valid, err := client.Validate()
+	if err == nil && valid {
 		logger.Info("API key validation successful.")
-	} else {
-		logger.Warn("API key validation failed.")
+		return
+	}
+	switch {
+	case err != nil && failOnInvalidKey:
+		logger.Fatal("Error while validating API key.", zap.Error(err))
+	case err != nil && !failOnInvalidKey:
+		logger.Warn("Error while validating API key.", zap.Error(err))
+	case !valid && failOnInvalidKey:
+		logger.Fatal("API Key validation failed.")
+	case !valid && !failOnInvalidKey:
+		logger.Warn("API Key validation failed.")
 	}
 }

@@ -83,6 +83,11 @@ exporters:
       #
       # site: datadoghq.com
 
+      ## @param fail_on_invalid_key - boolean - optional - default: false
+      ## Whether to exit on invalid api key.
+      #
+      # fail_on_invalid_key: false
+
     ## @param tls - custom object - optional
     # TLS settings for HTTPS communications.
     # tls:
