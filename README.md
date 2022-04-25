@@ -67,7 +67,6 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
-- [Anuraag Agrawal](https://github.com/anuraaga), AWS
 - [David Ashpole](https://github.com/dashpole), Google
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
