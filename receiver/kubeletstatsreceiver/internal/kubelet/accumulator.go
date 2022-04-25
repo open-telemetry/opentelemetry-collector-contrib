@@ -17,12 +17,12 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 type MetricGroup string
