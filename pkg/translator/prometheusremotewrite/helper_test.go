@@ -22,12 +22,23 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
+
+// setSanitizeLabelFeatureGateForTest changes the dropSanitizationGate feature gate during a test.
+// usage: defer setSanitizeLabelFeatureGateForTest(true)()
+func setSanitizeLabelFeatureGateForTest(enabled bool) func() {
+	originalValue := featuregate.IsEnabled(dropSanitization)
+	featuregate.Apply(map[string]bool{dropSanitization: enabled})
+	return func() {
+		featuregate.Apply(map[string]bool{dropSanitization: originalValue})
+	}
+}
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
 // otherwise.
@@ -284,6 +295,41 @@ func Test_createLabelSet(t *testing.T) {
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
+		},
+		{
+			"sanitize_labels_starts_with_underscore",
+			getResource(map[string]pcommon.Value{}),
+			lbs3,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, keyStr+label51, value51, label41, value41, label31, value31, label32, value32),
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+		})
+	}
+}
+
+func Test_createLabelSetDropSanitization(t *testing.T) {
+	defer setSanitizeLabelFeatureGateForTest(true)()
+	tests := []struct {
+		name           string
+		resource       pcommon.Resource
+		orig           pcommon.Map
+		externalLabels map[string]string
+		extras         []string
+		want           []prompb.Label
+	}{
+		{
+			"donot_sanitize_labels_starts_with_underscore",
+			getResource(map[string]pcommon.Value{}),
+			lbs3,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
@@ -611,7 +657,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 
 func TestMostRecentTimestampInMetric(t *testing.T) {
 	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
-	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// the first datapoint timestamp is at testdata.TestMetricTime
 	metricMultipleTimestamps.Sum().DataPoints().At(1).SetTimestamp(laterTimestamp)
 	for _, tc := range []struct {

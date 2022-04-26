@@ -20,7 +20,14 @@ These are the metrics available for this scraper.
 | **memcached.operations** | Operation counts. | {operations} | Sum(Int) | <ul> <li>type</li> <li>operation</li> </ul> |
 | **memcached.threads** | Number of threads used by the memcached instance. | {threads} | Sum(Int) | <ul> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Metric attributes
 

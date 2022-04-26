@@ -22,9 +22,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func resourceAndLogRecordsToLogs(r pcommon.Resource, lrs []plog.LogRecord) plog.Logs {
@@ -297,6 +297,26 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 		},
 		{
 			"No timestamp on record",
+			func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStringVal("Message")
+				logRecord.SetObservedTimestamp(nanoTs)
+				return logRecord
+			},
+			pcommon.NewResource,
+			"agent",
+			"agentID",
+			observIQLogEntry{
+				Timestamp: stringTs,
+				Message:   "Message",
+				Severity:  "default",
+				Data:      nil,
+				Agent:     &observIQAgentInfo{Name: "agent", ID: "agentID", Version: "latest"},
+			},
+			false,
+		},
+		{
+			"No timestamp and no observed timestamp on record",
 			func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStringVal("Message")
