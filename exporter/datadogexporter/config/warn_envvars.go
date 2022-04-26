@@ -46,6 +46,9 @@ func futureDefaultConfig() *Config {
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
+			},
 		},
 		Traces: TracesConfig{
 			SampleRate:      1,
@@ -65,7 +68,7 @@ func futureDefaultConfig() *Config {
 // explicitly on configuration instead.
 func errUsedEnvVar(settingName, envVarName string) error {
 	return fmt.Errorf(
-		"%q will not default to %q's value starting on v0.50.0. Set %s: ${%s} to remove this warning",
+		"%q will not default to %q's value in a future minor version. Set %s: ${%s} to remove this warning",
 		settingName,
 		envVarName,
 		settingName,
@@ -141,8 +144,8 @@ func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
 	if cfg.Traces.Endpoint != futureCfg.Traces.Endpoint {
 		warnings = append(warnings, errUsedEnvVar("traces.endpoint", "DD_APM_URL"))
 	}
-	if tagsDiffer(cfg.GetHostTags(), futureCfg.GetHostTags()) {
-		warnings = append(warnings, fmt.Errorf("\"tags\" will not default to \"DD_TAGS\"'s value starting on v0.50.0. Use 'env' configuration source instead to remove this warning"))
+	if tagsDiffer(cfg.getHostTags(), futureCfg.getHostTags()) {
+		warnings = append(warnings, fmt.Errorf("\"tags\" will not default to \"DD_TAGS\"'s value in a future minor version. Use 'env' configuration source instead to remove this warning"))
 	}
 
 	if len(warnings) > 0 {
