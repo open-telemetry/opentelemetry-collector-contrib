@@ -22,7 +22,7 @@ it references an unset map value, there will be no action.
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
 the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`
 
-- `truncate(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that all string values are truncated to the limit. e.g., `truncate(attributes, 100)` will truncate all string values in `attributes` such that all string values have less than or equal to 100 characters.  Non-string values are ignored.
+- `truncateAll(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that all string values are truncated to the limit. e.g., `truncate(attributes, 100)` will truncate all string values in `attributes` such that all string values have less than or equal to 100 characters.  Non-string values are ignored.
 
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
