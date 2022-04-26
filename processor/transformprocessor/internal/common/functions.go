@@ -91,6 +91,7 @@ func truncate(target GetSetter, limit int64) ExprFunc {
 				return true
 			})
 			target.Set(ctx, updated)
+			// TODO: Write log when truncation is performed
 		}
 		return nil
 	}
@@ -126,8 +127,7 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
 			}
 			argDef := inv.Arguments[i]
-			temp := argType.Name()
-			switch temp {
+			switch argType.Name() {
 			case "Setter":
 				fallthrough
 			case "GetSetter":
