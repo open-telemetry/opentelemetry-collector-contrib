@@ -545,7 +545,7 @@ func TestExtractionRules(t *testing.T) {
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
 					Name:                 "$1",
-					KeyRegex:             regexp.MustCompile("annotation(\\d+)"),
+					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
@@ -560,7 +560,7 @@ func TestExtractionRules(t *testing.T) {
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
 					Name:                 "$0",
-					KeyRegex:             regexp.MustCompile("annotation(\\d+)"),
+					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
