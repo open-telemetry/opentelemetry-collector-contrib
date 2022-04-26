@@ -28,7 +28,7 @@ func Test_newFunctionCall(t *testing.T) {
 	input := ptrace.NewSpan()
 	input.SetName("bear")
 	attrs := pcommon.NewMap()
-	attrs.InsertString("test", "1")
+	attrs.InsertString("test", "hello world")
 	attrs.InsertInt("test2", 3)
 	attrs.InsertBool("test3", true)
 	attrs.CopyTo(input.Attributes())
@@ -112,7 +112,7 @@ func Test_newFunctionCall(t *testing.T) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
 				attrs := pcommon.NewMap()
-				attrs.InsertString("test", "1")
+				attrs.InsertString("test", "hello world")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -142,7 +142,7 @@ func Test_newFunctionCall(t *testing.T) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
 				attrs := pcommon.NewMap()
-				attrs.InsertString("test", "1")
+				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.CopyTo(span.Attributes())
 			},
@@ -166,6 +166,120 @@ func Test_newFunctionCall(t *testing.T) {
 			want: func(span ptrace.Span) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
+			},
+		},
+		{
+			name: "limit attributes",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(1),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit attributes zero",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(0),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit attributes nothing",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(100),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit resource attributes",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "resource",
+								},
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(1),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
 			},
 		},
 	}

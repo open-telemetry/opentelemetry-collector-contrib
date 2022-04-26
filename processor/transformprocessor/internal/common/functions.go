@@ -24,6 +24,7 @@ import (
 var registry = map[string]interface{}{
 	"keep_keys": keepKeys,
 	"set":       set,
+	"limit":     limit,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -65,6 +66,32 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 				return true
 			})
 			target.Set(ctx, filtered)
+		}
+		return nil
+	}
+}
+
+func limit(target GetSetter, limit int64) ExprFunc {
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			count := int64(0)
+			attrs.Range(func(key string, val pcommon.Value) bool {
+				if count < limit {
+					updated.Insert(key, val)
+					count++
+					return true
+				}
+				return false
+			})
+			target.Set(ctx, updated)
+			// TODO: Write log when limiting is performed
 		}
 		return nil
 	}
@@ -117,6 +144,11 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				}
 				args = append(args, reflect.ValueOf(arg))
 				continue
+			case "int64":
+				if argDef.Int == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.Int))
 			}
 		}
 		val := reflect.ValueOf(f)

@@ -22,6 +22,8 @@ it references an unset map value, there will be no action.
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
 the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`
 
+- `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `truncate(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
+
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
 - `!=` - matches telemetry where the values are not equal to each other
@@ -48,6 +50,8 @@ processors:
         - set(status.code, 1) where attributes["http.path"] == "/health"
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
         - set(name, attributes["http.route"])
+        - limit(attributes, 100)
+        - limit(resource.attributes, 100)
 service:
   pipelines:
     logs:
@@ -73,3 +77,5 @@ All spans
 1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `name` to the `http.route` attribute if it is set
+4) Limit all span attributes such that each span has no more than 100 attributes.
+5) Limit all resource attributes such that each resource no more than 100 attributes.
