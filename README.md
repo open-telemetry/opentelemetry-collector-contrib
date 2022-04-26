@@ -54,7 +54,7 @@ Each component has its own support levels, as defined in the following sections.
 
 ## Stability levels
 
-While we intend to provide high-quality components as part of this repository, we acknowledge that not all of them are ready for prime time. As such, each component should list its current stability level, according to the following definitions:
+While we intend to provide high-quality components as part of this repository, we acknowledge that not all of them are ready for prime time. As such, each component should list its current stability level for each telemetry signal, according to the following definitions:
 
 * **In development**: not all pieces of the component are in place yet and it might not be available as part of any distributions yet. Bugs and performance issues should be reported, but it is likely that the component owners might not give them much attention. Your feedback is still desired, especially when it comes to the user-experience (configuration options, component observability, technical implementation details, ...). Configuration options might break often depending on how things evolve. The component should not be used in production.
 * **Experimental**: the component is ready to be used for limited non-critical workloads and the authors of this component would welcome your feedback. Bugs and performance problems should be reported, but component owners might not work on them right away. The configuration options might change between releases, although component owners should try to minimize breaking changes.
@@ -64,6 +64,8 @@ While we intend to provide high-quality components as part of this repository, w
 ## Gated features
 
 Some features are hidden behind feature gates before they are ready for general availability. In such cases, even if a component is already stable, the features behind a feature gate should be considered **Experimental**.
+
+Note that the feature gates themselves might be at different [lifecycle stages](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.49.0/service/featuregate/README.md#feature-lifecycle).
 
 ## Support levels
 
