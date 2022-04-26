@@ -207,6 +207,17 @@ func TestUnmarshal(t *testing.T) {
 			}),
 			err: "1 error(s) decoding:\n\n* error decoding 'host_metadata.hostname_source': invalid host metadata hostname source \"invalid_source\"",
 		},
+		{
+			name: "invalid summary mode",
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"summaries": map[string]interface{}{
+						"mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
+		},
 	}
 
 	for _, testInstance := range tests {

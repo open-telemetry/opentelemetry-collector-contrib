@@ -84,6 +84,19 @@ var renamedSettings = []renameError{
 			}
 		},
 	},
+	{
+		oldName:      "metrics::report_quantiles",
+		newName:      "metrics::summaries::mode",
+		oldRemovedIn: "v0.53.0",
+		issueNumber:  8845,
+		updateFn: func(c *Config) {
+			if c.Metrics.Quantiles {
+				c.Metrics.SummaryConfig.Mode = SummaryModeGauges
+			} else {
+				c.Metrics.SummaryConfig.Mode = SummaryModeNoQuantiles
+			}
+		},
+	},
 }
 
 // List of settings that have been removed, but for which we keep a custom error.
@@ -92,7 +105,7 @@ var removedSettings = []renameError{}
 // Error implements the error interface.
 func (e renameError) Error() string {
 	return fmt.Sprintf(
-		"%q has been deprecated in favor of %q and will be removed in %s. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
+		"%q has been deprecated in favor of %q and will be removed in %s or later. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
 		e.oldName,
 		e.newName,
 		e.oldRemovedIn,
