@@ -31,7 +31,7 @@
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
 - `attributesprocessor`: Support filter by severity (#9132)
 - `transformprocessor`: Add transformation of logs (#9368)
-- `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes`.
+- `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 
 ### 🧰 Bug fixes 🧰
