@@ -18,6 +18,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9087)
+
 ## v0.49.0
 
 ### 🛑 Breaking changes 🛑
