@@ -88,7 +88,7 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		var resourceAttributes map[string]string
 		err := json.Unmarshal([]byte(k), &resourceAttributes)
 		if err != nil {
-			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for sap hana scraper: %w", err))
+			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for saphana scraper: %w", err))
 			continue
 		}
 		resourceOptions := []metadata.ResourceOption{metadata.WithDbSystem("saphana")}
