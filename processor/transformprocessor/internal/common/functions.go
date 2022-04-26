@@ -24,6 +24,7 @@ import (
 var registry = map[string]interface{}{
 	"keep_keys": keepKeys,
 	"set":       set,
+	"truncate":  truncate,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -70,6 +71,31 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 	}
 }
 
+func truncate(target GetSetter, limit int64) ExprFunc {
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			attrs.Range(func(key string, val pcommon.Value) bool {
+				stringVal := val.StringVal()
+				if int64(len(stringVal)) > limit {
+					updated.InsertString(key, stringVal[:limit])
+				} else {
+					updated.Insert(key, val)
+				}
+				return true
+			})
+			target.Set(ctx, updated)
+		}
+		return nil
+	}
+}
+
 // TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
 // Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
@@ -100,7 +126,8 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
 			}
 			argDef := inv.Arguments[i]
-			switch argType.Name() {
+			temp := argType.Name()
+			switch temp {
 			case "Setter":
 				fallthrough
 			case "GetSetter":
@@ -117,6 +144,11 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				}
 				args = append(args, reflect.ValueOf(arg))
 				continue
+			case "int64":
+				if argDef.Int == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.Int))
 			}
 		}
 		val := reflect.ValueOf(f)
