@@ -159,9 +159,8 @@ type FieldExtractionRule struct {
 	// Key is used to lookup k8s pod fields.
 	Key string
 	// KeyRegex is a regular expression used to extract a Key that matches the regex.
-	KeyRegex *regexp.Regexp
-	// KeyPrefix is the prefix to be appended.
-	KeyPrefix string
+	KeyRegex             *regexp.Regexp
+	HasKeyRegexReference bool
 	// Regex is a regular expression used to extract a sub-part of a field value.
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
@@ -188,9 +187,19 @@ func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]s
 func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
-			if r.KeyRegex.MatchString(k) && v != "" {
-				name := fmt.Sprintf(formatter, k)
+			var name string
+			if r.HasKeyRegexReference {
+				result := []byte{}
+				for _, submatches := range r.KeyRegex.FindAllStringSubmatchIndex(k, -1) {
+					result = r.KeyRegex.ExpandString(result, r.Name, k, submatches)
+				}
+				name = string(result)
 				tags[name] = v
+			} else {
+				if r.KeyRegex.MatchString(k) && v != "" {
+					name = fmt.Sprintf(formatter, k)
+					tags[name] = v
+				}
 			}
 		}
 	} else if v, ok := metadata[r.Key]; ok {

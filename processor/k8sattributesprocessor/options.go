@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -178,16 +179,36 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		var keyRegex *regexp.Regexp
+		var hasKeyRegexReference bool
 		if a.KeyRegex != "" {
 			var err error
 			keyRegex, err = regexp.Compile(a.KeyRegex)
 			if err != nil {
 				return rules, err
 			}
+
+			var maxCapGroup int
+			capGroupRegex := regexp.MustCompile(`\$\d+`)
+			groups := capGroupRegex.FindAllStringSubmatch(a.TagName, -1)
+			for i := 0; i < len(groups); i++ {
+				s := groups[i][0]
+				if c, err := strconv.Atoi(s[1:]); err != nil {
+					return rules, fmt.Errorf("invalid captured group %s: %s", a.TagName, err)
+				} else if c > maxCapGroup {
+					maxCapGroup = c
+				}
+			}
+			subexp := keyRegex.NumSubexp()
+			if maxCapGroup > subexp {
+				return rules, fmt.Errorf("invalid captured group reference")
+			}
+			if subexp > 0 {
+				hasKeyRegexReference = true
+			}
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, KeyRegex: keyRegex, Regex: r, From: a.From,
+			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, Regex: r, From: a.From,
 		})
 	}
 	return rules, nil

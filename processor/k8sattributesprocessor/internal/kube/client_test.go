@@ -540,6 +540,21 @@ func TestExtractionRules(t *testing.T) {
 				"k8s.pod.annotations.annotation1": "av1",
 			},
 		},
+		{
+			name: "captured-groups",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile("annotation(\\d+)"),
+					HasKeyRegexReference: true,
+					From:                 MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"1": "av1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
