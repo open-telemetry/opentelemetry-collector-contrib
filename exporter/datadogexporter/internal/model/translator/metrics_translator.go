@@ -100,9 +100,9 @@ func (t *Translator) mapNumberMetrics(
 		pointDims := dims.WithAttributeMap(p.Attributes())
 		var val float64
 		switch p.ValueType() {
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val = p.DoubleVal()
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val = float64(p.IntVal())
 		}
 
@@ -129,9 +129,9 @@ func (t *Translator) mapNumberMonotonicMetrics(
 
 		var val float64
 		switch p.ValueType() {
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val = p.DoubleVal()
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val = float64(p.IntVal())
 		}
 

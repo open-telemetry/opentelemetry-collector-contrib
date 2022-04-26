@@ -24,9 +24,9 @@ import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )

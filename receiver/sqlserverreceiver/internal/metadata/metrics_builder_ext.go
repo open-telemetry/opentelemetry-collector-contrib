@@ -15,10 +15,10 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func (mb *MetricsBuilder) RecordAnyDataPoint(ts pdata.Timestamp, val float64, name string, attributes map[string]string) {
+func (mb *MetricsBuilder) RecordAnyDataPoint(ts pcommon.Timestamp, val float64, name string, attributes map[string]string) {
 	switch name {
 	case "sqlserver.user.connection.count":
 		mb.RecordSqlserverUserConnectionCountDataPoint(ts, val)
