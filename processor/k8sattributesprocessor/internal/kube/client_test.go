@@ -555,6 +555,21 @@ func TestExtractionRules(t *testing.T) {
 				"1": "av1",
 			},
 		},
+		{
+			name: "captured-groups-$0",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					Name:                 "$0",
+					KeyRegex:             regexp.MustCompile("annotation(\\d+)"),
+					HasKeyRegexReference: true,
+					From:                 MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"annotation1": "av1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

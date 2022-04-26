@@ -676,14 +676,14 @@ func Test_extractFieldRules(t *testing.T) {
 			"keyregex-capture-group",
 			args{"labels", []FieldExtractConfig{
 				{
-					TagName:  "$1-$2",
+					TagName:  "$0-$1-$2",
 					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name:                 "$1-$2",
+					Name:                 "$0-$1-$2",
 					KeyRegex:             regexp.MustCompile("(key)(.*)"),
 					HasKeyRegexReference: true,
 					From:                 kube.MetadataFromPod,
