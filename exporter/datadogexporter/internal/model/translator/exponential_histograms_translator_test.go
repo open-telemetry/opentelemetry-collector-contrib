@@ -22,7 +22,8 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/quantile/summary"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
@@ -33,8 +34,8 @@ const (
 )
 
 func TestExponentialHistogramToDDSketch(t *testing.T) {
-	ts := pdata.NewTimestampFromTime(time.Now())
-	point := pdata.NewExponentialHistogramDataPoint()
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	point := pmetric.NewExponentialHistogramDataPoint()
 	point.SetScale(6)
 
 	point.SetCount(30)
@@ -74,8 +75,8 @@ func TestExponentialHistogramToDDSketch(t *testing.T) {
 	assert.InDelta(t, accuracy, sketch.RelativeAccuracy(), acceptableFloatError)
 }
 
-func createExponentialHistogramMetrics(additionalResourceAttributes map[string]string, additionalDatapointAttributes map[string]string) pdata.Metrics {
-	md := pdata.NewMetrics()
+func createExponentialHistogramMetrics(additionalResourceAttributes map[string]string, additionalDatapointAttributes map[string]string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
 
@@ -85,14 +86,14 @@ func createExponentialHistogramMetrics(additionalResourceAttributes map[string]s
 		resourceAttrs.InsertString(attr, val)
 	}
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
 	metricsArray := ilm.Metrics()
 
 	met := metricsArray.AppendEmpty()
 	met.SetName("expHist.test")
-	met.SetDataType(pdata.MetricDataTypeExponentialHistogram)
-	met.ExponentialHistogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	met.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
+	met.ExponentialHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	points := met.ExponentialHistogram().DataPoints()
 	point := points.AppendEmpty()
 
@@ -123,7 +124,7 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 		"attribute_tag": "attribute_value",
 	})
 
-	point := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
+	point := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
 	// gamma = 2^(2^-scale)
 	gamma := math.Pow(2, math.Pow(2, -float64(point.Scale())))
 

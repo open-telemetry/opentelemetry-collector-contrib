@@ -23,11 +23,11 @@ import (
 	"github.com/DataDog/sketches-go/ddsketch"
 	"github.com/DataDog/sketches-go/ddsketch/mapping"
 	"github.com/DataDog/sketches-go/ddsketch/store"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
-func toStore(b pdata.Buckets) store.Store {
+func toStore(b pmetric.Buckets) store.Store {
 	offset := b.Offset()
 	bucketCounts := b.BucketCounts()
 
@@ -42,7 +42,7 @@ func toStore(b pdata.Buckets) store.Store {
 }
 
 func (t *Translator) exponentialHistogramToDDSketch(
-	p pdata.ExponentialHistogramDataPoint,
+	p pmetric.ExponentialHistogramDataPoint,
 	delta bool,
 ) (*ddsketch.DDSketch, error) {
 	if !delta {
@@ -81,7 +81,7 @@ func (t *Translator) mapExponentialHistogramMetrics(
 	ctx context.Context,
 	consumer Consumer,
 	dims *Dimensions,
-	slice pdata.ExponentialHistogramDataPointSlice,
+	slice pmetric.ExponentialHistogramDataPointSlice,
 	delta bool,
 ) {
 	for i := 0; i < slice.Len(); i++ {
