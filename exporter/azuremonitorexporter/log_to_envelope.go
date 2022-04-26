@@ -24,9 +24,8 @@ import (
 )
 
 const (
-	traceIDTag      = "TraceId"
-	spanIDTag       = "SpanId"
-	categoryNameTag = "CategoryName"
+	traceIDTag = "TraceId"
+	spanIDTag  = "SpanId"
 )
 
 var severityLevelMap = map[string]contracts.SeverityLevel{
