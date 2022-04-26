@@ -79,6 +79,10 @@ func limit(target GetSetter, limit int64) ExprFunc {
 		}
 
 		if attrs, ok := val.(pcommon.Map); ok {
+			if int64(attrs.Len()) <= limit {
+				return nil
+			}
+
 			updated := pcommon.NewMap()
 			updated.EnsureCapacity(attrs.Len())
 			count := int64(0)
