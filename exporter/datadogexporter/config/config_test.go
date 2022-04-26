@@ -40,7 +40,7 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 
 	tc = TagsConfig{
@@ -59,7 +59,7 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 
 	tc = TagsConfig{
@@ -77,7 +77,7 @@ func TestHostTags(t *testing.T) {
 			"key3:val3",
 			"key4:val4",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 }
 
