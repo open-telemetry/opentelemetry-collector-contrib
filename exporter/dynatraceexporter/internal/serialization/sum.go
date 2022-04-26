@@ -43,11 +43,11 @@ func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimens
 	var valueOpt dtMetric.MetricOption
 
 	switch dp.ValueType() {
-	case pmetric.MetricValueTypeNone:
+	case pmetric.NumberDataPointValueTypeNone:
 		return "", fmt.Errorf("unsupported value type none")
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal())
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal())
 	default:
 		return "", fmt.Errorf("unknown data type")
@@ -111,9 +111,9 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 		return nil, fmt.Errorf("expected %s to be type %s but got %s - count reset", name, metricValueTypeToString(oldCount.ValueType()), metricValueTypeToString(dp.ValueType()))
 	}
 
-	if dp.ValueType() == pmetric.MetricValueTypeInt {
+	if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal() - oldCount.IntVal())
-	} else if dp.ValueType() == pmetric.MetricValueTypeDouble {
+	} else if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal() - oldCount.DoubleVal())
 	} else {
 		return nil, fmt.Errorf("%s value type %s not supported", name, metricValueTypeToString(dp.ValueType()))
@@ -136,13 +136,13 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 	return dm, err
 }
 
-func metricValueTypeToString(t pmetric.MetricValueType) string {
+func metricValueTypeToString(t pmetric.NumberDataPointValueType) string {
 	switch t {
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return "MetricValueTypeDouble"
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return "MericValueTypeInt"
-	case pmetric.MetricValueTypeNone:
+	case pmetric.NumberDataPointValueTypeNone:
 		return "MericValueTypeNone"
 	default:
 		return "MetricValueTypeUnknown"

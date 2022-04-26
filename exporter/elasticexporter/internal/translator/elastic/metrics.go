@@ -46,9 +46,9 @@ func EncodeMetrics(otlpMetrics pmetric.MetricSlice, otlpLibrary pcommon.Instrume
 				dp := dps.At(i)
 				var val float64
 				switch dp.ValueType() {
-				case pmetric.MetricValueTypeDouble:
+				case pmetric.NumberDataPointValueTypeDouble:
 					val = dp.DoubleVal()
-				case pmetric.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					val = float64(dp.IntVal())
 				}
 				metricsets.upsert(model.Metrics{
@@ -66,9 +66,9 @@ func EncodeMetrics(otlpMetrics pmetric.MetricSlice, otlpLibrary pcommon.Instrume
 				dp := dps.At(i)
 				var val float64
 				switch dp.ValueType() {
-				case pmetric.MetricValueTypeDouble:
+				case pmetric.NumberDataPointValueTypeDouble:
 					val = dp.DoubleVal()
-				case pmetric.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					val = float64(dp.IntVal())
 				}
 				metricsets.upsert(model.Metrics{

@@ -1,6 +1,6 @@
 # Transform Processor
 
-Supported pipeline types: traces
+Supported pipeline types: logs, traces
 
 The transform processor modifies telemetry based on configuration using the Telemetry Query Language.
 It takes a list of queries which are performed in the order specified in the config.
@@ -40,6 +40,11 @@ exporters:
 
 processors:
   transform:
+    logs:
+      queries:
+        - set(severity_text, "FAIL") where body == "request failed"
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - set(body, attributes["http.route"])
     traces:
       queries:
         - set(status.code, 1) where attributes["http.path"] == "/health"
@@ -49,13 +54,25 @@ processors:
         - truncate(resource.attributes, 4096)
 service:
   pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [nop]
     traces:
       receivers: [otlp]
       processors: [transform]
       exporters: [nop]
 ```
 
-This processor will perform the operations in order for all spans
+This processor will perform the operations in order for 
+
+All logs
+
+1) Set severity text to FAIL if the body contains a string text "request failed"
+2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+3) Set `body` to the `http.route` attribute if it is set
+
+All spans
 
 1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes

@@ -24,11 +24,11 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -276,9 +276,9 @@ func (t *transformer) Metric(m pmetric.Metric) ([]telemetry.Metric, error) {
 
 			var val float64
 			switch point.ValueType() {
-			case pmetric.MetricValueTypeDouble:
+			case pmetric.NumberDataPointValueTypeDouble:
 				val = point.DoubleVal()
-			case pmetric.MetricValueTypeInt:
+			case pmetric.NumberDataPointValueTypeInt:
 				val = float64(point.IntVal())
 			}
 			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
@@ -304,9 +304,9 @@ func (t *transformer) Metric(m pmetric.Metric) ([]telemetry.Metric, error) {
 			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
 			var val float64
 			switch point.ValueType() {
-			case pmetric.MetricValueTypeDouble:
+			case pmetric.NumberDataPointValueTypeDouble:
 				val = point.DoubleVal()
-			case pmetric.MetricValueTypeInt:
+			case pmetric.NumberDataPointValueTypeInt:
 				val = float64(point.IntVal())
 			}
 
