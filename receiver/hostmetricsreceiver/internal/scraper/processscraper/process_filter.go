@@ -30,8 +30,8 @@ type processFilter struct {
 	excludeCommandLineFilter    filterset.FilterSet
 	includeOwnerFilter          filterset.FilterSet
 	excludeOwnerFilter          filterset.FilterSet
-	includePidFilter            map[int32]struct{}
-	excludePidFilter            map[int32]struct{}
+	includePidFilter            []int32
+	excludePidFilter            []int32
 }
 
 // includeExecutable return a boolean value indicating if executableName and executablePath matches the filter.
@@ -59,9 +59,14 @@ func (p *processFilter) includePid(pid int32) bool {
 
 // findInt searches an int map for a specific integer.  If the
 // int is found in the map return true.  Otherwise return false
-func findInt(intMap map[int32]struct{}, intMatch int32) bool {
-	_, ok := intMap[intMatch]
-	return ok
+func findInt(includeSet []int32, intMatch int32) bool {
+	for _, val := range includeSet {
+		if val == intMatch {
+			return true
+		}
+	}
+
+	return false
 }
 
 // createFilter receives a filter config and createa a processFilter based on the config settings
@@ -119,17 +124,9 @@ func createFilter(filterConfig FilterConfig) (*processFilter, error) {
 		return nil, err
 	}
 
-	filter.includePidFilter = make(map[int32]struct{})
-	// convert slice to map for quick lookup
-	for _, val := range filterConfig.IncludePids {
-		filter.includePidFilter[val] = struct{}{}
-	}
+	filter.includePidFilter = filterConfig.IncludePids
 
-	filter.excludePidFilter = make(map[int32]struct{})
-	// convert slice to map for quick lookup
-	for _, val := range filterConfig.ExcludePids {
-		filter.excludePidFilter[val] = struct{}{}
-	}
+	filter.excludePidFilter = filterConfig.ExcludePids
 
 	return &filter, err
 }
