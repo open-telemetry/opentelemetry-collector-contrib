@@ -50,8 +50,8 @@ processors:
         - set(status.code, 1) where attributes["http.path"] == "/health"
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
         - set(name, attributes["http.route"])
-        - truncate(attributes, 4096)
-        - truncate(resource.attributes, 4096)
+        - truncateAll(attributes, 4096)
+        - truncateAll(resource.attributes, 4096)
 service:
   pipelines:
     logs:

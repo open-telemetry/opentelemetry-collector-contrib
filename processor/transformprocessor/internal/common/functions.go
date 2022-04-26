@@ -22,9 +22,9 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"keep_keys": keepKeys,
-	"set":       set,
-	"truncate":  truncate,
+	"keep_keys":   keepKeys,
+	"set":         set,
+	"truncateAll": truncateAll,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -71,7 +71,7 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 	}
 }
 
-func truncate(target GetSetter, limit int64) ExprFunc {
+func truncateAll(target GetSetter, limit int64) ExprFunc {
 	return func(ctx TransformContext) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
