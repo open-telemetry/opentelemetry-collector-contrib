@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -215,6 +216,64 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 	require.Nil(t, client)
 
 	defaultBucket = temp
+}
+
+func TestClientCompaction(t *testing.T) {
+	tempDir := newTempDir(t)
+	compactDir := newTempDir(t)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	var wg sync.WaitGroup
+
+	repeats := 10
+
+	clientOperationsThread := func(id int) {
+		for i := 0; i < repeats; i++ {
+			batchWrite := []storage.Operation{
+				storage.SetOperation(fmt.Sprintf("foo-%d-%d", id, i), []byte("testValueFoo")),
+				storage.SetOperation(fmt.Sprintf("bar-%d-%d", id, i), []byte("testValueBar")),
+			}
+			err := client.Batch(ctx, batchWrite...)
+			require.NoError(t, err)
+
+			err = client.Batch(ctx, storage.DeleteOperation(fmt.Sprintf("foo-%d-%d", id, i)))
+			require.NoError(t, err)
+
+			time.Sleep(time.Millisecond * 1)
+
+			result, err := client.Get(ctx, fmt.Sprintf("foo-%d-%d", id, i))
+			require.NoError(t, err)
+			require.Equal(t, []byte(nil), result)
+
+			result, err = client.Get(ctx, fmt.Sprintf("bar-%d-%d", id, i))
+			require.NoError(t, err)
+			require.Equal(t, []byte("testValueBar"), result)
+		}
+
+		wg.Done()
+	}
+
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go clientOperationsThread(i)
+	}
+
+	wg.Add(1)
+	go func() {
+		for i := 0; i < repeats; i++ {
+			time.Sleep(time.Millisecond * 1)
+			err := client.Compact(ctx, compactDir, time.Second, 1024)
+			require.NoError(t, err)
+		}
+
+		wg.Done()
+	}()
+
+	wg.Wait()
 }
 
 func BenchmarkClientGet(b *testing.B) {

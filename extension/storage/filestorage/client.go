@@ -159,7 +159,7 @@ func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory str
 	}
 
 	defer func() {
-		_, statErr := file.Stat()
+		_, statErr := os.Stat(file.Name())
 		if statErr == nil {
 			// File still exists and needs to be removed
 			if removeErr := os.Remove(file.Name()); removeErr != nil {
