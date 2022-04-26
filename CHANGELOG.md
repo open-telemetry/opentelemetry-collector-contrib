@@ -31,6 +31,7 @@
 - `attributesprocessor`: Support filter by severity (#9132)
 - `processor/transform`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
+- `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 
 ### 🧰 Bug fixes 🧰
 
