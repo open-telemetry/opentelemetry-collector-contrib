@@ -60,9 +60,6 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 	envelope.Tags[contracts.OperationId] = hexTraceID
 
 	messageData.Properties[spanIDTag] = logRecord.SpanID().HexString()
-
-	// TODO Does this require a replacement?
-	// messageData.Properties[categoryNameTag] = logRecord.Name()
 	envelope.Name = messageData.EnvelopeName("")
 
 	data.BaseData = messageData

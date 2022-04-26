@@ -88,9 +88,6 @@ func TestLogRecordToEnvelope(t *testing.T) {
 			assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceID)
 
 			assert.Equal(t, messageData.Properties[spanIDTag], logRecord.SpanID().HexString())
-
-			// TODO Does this require a replacement?
-			//assert.Equal(t, messageData.Properties[categoryNameTag], logRecord.Name())
 		})
 	}
 }
