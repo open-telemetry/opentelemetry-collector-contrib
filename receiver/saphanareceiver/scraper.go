@@ -91,7 +91,7 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for sap hana scraper: %w", err))
 			continue
 		}
-		resourceOptions := []metadata.ResourceOption{}
+		resourceOptions := []metadata.ResourceOption{metadata.WithDbSystem("saphana")}
 		for attribute, value := range resourceAttributes {
 			if attribute == "host" {
 				resourceOptions = append(resourceOptions, metadata.WithHost(value))
@@ -104,6 +104,5 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	}
 
 	s.mbs = make(map[string]*metadata.MetricsBuilder)
-
 	return metrics, errs.Combine()
 }

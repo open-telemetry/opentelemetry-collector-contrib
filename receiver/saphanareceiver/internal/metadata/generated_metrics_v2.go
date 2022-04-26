@@ -2731,6 +2731,13 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceOption applies changes to provided resource.
 type ResourceOption func(pcommon.Resource)
 
+// WithDbSystem sets provided value as "db.system" attribute for current resource.
+func WithDbSystem(val string) ResourceOption {
+	return func(r pcommon.Resource) {
+		r.Attributes().UpsertString("db.system", val)
+	}
+}
+
 // WithHost sets provided value as "host" attribute for current resource.
 func WithHost(val string) ResourceOption {
 	return func(r pcommon.Resource) {

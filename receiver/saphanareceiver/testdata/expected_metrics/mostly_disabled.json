@@ -4,6 +4,12 @@
          "resource": {
             "attributes": [
                {
+                  "key": "db.system",
+                  "value": {
+                     "stringValue": "saphana"
+                  }
+               },
+               {
                   "key": "host",
                   "value": {
                      "stringValue": "host1"
@@ -30,8 +36,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313521000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814597821000",
+                              "timeUnixNano": "1650937814597705000"
                            },
                            {
                               "asInt": "0",
@@ -43,8 +49,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313521000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814597821000",
+                              "timeUnixNano": "1650937814597705000"
                            }
                         ]
                      },
@@ -66,8 +72,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313521000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814597821000",
+                              "timeUnixNano": "1650937814597705000"
                            },
                            {
                               "asInt": "11",
@@ -79,8 +85,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313521000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814597821000",
+                              "timeUnixNano": "1650937814597705000"
                            }
                         ]
                      },
@@ -96,6 +102,12 @@
       {
          "resource": {
             "attributes": [
+               {
+                  "key": "db.system",
+                  "value": {
+                     "stringValue": "saphana"
+                  }
+               },
                {
                   "key": "host",
                   "value": {
@@ -123,8 +135,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313758000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814598010000",
+                              "timeUnixNano": "1650937814597705000"
                            },
                            {
                               "asInt": "8",
@@ -136,8 +148,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313758000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814598010000",
+                              "timeUnixNano": "1650937814597705000"
                            }
                         ]
                      },
@@ -159,8 +171,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313758000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814598010000",
+                              "timeUnixNano": "1650937814597705000"
                            },
                            {
                               "asInt": "1111",
@@ -172,8 +184,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650917791313758000",
-                              "timeUnixNano": "1650917791313385000"
+                              "startTimeUnixNano": "1650937814598010000",
+                              "timeUnixNano": "1650937814597705000"
                            }
                         ]
                      },
