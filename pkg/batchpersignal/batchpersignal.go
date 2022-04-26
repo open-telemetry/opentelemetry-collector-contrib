@@ -14,22 +14,26 @@
 
 package batchpersignal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
 
-// SplitTraces returns one pdata.Traces for each trace in the given pdata.Traces input. Each of the resulting pdata.Traces contains exactly one trace.
-func SplitTraces(batch pdata.Traces) []pdata.Traces {
+// SplitTraces returns one ptrace.Traces for each trace in the given ptrace.Traces input. Each of the resulting ptrace.Traces contains exactly one trace.
+func SplitTraces(batch ptrace.Traces) []ptrace.Traces {
 	// for each span in the resource spans, we group them into batches of rs/ils/traceID.
 	// if the same traceID exists in different ils, they land in different batches.
-	var result []pdata.Traces
+	var result []ptrace.Traces
 
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
 		rs := batch.ResourceSpans().At(i)
 
-		for j := 0; j < rs.InstrumentationLibrarySpans().Len(); j++ {
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			// the batches for this ILS
-			batches := map[pdata.TraceID]pdata.ResourceSpans{}
+			batches := map[pcommon.TraceID]ptrace.ResourceSpans{}
 
-			ils := rs.InstrumentationLibrarySpans().At(j)
+			ils := rs.ScopeSpans().At(j)
 			for k := 0; k < ils.Spans().Len(); k++ {
 				span := ils.Spans().At(k)
 				key := span.TraceID()
@@ -37,23 +41,23 @@ func SplitTraces(batch pdata.Traces) []pdata.Traces {
 				// for the first traceID in the ILS, initialize the map entry
 				// and add the singleTraceBatch to the result list
 				if _, ok := batches[key]; !ok {
-					trace := pdata.NewTraces()
+					trace := ptrace.NewTraces()
 					newRS := trace.ResourceSpans().AppendEmpty()
 					// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
 					// and set our own ILS
 					rs.Resource().CopyTo(newRS.Resource())
 
-					newILS := newRS.InstrumentationLibrarySpans().AppendEmpty()
+					newILS := newRS.ScopeSpans().AppendEmpty()
 					// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 					// and set our own spans
-					ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())
+					ils.Scope().CopyTo(newILS.Scope())
 					batches[key] = newRS
 
 					result = append(result, trace)
 				}
 
 				// there is only one instrumentation library per batch
-				tgt := batches[key].InstrumentationLibrarySpans().At(0).Spans().AppendEmpty()
+				tgt := batches[key].ScopeSpans().At(0).Spans().AppendEmpty()
 				span.CopyTo(tgt)
 			}
 		}
@@ -62,44 +66,44 @@ func SplitTraces(batch pdata.Traces) []pdata.Traces {
 	return result
 }
 
-// SplitLogs returns one pdata.Logs for each trace in the given pdata.Logs input. Each of the resulting pdata.Logs contains exactly one trace.
-func SplitLogs(batch pdata.Logs) []pdata.Logs {
-	// for each log in the resource logs, we group them into batches of rl/ill/traceID.
-	// if the same traceID exists in different ill, they land in different batches.
-	var result []pdata.Logs
+// SplitLogs returns one plog.Logs for each trace in the given plog.Logs input. Each of the resulting plog.Logs contains exactly one trace.
+func SplitLogs(batch plog.Logs) []plog.Logs {
+	// for each log in the resource logs, we group them into batches of rl/sl/traceID.
+	// if the same traceID exists in different sl, they land in different batches.
+	var result []plog.Logs
 
 	for i := 0; i < batch.ResourceLogs().Len(); i++ {
 		rs := batch.ResourceLogs().At(i)
 
-		for j := 0; j < rs.InstrumentationLibraryLogs().Len(); j++ {
+		for j := 0; j < rs.ScopeLogs().Len(); j++ {
 			// the batches for this ILL
-			batches := map[pdata.TraceID]pdata.ResourceLogs{}
+			batches := map[pcommon.TraceID]plog.ResourceLogs{}
 
-			ill := rs.InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ill.LogRecords().Len(); k++ {
-				log := ill.LogRecords().At(k)
+			sl := rs.ScopeLogs().At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				log := sl.LogRecords().At(k)
 				key := log.TraceID()
 
 				// for the first traceID in the ILL, initialize the map entry
 				// and add the singleTraceBatch to the result list
 				if _, ok := batches[key]; !ok {
-					logs := pdata.NewLogs()
+					logs := plog.NewLogs()
 					newRL := logs.ResourceLogs().AppendEmpty()
 					// currently, the ResourceLogs implementation has only a Resource and an ILL. We'll copy the Resource
 					// and set our own ILL
 					rs.Resource().CopyTo(newRL.Resource())
 
-					newILL := newRL.InstrumentationLibraryLogs().AppendEmpty()
+					newILL := newRL.ScopeLogs().AppendEmpty()
 					// currently, the ILL implementation has only an InstrumentationLibrary and logs. We'll copy the library
 					// and set our own logs
-					ill.InstrumentationLibrary().CopyTo(newILL.InstrumentationLibrary())
+					sl.Scope().CopyTo(newILL.Scope())
 					batches[key] = newRL
 
 					result = append(result, logs)
 				}
 
 				// there is only one instrumentation library per batch
-				tgt := batches[key].InstrumentationLibraryLogs().At(0).LogRecords().AppendEmpty()
+				tgt := batches[key].ScopeLogs().At(0).LogRecords().AppendEmpty()
 				log.CopyTo(tgt)
 			}
 		}

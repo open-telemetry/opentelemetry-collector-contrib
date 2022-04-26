@@ -22,7 +22,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/atomic"
 )
 
@@ -47,9 +49,9 @@ type MockBackend struct {
 	// Recording fields.
 	isRecording     bool
 	recordMutex     sync.Mutex
-	ReceivedTraces  []pdata.Traces
-	ReceivedMetrics []pdata.Metrics
-	ReceivedLogs    []pdata.Logs
+	ReceivedTraces  []ptrace.Traces
+	ReceivedMetrics []pmetric.Metrics
+	ReceivedLogs    []plog.Logs
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -134,7 +136,7 @@ func (mb *MockBackend) ClearReceivedItems() {
 	mb.ReceivedLogs = nil
 }
 
-func (mb *MockBackend) ConsumeTrace(td pdata.Traces) {
+func (mb *MockBackend) ConsumeTrace(td ptrace.Traces) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -142,7 +144,7 @@ func (mb *MockBackend) ConsumeTrace(td pdata.Traces) {
 	}
 }
 
-func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
+func (mb *MockBackend) ConsumeMetric(md pmetric.Metrics) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -152,7 +154,7 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 
 var _ consumer.Traces = (*MockTraceConsumer)(nil)
 
-func (mb *MockBackend) ConsumeLogs(ld pdata.Logs) {
+func (mb *MockBackend) ConsumeLogs(ld plog.Logs) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -169,12 +171,12 @@ func (tc *MockTraceConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
-		ils := rs.At(i).InstrumentationLibrarySpans()
+		ils := rs.At(i).ScopeSpans()
 		for j := 0; j < ils.Len(); j++ {
 			spans := ils.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -216,7 +218,7 @@ func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
@@ -241,7 +243,7 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	recordCount := ld.LogRecordCount()
 	lc.numLogRecordsReceived.Add(uint64(recordCount))
 	lc.backend.ConsumeLogs(ld)

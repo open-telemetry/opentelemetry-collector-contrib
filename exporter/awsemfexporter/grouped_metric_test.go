@@ -24,8 +24,8 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -144,11 +144,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 				},
 				Metrics: tc.metric,
 			}
-			// Retrieve *pdata.Metric
+			// Retrieve *pmetric.Metric
 			rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 			rms := rm.ResourceMetrics()
 			assert.Equal(t, 1, rms.Len())
-			ilms := rms.At(0).InstrumentationLibraryMetrics()
+			ilms := rms.At(0).ScopeMetrics()
 			assert.Equal(t, 1, ilms.Len())
 			metrics := ilms.At(0).Metrics()
 			assert.Equal(t, len(tc.metric), metrics.Len())
@@ -197,7 +197,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 9, metrics.Len())
 
@@ -260,7 +260,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 4, metrics.Len())
 
@@ -301,7 +301,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			},
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
-		ilms := rm.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+		ilms := rm.ResourceMetrics().At(0).ScopeMetrics()
 		metric := ilms.At(0).Metrics().At(0)
 
 		metricMetadata1 := cWMetricMetadata{
@@ -370,7 +370,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 2, metrics.Len())
 
@@ -403,12 +403,12 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Unhandled metric type", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		md := pdata.NewMetrics()
+		md := pmetric.NewMetrics()
 		rms := md.ResourceMetrics()
-		metric := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeNone)
+		metric.SetDataType(pmetric.MetricDataTypeNone)
 
 		obs, logs := observer.New(zap.WarnLevel)
 		obsLogger := zap.New(obs)
@@ -481,7 +481,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	oc.Metrics = append(oc.Metrics, generateTestDoubleSum("double-sum")...)
 	oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 	rms := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics()
-	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
 	metadata := cWMetricMetadata{
@@ -507,7 +507,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 }
 
 func TestTranslateUnit(t *testing.T) {
-	metric := pdata.NewMetric()
+	metric := pmetric.NewMetric()
 	metric.SetName("writeIfNotExist")
 
 	translator := &metricTranslator{

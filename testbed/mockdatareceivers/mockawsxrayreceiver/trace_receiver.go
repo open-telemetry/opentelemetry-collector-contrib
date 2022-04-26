@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -134,7 +134,7 @@ func (ar *MockAwsXrayReceiver) Shutdown(context.Context) error {
 	return ar.server.Close()
 }
 
-func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
+func ToTraces(rawSeg []byte) (*ptrace.Traces, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal(rawSeg, &result)
 	if err != nil {
@@ -146,9 +146,9 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
 		panic("Not a slice")
 	}
 
-	traceData := pdata.NewTraces()
+	traceData := ptrace.NewTraces()
 	rspan := traceData.ResourceSpans().AppendEmpty()
-	ils := rspan.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rspan.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(len(records))
 
 	for i := 0; i < len(records); i++ {

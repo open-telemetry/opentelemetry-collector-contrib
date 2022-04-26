@@ -1,0 +1,19 @@
+processors:
+  transform:
+    logs:
+      queries:
+        - set(body, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, "http.method", "http.path")
+
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [transform]
+      exporters: [nop]

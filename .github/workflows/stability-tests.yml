@@ -24,7 +24,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
         with:
@@ -34,7 +34,7 @@ jobs:
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-tool-binaries
         with:
@@ -70,7 +70,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
         with:
@@ -89,7 +89,7 @@ jobs:
       - name: Upload Test Results
         if: ${{ success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: stability-test-results
           path: stabilitytest_results.tar

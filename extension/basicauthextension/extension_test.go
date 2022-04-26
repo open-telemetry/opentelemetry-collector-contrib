@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 
@@ -69,8 +70,8 @@ func TestBasicAuth_Valid(t *testing.T) {
 
 	ctx := context.Background()
 
-	ext, err := newExtension(&Config{
-		Htpasswd: HtpasswdSettings{
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
 			File: f.Name(),
 		},
 	})
@@ -94,8 +95,8 @@ func TestBasicAuth_Valid(t *testing.T) {
 }
 
 func TestBasicAuth_InvalidCredentials(t *testing.T) {
-	ext, err := newExtension(&Config{
-		Htpasswd: HtpasswdSettings{
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
 	})
@@ -106,8 +107,8 @@ func TestBasicAuth_InvalidCredentials(t *testing.T) {
 }
 
 func TestBasicAuth_NoHeader(t *testing.T) {
-	ext, err := newExtension(&Config{
-		Htpasswd: HtpasswdSettings{
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
 	})
@@ -117,8 +118,8 @@ func TestBasicAuth_NoHeader(t *testing.T) {
 }
 
 func TestBasicAuth_InvalidPrefix(t *testing.T) {
-	ext, err := newExtension(&Config{
-		Htpasswd: HtpasswdSettings{
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
 	})
@@ -127,9 +128,21 @@ func TestBasicAuth_InvalidPrefix(t *testing.T) {
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
 
+func TestBasicAuth_NoFile(t *testing.T) {
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
+			File: "/non/existing/file",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	require.Error(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+}
+
 func TestBasicAuth_InvalidFormat(t *testing.T) {
-	ext, err := newExtension(&Config{
-		Htpasswd: HtpasswdSettings{
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
 	})
@@ -153,8 +166,8 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 
 	f.WriteString("username:fromfile")
 
-	ext, err := newExtension(&Config{
-		Htpasswd: HtpasswdSettings{
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
 			File:   f.Name(),
 			Inline: "username:frominline",
 		},
@@ -174,8 +187,8 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 }
 
 func TestBasicAuth_SupportedHeaders(t *testing.T) {
-	ext, err := newExtension(&Config{
-		Htpasswd: HtpasswdSettings{
+	ext, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
 	})
@@ -192,4 +205,112 @@ func TestBasicAuth_SupportedHeaders(t *testing.T) {
 		_, err = ext.Authenticate(context.Background(), map[string][]string{k: {"Basic " + auth}})
 		assert.NoError(t, err)
 	}
+}
+
+func TestBasicAuth_ServerInvalid(t *testing.T) {
+	_, err := newServerAuthExtension(&Config{
+		Htpasswd: &HtpasswdSettings{},
+	})
+	assert.Error(t, err)
+}
+
+func TestPerRPCAuth(t *testing.T) {
+	metadata := map[string]string{
+		"authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg=",
+	}
+
+	rpcAuth := &perRPCAuth{metadata: metadata}
+	md, err := rpcAuth.GetRequestMetadata(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, md, metadata)
+
+	ok := rpcAuth.RequireTransportSecurity()
+	assert.True(t, ok)
+}
+
+type mockRoundTripper struct{}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
+	for k, v := range req.Header {
+		resp.Header[k] = v
+	}
+	return resp, nil
+}
+
+func TestBasicAuth_ClientValid(t *testing.T) {
+	ext, err := newClientAuthExtension(&Config{
+		ClientAuth: &ClientAuthSettings{
+			Username: "username",
+			Password: "password",
+		},
+	})
+	require.NotNil(t, ext)
+	require.NoError(t, err)
+
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	base := &mockRoundTripper{}
+	c, err := ext.RoundTripper(base)
+	require.NoError(t, err)
+	require.NotNil(t, c)
+
+	authCreds := base64.StdEncoding.EncodeToString([]byte("username:password"))
+	orgHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+	}
+	expectedHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+		"Authorization": {fmt.Sprintf("Basic %s", authCreds)},
+	}
+
+	resp, err := c.RoundTrip(&http.Request{Header: orgHeaders})
+	assert.NoError(t, err)
+	assert.Equal(t, expectedHeaders, resp.Header)
+
+	credential, err := ext.PerRPCCredentials()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, credential)
+
+	md, err := credential.GetRequestMetadata(context.Background())
+	expectedMd := map[string]string{
+		"authorization": fmt.Sprintf("Basic %s", authCreds),
+	}
+	assert.Equal(t, md, expectedMd)
+	assert.NoError(t, err)
+	assert.True(t, credential.RequireTransportSecurity())
+
+	assert.NoError(t, ext.Shutdown(context.Background()))
+}
+
+func TestBasicAuth_ClientInvalid(t *testing.T) {
+	t.Run("no username", func(t *testing.T) {
+		_, err := newClientAuthExtension(&Config{
+			ClientAuth: &ClientAuthSettings{
+				Username: "",
+			},
+		})
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid username format", func(t *testing.T) {
+		ext, err := newClientAuthExtension(&Config{
+			ClientAuth: &ClientAuthSettings{
+				Username: "user:name",
+				Password: "password",
+			},
+		})
+		require.NotNil(t, ext)
+		require.NoError(t, err)
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		base := &mockRoundTripper{}
+		_, err = ext.RoundTripper(base)
+		assert.Error(t, err)
+
+		_, err = ext.PerRPCCredentials()
+		assert.Error(t, err)
+	})
 }

@@ -61,7 +61,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
@@ -79,6 +78,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -97,6 +97,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
@@ -110,6 +111,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
@@ -129,10 +131,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -163,6 +168,7 @@ func Components() (component.Factories, error) {
 		pprofextension.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
 		oidcauthextension.NewFactory(),
+		sigv4authextension.NewFactory(),
 		zpagesextension.NewFactory(),
 	}
 	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
@@ -171,6 +177,7 @@ func Components() (component.Factories, error) {
 	}
 
 	receivers := []component.ReceiverFactory{
+		activedirectorydsreceiver.NewFactory(),
 		awscontainerinsightreceiver.NewFactory(),
 		awsecscontainermetricsreceiver.NewFactory(),
 		awsfirehosereceiver.NewFactory(),
@@ -185,6 +192,7 @@ func Components() (component.Factories, error) {
 		googlecloudspannerreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
+		iisreceiver.NewFactory(),
 		jaegerreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		journaldreceiver.NewFactory(),
@@ -204,10 +212,13 @@ func Components() (component.Factories, error) {
 		prometheusreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
+		riakreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
 		signalfxreceiver.NewFactory(),
 		simpleprometheusreceiver.NewFactory(),
+		skywalkingreceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),
+		sqlserverreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
@@ -263,7 +274,6 @@ func Components() (component.Factories, error) {
 		signalfxexporter.NewFactory(),
 		skywalkingexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
-		stackdriverexporter.NewFactory(),
 		sumologicexporter.NewFactory(),
 		tanzuobservabilityexporter.NewFactory(),
 		tencentcloudlogserviceexporter.NewFactory(),

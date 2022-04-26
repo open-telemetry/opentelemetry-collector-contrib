@@ -19,11 +19,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestGetMetadata(t *testing.T) {
-	attributes := pdata.NewAttributeMap()
+	attributes := pcommon.NewMap()
 	attributes.InsertString("key3", "value3")
 	attributes.InsertString("key1", "value1")
 	attributes.InsertString("key2", "value2")
@@ -45,7 +45,7 @@ func TestGetMetadata(t *testing.T) {
 }
 
 func TestFilterOutMetadata(t *testing.T) {
-	attributes := pdata.NewAttributeMap()
+	attributes := pcommon.NewMap()
 	attributes.InsertString("key3", "value3")
 	attributes.InsertString("key1", "value1")
 	attributes.InsertString("key2", "value2")

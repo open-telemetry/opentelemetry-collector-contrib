@@ -27,8 +27,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.elastic.co/apm/transport/transporttest"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestTracesExporter(t *testing.T) {
@@ -43,9 +44,9 @@ func TestTracesExporter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans()
-	span := resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
 
 	err = te.ConsumeTraces(context.Background(), traces)
@@ -104,14 +105,14 @@ func TestMetricsExporterSendError(t *testing.T) {
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
-func sampleMetrics() pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func sampleMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetrics.EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
-		metric := resourceMetrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := resourceMetrics.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		metric.Gauge().DataPoints().AppendEmpty().SetDoubleVal(123)
 	}
 	return metrics

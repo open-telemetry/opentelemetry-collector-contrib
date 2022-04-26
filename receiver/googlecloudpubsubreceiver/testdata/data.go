@@ -18,43 +18,44 @@ import (
 	"bytes"
 	"compress/gzip"
 
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func CreateTraceExport() []byte {
-	out := pdata.NewTraces()
+	out := ptrace.NewTraces()
 	resources := out.ResourceSpans()
 	resource := resources.AppendEmpty()
-	libs := resource.InstrumentationLibrarySpans()
+	libs := resource.ScopeSpans()
 	spans := libs.AppendEmpty().Spans()
 	span := spans.AppendEmpty()
 	span.SetName("test")
-	data, _ := otlp.NewProtobufTracesMarshaler().MarshalTraces(out)
+	data, _ := ptrace.NewProtoMarshaler().MarshalTraces(out)
 	return data
 }
 
 func CreateMetricExport() []byte {
-	out := pdata.NewMetrics()
+	out := pmetric.NewMetrics()
 	resources := out.ResourceMetrics()
 	resource := resources.AppendEmpty()
-	libs := resource.InstrumentationLibraryMetrics()
+	libs := resource.ScopeMetrics()
 	metrics := libs.AppendEmpty().Metrics()
 	metric := metrics.AppendEmpty()
 	metric.SetName("test")
-	data, _ := otlp.NewProtobufMetricsMarshaler().MarshalMetrics(out)
+	data, _ := pmetric.NewProtoMarshaler().MarshalMetrics(out)
 	return data
 }
 
 func CreateLogExport() []byte {
-	out := pdata.NewLogs()
+	out := plog.NewLogs()
 	resources := out.ResourceLogs()
 	resource := resources.AppendEmpty()
-	libs := resource.InstrumentationLibraryLogs()
+	libs := resource.ScopeLogs()
 	logs := libs.AppendEmpty()
 	log := logs.LogRecords().AppendEmpty()
 	log.SetName("test")
-	data, _ := otlp.NewProtobufLogsMarshaler().MarshalLogs(out)
+	data, _ := plog.NewProtoMarshaler().MarshalLogs(out)
 	return data
 }
 

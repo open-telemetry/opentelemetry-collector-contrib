@@ -23,7 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -34,8 +35,8 @@ import (
 // Common structure for all the Tests
 type logTestCase struct {
 	name               string
-	inputAttributes    map[string]pdata.AttributeValue
-	expectedAttributes map[string]pdata.AttributeValue
+	inputAttributes    map[string]interface{}
+	expectedAttributes map[string]interface{}
 }
 
 // runIndividualLogTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -49,23 +50,23 @@ func runIndividualLogTestCase(t *testing.T, tt logTestCase, tp component.LogsPro
 	})
 }
 
-func generateLogData(resourceName string, attrs map[string]pdata.AttributeValue) pdata.Logs {
-	td := pdata.NewLogs()
+func generateLogData(resourceName string, attrs map[string]interface{}) plog.Logs {
+	td := plog.NewLogs()
 	res := td.ResourceLogs().AppendEmpty()
 	res.Resource().Attributes().InsertString("name", resourceName)
-	ill := res.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ill.LogRecords().AppendEmpty()
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(lr.Attributes())
+	sl := res.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+	pcommon.NewMapFromRaw(attrs).CopyTo(lr.Attributes())
 	lr.Attributes().Sort()
 	return td
 }
 
-func sortLogAttributes(ld pdata.Logs) {
+func sortLogAttributes(ld plog.Logs) {
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		rs.Resource().Attributes().Sort()
-		ilss := rs.InstrumentationLibraryLogs()
+		ilss := rs.ScopeLogs()
 		for j := 0; j < ilss.Len(); j++ {
 			logs := ilss.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
@@ -80,14 +81,14 @@ func sortLogAttributes(ld pdata.Logs) {
 func TestLogProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  pdata.Logs
-		output pdata.Logs
+		input  plog.Logs
+		output plog.Logs
 	}
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
-			input:  pdata.NewLogs(),
-			output: pdata.NewLogs(),
+			input:  plog.NewLogs(),
+			output: plog.NewLogs(),
 		},
 		{
 			name:   "one-empty-resource-logs",
@@ -125,33 +126,33 @@ func TestAttributes_FilterLogs(t *testing.T) {
 	testCases := []logTestCase{
 		{
 			name:            "apply processor",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{
+				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply processor with different value for exclude property",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]interface{}{
+				"NoModification": false,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]interface{}{
+				"attribute1":     123,
+				"NoModification": false,
 			},
 		},
 		{
 			name:               "incorrect name for include property",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{},
 		},
 		{
 			name: "attribute match for exclude property",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"NoModification": true,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]interface{}{
+				"NoModification": true,
 			},
 		},
 	}
@@ -186,38 +187,38 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 	testCases := []logTestCase{
 		{
 			name:            "apply",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{
+				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]interface{}{
+				"NoModification": false,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]interface{}{
+				"attribute1":     123,
+				"NoModification": false,
 			},
 		},
 		{
 			name:               "incorrect_log_name",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{},
 		},
 		{
 			name: "incorrect_log_name_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"NoModification": true,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]interface{}{
+				"NoModification": true,
 			},
 		},
 	}
@@ -249,38 +250,38 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 	testCases := []logTestCase{
 		{
 			name:            "apply_to_log_with_no_attrs",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{
+				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply_to_log_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]interface{}{
+				"NoModification": false,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]interface{}{
+				"attribute1":     123,
+				"NoModification": false,
 			},
 		},
 		{
 			name:               "incorrect_log_name",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{},
 		},
 		{
 			name:               "apply_dont_apply",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{},
 		},
 		{
 			name: "incorrect_log_name_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"NoModification": true,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]interface{}{
+				"NoModification": true,
 			},
 		},
 	}
@@ -312,38 +313,38 @@ func TestLogAttributes_Hash(t *testing.T) {
 	testCases := []logTestCase{
 		{
 			name: "String",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.email": pdata.NewAttributeValueString("john.doe@example.com"),
+			inputAttributes: map[string]interface{}{
+				"user.email": "john.doe@example.com",
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.email": pdata.NewAttributeValueString("73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"),
+			expectedAttributes: map[string]interface{}{
+				"user.email": "73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9",
 			},
 		},
 		{
 			name: "Int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.id": pdata.NewAttributeValueInt(10),
+			inputAttributes: map[string]interface{}{
+				"user.id": 10,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.id": pdata.NewAttributeValueString("71aa908aff1548c8c6cdecf63545261584738a25"),
+			expectedAttributes: map[string]interface{}{
+				"user.id": "71aa908aff1548c8c6cdecf63545261584738a25",
 			},
 		},
 		{
 			name: "Double",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.balance": pdata.NewAttributeValueDouble(99.1),
+			inputAttributes: map[string]interface{}{
+				"user.balance": 99.1,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.balance": pdata.NewAttributeValueString("76429edab4855b03073f9429fd5d10313c28655e"),
+			expectedAttributes: map[string]interface{}{
+				"user.balance": "76429edab4855b03073f9429fd5d10313c28655e",
 			},
 		},
 		{
 			name: "Bool",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.authenticated": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"user.authenticated": true,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.authenticated": pdata.NewAttributeValueString("bf8b4530d8d246dd74ac53a13471bba17941dff7"),
+			expectedAttributes: map[string]interface{}{
+				"user.authenticated": "bf8b4530d8d246dd74ac53a13471bba17941dff7",
 			},
 		},
 	}
@@ -371,56 +372,56 @@ func TestLogAttributes_Convert(t *testing.T) {
 	testCases := []logTestCase{
 		{
 			name: "int to int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(1),
+			inputAttributes: map[string]interface{}{
+				"to.int": 1,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(1),
+			expectedAttributes: map[string]interface{}{
+				"to.int": 1,
 			},
 		},
 		{
 			name: "false to int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]interface{}{
+				"to.int": false,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(0),
+			expectedAttributes: map[string]interface{}{
+				"to.int": 0,
 			},
 		},
 		{
 			name: "String to int (good)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("123"),
+			inputAttributes: map[string]interface{}{
+				"to.int": "123",
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(123),
+			expectedAttributes: map[string]interface{}{
+				"to.int": 123,
 			},
 		},
 		{
 			name: "String to int (bad)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("int-10"),
+			inputAttributes: map[string]interface{}{
+				"to.int": "int-10",
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("int-10"),
+			expectedAttributes: map[string]interface{}{
+				"to.int": "int-10",
 			},
 		},
 		{
 			name: "String to double",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueString("123.6"),
+			inputAttributes: map[string]interface{}{
+				"to.double": "123.6",
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueDouble(123.6),
+			expectedAttributes: map[string]interface{}{
+				"to.double": 123.6,
 			},
 		},
 		{
 			name: "Double to string",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.string": pdata.NewAttributeValueDouble(99.1),
+			inputAttributes: map[string]interface{}{
+				"to.string": 99.1,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.string": pdata.NewAttributeValueString("99.1"),
+			expectedAttributes: map[string]interface{}{
+				"to.string": "99.1",
 			},
 		},
 	}
@@ -447,25 +448,25 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 	testCases := []logTestCase{
 		{
 			name:            "apply_to_log_with_no_attrs",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{
+				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply_to_log_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]interface{}{
+				"NoModification": false,
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]interface{}{
+				"attribute1":     123,
+				"NoModification": false,
 			},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]interface{}{},
+			expectedAttributes: map[string]interface{}{},
 		},
 	}
 

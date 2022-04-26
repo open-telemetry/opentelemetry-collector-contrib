@@ -32,9 +32,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -246,7 +247,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
 				res := rm.Resource()
-				res.Attributes().Insert(splunk.SFxAccessTokenLabel, pdata.NewAttributeValueString(accessToken))
+				res.Attributes().Insert(splunk.SFxAccessTokenLabel, pcommon.NewValueString(accessToken))
 			}
 		}
 	}
@@ -282,10 +283,10 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		return
 	}
 
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	signalFxV2EventsToLogRecords(msg.Events, ill.LogRecords())
+	sl := rl.ScopeLogs().AppendEmpty()
+	signalFxV2EventsToLogRecords(msg.Events, sl.LogRecords())
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {

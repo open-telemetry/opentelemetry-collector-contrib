@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	winperfcounters "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -43,9 +45,31 @@ func TestLoadConfig(t *testing.T) {
 
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
-	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+
+	counterConfig := winperfcounters.CounterConfig{
+		Name: "counter1",
+		MetricRep: winperfcounters.MetricRep{
+			Name: "metric",
+		},
+	}
+	defaultConfigSingleObject.(*Config).PerfCounters = []winperfcounters.ObjectConfig{{Object: "object", Counters: []winperfcounters.CounterConfig{counterConfig}}}
+	defaultConfigSingleObject.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
+			Description: "desc",
+			Unit:        "1",
+			Gauge:       GaugeMetric{},
+		},
+	}
 
 	assert.Equal(t, defaultConfigSingleObject, r0)
+
+	counterConfig2 := winperfcounters.CounterConfig{
+		Name: "counter2",
+		MetricRep: winperfcounters.MetricRep{
+
+			Name: "metric2",
+		},
+	}
 
 	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	expectedConfig := &Config{
@@ -53,19 +77,134 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			CollectionInterval: 30 * time.Second,
 		},
-		PerfCounters: []PerfCounterConfig{
+		PerfCounters: []winperfcounters.ObjectConfig{
 			{
 				Object:   "object1",
-				Counters: []string{"counter1"},
+				Counters: []winperfcounters.CounterConfig{counterConfig},
 			},
 			{
 				Object:   "object2",
-				Counters: []string{"counter1", "counter2"},
+				Counters: []winperfcounters.CounterConfig{counterConfig, counterConfig2},
+			},
+		},
+		MetricMetaData: map[string]MetricConfig{
+			"metric": {
+				Description: "desc",
+				Unit:        "1",
+				Gauge:       GaugeMetric{},
+			},
+			"metric2": {
+				Description: "desc",
+				Unit:        "1",
+				Gauge:       GaugeMetric{},
 			},
 		},
 	}
 
 	assert.Equal(t, expectedConfig, r1)
+}
+
+func TestLoadConfigMetrics(t *testing.T) {
+	testCases := []struct {
+		TestName string
+		TestPath string
+		Expected Config
+	}{
+		{
+			TestName: "NoMetricsDefined",
+			TestPath: filepath.Join("testdata", "config-nometrics.yaml"),
+			Expected: Config{
+				PerfCounters: []winperfcounters.ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1"}},
+					},
+				},
+			},
+		},
+		{
+			TestName: "NoMetricSpecified",
+			TestPath: filepath.Join("testdata", "config-nometricspecified.yaml"),
+			Expected: Config{
+				PerfCounters: []winperfcounters.ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1"}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+		{
+			TestName: "SumMetric",
+			TestPath: filepath.Join("testdata", "config-summetric.yaml"),
+			Expected: Config{
+				PerfCounters: []winperfcounters.ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Sum: SumMetric{
+							Aggregation: "cumulative",
+							Monotonic:   false,
+						},
+					},
+				},
+			},
+		},
+		{
+			TestName: "MetricUnspecifiedType",
+			TestPath: filepath.Join("testdata", "config-unspecifiedmetrictype.yaml"),
+			Expected: Config{
+				PerfCounters: []winperfcounters.ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			factories, err := componenttest.NopFactories()
+			require.NoError(t, err)
+
+			factory := NewFactory()
+			factories.Receivers[typeStr] = factory
+			cfg, err := servicetest.LoadConfigAndValidate(test.TestPath, factories)
+
+			require.NoError(t, err)
+			require.NotNil(t, cfg)
+
+			assert.Equal(t, len(cfg.Receivers), 1)
+
+			actualReceiver := cfg.Receivers[config.NewComponentID(typeStr)]
+			expectedReceiver := factory.CreateDefaultConfig()
+			expectedReceiver.(*Config).PerfCounters = test.Expected.PerfCounters
+			expectedReceiver.(*Config).MetricMetaData = test.Expected.MetricMetaData
+
+			assert.Equal(t, expectedReceiver, actualReceiver)
+		})
+	}
 }
 
 func TestLoadConfig_Error(t *testing.T) {
@@ -117,8 +256,8 @@ func TestLoadConfig_Error(t *testing.T) {
 				"%s: %s; %s; %s; %s",
 				errorPrefix,
 				negativeCollectionIntervalErr,
-				fmt.Sprintf(emptyInstanceErr, "object"),
 				fmt.Sprintf(noCountersErr, "object"),
+				fmt.Sprintf(emptyInstanceErr, "object"),
 				noObjectNameErr,
 			),
 		},

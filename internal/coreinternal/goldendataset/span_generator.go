@@ -19,14 +19,15 @@ import (
 	"io"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
-var statusCodeMap = map[PICTInputStatus]pdata.StatusCode{
-	SpanStatusUnset: pdata.StatusCodeUnset,
-	SpanStatusOk:    pdata.StatusCodeOk,
-	SpanStatusError: pdata.StatusCodeError,
+var statusCodeMap = map[PICTInputStatus]ptrace.StatusCode{
+	SpanStatusUnset: ptrace.StatusCodeUnset,
+	SpanStatusOk:    ptrace.StatusCodeOk,
+	SpanStatusError: ptrace.StatusCodeError,
 }
 
 var statusMsgMap = map[PICTInputStatus]string{
@@ -35,12 +36,12 @@ var statusMsgMap = map[PICTInputStatus]string{
 	SpanStatusError: "Error",
 }
 
-// appendSpans appends to the pdata.SpanSlice objects the number of spans specified by the count input
+// appendSpans appends to the ptrace.SpanSlice objects the number of spans specified by the count input
 // parameter. The random parameter injects the random number generator to use in generating IDs and other random values.
 // Using a random number generator with the same seed value enables reproducible tests.
 //
 // If err is not nil, the spans slice will have nil values.
-func appendSpans(count int, pictFile string, random io.Reader, spanList pdata.SpanSlice) error {
+func appendSpans(count int, pictFile string, random io.Reader, spanList ptrace.SpanSlice) error {
 	pairsData, err := loadPictOutputFile(pictFile)
 	if err != nil {
 		return err
@@ -49,8 +50,8 @@ func appendSpans(count int, pictFile string, random io.Reader, spanList pdata.Sp
 	index := 1
 	var inputs []string
 	var spanInputs *PICTSpanInputs
-	var traceID pdata.TraceID
-	var parentID pdata.SpanID
+	var traceID pcommon.TraceID
+	var parentID pcommon.SpanID
 	for i := 0; i < count; i++ {
 		if index >= pairsTotal {
 			index = 1
@@ -68,7 +69,7 @@ func appendSpans(count int, pictFile string, random io.Reader, spanList pdata.Sp
 		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
-			parentID = pdata.NewSpanID([8]byte{})
+			parentID = pcommon.NewSpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
 			if traceID.IsEmpty() {
@@ -90,7 +91,7 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 		spanInputs.Attributes, spanInputs.Events, spanInputs.Links, spanInputs.Status)
 }
 
-// fillSpan generates a single pdata.Span based on the input values provided. They are:
+// fillSpan generates a single ptrace.Span based on the input values provided. They are:
 //   traceID - the trace ID to use, should not be nil
 //   parentID - the parent span ID or nil if it is a root span
 //   spanName - the span name, should not be blank
@@ -98,7 +99,7 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 //   random - the random number generator to use in generating ID values
 //
 // The generated span is returned.
-func fillSpan(traceID pdata.TraceID, parentID pdata.SpanID, spanName string, spanInputs *PICTSpanInputs, random io.Reader, span pdata.Span) {
+func fillSpan(traceID pcommon.TraceID, parentID pcommon.SpanID, spanName string, spanInputs *PICTSpanInputs, random io.Reader, span ptrace.Span) {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	span.SetTraceID(traceID)
 	span.SetSpanID(generateSpanID(random))
@@ -106,8 +107,8 @@ func fillSpan(traceID pdata.TraceID, parentID pdata.SpanID, spanName string, spa
 	span.SetParentSpanID(parentID)
 	span.SetName(spanName)
 	span.SetKind(lookupSpanKind(spanInputs.Kind))
-	span.SetStartTimestamp(pdata.Timestamp(endTime.Add(-215 * time.Millisecond).UnixNano()))
-	span.SetEndTimestamp(pdata.Timestamp(endTime.UnixNano()))
+	span.SetStartTimestamp(pcommon.Timestamp(endTime.Add(-215 * time.Millisecond).UnixNano()))
+	span.SetEndTimestamp(pcommon.Timestamp(endTime.UnixNano()))
 	appendSpanAttributes(spanInputs.Attributes, spanInputs.Status, span.Attributes())
 	span.SetDroppedAttributesCount(0)
 	appendSpanEvents(spanInputs.Events, span.Events())
@@ -117,7 +118,7 @@ func fillSpan(traceID pdata.TraceID, parentID pdata.SpanID, spanName string, spa
 	fillStatus(spanInputs.Status, span.Status())
 }
 
-func generateTraceState(tracestate PICTInputTracestate) pdata.TraceState {
+func generateTraceState(tracestate PICTInputTracestate) ptrace.TraceState {
 	switch tracestate {
 	case TraceStateOne:
 		return "lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955"
@@ -130,26 +131,26 @@ func generateTraceState(tracestate PICTInputTracestate) pdata.TraceState {
 	}
 }
 
-func lookupSpanKind(kind PICTInputKind) pdata.SpanKind {
+func lookupSpanKind(kind PICTInputKind) ptrace.SpanKind {
 	switch kind {
 	case SpanKindClient:
-		return pdata.SpanKindClient
+		return ptrace.SpanKindClient
 	case SpanKindServer:
-		return pdata.SpanKindServer
+		return ptrace.SpanKindServer
 	case SpanKindProducer:
-		return pdata.SpanKindProducer
+		return ptrace.SpanKindProducer
 	case SpanKindConsumer:
-		return pdata.SpanKindConsumer
+		return ptrace.SpanKindConsumer
 	case SpanKindInternal:
-		return pdata.SpanKindInternal
+		return ptrace.SpanKindInternal
 	case SpanKindUnspecified:
 		fallthrough
 	default:
-		return pdata.SpanKindUnspecified
+		return ptrace.SpanKindUnspecified
 	}
 }
 
-func appendSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus, attrMap pdata.AttributeMap) {
+func appendSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus, attrMap pcommon.Map) {
 	includeStatus := statusStr != SpanStatusUnset
 	switch spanTypeID {
 	case SpanAttrEmpty:
@@ -189,7 +190,7 @@ func appendSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputSta
 	}
 }
 
-func fillStatus(statusStr PICTInputStatus, spanStatus pdata.SpanStatus) {
+func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.SpanStatus) {
 	if statusStr == SpanStatusUnset {
 		return
 	}
@@ -197,7 +198,7 @@ func fillStatus(statusStr PICTInputStatus, spanStatus pdata.SpanStatus) {
 	spanStatus.SetMessage(statusMsgMap[statusStr])
 }
 
-func appendDatabaseSQLAttributes(attrMap pdata.AttributeMap) {
+func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeDBSystem, "mysql")
 	attrMap.UpsertString(conventions.AttributeDBConnectionString, "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;")
 	attrMap.UpsertString(conventions.AttributeDBUser, "billing_user")
@@ -212,7 +213,7 @@ func appendDatabaseSQLAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendDatabaseNoSQLAttributes(attrMap pdata.AttributeMap) {
+func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeDBSystem, "mongodb")
 	attrMap.UpsertString(conventions.AttributeDBUser, "the_user")
 	attrMap.UpsertString(conventions.AttributeNetPeerName, "mongodb0.example.com")
@@ -225,7 +226,7 @@ func appendDatabaseNoSQLAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendFaaSDatasourceAttributes(attrMap pdata.AttributeMap) {
+func appendFaaSDatasourceAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerDatasource)
 	attrMap.UpsertString(conventions.AttributeFaaSExecution, "DB85AF51-5E13-473D-8454-1E2D59415EAB")
 	attrMap.UpsertString(conventions.AttributeFaaSDocumentCollection, "faa-flight-delay-information-incoming")
@@ -235,7 +236,7 @@ func appendFaaSDatasourceAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendFaaSHTTPAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
+func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerHTTP)
 	attrMap.UpsertString(conventions.AttributeHTTPMethod, "POST")
 	attrMap.UpsertString(conventions.AttributeHTTPScheme, "https")
@@ -250,7 +251,7 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendFaaSPubSubAttributes(attrMap pdata.AttributeMap) {
+func appendFaaSPubSubAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerPubsub)
 	attrMap.UpsertString(conventions.AttributeMessagingSystem, "sqs")
 	attrMap.UpsertString(conventions.AttributeMessagingDestination, "video-views-au")
@@ -258,7 +259,7 @@ func appendFaaSPubSubAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendFaaSTimerAttributes(attrMap pdata.AttributeMap) {
+func appendFaaSTimerAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerTimer)
 	attrMap.UpsertString(conventions.AttributeFaaSExecution, "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
 	attrMap.UpsertString(conventions.AttributeFaaSTime, "2020-05-09T20:00:08Z")
@@ -266,7 +267,7 @@ func appendFaaSTimerAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendFaaSOtherAttributes(attrMap pdata.AttributeMap) {
+func appendFaaSOtherAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerOther)
 	attrMap.UpsertInt("processed.count", 256)
 	attrMap.UpsertDouble("processed.data", 14.46)
@@ -274,7 +275,7 @@ func appendFaaSOtherAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendHTTPClientAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
+func appendHTTPClientAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeHTTPMethod, "GET")
 	attrMap.UpsertString(conventions.AttributeHTTPURL, "https://opentelemetry.io/registry/")
 	if includeStatus {
@@ -284,7 +285,7 @@ func appendHTTPClientAttributes(includeStatus bool, attrMap pdata.AttributeMap) 
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendHTTPServerAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
+func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeHTTPMethod, "POST")
 	attrMap.UpsertString(conventions.AttributeHTTPScheme, "https")
 	attrMap.UpsertString(conventions.AttributeHTTPServerName, "api22.opentelemetry.io")
@@ -301,7 +302,7 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pdata.AttributeMap) 
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendMessagingProducerAttributes(attrMap pdata.AttributeMap) {
+func appendMessagingProducerAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeMessagingSystem, "nats")
 	attrMap.UpsertString(conventions.AttributeMessagingDestination, "time.us.east.atlanta")
 	attrMap.UpsertString(conventions.AttributeMessagingDestinationKind, "topic")
@@ -311,7 +312,7 @@ func appendMessagingProducerAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendMessagingConsumerAttributes(attrMap pdata.AttributeMap) {
+func appendMessagingConsumerAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeMessagingSystem, "kafka")
 	attrMap.UpsertString(conventions.AttributeMessagingDestination, "infrastructure-events-zone1")
 	attrMap.UpsertString(conventions.AttributeMessagingOperation, "receive")
@@ -319,25 +320,25 @@ func appendMessagingConsumerAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendGRPCClientAttributes(attrMap pdata.AttributeMap) {
+func appendGRPCClientAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeRPCService, "PullRequestsService")
 	attrMap.UpsertString(conventions.AttributeNetPeerIP, "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
 	attrMap.UpsertInt(conventions.AttributeNetHostPort, 8443)
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendGRPCServerAttributes(attrMap pdata.AttributeMap) {
+func appendGRPCServerAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeRPCService, "PullRequestsService")
 	attrMap.UpsertString(conventions.AttributeNetPeerIP, "192.168.1.70")
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendInternalAttributes(attrMap pdata.AttributeMap) {
+func appendInternalAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString("parameters", "account=7310,amount=1817.10")
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
 
-func appendMaxCountAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
+func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeHTTPMethod, "POST")
 	attrMap.UpsertString(conventions.AttributeHTTPScheme, "https")
 	attrMap.UpsertString(conventions.AttributeHTTPHost, "api.opentelemetry.io")
@@ -361,12 +362,12 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 	attrMap.UpsertBool("ai-sampler.absolute", false)
 	attrMap.UpsertInt("ai-sampler.maxhops", 6)
 	attrMap.UpsertString("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
-	stages := pdata.NewAttributeValueArray()
+	stages := pcommon.NewValueSlice()
 	stages.SliceVal().AppendEmpty().SetStringVal("Launch")
 	stages.SliceVal().AppendEmpty().SetStringVal("Injestion")
 	stages.SliceVal().AppendEmpty().SetStringVal("Validation")
 	attrMap.Upsert("application.stages", stages)
-	subMap := pdata.NewAttributeValueMap()
+	subMap := pcommon.NewValueMap()
 	subMap.MapVal().InsertBool("UIx", false)
 	subMap.MapVal().InsertBool("UI4", true)
 	subMap.MapVal().InsertBool("flow-alt3", false)
@@ -383,14 +384,14 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeEnduserScope, "email profile administrator")
 }
 
-func appendSpanEvents(eventCnt PICTInputSpanChild, spanEvents pdata.SpanEventSlice) {
+func appendSpanEvents(eventCnt PICTInputSpanChild, spanEvents ptrace.SpanEventSlice) {
 	listSize := calculateListSize(eventCnt)
 	for i := 0; i < listSize; i++ {
 		appendSpanEvent(i, spanEvents)
 	}
 }
 
-func appendSpanLinks(linkCnt PICTInputSpanChild, random io.Reader, spanLinks pdata.SpanLinkSlice) {
+func appendSpanLinks(linkCnt PICTInputSpanChild, random io.Reader, spanLinks ptrace.SpanLinkSlice) {
 	listSize := calculateListSize(linkCnt)
 	for i := 0; i < listSize; i++ {
 		appendSpanLink(random, i, spanLinks)
@@ -412,10 +413,10 @@ func calculateListSize(listCnt PICTInputSpanChild) int {
 	}
 }
 
-func appendSpanEvent(index int, spanEvents pdata.SpanEventSlice) {
+func appendSpanEvent(index int, spanEvents ptrace.SpanEventSlice) {
 	spanEvent := spanEvents.AppendEmpty()
 	t := time.Now().Add(-75 * time.Microsecond)
-	spanEvent.SetTimestamp(pdata.Timestamp(t.UnixNano()))
+	spanEvent.SetTimestamp(pcommon.Timestamp(t.UnixNano()))
 	switch index % 4 {
 	case 0, 3:
 		spanEvent.SetName("message")
@@ -441,7 +442,7 @@ func appendSpanEvent(index int, spanEvents pdata.SpanEventSlice) {
 	spanEvent.SetDroppedAttributesCount(0)
 }
 
-func appendSpanLink(random io.Reader, index int, spanLinks pdata.SpanLinkSlice) {
+func appendSpanLink(random io.Reader, index int, spanLinks ptrace.SpanLinkSlice) {
 	spanLink := spanLinks.AppendEmpty()
 	spanLink.SetTraceID(generateTraceID(random))
 	spanLink.SetSpanID(generateSpanID(random))
@@ -458,20 +459,20 @@ func appendSpanLink(random io.Reader, index int, spanLinks pdata.SpanLinkSlice) 
 	spanLink.SetDroppedAttributesCount(0)
 }
 
-func generateTraceID(random io.Reader) pdata.TraceID {
+func generateTraceID(random io.Reader) pcommon.TraceID {
 	var r [16]byte
 	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewTraceID(r)
+	return pcommon.NewTraceID(r)
 }
 
-func generateSpanID(random io.Reader) pdata.SpanID {
+func generateSpanID(random io.Reader) pcommon.SpanID {
 	var r [8]byte
 	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewSpanID(r)
+	return pcommon.NewSpanID(r)
 }

@@ -21,7 +21,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
@@ -54,13 +55,13 @@ func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (er
 	return
 }
 
-func (r *elasticsearchScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	metrics := pdata.NewMetrics()
+func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics()
 
 	errs := &scrapererror.ScrapeErrors{}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	r.scrapeNodeMetrics(ctx, now, rms, errs)
 	r.scrapeClusterMetrics(ctx, now, rms, errs)
@@ -69,7 +70,7 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pdata.Metrics, error
 }
 
 // scrapeNodeMetrics scrapes adds node-level metrics to the given MetricSlice from the NodeStats endpoint
-func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pdata.Timestamp, rms pdata.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
+func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommon.Timestamp, rms pmetric.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
 	if len(r.cfg.Nodes) == 0 {
 		return
 	}
@@ -86,8 +87,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pdata.
 		resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, nodeStats.ClusterName)
 		resourceAttrs.InsertString(metadata.A.ElasticsearchNodeName, info.Name)
 
-		ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-		ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+		ilms := rm.ScopeMetrics().AppendEmpty()
+		ilms.Scope().SetName(instrumentationLibraryName)
 
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheName.Fielddata)
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.QueryCache.MemorySizeInBy, metadata.AttributeCacheName.Query)
@@ -174,7 +175,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pdata.
 	}
 }
 
-func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pdata.Timestamp, rms pdata.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
+func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pcommon.Timestamp, rms pmetric.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
 	if r.cfg.SkipClusterMetrics {
 		return
 	}
@@ -189,8 +190,8 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pda
 	resourceAttrs := rm.Resource().Attributes()
 	resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, clusterHealth.ClusterName)
 
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+	ilms := rm.ScopeMetrics().AppendEmpty()
+	ilms.Scope().SetName(instrumentationLibraryName)
 
 	r.mb.RecordElasticsearchClusterNodesDataPoint(now, clusterHealth.NodeCount)
 

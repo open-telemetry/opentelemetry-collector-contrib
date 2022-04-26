@@ -25,7 +25,7 @@ import (
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -99,18 +99,18 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 	}, nil
 }
 
-func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			ispans := rspans.InstrumentationLibrarySpans().At(j)
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			ispans := rspans.ScopeSpans().At(j)
 			transform := newTraceTransformer(resource)
 
-			libraryName := ispans.InstrumentationLibrary().Name()
-			libraryVersion := ispans.InstrumentationLibrary().Version()
+			libraryName := ispans.Scope().Name()
+			libraryVersion := ispans.Scope().Version()
 
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {

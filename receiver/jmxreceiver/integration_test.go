@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -221,9 +221,9 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.True(t, ok)
 				require.Equal(t, "myothervalue", anotherCustomAttr.StringVal())
 
-				ilm := rm.InstrumentationLibraryMetrics().At(0)
-				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
-				require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
+				ilm := rm.ScopeMetrics().At(0)
+				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.Scope().Name())
+				require.Equal(t, "1.0.0-alpha", ilm.Scope().Version())
 
 				met := ilm.Metrics().At(0)
 
@@ -232,7 +232,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.Equal(t, "By", met.Unit())
 
 				// otel-java only uses int sum w/ non-monotonic for up down counters instead of gauge
-				require.Equal(t, pdata.MetricDataTypeSum, met.DataType())
+				require.Equal(t, pmetric.MetricDataTypeSum, met.DataType())
 				sum := met.Sum()
 				require.False(t, sum.IsMonotonic())
 

@@ -14,10 +14,13 @@
 
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
 
 /*
-	Encapsulates iteration over the Spans inside pdata.Traces from the underlying representation.
+	Encapsulates iteration over the Spans inside ptrace.Traces from the underlying representation.
 	Everyone is doing the same kind of iteration and checking over a set traces.
 */
 
@@ -25,30 +28,30 @@ import "go.opentelemetry.io/collector/model/pdata"
 type TraceVisitor interface {
 	// Called for each tuple of Resource, InstrumentationLibrary, and Span
 	// If Visit returns false, the iteration is short-circuited
-	visit(resource pdata.Resource, instrumentationLibrary pdata.InstrumentationLibrary, span pdata.Span) (ok bool)
+	visit(resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, span ptrace.Span) (ok bool)
 }
 
 // Accept method is called to start the iteration process
-func Accept(traces pdata.Traces, v TraceVisitor) {
+func Accept(traces ptrace.Traces, v TraceVisitor) {
 	resourceSpans := traces.ResourceSpans()
 
 	// Walk each ResourceSpans instance
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		resource := rs.Resource()
-		instrumentationLibrarySpansSlice := rs.InstrumentationLibrarySpans()
+		scopeSpansSlice := rs.ScopeSpans()
 
-		for j := 0; j < instrumentationLibrarySpansSlice.Len(); j++ {
-			instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(j)
+		for j := 0; j < scopeSpansSlice.Len(); j++ {
+			scopeSpans := scopeSpansSlice.At(j)
 			// instrumentation library is optional
-			instrumentationLibrary := instrumentationLibrarySpans.InstrumentationLibrary()
-			spansSlice := instrumentationLibrarySpans.Spans()
+			scope := scopeSpans.Scope()
+			spansSlice := scopeSpans.Spans()
 			if spansSlice.Len() == 0 {
 				continue
 			}
 
 			for k := 0; k < spansSlice.Len(); k++ {
-				if ok := v.visit(resource, instrumentationLibrary, spansSlice.At(k)); !ok {
+				if ok := v.visit(resource, scope, spansSlice.At(k)); !ok {
 					return
 				}
 			}

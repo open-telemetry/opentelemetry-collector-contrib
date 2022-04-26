@@ -33,11 +33,16 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Resource attributes
 
-| Name | Description |
-| ---- | ----------- |
-| direction | State of a packet based on io direction. |
-| server.state | State of the Zookeeper server (leader, standalone or follower). |
-| state | State of followers |
-| zk.version | Zookeeper version of the instance. |
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| server.state | State of the Zookeeper server (leader, standalone or follower). | String |
+| zk.version | Zookeeper version of the instance. | String |
+
+## Metric attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | State of a packet based on io direction. | received, sent |
+| state | State of followers | synced, unsynced |

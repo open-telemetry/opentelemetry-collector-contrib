@@ -47,9 +47,9 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| db | Redis database identifier |
-| state | Redis CPU usage state |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db | Redis database identifier |  |
+| state | Redis CPU usage state |  |

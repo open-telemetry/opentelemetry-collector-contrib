@@ -17,23 +17,24 @@ package honeycombexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // spanAttributesToMap converts an opencensus proto Span_Attributes object into a map
 // of strings to generic types usable for sending events to honeycomb.
-func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
+func spanAttributesToMap(spanAttrs pcommon.Map) map[string]interface{} {
 	var attrs = make(map[string]interface{}, spanAttrs.Len())
 
-	spanAttrs.Range(func(key string, value pdata.AttributeValue) bool {
+	spanAttrs.Range(func(key string, value pcommon.Value) bool {
 		switch value.Type() {
-		case pdata.AttributeValueTypeString:
+		case pcommon.ValueTypeString:
 			attrs[key] = value.StringVal()
-		case pdata.AttributeValueTypeBool:
+		case pcommon.ValueTypeBool:
 			attrs[key] = value.BoolVal()
-		case pdata.AttributeValueTypeInt:
+		case pcommon.ValueTypeInt:
 			attrs[key] = value.IntVal()
-		case pdata.AttributeValueTypeDouble:
+		case pcommon.ValueTypeDouble:
 			attrs[key] = value.DoubleVal()
 		}
 		return true
@@ -43,7 +44,7 @@ func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
 }
 
 // timestampToTime converts a protobuf timestamp into a time.Time.
-func timestampToTime(ts pdata.Timestamp) (t time.Time) {
+func timestampToTime(ts pcommon.Timestamp) (t time.Time) {
 	if ts == 0 {
 		return
 	}
@@ -51,12 +52,12 @@ func timestampToTime(ts pdata.Timestamp) (t time.Time) {
 }
 
 // getStatusCode returns the status code
-func getStatusCode(status pdata.SpanStatus) int32 {
+func getStatusCode(status ptrace.SpanStatus) int32 {
 	return int32(status.Code())
 }
 
 // getStatusMessage returns the status message as a string
-func getStatusMessage(status pdata.SpanStatus) string {
+func getStatusMessage(status ptrace.SpanStatus) string {
 	if len(status.Message()) > 0 {
 		return status.Message()
 	}

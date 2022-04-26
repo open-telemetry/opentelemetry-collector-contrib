@@ -26,7 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +41,7 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceReceived",
 			typ:      traceReceived,
-			payload:  tracesWithID{id: pdata.InvalidTraceID(), td: pdata.NewTraces()},
+			payload:  tracesWithID{id: pcommon.InvalidTraceID(), td: ptrace.NewTraces()},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
 				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
 					wg.Done()
@@ -51,11 +52,11 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceExpired",
 			typ:      traceExpired,
-			payload:  pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+			payload:  pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pdata.TraceID, worker *eventMachineWorker) error {
+				em.onTraceExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
 					wg.Done()
-					assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), expired)
+					assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
 				}
 			},
@@ -63,9 +64,9 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceReleased",
 			typ:      traceReleased,
-			payload:  []pdata.ResourceSpans{},
+			payload:  []ptrace.ResourceSpans{},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(expired []pdata.ResourceSpans) error {
+				em.onTraceReleased = func(expired []ptrace.ResourceSpans) error {
 					wg.Done()
 					return nil
 				}
@@ -74,11 +75,11 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceRemoved",
 			typ:      traceRemoved,
-			payload:  pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+			payload:  pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceRemoved = func(expired pdata.TraceID) error {
+				em.onTraceRemoved = func(expired pcommon.TraceID) error {
 					wg.Done()
-					assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), expired)
+					assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
 				}
 			},
@@ -175,7 +176,7 @@ func TestEventInvalidPayload(t *testing.T) {
 			casename: "onTraceExpired",
 			typ:      traceExpired,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pdata.TraceID, worker *eventMachineWorker) error {
+				em.onTraceExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
 					return nil
 				}
 			},
@@ -184,7 +185,7 @@ func TestEventInvalidPayload(t *testing.T) {
 			casename: "onTraceReleased",
 			typ:      traceReleased,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(released []pdata.ResourceSpans) error {
+				em.onTraceReleased = func(released []ptrace.ResourceSpans) error {
 					return nil
 				}
 			},
@@ -193,7 +194,7 @@ func TestEventInvalidPayload(t *testing.T) {
 			casename: "onTraceRemoved",
 			typ:      traceRemoved,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceRemoved = func(expired pdata.TraceID) error {
+				em.onTraceRemoved = func(expired pcommon.TraceID) error {
 					return nil
 				}
 			},
@@ -283,11 +284,11 @@ func TestEventTracePerWorker(t *testing.T) {
 				workerForTrace = w
 				w.fire(event{
 					typ:     traceExpired,
-					payload: pdata.NewTraceID([16]byte{1}),
+					payload: pcommon.NewTraceID([16]byte{1}),
 				})
 				return nil
 			}
-			em.onTraceExpired = func(id pdata.TraceID, w *eventMachineWorker) error {
+			em.onTraceExpired = func(id pcommon.TraceID, w *eventMachineWorker) error {
 				assert.Equal(t, workerForTrace, w)
 				wg.Done()
 				return nil
@@ -295,11 +296,11 @@ func TestEventTracePerWorker(t *testing.T) {
 			em.startInBackground()
 			defer em.shutdown()
 
-			td := pdata.NewTraces()
-			ils := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+			td := ptrace.NewTraces()
+			ils := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 			if tt.traceID != [16]byte{} {
 				span := ils.Spans().AppendEmpty()
-				span.SetTraceID(pdata.NewTraceID(tt.traceID))
+				span.SetTraceID(pcommon.NewTraceID(tt.traceID))
 			}
 
 			// test
@@ -335,14 +336,14 @@ func TestEventConsumeConsistency(t *testing.T) {
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			realTraceID := workerIndexForTraceID(pdata.NewTraceID(tt.traceID), 100)
+			realTraceID := workerIndexForTraceID(pcommon.NewTraceID(tt.traceID), 100)
 			var wg sync.WaitGroup
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
 					for j := 0; j < 30; j++ {
-						assert.Equal(t, realTraceID, workerIndexForTraceID(pdata.NewTraceID(tt.traceID), 100))
+						assert.Equal(t, realTraceID, workerIndexForTraceID(pcommon.NewTraceID(tt.traceID), 100))
 					}
 				}()
 			}
@@ -362,11 +363,11 @@ func TestEventShutdown(t *testing.T) {
 		atomic.StoreInt64(&traceReceivedFired, 1)
 		return nil
 	}
-	em.onTraceExpired = func(pdata.TraceID, *eventMachineWorker) error {
+	em.onTraceExpired = func(pcommon.TraceID, *eventMachineWorker) error {
 		atomic.StoreInt64(&traceExpiredFired, 1)
 		return nil
 	}
-	em.onTraceRemoved = func(pdata.TraceID) error {
+	em.onTraceRemoved = func(pcommon.TraceID) error {
 		wg.Wait()
 		return nil
 	}
@@ -375,15 +376,15 @@ func TestEventShutdown(t *testing.T) {
 	// test
 	em.workers[0].fire(event{
 		typ:     traceReceived,
-		payload: tracesWithID{id: pdata.InvalidTraceID(), td: pdata.NewTraces()},
+		payload: tracesWithID{id: pcommon.InvalidTraceID(), td: ptrace.NewTraces()},
 	})
 	em.workers[0].fire(event{
 		typ:     traceRemoved,
-		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+		payload: pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 	em.workers[0].fire(event{
 		typ:     traceRemoved,
-		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+		payload: pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 
 	time.Sleep(10 * time.Millisecond)  // give it a bit of time to process the items
@@ -404,7 +405,7 @@ func TestEventShutdown(t *testing.T) {
 	// new events should *not* be processed
 	em.workers[0].fire(event{
 		typ:     traceExpired,
-		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+		payload: pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 
 	// verify

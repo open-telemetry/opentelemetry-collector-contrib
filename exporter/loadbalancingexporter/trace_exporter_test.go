@@ -28,13 +28,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/zap"
 )
@@ -303,8 +303,8 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	lb.exporters["endpoint-1"] = newMockTracesExporter(sink.ConsumeTraces)
 
 	first := simpleTraces()
-	second := simpleTraceWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
-	batch := pdata.NewTraces()
+	second := simpleTraceWithID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
+	batch := ptrace.NewTraces()
 	first.ResourceSpans().MoveAndAppendTo(batch.ResourceSpans())
 	second.ResourceSpans().MoveAndAppendTo(batch.ResourceSpans())
 
@@ -319,32 +319,32 @@ func TestBatchWithTwoTraces(t *testing.T) {
 func TestNoTracesInBatch(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
-		batch pdata.Traces
+		batch ptrace.Traces
 	}{
 		{
 			"no resource spans",
-			pdata.NewTraces(),
+			ptrace.NewTraces(),
 		},
 		{
 			"no instrumentation library spans",
-			func() pdata.Traces {
-				batch := pdata.NewTraces()
+			func() ptrace.Traces {
+				batch := ptrace.NewTraces()
 				batch.ResourceSpans().AppendEmpty()
 				return batch
 			}(),
 		},
 		{
 			"no spans",
-			func() pdata.Traces {
-				batch := pdata.NewTraces()
-				batch.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+			func() ptrace.Traces {
+				batch := ptrace.NewTraces()
+				batch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 				return batch
 			}(),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res := traceIDFromTraces(tt.batch)
-			assert.Equal(t, pdata.InvalidTraceID(), res)
+			assert.Equal(t, pcommon.InvalidTraceID(), res)
 		})
 	}
 }
@@ -417,14 +417,14 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	var counter1, counter2 int64
 	defaultExporters := map[string]component.Exporter{
-		"127.0.0.1": newMockTracesExporter(func(ctx context.Context, td pdata.Traces) error {
+		"127.0.0.1": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
 			atomic.AddInt64(&counter1, 1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		},
 		),
-		"127.0.0.2": newMockTracesExporter(func(ctx context.Context, td pdata.Traces) error {
+		"127.0.0.2": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
 			atomic.AddInt64(&counter2, 1)
 			return nil
 		},
@@ -479,21 +479,21 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
 }
 
-func randomTraces() pdata.Traces {
+func randomTraces() ptrace.Traces {
 	v1 := uint8(rand.Intn(256))
 	v2 := uint8(rand.Intn(256))
 	v3 := uint8(rand.Intn(256))
 	v4 := uint8(rand.Intn(256))
-	return simpleTraceWithID(pdata.NewTraceID([16]byte{v1, v2, v3, v4}))
+	return simpleTraceWithID(pcommon.NewTraceID([16]byte{v1, v2, v3, v4}))
 }
 
-func simpleTraces() pdata.Traces {
-	return simpleTraceWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+func simpleTraces() ptrace.Traces {
+	return simpleTraceWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
-func simpleTraceWithID(id pdata.TraceID) pdata.Traces {
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+func simpleTraceWithID(id pcommon.TraceID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 	return traces
 }
 
@@ -508,20 +508,20 @@ func simpleConfig() *Config {
 
 type mockTracesExporter struct {
 	component.Component
-	ConsumeTracesFn func(ctx context.Context, td pdata.Traces) error
+	ConsumeTracesFn func(ctx context.Context, td ptrace.Traces) error
 }
 
-func newMockTracesExporter(consumeTracesFn func(ctx context.Context, td pdata.Traces) error) component.TracesExporter {
+func newMockTracesExporter(consumeTracesFn func(ctx context.Context, td ptrace.Traces) error) component.TracesExporter {
 	return &mockTracesExporter{
-		Component:       componenthelper.New(),
+		Component:       mockComponent{},
 		ConsumeTracesFn: consumeTracesFn,
 	}
 }
 
 func newNopMockTracesExporter() component.TracesExporter {
 	return &mockTracesExporter{
-		Component: componenthelper.New(),
-		ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+		Component: mockComponent{},
+		ConsumeTracesFn: func(ctx context.Context, td ptrace.Traces) error {
 			return nil
 		},
 	}
@@ -531,7 +531,7 @@ func (e *mockTracesExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	if e.ConsumeTracesFn == nil {
 		return nil
 	}

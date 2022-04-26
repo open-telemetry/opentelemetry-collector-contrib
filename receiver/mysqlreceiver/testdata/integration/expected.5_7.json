@@ -1,9 +1,9 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
+               "scope": {
                   "name": "otelcol/mysqlreceiver"
                },
                "metrics": [
@@ -670,7 +670,7 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of InndoDB log operations.",
+                     "description": "The number of InnoDB log operations.",
                      "name": "mysql.log_operations",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -720,7 +720,7 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of InndoDB operations.",
+                     "description": "The number of InnoDB operations.",
                      "name": "mysql.operations",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -770,7 +770,7 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of InndoDB page operations.",
+                     "description": "The number of InnoDB page operations.",
                      "name": "mysql.page_operations",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -820,7 +820,7 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of InndoDB row locks.",
+                     "description": "The number of InnoDB row locks.",
                      "name": "mysql.row_locks",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -857,7 +857,7 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of InndoDB row operations.",
+                     "description": "The number of InnoDB row operations.",
                      "name": "mysql.row_operations",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",

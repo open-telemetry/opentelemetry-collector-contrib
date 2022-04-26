@@ -23,11 +23,11 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| device | Name of the network interface. |
-| direction | Direction of flow of bytes/operations (receive or transmit). |
-| protocol | Network protocol, e.g. TCP or UDP. |
-| state | State of the network connection. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the network interface. |  |
+| direction | Direction of flow of bytes/operations (receive or transmit). | receive, transmit |
+| protocol | Network protocol, e.g. TCP or UDP. | tcp |
+| state | State of the network connection. |  |

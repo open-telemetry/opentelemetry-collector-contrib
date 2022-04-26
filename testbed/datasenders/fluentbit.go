@@ -25,7 +25,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -91,10 +92,10 @@ func (f *FluentBitFileLogWriter) setupParsers() {
 	f.parsersFile.Close()
 }
 
-func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
-			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
+		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
 			for k := 0; k < ills.LogRecords().Len(); k++ {
 				_, err := f.file.Write(append(f.convertLogToJSON(ills.LogRecords().At(k)), '\n'))
 				if err != nil {
@@ -106,21 +107,21 @@ func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs)
 	return nil
 }
 
-func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
+func (f *FluentBitFileLogWriter) convertLogToJSON(lr plog.LogRecord) []byte {
 	rec := map[string]string{
 		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
 	}
 	rec["log"] = lr.Body().StringVal()
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pcommon.ValueTypeString:
 			rec[k] = v.StringVal()
-		case pdata.AttributeValueTypeInt:
+		case pcommon.ValueTypeInt:
 			rec[k] = strconv.FormatInt(v.IntVal(), 10)
-		case pdata.AttributeValueTypeDouble:
+		case pcommon.ValueTypeDouble:
 			rec[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
-		case pdata.AttributeValueTypeBool:
+		case pcommon.ValueTypeBool:
 			rec[k] = strconv.FormatBool(v.BoolVal())
 		default:
 			panic("missing case")

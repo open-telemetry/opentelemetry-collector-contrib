@@ -29,8 +29,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -83,21 +84,21 @@ func newTestClient(config *Config, httpClient *http.Client) *client {
 	}
 }
 
-func createLogData() pdata.Logs {
-	logs := pdata.NewLogs()
+func createLogData() plog.Logs {
+	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(1)
 
 	now := timeNow()
 
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.InstrumentationLibraryLogs().EnsureCapacity(1)
+	rl.ScopeLogs().EnsureCapacity(1)
 
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.LogRecords().EnsureCapacity(1)
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().EnsureCapacity(1)
 
-	logRecord := ill.LogRecords().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
 
-	logRecord.SetTimestamp(pdata.Timestamp(now.UnixNano()))
+	logRecord.SetTimestamp(pcommon.Timestamp(now.UnixNano()))
 	logRecord.Body().SetStringVal("message")
 	logRecord.Attributes().InsertString(conventions.AttributeNetHostIP, "1.1.1.1")
 	logRecord.Attributes().InsertInt(conventions.AttributeNetHostPort, 4000)
@@ -134,7 +135,7 @@ func verifyFirstElementIsEntryFunc(e observIQLogEntry) requestVerificationFunc {
 func TestClientSendLogs(t *testing.T) {
 	type testCaseRequest struct {
 		// Inputs
-		logs           pdata.Logs
+		logs           plog.Logs
 		responseStatus int
 		respBody       string
 		timeoutTimer   bool // Timeout the last set timer created through timeAfterFunc()

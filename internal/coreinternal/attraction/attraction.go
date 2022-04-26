@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
@@ -162,7 +162,7 @@ type attributeAction struct {
 	// The reason is attributes processor will most likely be commonly used
 	// and could impact performance.
 	Action         Action
-	AttributeValue *pdata.AttributeValue
+	AttributeValue *pcommon.Value
 }
 
 // AttrProc is an attribute processor.
@@ -273,7 +273,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 }
 
 // Process applies the AttrProc to an attribute map.
-func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata.AttributeMap) {
+func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcommon.Map) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
@@ -310,18 +310,18 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata
 	}
 }
 
-func getAttributeValueFromContext(ctx context.Context, key string) (pdata.AttributeValue, bool) {
+func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
 	ci := client.FromContext(ctx)
 	vals := ci.Metadata.Get(key)
 
 	if len(vals) == 0 {
-		return pdata.AttributeValue{}, false
+		return pcommon.Value{}, false
 	}
 
-	return pdata.NewAttributeValueString(strings.Join(vals, ";")), true
+	return pcommon.NewValueString(strings.Join(vals, ";")), true
 }
 
-func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) (pdata.AttributeValue, bool) {
+func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map) (pcommon.Value, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
@@ -334,23 +334,23 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 	return attrs.Get(action.FromAttribute)
 }
 
-func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
+func hashAttribute(action attributeAction, attrs pcommon.Map) {
 	if value, exists := attrs.Get(action.Key); exists {
 		sha1Hasher(value)
 	}
 }
 
-func convertAttribute(logger *zap.Logger, action attributeAction, attrs pdata.AttributeMap) {
+func convertAttribute(logger *zap.Logger, action attributeAction, attrs pcommon.Map) {
 	if value, exists := attrs.Get(action.Key); exists {
 		convertValue(logger, action.Key, action.ConvertedType, value)
 	}
 }
 
-func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
+func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pdata.AttributeValueTypeString {
+	if !found || value.Type() != pcommon.ValueTypeString {
 		return
 	}
 

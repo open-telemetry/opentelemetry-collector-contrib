@@ -20,8 +20,8 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -66,8 +66,8 @@ func NewDetector(set component.ProcessorCreateSettings, _ internal.DetectorConfi
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
-func (detector *detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
+func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
 
 	//Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)

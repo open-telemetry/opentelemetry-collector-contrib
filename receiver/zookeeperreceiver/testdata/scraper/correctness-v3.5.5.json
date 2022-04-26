@@ -1,9 +1,9 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
+               "scope": {
                   "name": "otelcol/zookeeperreceiver"
                },
                "metrics": [

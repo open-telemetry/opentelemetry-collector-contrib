@@ -20,7 +20,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
@@ -85,33 +87,33 @@ func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request)
 	}
 }
 
-func fillAttributeMap(attrs pdata.AttributeMap, mp map[string]string) {
+func fillAttributeMap(attrs pcommon.Map, mp map[string]string) {
 	attrs.Clear()
 	attrs.EnsureCapacity(len(mp))
 	for k, v := range mp {
-		attrs.Insert(k, pdata.NewAttributeValueString(v))
+		attrs.Insert(k, pcommon.NewValueString(v))
 	}
 }
 
 // NewAttributeMap creates a new attribute map (string only)
 // from a Go map
-func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func NewAttributeMap(mp map[string]string) pcommon.Map {
+	attrs := pcommon.NewMap()
 	fillAttributeMap(attrs, mp)
 	return attrs
 }
 
-func newMetricsWithAttributeMap(mp map[string]string) pdata.Metrics {
-	md := pdata.NewMetrics()
+func newMetricsWithAttributeMap(mp map[string]string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	fillAttributeMap(md.ResourceMetrics().AppendEmpty().Resource().Attributes(), mp)
 	return md
 }
 
-func newTracesWithAttributeMap(mp map[string]string) pdata.Traces {
-	traces := pdata.NewTraces()
+func newTracesWithAttributeMap(mp map[string]string) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans()
 	rs := resourceSpans.AppendEmpty()
 	fillAttributeMap(rs.Resource().Attributes(), mp)
-	rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	return traces
 }

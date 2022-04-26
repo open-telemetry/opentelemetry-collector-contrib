@@ -24,14 +24,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
 type DetectorType string
 
 type Detector interface {
-	Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error)
+	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
 type DetectorConfig interface{}
@@ -54,6 +54,7 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params component.ProcessorCreateSettings,
 	timeout time.Duration,
+	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
@@ -61,7 +62,14 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		return nil, err
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, detectors...)
+	attributesToKeep := make(map[string]struct{})
+	if len(attributes) > 0 {
+		for _, attribute := range attributes {
+			attributesToKeep[attribute] = struct{}{}
+		}
+	}
+
+	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, detectors...)
 	return provider, nil
 }
 
@@ -90,23 +98,25 @@ type ResourceProvider struct {
 	detectors        []Detector
 	detectedResource *resourceResult
 	once             sync.Once
+	attributesToKeep map[string]struct{}
 }
 
 type resourceResult struct {
-	resource  pdata.Resource
+	resource  pcommon.Resource
 	schemaURL string
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
-		logger:    logger,
-		timeout:   timeout,
-		detectors: detectors,
+		logger:           logger,
+		timeout:          timeout,
+		detectors:        detectors,
+		attributesToKeep: attributesToKeep,
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pdata.Resource, schemaURL string, err error) {
+func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
 	p.once.Do(func() {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
@@ -120,7 +130,7 @@ func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resour
 func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource = &resourceResult{}
 
-	res := pdata.NewResource()
+	res := pcommon.NewResource()
 	mergedSchemaURL := ""
 
 	p.logger.Info("began detecting resource information")
@@ -133,44 +143,48 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, schemaURL)
 			MergeResource(res, r, false)
 		}
-
 	}
 
+	droppedAttributes := filterAttributes(res.Attributes(), p.attributesToKeep)
+
 	p.logger.Info("detected resource information", zap.Any("resource", AttributesToMap(res.Attributes())))
+	if len(droppedAttributes) > 0 {
+		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
+	}
 
 	p.detectedResource.resource = res
 	p.detectedResource.schemaURL = mergedSchemaURL
 }
 
-func AttributesToMap(am pdata.AttributeMap) map[string]interface{} {
+func AttributesToMap(am pcommon.Map) map[string]interface{} {
 	mp := make(map[string]interface{}, am.Len())
-	am.Range(func(k string, v pdata.AttributeValue) bool {
+	am.Range(func(k string, v pcommon.Value) bool {
 		mp[k] = UnwrapAttribute(v)
 		return true
 	})
 	return mp
 }
 
-func UnwrapAttribute(v pdata.AttributeValue) interface{} {
+func UnwrapAttribute(v pcommon.Value) interface{} {
 	switch v.Type() {
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return v.BoolVal()
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return v.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return v.DoubleVal()
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		return v.StringVal()
-	case pdata.AttributeValueTypeArray:
+	case pcommon.ValueTypeSlice:
 		return getSerializableArray(v.SliceVal())
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeMap:
 		return AttributesToMap(v.MapVal())
 	default:
 		return nil
 	}
 }
 
-func getSerializableArray(inArr pdata.AttributeValueSlice) []interface{} {
+func getSerializableArray(inArr pcommon.Slice) []interface{} {
 	var outArr []interface{}
 	for i := 0; i < inArr.Len(); i++ {
 		outArr = append(outArr, UnwrapAttribute(inArr.At(i)))
@@ -194,13 +208,28 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 	return currentSchemaURL
 }
 
-func MergeResource(to, from pdata.Resource, overrideTo bool) {
+func filterAttributes(am pcommon.Map, attributesToKeep map[string]struct{}) []string {
+	if len(attributesToKeep) > 0 {
+		droppedAttributes := make([]string, 0)
+		am.RemoveIf(func(k string, v pcommon.Value) bool {
+			_, keep := attributesToKeep[k]
+			if !keep {
+				droppedAttributes = append(droppedAttributes, k)
+			}
+			return !keep
+		})
+		return droppedAttributes
+	}
+	return nil
+}
+
+func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 	if IsEmptyResource(from) {
 		return
 	}
 
 	toAttr := to.Attributes()
-	from.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	from.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if overrideTo {
 			toAttr.Upsert(k, v)
 		} else {
@@ -210,7 +239,7 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 	})
 }
 
-func IsEmptyResource(res pdata.Resource) bool {
+func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
 }
 

@@ -14,23 +14,21 @@
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-func addBool(val *bool, attrKey string, attrs *pdata.AttributeMap) {
+func addBool(val *bool, attrKey string, attrs *pcommon.Map) {
 	if val != nil {
 		attrs.UpsertBool(attrKey, *val)
 	}
 }
 
-func addString(val *string, attrKey string, attrs *pdata.AttributeMap) {
+func addString(val *string, attrKey string, attrs *pcommon.Map) {
 	if val != nil {
 		attrs.UpsertString(attrKey, *val)
 	}
 }
 
-func addInt64(val *int64, attrKey string, attrs *pdata.AttributeMap) {
+func addInt64(val *int64, attrKey string, attrs *pcommon.Map) {
 	if val != nil {
 		attrs.UpsertInt(attrKey, *val)
 	}

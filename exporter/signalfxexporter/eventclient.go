@@ -24,7 +24,8 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -38,7 +39,7 @@ type sfxEventClient struct {
 	accessTokenPassthrough bool
 }
 
-func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, error) {
+func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, error) {
 	rls := ld.ResourceLogs()
 	if rls.Len() == 0 {
 		return 0, nil
@@ -51,10 +52,10 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, 
 
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
-			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, ill.LogRecords(), rl.Resource().Attributes())
+			sl := ills.At(j)
+			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, sl.LogRecords(), rl.Resource().Attributes())
 			sfxEvents = append(sfxEvents, events...)
 			numDroppedLogRecords += dropped
 		}
@@ -115,9 +116,9 @@ func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader
 	return s.getReader(body)
 }
 
-func (s *sfxEventClient) retrieveAccessToken(rl pdata.ResourceLogs) string {
+func (s *sfxEventClient) retrieveAccessToken(rl plog.ResourceLogs) string {
 	attrs := rl.Resource().Attributes()
-	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pdata.AttributeValueTypeString {
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pcommon.ValueTypeString {
 		return accessToken.StringVal()
 	}
 	return ""

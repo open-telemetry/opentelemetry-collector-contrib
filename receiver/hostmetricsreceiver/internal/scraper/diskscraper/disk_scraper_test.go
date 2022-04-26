@@ -22,7 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -37,7 +38,7 @@ func TestScrape(t *testing.T) {
 		newErrRegex       string
 		initializationErr string
 		expectMetrics     int
-		expectedStartTime pdata.Timestamp
+		expectedStartTime pcommon.Timestamp
 	}
 
 	testCases := []testCase{
@@ -120,7 +121,11 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, test.expectMetrics, md.MetricCount())
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			if md.ResourceMetrics().Len() == 0 {
+				return
+			}
+
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			assert.Equal(t, test.expectMetrics, metrics.Len())
 
 			reportedMetricsCount := map[string]int{}
@@ -157,7 +162,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
+func assertInt64DiskMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
@@ -165,11 +170,11 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, startTime pda
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pcommon.NewValueString(metadata.AttributeDirection.Write))
 }
 
-func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
+func assertDoubleDiskMetricValid(t *testing.T, metric pmetric.Metric, expectDirectionLabels bool, startTime pcommon.Timestamp) {
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
@@ -182,12 +187,12 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectDirect
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.Read))
+		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pcommon.NewValueString(metadata.AttributeDirection.Write))
 	}
 }
 
-func assertDiskPendingOperationsMetricValid(t *testing.T, metric pdata.Metric) {
+func assertDiskPendingOperationsMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 }

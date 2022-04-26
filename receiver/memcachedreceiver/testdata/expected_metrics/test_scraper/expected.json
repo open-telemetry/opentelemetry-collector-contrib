@@ -1,10 +1,10 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/memcached"
+               "scope": {
+                  "name": "otelcol/memcachedreceiver"
                },
                "metrics": [
                   {

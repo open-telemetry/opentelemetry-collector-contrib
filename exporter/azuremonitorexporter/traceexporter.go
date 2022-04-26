@@ -20,7 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -38,8 +39,8 @@ type traceVisitor struct {
 
 // Called for each tuple of Resource, InstrumentationLibrary, and Span
 func (v *traceVisitor) visit(
-	resource pdata.Resource,
-	instrumentationLibrary pdata.InstrumentationLibrary, span pdata.Span) (ok bool) {
+	resource pcommon.Resource,
+	instrumentationLibrary pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
 
 	envelope, err := spanToEnvelope(resource, instrumentationLibrary, span, v.exporter.logger)
 	if err != nil {
@@ -58,7 +59,7 @@ func (v *traceVisitor) visit(
 	return true
 }
 
-func (exporter *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) error {
+func (exporter *traceExporter) onTraceData(context context.Context, traceData ptrace.Traces) error {
 	spanCount := traceData.SpanCount()
 	if spanCount == 0 {
 		return nil

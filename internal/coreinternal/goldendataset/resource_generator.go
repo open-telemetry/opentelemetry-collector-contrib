@@ -15,14 +15,14 @@
 package goldendataset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // GenerateResource generates a PData Resource object with representative attributes for the
 // underlying resource type specified by the rscID input parameter.
-func GenerateResource(rscID PICTInputResource) pdata.Resource {
-	resource := pdata.NewResource()
+func GenerateResource(rscID PICTInputResource) pcommon.Resource {
+	resource := pcommon.NewResource()
 	switch rscID {
 	case ResourceEmpty:
 		break
@@ -42,11 +42,11 @@ func GenerateResource(rscID PICTInputResource) pdata.Resource {
 	return resource
 }
 
-func appendOnpremVMAttributes(attrMap pdata.AttributeMap) {
+func appendOnpremVMAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeServiceName, "customers")
 	attrMap.UpsertString(conventions.AttributeServiceNamespace, "production")
 	attrMap.UpsertString(conventions.AttributeServiceVersion, "semver:0.7.3")
-	subMap := pdata.NewAttributeValueMap()
+	subMap := pcommon.NewValueMap()
 	subMap.MapVal().InsertString("public", "tc-prod9.internal.example.com")
 	subMap.MapVal().InsertString("internal", "172.18.36.18")
 	attrMap.Upsert(conventions.AttributeHostName, subMap)
@@ -56,7 +56,7 @@ func appendOnpremVMAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeTelemetrySDKVersion, "0.3.0")
 }
 
-func appendCloudVMAttributes(attrMap pdata.AttributeMap) {
+func appendCloudVMAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeServiceName, "shoppingcart")
 	attrMap.UpsertString(conventions.AttributeServiceName, "customers")
 	attrMap.UpsertString(conventions.AttributeServiceNamespace, "production")
@@ -73,7 +73,7 @@ func appendCloudVMAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeCloudRegion, "South Central US")
 }
 
-func appendOnpremK8sAttributes(attrMap pdata.AttributeMap) {
+func appendOnpremK8sAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeContainerName, "cert-manager")
 	attrMap.UpsertString(conventions.AttributeContainerImageName, "quay.io/jetstack/cert-manager-controller")
 	attrMap.UpsertString(conventions.AttributeContainerImageTag, "v0.14.2")
@@ -84,7 +84,7 @@ func appendOnpremK8sAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeHostName, "docker-desktop")
 }
 
-func appendCloudK8sAttributes(attrMap pdata.AttributeMap) {
+func appendCloudK8sAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeContainerName, "otel-collector")
 	attrMap.UpsertString(conventions.AttributeContainerImageName, "otel/opentelemetry-collector-contrib")
 	attrMap.UpsertString(conventions.AttributeContainerImageTag, "0.4.0")
@@ -106,7 +106,7 @@ func appendCloudK8sAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
 }
 
-func appendFassAttributes(attrMap pdata.AttributeMap) {
+func appendFassAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeFaaSID, "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print")
 	attrMap.UpsertString(conventions.AttributeFaaSName, "env-vars-print")
 	attrMap.UpsertString(conventions.AttributeFaaSVersion, "semver:1.0.0")
@@ -116,9 +116,9 @@ func appendFassAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-central1-a")
 }
 
-func appendExecAttributes(attrMap pdata.AttributeMap) {
+func appendExecAttributes(attrMap pcommon.Map) {
 	attrMap.UpsertString(conventions.AttributeProcessExecutableName, "otelcol")
-	parts := pdata.NewAttributeValueArray()
+	parts := pcommon.NewValueSlice()
 	parts.SliceVal().AppendEmpty().SetStringVal("otelcol")
 	parts.SliceVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
 	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)

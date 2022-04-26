@@ -19,12 +19,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestConvertToOTMetrics(t *testing.T) {
-	timestamp := pdata.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	m := ECSMetrics{}
 
 	m.MemoryUsage = 100
@@ -33,43 +34,43 @@ func TestConvertToOTMetrics(t *testing.T) {
 	m.MemoryReserved = 100
 	m.CPUTotalUsage = 100
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	md := convertToOTLPMetrics("container.", m, resource, timestamp)
-	require.EqualValues(t, 26, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+	require.EqualValues(t, 26, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	assert.EqualValues(t, conventions.SchemaURL, md.ResourceMetrics().At(0).SchemaUrl())
 }
 
 func TestIntGauge(t *testing.T) {
 	intValue := int64(100)
-	timestamp := pdata.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm := pmetric.NewScopeMetrics()
 	appendIntGauge("cpu_utilized", "Count", intValue, timestamp, ilm)
 	require.NotNil(t, ilm)
 }
 
 func TestDoubleGauge(t *testing.T) {
-	timestamp := pdata.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	floatValue := 100.01
 
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm := pmetric.NewScopeMetrics()
 	appendDoubleGauge("cpu_utilized", "Count", floatValue, timestamp, ilm)
 	require.NotNil(t, ilm)
 }
 
 func TestIntSum(t *testing.T) {
-	timestamp := pdata.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	intValue := int64(100)
 
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm := pmetric.NewScopeMetrics()
 	appendIntSum("cpu_utilized", "Count", intValue, timestamp, ilm)
 	require.NotNil(t, ilm)
 }
 
 func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
-	timestamp := pdata.NewTimestampFromTime(time.Now())
-	resource := pdata.NewResource()
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	resource := pcommon.NewResource()
 	duration := 1200000000.32132
 	md := convertStoppedContainerDataToOTMetrics("container.", resource, timestamp, duration)
-	require.EqualValues(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+	require.EqualValues(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 }

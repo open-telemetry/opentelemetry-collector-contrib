@@ -29,7 +29,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -41,9 +44,9 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
+func (p *MockDetector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), "", args.Error(1)
+	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
 
 func TestResourceProcessor(t *testing.T) {
@@ -51,10 +54,10 @@ func TestResourceProcessor(t *testing.T) {
 		name             string
 		detectorKeys     []string
 		override         bool
-		sourceResource   pdata.Resource
-		detectedResource pdata.Resource
+		sourceResource   pcommon.Resource
+		detectedResource pcommon.Resource
 		detectedError    error
-		expectedResource pdata.Resource
+		expectedResource pcommon.Resource
 		expectedNewError string
 	}{
 		{
@@ -121,20 +124,20 @@ func TestResourceProcessor(t *testing.T) {
 		},
 		{
 			name:             "Source resource is nil",
-			sourceResource:   pdata.NewResource(),
+			sourceResource:   pcommon.NewResource(),
 			detectedResource: internal.NewResource(map[string]interface{}{"host.name": "node"}),
 			expectedResource: internal.NewResource(map[string]interface{}{"host.name": "node"}),
 		},
 		{
 			name:             "Detected resource is nil",
 			sourceResource:   internal.NewResource(map[string]interface{}{"host.name": "node"}),
-			detectedResource: pdata.NewResource(),
+			detectedResource: pcommon.NewResource(),
 			expectedResource: internal.NewResource(map[string]interface{}{"host.name": "node"}),
 		},
 		{
 			name:             "Both resources are nil",
-			sourceResource:   pdata.NewResource(),
-			detectedResource: pdata.NewResource(),
+			sourceResource:   pcommon.NewResource(),
+			detectedResource: pcommon.NewResource(),
 			expectedResource: internal.NewResource(map[string]interface{}{}),
 		},
 		{
@@ -197,7 +200,7 @@ func TestResourceProcessor(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { assert.NoError(t, rtp.Shutdown(context.Background())) }()
 
-			td := pdata.NewTraces()
+			td := ptrace.NewTraces()
 			tt.sourceResource.CopyTo(td.ResourceSpans().AppendEmpty().Resource())
 
 			err = rtp.ConsumeTraces(context.Background(), td)
@@ -230,7 +233,7 @@ func TestResourceProcessor(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { assert.NoError(t, rmp.Shutdown(context.Background())) }()
 
-			// TODO create pdata.Metrics directly when this is no longer internal
+			// TODO create pmetric.Metrics directly when this is no longer internal
 			err = rmp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, oCensusResource(tt.sourceResource), nil))
 			require.NoError(t, err)
 			got = tmn.AllMetrics()[0].ResourceMetrics().At(0).Resource()
@@ -261,7 +264,7 @@ func TestResourceProcessor(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { assert.NoError(t, rlp.Shutdown(context.Background())) }()
 
-			ld := pdata.NewLogs()
+			ld := plog.NewLogs()
 			tt.sourceResource.CopyTo(ld.ResourceLogs().AppendEmpty().Resource())
 
 			err = rlp.ConsumeLogs(context.Background(), ld)
@@ -275,13 +278,13 @@ func TestResourceProcessor(t *testing.T) {
 	}
 }
 
-func oCensusResource(res pdata.Resource) *resourcepb.Resource {
+func oCensusResource(res pcommon.Resource) *resourcepb.Resource {
 	if res.Attributes().Len() == 0 {
 		return &resourcepb.Resource{}
 	}
 
 	mp := make(map[string]string, res.Attributes().Len())
-	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
 		mp[k] = v.StringVal()
 		return true
 	})
@@ -297,7 +300,7 @@ func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
-		processor.ConsumeTraces(context.Background(), pdata.NewTraces())
+		processor.ConsumeTraces(context.Background(), ptrace.NewTraces())
 	}
 }
 
@@ -319,7 +322,7 @@ func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
-		processor.ConsumeMetrics(context.Background(), pdata.NewMetrics())
+		processor.ConsumeMetrics(context.Background(), pmetric.NewMetrics())
 	}
 }
 
@@ -341,7 +344,7 @@ func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
-		processor.ConsumeLogs(context.Background(), pdata.NewLogs())
+		processor.ConsumeLogs(context.Background(), plog.NewLogs())
 	}
 }
 

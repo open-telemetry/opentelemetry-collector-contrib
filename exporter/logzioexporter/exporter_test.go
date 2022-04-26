@@ -33,8 +33,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -43,17 +45,17 @@ const (
 	testOperation = "testOperation"
 )
 
-func newTestTraces() pdata.Traces {
-	td := pdata.NewTraces()
-	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+func newTestTraces() ptrace.Traces {
+	td := ptrace.NewTraces()
+	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName(testOperation)
-	s.SetTraceID(pdata.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
-	s.SetKind(pdata.SpanKindServer)
+	s.SetTraceID(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetKind(ptrace.SpanKindServer)
 	return td
 }
 
-func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) {
+func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) {
 	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
@@ -71,7 +73,7 @@ func TestNullTracesExporterConfig(tester *testing.T) {
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
-func testMetricsExporter(md pdata.Metrics, t *testing.T, cfg *Config) {
+func testMetricsExporter(md pmetric.Metrics, t *testing.T, cfg *Config) {
 	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := createMetricsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
@@ -100,7 +102,7 @@ func TestEmptyNode(tester *testing.T) {
 		TracesToken:      "test",
 		Region:           "eu",
 	}
-	testTracesExporter(pdata.NewTraces(), tester, &cfg)
+	testTracesExporter(ptrace.NewTraces(), tester, &cfg)
 }
 
 func TestWriteSpanError(tester *testing.T) {
@@ -128,7 +130,7 @@ func TestConversionTraceError(tester *testing.T) {
 	exporter, _ := newLogzioExporter(&cfg, params)
 	oldFunc := exporter.InternalTracesToJaegerTraces
 	defer func() { exporter.InternalTracesToJaegerTraces = oldFunc }()
-	exporter.InternalTracesToJaegerTraces = func(td pdata.Traces) ([]*model.Batch, error) {
+	exporter.InternalTracesToJaegerTraces = func(td ptrace.Traces) ([]*model.Batch, error) {
 		return nil, errors.New("fail")
 	}
 	err := exporter.pushTraceData(context.Background(), newTestTraces())
@@ -197,7 +199,7 @@ func TestPushMetricsData(tester *testing.T) {
 		Region:           "eu",
 		CustomEndpoint:   "url",
 	}
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 
 	testMetricsExporter(md, tester, &cfg)
 }

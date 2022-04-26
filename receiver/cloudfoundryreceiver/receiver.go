@@ -25,8 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
@@ -138,7 +138,7 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 			break
 		}
 
-		metrics := pdata.NewMetrics()
+		metrics := pmetric.NewMetrics()
 		libraryMetrics := createLibraryMetricsSlice(metrics)
 
 		for _, envelope := range envelopes {
@@ -157,12 +157,12 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 	}
 }
 
-func createLibraryMetricsSlice(metrics pdata.Metrics) pdata.MetricSlice {
+func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetric := resourceMetrics.AppendEmpty()
 	resourceMetric.Resource().Attributes()
-	libraryMetricsSlice := resourceMetric.InstrumentationLibraryMetrics()
+	libraryMetricsSlice := resourceMetric.ScopeMetrics()
 	libraryMetrics := libraryMetricsSlice.AppendEmpty()
-	libraryMetrics.InstrumentationLibrary().SetName(instrumentationLibName)
+	libraryMetrics.Scope().SetName(instrumentationLibName)
 	return libraryMetrics.Metrics()
 }

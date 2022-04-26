@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestGenerateMetricDatas(t *testing.T) {
@@ -45,8 +45,8 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     0,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: pdata.MetricDataTypeGauge,
-				MetricValueType:      pdata.MetricValueTypeInt,
+				MetricDescriptorType: pmetric.MetricDataTypeGauge,
+				MetricValueType:      pmetric.NumberDataPointValueTypeInt,
 				NumPtLabels:          0,
 			},
 		},
@@ -61,8 +61,8 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     1,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: pdata.MetricDataTypeGauge,
-				MetricValueType:      pdata.MetricValueTypeDouble,
+				MetricDescriptorType: pmetric.MetricDataTypeGauge,
+				MetricValueType:      pmetric.NumberDataPointValueTypeDouble,
 				NumPtLabels:          1,
 			},
 		},
@@ -77,7 +77,7 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     2,
 				NumPtsPerMetric:      16,
-				MetricDescriptorType: pdata.MetricDataTypeHistogram,
+				MetricDescriptorType: pmetric.MetricDataTypeHistogram,
 				NumPtLabels:          16,
 			},
 		},

@@ -25,9 +25,9 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| device | Name of the disk. |
-| direction | Direction of flow of bytes/operations (read or write). |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. |  |
+| direction | Direction of flow of bytes/operations (read or write). | read, write |

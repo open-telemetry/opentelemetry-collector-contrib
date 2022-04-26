@@ -17,11 +17,11 @@ package scrapertest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func metricsByName(metricSlice pdata.MetricSlice) map[string]pdata.Metric {
-	byName := make(map[string]pdata.Metric, metricSlice.Len())
+func metricsByName(metricSlice pmetric.MetricSlice) map[string]pmetric.Metric {
+	byName := make(map[string]pmetric.Metric, metricSlice.Len())
 	for i := 0; i < metricSlice.Len(); i++ {
 		a := metricSlice.At(i)
 		byName[a.Name()] = a
@@ -29,12 +29,12 @@ func metricsByName(metricSlice pdata.MetricSlice) map[string]pdata.Metric {
 	return byName
 }
 
-func getDataPointSlice(metric pdata.Metric) pdata.NumberDataPointSlice {
-	var dataPointSlice pdata.NumberDataPointSlice
+func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
+	var dataPointSlice pmetric.NumberDataPointSlice
 	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		dataPointSlice = metric.Gauge().DataPoints()
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		dataPointSlice = metric.Sum().DataPoints()
 	default:
 		panic(fmt.Sprintf("data type not supported: %s", metric.DataType()))
@@ -42,14 +42,14 @@ func getDataPointSlice(metric pdata.Metric) pdata.NumberDataPointSlice {
 	return dataPointSlice
 }
 
-func sortInstrumentationLibrary(a, b pdata.InstrumentationLibraryMetrics) bool {
+func sortInstrumentationLibrary(a, b pmetric.ScopeMetrics) bool {
 	if a.SchemaUrl() < b.SchemaUrl() {
 		return true
 	}
-	if a.InstrumentationLibrary().Name() < b.InstrumentationLibrary().Name() {
+	if a.Scope().Name() < b.Scope().Name() {
 		return true
 	}
-	if a.InstrumentationLibrary().Version() < b.InstrumentationLibrary().Version() {
+	if a.Scope().Version() < b.Scope().Version() {
 		return true
 	}
 	return false

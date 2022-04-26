@@ -18,7 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // carbon2TagString returns all attributes as space spearated key=value pairs.
@@ -37,7 +38,7 @@ func carbon2TagString(record metricPair) string {
 	}
 
 	returnValue := make([]string, 0, length)
-	record.attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	record.attributes.Range(func(k string, v pcommon.Value) bool {
 		if k == "name" || k == "unit" {
 			k = fmt.Sprintf("_%s", k)
 		}
@@ -65,15 +66,15 @@ func sanitizeCarbonString(text string) string {
 
 // carbon2NumberRecord converts NumberDataPoint to carbon2 metric string
 // with additional information from metricPair.
-func carbon2NumberRecord(record metricPair, dataPoint pdata.NumberDataPoint) string {
+func carbon2NumberRecord(record metricPair, dataPoint pmetric.NumberDataPoint) string {
 	switch dataPoint.ValueType() {
-	case pdata.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return fmt.Sprintf("%s  %g %d",
 			carbon2TagString(record),
 			dataPoint.DoubleVal(),
 			dataPoint.Timestamp()/1e9,
 		)
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return fmt.Sprintf("%s  %d %d",
 			carbon2TagString(record),
 			dataPoint.IntVal(),
@@ -88,21 +89,21 @@ func carbon2Metric2String(record metricPair) string {
 	var nextLines []string
 
 	switch record.metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
 	// Skip complex metrics
-	case pdata.MetricDataTypeHistogram:
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeSummary:
 	}
 
 	return strings.Join(nextLines, "\n")

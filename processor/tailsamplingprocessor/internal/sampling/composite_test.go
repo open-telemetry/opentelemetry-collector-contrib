@@ -19,7 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -31,30 +32,30 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 	return f.second
 }
 
-var traceID = pdata.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
+var traceID = pcommon.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *TraceData {
 	trace := &TraceData{SpanCount: 1}
 	return trace
 }
 
-func newTraceID() pdata.TraceID {
+func newTraceID() pcommon.TraceID {
 	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pdata.NewTraceID(r)
+	return pcommon.NewTraceID(r)
 }
 
-func newTraceWithKV(traceID pdata.TraceID, key string, val int64) *TraceData {
-	var traceBatches []pdata.Traces
-	traces := pdata.NewTraces()
+func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
+	var traceBatches []ptrace.Traces
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
 	span.Attributes().InsertInt(key, val)

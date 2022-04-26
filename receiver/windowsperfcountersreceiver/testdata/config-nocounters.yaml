@@ -1,5 +1,10 @@
 receivers:
   windowsperfcounters:
+    metrics:
+      metric:
+        description: desc
+        unit: "1"
+        gauge:
     perfcounters:
       - object: "object"
 

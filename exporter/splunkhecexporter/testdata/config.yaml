@@ -14,6 +14,8 @@ exporters:
     source: "otel"
     sourcetype: "otel"
     index: "metrics"
+    log_data_enabled: true
+    profiling_data_enabled: true
     tls:
       insecure_skip_verify: false
       ca_file: ""

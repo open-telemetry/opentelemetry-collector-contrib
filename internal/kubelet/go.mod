@@ -3,17 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.46.0
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.49.0
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2
 	go.uber.org/zap v1.21.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
@@ -30,20 +30,20 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
-	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
+	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.23.4 // indirect
-	k8s.io/apimachinery v0.23.4 // indirect
-	k8s.io/client-go v0.23.4 // indirect
+	k8s.io/api v0.23.5 // indirect
+	k8s.io/apimachinery v0.23.5 // indirect
+	k8s.io/client-go v0.23.5 // indirect
 	k8s.io/klog/v2 v2.30.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
@@ -55,3 +55,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

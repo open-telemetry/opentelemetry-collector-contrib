@@ -21,23 +21,24 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
 func TestMetricTracker_Convert(t *testing.T) {
 	miSum := MetricIdentity{
-		Resource:               pdata.NewResource(),
-		InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
-		MetricDataType:         pdata.MetricDataTypeSum,
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricDataType:         pmetric.MetricDataTypeSum,
 		MetricIsMonotonic:      true,
 		MetricName:             "",
 		MetricUnit:             "",
-		Attributes:             pdata.NewAttributeMap(),
+		Attributes:             pcommon.NewMap(),
 	}
 	miIntSum := miSum
-	miIntSum.MetricValueType = pdata.MetricValueTypeInt
-	miSum.MetricValueType = pdata.MetricValueTypeDouble
+	miIntSum.MetricValueType = pmetric.NumberDataPointValueTypeInt
+	miSum.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 
 	m := NewMetricTracker(context.Background(), zap.NewNop(), 0)
 
@@ -135,7 +136,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 
 	t.Run("Invalid metric identity", func(t *testing.T) {
 		invalidID := miIntSum
-		invalidID.MetricDataType = pdata.MetricDataTypeGauge
+		invalidID.MetricDataType = pmetric.MetricDataTypeGauge
 		_, valid := m.Convert(MetricPoint{
 			Identity: invalidID,
 			Value: ValuePoint{
@@ -151,7 +152,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 }
 
 func Test_metricTracker_removeStale(t *testing.T) {
-	currentTime := pdata.Timestamp(100)
+	currentTime := pcommon.Timestamp(100)
 	freshPoint := ValuePoint{
 		ObservedTimestamp: currentTime,
 	}
@@ -214,10 +215,10 @@ func Test_metricTracker_removeStale(t *testing.T) {
 
 func Test_metricTracker_sweeper(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	sweepEvent := make(chan pdata.Timestamp)
+	sweepEvent := make(chan pcommon.Timestamp)
 	closed := int32(0)
 
-	onSweep := func(staleBefore pdata.Timestamp) {
+	onSweep := func(staleBefore pcommon.Timestamp) {
 		sweepEvent <- staleBefore
 	}
 

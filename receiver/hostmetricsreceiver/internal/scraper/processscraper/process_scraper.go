@@ -21,8 +21,8 @@ import (
 
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -78,34 +78,25 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
 
-	metadata, err := s.getProcessMetadata()
+	data, err := s.getProcessMetadata()
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
-			return md, err
+			return pmetric.NewMetrics(), err
 		}
 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
-	rms.EnsureCapacity(len(metadata))
-	for _, md := range metadata {
-		rm := rms.AppendEmpty()
-		rm.SetSchemaUrl(conventions.SchemaURL)
-		md.initializeResource(rm.Resource())
-		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
-		now := pdata.NewTimestampFromTime(time.Now())
+	for _, md := range data {
+		now := pcommon.NewTimestampFromTime(time.Now())
 
 		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
@@ -118,10 +109,11 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
-		s.mb.Emit(metrics)
+
+		s.mb.EmitForResource(md.resourceOptions()...)
 	}
 
-	return md, errs.Combine()
+	return s.mb.Emit(), errs.Combine()
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
@@ -136,7 +128,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 	var errs scrapererror.ScrapeErrors
 
-	metadata := make([]*processMetadata, 0, handles.Len())
+	data := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
@@ -173,13 +165,13 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			handle:     handle,
 		}
 
-		metadata = append(metadata, md)
+		data = append(data, md)
 	}
 
-	return metadata, errs.Combine()
+	return data, errs.Combine()
 }
 
-func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle) error {
 	times, err := handle.Times()
 	if err != nil {
 		return err
@@ -189,7 +181,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, handle proce
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
 		return err
@@ -200,7 +192,7 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle 
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle processHandle) error {
 	io, err := handle.IOCounters()
 	if err != nil {
 		return err

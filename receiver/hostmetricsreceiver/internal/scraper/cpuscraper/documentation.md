@@ -20,9 +20,9 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| cpu | CPU number starting at 0. |
-| state | Breakdown of CPU usage by type. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cpu | CPU number starting at 0. |  |
+| state | Breakdown of CPU usage by type. | idle, interrupt, nice, softirq, steal, system, user, wait |

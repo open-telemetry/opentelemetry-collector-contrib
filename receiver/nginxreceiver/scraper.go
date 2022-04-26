@@ -21,7 +21,8 @@ import (
 
 	"github.com/nginxinc/nginx-prometheus-exporter/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
@@ -57,25 +58,24 @@ func (r *nginxScraper) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the constructor.
 	if r.client == nil {
 		var err error
 		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
 		if err != nil {
 			r.client = nil
-			return pdata.Metrics{}, err
+			return pmetric.Metrics{}, err
 		}
 	}
 
 	stats, err := r.client.GetStubStats()
 	if err != nil {
 		r.settings.Logger.Error("Failed to fetch nginx stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
-	md := r.mb.NewMetricData()
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	r.mb.RecordNginxRequestsDataPoint(now, stats.Requests)
 	r.mb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
@@ -85,6 +85,5 @@ func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
 	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeState.Writing)
 	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeState.Waiting)
 
-	r.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	return md, nil
+	return r.mb.Emit(), nil
 }

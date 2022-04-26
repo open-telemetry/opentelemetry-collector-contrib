@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 )
@@ -39,7 +40,7 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 
 	tc = TagsConfig{
@@ -58,7 +59,7 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 
 	tc = TagsConfig{
@@ -76,7 +77,7 @@ func TestHostTags(t *testing.T) {
 			"key3:val3",
 			"key4:val4",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 }
 
@@ -160,18 +161,6 @@ func TestInvalidHostname(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCensorAPIKey(t *testing.T) {
-	cfg := APIConfig{
-		Key: "ddog_32_characters_long_api_key1",
-	}
-
-	assert.Equal(
-		t,
-		"***************************_key1",
-		cfg.GetCensoredKey(),
-	)
-}
-
 func TestIgnoreResourcesValidation(t *testing.T) {
 	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
 	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
@@ -189,4 +178,57 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 	err := invalidCfg.Validate()
 	require.NoError(t, noErr)
 	require.Error(t, err)
+}
+
+func TestUnmarshal(t *testing.T) {
+	tests := []struct {
+		name      string
+		configMap *config.Map
+		cfg       Config
+		err       string
+	}{
+		{
+			name: "invalid cumulative monotonic mode",
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"cumulative_monotonic_mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"",
+		},
+		{
+			name: "invalid host metadata hostname source",
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
+				"host_metadata": map[string]interface{}{
+					"hostname_source": "invalid_source",
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'host_metadata.hostname_source': invalid host metadata hostname source \"invalid_source\"",
+		},
+		{
+			name: "invalid summary mode",
+			configMap: config.NewMapFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"summaries": map[string]interface{}{
+						"mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			cfg := futureDefaultConfig()
+			err := cfg.Unmarshal(testInstance.configMap)
+			if err != nil || testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
+			} else {
+				assert.Equal(t, testInstance.cfg, cfg)
+			}
+		})
+	}
 }

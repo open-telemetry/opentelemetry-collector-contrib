@@ -21,13 +21,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestWriteMetrics(t *testing.T) {
 	metricslice := testMetrics()
-	metrics := pdata.NewMetrics()
-	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	metrics := pmetric.NewMetrics()
+	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
 	WriteMetrics(tempDir, metrics)
@@ -44,8 +45,8 @@ func TestWriteMetrics(t *testing.T) {
 
 func TestReadMetrics(t *testing.T) {
 	metricslice := testMetrics()
-	expectedMetrics := pdata.NewMetrics()
-	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	expectedMetrics := pmetric.NewMetrics()
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
 	actualMetrics, err := ReadMetrics(expectedFile)
@@ -55,8 +56,8 @@ func TestReadMetrics(t *testing.T) {
 
 func TestRoundTrip(t *testing.T) {
 	metricslice := testMetrics()
-	expectedMetrics := pdata.NewMetrics()
-	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	expectedMetrics := pmetric.NewMetrics()
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
 	err := WriteMetrics(tempDir, expectedMetrics)
@@ -67,8 +68,8 @@ func TestRoundTrip(t *testing.T) {
 	require.Equal(t, expectedMetrics, actualMetrics)
 }
 
-func testMetrics() pdata.MetricSlice {
-	slice := pdata.NewMetricSlice()
+func testMetrics() pmetric.MetricSlice {
+	slice := pmetric.NewMetricSlice()
 
 	// Gauge with two double dps
 	metric := slice.AppendEmpty()
@@ -76,15 +77,15 @@ func testMetrics() pdata.MetricSlice {
 	dps := metric.Gauge().DataPoints()
 
 	dp := dps.AppendEmpty()
-	attributes := pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue1"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue1"))
+	attributes := pcommon.NewMap()
+	attributes.Insert("testKey1", pcommon.NewValueString("teststringvalue1"))
+	attributes.Insert("testKey2", pcommon.NewValueString("testvalue1"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue2"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue2"))
+	attributes = pcommon.NewMap()
+	attributes.Insert("testKey1", pcommon.NewValueString("teststringvalue2"))
+	attributes.Insert("testKey2", pcommon.NewValueString("testvalue2"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	// Gauge with one int dp
@@ -93,57 +94,57 @@ func testMetrics() pdata.MetricSlice {
 	dps = metric.Gauge().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes = pcommon.NewMap()
+	attributes.Insert("testKey2", pcommon.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Delta Sum with two int dps
 	metric = slice.AppendEmpty()
-	initSum(metric, "test delta sum multi", "multi sum", "s", pdata.MetricAggregationTemporalityDelta, false)
+	initSum(metric, "test delta sum multi", "multi sum", "s", pmetric.MetricAggregationTemporalityDelta, false)
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes = pcommon.NewMap()
+	attributes.Insert("testKey2", pcommon.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes = pcommon.NewMap()
+	attributes.Insert("testKey2", pcommon.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Cumulative Sum with one double dp
 	metric = slice.AppendEmpty()
-	initSum(metric, "test cumulative sum single", "single sum", "1/s", pdata.MetricAggregationTemporalityCumulative, true)
+	initSum(metric, "test cumulative sum single", "single sum", "1/s", pmetric.MetricAggregationTemporalityCumulative, true)
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
+	attributes = pcommon.NewMap()
 	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 07, 27, 1, 1, 1, 1, &time.Location{}))
 	return slice
 }
 
-func setDPDoubleVal(dp pdata.NumberDataPoint, value float64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPDoubleVal(dp pmetric.NumberDataPoint, value float64, attributes pcommon.Map, timeStamp time.Time) {
 	dp.SetDoubleVal(value)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
-func setDPIntVal(dp pdata.NumberDataPoint, value int64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPIntVal(dp pmetric.NumberDataPoint, value int64, attributes pcommon.Map, timeStamp time.Time) {
 	dp.SetIntVal(value)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
-func initGauge(metric pdata.Metric, name, desc, unit string) {
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+func initGauge(metric pmetric.Metric, name, desc, unit string) {
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetDescription(desc)
 	metric.SetName(name)
 	metric.SetUnit(unit)
 }
 
-func initSum(metric pdata.Metric, name, desc, unit string, aggr pdata.MetricAggregationTemporality, isMonotonic bool) {
-	metric.SetDataType(pdata.MetricDataTypeSum)
+func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.MetricAggregationTemporality, isMonotonic bool) {
+	metric.SetDataType(pmetric.MetricDataTypeSum)
 	metric.Sum().SetIsMonotonic(isMonotonic)
 	metric.Sum().SetAggregationTemporality(aggr)
 	metric.SetDescription(desc)

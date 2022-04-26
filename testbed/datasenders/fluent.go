@@ -26,7 +26,8 @@ import (
 	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -86,10 +87,10 @@ func (f *FluentLogsForwarder) Stop() error {
 	return f.fluentLogger.Close()
 }
 
-func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
-			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
+		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
 			for k := 0; k < ills.LogRecords().Len(); k++ {
 				if f.dataFile == nil {
 					if err := f.fluentLogger.Post("", f.convertLogToMap(ills.LogRecords().At(k))); err != nil {
@@ -106,22 +107,22 @@ func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs pdata.Logs) er
 	return nil
 }
 
-func (f *FluentLogsForwarder) convertLogToMap(lr pdata.LogRecord) map[string]string {
+func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]string {
 	out := map[string]string{}
 
-	if lr.Body().Type() == pdata.AttributeValueTypeString {
+	if lr.Body().Type() == pcommon.ValueTypeString {
 		out["log"] = lr.Body().StringVal()
 	}
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pcommon.ValueTypeString:
 			out[k] = v.StringVal()
-		case pdata.AttributeValueTypeInt:
+		case pcommon.ValueTypeInt:
 			out[k] = strconv.FormatInt(v.IntVal(), 10)
-		case pdata.AttributeValueTypeDouble:
+		case pcommon.ValueTypeDouble:
 			out[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
-		case pdata.AttributeValueTypeBool:
+		case pcommon.ValueTypeBool:
 			out[k] = strconv.FormatBool(v.BoolVal())
 		default:
 			panic("missing case")
@@ -132,21 +133,21 @@ func (f *FluentLogsForwarder) convertLogToMap(lr pdata.LogRecord) map[string]str
 	return out
 }
 
-func (f *FluentLogsForwarder) convertLogToJSON(lr pdata.LogRecord) []byte {
+func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 	rec := map[string]string{
 		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
 	}
 	rec["log"] = lr.Body().StringVal()
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pcommon.ValueTypeString:
 			rec[k] = v.StringVal()
-		case pdata.AttributeValueTypeInt:
+		case pcommon.ValueTypeInt:
 			rec[k] = strconv.FormatInt(v.IntVal(), 10)
-		case pdata.AttributeValueTypeDouble:
+		case pcommon.ValueTypeDouble:
 			rec[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
-		case pdata.AttributeValueTypeBool:
+		case pcommon.ValueTypeBool:
 			rec[k] = strconv.FormatBool(v.BoolVal())
 		default:
 			panic("missing case")

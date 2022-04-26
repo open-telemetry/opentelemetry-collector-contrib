@@ -18,7 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -31,55 +32,55 @@ func TestNewStatusCodeFilter_errorHandling(t *testing.T) {
 }
 
 func TestStatusCodeSampling(t *testing.T) {
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
 		Desc                  string
 		StatusCodesToFilterOn []string
-		StatusCodesPresent    []pdata.StatusCode
+		StatusCodesPresent    []ptrace.StatusCode
 		Decision              Decision
 	}{
 		{
 			Desc:                  "filter on ERROR - none match",
 			StatusCodesToFilterOn: []string{"ERROR"},
-			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeOk, pdata.StatusCodeUnset, pdata.StatusCodeOk},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeOk, ptrace.StatusCodeUnset, ptrace.StatusCodeOk},
 			Decision:              NotSampled,
 		},
 		{
 			Desc:                  "filter on OK and ERROR - none match",
 			StatusCodesToFilterOn: []string{"OK", "ERROR"},
-			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeUnset, pdata.StatusCodeUnset},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeUnset},
 			Decision:              NotSampled,
 		},
 		{
 			Desc:                  "filter on UNSET - matches",
 			StatusCodesToFilterOn: []string{"UNSET"},
-			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeUnset},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeUnset},
 			Decision:              Sampled,
 		},
 		{
 			Desc:                  "filter on OK and UNSET - matches",
 			StatusCodesToFilterOn: []string{"OK", "UNSET"},
-			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeError, pdata.StatusCodeOk},
+			StatusCodesPresent:    []ptrace.StatusCode{ptrace.StatusCodeError, ptrace.StatusCodeOk},
 			Decision:              Sampled,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			traces := pdata.NewTraces()
+			traces := ptrace.NewTraces()
 			rs := traces.ResourceSpans().AppendEmpty()
-			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+			ils := rs.ScopeSpans().AppendEmpty()
 
 			for _, statusCode := range c.StatusCodesPresent {
 				span := ils.Spans().AppendEmpty()
 				span.Status().SetCode(statusCode)
-				span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-				span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+				span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+				span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 			}
 
 			trace := &TraceData{
-				ReceivedBatches: []pdata.Traces{traces},
+				ReceivedBatches: []ptrace.Traces{traces},
 			}
 
 			statusCodeFilter, err := NewStatusCodeFilter(zap.NewNop(), c.StatusCodesToFilterOn)

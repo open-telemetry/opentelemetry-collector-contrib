@@ -22,7 +22,8 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/load"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -54,7 +55,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return startSampling(ctx, s.logger)
 }
 
@@ -64,14 +65,11 @@ func (s *scraper) shutdown(ctx context.Context) error {
 }
 
 // scrape
-func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
-	now := pdata.NewTimestampFromTime(time.Now())
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
 	avgLoadValues, err := s.load()
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if s.config.CPUAverage {
@@ -81,11 +79,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		avgLoadValues.Load15 = avgLoadValues.Load1 / divisor
 	}
 
-	metrics.EnsureCapacity(metricsLen)
-
 	s.mb.RecordSystemCPULoadAverage1mDataPoint(now, avgLoadValues.Load1)
 	s.mb.RecordSystemCPULoadAverage5mDataPoint(now, avgLoadValues.Load5)
 	s.mb.RecordSystemCPULoadAverage15mDataPoint(now, avgLoadValues.Load15)
-	s.mb.Emit(metrics)
-	return md, nil
+
+	return s.mb.Emit(), nil
 }

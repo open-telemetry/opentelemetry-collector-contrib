@@ -12,14 +12,14 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
-    - anuraaga
     - dashpole
     - djaglowski
     - dmitryax
     - mx-psi
+    - pmm-sumo
     # Maintainers
-    - codeboten
     - bogdandrutu
+    - codeboten
     - jpkrohling
 
 # A number of assignees added to the pull request

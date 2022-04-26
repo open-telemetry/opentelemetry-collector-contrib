@@ -21,8 +21,9 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -61,14 +62,14 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 		},
 	}
 
-	expected := pdata.NewAttributeMap()
+	expected := pcommon.NewMap()
 	expected.InsertBool("bool-val", true)
 	expected.InsertInt("int-val", 123)
 	expected.InsertString("string-val", "abc")
 	expected.InsertDouble("double-val", 1.23)
 	expected.InsertString("binary-val", "AAAAAABkfZg=")
 
-	got := pdata.NewAttributeMap()
+	got := pcommon.NewMap()
 	jThriftTagsToInternalAttributes(tags, got)
 
 	require.EqualValues(t, expected, got)
@@ -79,12 +80,12 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 	tests := []struct {
 		name string
 		jb   *jaeger.Batch
-		td   pdata.Traces
+		td   ptrace.Traces
 	}{
 		{
 			name: "empty",
 			jb:   &jaeger.Batch{},
-			td:   pdata.NewTraces(),
+			td:   ptrace.NewTraces(),
 		},
 
 		{
@@ -283,7 +284,7 @@ func generateThriftFollowerSpan() *jaeger.Span {
 	}
 }
 
-func unixNanoToMicroseconds(ns pdata.Timestamp) int64 {
+func unixNanoToMicroseconds(ns pcommon.Timestamp) int64 {
 	return int64(ns / 1000)
 }
 

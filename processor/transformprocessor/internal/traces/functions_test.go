@@ -18,15 +18,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func Test_newFunctionCall(t *testing.T) {
-	input := pdata.NewSpan()
+	input := ptrace.NewSpan()
 	input.SetName("bear")
-	attrs := pdata.NewAttributeMap()
+	attrs := pcommon.NewMap()
 	attrs.InsertString("test", "1")
 	attrs.InsertInt("test2", 3)
 	attrs.InsertBool("test3", true)
@@ -35,7 +36,7 @@ func Test_newFunctionCall(t *testing.T) {
 	tests := []struct {
 		name string
 		inv  common.Invocation
-		want func(pdata.Span)
+		want func(ptrace.Span)
 	}{
 		{
 			name: "set name",
@@ -56,7 +57,7 @@ func Test_newFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			want: func(span pdata.Span) {
+			want: func(span ptrace.Span) {
 				input.CopyTo(span)
 				span.SetName("cat")
 			},
@@ -83,9 +84,9 @@ func Test_newFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			want: func(span pdata.Span) {
+			want: func(span ptrace.Span) {
 				input.CopyTo(span)
-				span.Status().SetCode(pdata.StatusCodeOk)
+				span.Status().SetCode(ptrace.StatusCodeOk)
 			},
 		},
 		{
@@ -107,10 +108,10 @@ func Test_newFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			want: func(span pdata.Span) {
+			want: func(span ptrace.Span) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
-				attrs := pdata.NewAttributeMap()
+				attrs := pcommon.NewMap()
 				attrs.InsertString("test", "1")
 				attrs.CopyTo(span.Attributes())
 			},
@@ -137,10 +138,10 @@ func Test_newFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			want: func(span pdata.Span) {
+			want: func(span ptrace.Span) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
-				attrs := pdata.NewAttributeMap()
+				attrs := pcommon.NewMap()
 				attrs.InsertString("test", "1")
 				attrs.InsertInt("test2", 3)
 				attrs.CopyTo(span.Attributes())
@@ -162,7 +163,7 @@ func Test_newFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			want: func(span pdata.Span) {
+			want: func(span ptrace.Span) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
 			},
@@ -170,115 +171,20 @@ func Test_newFunctionCall(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			span := pdata.NewSpan()
+			span := ptrace.NewSpan()
 			input.CopyTo(span)
 
-			evaluate, err := newFunctionCall(tt.inv, DefaultFunctions())
+			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
 			assert.NoError(t, err)
-			evaluate(span, pdata.NewInstrumentationLibrary(), pdata.NewResource())
+			evaluate(spanTransformContext{
+				span:     span,
+				il:       pcommon.NewInstrumentationScope(),
+				resource: pcommon.NewResource(),
+			})
 
-			expected := pdata.NewSpan()
+			expected := ptrace.NewSpan()
 			tt.want(expected)
 			assert.Equal(t, expected, span)
-		})
-	}
-}
-
-func Test_newFunctionCall_invalid(t *testing.T) {
-	tests := []struct {
-		name string
-		inv  common.Invocation
-	}{
-		{
-			name: "unknown function",
-			inv: common.Invocation{
-				Function:  "unknownfunc",
-				Arguments: []common.Value{},
-			},
-		},
-		{
-			name: "not trace accessor",
-			inv: common.Invocation{
-				Function: "set",
-				Arguments: []common.Value{
-					{
-						String: strp("not path"),
-					},
-					{
-						String: strp("cat"),
-					},
-				},
-			},
-		},
-		{
-			name: "not trace reader (invalid function)",
-			inv: common.Invocation{
-				Function: "set",
-				Arguments: []common.Value{
-					{
-						Path: &common.Path{
-							Fields: []common.Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Invocation: &common.Invocation{
-							Function: "unknownfunc",
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "not enough args",
-			inv: common.Invocation{
-				Function: "set",
-				Arguments: []common.Value{
-					{
-						Path: &common.Path{
-							Fields: []common.Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Invocation: &common.Invocation{
-							Function: "unknownfunc",
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "not matching slice type",
-			inv: common.Invocation{
-				Function: "keep_keys",
-				Arguments: []common.Value{
-					{
-						Path: &common.Path{
-							Fields: []common.Field{
-								{
-									Name: "attributes",
-								},
-							},
-						},
-					},
-					{
-						Int: intp(10),
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := newFunctionCall(tt.inv, DefaultFunctions())
-			assert.Error(t, err)
 		})
 	}
 }

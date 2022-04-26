@@ -14,34 +14,34 @@
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-func NewResource(mp map[string]interface{}) pdata.Resource {
-	res := pdata.NewResource()
+func NewResource(mp map[string]interface{}) pcommon.Resource {
+	res := pcommon.NewResource()
 	attr := res.Attributes()
 	fillAttributeMap(mp, attr)
 	return res
 }
 
-func NewAttributeMap(mp map[string]interface{}) pdata.AttributeMap {
-	attr := pdata.NewAttributeMap()
+func NewAttributeMap(mp map[string]interface{}) pcommon.Map {
+	attr := pcommon.NewMap()
 	fillAttributeMap(mp, attr)
 	return attr
 }
 
-func fillAttributeMap(mp map[string]interface{}, attr pdata.AttributeMap) {
+func fillAttributeMap(mp map[string]interface{}, attr pcommon.Map) {
 	attr.Clear()
 	attr.EnsureCapacity(len(mp))
 	for k, v := range mp {
 		switch t := v.(type) {
 		case bool:
-			attr.Insert(k, pdata.NewAttributeValueBool(t))
+			attr.Insert(k, pcommon.NewValueBool(t))
 		case int64:
-			attr.Insert(k, pdata.NewAttributeValueInt(t))
+			attr.Insert(k, pcommon.NewValueInt(t))
 		case float64:
-			attr.Insert(k, pdata.NewAttributeValueDouble(t))
+			attr.Insert(k, pcommon.NewValueDouble(t))
 		case string:
-			attr.Insert(k, pdata.NewAttributeValueString(t))
+			attr.Insert(k, pcommon.NewValueString(t))
 		}
 	}
 }

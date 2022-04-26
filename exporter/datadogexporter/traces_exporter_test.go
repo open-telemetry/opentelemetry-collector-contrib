@@ -31,14 +31,15 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
-func testTracesExporterHelper(td pdata.Traces, t *testing.T) []string {
+func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
 	metricsServer := testutils.DatadogServerMock()
 	defer metricsServer.Close()
 
@@ -85,8 +86,8 @@ func testTracesExporterHelper(td pdata.Traces, t *testing.T) []string {
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()
-
-	exporter, err := createTracesExporter(context.Background(), params, &cfg)
+	f := NewFactory()
+	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 
 	assert.NoError(t, err)
 
@@ -163,7 +164,9 @@ func TestNewTracesExporter(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 
 	// The client should have been created correctly
-	exp := newTracesExporter(context.Background(), params, cfg)
+	f := NewFactory()
+	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
 
@@ -175,7 +178,7 @@ func TestPushTraceData(t *testing.T) {
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		TagsConfig: config.TagsConfig{
-			Hostname: "test_host",
+			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
@@ -186,14 +189,19 @@ func TestPushTraceData(t *testing.T) {
 			SampleRate: 1,
 			TCPAddr:    confignet.TCPAddr{Endpoint: server.URL},
 		},
-		SendMetadata:        true,
-		UseResourceMetadata: true,
+
+		HostMetadata: config.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: config.HostnameSourceFirstResource,
+		},
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()
-	exp := newTracesExporter(context.Background(), params, cfg)
+	f := NewFactory()
+	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
 
-	err := exp.pushTraceData(context.Background(), testutils.TestTraces.Clone())
+	err = exp.ConsumeTraces(context.Background(), testutils.TestTraces.Clone())
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan
@@ -214,12 +222,12 @@ func TestTraceAndStatsExporter(t *testing.T) {
 	assert.Equal(t, "application/x-protobuf", got[0])
 }
 
-func simpleTraces() pdata.Traces {
-	return simpleTracesWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+func simpleTraces() ptrace.Traces {
+	return simpleTracesWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
-func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }

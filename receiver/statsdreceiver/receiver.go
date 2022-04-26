@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -103,7 +103,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 			select {
 			case <-ticker.C:
 				metrics := r.parser.GetMetrics()
-				if metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len() > 0 {
+				if metrics.ResourceMetrics().At(0).ScopeMetrics().Len() > 0 {
 					r.Flush(ctx, metrics, r.nextConsumer)
 				}
 			case rawMetric := <-transferChan:
@@ -125,7 +125,7 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *statsdReceiver) Flush(ctx context.Context, metrics pdata.Metrics, nextConsumer consumer.Metrics) error {
+func (r *statsdReceiver) Flush(ctx context.Context, metrics pmetric.Metrics, nextConsumer consumer.Metrics) error {
 	error := nextConsumer.ConsumeMetrics(ctx, metrics)
 	if error != nil {
 		return error

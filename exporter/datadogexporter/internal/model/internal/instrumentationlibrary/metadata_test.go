@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestTagsFromInstrumentationLibraryMetadata(t *testing.T) {
@@ -35,7 +35,7 @@ func TestTagsFromInstrumentationLibraryMetadata(t *testing.T) {
 	}
 
 	for _, testInstance := range tests {
-		il := pdata.NewInstrumentationLibrary()
+		il := pcommon.NewInstrumentationScope()
 		il.SetName(testInstance.name)
 		il.SetVersion(testInstance.version)
 		tags := TagsFromInstrumentationLibraryMetadata(il)

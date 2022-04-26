@@ -24,7 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type testMetric struct {
@@ -38,8 +39,8 @@ type testMetric struct {
 type deltaToRateTest struct {
 	name       string
 	metrics    []string
-	inMetrics  pdata.Metrics
-	outMetrics pdata.Metrics
+	inMetrics  pmetric.Metrics
+	outMetrics pmetric.Metrics
 }
 
 var (
@@ -152,8 +153,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.Equal(t, 1, len(got))
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
-			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			actualMetrics := got[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			actualMetrics := got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 			require.Equal(t, expectedMetrics.Len(), actualMetrics.Len())
 
@@ -163,7 +164,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 
 				require.Equal(t, eM.Name(), aM.Name())
 
-				if eM.DataType() == pdata.MetricDataTypeGauge {
+				if eM.DataType() == pmetric.MetricDataTypeGauge {
 					eDataPoints := eM.Gauge().DataPoints()
 					aDataPoints := aM.Gauge().DataPoints()
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
@@ -173,7 +174,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					}
 				}
 
-				if eM.DataType() == pdata.MetricDataTypeSum {
+				if eM.DataType() == pmetric.MetricDataTypeSum {
 					eDataPoints := eM.Sum().DataPoints()
 					aDataPoints := aM.Sum().DataPoints()
 
@@ -192,40 +193,40 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 	}
 }
 
-func generateSumMetrics(tm testMetric) pdata.Metrics {
-	md := pdata.NewMetrics()
+func generateSumMetrics(tm testMetric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	now := time.Now()
 	delta := time.Duration(tm.deltaSecond)
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pdata.MetricDataTypeSum)
+		m.SetDataType(pmetric.MetricDataTypeSum)
 
 		sum := m.Sum()
 		sum.SetIsMonotonic(true)
 
 		if tm.isDelta[i] {
-			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		} else {
-			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		}
 
 		if i < len(tm.metricValues) {
 			for _, value := range tm.metricValues[i] {
 				dp := m.Sum().DataPoints().AppendEmpty()
-				dp.SetStartTimestamp(pdata.NewTimestampFromTime(now))
-				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(delta * time.Second)))
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta * time.Second)))
 				dp.SetDoubleVal(value)
 			}
 		}
 		if i < len(tm.metricIntValues) {
 			for _, value := range tm.metricIntValues[i] {
 				dp := m.Sum().DataPoints().AppendEmpty()
-				dp.SetStartTimestamp(pdata.NewTimestampFromTime(now))
-				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(delta * time.Second)))
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta * time.Second)))
 				dp.SetIntVal(value)
 			}
 		}
@@ -234,27 +235,27 @@ func generateSumMetrics(tm testMetric) pdata.Metrics {
 	return md
 }
 
-func generateGaugeMetrics(tm testMetric) pdata.Metrics {
-	md := pdata.NewMetrics()
+func generateGaugeMetrics(tm testMetric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		if i < len(tm.metricValues) {
 			for _, value := range tm.metricValues[i] {
 				dp := m.Gauge().DataPoints().AppendEmpty()
-				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(120 * time.Second)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(120 * time.Second)))
 				dp.SetDoubleVal(value)
 			}
 		}
 		if i < len(tm.metricIntValues) {
 			for _, value := range tm.metricIntValues[i] {
 				dp := m.Gauge().DataPoints().AppendEmpty()
-				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(120 * time.Second)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(120 * time.Second)))
 				dp.SetIntVal(value)
 			}
 		}

@@ -15,7 +15,7 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 )
@@ -23,7 +23,7 @@ import (
 const instrumentationLibraryName = "otelcol/googlecloudspannermetrics"
 
 type MetricsBuilder interface {
-	Build(dataPoints []*MetricsDataPoint) (pdata.Metrics, error)
+	Build(dataPoints []*MetricsDataPoint) (pmetric.Metrics, error)
 	Shutdown() error
 }
 
@@ -41,21 +41,21 @@ func (b *metricsFromDataPointBuilder) Shutdown() error {
 	return b.filterResolver.Shutdown()
 }
 
-func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pdata.Metrics, error) {
-	var metrics pdata.Metrics
+func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pmetric.Metrics, error) {
+	var metrics pmetric.Metrics
 
 	groupedDataPoints, err := b.groupAndFilter(dataPoints)
 	if err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
-	metrics = pdata.NewMetrics()
+	metrics = pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(instrumentationLibraryName)
+	ilm.Scope().SetName(instrumentationLibraryName)
 
 	for key, points := range groupedDataPoints {
 		metric := ilm.Metrics().AppendEmpty()
@@ -63,12 +63,12 @@ func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pda
 		metric.SetUnit(key.MetricUnit)
 		metric.SetDataType(key.MetricDataType.MetricDataType())
 
-		var dataPointSlice pdata.NumberDataPointSlice
+		var dataPointSlice pmetric.NumberDataPointSlice
 
 		switch key.MetricDataType.MetricDataType() {
-		case pdata.MetricDataTypeGauge:
+		case pmetric.MetricDataTypeGauge:
 			dataPointSlice = metric.Gauge().DataPoints()
-		case pdata.MetricDataTypeSum:
+		case pmetric.MetricDataTypeSum:
 			metric.Sum().SetAggregationTemporality(key.MetricDataType.AggregationTemporality())
 			metric.Sum().SetIsMonotonic(key.MetricDataType.IsMonotonic())
 			dataPointSlice = metric.Sum().DataPoints()

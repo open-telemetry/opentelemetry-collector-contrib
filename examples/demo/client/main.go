@@ -33,8 +33,8 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -143,31 +143,27 @@ func main() {
 	}
 
 	// Recorder metric example
-	requestLatency := metric.Must(meter).
-		NewFloat64Histogram(
-			"demo_client/request_latency",
-			metric.WithDescription("The latency of requests processed"),
-		)
+	requestLatency, _ := meter.SyncFloat64().Histogram(
+		"demo_client/request_latency",
+		instrument.WithDescription("The latency of requests processed"),
+	)
 
 	// TODO: Use a view to just count number of measurements for requestLatency when available.
-	requestCount := metric.Must(meter).
-		NewInt64Counter(
-			"demo_client/request_counts",
-			metric.WithDescription("The number of requests processed"),
-		)
+	requestCount, _ := meter.SyncInt64().Counter(
+		"demo_client/request_counts",
+		instrument.WithDescription("The number of requests processed"),
+	)
 
-	lineLengths := metric.Must(meter).
-		NewInt64Histogram(
-			"demo_client/line_lengths",
-			metric.WithDescription("The lengths of the various lines in"),
-		)
+	lineLengths, _ := meter.SyncInt64().Histogram(
+		"demo_client/line_lengths",
+		instrument.WithDescription("The lengths of the various lines in"),
+	)
 
 	// TODO: Use a view to just count number of measurements for lineLengths when available.
-	lineCounts := metric.Must(meter).
-		NewInt64Counter(
-			"demo_client/line_counts",
-			metric.WithDescription("The counts of the lines in"),
-		)
+	lineCounts, _ := meter.SyncInt64().Counter(
+		"demo_client/line_counts",
+		instrument.WithDescription("The counts of the lines in"),
+	)
 
 	defaultCtx := baggage.ContextWithBaggage(context.Background(), bag)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -180,21 +176,13 @@ func main() {
 		nr := int(rng.Int31n(7))
 		for i := 0; i < nr; i++ {
 			randLineLength := rng.Int63n(999)
-			meter.RecordBatch(
-				ctx,
-				commonLabels,
-				lineCounts.Measurement(1),
-				lineLengths.Measurement(randLineLength),
-			)
+			lineCounts.Add(ctx, 1, commonLabels...)
+			lineLengths.Record(ctx, randLineLength, commonLabels...)
 			fmt.Printf("#%d: LineLength: %dBy\n", i, randLineLength)
 		}
 
-		meter.RecordBatch(
-			ctx,
-			commonLabels,
-			requestLatency.Measurement(latencyMs),
-			requestCount.Measurement(1),
-		)
+		requestLatency.Record(ctx, latencyMs, commonLabels...)
+		requestCount.Add(ctx, 1, commonLabels...)
 
 		fmt.Printf("Latency: %.3fms\n", latencyMs)
 		time.Sleep(time.Duration(1) * time.Second)

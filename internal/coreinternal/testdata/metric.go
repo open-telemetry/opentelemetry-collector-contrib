@@ -17,18 +17,19 @@ package testdata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var (
 	TestMetricStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestMetricStartTimestamp = pdata.NewTimestampFromTime(TestMetricStartTime)
+	TestMetricStartTimestamp = pcommon.NewTimestampFromTime(TestMetricStartTime)
 
 	TestMetricExemplarTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestMetricExemplarTimestamp = pdata.NewTimestampFromTime(TestMetricExemplarTime)
+	TestMetricExemplarTimestamp = pcommon.NewTimestampFromTime(TestMetricExemplarTime)
 
 	TestMetricTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestMetricTimestamp = pdata.NewTimestampFromTime(TestMetricTime)
+	TestMetricTimestamp = pcommon.NewTimestampFromTime(TestMetricTime)
 )
 
 const (
@@ -41,117 +42,117 @@ const (
 	TestExponentialHistogramMetricName = "exponential-histogram"
 )
 
-func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
-	md := pdata.NewMetrics()
+func GenerateMetricsOneEmptyResourceMetrics() pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty()
 	return md
 }
 
-func GenerateMetricsNoLibraries() pdata.Metrics {
+func GenerateMetricsNoLibraries() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyResourceMetrics()
 	ms0 := md.ResourceMetrics().At(0)
 	initResource1(ms0.Resource())
 	return md
 }
 
-func GenerateMetricsOneEmptyInstrumentationLibrary() pdata.Metrics {
+func GenerateMetricsOneEmptyInstrumentationLibrary() pmetric.Metrics {
 	md := GenerateMetricsNoLibraries()
-	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty()
+	md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
 	return md
 }
 
-func GenerateMetricsOneMetricNoResource() pdata.Metrics {
+func GenerateMetricsOneMetricNoResource() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyResourceMetrics()
 	rm0 := md.ResourceMetrics().At(0)
-	rm0ils0 := rm0.InstrumentationLibraryMetrics().AppendEmpty()
+	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
-func GenerateMetricsOneMetric() pdata.Metrics {
+func GenerateMetricsOneMetric() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
-func GenerateMetricsTwoMetrics() pdata.Metrics {
+func GenerateMetricsTwoMetrics() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
-func GenerateMetricsOneCounterOneSummaryMetrics() pdata.Metrics {
+func GenerateMetricsOneCounterOneSummaryMetrics() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	initDoubleSummaryMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
-func GenerateMetricsOneMetricNoAttributes() pdata.Metrics {
+func GenerateMetricsOneMetricNoAttributes() pmetric.Metrics {
 	md := GenerateMetricsOneMetric()
-	dps := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints()
-	pdata.NewAttributeMap().CopyTo(dps.At(0).Attributes())
-	pdata.NewAttributeMap().CopyTo(dps.At(1).Attributes())
+	dps := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints()
+	pcommon.NewMap().CopyTo(dps.At(0).Attributes())
+	pcommon.NewMap().CopyTo(dps.At(1).Attributes())
 	return md
 }
 
-func GenerateMetricsAllTypesNoDataPoints() pdata.Metrics {
+func GenerateMetricsAllTypesNoDataPoints() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm0.Metrics()
-	initMetric(ms.AppendEmpty(), TestGaugeDoubleMetricName, pdata.MetricDataTypeGauge)
-	initMetric(ms.AppendEmpty(), TestGaugeIntMetricName, pdata.MetricDataTypeGauge)
-	initMetric(ms.AppendEmpty(), TestSumDoubleMetricName, pdata.MetricDataTypeSum)
-	initMetric(ms.AppendEmpty(), TestSumIntMetricName, pdata.MetricDataTypeSum)
-	initMetric(ms.AppendEmpty(), TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
-	initMetric(ms.AppendEmpty(), TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
+	initMetric(ms.AppendEmpty(), TestGaugeDoubleMetricName, pmetric.MetricDataTypeGauge)
+	initMetric(ms.AppendEmpty(), TestGaugeIntMetricName, pmetric.MetricDataTypeGauge)
+	initMetric(ms.AppendEmpty(), TestSumDoubleMetricName, pmetric.MetricDataTypeSum)
+	initMetric(ms.AppendEmpty(), TestSumIntMetricName, pmetric.MetricDataTypeSum)
+	initMetric(ms.AppendEmpty(), TestDoubleHistogramMetricName, pmetric.MetricDataTypeHistogram)
+	initMetric(ms.AppendEmpty(), TestDoubleSummaryMetricName, pmetric.MetricDataTypeSummary)
 	return md
 }
 
-func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
+func GenerateMetricsAllTypesEmptyDataPoint() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm0.Metrics()
 
 	doubleGauge := ms.AppendEmpty()
-	initMetric(doubleGauge, TestGaugeDoubleMetricName, pdata.MetricDataTypeGauge)
+	initMetric(doubleGauge, TestGaugeDoubleMetricName, pmetric.MetricDataTypeGauge)
 	doubleGauge.Gauge().DataPoints().AppendEmpty()
 	intGauge := ms.AppendEmpty()
-	initMetric(intGauge, TestGaugeIntMetricName, pdata.MetricDataTypeGauge)
+	initMetric(intGauge, TestGaugeIntMetricName, pmetric.MetricDataTypeGauge)
 	intGauge.Gauge().DataPoints().AppendEmpty()
 	doubleSum := ms.AppendEmpty()
-	initMetric(doubleSum, TestSumDoubleMetricName, pdata.MetricDataTypeSum)
+	initMetric(doubleSum, TestSumDoubleMetricName, pmetric.MetricDataTypeSum)
 	doubleSum.Sum().DataPoints().AppendEmpty()
 	intSum := ms.AppendEmpty()
-	initMetric(intSum, TestSumIntMetricName, pdata.MetricDataTypeSum)
+	initMetric(intSum, TestSumIntMetricName, pmetric.MetricDataTypeSum)
 	intSum.Sum().DataPoints().AppendEmpty()
 	histogram := ms.AppendEmpty()
-	initMetric(histogram, TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
+	initMetric(histogram, TestDoubleHistogramMetricName, pmetric.MetricDataTypeHistogram)
 	histogram.Histogram().DataPoints().AppendEmpty()
 	summary := ms.AppendEmpty()
-	initMetric(summary, TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
+	initMetric(summary, TestDoubleSummaryMetricName, pmetric.MetricDataTypeSummary)
 	summary.Summary().DataPoints().AppendEmpty()
 	exphist := ms.AppendEmpty()
-	initMetric(exphist, TestExponentialHistogramMetricName, pdata.MetricDataTypeExponentialHistogram)
+	initMetric(exphist, TestExponentialHistogramMetricName, pmetric.MetricDataTypeExponentialHistogram)
 	exphist.ExponentialHistogram().DataPoints().AppendEmpty()
 	return md
 }
 
-func GenerateMetricsMetricTypeInvalid() pdata.Metrics {
+func GenerateMetricsMetricTypeInvalid() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	initMetric(ilm0.Metrics().AppendEmpty(), TestSumIntMetricName, pdata.MetricDataTypeNone)
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
+	initMetric(ilm0.Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricDataTypeNone)
 	return md
 }
 
-func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
+func GeneratMetricsAllTypesWithSampleDatapoints() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 
-	ilm := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	ilm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm.Metrics()
 	initGaugeIntMetric(ms.AppendEmpty())
 	initGaugeDoubleMetric(ms.AppendEmpty())
@@ -163,8 +164,8 @@ func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	return md
 }
 
-func initGaugeIntMetric(im pdata.Metric) {
-	initMetric(im, TestGaugeIntMetricName, pdata.MetricDataTypeGauge)
+func initGaugeIntMetric(im pmetric.Metric) {
+	initMetric(im, TestGaugeIntMetricName, pmetric.MetricDataTypeGauge)
 
 	idps := im.Gauge().DataPoints()
 	idp0 := idps.AppendEmpty()
@@ -179,8 +180,8 @@ func initGaugeIntMetric(im pdata.Metric) {
 	idp1.SetIntVal(456)
 }
 
-func initGaugeDoubleMetric(im pdata.Metric) {
-	initMetric(im, TestGaugeDoubleMetricName, pdata.MetricDataTypeGauge)
+func initGaugeDoubleMetric(im pmetric.Metric) {
+	initMetric(im, TestGaugeDoubleMetricName, pmetric.MetricDataTypeGauge)
 
 	idps := im.Gauge().DataPoints()
 	idp0 := idps.AppendEmpty()
@@ -195,8 +196,8 @@ func initGaugeDoubleMetric(im pdata.Metric) {
 	idp1.SetDoubleVal(4.56)
 }
 
-func initSumIntMetric(im pdata.Metric) {
-	initMetric(im, TestSumIntMetricName, pdata.MetricDataTypeSum)
+func initSumIntMetric(im pmetric.Metric) {
+	initMetric(im, TestSumIntMetricName, pmetric.MetricDataTypeSum)
 
 	idps := im.Sum().DataPoints()
 	idp0 := idps.AppendEmpty()
@@ -211,8 +212,8 @@ func initSumIntMetric(im pdata.Metric) {
 	idp1.SetIntVal(456)
 }
 
-func initSumDoubleMetric(dm pdata.Metric) {
-	initMetric(dm, TestSumDoubleMetricName, pdata.MetricDataTypeSum)
+func initSumDoubleMetric(dm pmetric.Metric) {
+	initMetric(dm, TestSumDoubleMetricName, pmetric.MetricDataTypeSum)
 
 	ddps := dm.Sum().DataPoints()
 	ddp0 := ddps.AppendEmpty()
@@ -228,8 +229,8 @@ func initSumDoubleMetric(dm pdata.Metric) {
 	ddp1.SetDoubleVal(4.56)
 }
 
-func initDoubleHistogramMetric(hm pdata.Metric) {
-	initMetric(hm, TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
+func initDoubleHistogramMetric(hm pmetric.Metric) {
+	initMetric(hm, TestDoubleHistogramMetricName, pmetric.MetricDataTypeHistogram)
 
 	hdps := hm.Histogram().DataPoints()
 	hdp0 := hdps.AppendEmpty()
@@ -252,8 +253,8 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	hdp1.SetExplicitBounds([]float64{1})
 }
 
-func initDoubleSummaryMetric(sm pdata.Metric) {
-	initMetric(sm, TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
+func initDoubleSummaryMetric(sm pmetric.Metric) {
+	initMetric(sm, TestDoubleSummaryMetricName, pmetric.MetricDataTypeSummary)
 
 	sdps := sm.Summary().DataPoints()
 	sdp0 := sdps.AppendEmpty()
@@ -274,25 +275,25 @@ func initDoubleSummaryMetric(sm pdata.Metric) {
 	quantile.SetValue(15)
 }
 
-func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
+func initMetric(m pmetric.Metric, name string, ty pmetric.MetricDataType) {
 	m.SetName(name)
 	m.SetDescription("")
 	m.SetUnit("1")
 	m.SetDataType(ty)
 	switch ty {
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		sum := m.Sum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	case pdata.MetricDataTypeHistogram:
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	case pmetric.MetricDataTypeHistogram:
 		histo := m.Histogram()
-		histo.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	}
 }
 
-func GenerateMetricsManyMetricsSameResource(metricsCount int) pdata.Metrics {
+func GenerateMetricsManyMetricsSameResource(metricsCount int) pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rs0ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	rs0ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	rs0ilm0.Metrics().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
 		initSumIntMetric(rs0ilm0.Metrics().AppendEmpty())

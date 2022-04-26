@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
@@ -49,7 +49,7 @@ func newTracesExporter(
 	return exporterhelper.NewTracesExporter(
 		config,
 		set,
-		func(ctx context.Context, td pdata.Traces) error {
+		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 
@@ -85,13 +85,13 @@ func newTracesExporter(
 	)
 }
 
-func extractResourceSpans(config config.Exporter, logger *zap.Logger, td pdata.Traces) []*string {
+func extractResourceSpans(config config.Exporter, logger *zap.Logger, td ptrace.Traces) []*string {
 	documents := make([]*string, 0, td.SpanCount())
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
 					config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)

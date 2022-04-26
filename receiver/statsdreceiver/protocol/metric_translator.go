@@ -18,7 +18,8 @@ import (
 	"sort"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"gonum.org/v1/gonum/stat"
 )
 
@@ -26,22 +27,22 @@ var (
 	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pdata.InstrumentationLibraryMetrics {
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pmetric.ScopeMetrics {
+	ilm := pmetric.NewScopeMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pdata.MetricDataTypeSum)
+	nm.SetDataType(pmetric.MetricDataTypeSum)
 
-	nm.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	nm.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
 	dp.SetIntVal(parsedMetric.counterValue())
-	dp.SetStartTimestamp(pdata.NewTimestampFromTime(lastIntervalTime))
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastIntervalTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
@@ -49,17 +50,17 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	return ilm
 }
 
-func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.ScopeMetrics {
+	ilm := pmetric.NewScopeMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
-	nm.SetDataType(pdata.MetricDataTypeGauge)
+	nm.SetDataType(pmetric.MetricDataTypeGauge)
 	dp := nm.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(parsedMetric.gaugeValue())
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
@@ -67,10 +68,10 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	return ilm
 }
 
-func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pdata.InstrumentationLibraryMetrics) {
+func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pmetric.ScopeMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
-	nm.SetDataType(pdata.MetricDataTypeSummary)
+	nm.SetDataType(pmetric.MetricDataTypeSummary)
 
 	dp := nm.Summary().DataPoints().AppendEmpty()
 
@@ -86,8 +87,8 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 	dp.SetCount(uint64(count))
 	dp.SetSum(sum)
 
-	dp.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	dp.SetTimestamp(pdata.NewTimestampFromTime(timeNow))
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := desc.attrs.Iter(); i.Next(); {
 		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}

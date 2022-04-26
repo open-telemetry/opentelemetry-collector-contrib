@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -84,7 +85,7 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 	batches := batchpersignal.SplitTraces(td)
 	for _, batch := range batches {
@@ -94,9 +95,9 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	return errs
 }
 
-func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {
+func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
 	traceID := traceIDFromTraces(td)
-	if traceID == pdata.InvalidTraceID() {
+	if traceID == pcommon.InvalidTraceID() {
 		return errNoTracesInBatch
 	}
 
@@ -128,20 +129,20 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) er
 	return err
 }
 
-func traceIDFromTraces(td pdata.Traces) pdata.TraceID {
+func traceIDFromTraces(td ptrace.Traces) pcommon.TraceID {
 	rs := td.ResourceSpans()
 	if rs.Len() == 0 {
-		return pdata.InvalidTraceID()
+		return pcommon.InvalidTraceID()
 	}
 
-	ils := rs.At(0).InstrumentationLibrarySpans()
+	ils := rs.At(0).ScopeSpans()
 	if ils.Len() == 0 {
-		return pdata.InvalidTraceID()
+		return pcommon.InvalidTraceID()
 	}
 
 	spans := ils.At(0).Spans()
 	if spans.Len() == 0 {
-		return pdata.InvalidTraceID()
+		return pcommon.InvalidTraceID()
 	}
 
 	return spans.At(0).TraceID()

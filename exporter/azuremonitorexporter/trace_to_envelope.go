@@ -23,8 +23,9 @@ import (
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -48,20 +49,20 @@ var (
 // Used to identify the type of a received Span
 type spanType int8
 
-// Transforms a tuple of pdata.Resource, pdata.InstrumentationLibrary, pdata.Span into an AppInsights contracts.Envelope
+// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into an AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
 func spanToEnvelope(
-	resource pdata.Resource,
-	instrumentationLibrary pdata.InstrumentationLibrary,
-	span pdata.Span,
+	resource pcommon.Resource,
+	instrumentationScope pcommon.InstrumentationScope,
+	span ptrace.Span,
 	logger *zap.Logger) (*contracts.Envelope, error) {
 
 	spanKind := span.Kind()
 
 	// According to the SpanKind documentation, we can assume it to be INTERNAL
 	// when we get UNSPECIFIED.
-	if spanKind == pdata.SpanKindUnspecified {
-		spanKind = pdata.SpanKindInternal
+	if spanKind == ptrace.SpanKindUnspecified {
+		spanKind = ptrace.SpanKindInternal
 	}
 
 	attributeMap := span.Attributes()
@@ -82,7 +83,7 @@ func spanToEnvelope(
 	var dataSanitizeFunc func() []string
 	var dataProperties map[string]string
 
-	if spanKind == pdata.SpanKindServer || spanKind == pdata.SpanKindConsumer {
+	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
 		requestData := spanToRequestData(span, incomingSpanType)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
@@ -90,11 +91,11 @@ func spanToEnvelope(
 		envelope.Tags[contracts.OperationName] = requestData.Name
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
-	} else if spanKind == pdata.SpanKindClient || spanKind == pdata.SpanKindProducer || spanKind == pdata.SpanKindInternal {
+	} else if spanKind == ptrace.SpanKindClient || spanKind == ptrace.SpanKindProducer || spanKind == ptrace.SpanKindInternal {
 		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc
-		if spanKind == pdata.SpanKindInternal {
+		if spanKind == ptrace.SpanKindInternal {
 			remoteDependencyData.Type = "InProc"
 		}
 
@@ -116,18 +117,18 @@ func spanToEnvelope(
 	resourceAttributes := resource.Attributes()
 
 	// Copy all the resource labels into the base data properties. Resource values are always strings
-	resourceAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	resourceAttributes.Range(func(k string, v pcommon.Value) bool {
 		dataProperties[k] = v.StringVal()
 		return true
 	})
 
 	// Copy the instrumentation properties
-	if instrumentationLibrary.Name() != "" {
-		dataProperties[instrumentationLibraryName] = instrumentationLibrary.Name()
+	if instrumentationScope.Name() != "" {
+		dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
 	}
 
-	if instrumentationLibrary.Version() != "" {
-		dataProperties[instrumentationLibraryVersion] = instrumentationLibrary.Version()
+	if instrumentationScope.Version() != "" {
+		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
 	}
 
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
@@ -155,7 +156,7 @@ func spanToEnvelope(
 }
 
 // Maps Server/Consumer Span to AppInsights RequestData
-func spanToRequestData(span pdata.Span, incomingSpanType spanType) *contracts.RequestData {
+func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.RequestData {
 	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/requestdata.go
 	// Start with some reasonable default for server spans.
 	data := contracts.NewRequestData()
@@ -181,7 +182,7 @@ func spanToRequestData(span pdata.Span, incomingSpanType spanType) *contracts.Re
 }
 
 // Maps Span to AppInsights RemoteDependencyData
-func spanToRemoteDependencyData(span pdata.Span, incomingSpanType spanType) *contracts.RemoteDependencyData {
+func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *contracts.RemoteDependencyData {
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/remotedependencydata.go
 	// Start with some reasonable default for dependent spans.
 	data := contracts.NewRemoteDependencyData()
@@ -215,7 +216,7 @@ func getFormattedHTTPStatusValues(statusCode int64) (statusAsString string, succ
 
 // Maps HTTP Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#semantic-conventions-for-http-spans
-func fillRequestDataHTTP(span pdata.Span, data *contracts.RequestData) {
+func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties, data.Measurements)
 
 	if attrs.HTTPStatusCode != 0 {
@@ -301,7 +302,7 @@ func fillRequestDataHTTP(span pdata.Span, data *contracts.RequestData) {
 
 // Maps HTTP Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md
-func fillRemoteDependencyDataHTTP(span pdata.Span, data *contracts.RemoteDependencyData) {
+func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDependencyData) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties, data.Measurements)
 
 	data.Type = "HTTP"
@@ -388,7 +389,7 @@ func fillRemoteDependencyDataHTTP(span pdata.Span, data *contracts.RemoteDepende
 
 // Maps RPC Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md
-func fillRequestDataRPC(span pdata.Span, data *contracts.RequestData) {
+func fillRequestDataRPC(span ptrace.Span, data *contracts.RequestData) {
 	attrs := copyAndExtractRPCAttributes(span.Attributes(), data.Properties, data.Measurements)
 
 	data.ResponseCode = getRPCStatusCodeAsString(attrs)
@@ -414,7 +415,7 @@ func fillRequestDataRPC(span pdata.Span, data *contracts.RequestData) {
 
 // Maps RPC Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md
-func fillRemoteDependencyDataRPC(span pdata.Span, data *contracts.RemoteDependencyData) {
+func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDependencyData) {
 	attrs := copyAndExtractRPCAttributes(span.Attributes(), data.Properties, data.Measurements)
 
 	data.ResultCode = getRPCStatusCodeAsString(attrs)
@@ -440,7 +441,7 @@ func getRPCStatusCodeAsString(rpcAttributes *RPCAttributes) (statusCodeAsString 
 
 // Maps Database Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
-func fillRemoteDependencyDataDatabase(span pdata.Span, data *contracts.RemoteDependencyData) {
+func fillRemoteDependencyDataDatabase(span ptrace.Span, data *contracts.RemoteDependencyData) {
 	attrs := copyAndExtractDatabaseAttributes(span.Attributes(), data.Properties, data.Measurements)
 
 	data.Type = attrs.DBSystem
@@ -458,7 +459,7 @@ func fillRemoteDependencyDataDatabase(span pdata.Span, data *contracts.RemoteDep
 
 // Maps Messaging Consumer/Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/messaging.md
-func fillRequestDataMessaging(span pdata.Span, data *contracts.RequestData) {
+func fillRequestDataMessaging(span ptrace.Span, data *contracts.RequestData) {
 	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties, data.Measurements)
 
 	// TODO Understand how to map attributes to RequestData fields
@@ -473,7 +474,7 @@ func fillRequestDataMessaging(span pdata.Span, data *contracts.RequestData) {
 
 // Maps Messaging Producer/Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/messaging.md
-func fillRemoteDependencyDataMessaging(span pdata.Span, data *contracts.RemoteDependencyData) {
+func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteDependencyData) {
 	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties, data.Measurements)
 
 	// TODO Understand how to map attributes to RemoteDependencyData fields
@@ -491,12 +492,12 @@ func fillRemoteDependencyDataMessaging(span pdata.Span, data *contracts.RemoteDe
 
 // Copies all attributes to either properties or measurements and passes the key/value to another mapping function
 func copyAndMapAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pcommon.Map,
 	properties map[string]string,
 	measurements map[string]float64,
-	mappingFunc func(k string, v pdata.AttributeValue)) {
+	mappingFunc func(k string, v pcommon.Value)) {
 
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		setAttributeValueAsPropertyOrMeasurement(k, v, properties, measurements)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
@@ -507,7 +508,7 @@ func copyAndMapAttributes(
 
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes
 func copyAttributesWithoutMapping(
-	attributeMap pdata.AttributeMap,
+	attributeMap pcommon.Map,
 	properties map[string]string,
 	measurements map[string]float64) {
 
@@ -516,7 +517,7 @@ func copyAttributesWithoutMapping(
 
 // Attribute extraction logic for HTTP Span attributes
 func copyAndExtractHTTPAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pcommon.Map,
 	properties map[string]string,
 	measurements map[string]float64) *HTTPAttributes {
 
@@ -525,14 +526,14 @@ func copyAndExtractHTTPAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
 
 // Attribute extraction logic for RPC Span attributes
 func copyAndExtractRPCAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pcommon.Map,
 	properties map[string]string,
 	measurements map[string]float64) *RPCAttributes {
 
@@ -541,14 +542,14 @@ func copyAndExtractRPCAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
 
 // Attribute extraction logic for Database Span attributes
 func copyAndExtractDatabaseAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pcommon.Map,
 	properties map[string]string,
 	measurements map[string]float64) *DatabaseAttributes {
 
@@ -557,14 +558,14 @@ func copyAndExtractDatabaseAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
 
 // Attribute extraction logic for Messaging Span attributes
 func copyAndExtractMessagingAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pcommon.Map,
 	properties map[string]string,
 	measurements map[string]float64) *MessagingAttributes {
 
@@ -573,19 +574,19 @@ func copyAndExtractMessagingAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
 
-func formatSpanDuration(span pdata.Span) string {
+func formatSpanDuration(span ptrace.Span) string {
 	startTime := toTime(span.StartTimestamp())
 	endTime := toTime(span.EndTimestamp())
 	return formatDuration(endTime.Sub(startTime))
 }
 
 // Maps incoming Span to a type defined in the specification
-func mapIncomingSpanToType(attributeMap pdata.AttributeMap) spanType {
+func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 	// No attributes
 	if attributeMap.Len() == 0 {
 		return unknownSpanType
@@ -619,10 +620,10 @@ func mapIncomingSpanToType(attributeMap pdata.AttributeMap) spanType {
 }
 
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-func getDefaultFormattedSpanStatus(spanStatus pdata.SpanStatus) (statusCodeAsString string, success bool) {
+func getDefaultFormattedSpanStatus(spanStatus ptrace.SpanStatus) (statusCodeAsString string, success bool) {
 	code := spanStatus.Code()
 
-	return strconv.FormatInt(int64(code), 10), code != pdata.StatusCodeError
+	return strconv.FormatInt(int64(code), 10), code != ptrace.StatusCodeError
 }
 
 func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAttributes, sb *strings.Builder) {
@@ -641,21 +642,21 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 
 func setAttributeValueAsPropertyOrMeasurement(
 	key string,
-	attributeValue pdata.AttributeValue,
+	attributeValue pcommon.Value,
 	properties map[string]string,
 	measurements map[string]float64) {
 
 	switch attributeValue.Type() {
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		properties[key] = strconv.FormatBool(attributeValue.BoolVal())
 
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		properties[key] = attributeValue.StringVal()
 
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		measurements[key] = float64(attributeValue.IntVal())
 
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		measurements[key] = attributeValue.DoubleVal()
 	}
 }

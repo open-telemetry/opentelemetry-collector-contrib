@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -44,34 +44,33 @@ func (s *consumerScraper) Name() string {
 	return consumersScraperName
 }
 
-func (s *consumerScraper) start(context.Context, component.Host) error {
-	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client while starting consumer scraper: %w", err)
-	}
-	clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		if client != nil {
-			_ = client.Close()
-		}
-		return fmt.Errorf("failed to create cluster admin while starting consumer scraper: %w", err)
-	}
-	s.client = client
-	s.clusterAdmin = clusterAdmin
-	return nil
-}
-
 func (s *consumerScraper) shutdown(_ context.Context) error {
-	if !s.client.Closed() {
+	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
 	}
 	return nil
 }
 
-func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if s.client == nil {
+		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
+		}
+		clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			if client != nil {
+				_ = client.Close()
+			}
+			return pmetric.Metrics{}, fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
+		}
+		s.client = client
+		s.clusterAdmin = clusterAdmin
+	}
+
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
 	if listErr != nil {
-		return pdata.Metrics{}, listErr
+		return pmetric.Metrics{}, listErr
 	}
 
 	var matchedGrpIds []string
@@ -83,7 +82,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	allTopics, listErr := s.clusterAdmin.ListTopics()
 	if listErr != nil {
-		return pdata.Metrics{}, listErr
+		return pmetric.Metrics{}, listErr
 	}
 
 	matchedTopics := map[string]sarama.TopicDetail{}
@@ -117,15 +116,15 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIds)
 	if listErr != nil {
-		return pdata.Metrics{}, listErr
+		return pmetric.Metrics{}, listErr
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
+	now := pcommon.NewTimestampFromTime(time.Now())
+	md := pmetric.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
-		labels := pdata.NewAttributeMap()
+		labels := pcommon.NewMap()
 		labels.UpsertString(metadata.A.Group, group.GroupId)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
@@ -193,6 +192,5 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
-		scraperhelper.WithStart(s.start),
 	)
 }

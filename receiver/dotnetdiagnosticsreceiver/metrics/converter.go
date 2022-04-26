@@ -17,17 +17,18 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 )
 
-func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pdata.Metrics {
-	pdm := pdata.NewMetrics()
+func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pmetric.Metrics {
+	pdm := pmetric.NewMetrics()
 	rms := pdm.ResourceMetrics()
 	rm := rms.AppendEmpty()
 	rm.Resource().Attributes()
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
 	ms.EnsureCapacity(len(rawMetrics))
@@ -37,26 +38,26 @@ func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pda
 	return pdm
 }
 
-func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Time) pdata.Metric {
+func rawMetricToPdata(dm dotnet.Metric, pdm pmetric.Metric, startTime, now time.Time) pmetric.Metric {
 	const metricNamePrefix = "dotnet."
 	pdm.SetName(metricNamePrefix + dm.Name())
 	pdm.SetDescription(dm.DisplayName())
 	pdm.SetUnit(mapUnits(dm.DisplayUnits()))
-	nowPD := pdata.NewTimestampFromTime(now)
+	nowPD := pcommon.NewTimestampFromTime(now)
 	switch dm.CounterType() {
 	case "Mean":
-		pdm.SetDataType(pdata.MetricDataTypeGauge)
+		pdm.SetDataType(pmetric.MetricDataTypeGauge)
 		dps := pdm.Gauge().DataPoints()
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(nowPD)
 		dp.SetDoubleVal(dm.Mean())
 	case "Sum":
-		pdm.SetDataType(pdata.MetricDataTypeSum)
+		pdm.SetDataType(pmetric.MetricDataTypeSum)
 		sum := pdm.Sum()
-		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dps := sum.DataPoints()
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		dp.SetTimestamp(nowPD)
 		dp.SetDoubleVal(dm.Increment())
 	}

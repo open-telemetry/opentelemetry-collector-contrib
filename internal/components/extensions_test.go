@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -71,6 +72,13 @@ func TestDefaultExtensions(t *testing.T) {
 			},
 		},
 		{
+			extension: "sigv4auth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["sigv4auth"].CreateDefaultConfig().(*sigv4authextension.Config)
+				return cfg
+			},
+		},
+		{
 			extension: "zpages",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
@@ -84,7 +92,7 @@ func TestDefaultExtensions(t *testing.T) {
 				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
 				f := testutil.NewTemporaryFile(t)
 				f.WriteString("username:password")
-				cfg.Htpasswd = basicauthextension.HtpasswdSettings{
+				cfg.Htpasswd = &basicauthextension.HtpasswdSettings{
 					File:   f.Name(),
 					Inline: "username:password",
 				}

@@ -25,12 +25,12 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| database | The name of the database. |
-| operation | The database operation. |
-| source | The block read source type. |
-| state | The tuple (row) state. |
-| table | The schema name followed by the table name. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. |  |
+| operation | The database operation. | ins, upd, del, hot_upd |
+| source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |
+| state | The tuple (row) state. | dead, live |
+| table | The schema name followed by the table name. |  |

@@ -29,9 +29,9 @@ These are the metrics available for this scraper.
 
 **Highlighted metrics** are emitted by default.
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| direction | Direction of flow of bytes/operations (receive or transmit). |
-| interface | Name of the network interface. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | Direction of flow of bytes/operations (receive or transmit). | receive, transmit |
+| interface | Name of the network interface. |  |

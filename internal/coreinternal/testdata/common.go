@@ -14,16 +14,14 @@
 
 package testdata
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
 var (
-	resourceAttributes1 = map[string]pdata.AttributeValue{"resource-attr": pdata.NewAttributeValueString("resource-attr-val-1")}
-	resourceAttributes2 = map[string]pdata.AttributeValue{"resource-attr": pdata.NewAttributeValueString("resource-attr-val-2")}
-	spanEventAttributes = map[string]pdata.AttributeValue{"span-event-attr": pdata.NewAttributeValueString("span-event-attr-val")}
-	spanLinkAttributes  = map[string]pdata.AttributeValue{"span-link-attr": pdata.NewAttributeValueString("span-link-attr-val")}
-	spanAttributes      = map[string]pdata.AttributeValue{"span-attr": pdata.NewAttributeValueString("span-attr-val")}
+	resourceAttributes1 = map[string]interface{}{"resource-attr": "resource-attr-val-1"}
+	resourceAttributes2 = map[string]interface{}{"resource-attr": "resource-attr-val-2"}
+	spanEventAttributes = map[string]interface{}{"span-event-attr": "span-event-attr-val"}
+	spanLinkAttributes  = map[string]interface{}{"span-link-attr": "span-link-attr-val"}
+	spanAttributes      = map[string]interface{}{"span-attr": "span-attr-val"}
 )
 
 const (
@@ -37,46 +35,46 @@ const (
 	TestAttachmentValue = "exemplar-attachment-value"
 )
 
-func initResourceAttributes1(dest pdata.AttributeMap) {
-	pdata.NewAttributeMapFromMap(resourceAttributes1).CopyTo(dest)
+func initResourceAttributes1(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
 }
 
-func initResourceAttributes2(dest pdata.AttributeMap) {
-	pdata.NewAttributeMapFromMap(resourceAttributes2).CopyTo(dest)
+func initResourceAttributes2(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(resourceAttributes2).CopyTo(dest)
 }
 
-func initSpanAttributes(dest pdata.AttributeMap) {
-	pdata.NewAttributeMapFromMap(spanAttributes).CopyTo(dest)
+func initSpanAttributes(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(spanAttributes).CopyTo(dest)
 }
 
-func initSpanEventAttributes(dest pdata.AttributeMap) {
-	pdata.NewAttributeMapFromMap(spanEventAttributes).CopyTo(dest)
+func initSpanEventAttributes(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(spanEventAttributes).CopyTo(dest)
 }
 
-func initSpanLinkAttributes(dest pdata.AttributeMap) {
-	pdata.NewAttributeMapFromMap(spanLinkAttributes).CopyTo(dest)
+func initSpanLinkAttributes(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(spanLinkAttributes).CopyTo(dest)
 }
 
-func initMetricAttachment(dest pdata.AttributeMap) {
+func initMetricAttachment(dest pcommon.Map) {
 	dest.UpsertString(TestAttachmentKey, TestAttachmentValue)
 }
 
-func initMetricAttributes1(dest pdata.AttributeMap) {
+func initMetricAttributes1(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey1, TestLabelValue1)
 }
 
-func initMetricAttributes12(dest pdata.AttributeMap) {
+func initMetricAttributes12(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey1, TestLabelValue1)
 	dest.UpsertString(TestLabelKey2, TestLabelValue2)
 	dest.Sort()
 }
 
-func initMetricAttributes13(dest pdata.AttributeMap) {
+func initMetricAttributes13(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey1, TestLabelValue1)
 	dest.UpsertString(TestLabelKey3, TestLabelValue3)
 	dest.Sort()
 }
 
-func initMetricAttributes2(dest pdata.AttributeMap) {
+func initMetricAttributes2(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey2, TestLabelValue2)
 }

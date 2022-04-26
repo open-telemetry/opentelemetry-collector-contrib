@@ -18,15 +18,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
 func TestRateLimiter(t *testing.T) {
-	var empty = map[string]pdata.AttributeValue{}
-
-	trace := newTraceStringAttrs(empty, "example", "value")
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	trace := newTraceStringAttrs(pcommon.NewMap(), "example", "value")
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
 
 	// Trace span count greater than spans per second

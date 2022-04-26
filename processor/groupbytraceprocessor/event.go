@@ -24,7 +24,8 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -63,8 +64,8 @@ type event struct {
 }
 
 type tracesWithID struct {
-	id pdata.TraceID
-	td pdata.Traces
+	id pcommon.TraceID
+	td ptrace.Traces
 }
 
 // eventMachine is a machine that accepts events in a typically non-blocking manner,
@@ -81,9 +82,9 @@ type eventMachine struct {
 	logger *zap.Logger
 
 	onTraceReceived func(td tracesWithID, worker *eventMachineWorker) error
-	onTraceExpired  func(traceID pdata.TraceID, worker *eventMachineWorker) error
-	onTraceReleased func(rss []pdata.ResourceSpans) error
-	onTraceRemoved  func(traceID pdata.TraceID) error
+	onTraceExpired  func(traceID pcommon.TraceID, worker *eventMachineWorker) error
+	onTraceReleased func(rss []ptrace.ResourceSpans) error
+	onTraceRemoved  func(traceID pcommon.TraceID) error
 
 	onError func(event)
 
@@ -171,7 +172,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			em.callOnError(e)
 			return
 		}
-		payload, ok := e.payload.(pdata.TraceID)
+		payload, ok := e.payload.(pcommon.TraceID)
 		if !ok {
 			// the payload had an unexpected type!
 			em.callOnError(e)
@@ -187,7 +188,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			em.callOnError(e)
 			return
 		}
-		payload, ok := e.payload.([]pdata.ResourceSpans)
+		payload, ok := e.payload.([]ptrace.ResourceSpans)
 		if !ok {
 			// the payload had an unexpected type!
 			em.callOnError(e)
@@ -203,7 +204,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			em.callOnError(e)
 			return
 		}
-		payload, ok := e.payload.(pdata.TraceID)
+		payload, ok := e.payload.(pcommon.TraceID)
 		if !ok {
 			// the payload had an unexpected type!
 			em.callOnError(e)
@@ -221,7 +222,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 }
 
 // consume takes a single trace and routes it to one of the workers.
-func (em *eventMachine) consume(td pdata.Traces) error {
+func (em *eventMachine) consume(td ptrace.Traces) error {
 	traceID, err := getTraceID(td)
 	if err != nil {
 		return fmt.Errorf("eventmachine consume failed: %w", err)
@@ -241,7 +242,7 @@ func (em *eventMachine) consume(td pdata.Traces) error {
 	return nil
 }
 
-func workerIndexForTraceID(traceID pdata.TraceID, numWorkers int) uint64 {
+func workerIndexForTraceID(traceID pcommon.TraceID, numWorkers int) uint64 {
 	hash := hashPool.Get().(*maphash.Hash)
 	defer func() {
 		hash.Reset()
@@ -361,20 +362,20 @@ func doWithTimeout(timeout time.Duration, do func() error) (bool, error) {
 	}
 }
 
-func getTraceID(td pdata.Traces) (pdata.TraceID, error) {
+func getTraceID(td ptrace.Traces) (pcommon.TraceID, error) {
 	rss := td.ResourceSpans()
 	if rss.Len() == 0 {
-		return pdata.InvalidTraceID(), errNoTraceID
+		return pcommon.InvalidTraceID(), errNoTraceID
 	}
 
-	ilss := rss.At(0).InstrumentationLibrarySpans()
+	ilss := rss.At(0).ScopeSpans()
 	if ilss.Len() == 0 {
-		return pdata.InvalidTraceID(), errNoTraceID
+		return pcommon.InvalidTraceID(), errNoTraceID
 	}
 
 	spans := ilss.At(0).Spans()
 	if spans.Len() == 0 {
-		return pdata.InvalidTraceID(), errNoTraceID
+		return pcommon.InvalidTraceID(), errNoTraceID
 	}
 
 	return spans.At(0).TraceID(), nil

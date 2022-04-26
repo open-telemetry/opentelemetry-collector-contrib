@@ -34,7 +34,10 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -53,7 +56,7 @@ type mockConfig struct {
 	responseHeaders map[string]string
 }
 
-func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockConfig) (*Mock, error) {
+func runTraceMock(initialContext context.Context, ptrace ptrace.Traces, cfg mockConfig) (*Mock, error) {
 	ctx, cancel := context.WithCancel(initialContext)
 	defer cancel()
 
@@ -100,7 +103,7 @@ func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockC
 	return m, nil
 }
 
-func runMetricMock(initialContext context.Context, pmetrics pdata.Metrics, cfg mockConfig) (*Mock, error) {
+func runMetricMock(initialContext context.Context, pmetrics pmetric.Metrics, cfg mockConfig) (*Mock, error) {
 	ctx, cancel := context.WithCancel(initialContext)
 	defer cancel()
 
@@ -143,7 +146,7 @@ func runMetricMock(initialContext context.Context, pmetrics pdata.Metrics, cfg m
 	return m, nil
 }
 
-func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig) (*Mock, error) {
+func runLogMock(initialContext context.Context, plogs plog.Logs, cfg mockConfig) (*Mock, error) {
 	ctx, cancel := context.WithCancel(initialContext)
 	defer cancel()
 
@@ -186,7 +189,7 @@ func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig
 	return m, nil
 }
 
-func testTraceData(t *testing.T, expected []Batch, td pdata.Traces, apiKey string) {
+func testTraceData(t *testing.T, expected []Batch, td ptrace.Traces, apiKey string) {
 	ctx := context.Background()
 	useAPIKeyHeader := apiKey != ""
 	if useAPIKeyHeader {
@@ -217,7 +220,7 @@ func testMetricData(t *testing.T, expected []Batch, md *agentmetricspb.ExportMet
 	assert.Equal(t, expected, m.Batches)
 }
 
-func testLogData(t *testing.T, expected []Batch, logs pdata.Logs, apiKey string) {
+func testLogData(t *testing.T, expected []Batch, logs plog.Logs, apiKey string) {
 	ctx := context.Background()
 	useAPIKeyHeader := apiKey != ""
 	if useAPIKeyHeader {
@@ -269,10 +272,10 @@ func TestExportTraceWithBadPayload(t *testing.T) {
 
 func TestExportTraceWithInvalidMetadata(t *testing.T) {
 	// TODO: Newrelic owners to investigate why passing valid data "newTestTraces()" does not return error.
-	td := pdata.NewTraces()
-	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	td := ptrace.NewTraces()
+	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("a")
-	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	_, err := runTraceMock(context.Background(), td, mockConfig{useAPIKeyHeader: true})
 	require.Error(t, err)
@@ -280,10 +283,10 @@ func TestExportTraceWithInvalidMetadata(t *testing.T) {
 
 func TestExportTraceWithNoAPIKeyInMetadata(t *testing.T) {
 	// TODO: Newrelic owners to investigate why passing valid data "newTestTraces()" does not return error.
-	td := pdata.NewTraces()
-	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	td := ptrace.NewTraces()
+	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("a")
-	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
 	_, err := runTraceMock(ctx, td, mockConfig{useAPIKeyHeader: true})
@@ -292,8 +295,8 @@ func TestExportTraceWithNoAPIKeyInMetadata(t *testing.T) {
 
 func TestExportTracePartialData(t *testing.T) {
 	ptrace := newTestTraces()
-	ptrace.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{}))
-	ptrace.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(1).SetSpanID(pdata.NewSpanID([8]byte{}))
+	ptrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetTraceID(pcommon.NewTraceID([16]byte{}))
+	ptrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).SetSpanID(pcommon.NewSpanID([8]byte{}))
 
 	_, err := runTraceMock(context.Background(), ptrace, mockConfig{useAPIKeyHeader: false})
 	require.Error(t, err)
@@ -302,11 +305,11 @@ func TestExportTracePartialData(t *testing.T) {
 }
 
 func TestExportTraceDataMinimum(t *testing.T) {
-	td := pdata.NewTraces()
-	s1 := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	td := ptrace.NewTraces()
+	s1 := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s1.SetName("root")
-	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s1.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s1.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s1.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	expected := []Batch{
 		{
@@ -334,25 +337,25 @@ func TestExportTraceDataMinimum(t *testing.T) {
 }
 
 func TestExportTraceDataFullTrace(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString("service.name", "test-service")
 	rs.Resource().Attributes().UpsertString("resource", "R1")
-	sps := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	sps := rs.ScopeSpans().AppendEmpty().Spans()
 	s1 := sps.AppendEmpty()
 	s1.SetName("root")
-	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s1.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s1.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s1.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	s2 := sps.AppendEmpty()
 	s2.SetName("client")
-	s2.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s2.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
-	s2.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s2.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s2.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s2.SetParentSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	s3 := sps.AppendEmpty()
 	s3.SetName("server")
-	s3.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s3.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
-	s3.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s3.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s3.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
+	s3.SetParentSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 
 	expected := []Batch{
 		{
@@ -398,13 +401,13 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 }
 
 func TestExportMetricUnsupported(t *testing.T) {
-	ms := pdata.NewMetrics()
-	m := ms.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetDataType(pdata.MetricDataTypeHistogram)
+	ms := pmetric.NewMetrics()
+	m := ms.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetDataType(pmetric.MetricDataTypeHistogram)
 	dp := m.Histogram().DataPoints().AppendEmpty()
 	dp.SetCount(1)
 	dp.SetSum(1)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	_, err := runMetricMock(context.Background(), ms, mockConfig{useAPIKeyHeader: false})
 	var unsupportedErr *errUnsupportedMetricType
@@ -647,12 +650,12 @@ func TestExportMetricDataFull(t *testing.T) {
 
 func TestExportLogs(t *testing.T) {
 	timestamp := time.Now()
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rlog := logs.ResourceLogs().AppendEmpty()
 	rlog.Resource().Attributes().InsertString("resource", "R1")
 	rlog.Resource().Attributes().InsertString("service.name", "test-service")
-	l := rlog.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
-	l.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
+	l := rlog.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	l.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	l.Body().SetStringVal("log body")
 	l.Attributes().InsertString("foo", "bar")
 
@@ -715,11 +718,11 @@ func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
 	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
-	ptrace := pdata.NewTraces()
-	s := ptrace.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	ptrace := ptrace.NewTraces()
+	s := ptrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("root")
-	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	err = exp.ConsumeTraces(ctx, ptrace)
 	require.NoError(t, err)
@@ -760,13 +763,13 @@ func TestBadSpanResourceGeneratesError(t *testing.T) {
 	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
-	ptrace := pdata.NewTraces()
+	ptrace := ptrace.NewTraces()
 	rs := ptrace.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
-	s := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("root")
-	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	errorFromConsumeTraces := exp.ConsumeTraces(ctx, ptrace)
 
@@ -807,10 +810,10 @@ func TestBadMetricResourceGeneratesError(t *testing.T) {
 	exp, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
-	metric := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("testmetric")
 
 	errorFromConsumeMetrics := exp.ConsumeMetrics(ctx, md)
@@ -852,10 +855,10 @@ func TestBadLogResourceGeneratesError(t *testing.T) {
 	exp, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
-	rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	errorFromConsumeLogs := exp.ConsumeLogs(ctx, ld)
 
@@ -901,11 +904,11 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 	exp, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), c)
 	require.NoError(t, err)
 
-	ptrace := pdata.NewTraces()
-	s := ptrace.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	ptrace := ptrace.NewTraces()
+	s := ptrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("root")
-	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
 	// Create a long string so that the user-agent will be too long and cause RecordMetric to fail
 	b := make([]byte, 300)
@@ -921,16 +924,16 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 	assert.Contains(t, m.Header[http.CanonicalHeaderKey("user-agent")][0], testCollectorName)
 }
 
-func newTestTraces() pdata.Traces {
-	td := pdata.NewTraces()
-	sps := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+func newTestTraces() ptrace.Traces {
+	td := ptrace.NewTraces()
+	sps := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	s1 := sps.AppendEmpty()
 	s1.SetName("a")
-	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s1.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s1.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s1.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	s2 := sps.AppendEmpty()
 	s2.SetName("b")
-	s2.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s2.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s2.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s2.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 	return td
 }

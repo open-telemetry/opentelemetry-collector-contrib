@@ -27,9 +27,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -70,7 +71,6 @@ func TestScrape(t *testing.T) {
 	}
 
 	require.Greater(t, md.ResourceMetrics().Len(), 1)
-	assertSchemaIsSet(t, md.ResourceMetrics())
 	assertProcessResourceAttributesExist(t, md.ResourceMetrics())
 	assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
@@ -78,14 +78,7 @@ func TestScrape(t *testing.T) {
 	assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
 }
 
-func assertSchemaIsSet(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		rm := resourceMetrics.At(0)
-		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl())
-	}
-}
-
-func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attr := resourceMetrics.At(0).Resource().Attributes()
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
@@ -97,20 +90,20 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 	}
 }
 
-func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
+func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
 	cpuTimeMetric := getMetric(t, "process.cpu.time", resourceMetrics)
 	assert.Equal(t, "process.cpu.time", cpuTimeMetric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.User))
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.System))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pcommon.NewValueString(metadata.AttributeState.User))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pcommon.NewValueString(metadata.AttributeState.System))
 	if runtime.GOOS == "linux" {
-		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Wait))
+		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pcommon.NewValueString(metadata.AttributeState.Wait))
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
+func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
 	physicalMemUsageMetric := getMetric(t, "process.memory.physical_usage", resourceMetrics)
 	assert.Equal(t, "process.memory.physical_usage", physicalMemUsageMetric.Name())
 	virtualMemUsageMetric := getMetric(t, "process.memory.virtual_usage", resourceMetrics)
@@ -122,26 +115,26 @@ func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMe
 	}
 }
 
-func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
+func assertDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
 	diskIOMetric := getMetric(t, "process.disk.io", resourceMetrics)
 	assert.Equal(t, "process.disk.io", diskIOMetric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pcommon.NewValueString(metadata.AttributeDirection.Write))
 }
 
-func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		ilms := resourceMetrics.At(i).InstrumentationLibraryMetrics()
+		ilms := resourceMetrics.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			internal.AssertSameTimeStampForAllMetrics(t, ilms.At(j).Metrics())
 		}
 	}
 }
 
-func getMetric(t *testing.T, expectedMetricName string, rms pdata.ResourceMetricsSlice) pdata.Metric {
+func getMetric(t *testing.T, expectedMetricName string, rms pmetric.ResourceMetricsSlice) pmetric.Metric {
 	for i := 0; i < rms.Len(); i++ {
 		metrics := getMetricSlice(t, rms.At(i))
 		for j := 0; j < metrics.Len(); j++ {
@@ -153,11 +146,11 @@ func getMetric(t *testing.T, expectedMetricName string, rms pdata.ResourceMetric
 	}
 
 	require.Fail(t, fmt.Sprintf("no metric with name %s was returned", expectedMetricName))
-	return pdata.NewMetric()
+	return pmetric.NewMetric()
 }
 
-func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
-	ilms := rm.InstrumentationLibraryMetrics()
+func getMetricSlice(t *testing.T, rm pmetric.ResourceMetrics) pmetric.MetricSlice {
+	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	return ilms.At(0).Metrics()
 }
@@ -486,19 +479,24 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if diskError == nil {
 		expectedLen += diskMetricsLen
 	}
+
+	if expectedLen == 0 {
+		return 0, 0
+	}
 	return 1, expectedLen
 }
 
 func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError error) int {
-	expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
-	if expectedResourceMetricsLen == 0 {
+	if nameError != nil || exeError != nil {
 		return 1
 	}
-
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
 	return metricsLen - expectedMetricsLen
 }
 
 func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
 	processNameError := errors.New("err1")
 
 	type testCase struct {
@@ -533,6 +531,8 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			}
 			scraper, err := newProcessScraper(config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handleMock := &processHandleMock{}
 			handleMock.On("Name").Return("test", processNameError)

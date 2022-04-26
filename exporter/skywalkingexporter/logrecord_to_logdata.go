@@ -18,8 +18,9 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 )
@@ -34,12 +35,12 @@ const (
 	defaultServiceName     = "otel-collector"
 )
 
-func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
+func logRecordToLogData(ld plog.Logs) []*logpb.LogData {
 	lds := make([]*logpb.LogData, 0)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		resource := rl.Resource()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
@@ -48,7 +49,7 @@ func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
 				logData := &logpb.LogData{}
 				logData.Tags = &logpb.LogTags{}
 				resourceToLogData(resource, logData)
-				instrumentationLibraryToLogData(ils.InstrumentationLibrary(), logData)
+				instrumentationLibraryToLogData(ils.Scope(), logData)
 				mapLogRecordToLogData(logs.At(k), logData)
 				lds = append(lds, logData)
 			}
@@ -57,7 +58,7 @@ func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
 	return lds
 }
 
-func resourceToLogData(resource pdata.Resource, logData *logpb.LogData) {
+func resourceToLogData(resource pcommon.Resource, logData *logpb.LogData) {
 	attrs := resource.Attributes()
 
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
@@ -70,7 +71,7 @@ func resourceToLogData(resource pdata.Resource, logData *logpb.LogData) {
 		logData.ServiceInstance = serviceInstanceID.AsString()
 	}
 
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   k,
 			Value: v.AsString(),
@@ -79,7 +80,7 @@ func resourceToLogData(resource pdata.Resource, logData *logpb.LogData) {
 	})
 }
 
-func instrumentationLibraryToLogData(instrumentationLibrary pdata.InstrumentationLibrary, logData *logpb.LogData) {
+func instrumentationLibraryToLogData(instrumentationLibrary pcommon.InstrumentationScope, logData *logpb.LogData) {
 	if nameValue := instrumentationLibrary.Name(); nameValue != "" {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   instrumentationName,
@@ -94,8 +95,8 @@ func instrumentationLibraryToLogData(instrumentationLibrary pdata.Instrumentatio
 	}
 }
 
-func mapLogRecordToLogData(lr pdata.LogRecord, logData *logpb.LogData) {
-	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
+func mapLogRecordToLogData(lr plog.LogRecord, logData *logpb.LogData) {
+	if lr.Body().Type() == pcommon.ValueTypeEmpty {
 		return
 	}
 
@@ -117,7 +118,7 @@ func mapLogRecordToLogData(lr pdata.LogRecord, logData *logpb.LogData) {
 		})
 	}
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   k,
 			Value: v.AsString(),

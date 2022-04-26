@@ -18,19 +18,20 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPData) {
+func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 	var (
 		info = awsxray.HTTPData{
 			Request:  &awsxray.RequestData{},
 			Response: &awsxray.ResponseData{},
 		}
-		filtered = make(map[string]pdata.AttributeValue)
+		filtered = make(map[string]pcommon.Value)
 		urlParts = make(map[string]string)
 	)
 
@@ -41,7 +42,7 @@ func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPDa
 	hasHTTP := false
 	hasHTTPRequestURLAttributes := false
 
-	span.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
+	span.Attributes().Range(func(key string, value pcommon.Value) bool {
 		switch key {
 		case conventions.AttributeHTTPMethod:
 			info.Request.Method = awsxray.String(value.StringVal())
@@ -112,7 +113,7 @@ func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPDa
 	}
 
 	if hasHTTPRequestURLAttributes {
-		if span.Kind() == pdata.SpanKindServer {
+		if span.Kind() == ptrace.SpanKindServer {
 			info.Request.URL = awsxray.String(constructServerURL(urlParts))
 		} else {
 			info.Request.URL = awsxray.String(constructClientURL(urlParts))
@@ -124,7 +125,7 @@ func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPDa
 	return filtered, &info
 }
 
-func extractResponseSizeFromEvents(span pdata.Span) int64 {
+func extractResponseSizeFromEvents(span ptrace.Span) int64 {
 	// Support insrumentation that sets response size in span or as an event.
 	size := extractResponseSizeFromAttributes(span.Attributes())
 	if size != 0 {
@@ -140,7 +141,7 @@ func extractResponseSizeFromEvents(span pdata.Span) int64 {
 	return size
 }
 
-func extractResponseSizeFromAttributes(attributes pdata.AttributeMap) int64 {
+func extractResponseSizeFromAttributes(attributes pcommon.Map) int64 {
 	typeVal, ok := attributes.Get("message.type")
 	if ok && typeVal.StringVal() == "RECEIVED" {
 		if sizeVal, ok := attributes.Get(conventions.AttributeMessagingMessagePayloadSizeBytes); ok {

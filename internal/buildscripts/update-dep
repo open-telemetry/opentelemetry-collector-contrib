@@ -8,10 +8,16 @@ if grep -q "$MODULE " go.mod; then
   go get "$MODULE"@"$VERSION"
 fi
 
-# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/model" as well.
+# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/model"
+# and "go.opentelemetry.io/collector/pdata" as well.
 if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
-  MODEL=$MODULE"/model"
-  if grep -q "$MODEL " go.mod; then
-    go get "$MODEL"@"$VERSION"
+  # TODO: Uncomment this after semconv releases.
+  # SEMCONV=$MODULE"/semconv"
+  # if grep -q "$SEMCONV " go.mod; then
+  #   go get "$SEMCONV"@"$VERSION"
+  # fi
+  PDATA=$MODULE"/pdata"
+  if grep -q "$PDATA " go.mod; then
+    go get "$PDATA"@"$VERSION"
   fi
 fi

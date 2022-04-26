@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -66,11 +66,11 @@ func newKubletScraper(
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
 }
 
-func (r *kubletScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
 		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
 	var podsMetadata *v1.PodList
@@ -79,13 +79,13 @@ func (r *kubletScraper) scrape(context.Context) (pdata.Metrics, error) {
 		podsMetadata, err = r.metadataProvider.Pods()
 		if err != nil {
 			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
-			return pdata.Metrics{}, err
+			return pmetric.Metrics{}, err
 		}
 	}
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
-	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
-	md := pdata.NewMetrics()
+	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect)
+	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}

@@ -27,7 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -73,7 +74,7 @@ func (e *logExporterImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var errs error
 	batches := batchpersignal.SplitLogs(ld)
 	for _, batch := range batches {
@@ -83,10 +84,10 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	return errs
 }
 
-func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {
+func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 	traceID := traceIDFromLogs(ld)
 	balancingKey := traceID
-	if traceID == pdata.InvalidTraceID() {
+	if traceID == pcommon.InvalidTraceID() {
 		// every log may not contain a traceID
 		// generate a random traceID as balancingKey
 		// so the log can be routed to a random backend
@@ -121,29 +122,29 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {
 	return err
 }
 
-func traceIDFromLogs(ld pdata.Logs) pdata.TraceID {
+func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {
 	rl := ld.ResourceLogs()
 	if rl.Len() == 0 {
-		return pdata.InvalidTraceID()
+		return pcommon.InvalidTraceID()
 	}
 
-	ill := rl.At(0).InstrumentationLibraryLogs()
-	if ill.Len() == 0 {
-		return pdata.InvalidTraceID()
+	sl := rl.At(0).ScopeLogs()
+	if sl.Len() == 0 {
+		return pcommon.InvalidTraceID()
 	}
 
-	logs := ill.At(0).LogRecords()
+	logs := sl.At(0).LogRecords()
 	if logs.Len() == 0 {
-		return pdata.InvalidTraceID()
+		return pcommon.InvalidTraceID()
 	}
 
 	return logs.At(0).TraceID()
 }
 
-func random() pdata.TraceID {
+func random() pcommon.TraceID {
 	v1 := uint8(rand.Intn(256))
 	v2 := uint8(rand.Intn(256))
 	v3 := uint8(rand.Intn(256))
 	v4 := uint8(rand.Intn(256))
-	return pdata.NewTraceID([16]byte{v1, v2, v3, v4})
+	return pcommon.NewTraceID([16]byte{v1, v2, v3, v4})
 }

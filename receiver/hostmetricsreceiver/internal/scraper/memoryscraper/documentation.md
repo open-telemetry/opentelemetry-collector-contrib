@@ -20,8 +20,8 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| state | Breakdown of memory usage by type. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | Breakdown of memory usage by type. | buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used |

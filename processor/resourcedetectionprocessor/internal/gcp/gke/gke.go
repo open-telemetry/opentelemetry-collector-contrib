@@ -19,8 +19,8 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -50,8 +50,8 @@ func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorCo
 }
 
 // Detect detects associated resources when running in GKE environment.
-func (gke *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
+func (gke *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
 
 	// Check if on GCP.
 	if !gke.metadata.OnGCE() {

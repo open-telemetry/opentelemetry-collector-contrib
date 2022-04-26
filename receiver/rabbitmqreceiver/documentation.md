@@ -24,11 +24,16 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Resource attributes
 
-| Name | Description |
-| ---- | ----------- |
-| message.state | The state of messages in a queue. |
-| rabbitmq.node.name | The name of the RabbitMQ node. |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. |
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| rabbitmq.node.name | The name of the RabbitMQ node. | String |
+| rabbitmq.queue.name | The name of the RabbitMQ queue. | String |
+| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | String |
+
+## Metric attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| message.state (state) | The state of messages in a queue. | ready, unacknowledged |

@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -36,9 +36,9 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, string, error) {
+func (p *MockDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), "", args.Error(1)
+	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
 
 type mockDetectorConfig struct{}
@@ -50,33 +50,46 @@ func (d *mockDetectorConfig) GetConfigFromType(detectorType DetectorType) Detect
 func TestDetect(t *testing.T) {
 	tests := []struct {
 		name              string
-		detectedResources []pdata.Resource
-		expectedResource  pdata.Resource
+		detectedResources []pcommon.Resource
+		expectedResource  pcommon.Resource
+		attributes        []string
 	}{
 		{
 			name: "Detect three resources",
-			detectedResources: []pdata.Resource{
+			detectedResources: []pcommon.Resource{
 				NewResource(map[string]interface{}{"a": "1", "b": "2"}),
 				NewResource(map[string]interface{}{"a": "11", "c": "3"}),
 				NewResource(map[string]interface{}{"a": "12", "c": "3"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
+			attributes:       nil,
 		}, {
 			name: "Detect empty resources",
-			detectedResources: []pdata.Resource{
+			detectedResources: []pcommon.Resource{
 				NewResource(map[string]interface{}{"a": "1", "b": "2"}),
 				NewResource(map[string]interface{}{}),
 				NewResource(map[string]interface{}{"a": "11"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+			attributes:       nil,
 		}, {
 			name: "Detect non-string resources",
-			detectedResources: []pdata.Resource{
+			detectedResources: []pcommon.Resource{
 				NewResource(map[string]interface{}{"bool": true, "int": int64(2), "double": 0.5}),
 				NewResource(map[string]interface{}{"bool": false}),
 				NewResource(map[string]interface{}{"a": "11"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "11", "bool": true, "int": int64(2), "double": 0.5}),
+			attributes:       nil,
+		}, {
+			name: "Filter to one attribute",
+			detectedResources: []pcommon.Resource{
+				NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+				NewResource(map[string]interface{}{"a": "11", "c": "3"}),
+				NewResource(map[string]interface{}{"a": "12", "c": "3"}),
+			},
+			expectedResource: NewResource(map[string]interface{}{"a": "1"}),
+			attributes:       []string{"a"},
 		},
 	}
 
@@ -97,7 +110,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -113,7 +126,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -124,7 +137,7 @@ func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -133,9 +146,9 @@ func TestDetectResource_Error(t *testing.T) {
 	md1.On("Detect").Return(NewResource(map[string]interface{}{"a": "1", "b": "2"}), nil)
 
 	md2 := &MockDetector{}
-	md2.On("Detect").Return(pdata.NewResource(), errors.New("err1"))
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 	_, _, err := p.Get(context.Background(), http.DefaultClient)
 	require.NoError(t, err)
 }
@@ -143,10 +156,10 @@ func TestDetectResource_Error(t *testing.T) {
 func TestMergeResource(t *testing.T) {
 	for _, tt := range []struct {
 		name       string
-		res1       pdata.Resource
-		res2       pdata.Resource
+		res1       pcommon.Resource
+		res2       pcommon.Resource
 		overrideTo bool
-		expected   pdata.Resource
+		expected   pcommon.Resource
 	}{
 		{
 			name:       "override non-empty resources",
@@ -156,14 +169,14 @@ func TestMergeResource(t *testing.T) {
 			expected:   NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
 		}, {
 			name:       "empty resource",
-			res1:       pdata.NewResource(),
+			res1:       pcommon.NewResource(),
 			res2:       NewResource(map[string]interface{}{"a": "1", "c": "3"}),
 			overrideTo: false,
 			expected:   NewResource(map[string]interface{}{"a": "1", "c": "3"}),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			out := pdata.NewResource()
+			out := pcommon.NewResource()
 			tt.res1.CopyTo(out)
 			MergeResource(out, tt.res2, tt.overrideTo)
 			tt.expected.Attributes().Sort()
@@ -182,10 +195,10 @@ func NewMockParallelDetector() *MockParallelDetector {
 	return &MockParallelDetector{ch: make(chan struct{})}
 }
 
-func (p *MockParallelDetector) Detect(ctx context.Context) (pdata.Resource, string, error) {
+func (p *MockParallelDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
-	return args.Get(0).(pdata.Resource), "", args.Error(1)
+	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
 
 // TestDetectResource_Parallel validates that Detect is only called once, even if there
@@ -200,12 +213,12 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md2.On("Detect").Return(NewResource(map[string]interface{}{"a": "11", "c": "3"}), nil)
 
 	md3 := NewMockParallelDetector()
-	md3.On("Detect").Return(pdata.NewResource(), errors.New("an error"))
+	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
 
 	expectedResource := NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"})
 	expectedResource.Attributes().Sort()
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2, md3)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
@@ -235,6 +248,83 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md3.AssertNumberOfCalls(t, "Detect", 1)
 }
 
+func TestFilterAttributes_Match(t *testing.T) {
+	m := map[string]struct{}{
+		"host.name": {},
+		"host.id":   {},
+	}
+	attr := pcommon.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+	attr.InsertString("drop.this", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("drop.this")
+	assert.False(t, ok)
+
+	assert.Contains(t, droppedAttributes, "drop.this")
+}
+
+func TestFilterAttributes_NoMatch(t *testing.T) {
+	m := map[string]struct{}{
+		"cloud.region": {},
+	}
+	attr := pcommon.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.False(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.False(t, ok)
+
+	assert.EqualValues(t, droppedAttributes, []string{"host.name", "host.id"})
+}
+
+func TestFilterAttributes_NilAttributes(t *testing.T) {
+	var m map[string]struct{}
+	attr := pcommon.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	assert.Equal(t, len(droppedAttributes), 0)
+}
+
+func TestFilterAttributes_NoAttributes(t *testing.T) {
+	m := make(map[string]struct{})
+	attr := pcommon.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	assert.Equal(t, len(droppedAttributes), 0)
+}
+
 func TestAttributesToMap(t *testing.T) {
 	m := map[string]interface{}{
 		"str":    "a",
@@ -249,17 +339,17 @@ func TestAttributesToMap(t *testing.T) {
 			int64(42),
 		},
 	}
-	attr := pdata.NewAttributeMap()
+	attr := pcommon.NewMap()
 	attr.InsertString("str", "a")
 	attr.InsertInt("int", 5)
 	attr.InsertDouble("double", 5.0)
 	attr.InsertBool("bool", true)
-	avm := pdata.NewAttributeValueMap()
+	avm := pcommon.NewValueMap()
 	innerAttr := avm.MapVal()
 	innerAttr.InsertString("inner", "val")
 	attr.Insert("map", avm)
 
-	ava := pdata.NewAttributeValueArray()
+	ava := pcommon.NewValueSlice()
 	arrayAttr := ava.SliceVal()
 	arrayAttr.EnsureCapacity(2)
 	arrayAttr.AppendEmpty().SetStringVal("inner")

@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -74,7 +74,7 @@ func TestScrape(t *testing.T) {
 			expectedErr: "err1",
 		},
 	}
-	results := make(map[string]pdata.MetricSlice)
+	results := make(map[string]pmetric.MetricSlice)
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestScrape(t *testing.T) {
 			// expect 3 metrics
 			assert.Equal(t, 3, md.MetricCount())
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			// expect a single datapoint for 1m, 5m & 15m load metrics
 			assertMetricHasSingleDatapoint(t, metrics.At(0), "system.cpu.load_average.15m")
 			assertMetricHasSingleDatapoint(t, metrics.At(1), "system.cpu.load_average.1m")
@@ -134,12 +134,12 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, expectedName string) {
+func assertMetricHasSingleDatapoint(t *testing.T, metric pmetric.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 }
 
-func assertCompareAveragePerCPU(t *testing.T, average pdata.Metric, standard pdata.Metric, numCPU int) {
+func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard pmetric.Metric, numCPU int) {
 	valAverage := average.Gauge().DataPoints().At(0).DoubleVal()
 	valStandard := standard.Gauge().DataPoints().At(0).DoubleVal()
 	if numCPU == 1 {

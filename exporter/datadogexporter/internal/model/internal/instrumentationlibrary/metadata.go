@@ -15,7 +15,7 @@
 package instrumentationlibrary // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationlibrary"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/utils"
 )
@@ -27,7 +27,7 @@ const (
 
 // TagsFromInstrumentationLibraryMetadata takes the name and version of
 // the instrumentation library and converts them to Datadog tags.
-func TagsFromInstrumentationLibraryMetadata(il pdata.InstrumentationLibrary) []string {
+func TagsFromInstrumentationLibraryMetadata(il pcommon.InstrumentationScope) []string {
 	return []string{
 		utils.FormatKeyValueTag(instrumentationLibraryTag, il.Name()),
 		utils.FormatKeyValueTag(instrumentationLibraryVersionTag, il.Version()),

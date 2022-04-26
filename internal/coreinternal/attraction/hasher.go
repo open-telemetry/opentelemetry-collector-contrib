@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"math"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -38,21 +38,21 @@ var (
 // hashed version of the attribute. In practice, this would mostly be used
 // for string attributes but we support all types for completeness/correctness
 // and eliminate any surprises.
-func sha1Hasher(attr pdata.AttributeValue) {
+func sha1Hasher(attr pcommon.Value) {
 	var val []byte
 	switch attr.Type() {
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		val = []byte(attr.StringVal())
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		if attr.BoolVal() {
 			val = byteTrue[:]
 		} else {
 			val = byteFalse[:]
 		}
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		val = make([]byte, int64ByteSize)
 		binary.LittleEndian.PutUint64(val, uint64(attr.IntVal()))
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		val = make([]byte, float64ByteSize)
 		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.DoubleVal()))
 	}

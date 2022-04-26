@@ -7,10 +7,33 @@ attributes. It also masks span attribute values that match a blocked value
 list. Span attributes that aren't on the allowed list are removed before any
 value checks are done.
 
+## Use Cases
+
 Typical use-cases:
 
 * Prevent sensitive fields from accidentally leaking into traces
 * Ensure compliance with legal, privacy, or security requirements
+
+For example:
+
+* EU General Data Protection Regulation (GDPR) prohibits the transfer of any
+  personal data like birthdates, addresses, or ip addresses across borders
+  without explicit consent from the data subject. Popular trace aggregation
+  services are located in US, not in EU. You can use the redaction processor
+  to scrub personal data from your data.
+* PRC legislation prohibits the transfer of geographic coordinates outside of
+  the PRC. Popular trace aggregation services are located in US, not in the
+  PRC. You can use the redaction processor to scrub geographic coordinates
+  from your data.
+* Payment Card Industry (PCI) Data Security Standards prohibit logging certain
+  things or storing them unencrypted. You can use the redaction processor to
+  scrub them from your traces.
+
+The above is written by an engineer, not a lawyer. The redaction processor is
+intended as one line of defence rather than the only compliance measure in
+place.
+
+## Processor Configuration
 
 Please refer to [config.go](./config.go) for the config spec.
 
@@ -19,29 +42,38 @@ Examples:
 ```yaml
 processors:
   redaction:
-    # Flag to allow all span attribute keys. Setting this to true disables the
+    # allow_all_keys is a flag which when set to true, which can disables the
     # allowed_keys list. The list of blocked_values is applied regardless. If
     # you just want to block values, set this to true.
     allow_all_keys: false
-    # Allowlist for span attribute keys. The list is designed to fail closed.
-    # If allowed_keys is empty, no span attributes are allowed and all span
-    # attributes are removed. To allow all keys, set allow_all_keys to true.
-    # To allow the span attributes you know are good, add them to the list.
+    # allowed_keys is a list of span attribute keys that are allowed to pass
+    # through. The list is designed to fail closed. If allowed_keys is empty,
+    # no span attributes are allowed and all span attributes are removed. To
+    # allow all keys, set allow_all_keys to true. To allow the span attributes
+    # you know are good, add them to the list.
     allowed_keys:
       - description
       - group
       - id
       - name
-    # Blocklist for span attribute values
+    # blocked_values is a list of regular expressions for blocking values of
+    # allowed span attributes. Values that match are masked
     blocked_values:
       - "4[0-9]{12}(?:[0-9]{3})?" ## Visa credit card number
       - "(5[1-5][0-9]{14})"       ## MasterCard number
+    # summary controls the verbosity level of the diagnostic attributes that
+    # the processor adds to the spans when it redacts or masks other
+    # attributes. In some contexts a list of redacted attributes leaks
+    # information, while it is valuable when integrating and testing a new
+    # configuration. Possible values:
+    # - `debug` includes both redacted key counts and names in the summary
+    # - `info` includes just the redacted key counts in the summary
+    # - `silent` omits the summary attributes
+    summary: debug
 ```
 
-## Configuration
-
-Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using
-the processor.
+Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
+into an OpenTelemetry Collector pipeline definition.
 
 Only span attributes included on the list of allowed keys list are retained.
 If `allowed_keys` is empty, then no span attributes are allowed. All span

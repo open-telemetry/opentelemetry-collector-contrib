@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestGenDefault(t *testing.T) {
@@ -33,7 +33,7 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, 1, rattrs.Len())
 	val, _ := rattrs.Get("resource-attr-name-0")
 	require.Equal(t, "resource-attr-val-0", val.StringVal())
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	ms := ilms.At(0).Metrics()
 	require.Equal(t, 1, ms.Len())
@@ -42,7 +42,7 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, "my-md-description", pdm.Description())
 	require.Equal(t, "my-md-units", pdm.Unit())
 
-	require.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
+	require.Equal(t, pmetric.MetricDataTypeGauge, pdm.DataType())
 	pts := pdm.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
@@ -57,7 +57,7 @@ func TestGenDefault(t *testing.T) {
 }
 
 func TestDoubleHistogramFunctions(t *testing.T) {
-	pt := pdata.NewHistogramDataPoint()
+	pt := pmetric.NewHistogramDataPoint()
 	setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 	require.Equal(t, 5, len(pt.ExplicitBounds()))
 	require.Equal(t, 5, len(pt.BucketCounts()))
@@ -80,7 +80,7 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 
 func TestGenDoubleHistogram(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
+	cfg.MetricDescriptorType = pmetric.MetricDataTypeHistogram
 	cfg.PtVal = 2
 	md := MetricsFromCfg(cfg)
 	pts := getMetric(md).Histogram().DataPoints()
@@ -92,7 +92,7 @@ func TestGenDoubleHistogram(t *testing.T) {
 
 func TestGenDoubleGauge(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricDataTypeGauge
+	cfg.MetricDescriptorType = pmetric.MetricDataTypeGauge
 	md := MetricsFromCfg(cfg)
 	metric := getMetric(md)
 	pts := metric.Gauge().DataPoints()
@@ -101,6 +101,6 @@ func TestGenDoubleGauge(t *testing.T) {
 	require.EqualValues(t, float64(1), pt.IntVal())
 }
 
-func getMetric(md pdata.Metrics) pdata.Metric {
-	return md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+func getMetric(md pmetric.Metrics) pmetric.Metric {
+	return md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 }

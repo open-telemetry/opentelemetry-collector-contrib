@@ -19,7 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -40,14 +41,15 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: `at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`,
 		},
 		{
-			name: "empty_log_names_and_attributes",
+			name: "empty_log_bodies_and_attributes",
 			property: filterconfig.MatchProperties{
-				LogNames: []string{},
+				LogBodies:        []string{},
+				LogSeverityTexts: []string{},
 			},
-			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: `at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`,
 		},
 		{
 			name: "span_properties",
@@ -116,14 +118,14 @@ func TestLogRecord_Matching_False(t *testing.T) {
 		},
 	}
 
-	lr := pdata.NewLogRecord()
+	lr := plog.NewLogRecord()
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher, err := NewMatcher(tc.properties)
 			assert.Nil(t, err)
 			require.NotNil(t, matcher)
 
-			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.False(t, matcher.MatchLogRecord(lr, pcommon.Resource{}, pcommon.InstrumentationScope{}))
 		})
 	}
 }
@@ -149,10 +151,26 @@ func TestLogRecord_Matching_True(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log_body_regexp_match",
+			properties: &filterconfig.MatchProperties{
+				Config:    *createConfig(filterset.Regexp),
+				LogBodies: []string{"AUTH.*"},
+			},
+		},
+		{
+			name: "log_severity_text_regexp_match",
+			properties: &filterconfig.MatchProperties{
+				Config:           *createConfig(filterset.Regexp),
+				LogSeverityTexts: []string{"debug.*"},
+			},
+		},
 	}
 
-	lr := pdata.NewLogRecord()
+	lr := plog.NewLogRecord()
 	lr.Attributes().InsertString("abc", "def")
+	lr.Body().SetStringVal("AUTHENTICATION FAILED")
+	lr.SetSeverityText("debug")
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -161,7 +179,7 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			require.NotNil(t, mp)
 
 			assert.NotNil(t, lr)
-			assert.True(t, mp.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.True(t, mp.MatchLogRecord(lr, pcommon.Resource{}, pcommon.InstrumentationScope{}))
 		})
 	}
 }

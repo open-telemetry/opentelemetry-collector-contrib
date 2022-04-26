@@ -20,14 +20,21 @@ These are the metrics available for this scraper.
 | **memcached.operations** | Operation counts. | {operations} | Sum(Int) | <ul> <li>type</li> <li>operation</li> </ul> |
 | **memcached.threads** | Number of threads used by the memcached instance. | {threads} | Sum(Int) | <ul> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
 
-## Attributes
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
-| Name | Description |
-| ---- | ----------- |
-| command | The type of command. |
-| direction | Direction of data flow. |
-| operation | The type of operation. |
-| state | The type of CPU usage. |
-| type | Result of cache request. |
+## Metric attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| command | The type of command. | get, set, flush, touch |
+| direction | Direction of data flow. | sent, received |
+| operation | The type of operation. | increment, decrement, get |
+| state | The type of CPU usage. | system, user |
+| type | Result of cache request. | hit, miss |

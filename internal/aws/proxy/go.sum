@@ -1,5 +1,5 @@
-github.com/aws/aws-sdk-go v1.43.17 h1:jDPBz1UuTxmyRo0eLgaRiro0fiI1zL7lkscqYxoEDLM=
-github.com/aws/aws-sdk-go v1.43.17/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.43.41 h1:HaazVplP8/t6SOfybQlNUmjAxLWDKdLdX8BSEHFlJdY=
+github.com/aws/aws-sdk-go v1.43.41/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
@@ -26,11 +26,12 @@ github.com/rogpeppe/go-internal v1.6.1 h1:/FiVV8dS/e+YqF2JvO3yXRFbBLTIuSDkuC7aBO
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
-github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
+github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1 h1:XA3Rg5AbrRFjZIw9LysPqjscwe9PNK0boL/+AUhDRDU=
-go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1/go.mod h1:3G6HUzm11xa5ZHxf8QWMYYUwtSmPkTZT9DiTuo3fodQ=
+go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2 h1:Ss1+RRJedpuBQ71wrqBxUUv/qiNlOWN1omK0xR0BpKc=
+go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2/go.mod h1:0nkkn+A4B7S+U4ioI8C2CD0dIOoQeXOMz6qbpGiJC3E=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.9.0 h1:ECmE8Bn/WFTYwEW/bpKD3M8VtR/zQVbavAoalC1PYyE=
 go.uber.org/atomic v1.9.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=

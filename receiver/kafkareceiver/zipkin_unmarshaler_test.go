@@ -24,8 +24,9 @@ import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
@@ -33,16 +34,16 @@ import (
 var v2FromTranslator zipkinv2.FromTranslator
 
 func TestUnmarshalZipkin(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "my_service")
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
-	span.SetStartTimestamp(pdata.Timestamp(1597759000))
-	span.SetEndTimestamp(pdata.Timestamp(1597769000))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
+	span.SetStartTimestamp(pcommon.Timestamp(1597759000))
+	span.SetEndTimestamp(pcommon.Timestamp(1597769000))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetParentSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
 	spans, err := v2FromTranslator.FromTraces(td)
 	require.NoError(t, err)
 
@@ -68,7 +69,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 		unmarshaler TracesUnmarshaler
 		encoding    string
 		bytes       []byte
-		expected    pdata.Traces
+		expected    ptrace.Traces
 	}{
 		{
 			unmarshaler: newZipkinProtobufUnmarshaler(),

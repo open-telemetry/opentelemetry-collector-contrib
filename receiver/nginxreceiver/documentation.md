@@ -22,8 +22,8 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| state | The state of a connection |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The state of a connection | active, reading, writing, waiting |

@@ -76,7 +76,7 @@ func TestBrokerScraperStart(t *testing.T) {
 	assert.NoError(t, bs.Start(context.Background(), nil))
 }
 
-func TestBrokerScraper_startBrokerScraper_handles_client_error(t *testing.T) {
+func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("new client failed")
 	}
@@ -84,7 +84,20 @@ func TestBrokerScraper_startBrokerScraper_handles_client_error(t *testing.T) {
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
-	assert.Error(t, bs.Start(context.Background(), nil))
+	_, err = bs.Scrape(context.Background())
+	assert.Error(t, err)
+}
+
+func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
+	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+		return nil, fmt.Errorf("new client failed")
+	}
+	sc := sarama.NewConfig()
+	bs, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, bs)
+	err = bs.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
 
 func TestBrokerScraper_scrape(t *testing.T) {
@@ -98,7 +111,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	md, err := bs.scrape(context.Background())
 	assert.NoError(t, err)
 	expectedDp := int64(len(testBrokers))
-	receivedMetrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	receivedMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	receivedDp := receivedMetrics.Gauge().DataPoints().At(0).IntVal()
 	assert.Equal(t, expectedDp, receivedDp)
 }

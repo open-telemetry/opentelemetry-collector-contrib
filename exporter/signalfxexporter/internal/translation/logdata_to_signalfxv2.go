@@ -18,7 +18,8 @@ import (
 	"fmt"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -26,8 +27,8 @@ import (
 
 func LogRecordSliceToSignalFxV2(
 	logger *zap.Logger,
-	logs pdata.LogRecordSlice,
-	resourceAttrs pdata.AttributeMap,
+	logs plog.LogRecordSlice,
+	resourceAttrs pcommon.Map,
 ) ([]*sfxpb.Event, int) {
 	events := make([]*sfxpb.Event, 0, logs.Len())
 	numDroppedLogRecords := 0
@@ -45,7 +46,7 @@ func LogRecordSliceToSignalFxV2(
 	return events, numDroppedLogRecords
 }
 
-func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logger *zap.Logger) (*sfxpb.Event, bool) {
+func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.Logger) (*sfxpb.Event, bool) {
 	attrs := lr.Attributes()
 
 	categoryVal, ok := attrs.Get(splunk.SFxEventCategoryKey)
@@ -55,13 +56,13 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 
 	var event sfxpb.Event
 
-	if categoryVal.Type() == pdata.AttributeValueTypeInt {
+	if categoryVal.Type() == pcommon.ValueTypeInt {
 		asCat := sfxpb.EventCategory(categoryVal.IntVal())
 		event.Category = &asCat
 	}
 
-	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pdata.AttributeValueTypeMap {
-		mapVal.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
+	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pcommon.ValueTypeMap {
+		mapVal.MapVal().Range(func(k string, v pcommon.Value) bool {
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
 				logger.Debug("Failed to convert log record property value to SignalFx property value", zap.Error(err), zap.String("key", k))
@@ -78,8 +79,8 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
-	resourceAttrsForDimensions := pdata.NewAttributeMap()
-	resourceAttrs.Range(func(k string, v pdata.AttributeValue) bool {
+	resourceAttrsForDimensions := pcommon.NewMap()
+	resourceAttrs.Range(func(k string, v pcommon.Value) bool {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {
 			resourceAttrsForDimensions.Insert(k, v)
@@ -87,7 +88,7 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 		return true
 	})
 
-	addDimension := func(k string, v pdata.AttributeValue) bool {
+	addDimension := func(k string, v pcommon.Value) bool {
 		// Skip internal attributes
 		switch k {
 		case splunk.SFxEventCategoryKey:
@@ -95,13 +96,13 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 		case splunk.SFxEventPropertiesKey:
 			return true
 		case splunk.SFxEventType:
-			if v.Type() == pdata.AttributeValueTypeString {
+			if v.Type() == pcommon.ValueTypeString {
 				event.EventType = v.StringVal()
 			}
 			return true
 		}
 
-		if v.Type() != pdata.AttributeValueTypeString {
+		if v.Type() != pcommon.ValueTypeString {
 			logger.Debug("Failed to convert log record or resource attribute value to SignalFx property value, key is not a string", zap.String("key", k))
 			return true
 		}
@@ -123,19 +124,19 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	return &event, true
 }
 
-func attributeValToPropertyVal(v pdata.AttributeValue) (*sfxpb.PropertyValue, error) {
+func attributeValToPropertyVal(v pcommon.Value) (*sfxpb.PropertyValue, error) {
 	var val sfxpb.PropertyValue
 	switch v.Type() {
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		asInt := v.IntVal()
 		val.IntValue = &asInt
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		asBool := v.BoolVal()
 		val.BoolValue = &asBool
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		asDouble := v.DoubleVal()
 		val.DoubleValue = &asDouble
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		asString := v.StringVal()
 		val.StrValue = &asString
 	default:

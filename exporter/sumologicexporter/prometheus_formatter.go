@@ -20,12 +20,13 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type dataPoint interface {
-	Timestamp() pdata.Timestamp
-	Attributes() pdata.AttributeMap
+	Timestamp() pcommon.Timestamp
+	Attributes() pcommon.Map
 }
 
 type prometheusFormatter struct {
@@ -54,10 +55,10 @@ func newPrometheusFormatter() (prometheusFormatter, error) {
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
-func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.AttributeMap) prometheusTags {
-	mergedAttributes := pdata.NewAttributeMap()
+func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) prometheusTags {
+	mergedAttributes := pcommon.NewMap()
 	attr.CopyTo(mergedAttributes)
-	labels.Range(func(k string, v pdata.AttributeValue) bool {
+	labels.Range(func(k string, v pcommon.Value) bool {
 		mergedAttributes.UpsertString(k, v.StringVal())
 		return true
 	})
@@ -68,7 +69,7 @@ func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.
 	}
 
 	returnValue := make([]string, 0, length)
-	mergedAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	mergedAttributes.Range(func(k string, v pcommon.Value) bool {
 		returnValue = append(
 			returnValue,
 			fmt.Sprintf(
@@ -98,40 +99,40 @@ func (f *prometheusFormatter) sanitizeValue(s string) string {
 }
 
 // doubleLine builds metric based on the given arguments where value is float64
-func (f *prometheusFormatter) doubleLine(name string, attributes prometheusTags, value float64, timestamp pdata.Timestamp) string {
+func (f *prometheusFormatter) doubleLine(name string, attributes prometheusTags, value float64, timestamp pcommon.Timestamp) string {
 	return fmt.Sprintf(
 		"%s%s %g %d",
 		f.sanitizeKey(name),
 		attributes,
 		value,
-		timestamp/pdata.Timestamp(time.Millisecond),
+		timestamp/pcommon.Timestamp(time.Millisecond),
 	)
 }
 
 // intLine builds metric based on the given arguments where value is int64
-func (f *prometheusFormatter) intLine(name string, attributes prometheusTags, value int64, timestamp pdata.Timestamp) string {
+func (f *prometheusFormatter) intLine(name string, attributes prometheusTags, value int64, timestamp pcommon.Timestamp) string {
 	return fmt.Sprintf(
 		"%s%s %d %d",
 		f.sanitizeKey(name),
 		attributes,
 		value,
-		timestamp/pdata.Timestamp(time.Millisecond),
+		timestamp/pcommon.Timestamp(time.Millisecond),
 	)
 }
 
 // uintLine builds metric based on the given arguments where value is uint64
-func (f *prometheusFormatter) uintLine(name string, attributes prometheusTags, value uint64, timestamp pdata.Timestamp) string {
+func (f *prometheusFormatter) uintLine(name string, attributes prometheusTags, value uint64, timestamp pcommon.Timestamp) string {
 	return fmt.Sprintf(
 		"%s%s %d %d",
 		f.sanitizeKey(name),
 		attributes,
 		value,
-		timestamp/pdata.Timestamp(time.Millisecond),
+		timestamp/pcommon.Timestamp(time.Millisecond),
 	)
 }
 
 // doubleValueLine returns prometheus line with given value
-func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dataPoint, attributes pdata.AttributeMap) string {
+func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dataPoint, attributes pcommon.Map) string {
 	return f.doubleLine(
 		name,
 		f.tags2String(attributes, dp.Attributes()),
@@ -141,7 +142,7 @@ func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dat
 }
 
 // uintValueLine returns prometheus line with given value
-func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPoint, attributes pdata.AttributeMap) string {
+func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPoint, attributes pcommon.Map) string {
 	return f.uintLine(
 		name,
 		f.tags2String(attributes, dp.Attributes()),
@@ -150,17 +151,17 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 	)
 }
 
-// numberDataPointValueLine returns prometheus line with value from pdata.NumberDataPoint
-func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.AttributeMap) string {
+// numberDataPointValueLine returns prometheus line with value from pmetric.NumberDataPoint
+func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pmetric.NumberDataPoint, attributes pcommon.Map) string {
 	switch dp.ValueType() {
-	case pdata.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return f.doubleValueLine(
 			name,
 			dp.DoubleVal(),
 			dp,
 			attributes,
 		)
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return f.intLine(
 			name,
 			f.tags2String(attributes, dp.Attributes()),
@@ -181,11 +182,11 @@ func (f *prometheusFormatter) countMetric(name string) string {
 	return fmt.Sprintf("%s_count", name)
 }
 
-// mergeAttributes gets two pdata.AttributeMaps and returns new which contains values from both of them
-func (f *prometheusFormatter) mergeAttributes(attributes pdata.AttributeMap, additionalAttributes pdata.AttributeMap) pdata.AttributeMap {
-	mergedAttributes := pdata.NewAttributeMap()
+// mergeAttributes gets two pcommon.Map and returns new which contains values from both of them
+func (f *prometheusFormatter) mergeAttributes(attributes pcommon.Map, additionalAttributes pcommon.Map) pcommon.Map {
+	mergedAttributes := pcommon.NewMap()
 	attributes.CopyTo(mergedAttributes)
-	additionalAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	additionalAttributes.Range(func(k string, v pcommon.Value) bool {
 		mergedAttributes.Upsert(k, v)
 		return true
 	})
@@ -237,7 +238,7 @@ func (f *prometheusFormatter) summary2Strings(record metricPair) []string {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		qs := dp.QuantileValues()
-		additionalAttributes := pdata.NewAttributeMap()
+		additionalAttributes := pcommon.NewMap()
 		for i := 0; i < qs.Len(); i++ {
 			q := qs.At(i)
 			additionalAttributes.UpsertDouble(prometheusQuantileTag, q.Quantile())
@@ -285,7 +286,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 		}
 
 		var cumulative uint64
-		additionalAttributes := pdata.NewAttributeMap()
+		additionalAttributes := pcommon.NewMap()
 
 		for i, bound := range explicitBounds {
 			cumulative += dp.BucketCounts()[i]
@@ -335,13 +336,13 @@ func (f *prometheusFormatter) metric2String(record metricPair) string {
 	var lines []string
 
 	switch record.metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		lines = f.gauge2Strings(record)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		lines = f.sum2Strings(record)
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		lines = f.summary2Strings(record)
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		lines = f.histogram2Strings(record)
 	}
 	return strings.Join(lines, "\n")

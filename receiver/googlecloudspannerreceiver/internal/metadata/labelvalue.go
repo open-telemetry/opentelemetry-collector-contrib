@@ -19,7 +19,7 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type newLabelValueFunction func(m LabelValueMetadata, value interface{}) LabelValue
@@ -33,7 +33,7 @@ type LabelValueMetadata interface {
 type LabelValue interface {
 	Metadata() LabelValueMetadata
 	Value() interface{}
-	SetValueTo(attributes pdata.AttributeMap)
+	SetValueTo(attributes pcommon.Map)
 }
 
 type queryLabelValueMetadata struct {
@@ -102,7 +102,7 @@ func (v stringLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v stringLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+func (v stringLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.InsertString(v.metadata.Name(), v.value)
 }
 
@@ -121,7 +121,7 @@ func (v int64LabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v int64LabelValue) SetValueTo(attributes pdata.AttributeMap) {
+func (v int64LabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.InsertInt(v.metadata.Name(), v.value)
 }
 
@@ -140,7 +140,7 @@ func (v boolLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v boolLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+func (v boolLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.InsertBool(v.metadata.Name(), v.value)
 }
 
@@ -159,7 +159,7 @@ func (v stringSliceLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v stringSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+func (v stringSliceLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.InsertString(v.metadata.Name(), v.value)
 }
 
@@ -184,7 +184,7 @@ func (v byteSliceLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v byteSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+func (v byteSliceLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.InsertString(v.metadata.Name(), v.value)
 }
 
@@ -203,7 +203,7 @@ func (v lockRequestSliceLabelValue) Value() interface{} {
 	return v.value
 }
 
-func (v lockRequestSliceLabelValue) SetValueTo(attributes pdata.AttributeMap) {
+func (v lockRequestSliceLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.InsertString(v.metadata.Name(), v.value)
 }
 

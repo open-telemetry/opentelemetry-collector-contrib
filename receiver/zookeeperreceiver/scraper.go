@@ -24,7 +24,8 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -80,7 +81,7 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 
@@ -90,7 +91,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, er
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
@@ -108,20 +109,19 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, er
 	return z.getResourceMetrics(conn)
 }
 
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metrics, error) {
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pmetric.Metrics, error) {
 	scanner, err := z.sendCmd(conn, mntrCommand)
 	if err != nil {
 		z.logger.Error("failed to send command",
 			zap.Error(err),
 			zap.String("command", mntrCommand),
 		)
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 
-	md := z.mb.NewMetricData()
 	creator := newMetricCreator(z.mb)
-	now := pdata.NewTimestampFromTime(time.Now())
-	rm := md.ResourceMetrics().At(0)
+	now := pcommon.NewTimestampFromTime(time.Now())
+	resourceOpts := make([]metadata.ResourceOption, 0, 2)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -137,10 +137,10 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithZkVersion(metricValue))
 			continue
 		case serverStateKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithServerState(metricValue))
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
@@ -164,8 +164,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 	// Generate computed metrics
 	creator.generateComputedMetrics(z.logger, now)
 
-	z.mb.Emit(rm.InstrumentationLibraryMetrics().At(0).Metrics())
-	return md, nil
+	return z.mb.Emit(resourceOpts...), nil
 }
 
 func closeConnection(conn net.Conn) error {

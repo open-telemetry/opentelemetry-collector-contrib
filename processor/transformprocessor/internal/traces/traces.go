@@ -19,34 +19,49 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
+type spanTransformContext struct {
+	span     ptrace.Span
+	il       pcommon.InstrumentationScope
+	resource pcommon.Resource
+}
+
+func (ctx spanTransformContext) GetItem() interface{} {
+	return ctx.span
+}
+
+func (ctx spanTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.il
+}
+
+func (ctx spanTransformContext) GetResource() pcommon.Resource {
+	return ctx.resource
+}
+
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
 type pathGetSetter struct {
-	getter exprFunc
-	setter func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{})
+	getter common.ExprFunc
+	setter func(ctx common.TransformContext, val interface{})
 }
 
-func (path pathGetSetter) get(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-	return path.getter(span, il, resource)
+func (path pathGetSetter) Get(ctx common.TransformContext) interface{} {
+	return path.getter(ctx)
 }
 
-func (path pathGetSetter) set(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-	path.setter(span, il, resource, val)
+func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
+	path.setter(ctx, val)
 }
 
-func newGetSetter(val common.Value) (getSetter, error) {
-	if val.Path == nil {
-		return nil, fmt.Errorf("must be a trace path expression")
-	}
-
-	return newPathGetSetter(val.Path.Fields)
+func ParsePath(val *common.Path) (common.GetSetter, error) {
+	return newPathGetSetter(val.Fields)
 }
 
-func newPathGetSetter(path []common.Field) (getSetter, error) {
+func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
 		if len(path) == 1 {
@@ -62,13 +77,13 @@ func newPathGetSetter(path []common.Field) (getSetter, error) {
 		}
 	case "instrumentation_library":
 		if len(path) == 1 {
-			return accessInstrumentationLibrary(), nil
+			return accessInstrumentationScope(), nil
 		}
 		switch path[1].Name {
 		case "name":
-			return accessInstrumentationLibraryName(), nil
+			return accessInstrumentationScopeName(), nil
 		case "version":
-			return accessInstrumentationLibraryVersion(), nil
+			return accessInstrumentationScopeVersion(), nil
 		}
 	case "trace_id":
 		return accessTraceID(), nil
@@ -121,13 +136,13 @@ func newPathGetSetter(path []common.Field) (getSetter, error) {
 
 func accessResource() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return resource
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetResource()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if newRes, ok := val.(pdata.Resource); ok {
-				resource.Attributes().Clear()
-				newRes.CopyTo(resource)
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newRes, ok := val.(pcommon.Resource); ok {
+				ctx.GetResource().Attributes().Clear()
+				newRes.CopyTo(ctx.GetResource())
 			}
 		},
 	}
@@ -135,13 +150,13 @@ func accessResource() pathGetSetter {
 
 func accessResourceAttributes() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return resource.Attributes()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetResource().Attributes()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if attrs, ok := val.(pdata.AttributeMap); ok {
-				resource.Attributes().Clear()
-				attrs.CopyTo(resource.Attributes())
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if attrs, ok := val.(pcommon.Map); ok {
+				ctx.GetResource().Attributes().Clear()
+				attrs.CopyTo(ctx.GetResource().Attributes())
 			}
 		},
 	}
@@ -149,49 +164,49 @@ func accessResourceAttributes() pathGetSetter {
 
 func accessResourceAttributesKey(mapKey *string) pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return getAttr(resource.Attributes(), *mapKey)
+		getter: func(ctx common.TransformContext) interface{} {
+			return getAttr(ctx.GetResource().Attributes(), *mapKey)
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			setAttr(resource.Attributes(), *mapKey, val)
+		setter: func(ctx common.TransformContext, val interface{}) {
+			setAttr(ctx.GetResource().Attributes(), *mapKey, val)
 		},
 	}
 }
 
-func accessInstrumentationLibrary() pathGetSetter {
+func accessInstrumentationScope() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return il
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetInstrumentationScope()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if newIl, ok := val.(pdata.InstrumentationLibrary); ok {
-				newIl.CopyTo(il)
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
+				newIl.CopyTo(ctx.GetInstrumentationScope())
 			}
 		},
 	}
 }
 
-func accessInstrumentationLibraryName() pathGetSetter {
+func accessInstrumentationScopeName() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return il.Name()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetInstrumentationScope().Name()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				il.SetName(str)
+				ctx.GetInstrumentationScope().SetName(str)
 			}
 		},
 	}
 }
 
-func accessInstrumentationLibraryVersion() pathGetSetter {
+func accessInstrumentationScopeVersion() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return il.Version()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetInstrumentationScope().Version()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				il.SetVersion(str)
+				ctx.GetInstrumentationScope().SetVersion(str)
 			}
 		},
 	}
@@ -199,15 +214,15 @@ func accessInstrumentationLibraryVersion() pathGetSetter {
 
 func accessTraceID() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.TraceID()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).TraceID()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				id, _ := hex.DecodeString(str)
 				var idArr [16]byte
 				copy(idArr[:16], id)
-				span.SetTraceID(pdata.NewTraceID(idArr))
+				ctx.GetItem().(ptrace.Span).SetTraceID(pcommon.NewTraceID(idArr))
 			}
 		},
 	}
@@ -215,15 +230,15 @@ func accessTraceID() pathGetSetter {
 
 func accessSpanID() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.SpanID()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).SpanID()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				id, _ := hex.DecodeString(str)
 				var idArr [8]byte
 				copy(idArr[:8], id)
-				span.SetSpanID(pdata.NewSpanID(idArr))
+				ctx.GetItem().(ptrace.Span).SetSpanID(pcommon.NewSpanID(idArr))
 			}
 		},
 	}
@@ -231,12 +246,12 @@ func accessSpanID() pathGetSetter {
 
 func accessTraceState() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.TraceState()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).TraceState()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				span.SetTraceState(pdata.TraceState(str))
+				ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(str))
 			}
 		},
 	}
@@ -244,15 +259,15 @@ func accessTraceState() pathGetSetter {
 
 func accessParentSpanID() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.ParentSpanID()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).ParentSpanID()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				id, _ := hex.DecodeString(str)
 				var idArr [8]byte
 				copy(idArr[:8], id)
-				span.SetParentSpanID(pdata.NewSpanID(idArr))
+				ctx.GetItem().(ptrace.Span).SetParentSpanID(pcommon.NewSpanID(idArr))
 			}
 		},
 	}
@@ -260,12 +275,12 @@ func accessParentSpanID() pathGetSetter {
 
 func accessName() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Name()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Name()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				span.SetName(str)
+				ctx.GetItem().(ptrace.Span).SetName(str)
 			}
 		},
 	}
@@ -273,12 +288,12 @@ func accessName() pathGetSetter {
 
 func accessKind() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Kind()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Kind()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				span.SetKind(pdata.SpanKind(i))
+				ctx.GetItem().(ptrace.Span).SetKind(ptrace.SpanKind(i))
 			}
 		},
 	}
@@ -286,12 +301,12 @@ func accessKind() pathGetSetter {
 
 func accessStartTimeUnixNano() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.StartTimestamp().AsTime().UnixNano()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).StartTimestamp().AsTime().UnixNano()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				span.SetStartTimestamp(pdata.NewTimestampFromTime(time.Unix(0, i)))
+				ctx.GetItem().(ptrace.Span).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
 			}
 		},
 	}
@@ -299,12 +314,12 @@ func accessStartTimeUnixNano() pathGetSetter {
 
 func accessEndTimeUnixNano() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.EndTimestamp().AsTime().UnixNano()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).EndTimestamp().AsTime().UnixNano()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				span.SetEndTimestamp(pdata.NewTimestampFromTime(time.Unix(0, i)))
+				ctx.GetItem().(ptrace.Span).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
 			}
 		},
 	}
@@ -312,13 +327,13 @@ func accessEndTimeUnixNano() pathGetSetter {
 
 func accessAttributes() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Attributes()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Attributes()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if attrs, ok := val.(pdata.AttributeMap); ok {
-				span.Attributes().Clear()
-				attrs.CopyTo(span.Attributes())
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if attrs, ok := val.(pcommon.Map); ok {
+				ctx.GetItem().(ptrace.Span).Attributes().Clear()
+				attrs.CopyTo(ctx.GetItem().(ptrace.Span).Attributes())
 			}
 		},
 	}
@@ -326,23 +341,23 @@ func accessAttributes() pathGetSetter {
 
 func accessAttributesKey(mapKey *string) pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return getAttr(span.Attributes(), *mapKey)
+		getter: func(ctx common.TransformContext) interface{} {
+			return getAttr(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey)
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			setAttr(span.Attributes(), *mapKey, val)
+		setter: func(ctx common.TransformContext, val interface{}) {
+			setAttr(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey, val)
 		},
 	}
 }
 
 func accessDroppedAttributesCount() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.DroppedAttributesCount()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).DroppedAttributesCount()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				span.SetDroppedAttributesCount(uint32(i))
+				ctx.GetItem().(ptrace.Span).SetDroppedAttributesCount(uint32(i))
 			}
 		},
 	}
@@ -350,15 +365,15 @@ func accessDroppedAttributesCount() pathGetSetter {
 
 func accessEvents() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Events()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Events()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if slc, ok := val.(pdata.SpanEventSlice); ok {
-				span.Events().RemoveIf(func(event pdata.SpanEvent) bool {
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if slc, ok := val.(ptrace.SpanEventSlice); ok {
+				ctx.GetItem().(ptrace.Span).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
 					return true
 				})
-				slc.CopyTo(span.Events())
+				slc.CopyTo(ctx.GetItem().(ptrace.Span).Events())
 			}
 		},
 	}
@@ -366,12 +381,12 @@ func accessEvents() pathGetSetter {
 
 func accessDroppedEventsCount() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.DroppedEventsCount()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).DroppedEventsCount()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				span.SetDroppedEventsCount(uint32(i))
+				ctx.GetItem().(ptrace.Span).SetDroppedEventsCount(uint32(i))
 			}
 		},
 	}
@@ -379,15 +394,15 @@ func accessDroppedEventsCount() pathGetSetter {
 
 func accessLinks() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Links()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Links()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if slc, ok := val.(pdata.SpanLinkSlice); ok {
-				span.Links().RemoveIf(func(event pdata.SpanLink) bool {
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if slc, ok := val.(ptrace.SpanLinkSlice); ok {
+				ctx.GetItem().(ptrace.Span).Links().RemoveIf(func(event ptrace.SpanLink) bool {
 					return true
 				})
-				slc.CopyTo(span.Links())
+				slc.CopyTo(ctx.GetItem().(ptrace.Span).Links())
 			}
 		},
 	}
@@ -395,12 +410,12 @@ func accessLinks() pathGetSetter {
 
 func accessDroppedLinksCount() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.DroppedLinksCount()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).DroppedLinksCount()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				span.SetDroppedLinksCount(uint32(i))
+				ctx.GetItem().(ptrace.Span).SetDroppedLinksCount(uint32(i))
 			}
 		},
 	}
@@ -408,12 +423,12 @@ func accessDroppedLinksCount() pathGetSetter {
 
 func accessStatus() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Status()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Status()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if status, ok := val.(pdata.SpanStatus); ok {
-				status.CopyTo(span.Status())
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if status, ok := val.(ptrace.SpanStatus); ok {
+				status.CopyTo(ctx.GetItem().(ptrace.Span).Status())
 			}
 		},
 	}
@@ -421,12 +436,12 @@ func accessStatus() pathGetSetter {
 
 func accessStatusCode() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Status().Code()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Status().Code()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				span.Status().SetCode(pdata.StatusCode(i))
+				ctx.GetItem().(ptrace.Span).Status().SetCode(ptrace.StatusCode(i))
 			}
 		},
 	}
@@ -434,42 +449,42 @@ func accessStatusCode() pathGetSetter {
 
 func accessStatusMessage() pathGetSetter {
 	return pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.Status().Message()
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).Status().Message()
 		},
-		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				span.Status().SetMessage(str)
+				ctx.GetItem().(ptrace.Span).Status().SetMessage(str)
 			}
 		},
 	}
 }
 
-func getAttr(attrs pdata.AttributeMap, mapKey string) interface{} {
+func getAttr(attrs pcommon.Map, mapKey string) interface{} {
 	val, ok := attrs.Get(mapKey)
 	if !ok {
 		return nil
 	}
 	switch val.Type() {
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		return val.StringVal()
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return val.BoolVal()
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return val.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return val.DoubleVal()
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeMap:
 		return val.MapVal()
-	case pdata.AttributeValueTypeArray:
+	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
-	case pdata.AttributeValueTypeBytes:
+	case pcommon.ValueTypeBytes:
 		return val.BytesVal()
 	}
 	return nil
 }
 
-func setAttr(attrs pdata.AttributeMap, mapKey string, val interface{}) {
+func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	switch v := val.(type) {
 	case string:
 		attrs.UpsertString(mapKey, v)
@@ -482,31 +497,31 @@ func setAttr(attrs pdata.AttributeMap, mapKey string, val interface{}) {
 	case []byte:
 		attrs.UpsertBytes(mapKey, v)
 	case []string:
-		arr := pdata.NewAttributeValueArray()
+		arr := pcommon.NewValueSlice()
 		for _, str := range v {
 			arr.SliceVal().AppendEmpty().SetStringVal(str)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []bool:
-		arr := pdata.NewAttributeValueArray()
+		arr := pcommon.NewValueSlice()
 		for _, b := range v {
 			arr.SliceVal().AppendEmpty().SetBoolVal(b)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []int64:
-		arr := pdata.NewAttributeValueArray()
+		arr := pcommon.NewValueSlice()
 		for _, i := range v {
 			arr.SliceVal().AppendEmpty().SetIntVal(i)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []float64:
-		arr := pdata.NewAttributeValueArray()
+		arr := pcommon.NewValueSlice()
 		for _, f := range v {
 			arr.SliceVal().AppendEmpty().SetDoubleVal(f)
 		}
 		attrs.Upsert(mapKey, arr)
 	case [][]byte:
-		arr := pdata.NewAttributeValueArray()
+		arr := pcommon.NewValueSlice()
 		for _, b := range v {
 			arr.SliceVal().AppendEmpty().SetBytesVal(b)
 		}

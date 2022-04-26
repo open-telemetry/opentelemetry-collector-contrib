@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,7 +39,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 		volumeSource                    v1.VolumeSource
 		pod                             pod
 		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string, labels map[string]string) error
-		want                            map[string]pdata.AttributeValue
+		want                            map[string]interface{}
 	}{
 		{
 			name:       "persistentVolumeClaim - with detailed PVC labels (AWS)",
@@ -60,16 +60,16 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("awsElasticBlockStore"),
-				"aws.volume.id":                  pdata.NewAttributeValueString("volume_id"),
-				"fs.type":                        pdata.NewAttributeValueString("fs_type"),
-				"partition":                      pdata.NewAttributeValueString("10"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]interface{}{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "awsElasticBlockStore",
+				"aws.volume.id":                  "volume_id",
+				"fs.type":                        "fs_type",
+				"partition":                      "10",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 		{
@@ -91,16 +91,16 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("gcePersistentDisk"),
-				"gce.pd.name":                    pdata.NewAttributeValueString("pd_name"),
-				"fs.type":                        pdata.NewAttributeValueString("fs_type"),
-				"partition":                      pdata.NewAttributeValueString("10"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]interface{}{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "gcePersistentDisk",
+				"gce.pd.name":                    "pd_name",
+				"fs.type":                        "fs_type",
+				"partition":                      "10",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 		{
@@ -121,15 +121,15 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("glusterfs"),
-				"glusterfs.endpoints.name":       pdata.NewAttributeValueString("endpoints_name"),
-				"glusterfs.path":                 pdata.NewAttributeValueString("path"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]interface{}{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "glusterfs",
+				"glusterfs.endpoints.name":       "endpoints_name",
+				"glusterfs.path":                 "path",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 		{
@@ -149,13 +149,13 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("local"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]interface{}{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "local",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 	}
@@ -189,10 +189,10 @@ func TestDetailedPVCLabels(t *testing.T) {
 			}, nil)
 			metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
 
-			volumeResource := pdata.NewResource()
+			volumeResource := pcommon.NewResource()
 			err := fillVolumeResource(volumeResource, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
-			require.Equal(t, pdata.NewAttributeMapFromMap(tt.want).Sort(), volumeResource.Attributes().Sort())
+			require.Equal(t, pcommon.NewMapFromRaw(tt.want).Sort(), volumeResource.Attributes().Sort())
 		})
 	}
 }

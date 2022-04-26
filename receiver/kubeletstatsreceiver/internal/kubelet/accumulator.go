@@ -17,7 +17,8 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
@@ -41,12 +42,11 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []pdata.Metrics
+	m                     []pmetric.Metrics
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
 	time                  time.Time
-	typeStr               string
 }
 
 const (
@@ -54,6 +54,7 @@ const (
 	nodePrefix      = k8sPrefix + "node."
 	podPrefix       = k8sPrefix + "pod."
 	containerPrefix = "container."
+	scopeName       = "otelcol/kubeletstatsreceiver"
 )
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
@@ -61,15 +62,15 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 		return
 	}
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	fillNodeResource(rm.Resource(), s)
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(scopeName)
 
-	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
-	currentTime := pdata.NewTimestampFromTime(a.time)
+	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addCPUMetrics(ilm.Metrics(), nodePrefix, s.CPU, startTime, currentTime)
 	addMemoryMetrics(ilm.Metrics(), nodePrefix, s.Memory, currentTime)
 	addFilesystemMetrics(ilm.Metrics(), nodePrefix, s.Fs, currentTime)
@@ -84,15 +85,15 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 		return
 	}
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	fillPodResource(rm.Resource(), s)
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(scopeName)
 
-	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
-	currentTime := pdata.NewTimestampFromTime(a.time)
+	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addCPUMetrics(ilm.Metrics(), podPrefix, s.CPU, startTime, currentTime)
 	addMemoryMetrics(ilm.Metrics(), podPrefix, s.Memory, currentTime)
 	addFilesystemMetrics(ilm.Metrics(), podPrefix, s.EphemeralStorage, currentTime)
@@ -106,7 +107,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 
 	if err := fillContainerResource(rm.Resource(), sPod, s, a.metadata); err != nil {
@@ -118,11 +119,11 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(scopeName)
 
-	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
-	currentTime := pdata.NewTimestampFromTime(a.time)
+	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addCPUMetrics(ilm.Metrics(), containerPrefix, s.CPU, startTime, currentTime)
 	addMemoryMetrics(ilm.Metrics(), containerPrefix, s.Memory, currentTime)
 	addFilesystemMetrics(ilm.Metrics(), containerPrefix, s.Rootfs, currentTime)
@@ -134,7 +135,7 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 
 	if err := fillVolumeResource(rm.Resource(), sPod, s, a.metadata); err != nil {
@@ -146,10 +147,10 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(scopeName)
 
-	currentTime := pdata.NewTimestampFromTime(a.time)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addVolumeMetrics(ilm.Metrics(), k8sPrefix, s, currentTime)
 	a.m = append(a.m, md)
 }

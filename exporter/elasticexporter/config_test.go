@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -102,8 +102,8 @@ func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	traces := pdata.NewTraces()
-	span := traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
 	assert.NoError(t, te.ConsumeTraces(context.Background(), traces))
 }

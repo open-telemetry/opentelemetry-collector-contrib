@@ -32,8 +32,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -71,10 +74,10 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 	}, &headers
 }
 
-func createMetricsData(numberOfDataPoints int) pdata.Metrics {
+func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 
 	doubleVal := 1234.5678
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("k0", "v0")
 	rm.Resource().Attributes().InsertString("k1", "v1")
@@ -82,12 +85,12 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	for i := 0; i < numberOfDataPoints; i++ {
 		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
 
-		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm := rm.ScopeMetrics().AppendEmpty()
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName("gauge_double_with_dims")
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		doublePt := metric.Gauge().DataPoints().AppendEmpty()
-		doublePt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 		doublePt.SetDoubleVal(doubleVal)
 		doublePt.Attributes().InsertString("k/n0", "vn0")
 		doublePt.Attributes().InsertString("k/n1", "vn1")
@@ -98,23 +101,23 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	return metrics
 }
 
-func createTraceData(numberOfTraces int) pdata.Traces {
-	traces := pdata.NewTraces()
+func createTraceData(numberOfTraces int) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
 		span := ils.Spans().AppendEmpty()
 		span.SetName("root")
-		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
-		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
-		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+		span.SetStartTimestamp(pcommon.Timestamp((i + 1) * 1e9))
+		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
+		span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+		span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 		span.SetTraceState("foo")
 		if i%2 == 0 {
-			span.SetParentSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-			span.Status().SetCode(pdata.StatusCodeOk)
+			span.SetParentSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.Status().SetCode(ptrace.StatusCodeOk)
 			span.Status().SetMessage("ok")
 		}
 	}
@@ -122,7 +125,7 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	return traces
 }
 
-func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
+func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs {
 	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
 }
 
@@ -134,21 +137,21 @@ func repeat(what int, times int) []int {
 	return result
 }
 
-func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) pdata.Logs {
-	logs := pdata.NewLogs()
+func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
+	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
-		rl.InstrumentationLibraryLogs().EnsureCapacity(len(libraries))
+		rl.ScopeLogs().EnsureCapacity(len(libraries))
 		for j := 0; j < len(libraries); j++ {
-			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-			ill.InstrumentationLibrary().SetName(libraries[j])
-			ill.LogRecords().EnsureCapacity(numRecords[j])
+			sl := rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(libraries[j])
+			sl.LogRecords().EnsureCapacity(numRecords[j])
 			for k := 0; k < numRecords[j]; k++ {
-				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
-				logRecord := ill.LogRecords().AppendEmpty()
-				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
+				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
+				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("mylog")
+				logRecord.Attributes().InsertString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
 				logRecord.Attributes().InsertString(splunk.DefaultIndexLabel, "myindex")
@@ -162,9 +165,14 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 	return logs
 }
 
+type receivedRequest struct {
+	body    []byte
+	headers http.Header
+}
+
 type CapturingData struct {
 	testing          *testing.T
-	receivedRequest  chan []byte
+	receivedRequest  chan receivedRequest
 	statusCode       int
 	checkCompression bool
 }
@@ -182,12 +190,12 @@ func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	go func() {
-		c.receivedRequest <- body
+		c.receivedRequest <- receivedRequest{body, r.Header}
 	}()
 	w.WriteHeader(c.statusCode)
 }
 
-func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([][]byte, error) {
+func runMetricsExport(cfg *Config, metrics pmetric.Metrics, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -197,8 +205,8 @@ func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([][]byt
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	receivedRequest := make(chan []byte)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	rr := make(chan receivedRequest)
+	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler: &capture,
 	}
@@ -214,10 +222,10 @@ func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([][]byt
 
 	err = exporter.ConsumeMetrics(context.Background(), metrics)
 	assert.NoError(t, err)
-	var requests [][]byte
+	var requests []receivedRequest
 	for {
 		select {
-		case request := <-receivedRequest:
+		case request := <-rr:
 			requests = append(requests, request)
 		case <-time.After(1 * time.Second):
 			if len(requests) == 0 {
@@ -228,7 +236,7 @@ func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([][]byt
 	}
 }
 
-func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (string, error) {
+func runTraceExport(testConfig *Config, traces ptrace.Traces, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -237,11 +245,12 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
-	cfg.DisableCompression = disableCompression
+	cfg.DisableCompression = testConfig.DisableCompression
+	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
 
-	receivedRequest := make(chan []byte)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	rr := make(chan receivedRequest)
+	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler: &capture,
 	}
@@ -255,19 +264,23 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer exporter.Shutdown(context.Background())
 
-	td := createTraceData(numberOfTraces)
-
-	err = exporter.ConsumeTraces(context.Background(), td)
+	err = exporter.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	select {
-	case request := <-receivedRequest:
-		return string(request), nil
-	case <-time.After(1 * time.Second):
-		return "", errors.New("timeout")
+	var requests []receivedRequest
+	for {
+		select {
+		case request := <-rr:
+			requests = append(requests, request)
+		case <-time.After(1 * time.Second):
+			if len(requests) == 0 {
+				err = errors.New("timeout")
+			}
+			return requests, err
+		}
 	}
 }
 
-func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
+func runLogExport(cfg *Config, ld plog.Logs, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -276,8 +289,8 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	receivedRequest := make(chan []byte)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	rr := make(chan receivedRequest)
+	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler: &capture,
 	}
@@ -294,10 +307,10 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
 	err = exporter.ConsumeLogs(context.Background(), ld)
 	assert.NoError(t, err)
 
-	var requests [][]byte
+	var requests []receivedRequest
 	for {
 		select {
-		case request := <-receivedRequest:
+		case request := <-rr:
 			requests = append(requests, request)
 		case <-time.After(1 * time.Second):
 			if len(requests) == 0 {
@@ -308,13 +321,127 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
 	}
 }
 
-func TestReceiveTraces(t *testing.T) {
-	actual, err := runTraceExport(true, 3, t)
-	assert.NoError(t, err)
-	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000},"fields":{"resource":"R1"}}`
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":"STATUS_CODE_UNSET"},"start_time":2000000000},"fields":{"resource":"R1"}}`
-	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000},"fields":{"resource":"R1"}}`
-	assert.Equal(t, expected, actual)
+func TestReceiveTracesBatches(t *testing.T) {
+	type wantType struct {
+		batches    [][]string
+		numBatches int
+		compressed bool
+	}
+
+	// The test cases depend on the constant minCompressionLen = 1500.
+	// If the constant changed, the test cases with want.compressed=true must be updated.
+	require.Equal(t, minCompressionLen, 1500)
+
+	tests := []struct {
+		name   string
+		conf   *Config
+		traces ptrace.Traces
+		want   wantType
+	}{
+		{
+			name:   "all trace events in payload when max content length unknown (configured max content length 0)",
+			traces: createTraceData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 0
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`,
+						`"start_time":2`,
+						`start_time":3`,
+						`start_time":4`},
+				},
+				numBatches: 1,
+			},
+		},
+		{
+			name:   "1 trace event per payload (configured max content length is same as event size)",
+			traces: createTraceData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 320
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`},
+					{`"start_time":2`},
+					{`"start_time":3`},
+					{`"start_time":4`},
+				},
+				numBatches: 4,
+			},
+		},
+		{
+			name:   "2 trace events per payload (configured max content length is twice event size)",
+			traces: createTraceData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 640
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`, `"start_time":2`},
+					{`"start_time":3`, `"start_time":4`},
+				},
+				numBatches: 2,
+			},
+		},
+		{
+			name:   "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			traces: createTraceData(10),
+			conf: func() *Config {
+				return NewFactory().CreateDefaultConfig().(*Config)
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`, `"start_time":2`, `"start_time":3`, `"start_time":4`, `"start_time":7`, `"start_time":8`, `"start_time":9`},
+				},
+				numBatches: 1,
+				compressed: true,
+			},
+		},
+		{
+			name:   "2 compressed batches - 1832 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
+			traces: createTraceData(22),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 3520
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`, `"start_time":2`, `"start_time":5`, `"start_time":6`, `"start_time":7`, `"start_time":8`, `"start_time":9`, `"start_time":10`, `"start_time":11`},
+					{`"start_time":15`, `"start_time":16`, `"start_time":17`, `"start_time":18`, `"start_time":19`, `"start_time":20`, `"start_time":21`},
+				},
+				numBatches: 2,
+				compressed: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := runTraceExport(test.conf, test.traces, t)
+
+			require.NoError(t, err)
+			require.Len(t, got, test.want.numBatches)
+
+			for i := 0; i < test.want.numBatches; i++ {
+				require.NotZero(t, got[i])
+				if test.want.compressed {
+					validateCompressedContains(t, test.want.batches[i], got[i].body)
+				} else {
+					for _, expected := range test.want.batches[i] {
+						assert.Contains(t, string(got[i].body), expected)
+					}
+				}
+			}
+		})
+	}
 }
 
 func TestReceiveLogs(t *testing.T) {
@@ -331,7 +458,7 @@ func TestReceiveLogs(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		logs pdata.Logs
+		logs plog.Logs
 		want wantType
 	}{
 		{
@@ -429,10 +556,10 @@ func TestReceiveLogs(t *testing.T) {
 			for i := 0; i < test.want.numBatches; i++ {
 				require.NotZero(t, got[i])
 				if test.want.compressed {
-					validateCompressedContains(t, test.want.batches[i], got[i])
+					validateCompressedContains(t, test.want.batches[i], got[i].body)
 				} else {
 					for _, expected := range test.want.batches[i] {
-						assert.Contains(t, string(got[i]), expected)
+						assert.Contains(t, string(got[i].body), expected)
 					}
 				}
 			}
@@ -447,7 +574,7 @@ func TestReceiveMetrics(t *testing.T) {
 	actual, err := runMetricsExport(cfg, md, t)
 	assert.Len(t, actual, 1)
 	assert.NoError(t, err)
-	msg := string(actual[0])
+	msg := string(actual[0].body)
 	assert.Contains(t, msg, "\"event\":\"metric\"")
 	assert.Contains(t, msg, "\"time\":1.001")
 	assert.Contains(t, msg, "\"time\":2.002")
@@ -467,7 +594,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 	tests := []struct {
 		name    string
 		conf    *Config
-		metrics pdata.Metrics
+		metrics pmetric.Metrics
 		want    wantType
 	}{
 		{
@@ -562,21 +689,15 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			for i := 0; i < test.want.numBatches; i++ {
 				require.NotZero(t, got[i])
 				if test.want.compressed {
-					validateCompressedContains(t, test.want.batches[i], got[i])
+					validateCompressedContains(t, test.want.batches[i], got[i].body)
 				} else {
 					for _, expected := range test.want.batches[i] {
-						assert.Contains(t, string(got[i]), expected)
+						assert.Contains(t, string(got[i].body), expected)
 					}
 				}
 			}
 		})
 	}
-}
-
-func TestReceiveTracesWithCompression(t *testing.T) {
-	request, err := runTraceExport(false, 1000, t)
-	assert.NoError(t, err)
-	assert.NotEqual(t, "", request)
 }
 
 func TestReceiveMetricsWithCompression(t *testing.T) {
@@ -587,8 +708,8 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 }
 
 func TestErrorReceived(t *testing.T) {
-	receivedRequest := make(chan []byte)
-	capture := CapturingData{receivedRequest: receivedRequest, statusCode: 500}
+	rr := make(chan receivedRequest)
+	capture := CapturingData{receivedRequest: rr, statusCode: 500}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -621,16 +742,11 @@ func TestErrorReceived(t *testing.T) {
 
 	err = exporter.ConsumeTraces(context.Background(), td)
 	select {
-	case <-receivedRequest:
+	case <-rr:
 	case <-time.After(5 * time.Second):
 		t.Fatal("Should have received request")
 	}
 	assert.EqualError(t, err, "HTTP 500 \"Internal Server Error\"")
-}
-
-func TestInvalidTraces(t *testing.T) {
-	_, err := runTraceExport(false, 0, t)
-	assert.Error(t, err)
 }
 
 func TestInvalidLogs(t *testing.T) {
@@ -642,7 +758,7 @@ func TestInvalidLogs(t *testing.T) {
 
 func TestInvalidMetrics(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	_, err := runMetricsExport(cfg, pdata.NewMetrics(), t)
+	_, err := runMetricsExport(cfg, pmetric.NewMetrics(), t)
 	assert.Error(t, err)
 }
 
@@ -731,15 +847,15 @@ func TestInvalidURLClient(t *testing.T) {
 func Test_pushLogData_nil_Logs(t *testing.T) {
 	tests := []struct {
 		name     func(bool) string
-		logs     pdata.Logs
-		requires func(*testing.T, pdata.Logs)
+		logs     plog.Logs
+		requires func(*testing.T, plog.Logs)
 	}{
 		{
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil ResourceLogs"
 			},
-			logs: pdata.NewLogs(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			logs: plog.NewLogs(),
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Zero(t, logs.ResourceLogs().Len())
 			},
 		},
@@ -747,29 +863,29 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil InstrumentationLogs"
 			},
-			logs: func() pdata.Logs {
-				logs := pdata.NewLogs()
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
 				logs.ResourceLogs().AppendEmpty()
 				return logs
 			}(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len())
+				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
 		},
 		{
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil LogRecords"
 			},
-			logs: func() pdata.Logs {
-				logs := pdata.NewLogs()
-				logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return logs
 			}(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Equal(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len(), 1)
-				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().Len())
+				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},
 	}
@@ -799,18 +915,18 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		config: &Config{},
+		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
 	}
 
-	logs := pdata.NewLogs()
-	log := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	logs := plog.NewLogs()
+	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
 	log.Body().SetDoubleVal(math.Inf(1))
 
 	err := c.pushLogData(context.Background(), logs)
 
-	assert.Contains(t, err.Error(), "Permanent error: dropped log event: &{<nil> unknown    +Inf map[]}, error: splunk.Event.Event: unsupported value: +Inf")
+	assert.Error(t, err, "Permanent error: dropped log event: &{<nil> unknown    +Inf map[]}, error: splunk.Event.Event: unsupported value: +Inf")
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
@@ -1032,61 +1148,126 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	}
 }
 
+func TestAllowedLogDataTypes(t *testing.T) {
+	tests := []struct {
+		name                 string
+		allowProfilingData   bool
+		allowLogData         bool
+		wantProfilingRecords int
+		wantLogRecords       int
+	}{
+		{
+			name:               "both_allowed",
+			allowProfilingData: true,
+			allowLogData:       true,
+		},
+		{
+			name:               "logs_allowed",
+			allowProfilingData: false,
+			allowLogData:       true,
+		},
+		{
+			name:               "profiling_allowed",
+			allowProfilingData: true,
+			allowLogData:       false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{1, 1})
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.LogDataEnabled = test.allowLogData
+			cfg.ProfilingDataEnabled = test.allowProfilingData
+
+			requests, err := runLogExport(cfg, logs, t)
+			assert.NoError(t, err)
+
+			seenLogs := false
+			seenProfiling := false
+			for _, r := range requests {
+				if r.headers.Get(libraryHeaderName) == profilingLibraryName {
+					seenProfiling = true
+				} else {
+					seenLogs = true
+				}
+			}
+			assert.Equal(t, test.allowLogData, seenLogs)
+			assert.Equal(t, test.allowProfilingData, seenProfiling)
+		})
+	}
+}
+
 func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
 
+	c := client{
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
 	_0_0_0 := &index{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := subLogs(&logs, _0_0_0, nil)
+	got := c.subLogs(&logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
 
 	// The name of the leftmost log record should be 0_0_0.
-	assert.Equal(t, "0_0_0", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
+	val, _ := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "0_0_0", val.AsString())
 	// The name of the rightmost log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).LogRecords().At(2).Name())
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
 	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(&logs, _0_1_2, nil)
+	got = c.subLogs(&logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
 	// The name of the leftmost log record should be 0_1_2.
-	assert.Equal(t, "0_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "0_1_2", val.AsString())
 	// The name of the rightmost log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).LogRecords().At(2).Name())
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(&logs, _1_1_2, nil)
+	got = c.subLogs(&logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
 
 	// The name of the sole log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Now see how profiling and log data are merged
 	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
 	slice := &index{resource: 1, library: 0, record: 5}
 	profSlice := &index{resource: 0, library: 1, record: 8}
 
-	got = subLogs(&logs, slice, profSlice)
+	got = c.subLogs(&logs, slice, profSlice)
 
 	assert.Equal(t, 5+2+10, got.LogRecordCount())
-	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, "1_0_5", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
-	assert.Equal(t, "1_0_9", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(4).Name())
+	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "1_0_5", val.AsString())
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "1_0_9", val.AsString())
 
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, "0_1_8", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
-	assert.Equal(t, "0_1_9", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).LogRecords().At(1).Name())
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, "1_1_0", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
-	assert.Equal(t, "1_1_9", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).LogRecords().At(9).Name())
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).ScopeLogs().At(0).Scope().Name())
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "0_1_8", val.AsString())
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "0_1_9", val.AsString())
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).ScopeLogs().At(0).Scope().Name())
+	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "1_1_0", val.AsString())
+	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "1_1_9", val.AsString())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings
