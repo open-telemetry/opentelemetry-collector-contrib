@@ -16,6 +16,7 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -73,6 +74,16 @@ func (*factory) createDefaultConfig() config.Exporter {
 		site = "datadoghq.com"
 	}
 
+	metricsEndpoint := os.Getenv("DD_URL")
+	if metricsEndpoint == "" {
+		metricsEndpoint = fmt.Sprintf("https://api.%s", site)
+	}
+
+	tracesEndpoint := os.Getenv("DD_APM_URL")
+	if tracesEndpoint == "" {
+		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
+	}
+
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
@@ -81,7 +92,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		API: ddconfig.APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
-			Site: site,                    // If not provided, set during config sanitization
+			Site: site,
 		},
 
 		TagsConfig: ddconfig.TagsConfig{
@@ -94,7 +105,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		Metrics: ddconfig.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: os.Getenv("DD_URL"), // If not provided, set during config sanitization
+				Endpoint: metricsEndpoint,
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
@@ -118,7 +129,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 		Traces: ddconfig.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
+				Endpoint: tracesEndpoint,
 			},
 			IgnoreResources: []string{},
 		},

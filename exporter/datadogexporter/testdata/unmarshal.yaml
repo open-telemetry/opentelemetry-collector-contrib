@@ -1,0 +1,59 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  datadog/nositeandnoendpoints:
+
+  datadog/nositeandmetricsendpoint:
+    metrics:
+      endpoint: "metricsendpoint:1234"
+
+  datadog/nositeandtracesendpoint:
+    traces:
+      endpoint: "tracesendpoint:1234"
+
+  datadog/nositeandbothendpoints:
+    metrics:
+      endpoint: "metricsendpoint:1234"
+    traces:
+      endpoint: "tracesendpoint:1234"
+
+  datadog/siteandnoendpoints:
+    api:
+      site: datadoghq.eu
+
+  datadog/siteandmetricsendpoint:
+    api:
+      site: datadoghq.eu
+    metrics:
+      endpoint: "metricsendpoint:1234"
+
+  datadog/siteandtracesendpoint:
+    api:
+      site: datadoghq.eu
+    traces:
+      endpoint: "tracesendpoint:1234"
+
+  datadog/siteandbothendpoints:
+    api:
+      site: datadoghq.eu
+    metrics:
+      endpoint: "metricsendpoint:1234"
+    traces:
+      endpoint: "tracesendpoint:1234"
+
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [datadog/nositeandnoendpoints]
+
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [datadog/nositeandnoendpoints]

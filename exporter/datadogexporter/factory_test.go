@@ -383,6 +383,84 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	}, defaultConfig.Traces)
 }
 
+func TestOverrideEndpoints(t *testing.T) {
+	tests := []struct {
+		componentID             string
+		expectedSite            string
+		expectedMetricsEndpoint string
+		expectedTracesEndpoint  string
+	}{
+		{
+			componentID:             "nositeandnoendpoints",
+			expectedSite:            "datadoghq.com",
+			expectedMetricsEndpoint: "https://api.datadoghq.com",
+			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
+		},
+		{
+			componentID:             "nositeandmetricsendpoint",
+			expectedSite:            "datadoghq.com",
+			expectedMetricsEndpoint: "metricsendpoint:1234",
+			expectedTracesEndpoint:  "https://trace.agent.datadoghq.com",
+		},
+		{
+			componentID:             "nositeandtracesendpoint",
+			expectedSite:            "datadoghq.com",
+			expectedMetricsEndpoint: "https://api.datadoghq.com",
+			expectedTracesEndpoint:  "tracesendpoint:1234",
+		},
+		{
+			componentID:             "nositeandbothendpoints",
+			expectedSite:            "datadoghq.com",
+			expectedMetricsEndpoint: "metricsendpoint:1234",
+			expectedTracesEndpoint:  "tracesendpoint:1234",
+		},
+
+		{
+			componentID:             "siteandnoendpoints",
+			expectedSite:            "datadoghq.eu",
+			expectedMetricsEndpoint: "https://api.datadoghq.eu",
+			expectedTracesEndpoint:  "https://trace.agent.datadoghq.eu",
+		},
+		{
+			componentID:             "siteandmetricsendpoint",
+			expectedSite:            "datadoghq.eu",
+			expectedMetricsEndpoint: "metricsendpoint:1234",
+			expectedTracesEndpoint:  "https://trace.agent.datadoghq.eu",
+		},
+		{
+			componentID:             "siteandtracesendpoint",
+			expectedSite:            "datadoghq.eu",
+			expectedMetricsEndpoint: "https://api.datadoghq.eu",
+			expectedTracesEndpoint:  "tracesendpoint:1234",
+		},
+		{
+			componentID:             "siteandbothendpoints",
+			expectedSite:            "datadoghq.eu",
+			expectedMetricsEndpoint: "metricsendpoint:1234",
+			expectedTracesEndpoint:  "tracesendpoint:1234",
+		},
+	}
+
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "unmarshal.yaml"), factories)
+	require.NoError(t, err)
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.componentID, func(t *testing.T) {
+			rawCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, testInstance.componentID)]
+			componentCfg, ok := rawCfg.(*ddconfig.Config)
+			require.True(t, ok, "config.Exporter is not a Datadog exporter config (wrong ID?)")
+			assert.Equal(t, testInstance.expectedSite, componentCfg.API.Site)
+			assert.Equal(t, testInstance.expectedMetricsEndpoint, componentCfg.Metrics.Endpoint)
+			assert.Equal(t, testInstance.expectedTracesEndpoint, componentCfg.Traces.Endpoint)
+		})
+	}
+}
+
 func TestCreateAPIMetricsExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
