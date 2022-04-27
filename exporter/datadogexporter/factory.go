@@ -63,6 +63,16 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 // TODO (#8396): Remove `os.Getenv` everywhere.
 func (*factory) createDefaultConfig() config.Exporter {
+	env := os.Getenv("DD_ENV")
+	if env == "" {
+		env = "none"
+	}
+
+	site := os.Getenv("DD_SITE")
+	if site == "" {
+		site = "datadoghq.com"
+	}
+
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
@@ -71,12 +81,12 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		API: ddconfig.APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
-			Site: os.Getenv("DD_SITE"),    // If not provided, set during config sanitization
+			Site: site,                    // If not provided, set during config sanitization
 		},
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   os.Getenv("DD_HOST"),
-			Env:        os.Getenv("DD_ENV"),
+			Env:        env,
 			Service:    os.Getenv("DD_SERVICE"),
 			Version:    os.Getenv("DD_VERSION"),
 			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set

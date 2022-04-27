@@ -29,6 +29,12 @@ func futureDefaultConfig() *Config {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 15 * time.Second,
 		},
+		API: APIConfig{
+			Site: "datadoghq.com",
+		},
+		TagsConfig: TagsConfig{
+			Env: "none",
+		},
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		Metrics: MetricsConfig{

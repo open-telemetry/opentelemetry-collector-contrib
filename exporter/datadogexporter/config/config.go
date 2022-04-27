@@ -412,18 +412,8 @@ type Config struct {
 }
 
 // Sanitize tries to sanitize a given configuration
+// Deprecated: [v0.50.0] Will be unexported in a future minor version.
 func (c *Config) Sanitize(logger *zap.Logger) error {
-	if c.TagsConfig.Env == "" {
-		c.TagsConfig.Env = "none"
-	}
-
-	c.API.Key = strings.TrimSpace(c.API.Key)
-
-	// Set default site
-	if c.API.Site == "" {
-		c.API.Site = "datadoghq.com"
-	}
-
 	// Set the endpoint based on the Site
 	if c.Metrics.TCPAddr.Endpoint == "" {
 		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
@@ -491,6 +481,8 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 		return err
 	}
 
+	c.API.Key = strings.TrimSpace(c.API.Key)
+
 	// Add deprecation warnings for deprecated settings.
 	renamingWarnings, err := handleRenamedSettings(configMap, c)
 	if err != nil {
@@ -515,7 +507,7 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	if c.Version != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
 	}
-	if c.Env != "" {
+	if configMap.IsSet("env") {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
 	}
 

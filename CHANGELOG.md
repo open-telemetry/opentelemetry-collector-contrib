@@ -14,6 +14,7 @@
 
 - `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
 - `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
+- `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
 
 ### 🚀 New components 🚀
 
@@ -32,7 +33,7 @@
 - `attributesprocessor`: Support filter by severity (#9132)
 - `processor/transform`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
-- `datadogexporter`: Some config validation steps are now done on `Validate` instead of `Sanitize` (#8829)
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 
 ### 🧰 Bug fixes 🧰
 
