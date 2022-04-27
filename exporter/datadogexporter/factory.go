@@ -214,7 +214,11 @@ func (f *factory) createTracesExporter(
 			return nil
 		}
 	} else {
-		pushTracesFn = newTracesExporter(ctx, set, cfg, &f.onceMetadata).pushTraceDataScrubbed
+		exporter, err := newTracesExporter(ctx, set, cfg, &f.onceMetadata)
+		if err != nil {
+			return nil, err
+		}
+		pushTracesFn = exporter.pushTraceDataScrubbed
 	}
 
 	return exporterhelper.NewTracesExporter(

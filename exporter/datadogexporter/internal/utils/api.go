@@ -15,6 +15,9 @@
 package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 
 import (
+	"errors"
+	"fmt"
+
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
@@ -27,20 +30,21 @@ func CreateClient(APIKey string, endpoint string) *datadog.Client {
 	return client
 }
 
+var ErrInvalidAPI = errors.New("API Key validation failed")
+
 // ValidateAPIKey checks that the provided client was given a correct API key.
-func ValidateAPIKey(logger *zap.Logger, client *datadog.Client, failOnInvalidKey bool) {
+func ValidateAPIKey(logger *zap.Logger, client *datadog.Client) error {
 	logger.Info("Validating API key.")
 	valid, err := client.Validate()
 	if err == nil && valid {
 		logger.Info("API key validation successful.")
-		return
+		return nil
 	}
-	switch {
-	case err != nil:
-		logger.Warn("Error while validating API key.", zap.Error(err))
-	case !valid && failOnInvalidKey:
-		logger.Fatal("API Key validation failed.")
-	case !valid && !failOnInvalidKey:
-		logger.Warn("API Key validation failed.")
+	if err != nil {
+		msg := "Error while validating API key"
+		logger.Warn(msg, zap.Error(err))
+		return fmt.Errorf("%s: %w", msg, err)
 	}
+	logger.Warn(ErrInvalidAPI.Error())
+	return ErrInvalidAPI
 }
