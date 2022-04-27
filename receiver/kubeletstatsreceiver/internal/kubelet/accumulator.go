@@ -69,7 +69,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), metadata.NodeCpuMetrics, s.CPU, startTime, currentTime)
+	addCPUMetrics(ilm.Metrics(), metadata.NodeCPUMetrics, s.CPU, startTime, currentTime)
 	addMemoryMetrics(ilm.Metrics(), metadata.NodeMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(ilm.Metrics(), metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(ilm.Metrics(), metadata.NodeNetworkMetrics, s.Network, startTime, currentTime)
@@ -92,7 +92,7 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), metadata.PodCpuMetrics, s.CPU, startTime, currentTime)
+	addCPUMetrics(ilm.Metrics(), metadata.PodCPUMetrics, s.CPU, startTime, currentTime)
 	addMemoryMetrics(ilm.Metrics(), metadata.PodMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(ilm.Metrics(), metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(ilm.Metrics(), metadata.PodNetworkMetrics, s.Network, startTime, currentTime)
@@ -122,7 +122,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 
 	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), metadata.ContainerCpuMetrics, s.CPU, startTime, currentTime)
+	addCPUMetrics(ilm.Metrics(), metadata.ContainerCPUMetrics, s.CPU, startTime, currentTime)
 	addMemoryMetrics(ilm.Metrics(), metadata.ContainerMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(ilm.Metrics(), metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
 	a.m = append(a.m, md)

@@ -14,22 +14,22 @@
 
 package metadata
 
-type CpuMetrics struct {
+type CPUMetrics struct {
 	Time        MetricIntf
 	Utilization MetricIntf
 }
 
-var NodeCpuMetrics = CpuMetrics{
+var NodeCPUMetrics = CPUMetrics{
 	Time:        M.K8sNodeCPUTime,
 	Utilization: M.K8sNodeCPUUtilization,
 }
 
-var PodCpuMetrics = CpuMetrics{
+var PodCPUMetrics = CPUMetrics{
 	Time:        M.K8sPodCPUTime,
 	Utilization: M.K8sPodCPUUtilization,
 }
 
-var ContainerCpuMetrics = CpuMetrics{
+var ContainerCPUMetrics = CPUMetrics{
 	Time:        M.ContainerCPUTime,
 	Utilization: M.ContainerCPUUtilization,
 }

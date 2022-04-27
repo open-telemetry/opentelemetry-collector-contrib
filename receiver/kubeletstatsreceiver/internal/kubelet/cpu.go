@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addCPUMetrics(dest pmetric.MetricSlice, cpuMetrics metadata.CpuMetrics, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addCPUMetrics(dest pmetric.MetricSlice, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
