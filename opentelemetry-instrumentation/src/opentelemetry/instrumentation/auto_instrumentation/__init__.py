@@ -23,6 +23,8 @@ from shutil import which
 
 from pkg_resources import iter_entry_points
 
+from opentelemetry.instrumentation.version import __version__
+
 _logger = getLogger(__name__)
 
 
@@ -34,7 +36,7 @@ def run() -> None:
         program and its dependencies and then runs the program.
         """,
         epilog="""
-        Optional arguments (except for --help) for opentelemetry-instrument
+        Optional arguments (except for --help and --version) for opentelemetry-instrument
         directly correspond with OpenTelemetry environment variables. The
         corresponding optional argument is formed by removing the OTEL_ or
         OTEL_PYTHON_ prefix from the environment variable and lower casing the
@@ -66,6 +68,12 @@ def run() -> None:
                 )
                 argument_otel_environment_variable[argument] = attribute
 
+    parser.add_argument(
+        "--version",
+        help="print version information",
+        action="version",
+        version="%(prog)s " + __version__,
+    )
     parser.add_argument("command", help="Your Python application.")
     parser.add_argument(
         "command_args",

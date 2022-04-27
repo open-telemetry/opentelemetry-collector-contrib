@@ -25,6 +25,7 @@ from opentelemetry.instrumentation.bootstrap_gen import (
     default_instrumentations,
     libraries,
 )
+from opentelemetry.instrumentation.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,12 @@ def run() -> None:
         opentelemetry-bootstrap detects installed libraries and automatically
         installs the relevant instrumentation packages for them.
         """
+    )
+    parser.add_argument(
+        "--version",
+        help="print version information",
+        action="version",
+        version="%(prog)s " + __version__,
     )
     parser.add_argument(
         "-a",
