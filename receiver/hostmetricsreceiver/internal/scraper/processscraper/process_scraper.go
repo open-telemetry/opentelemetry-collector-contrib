@@ -188,8 +188,14 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			//create an empty command to run includeCommand against
 			command = &commandMetadata{}
 		}
+
 		// filter by command
-		commandLine := strings.Join(command.commandLineSlice, " ")
+		var commandLine string
+		if command.commandLineSlice != nil {
+			commandLine = strings.Join(command.commandLineSlice, " ")
+		} else {
+			commandLine = command.commandLine
+		}
 		matches = s.filterSet.includeCommand(command.command, commandLine, matches)
 		if len(matches) == 0 {
 			continue
