@@ -6,10 +6,14 @@
 
 - `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
+- `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
+- `kubeletstatsreceiver`: instrumentation name updated from `kubeletstats` to `otelcol/kubeletstatsreceiver` (#9400)
+- `datadogexporter`: Remove `GetHostTags` method from `TagsConfig` struct (#9423)
 
 ### 🚩 Deprecations 🚩
 
 - `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
+- `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
 
 ### 🚀 New components 🚀
 
@@ -21,10 +25,13 @@
 
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
+- `azuremonitorexporter`, `lokiexporter`, `observiqexporter`: Update timestamp processing logic (#9130)
 - `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
+- `datadogexporter`: Update deprecation messages to reflect new deprecation plan (#9422)
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
-
 - `attributesprocessor`: Support filter by severity (#9132)
+- `processor/transform`: Add transformation of logs (#9368)
+- `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 
 ### 🧰 Bug fixes 🧰
 
@@ -32,6 +39,7 @@
 - `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
 - `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
+- `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
 - `examples/demo`: fix baggage not work in trace demo app. (#9418)
 
 ## v0.49.0
