@@ -58,6 +58,7 @@
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
 - `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
 - `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
+- `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
 
 ## v0.49.0
 
