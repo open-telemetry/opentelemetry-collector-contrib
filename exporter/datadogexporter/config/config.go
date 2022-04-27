@@ -58,7 +58,7 @@ type APIConfig struct {
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
 
-	// FailOnInvalidKey states whether to exit on invalid api key.
+	// FailOnInvalidKey states whether to exit at startup on invalid API key.
 	// The default value is false.
 	FailOnInvalidKey bool `mapstructure:"fail_on_invalid_key"`
 }

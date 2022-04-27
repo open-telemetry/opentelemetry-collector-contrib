@@ -84,7 +84,7 @@ exporters:
       # site: datadoghq.com
 
       ## @param fail_on_invalid_key - boolean - optional - default: false
-      ## Whether to exit on invalid api key.
+      ## Whether to exit at startup on invalid API key.
       #
       # fail_on_invalid_key: false
 
