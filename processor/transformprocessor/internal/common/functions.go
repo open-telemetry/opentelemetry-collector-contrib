@@ -73,6 +73,10 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 
 func truncateAll(target GetSetter, limit int64) ExprFunc {
 	return func(ctx TransformContext) interface{} {
+		if limit < 0 {
+			return nil
+		}
+
 		val := target.Get(ctx)
 		if val == nil {
 			return nil
