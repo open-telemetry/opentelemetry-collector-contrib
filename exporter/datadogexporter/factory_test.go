@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
-	"go.uber.org/zap"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -135,9 +134,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	apiConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")].(*ddconfig.Config)
-	err = apiConfig.Sanitize(zap.NewNop())
-
-	require.NoError(t, err)
 	assert.Equal(t, config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api")), apiConfig.ExporterSettings)
 	assert.Equal(t, defaulttimeoutSettings(), apiConfig.TimeoutSettings)
 	assert.Equal(t, exporterhelper.NewDefaultRetrySettings(), apiConfig.RetrySettings)
@@ -184,9 +180,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.True(t, apiConfig.UseResourceMetadata)
 
 	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default")].(*ddconfig.Config)
-	err = defaultConfig.Sanitize(zap.NewNop())
-
-	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default")),
 		TimeoutSettings:  defaulttimeoutSettings(),
@@ -244,8 +237,6 @@ func TestLoadConfig(t *testing.T) {
 	}, defaultConfig)
 
 	hostMetadataConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "hostmetadata")].(*ddconfig.Config)
-	err = hostMetadataConfig.Sanitize(zap.NewNop())
-	require.NoError(t, err)
 
 	assert.Equal(t, ddconfig.HostMetadataConfig{
 		Enabled:        true,
@@ -284,10 +275,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	apiConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "api2")].(*ddconfig.Config)
-	err = apiConfig.Sanitize(zap.NewNop())
 
 	// Check that settings with env variables get overridden when explicitly set in config
-	require.NoError(t, err)
 	assert.Equal(t, config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api2")), apiConfig.ExporterSettings)
 	assert.Equal(t, defaulttimeoutSettings(), apiConfig.TimeoutSettings)
 	assert.Equal(t, exporterhelper.NewDefaultRetrySettings(), apiConfig.RetrySettings)
@@ -337,9 +326,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		}, apiConfig.HostMetadata)
 
 	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default")].(*ddconfig.Config)
-	err = defaultConfig.Sanitize(zap.NewNop())
-
-	require.NoError(t, err)
 
 	// Check that settings with env variables get taken into account when
 	// no settings are given.

@@ -18,10 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.uber.org/zap"
 )
 
 func TestHostTags(t *testing.T) {
@@ -79,26 +76,6 @@ func TestHostTags(t *testing.T) {
 		},
 		tc.getHostTags(),
 	)
-}
-
-// TestOverrideMetricsURL tests that the metrics URL is overridden
-// correctly when set manually.
-func TestOverrideMetricsURL(t *testing.T) {
-
-	const DebugEndpoint string = "http://localhost:8080"
-
-	cfg := Config{
-		API: APIConfig{Key: "notnull", Site: DefaultSite},
-		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: DebugEndpoint,
-			},
-		},
-	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
 }
 
 func TestValidate(t *testing.T) {
