@@ -114,7 +114,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "not matching slice type",
+			name: "function call returns error",
 			inv: Invocation{
 				Function: "testing_error",
 			},
