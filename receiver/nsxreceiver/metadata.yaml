@@ -1,1 +1,33 @@
 name: nsxreceiver
+
+resource_attributes:
+  nsx.node.name:
+    description: The name of the NSX Node.
+    type: string
+  nsx.node.type:
+    description: The type of NSX Node.
+    type: string
+    enum:
+      - manager
+      - transport
+  nsx.interface.id:
+    description: The name of the NiC.
+    type: string
+  nsx.load_balancer.type:
+    description: The load balancer layer assignment
+    type: string
+    enum:
+      - L4
+      - L7
+  
+
+attributes: {}
+metrics:
+  nsx.interface.throughput:
+    description: The number of messages published to a queue.
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true

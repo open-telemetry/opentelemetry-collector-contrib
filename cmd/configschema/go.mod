@@ -754,6 +754,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => ../../receiver/mysqlreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxreceiver => ../../receiver/nsxreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../../receiver/podmanreceiver
