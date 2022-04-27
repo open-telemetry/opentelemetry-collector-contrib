@@ -417,18 +417,6 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 		c.TagsConfig.Env = "none"
 	}
 
-	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
-		return errNoMetadata
-	}
-
-	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
-		return fmt.Errorf("hostname field is invalid: %s", err)
-	}
-
-	if c.API.Key == "" {
-		return errUnsetAPIKey
-	}
-
 	c.API.Key = strings.TrimSpace(c.API.Key)
 
 	// Set default site
@@ -453,6 +441,18 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 }
 
 func (c *Config) Validate() error {
+	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
+		return errNoMetadata
+	}
+
+	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
+		return fmt.Errorf("hostname field is invalid: %s", err)
+	}
+
+	if c.API.Key == "" {
+		return errUnsetAPIKey
+	}
+
 	if c.Traces.IgnoreResources != nil {
 		for _, entry := range c.Traces.IgnoreResources {
 			_, err := regexp.Compile(entry)

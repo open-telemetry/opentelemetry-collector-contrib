@@ -58,23 +58,14 @@ exporters:
     # Deprecated; kept here to test rename system
     use_resource_metadata: false
 
-  datadog/default2:
-
-  datadog/invalid:
-    metrics:
-      endpoint: "invalid:"
-    
-    traces:
-      endpoint: "invalid:"
-
 service:
   pipelines:
     metrics:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]
 
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]

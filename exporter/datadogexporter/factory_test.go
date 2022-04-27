@@ -243,10 +243,6 @@ func TestLoadConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, defaultConfig)
 
-	invalidConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "invalid")].(*ddconfig.Config)
-	err = invalidConfig.Sanitize(zap.NewNop())
-	require.Error(t, err)
-
 	hostMetadataConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "hostmetadata")].(*ddconfig.Config)
 	err = hostMetadataConfig.Sanitize(zap.NewNop())
 	require.NoError(t, err)
@@ -340,14 +336,14 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			Tags:           []string{"example:tag"},
 		}, apiConfig.HostMetadata)
 
-	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default2")].(*ddconfig.Config)
+	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default")].(*ddconfig.Config)
 	err = defaultConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
 
 	// Check that settings with env variables get taken into account when
 	// no settings are given.
-	assert.Equal(t, config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default2")), defaultConfig.ExporterSettings)
+	assert.Equal(t, config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default")), defaultConfig.ExporterSettings)
 	assert.Equal(t, defaulttimeoutSettings(), defaultConfig.TimeoutSettings)
 	assert.Equal(t, exporterhelper.NewDefaultRetrySettings(), defaultConfig.RetrySettings)
 	assert.Equal(t, exporterhelper.NewDefaultQueueSettings(), defaultConfig.QueueSettings)
@@ -357,7 +353,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		EnvVarTags: "envexample:tag envexample2:tag",
 	}, defaultConfig.TagsConfig)
 	assert.Equal(t, ddconfig.APIConfig{
-		Key:  "replacedapikey",
+		Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		Site: "datadoghq.test",
 	}, defaultConfig.API)
 	assert.Equal(t, ddconfig.MetricsConfig{
