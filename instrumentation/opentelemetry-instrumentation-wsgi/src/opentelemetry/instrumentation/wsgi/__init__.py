@@ -266,8 +266,8 @@ def collect_request_attributes(environ):
     return result
 
 
-def add_custom_request_headers(span, environ):
-    """Adds custom HTTP request headers into the span which are configured by the user
+def collect_custom_request_headers_attributes(environ):
+    """Returns custom HTTP request headers which are configured by the user
     from the PEP3333-conforming WSGI environ to be used as span creation attributes as described
     in the specification https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-request-and-response-headers"""
     attributes = {}
@@ -280,11 +280,11 @@ def add_custom_request_headers(span, environ):
         if header_values:
             key = normalise_request_header_name(header_name)
             attributes[key] = [header_values]
-    span.set_attributes(attributes)
+    return attributes
 
 
-def add_custom_response_headers(span, response_headers):
-    """Adds custom HTTP response headers into the sapn which are configured by the user from the
+def collect_custom_response_headers_attributes(response_headers):
+    """Returns custom HTTP response headers which are configured by the user from the
     PEP3333-conforming WSGI environ as described in the specification
     https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-request-and-response-headers"""
     attributes = {}
@@ -301,7 +301,7 @@ def add_custom_response_headers(span, response_headers):
         if header_values:
             key = normalise_response_header_name(header_name)
             attributes[key] = [header_values]
-    span.set_attributes(attributes)
+    return attributes
 
 
 def add_response_attributes(
@@ -365,7 +365,11 @@ class OpenTelemetryMiddleware:
         def _start_response(status, response_headers, *args, **kwargs):
             add_response_attributes(span, status, response_headers)
             if span.is_recording() and span.kind == trace.SpanKind.SERVER:
-                add_custom_response_headers(span, response_headers)
+                custom_attributes = collect_custom_response_headers_attributes(
+                    response_headers
+                )
+                if len(custom_attributes) > 0:
+                    span.set_attributes(custom_attributes)
             if response_hook:
                 response_hook(status, response_headers)
             return start_response(status, response_headers, *args, **kwargs)
@@ -388,7 +392,11 @@ class OpenTelemetryMiddleware:
             attributes=collect_request_attributes(environ),
         )
         if span.is_recording() and span.kind == trace.SpanKind.SERVER:
-            add_custom_request_headers(span, environ)
+            custom_attributes = collect_custom_request_headers_attributes(
+                environ
+            )
+            if len(custom_attributes) > 0:
+                span.set_attributes(custom_attributes)
 
         if self.request_hook:
             self.request_hook(span, environ)

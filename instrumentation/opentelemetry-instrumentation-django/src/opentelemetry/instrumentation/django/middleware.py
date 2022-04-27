@@ -28,13 +28,13 @@ from opentelemetry.instrumentation.utils import (
     _start_internal_or_server_span,
     extract_attributes_from_object,
 )
-from opentelemetry.instrumentation.wsgi import (
-    add_custom_request_headers as wsgi_add_custom_request_headers,
-)
-from opentelemetry.instrumentation.wsgi import (
-    add_custom_response_headers as wsgi_add_custom_response_headers,
-)
 from opentelemetry.instrumentation.wsgi import add_response_attributes
+from opentelemetry.instrumentation.wsgi import (
+    collect_custom_request_headers_attributes as wsgi_collect_custom_request_headers_attributes,
+)
+from opentelemetry.instrumentation.wsgi import (
+    collect_custom_response_headers_attributes as wsgi_collect_custom_response_headers_attributes,
+)
 from opentelemetry.instrumentation.wsgi import (
     collect_request_attributes as wsgi_collect_request_attributes,
 )
@@ -231,7 +231,11 @@ class _DjangoMiddleware(MiddlewareMixin):
                     )
             else:
                 if span.is_recording() and span.kind == SpanKind.SERVER:
-                    wsgi_add_custom_request_headers(span, carrier)
+                    custom_attributes = (
+                        wsgi_collect_custom_request_headers_attributes(carrier)
+                    )
+                    if len(custom_attributes) > 0:
+                        span.set_attributes(custom_attributes)
 
             for key, value in attributes.items():
                 span.set_attribute(key, value)
@@ -309,7 +313,13 @@ class _DjangoMiddleware(MiddlewareMixin):
                     response.items(),
                 )
                 if span.is_recording() and span.kind == SpanKind.SERVER:
-                    wsgi_add_custom_response_headers(span, response.items())
+                    custom_attributes = (
+                        wsgi_collect_custom_response_headers_attributes(
+                            response.items()
+                        )
+                    )
+                    if len(custom_attributes) > 0:
+                        span.set_attributes(custom_attributes)
 
             propagator = get_global_response_propagator()
             if propagator:

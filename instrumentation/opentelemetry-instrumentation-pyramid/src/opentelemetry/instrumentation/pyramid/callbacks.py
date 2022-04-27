@@ -105,7 +105,13 @@ def _before_traversal(event):
         for key, value in attributes.items():
             span.set_attribute(key, value)
         if span.kind == trace.SpanKind.SERVER:
-            otel_wsgi.add_custom_request_headers(span, request_environ)
+            custom_attributes = (
+                otel_wsgi.collect_custom_request_headers_attributes(
+                    request_environ
+                )
+            )
+            if len(custom_attributes) > 0:
+                span.set_attributes(custom_attributes)
 
     activation = trace.use_span(span, end_on_exit=True)
     activation.__enter__()  # pylint: disable=E1101
@@ -178,9 +184,13 @@ def trace_tween_factory(handler, registry):
                     )
 
                 if span.is_recording() and span.kind == trace.SpanKind.SERVER:
-                    otel_wsgi.add_custom_response_headers(
-                        span, getattr(response, "headerlist", None)
+                    custom_attributes = (
+                        otel_wsgi.collect_custom_response_headers_attributes(
+                            getattr(response, "headerlist", None)
+                        )
                     )
+                    if len(custom_attributes) > 0:
+                        span.set_attributes(custom_attributes)
 
                 propagator = get_global_response_propagator()
                 if propagator and hasattr(response, "headers"):

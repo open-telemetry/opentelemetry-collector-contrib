@@ -315,7 +315,7 @@ def _log_exception(tracer, func, handler, args, kwargs):
     return func(*args, **kwargs)
 
 
-def _add_custom_request_headers(span, request_headers):
+def _collect_custom_request_headers_attributes(request_headers):
     custom_request_headers_name = get_custom_headers(
         OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST
     )
@@ -325,10 +325,10 @@ def _add_custom_request_headers(span, request_headers):
         if header_values:
             key = normalise_request_header_name(header_name.lower())
             attributes[key] = [header_values]
-    span.set_attributes(attributes)
+    return attributes
 
 
-def _add_custom_response_headers(span, response_headers):
+def _collect_custom_response_headers_attributes(response_headers):
     custom_response_headers_name = get_custom_headers(
         OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE
     )
@@ -338,7 +338,7 @@ def _add_custom_response_headers(span, response_headers):
         if header_values:
             key = normalise_response_header_name(header_name.lower())
             attributes[key] = [header_values]
-    span.set_attributes(attributes)
+    return attributes
 
 
 def _get_attributes_from_request(request):
@@ -392,7 +392,11 @@ def _start_span(tracer, handler, start_time) -> _TraceContext:
             span.set_attribute(key, value)
         span.set_attribute("tornado.handler", _get_full_handler_name(handler))
         if span.is_recording() and span.kind == trace.SpanKind.SERVER:
-            _add_custom_request_headers(span, handler.request.headers)
+            custom_attributes = _collect_custom_request_headers_attributes(
+                handler.request.headers
+            )
+            if len(custom_attributes) > 0:
+                span.set_attributes(custom_attributes)
 
     activation = trace.use_span(span, end_on_exit=True)
     activation.__enter__()  # pylint: disable=E1101
@@ -448,7 +452,11 @@ def _finish_span(tracer, handler, error=None):
             )
         )
         if ctx.span.is_recording() and ctx.span.kind == trace.SpanKind.SERVER:
-            _add_custom_response_headers(ctx.span, handler._headers)
+            custom_attributes = _collect_custom_response_headers_attributes(
+                handler._headers
+            )
+            if len(custom_attributes) > 0:
+                ctx.span.set_attributes(custom_attributes)
 
     ctx.activation.__exit__(*finish_args)  # pylint: disable=E1101
     if ctx.token:

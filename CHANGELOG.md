@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.11.1-0.30b1...HEAD)
 
 ### Fixed
-- `opentelemetry-instrumentation-aws-lambda` Fixed an issue - in some rare cases (API GW proxy integration test) 
+- `opentelemetry-instrumentation-aws-lambda` Fixed an issue - in some rare cases (API GW proxy integration test)
   headers are set to None, breaking context propagators.
   ([#1055](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1055))
+- Refactoring custom header collection API for consistency
+  ([#1064](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1064))
 
 ## [1.11.1-0.30b1](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.11.1-0.30b1) - 2022-04-21
 

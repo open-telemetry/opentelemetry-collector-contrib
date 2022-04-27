@@ -208,9 +208,11 @@ def _rewrapped_app(wsgi_app, response_hook=None, excluded_urls=None):
                         span.is_recording()
                         and span.kind == trace.SpanKind.SERVER
                     ):
-                        otel_wsgi.add_custom_response_headers(
-                            span, response_headers
+                        custom_attributes = otel_wsgi.collect_custom_response_headers_attributes(
+                            response_headers
                         )
+                        if len(custom_attributes) > 0:
+                            span.set_attributes(custom_attributes)
                 else:
                     _logger.warning(
                         "Flask environ's OpenTelemetry span "
@@ -259,9 +261,13 @@ def _wrapped_before_request(
             for key, value in attributes.items():
                 span.set_attribute(key, value)
             if span.is_recording() and span.kind == trace.SpanKind.SERVER:
-                otel_wsgi.add_custom_request_headers(
-                    span, flask_request_environ
+                custom_attributes = (
+                    otel_wsgi.collect_custom_request_headers_attributes(
+                        flask_request_environ
+                    )
                 )
+                if len(custom_attributes) > 0:
+                    span.set_attributes(custom_attributes)
 
         activation = trace.use_span(span, end_on_exit=True)
         activation.__enter__()  # pylint: disable=E1101
