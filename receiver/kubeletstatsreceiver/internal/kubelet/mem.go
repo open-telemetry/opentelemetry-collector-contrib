@@ -15,25 +15,21 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addMemoryMetrics(dest pmetric.MetricSlice, availableMetricInt metadata.MetricIntf,
-	usageMetricInt metadata.MetricIntf, rssMetricInt metadata.MetricIntf, workingSetMetricInt metadata.MetricIntf,
-	pageFaultsMetricInt metadata.MetricIntf, majorPageFaultsMetricInt metadata.MetricIntf,
-	s *stats.MemoryStats, currentTime pcommon.Timestamp) {
+func addMemoryMetrics(dest pmetric.MetricSlice, memoryMetrics metadata.MemoryMetrics, s *stats.MemoryStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	addIntGauge(dest, availableMetricInt, s.AvailableBytes, currentTime)
-	addIntGauge(dest, usageMetricInt, s.UsageBytes, currentTime)
-	addIntGauge(dest, rssMetricInt, s.RSSBytes, currentTime)
-	addIntGauge(dest, workingSetMetricInt, s.WorkingSetBytes, currentTime)
-	addIntGauge(dest, pageFaultsMetricInt, s.PageFaults, currentTime)
-	addIntGauge(dest, majorPageFaultsMetricInt, s.MajorPageFaults, currentTime)
+	addIntGauge(dest, memoryMetrics.Available, s.AvailableBytes, currentTime)
+	addIntGauge(dest, memoryMetrics.Usage, s.UsageBytes, currentTime)
+	addIntGauge(dest, memoryMetrics.Rss, s.RSSBytes, currentTime)
+	addIntGauge(dest, memoryMetrics.WorkingSet, s.WorkingSetBytes, currentTime)
+	addIntGauge(dest, memoryMetrics.PageFaults, s.PageFaults, currentTime)
+	addIntGauge(dest, memoryMetrics.MajorPageFaults, s.MajorPageFaults, currentTime)
 }

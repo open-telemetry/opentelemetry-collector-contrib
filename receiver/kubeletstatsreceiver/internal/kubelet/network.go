@@ -22,12 +22,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addNetworkMetrics(dest pmetric.MetricSlice, ioMetricInt metadata.MetricIntf, errorsMetricInt metadata.MetricIntf, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addNetworkMetrics(dest pmetric.MetricSlice, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
-	addNetworkIOMetric(dest, ioMetricInt, s, startTime, currentTime)
-	addNetworkErrorsMetric(dest, errorsMetricInt, s, startTime, currentTime)
+	addNetworkIOMetric(dest, networkMetrics.IO, s, startTime, currentTime)
+	addNetworkErrorsMetric(dest, networkMetrics.Errors, s, startTime, currentTime)
 }
 
 func addNetworkIOMetric(dest pmetric.MetricSlice, metricInt metadata.MetricIntf, s *stats.NetworkStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {

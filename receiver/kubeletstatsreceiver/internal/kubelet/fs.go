@@ -15,21 +15,18 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addFilesystemMetrics(dest pmetric.MetricSlice, availableBytesMetricInt metadata.MetricIntf,
-	capacityBytesMetricInt metadata.MetricIntf, usedBytesMetricInt metadata.MetricIntf, s *stats.FsStats,
-	currentTime pcommon.Timestamp) {
+func addFilesystemMetrics(dest pmetric.MetricSlice, filesystemMetrics metadata.FilesystemMetrics, s *stats.FsStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	addIntGauge(dest, availableBytesMetricInt, s.AvailableBytes, currentTime)
-	addIntGauge(dest, capacityBytesMetricInt, s.CapacityBytes, currentTime)
-	addIntGauge(dest, usedBytesMetricInt, s.UsedBytes, currentTime)
+	addIntGauge(dest, filesystemMetrics.Available, s.AvailableBytes, currentTime)
+	addIntGauge(dest, filesystemMetrics.Capacity, s.CapacityBytes, currentTime)
+	addIntGauge(dest, filesystemMetrics.Usage, s.UsedBytes, currentTime)
 }

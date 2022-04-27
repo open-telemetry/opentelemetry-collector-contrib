@@ -15,25 +15,21 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addVolumeMetrics(dest pmetric.MetricSlice, availableBytesMetricInt metadata.MetricIntf,
-	capacityBytesMetricInt metadata.MetricIntf, inodesMetricInt metadata.MetricIntf,
-	inodesFreeMetricInt metadata.MetricIntf, inodesUsedMetricInt metadata.MetricIntf, s stats.VolumeStats,
-	currentTime pcommon.Timestamp) {
-	addIntGauge(dest, availableBytesMetricInt, s.AvailableBytes, currentTime)
-	addIntGauge(dest, capacityBytesMetricInt, s.CapacityBytes, currentTime)
-	addIntGauge(dest, inodesMetricInt, s.Inodes, currentTime)
-	addIntGauge(dest, inodesFreeMetricInt, s.InodesFree, currentTime)
-	addIntGauge(dest, inodesUsedMetricInt, s.InodesUsed, currentTime)
+func addVolumeMetrics(dest pmetric.MetricSlice, volumeMetrics metadata.VolumeMetrics, s stats.VolumeStats, currentTime pcommon.Timestamp) {
+	addIntGauge(dest, volumeMetrics.Available, s.AvailableBytes, currentTime)
+	addIntGauge(dest, volumeMetrics.Capacity, s.CapacityBytes, currentTime)
+	addIntGauge(dest, volumeMetrics.Inodes, s.Inodes, currentTime)
+	addIntGauge(dest, volumeMetrics.InodesFree, s.InodesFree, currentTime)
+	addIntGauge(dest, volumeMetrics.InodesUsed, s.InodesUsed, currentTime)
 }
 
 func getLabelsFromVolume(volume v1.Volume, labels map[string]string) {
