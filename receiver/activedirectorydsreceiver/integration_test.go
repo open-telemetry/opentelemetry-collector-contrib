@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
+//go:build windows && integration
 
-package sqlserverreceiver
+package activedirectorydsreceiver
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,28 +29,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
-func TestSqlServerIntegration(t *testing.T) {
+/*
+	TestIntegration test scraping metrics from a running Active Directory domain controller.
+	The domain controller must be set up locally outside of this test in order for it to pass.
+*/
+func TestIntegration(t *testing.T) {
 	t.Parallel()
 
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+	fact := NewFactory()
 
-	consumer := new(consumertest.MetricsSink)
-	settings := componenttest.NewNopReceiverCreateSettings()
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	require.Eventuallyf(t, func() bool {
-		return consumer.DataPointCount() > 0
-	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-	require.NoError(t, rcvr.Shutdown(context.Background()))
+	consumer := &consumertest.MetricsSink{}
+	recv, err := fact.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), fact.CreateDefaultConfig(), consumer)
 
-	actualMetrics := consumer.AllMetrics()[0]
-
-	expectedFile := filepath.Join("testdata", "integration", "expected.json")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
+	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return len(consumer.AllMetrics()) > 0
+	}, 2*time.Minute, 1*time.Second, "failed to receive any metrics")
+
+	actualMetrics := consumer.AllMetrics()[0]
+	expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
+	require.NoError(t, err)
+
+	err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+	require.NoError(t, err)
+
+	err = recv.Shutdown(context.Background())
+	require.NoError(t, err)
+
 }

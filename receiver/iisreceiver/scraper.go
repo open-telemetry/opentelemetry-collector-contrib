@@ -24,9 +24,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
@@ -40,12 +42,12 @@ type iisReceiver struct {
 	metricBuilder *metadata.MetricsBuilder
 }
 
-// new returns a iisReceiver
+// newIisReceiver returns an iisReceiver
 func newIisReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
 	return &iisReceiver{params: params, config: cfg, consumer: consumer, metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics)}
 }
 
-// Start creates and starts the prometheus receiver.
+// start builds the paths to the watchers
 func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 	rcvr.watchers = []winperfcounters.PerfCounterWatcher{}
 
@@ -64,25 +66,30 @@ func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 	return errors.Combine()
 }
 
-func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {
+// scrape pulls counter values from the watchers
+func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, watcher := range rcvr.watchers {
 		counterValues, err := watcher.ScrapeData()
 		if err != nil {
-			errs = multierr.Append(errs, err)
+			rcvr.params.Logger.Warn("some performance counters could not be scraped; ", zap.Error(err))
 			continue
 		}
+		var metricRep winperfcounters.MetricRep
+		value := 0.0
 		for _, counterValue := range counterValues {
-			rcvr.metricBuilder.RecordAny(now, counterValue.Value, counterValue.MetricRep.Name, counterValue.MetricRep.Attributes)
+			value += counterValue.Value
+			metricRep = counterValue.MetricRep
 		}
+		rcvr.metricBuilder.RecordAny(now, value, metricRep.Name, metricRep.Attributes)
 	}
 
 	return rcvr.metricBuilder.Emit(), errs
 }
 
-// Shutdown stops the underlying Prometheus receiver.
+// shutdown closes the watchers
 func (rcvr iisReceiver) shutdown(ctx context.Context) error {
 	var errs error
 	for _, watcher := range rcvr.watchers {

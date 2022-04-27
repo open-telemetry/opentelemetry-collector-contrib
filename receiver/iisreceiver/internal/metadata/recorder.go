@@ -15,10 +15,10 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func (mb *MetricsBuilder) RecordAny(ts pdata.Timestamp, val float64, name string, attributes map[string]string) {
+func (mb *MetricsBuilder) RecordAny(ts pcommon.Timestamp, val float64, name string, attributes map[string]string) {
 	switch name {
 	case "iis.connection.active":
 		mb.RecordIisConnectionActiveDataPoint(ts, int64(val))
