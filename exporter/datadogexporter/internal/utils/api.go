@@ -37,9 +37,7 @@ func ValidateAPIKey(logger *zap.Logger, client *datadog.Client, failOnInvalidKey
 		return
 	}
 	switch {
-	case err != nil && failOnInvalidKey:
-		logger.Fatal("Error while validating API key.", zap.Error(err))
-	case err != nil && !failOnInvalidKey:
+	case err != nil:
 		logger.Warn("Error while validating API key.", zap.Error(err))
 	case !valid && failOnInvalidKey:
 		logger.Fatal("API Key validation failed.")
