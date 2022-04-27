@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -112,11 +113,28 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "not matching slice type",
+			inv: Invocation{
+				Function: "testing_error",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, DefaultFunctions(), testParsePath)
+
+			functions := DefaultFunctions()
+			functions["testing_error"] = functionThatHasAnError
+
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
 			assert.Error(t, err)
 		})
 	}
+}
+
+func functionThatHasAnError() (ExprFunc, error) {
+	err := errors.New("testing")
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, err
 }

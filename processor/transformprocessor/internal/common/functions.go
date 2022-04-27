@@ -32,17 +32,17 @@ func DefaultFunctions() map[string]interface{} {
 	return registry
 }
 
-func set(target Setter, value Getter) ExprFunc {
+func set(target Setter, value Getter) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		val := value.Get(ctx)
 		if val != nil {
 			target.Set(ctx, val)
 		}
 		return nil
-	}
+	}, nil
 }
 
-func keepKeys(target GetSetter, keys []string) ExprFunc {
+func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
@@ -67,7 +67,7 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 			target.Set(ctx, filtered)
 		}
 		return nil
-	}
+	}, nil
 }
 
 // TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
@@ -121,7 +121,15 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 		}
 		val := reflect.ValueOf(f)
 		ret := val.Call(args)
-		return ret[0].Interface().(ExprFunc), nil
+
+		var err error
+		if ret[1].IsNil() {
+			err = nil
+		} else {
+			err = ret[1].Interface().(error)
+		}
+
+		return ret[0].Interface().(ExprFunc), err
 	}
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
