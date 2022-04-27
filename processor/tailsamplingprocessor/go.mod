@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220425174313-0674425b8ef2
+	go.opentelemetry.io/collector v0.49.1-0.20220426224620-b80d75452365
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220426224620-b80d75452365
 	go.uber.org/goleak v1.1.11
 	go.uber.org/zap v1.21.0
 )
