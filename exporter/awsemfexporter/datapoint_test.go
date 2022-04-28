@@ -22,7 +22,8 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -293,10 +294,10 @@ func TestIntDataPointSliceAt(t *testing.T) {
 
 	for i, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			testDPS := pdata.NewNumberDataPointSlice()
+			testDPS := pmetric.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetIntVal(tc.value.(int64))
-			pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+			pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -364,10 +365,10 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 	for i, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			testDPS := pdata.NewNumberDataPointSlice()
+			testDPS := pmetric.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetDoubleVal(tc.value.(float64))
-			pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+			pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -396,13 +397,13 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]interface{}{"label1": "value1"}
 
-	testDPS := pdata.NewHistogramDataPointSlice()
+	testDPS := pmetric.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
 	testDP.SetCount(uint64(17))
 	testDP.SetSum(17.13)
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
-	pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+	pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -456,7 +457,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 
 	for i, tt := range testCases {
 		t.Run(tt.testName, func(t *testing.T) {
-			testDPS := pdata.NewSummaryDataPointSlice()
+			testDPS := pmetric.NewSummaryDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetSum(tt.inputSumCount[0].(float64))
 			testDP.SetCount(tt.inputSumCount[1].(uint64))
@@ -468,7 +469,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
-			pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+			pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 			dps := summaryDataPointSlice{
 				instrLibName,
@@ -518,7 +519,7 @@ func TestCreateLabels(t *testing.T) {
 		"b": "B",
 		"c": "C",
 	}
-	labelsMap := pdata.NewMapFromRaw(map[string]interface{}{
+	labelsMap := pcommon.NewMapFromRaw(map[string]interface{}{
 		"a": "A",
 		"b": "B",
 		"c": "C",
@@ -573,7 +574,7 @@ func TestGetDataPoints(t *testing.T) {
 			numberDataPointSlice{
 				metadata.instrumentationLibraryName,
 				dmm,
-				pdata.NumberDataPointSlice{},
+				pmetric.NumberDataPointSlice{},
 			},
 		},
 		{
@@ -583,7 +584,7 @@ func TestGetDataPoints(t *testing.T) {
 			numberDataPointSlice{
 				metadata.instrumentationLibraryName,
 				dmm,
-				pdata.NumberDataPointSlice{},
+				pmetric.NumberDataPointSlice{},
 			},
 		},
 		{
@@ -593,7 +594,7 @@ func TestGetDataPoints(t *testing.T) {
 			numberDataPointSlice{
 				metadata.instrumentationLibraryName,
 				cumulativeDmm,
-				pdata.NumberDataPointSlice{},
+				pmetric.NumberDataPointSlice{},
 			},
 		},
 		{
@@ -603,7 +604,7 @@ func TestGetDataPoints(t *testing.T) {
 			numberDataPointSlice{
 				metadata.instrumentationLibraryName,
 				cumulativeDmm,
-				pdata.NumberDataPointSlice{},
+				pmetric.NumberDataPointSlice{},
 			},
 		},
 		{
@@ -612,7 +613,7 @@ func TestGetDataPoints(t *testing.T) {
 			generateTestHistogram("foo"),
 			histogramDataPointSlice{
 				metadata.instrumentationLibraryName,
-				pdata.HistogramDataPointSlice{},
+				pmetric.HistogramDataPointSlice{},
 			},
 		},
 		{
@@ -622,7 +623,7 @@ func TestGetDataPoints(t *testing.T) {
 			summaryDataPointSlice{
 				metadata.instrumentationLibraryName,
 				dmm,
-				pdata.SummaryDataPointSlice{},
+				pmetric.SummaryDataPointSlice{},
 			},
 		},
 		{
@@ -632,7 +633,7 @@ func TestGetDataPoints(t *testing.T) {
 			summaryDataPointSlice{
 				metadata.instrumentationLibraryName,
 				cumulativeDmm,
-				pdata.SummaryDataPointSlice{},
+				pmetric.SummaryDataPointSlice{},
 			},
 		},
 	}
@@ -640,13 +641,13 @@ func TestGetDataPoints(t *testing.T) {
 	for _, tc := range testCases {
 		ocMetrics := []*metricspb.Metric{tc.metric}
 
-		// Retrieve *pdata.Metric
+		// Retrieve *pmetric.Metric
 		rm := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics().At(0)
 		metric := rm.ScopeMetrics().At(0).Metrics().At(0)
 
 		logger := zap.NewNop()
 
-		expectedAttributes := pdata.NewMapFromRaw(map[string]interface{}{"label1": "value1"})
+		expectedAttributes := pcommon.NewMapFromRaw(map[string]interface{}{"label1": "value1"})
 
 		t.Run(tc.testName, func(t *testing.T) {
 			setupDataPointCache()
@@ -667,9 +668,9 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.NumberDataPointSlice.At(0)
 				switch dp.ValueType() {
-				case pdata.MetricValueTypeDouble:
+				case pmetric.NumberDataPointValueTypeDouble:
 					assert.Equal(t, 0.1, dp.DoubleVal())
-				case pdata.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					assert.Equal(t, int64(1), dp.IntVal())
 				}
 				assert.Equal(t, expectedAttributes, dp.Attributes())
@@ -697,10 +698,10 @@ func TestGetDataPoints(t *testing.T) {
 	}
 
 	t.Run("Unhandled metric type", func(t *testing.T) {
-		metric := pdata.NewMetric()
+		metric := pmetric.NewMetric()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeNone)
+		metric.SetDataType(pmetric.MetricDataTypeNone)
 
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
@@ -767,7 +768,7 @@ func TestIntDataPointSlice_At(t *testing.T) {
 	type fields struct {
 		instrumentationLibraryName string
 		deltaMetricMetadata        deltaMetricMetadata
-		NumberDataPointSlice       pdata.NumberDataPointSlice
+		NumberDataPointSlice       pmetric.NumberDataPointSlice
 	}
 	type args struct {
 		i int

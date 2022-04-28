@@ -22,8 +22,9 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -32,10 +33,10 @@ import (
 // TODO: Remove this when collector defines this semantic convention.
 const ExceptionEventName = "exception"
 
-func makeCause(span pdata.Span, attributes map[string]pdata.Value, resource pdata.Resource) (isError, isFault, isThrottle bool,
-	filtered map[string]pdata.Value, cause *awsxray.CauseData) {
+func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
+	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.Code() != pdata.StatusCodeError {
+	if status.Code() != ptrace.StatusCodeError {
 		return false, false, false, attributes, nil
 	}
 	filtered = attributes
@@ -91,7 +92,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.Value, resource pdat
 	} else {
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
-		filtered = make(map[string]pdata.Value)
+		filtered = make(map[string]pcommon.Value)
 		for key, value := range attributes {
 			switch key {
 			case "http.status_text":

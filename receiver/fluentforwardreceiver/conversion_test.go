@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestMessageEventConversion(t *testing.T) {
@@ -39,7 +39,7 @@ func TestMessageEventConversion(t *testing.T) {
 	expected := Logs(
 		Log{
 			Timestamp: 1593031012000000000,
-			Body:      pdata.NewValueString("..."),
+			Body:      pcommon.NewValueString("..."),
 			Attributes: map[string]interface{}{
 				"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
 				"container_name": "/unruffled_cannon",
@@ -107,7 +107,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 	require.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
-			Body:      pdata.NewValueEmpty(),
+			Body:      pcommon.NewValueEmpty(),
 			Attributes: map[string]interface{}{
 				"a":          5.0,
 				"b":          6.0,
@@ -252,21 +252,21 @@ func TestBodyConversion(t *testing.T) {
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
 
-	body := pdata.NewValueMap()
+	body := pcommon.NewValueMap()
 	body.MapVal().InsertString("a", "value")
 
-	bv := pdata.NewValueSlice()
+	bv := pcommon.NewValueSlice()
 	bv.SliceVal().EnsureCapacity(2)
 	bv.SliceVal().AppendEmpty().SetStringVal("first")
 	bv.SliceVal().AppendEmpty().SetStringVal("second")
 	body.MapVal().Insert("b", bv)
 
-	cv := pdata.NewValueMap()
+	cv := pcommon.NewValueMap()
 	cv.MapVal().InsertInt("d", 24)
 	body.MapVal().Insert("c", cv)
 
 	// Sort the map, sometimes may get in a different order.
-	require.Equal(t, pdata.ValueTypeMap, le.Body().Type())
+	require.Equal(t, pcommon.ValueTypeMap, le.Body().Type())
 	le.Body().MapVal().Sort()
 	assert.EqualValues(t, Logs(
 		Log{

@@ -17,7 +17,8 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
@@ -48,9 +49,9 @@ type dataPoint struct {
 }
 
 // dataPoints is a wrapper interface for:
-// 	- pdata.NumberDataPointSlice
-// 	- pdata.histogramDataPointSlice
-//  - pdata.summaryDataPointSlice
+// 	- pmetric.NumberDataPointSlice
+// 	- pmetric.HistogramDataPointSlice
+//  - pmetric.SummaryDataPointSlice
 type dataPoints interface {
 	Len() int
 	// At gets the adjusted datapoint from the DataPointSlice at i-th index.
@@ -82,24 +83,24 @@ func mergeLabels(m deltaMetricMetadata, labels map[string]string) map[string]str
 	return result
 }
 
-// numberDataPointSlice is a wrapper for pdata.NumberDataPointSlice
+// numberDataPointSlice is a wrapper for pmetric.NumberDataPointSlice
 type numberDataPointSlice struct {
 	instrumentationLibraryName string
 	deltaMetricMetadata
-	pdata.NumberDataPointSlice
+	pmetric.NumberDataPointSlice
 }
 
-// histogramDataPointSlice is a wrapper for pdata.histogramDataPointSlice
+// histogramDataPointSlice is a wrapper for pmetric.HistogramDataPointSlice
 type histogramDataPointSlice struct {
 	instrumentationLibraryName string
-	pdata.HistogramDataPointSlice
+	pmetric.HistogramDataPointSlice
 }
 
-// summaryDataPointSlice is a wrapper for pdata.summaryDataPointSlice
+// summaryDataPointSlice is a wrapper for pmetric.SummaryDataPointSlice
 type summaryDataPointSlice struct {
 	instrumentationLibraryName string
 	deltaMetricMetadata
-	pdata.SummaryDataPointSlice
+	pmetric.SummaryDataPointSlice
 }
 
 type summaryMetricEntry struct {
@@ -115,9 +116,9 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 
 	var metricVal float64
 	switch metric.ValueType() {
-	case pdata.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		metricVal = metric.DoubleVal()
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		metricVal = float64(metric.IntVal())
 	}
 
@@ -198,9 +199,9 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 
 // createLabels converts OTel AttributesMap attributes to a map
 // and optionally adds in the OTel instrumentation library name
-func createLabels(attributes pdata.Map, instrLibName string) map[string]string {
+func createLabels(attributes pcommon.Map, instrLibName string) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
-	attributes.Range(func(k string, v pdata.Value) bool {
+	attributes.Range(func(k string, v pcommon.Value) bool {
 		labels[k] = v.AsString()
 		return true
 	})
@@ -214,7 +215,7 @@ func createLabels(attributes pdata.Map, instrLibName string) map[string]string {
 }
 
 // getDataPoints retrieves data points from OT Metric.
-func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
+func getDataPoints(pmd *pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
 	if pmd == nil {
 		return
 	}
@@ -229,28 +230,28 @@ func getDataPoints(pmd *pdata.Metric, metadata cWMetricMetadata, logger *zap.Log
 	}
 
 	switch pmd.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		metric := pmd.Gauge()
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		metric := pmd.Sum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative
+		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		metric := pmd.Histogram()
 		dps = histogramDataPointSlice{
 			metadata.instrumentationLibraryName,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		metric := pmd.Summary()
 		// For summaries coming from the prometheus receiver, the sum and count are cumulative, whereas for summaries
 		// coming from other sources, e.g. SDK, the sum and count are delta by being accumulated and reset periodically.

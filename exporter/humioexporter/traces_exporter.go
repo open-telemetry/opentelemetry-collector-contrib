@@ -21,8 +21,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // HumioLink represents a relation between two spans
@@ -85,7 +86,7 @@ func newTracesExporterWithClientGetter(cfg *Config, settings component.Telemetry
 	}
 }
 
-func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *humioTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	e.wg.Add(1)
 	defer e.wg.Done()
 
@@ -114,9 +115,9 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 	return conversionErr
 }
 
-func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStructuredEvents, error) {
+func (e *humioTracesExporter) tracesToHumioEvents(td ptrace.Traces) ([]*HumioStructuredEvents, error) {
 	organizer := newTagOrganizer(e.cfg.Tag, tagFromSpan)
-	var droppedTraces []pdata.ResourceSpans
+	var droppedTraces []ptrace.ResourceSpans
 
 	resSpans := td.ResourceSpans()
 	for i := 0; i < resSpans.Len(); i++ {
@@ -145,7 +146,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	results := organizer.asEvents()
 
 	if len(droppedTraces) > 0 {
-		dropped := pdata.NewTraces()
+		dropped := ptrace.NewTraces()
 		for _, t := range droppedTraces {
 			tgt := dropped.ResourceSpans().AppendEmpty()
 			t.CopyTo(tgt)
@@ -160,7 +161,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	return results, nil
 }
 
-func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.InstrumentationScope, res pdata.Resource) *HumioStructuredEvent {
+func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.InstrumentationScope, res pcommon.Resource) *HumioStructuredEvent {
 	attr := toHumioAttributes(span.Attributes(), res.Attributes())
 	if instName := inst.Name(); instName != "" {
 		attr[conventions.OtelLibraryName] = instName
@@ -196,7 +197,7 @@ func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.Instr
 	}
 }
 
-func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
+func toHumioLinks(pLinks ptrace.SpanLinkSlice) []*HumioLink {
 	links := make([]*HumioLink, 0, pLinks.Len())
 	for i := 0; i < pLinks.Len(); i++ {
 		link := pLinks.At(i)
@@ -209,10 +210,10 @@ func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
 	return links
 }
 
-func toHumioAttributes(attrMaps ...pdata.Map) map[string]interface{} {
+func toHumioAttributes(attrMaps ...pcommon.Map) map[string]interface{} {
 	attr := make(map[string]interface{})
 	for _, attrMap := range attrMaps {
-		attrMap.Range(func(k string, v pdata.Value) bool {
+		attrMap.Range(func(k string, v pcommon.Value) bool {
 			attr[k] = toHumioAttributeValue(v)
 			return true
 		})
@@ -220,19 +221,19 @@ func toHumioAttributes(attrMaps ...pdata.Map) map[string]interface{} {
 	return attr
 }
 
-func toHumioAttributeValue(rawVal pdata.Value) interface{} {
+func toHumioAttributeValue(rawVal pcommon.Value) interface{} {
 	switch rawVal.Type() {
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return rawVal.StringVal()
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return rawVal.IntVal()
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return rawVal.DoubleVal()
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return rawVal.BoolVal()
-	case pdata.ValueTypeMap:
+	case pcommon.ValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
-	case pdata.ValueTypeSlice:
+	case pcommon.ValueTypeSlice:
 		arrVal := rawVal.SliceVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {

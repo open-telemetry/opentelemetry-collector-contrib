@@ -36,8 +36,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -216,12 +217,12 @@ func generateLargeBatch() *agentmetricspb.ExportMetricsServiceRequest {
 	return md
 }
 
-func generateLargeLogsBatch() pdata.Logs {
-	logs := pdata.NewLogs()
+func generateLargeLogsBatch() plog.Logs {
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.LogRecords().EnsureCapacity(65000)
-	ts := pdata.Timestamp(123)
+	ts := pcommon.Timestamp(123)
 	for i := 0; i < 65000; i++ {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
@@ -237,7 +238,7 @@ func generateLargeLogsBatch() pdata.Logs {
 }
 
 func TestConsumeLogsData(t *testing.T) {
-	smallBatch := pdata.NewLogs()
+	smallBatch := plog.NewLogs()
 	logRecord := smallBatch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	logRecord.Body().SetStringVal("mylog")
 	logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
@@ -245,7 +246,7 @@ func TestConsumeLogsData(t *testing.T) {
 	logRecord.SetTimestamp(123)
 	tests := []struct {
 		name             string
-		ld               pdata.Logs
+		ld               plog.Logs
 		reqTestFunc      func(t *testing.T, r *http.Request)
 		httpResponseCode int
 		wantErr          bool

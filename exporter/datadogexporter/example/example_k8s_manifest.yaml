@@ -102,9 +102,9 @@ spec:
     spec:
       containers:
       - command:
-          - "/otelcontribcol"
+          - "/otelcol-contrib"
           - "--config=/conf/otel-agent-config.yaml"
-        image: otel/opentelemetry-collector-contrib:0.39.0
+        image: otel/opentelemetry-collector-contrib:0.49.0
         name: otel-agent
         resources:
           limits:
@@ -234,9 +234,9 @@ spec:
     spec:
       containers:
       - command:
-          - "/otelcontribcol"
+          - "/otelcol-contrib"
           - "--config=/conf/otel-collector-config.yaml"
-        image: otel/opentelemetry-collector-contrib:latest
+        image: otel/opentelemetry-collector-contrib:0.49.0
         name: otel-collector
         resources:
           limits:

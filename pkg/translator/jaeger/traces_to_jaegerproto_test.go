@@ -20,8 +20,9 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -30,12 +31,12 @@ import (
 func TestGetTagFromStatusCode(t *testing.T) {
 	tests := []struct {
 		name string
-		code pdata.StatusCode
+		code ptrace.StatusCode
 		tag  model.KeyValue
 	}{
 		{
 			name: "ok",
-			code: pdata.StatusCodeOk,
+			code: ptrace.StatusCodeOk,
 			tag: model.KeyValue{
 				Key:   conventions.OtelStatusCode,
 				VType: model.ValueType_STRING,
@@ -45,7 +46,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 
 		{
 			name: "error",
-			code: pdata.StatusCodeError,
+			code: ptrace.StatusCodeError,
 			tag: model.KeyValue{
 				Key:   conventions.OtelStatusCode,
 				VType: model.ValueType_STRING,
@@ -70,13 +71,13 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 		VType: model.ValueType_BOOL,
 	}
 
-	_, ok := getErrorTagFromStatusCode(pdata.StatusCodeUnset)
+	_, ok := getErrorTagFromStatusCode(ptrace.StatusCodeUnset)
 	assert.False(t, ok)
 
-	_, ok = getErrorTagFromStatusCode(pdata.StatusCodeOk)
+	_, ok = getErrorTagFromStatusCode(ptrace.StatusCodeOk)
 	assert.False(t, ok)
 
-	got, ok := getErrorTagFromStatusCode(pdata.StatusCodeError)
+	got, ok := getErrorTagFromStatusCode(ptrace.StatusCodeError)
 	assert.True(t, ok)
 	assert.EqualValues(t, errTag, got)
 }
@@ -97,20 +98,20 @@ func TestGetTagFromStatusMsg(t *testing.T) {
 func TestGetTagFromSpanKind(t *testing.T) {
 	tests := []struct {
 		name string
-		kind pdata.SpanKind
+		kind ptrace.SpanKind
 		tag  model.KeyValue
 		ok   bool
 	}{
 		{
 			name: "unspecified",
-			kind: pdata.SpanKindUnspecified,
+			kind: ptrace.SpanKindUnspecified,
 			tag:  model.KeyValue{},
 			ok:   false,
 		},
 
 		{
 			name: "client",
-			kind: pdata.SpanKindClient,
+			kind: ptrace.SpanKindClient,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -121,7 +122,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "server",
-			kind: pdata.SpanKindServer,
+			kind: ptrace.SpanKindServer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -132,7 +133,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "producer",
-			kind: pdata.SpanKindProducer,
+			kind: ptrace.SpanKindProducer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -143,7 +144,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "consumer",
-			kind: pdata.SpanKindConsumer,
+			kind: ptrace.SpanKindConsumer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -154,7 +155,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "internal",
-			kind: pdata.SpanKindInternal,
+			kind: ptrace.SpanKindInternal,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -175,7 +176,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 func TestAttributesToJaegerProtoTags(t *testing.T) {
 
-	attributes := pdata.NewMap()
+	attributes := pcommon.NewMap()
 	attributes.InsertBool("bool-val", true)
 	attributes.InsertInt("int-val", 123)
 	attributes.InsertString("string-val", "abc")
@@ -222,13 +223,13 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 	tests := []struct {
 		name string
-		td   pdata.Traces
+		td   ptrace.Traces
 		jb   *model.Batch
 		err  error
 	}{
 		{
 			name: "empty",
-			td:   pdata.NewTraces(),
+			td:   ptrace.NewTraces(),
 			err:  nil,
 		},
 

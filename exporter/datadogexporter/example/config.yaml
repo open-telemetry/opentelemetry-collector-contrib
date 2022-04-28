@@ -15,37 +15,55 @@ exporters:
 
     ## @param env - string - optional
     ## The environment for unified service tagging.
+    ## Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
+    ## This option will be removed in v0.52.0.
     ## If unset it will be determined from the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # env: prod
 
     ## @param service - string - optional
     ## The service for unified service tagging.
-    ## Deprecated: [v0.48.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
-    ## This option will be removed in v0.51.0.
+    ## Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
+    ## This option will be removed in v0.52.0.
     ## If unset it will be determined from the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # service: myservice
 
     ## @param version - string - optional
     ## The version for unified service tagging.
-    ## Deprecated: [v0.48.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
-    ## This option will be removed in v0.51.0.
+    ## Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+    ## This option will be removed in v0.52.0.
     ## If unset it will be determined from the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # version: myversion
 
     ## @param tags - list of strings - optional - default: []
-    ## The list of default tags to add to every metric or trace.
+    ## The list of tags to send as host tags.
+    ## Deprecated: [v0.49.0] Use `host_metadata::tags` instead.
+    ## This option will be removed in v0.52.0.
     ## If unset it will be determined from the `DD_TAGS` environment variable, specified
     ## as a list of space-separated strings (Deprecated: [v0.47.0] use 'env' config source instead).
     #
     # tags: []
 
+    ## @params send_metadata - boolean - optional - default: true
+    ## Deprecated: [v0.49.0] Use `host_metadata::enabled` instead.
+    ## This option will be removed in v0.52.0.
+    #
+    # send_metadata: true
+
+    ## @params use_resource_metadata - boolean - optional - default: true
+    ## Deprecated: [v0.49.0] Use `host_metadata::hostname_source` instead.
+    ## This option will be removed in v0.52.0.
+    # 
+    # use_resource_metadata: true
+
     ## @param only_metadata - boolean - optional - default: false
     ## Whether to send only metadata. This is useful for agent-collector
     ## setups, so that metadata about a host is sent to the backend even
     ## when telemetry data is reported via a different host.
+    #
+    # only_metadata: false
 
     ## @param api - custom object - required.
     ## Specific API configuration.
@@ -82,6 +100,12 @@ exporters:
       ## for further details
       #
       # send_monotonic_counter: true
+
+      ## @param report_quantiles - boolean - optional - default: true
+      ## Deprecated: [v0.50.0] Use `metrics::summaries::mode` instead.
+      ## Whether to report quantiles for summary metrics.
+      #
+      # report_quantiles: true
 
       ## @param - delta_ttl - integer - optional - default: 3600
       ## The amount of time (in seconds) that values are kept in memory for
@@ -134,6 +158,16 @@ exporters:
         #
         # cumulative_monotonic_mode: to_delta
 
+      ## @param summaries - custom object - optional
+      ## Summaries specific configuration.
+        ## @param mode - string - optional - default: gauges
+        ## How to report summaries. Valid values are:
+        ## 
+        ## - `noquantiles` to not report quantile metrics
+        ## - `gauges` to report one gauge metric per quantile.
+        #
+        # mode: gauges
+
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.
     #
@@ -175,6 +209,40 @@ exporters:
       ## https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
       #
       # span_name_as_resource_name: true
+    
+    ## @param host_metadata - custom object - optional
+    ## Host metadata specific configuration.
+    ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
+    ##
+    ## The exporter will only send host metadata for a single host, whose name is chosen
+    ## according to `host_metadata::hostname_source`.
+    #
+    # host_metadata:
+      ## @param enabled - boolean - optional - default: true
+      ## Enable the host metadata functionality
+      #
+      # enabled: true
+
+      ## @param hostname_source - enum - optional - default: first_resource
+      ## Source for the hostname of host metadata.
+      ## Valid values are 'first_resource' and 'config_or_system':
+      ## - 'first_resource' picks the host metadata hostname from the resource attributes on the first OTLP payload that gets to the exporter.
+      ##    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system' behavior.
+      ##    Do not use this hostname source if receiving data from multiple hosts.
+      ##
+      ## - 'config_or_system' picks the host metadata hostname from the 'hostname' setting, falling back to system and cloud provider APIs.
+      ##
+      ##  The current default is 'first_resource'.
+      #
+      # hostname_source: first_resource
+
+      ## @param tags - list of strings - optional - default: empty list
+      ## List of host tags to be sent as part of the host metadata.
+      ## These tags will be attached to telemetry signals that have the host metadata hostname.
+      ## 
+      ## To attach tags to telemetry signals regardless of the host, use a processor instead.
+      #
+      # tags: []
 
 
 service:

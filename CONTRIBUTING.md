@@ -61,6 +61,21 @@ and the rest of contributors.
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
 
+### Rotating sponsors
+
+The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
+
+* [@dashpole](https://github.com/dashpole)
+* [@djaglowski](https://github.com/djaglowski)
+* [@codeboten](https://github.com/codeboten)
+* [@Aneurysm9](https://github.com/Aneurysm9)
+* [@mx-psi](https://github.com/mx-psi)
+* [@pmm-sumo](https://github.com/pmm-sumo)
+* [@jpkrohling](https://github.com/jpkrohling)
+* [@dmitryax](https://github.com/dmitryax)
+* [@bogdandrutu](https://github.com/bogdandrutu)
+
+Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not rigid rules and there are exceptions but
 in general try to follow them.
@@ -70,3 +85,5 @@ in general try to follow them.
 - When implementing exporters try to leverage the exporter helpers from the core repo, see [exporterhelper
   package](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper). This will
   ensure that the exporter provides [zPages](https://opencensus.io/zpages/) and a standard set of metrics.
+- `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
+  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink). 

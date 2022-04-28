@@ -20,7 +20,7 @@ import (
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -84,7 +84,7 @@ type DataCollector struct {
 
 var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
 	ID:      reportCPUMetricsAsDoubleFeatureGateID,
-	Enabled: false,
+	Enabled: true,
 	Description: "The k8s container and node cpu metrics being reported by the k8sclusterreceiver are transitioning " +
 		"from being reported as integer millicpu units to being reported as double cpu units to adhere to " +
 		"opentelemetry cpu metric specifications. You can control whether the k8sclusterreceiver reports container " +
@@ -95,12 +95,12 @@ var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
 }
 
 func init() {
-	featuregate.Register(reportCPUMetricsAsDoubleFeatureGate)
+	featuregate.GetRegistry().MustRegister(reportCPUMetricsAsDoubleFeatureGate)
 }
 
 // NewDataCollector returns a DataCollector.
 func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
-	if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+	if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 		logger.Info("The receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate is enabled. This " +
 			"otel collector will report double cpu units, which is good for future support!")
 	} else {
@@ -145,7 +145,7 @@ func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetri
 	}
 }
 
-func (dc *DataCollector) CollectMetricData(currentTime time.Time) pdata.Metrics {
+func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metrics {
 	return dc.metricsStore.getMetricData(currentTime)
 }
 

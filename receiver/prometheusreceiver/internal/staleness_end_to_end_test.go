@@ -34,6 +34,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
@@ -113,7 +115,7 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	defer prweServer.Close()
 
 	// 3. Set the OpenTelemetry Prometheus receiver.
-	config := fmt.Sprintf(`
+	cfg := fmt.Sprintf(`
 receivers:
   prometheus:
     config:
@@ -141,7 +143,7 @@ service:
 	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
 	require.Nil(t, err)
 	defer os.Remove(confFile.Name())
-	_, err = confFile.Write([]byte(config))
+	_, err = confFile.Write([]byte(cfg))
 	require.Nil(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
@@ -157,9 +159,17 @@ service:
 		Processors: processors,
 	}
 
+	fmp := filemapprovider.New()
+	configProvider, err := service.NewConfigProvider(
+		service.ConfigProviderSettings{
+			Locations:    []string{confFile.Name()},
+			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
+		})
+	require.NoError(t, err)
+
 	appSettings := service.CollectorSettings{
 		Factories:      factories,
-		ConfigProvider: service.MustNewDefaultConfigProvider([]string{confFile.Name()}, nil),
+		ConfigProvider: configProvider,
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

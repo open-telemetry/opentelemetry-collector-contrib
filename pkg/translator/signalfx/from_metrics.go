@@ -19,7 +19,8 @@ import (
 	"strconv"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Some fields on SignalFx protobuf are pointers, in order to reduce
@@ -40,8 +41,8 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-// FromMetrics converts pdata.Metrics to SignalFx proto data points.
-func FromMetrics(md pdata.Metrics) ([]*sfxpb.DataPoint, error) {
+// FromMetrics converts pmetric.Metrics to SignalFx proto data points.
+func FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -60,9 +61,9 @@ func FromMetrics(md pdata.Metrics) ([]*sfxpb.DataPoint, error) {
 	return sfxDataPoints, nil
 }
 
-// FromMetric converts pdata.Metric to SignalFx proto data points.
+// FromMetric converts pmetric.Metric to SignalFx proto data points.
 // TODO: Remove this and change signalfxexporter to us FromMetrics.
-func FromMetric(m pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var dps []*sfxpb.DataPoint
 
 	basePoint := &sfxpb.DataPoint{
@@ -71,35 +72,35 @@ func FromMetric(m pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.Dat
 	}
 
 	switch m.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		dps = convertNumberDataPoints(m.Gauge().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		dps = convertNumberDataPoints(m.Sum().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		dps = convertHistogram(m.Histogram().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		dps = convertSummaryDataPoints(m.Summary().DataPoints(), m.Name(), extraDimensions)
 	}
 
 	return dps
 }
 
-func fromMetricTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
+func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		return &sfxMetricTypeGauge
 
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		if !metric.Sum().IsMonotonic() {
 			return &sfxMetricTypeGauge
 		}
-		if metric.Sum().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
+		if metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
 
-	case pdata.MetricDataTypeHistogram:
-		if metric.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
+	case pmetric.MetricDataTypeHistogram:
+		if metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
@@ -108,7 +109,7 @@ func fromMetricTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 	return nil
 }
 
-func convertNumberDataPoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func convertNumberDataPoints(in pmetric.NumberDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	out := make([]*sfxpb.DataPoint, 0, in.Len())
 
 	for i := 0; i < in.Len(); i++ {
@@ -119,10 +120,10 @@ func convertNumberDataPoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.Dat
 		dp.Dimensions = attributesToDimensions(inDp.Attributes(), extraDims)
 
 		switch inDp.ValueType() {
-		case pdata.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val := inDp.IntVal()
 			dp.Value.IntValue = &val
-		case pdata.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val := inDp.DoubleVal()
 			dp.Value.DoubleValue = &val
 		}
@@ -132,7 +133,7 @@ func convertNumberDataPoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.Dat
 	return out
 }
 
-func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func convertHistogram(histDPs pmetric.HistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var out []*sfxpb.DataPoint
 
 	for i := 0; i < histDPs.Len(); i++ {
@@ -188,7 +189,7 @@ func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.Da
 }
 
 func convertSummaryDataPoints(
-	in pdata.SummaryDataPointSlice,
+	in pmetric.SummaryDataPointSlice,
 	name string,
 	extraDims []*sfxpb.Dimension,
 ) []*sfxpb.DataPoint {
@@ -241,7 +242,7 @@ func convertSummaryDataPoints(
 	return out
 }
 
-func attributesToDimensions(attributes pdata.Map, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
+func attributesToDimensions(attributes pcommon.Map, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
 	dimensions := make([]*sfxpb.Dimension, len(extraDims), attributes.Len()+len(extraDims))
 	copy(dimensions, extraDims)
 	if attributes.Len() == 0 {
@@ -249,7 +250,7 @@ func attributesToDimensions(attributes pdata.Map, extraDims []*sfxpb.Dimension) 
 	}
 	dimensionsValue := make([]sfxpb.Dimension, attributes.Len())
 	pos := 0
-	attributes.Range(func(k string, v pdata.Value) bool {
+	attributes.Range(func(k string, v pcommon.Value) bool {
 		dimensionsValue[pos].Key = k
 		dimensionsValue[pos].Value = v.AsString()
 		dimensions = append(dimensions, &dimensionsValue[pos])

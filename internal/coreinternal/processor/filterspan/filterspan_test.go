@@ -19,8 +19,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -54,9 +55,9 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name: "log_properties",
 			property: filterconfig.MatchProperties{
-				LogNames: []string{"log"},
+				LogBodies: []string{"log"},
 			},
-			errorString: "log_names should not be specified for trace spans",
+			errorString: "log_bodies should not be specified for trace spans",
 		},
 		{
 			name: "invalid_match_type",
@@ -145,10 +146,10 @@ func TestSpan_Matching_False(t *testing.T) {
 		},
 	}
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("spanName")
-	library := pdata.NewInstrumentationScope()
-	resource := pdata.NewResource()
+	library := pcommon.NewInstrumentationScope()
+	resource := pcommon.NewResource()
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -171,8 +172,8 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, mp)
 
-	emptySpan := pdata.NewSpan()
-	assert.False(t, mp.MatchSpan(emptySpan, pdata.NewResource(), pdata.NewInstrumentationScope()))
+	emptySpan := ptrace.NewSpan()
+	assert.False(t, mp.MatchSpan(emptySpan, pcommon.NewResource(), pcommon.NewInstrumentationScope()))
 }
 
 func TestSpan_Matching_True(t *testing.T) {
@@ -219,7 +220,7 @@ func TestSpan_Matching_True(t *testing.T) {
 		},
 	}
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetName("spanName")
 	span.Attributes().InsertString("keyString", "arithmetic")
 	span.Attributes().InsertInt("keyInt", 123)
@@ -228,10 +229,10 @@ func TestSpan_Matching_True(t *testing.T) {
 	span.Attributes().InsertString("keyExists", "present")
 	assert.NotNil(t, span)
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
 
-	library := pdata.NewInstrumentationScope()
+	library := pcommon.NewInstrumentationScope()
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

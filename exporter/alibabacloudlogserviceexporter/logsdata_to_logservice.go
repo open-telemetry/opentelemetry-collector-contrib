@@ -21,8 +21,9 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -40,7 +41,7 @@ const (
 	slsLogInstrumentationVersion = "otlp.version"
 )
 
-func logDataToLogService(ld pdata.Logs) []*sls.Log {
+func logDataToLogService(ld plog.Logs) []*sls.Log {
 	slsLogs := make([]*sls.Log, 0)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -64,7 +65,7 @@ func logDataToLogService(ld pdata.Logs) []*sls.Log {
 	return slsLogs
 }
 
-func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
+func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 	logContents := make([]*sls.LogContent, 3)
 	attrs := resource.Attributes()
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
@@ -92,7 +93,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.Range(func(k string, v pdata.Value) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
@@ -108,7 +109,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	return logContents
 }
 
-func instrumentationScopeToLogContents(instrumentationScope pdata.InstrumentationScope) []*sls.LogContent {
+func instrumentationScopeToLogContents(instrumentationScope pcommon.InstrumentationScope) []*sls.LogContent {
 	logContents := make([]*sls.LogContent, 2)
 	logContents[0] = &sls.LogContent{
 		Key:   proto.String(slsLogInstrumentationName),
@@ -121,10 +122,10 @@ func instrumentationScopeToLogContents(instrumentationScope pdata.Instrumentatio
 	return logContents
 }
 
-func mapLogRecordToLogService(lr pdata.LogRecord,
+func mapLogRecordToLogService(lr plog.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().Type() == pdata.ValueTypeEmpty {
+	if lr.Body().Type() == pcommon.ValueTypeEmpty {
 		return nil
 	}
 	var slsLog sls.Log
@@ -153,7 +154,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	})
 
 	fields := map[string]interface{}{}
-	lr.Attributes().Range(func(k string, v pdata.Value) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})

@@ -5,7 +5,9 @@ package metadata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -43,7 +45,7 @@ func DefaultMetricsSettings() MetricsSettings {
 }
 
 type metricSystemNetworkConnections struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -53,13 +55,13 @@ func (m *metricSystemNetworkConnections) init() {
 	m.data.SetName("system.network.connections")
 	m.data.SetDescription("The number of connections.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNetworkConnections) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemNetworkConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -67,8 +69,8 @@ func (m *metricSystemNetworkConnections) recordDataPoint(start pdata.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Protocol, pdata.NewValueString(protocolAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Protocol, pcommon.NewValueString(protocolAttributeValue))
+	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -79,7 +81,7 @@ func (m *metricSystemNetworkConnections) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemNetworkConnections) emit(metrics pdata.MetricSlice) {
+func (m *metricSystemNetworkConnections) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -90,14 +92,14 @@ func (m *metricSystemNetworkConnections) emit(metrics pdata.MetricSlice) {
 func newMetricSystemNetworkConnections(settings MetricSettings) metricSystemNetworkConnections {
 	m := metricSystemNetworkConnections{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricSystemNetworkDropped struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -107,13 +109,13 @@ func (m *metricSystemNetworkDropped) init() {
 	m.data.SetName("system.network.dropped")
 	m.data.SetDescription("The number of packets dropped.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNetworkDropped) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemNetworkDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -121,8 +123,8 @@ func (m *metricSystemNetworkDropped) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -133,7 +135,7 @@ func (m *metricSystemNetworkDropped) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemNetworkDropped) emit(metrics pdata.MetricSlice) {
+func (m *metricSystemNetworkDropped) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -144,14 +146,14 @@ func (m *metricSystemNetworkDropped) emit(metrics pdata.MetricSlice) {
 func newMetricSystemNetworkDropped(settings MetricSettings) metricSystemNetworkDropped {
 	m := metricSystemNetworkDropped{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricSystemNetworkErrors struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -161,13 +163,13 @@ func (m *metricSystemNetworkErrors) init() {
 	m.data.SetName("system.network.errors")
 	m.data.SetDescription("The number of errors encountered.")
 	m.data.SetUnit("{errors}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNetworkErrors) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -175,8 +177,8 @@ func (m *metricSystemNetworkErrors) recordDataPoint(start pdata.Timestamp, ts pd
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -187,7 +189,7 @@ func (m *metricSystemNetworkErrors) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemNetworkErrors) emit(metrics pdata.MetricSlice) {
+func (m *metricSystemNetworkErrors) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -198,14 +200,14 @@ func (m *metricSystemNetworkErrors) emit(metrics pdata.MetricSlice) {
 func newMetricSystemNetworkErrors(settings MetricSettings) metricSystemNetworkErrors {
 	m := metricSystemNetworkErrors{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricSystemNetworkIo struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -215,13 +217,13 @@ func (m *metricSystemNetworkIo) init() {
 	m.data.SetName("system.network.io")
 	m.data.SetDescription("The number of bytes transmitted and received.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNetworkIo) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -229,8 +231,8 @@ func (m *metricSystemNetworkIo) recordDataPoint(start pdata.Timestamp, ts pdata.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -241,7 +243,7 @@ func (m *metricSystemNetworkIo) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemNetworkIo) emit(metrics pdata.MetricSlice) {
+func (m *metricSystemNetworkIo) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -252,14 +254,14 @@ func (m *metricSystemNetworkIo) emit(metrics pdata.MetricSlice) {
 func newMetricSystemNetworkIo(settings MetricSettings) metricSystemNetworkIo {
 	m := metricSystemNetworkIo{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricSystemNetworkPackets struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -269,13 +271,13 @@ func (m *metricSystemNetworkPackets) init() {
 	m.data.SetName("system.network.packets")
 	m.data.SetDescription("The number of packets transferred.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNetworkPackets) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -283,8 +285,8 @@ func (m *metricSystemNetworkPackets) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -295,7 +297,7 @@ func (m *metricSystemNetworkPackets) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemNetworkPackets) emit(metrics pdata.MetricSlice) {
+func (m *metricSystemNetworkPackets) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -306,7 +308,7 @@ func (m *metricSystemNetworkPackets) emit(metrics pdata.MetricSlice) {
 func newMetricSystemNetworkPackets(settings MetricSettings) metricSystemNetworkPackets {
 	m := metricSystemNetworkPackets{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
@@ -315,10 +317,10 @@ func newMetricSystemNetworkPackets(settings MetricSettings) metricSystemNetworkP
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                      pdata.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity                int             // maximum observed number of metrics per resource.
-	resourceCapacity               int             // maximum observed number of resource attributes.
-	metricsBuffer                  pdata.Metrics   // accumulates metrics data before emitting.
+	startTime                      pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                int               // maximum observed number of metrics per resource.
+	resourceCapacity               int               // maximum observed number of resource attributes.
+	metricsBuffer                  pmetric.Metrics   // accumulates metrics data before emitting.
 	metricSystemNetworkConnections metricSystemNetworkConnections
 	metricSystemNetworkDropped     metricSystemNetworkDropped
 	metricSystemNetworkErrors      metricSystemNetworkErrors
@@ -330,7 +332,7 @@ type MetricsBuilder struct {
 type metricBuilderOption func(*MetricsBuilder)
 
 // WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
+func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
 	}
@@ -338,8 +340,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                      pdata.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                  pdata.NewMetrics(),
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
 		metricSystemNetworkConnections: newMetricSystemNetworkConnections(settings.SystemNetworkConnections),
 		metricSystemNetworkDropped:     newMetricSystemNetworkDropped(settings.SystemNetworkDropped),
 		metricSystemNetworkErrors:      newMetricSystemNetworkErrors(settings.SystemNetworkErrors),
@@ -353,7 +355,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
@@ -363,14 +365,15 @@ func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
 }
 
 // ResourceOption applies changes to provided resource.
-type ResourceOption func(pdata.Resource)
+type ResourceOption func(pcommon.Resource)
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
 func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
-	rm := pdata.NewResourceMetrics()
+	rm := pmetric.NewResourceMetrics()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	for _, op := range ro {
 		op(rm.Resource())
@@ -392,42 +395,42 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 	mb.EmitForResource(ro...)
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordSystemNetworkConnectionsDataPoint adds a data point to system.network.connections metric.
-func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pdata.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pcommon.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, val, protocolAttributeValue, stateAttributeValue)
 }
 
 // RecordSystemNetworkDroppedDataPoint adds a data point to system.network.dropped metric.
-func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // RecordSystemNetworkErrorsDataPoint adds a data point to system.network.errors metric.
-func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // RecordSystemNetworkIoDataPoint adds a data point to system.network.io metric.
-func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // RecordSystemNetworkPacketsDataPoint adds a data point to system.network.packets metric.
-func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
 func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pdata.NewTimestampFromTime(time.Now())
+	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
 		op(mb)
 	}

@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 var (
@@ -118,13 +118,13 @@ var (
 
 // TagsFromAttributes converts a selected list of attributes
 // to a tag list that can be added to metrics.
-func TagsFromAttributes(attrs pdata.Map) []string {
+func TagsFromAttributes(attrs pcommon.Map) []string {
 	tags := make([]string, 0, attrs.Len())
 
 	var processAttributes processAttributes
 	var systemAttributes systemAttributes
 
-	attrs.Range(func(key string, value pdata.Value) bool {
+	attrs.Range(func(key string, value pcommon.Value) bool {
 		switch key {
 		// Process attributes
 		case conventions.AttributeProcessExecutableName:
@@ -165,7 +165,7 @@ func TagsFromAttributes(attrs pdata.Map) []string {
 
 // OriginIDFromAttributes gets the origin IDs from resource attributes.
 // If not found, an empty string is returned for each of them.
-func OriginIDFromAttributes(attrs pdata.Map) (originID string) {
+func OriginIDFromAttributes(attrs pcommon.Map) (originID string) {
 	// originID is always empty. Container ID is preferred over Kubernetes pod UID.
 	// Prefixes come from pkg/util/kubernetes/kubelet and pkg/util/containers.
 	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
@@ -177,7 +177,7 @@ func OriginIDFromAttributes(attrs pdata.Map) (originID string) {
 }
 
 // RunningTagsFromAttributes gets tags used for running metrics from attributes.
-func RunningTagsFromAttributes(attrs pdata.Map) []string {
+func RunningTagsFromAttributes(attrs pcommon.Map) []string {
 	tags := make([]string, 0, 1)
 	for _, key := range runningTagsAttributes {
 		if val, ok := attrs.Get(key); ok {

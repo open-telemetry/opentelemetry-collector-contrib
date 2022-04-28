@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
@@ -40,6 +41,14 @@ func TestLoadingConfig(t *testing.T) {
 	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		Logs: LogsConfig{
+			Queries: []string{
+				`set(body, "bear") where attributes["http.path"] == "/animal"`,
+				`keep_keys(attributes, "http.method", "http.path")`,
+			},
+
+			functions: logs.DefaultFunctions(),
+		},
 		Traces: TracesConfig{
 			Queries: []string{
 				`set(name, "bear") where attributes["http.path"] == "/animal"`,
@@ -58,11 +67,19 @@ func TestLoadInvalidConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax_log.yaml"), factories)
 	assert.Error(t, err)
 	assert.NotNil(t, cfg)
 
-	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function.yaml"), factories)
+	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function_log.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+
+	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax_trace.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+
+	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function_trace.yaml"), factories)
 	assert.Error(t, err)
 	assert.NotNil(t, cfg)
 }

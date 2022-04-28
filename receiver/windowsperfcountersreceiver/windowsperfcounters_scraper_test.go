@@ -19,7 +19,6 @@ package windowsperfcountersreceiver
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -34,32 +33,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 type mockPerfCounter struct {
 	path        string
 	scrapeErr   error
 	shutdownErr error
-}
-
-func newMockPerfCounter(path string, scrapeErr, shutdownErr error) *mockPerfCounter {
-	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, shutdownErr: shutdownErr}
-}
-
-// Path
-func (mpc *mockPerfCounter) Path() string {
-	return mpc.path
-}
-
-// ScrapeData
-func (mpc *mockPerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, error) {
-	return []win_perf_counters.CounterValue{{Value: 0}}, mpc.scrapeErr
-}
-
-// Close
-func (mpc *mockPerfCounter) Close() error {
-	return mpc.shutdownErr
 }
 
 func Test_WindowsPerfCounterScraper(t *testing.T) {
@@ -70,8 +50,6 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		mockCounterPath string
 		startMessage    string
 		startErr        string
-		scrapeErr       error
-		shutdownErr     error
 
 		expectedMetricPath string
 	}
@@ -99,10 +77,10 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Gauge:       GaugeMetric{},
 					},
 				},
-				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{Name: "% Idle Time", Metric: "cpu.idle"}}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{Name: "% Processor Time", Metric: "processor.time"}}},
+				PerfCounters: []winperfcounters.ObjectConfig{
+					{Object: "Memory", Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes", MetricRep: winperfcounters.MetricRep{Name: "bytes.committed"}}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []winperfcounters.CounterConfig{{Name: "% Idle Time", MetricRep: winperfcounters.MetricRep{Name: "cpu.idle"}}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []winperfcounters.CounterConfig{{Name: "% Processor Time", MetricRep: winperfcounters.MetricRep{Name: "processor.time"}}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -118,8 +96,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Sum:         SumMetric{},
 					},
 				},
-				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
+				PerfCounters: []winperfcounters.ObjectConfig{
+					{Object: "Memory", Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes", MetricRep: winperfcounters.MetricRep{Name: "bytes.committed"}}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -128,8 +106,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "NoMetricDefinition",
 			cfg: &Config{
-				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes"}}},
+				PerfCounters: []winperfcounters.ObjectConfig{
+					{Object: "Memory", Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -138,28 +116,20 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "InvalidCounter",
 			cfg: &Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []winperfcounters.ObjectConfig{
 					{
 						Object:   "Memory",
-						Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "Committed Bytes"}},
+						Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes", MetricRep: winperfcounters.MetricRep{Name: "Committed Bytes"}}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []CounterConfig{{Name: "Invalid Counter", Metric: "invalid"}},
+						Counters: []winperfcounters.CounterConfig{{Name: "Invalid Counter", MetricRep: winperfcounters.MetricRep{Name: "invalid"}}},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
 			startMessage: "some performance counters could not be initialized",
 			startErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
-		},
-		{
-			name:      "ScrapeError",
-			scrapeErr: errors.New("err2"),
-		},
-		{
-			name:        "CloseError",
-			shutdownErr: errors.New("err1"),
 		},
 	}
 
@@ -188,34 +158,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if test.mockCounterPath != "" || test.scrapeErr != nil || test.shutdownErr != nil {
-				scraper.cfg.MetricMetaData = map[string]MetricConfig{
-					"metric": {
-						Description: "desc",
-						Unit:        "1",
-						Gauge:       GaugeMetric{},
-					},
-				}
-				scraper.counters = []PerfCounterMetrics{
-					{
-						CounterScraper: newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr),
-						Metric:         "metric",
-					},
-				}
-			}
-
 			actualMetrics, err := scraper.scrape(context.Background())
-			if test.scrapeErr != nil {
-				require.Equal(t, test.scrapeErr, err)
-				return
-			}
 			require.NoError(t, err)
 
 			err = scraper.shutdown(context.Background())
-			if test.shutdownErr != nil {
-				assert.Equal(t, test.shutdownErr, err)
-				return
-			}
+
 			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
 			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues)

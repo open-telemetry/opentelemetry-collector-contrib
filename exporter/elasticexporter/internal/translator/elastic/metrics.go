@@ -23,7 +23,8 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // EncodeMetrics encodes an OpenTelemetry metrics slice, and instrumentation
@@ -31,23 +32,23 @@ import (
 //
 // TODO(axw) otlpLibrary is currently not used. We should consider recording
 // it as metadata.
-func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.InstrumentationScope, w *fastjson.Writer) (dropped int, _ error) {
+func EncodeMetrics(otlpMetrics pmetric.MetricSlice, otlpLibrary pcommon.InstrumentationScope, w *fastjson.Writer) (dropped int, _ error) {
 	var metricsets metricsets
 	for i := 0; i < otlpMetrics.Len(); i++ {
 		metric := otlpMetrics.At(i)
 
 		name := metric.Name()
 		switch metric.DataType() {
-		case pdata.MetricDataTypeGauge:
+		case pmetric.MetricDataTypeGauge:
 			doubleGauge := metric.Gauge()
 			dps := doubleGauge.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
 				var val float64
 				switch dp.ValueType() {
-				case pdata.MetricValueTypeDouble:
+				case pmetric.NumberDataPointValueTypeDouble:
 					val = dp.DoubleVal()
-				case pdata.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					val = float64(dp.IntVal())
 				}
 				metricsets.upsert(model.Metrics{
@@ -58,16 +59,16 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 					}},
 				})
 			}
-		case pdata.MetricDataTypeSum:
+		case pmetric.MetricDataTypeSum:
 			doubleSum := metric.Sum()
 			dps := doubleSum.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
 				var val float64
 				switch dp.ValueType() {
-				case pdata.MetricValueTypeDouble:
+				case pmetric.NumberDataPointValueTypeDouble:
 					val = dp.DoubleVal()
-				case pdata.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					val = float64(dp.IntVal())
 				}
 				metricsets.upsert(model.Metrics{
@@ -78,7 +79,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 					}},
 				})
 			}
-		case pdata.MetricDataTypeHistogram:
+		case pmetric.MetricDataTypeHistogram:
 			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
 			doubleHistogram := metric.Histogram()
 			dropped += doubleHistogram.DataPoints().Len()
@@ -97,14 +98,14 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 	return dropped, nil
 }
 
-func asTime(in pdata.Timestamp) model.Time {
+func asTime(in pcommon.Timestamp) model.Time {
 	return model.Time(time.Unix(0, int64(in)))
 }
 
-func asStringMap(in pdata.Map) model.StringMap {
+func asStringMap(in pcommon.Map) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.Range(func(k string, v pdata.Value) bool {
+	in.Range(func(k string, v pcommon.Value) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
 			Value: v.AsString(),

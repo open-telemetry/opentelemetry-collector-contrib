@@ -5,6 +5,12 @@ Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 
 Supported pipeline types: metrics
 
+## ❗️ Important note
+
+Starting from version 0.49.0, the receiver consumes 30% more memory when there is a lot of target churn.
+The issue is currently being investigated and will be fixed in one of the new releases. More details:
+https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
+
 ## ⚠️ Warning
 
 Note: This component is currently work in progress. It has several limitations

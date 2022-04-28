@@ -28,8 +28,9 @@ import (
 	"github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -52,7 +53,7 @@ type SentryExporter struct {
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
-func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
+func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) error {
 	var exceptionEvents []*sentry.Event
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
@@ -136,14 +137,14 @@ func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphan
 
 // convertEventsToSentryExceptions creates a set of sentry events from exception events present in spans.
 // These events are stored in a mutated eventList
-func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events pdata.SpanEventSlice, sentrySpan *sentry.Span) {
+func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.SpanEventSlice, sentrySpan *sentry.Span) {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		if event.Name() != "exception" {
 			continue
 		}
 		var exceptionMessage, exceptionType string
-		event.Attributes().Range(func(k string, v pdata.Value) bool {
+		event.Attributes().Range(func(k string, v pcommon.Value) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.StringVal()
@@ -222,7 +223,7 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 	return classifyAsOrphanSpans(newOrphanSpans, len(orphanSpans), idMap, transactionMap)
 }
 
-func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationScope, resourceTags map[string]string) (sentrySpan *sentry.Span) {
+func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope, resourceTags map[string]string) (sentrySpan *sentry.Span) {
 	attributes := span.Attributes()
 	name := span.Name()
 	spanKind := span.Kind()
@@ -240,7 +241,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationScope, re
 		tags["status_message"] = message
 	}
 
-	if spanKind != pdata.SpanKindUnspecified {
+	if spanKind != ptrace.SpanKindUnspecified {
 		tags["span_kind"] = spanKind.String()
 	}
 
@@ -271,7 +272,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationScope, re
 //
 // See https://github.com/open-telemetry/opentelemetry-specification/tree/5b78ee1/specification/trace/semantic_conventions
 // for more details about the semantic conventions.
-func generateSpanDescriptors(name string, attrs pdata.Map, spanKind pdata.SpanKind) (op string, description string) {
+func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.SpanKind) (op string, description string) {
 	var opBuilder strings.Builder
 	var dBuilder strings.Builder
 
@@ -284,9 +285,9 @@ func generateSpanDescriptors(name string, attrs pdata.Map, spanKind pdata.SpanKi
 		opBuilder.WriteString("http")
 
 		switch spanKind {
-		case pdata.SpanKindClient:
+		case ptrace.SpanKindClient:
 			opBuilder.WriteString(".client")
-		case pdata.SpanKindServer:
+		case ptrace.SpanKindServer:
 			opBuilder.WriteString(".server")
 		}
 
@@ -335,22 +336,22 @@ func generateSpanDescriptors(name string, attrs pdata.Map, spanKind pdata.SpanKi
 	return "", name
 }
 
-func generateTagsFromResource(resource pdata.Resource) map[string]string {
+func generateTagsFromResource(resource pcommon.Resource) map[string]string {
 	return generateTagsFromAttributes(resource.Attributes())
 }
 
-func generateTagsFromAttributes(attrs pdata.Map) map[string]string {
+func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.Range(func(key string, attr pdata.Value) bool {
+	attrs.Range(func(key string, attr pcommon.Value) bool {
 		switch attr.Type() {
-		case pdata.ValueTypeString:
+		case pcommon.ValueTypeString:
 			tags[key] = attr.StringVal()
-		case pdata.ValueTypeBool:
+		case pcommon.ValueTypeBool:
 			tags[key] = strconv.FormatBool(attr.BoolVal())
-		case pdata.ValueTypeDouble:
+		case pcommon.ValueTypeDouble:
 			tags[key] = strconv.FormatFloat(attr.DoubleVal(), 'g', -1, 64)
-		case pdata.ValueTypeInt:
+		case pcommon.ValueTypeInt:
 			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
 		}
 		return true
@@ -359,7 +360,7 @@ func generateTagsFromAttributes(attrs pdata.Map) map[string]string {
 	return tags
 }
 
-func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status sentry.SpanStatus, message string) {
+func statusFromSpanStatus(spanStatus ptrace.SpanStatus) (status sentry.SpanStatus, message string) {
 	code := spanStatus.Code()
 	if code < 0 || int(code) >= len(canonicalCodes) {
 		return sentry.SpanStatusUnknown, fmt.Sprintf("error code %d", code)
@@ -370,9 +371,9 @@ func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status sentry.SpanStatus
 
 // spanIsTransaction determines if a span should be sent to Sentry as a transaction.
 // If parent span id is empty or the span kind allows remote parent spans, then the span is a root span.
-func spanIsTransaction(s pdata.Span) bool {
+func spanIsTransaction(s ptrace.Span) bool {
 	kind := s.Kind()
-	return s.ParentSpanID() == pdata.SpanID{} || kind == pdata.SpanKindServer || kind == pdata.SpanKindConsumer
+	return s.ParentSpanID() == pcommon.SpanID{} || kind == ptrace.SpanKindServer || kind == ptrace.SpanKindConsumer
 }
 
 // transactionFromSpan converts a span to a transaction.

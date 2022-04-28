@@ -40,5 +40,9 @@ func createDefaultConfig() config.Extension {
 }
 
 func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	return newExtension(cfg.(*Config))
+	// check if config is a server auth(Htpasswd should be set)
+	if cfg.(*Config).Htpasswd != nil {
+		return newServerAuthExtension(cfg.(*Config))
+	}
+	return newClientAuthExtension(cfg.(*Config))
 }

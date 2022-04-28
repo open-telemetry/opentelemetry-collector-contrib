@@ -25,8 +25,9 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // EncodeSpan encodes an OpenTelemetry span, and instrumentation library information,
@@ -36,9 +37,9 @@ import (
 //
 // TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
 func EncodeSpan(
-	otlpSpan pdata.Span,
-	otlpLibrary pdata.InstrumentationScope,
-	otlpResource pdata.Resource,
+	otlpSpan ptrace.Span,
+	otlpLibrary pcommon.InstrumentationScope,
+	otlpResource pcommon.Resource,
 	w *fastjson.Writer,
 ) error {
 	spanID := model.SpanID(otlpSpan.SpanID().Bytes())
@@ -52,7 +53,7 @@ func EncodeSpan(
 
 	name := truncate(otlpSpan.Name())
 	var transactionContext transactionContext
-	if root || otlpSpan.Kind() == pdata.SpanKindServer {
+	if root || otlpSpan.Kind() == ptrace.SpanKindServer {
 		transaction := model.Transaction{
 			ID:        spanID,
 			TraceID:   traceID,
@@ -95,8 +96,8 @@ func EncodeSpan(
 }
 
 func setTransactionProperties(
-	otlpSpan pdata.Span,
-	otlpLibrary pdata.InstrumentationScope,
+	otlpSpan ptrace.Span,
+	otlpLibrary pcommon.InstrumentationScope,
 	tx *model.Transaction, context *transactionContext,
 ) error {
 	var (
@@ -106,7 +107,7 @@ func setTransactionProperties(
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().Range(func(k string, v pdata.Value) bool {
+	otlpSpan.Attributes().Range(func(k string, v pcommon.Value) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -186,9 +187,9 @@ func setTransactionProperties(
 	status := otlpSpan.Status()
 	tx.Outcome = spanStatusOutcome(status)
 	switch status.Code() {
-	case pdata.StatusCodeOk:
+	case ptrace.StatusCodeOk:
 		tx.Result = "OK"
-	case pdata.StatusCodeError:
+	case ptrace.StatusCodeError:
 		tx.Result = "Error"
 	}
 
@@ -218,7 +219,7 @@ func setTransactionProperties(
 	return nil
 }
 
-func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
+func setSpanProperties(otlpSpan ptrace.Span, span *model.Span) error {
 	var (
 		context     spanContext
 		netPeerName string
@@ -226,7 +227,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().Range(func(k string, v pdata.Value) bool {
+	otlpSpan.Attributes().Range(func(k string, v pcommon.Value) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -358,8 +359,8 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 }
 
 func encodeSpanEvents(
-	events pdata.SpanEventSlice,
-	resource pdata.Resource,
+	events ptrace.SpanEventSlice,
+	resource pcommon.Resource,
 	traceID model.TraceID, spanID model.SpanID,
 	w *fastjson.Writer,
 ) error {
@@ -381,7 +382,7 @@ func encodeSpanEvents(
 		}
 		var exceptionEscaped bool
 		var exceptionMessage, exceptionStacktrace, exceptionType string
-		event.Attributes().Range(func(k string, v pdata.Value) bool {
+		event.Attributes().Range(func(k string, v pcommon.Value) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.StringVal()
@@ -618,11 +619,11 @@ func schemeDefaultPort(scheme string) int {
 	return 0
 }
 
-func spanStatusOutcome(status pdata.SpanStatus) string {
+func spanStatusOutcome(status ptrace.SpanStatus) string {
 	switch status.Code() {
-	case pdata.StatusCodeOk:
+	case ptrace.StatusCodeOk:
 		return "success"
-	case pdata.StatusCodeError:
+	case ptrace.StatusCodeError:
 		return "failure"
 	}
 	// Outcome will be set by the server.

@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -72,7 +72,7 @@ func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (
 
 func (s *jaegerThriftHTTPSender) pushTraceData(
 	ctx context.Context,
-	td pdata.Traces,
+	td ptrace.Traces,
 ) error {
 	batches, err := jaegertranslator.ProtoFromTraces(td)
 	if err != nil {

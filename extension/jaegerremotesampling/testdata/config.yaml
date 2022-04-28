@@ -5,7 +5,8 @@ extensions:
         endpoint: jaeger-collector:14250
   jaegerremotesampling/1:
     source:
-      file: /etc/otel/sampling_strategies.json
+      reload_interval: 1s
+      file: /etc/otelcol/sampling_strategies.json
 
 service:
   extensions: [jaegerremotesampling/1]

@@ -25,17 +25,18 @@ import (
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
 func TestSpansRequireTraceAndSpanIDs(t *testing.T) {
-	spanWithNoTraceID := pdata.NewSpan()
-	spanWithNoTraceID.SetSpanID(pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}))
-	spanWithNoSpanID := pdata.NewSpan()
-	spanWithNoSpanID.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	traces := constructTraces([]pdata.Span{spanWithNoTraceID, spanWithNoSpanID})
+	spanWithNoTraceID := ptrace.NewSpan()
+	spanWithNoTraceID.SetSpanID(pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}))
+	spanWithNoSpanID := ptrace.NewSpan()
+	spanWithNoSpanID.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	traces := constructTraces([]ptrace.Span{spanWithNoTraceID, spanWithNoSpanID})
 
 	_, err := consumeTraces(traces)
 	require.Error(t, err)
@@ -48,11 +49,11 @@ func TestExportTraceDataMinimum(t *testing.T) {
 	// getAllUsers source=localhost traceId=7b3bf470-9456-11e8-9eb6-529269fb1459 spanId=0313bafe-9457-11e8-9eb6-529269fb1459 parent=2f64e538-9457-11e8-9eb6-529269fb1459 application=Wavefront service=auth cluster=us-west-2 shard=secondary http.method=GET 1552949776000 343
 	minSpan := createSpan(
 		"root",
-		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
-		pdata.SpanID{},
+		pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pcommon.SpanID{},
 	)
-	traces := constructTraces([]pdata.Span{minSpan})
+	traces := constructTraces([]ptrace.Span{minSpan})
 
 	expected := []*span{{
 		Name:    "root",
@@ -68,53 +69,53 @@ func TestExportTraceDataMinimum(t *testing.T) {
 }
 
 func TestExportTraceDataFullTrace(t *testing.T) {
-	traceID := pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	traceID := pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 
 	rootSpan := createSpan(
 		"root",
 		traceID,
-		pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}),
-		pdata.SpanID{},
+		pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}),
+		pcommon.SpanID{},
 	)
 
 	clientSpan := createSpan(
 		"client",
 		traceID,
-		pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}),
+		pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}),
 		rootSpan.SpanID(),
 	)
 
-	clientSpan.SetKind(pdata.SpanKindClient)
-	event := pdata.NewSpanEvent()
+	clientSpan.SetKind(ptrace.SpanKindClient)
+	event := ptrace.NewSpanEvent()
 	event.SetName("client-event")
 	event.CopyTo(clientSpan.Events().AppendEmpty())
 
-	status := pdata.NewSpanStatus()
-	status.SetCode(pdata.StatusCodeError)
+	status := ptrace.NewSpanStatus()
+	status.SetCode(ptrace.StatusCodeError)
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())
 
-	clientAttrs := pdata.NewMap()
+	clientAttrs := pcommon.NewMap()
 	clientAttrs.InsertString(labelApplication, "test-app")
 	clientAttrs.CopyTo(clientSpan.Attributes())
 
 	serverSpan := createSpan(
 		"server",
 		traceID,
-		pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}),
+		pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}),
 		clientSpan.SpanID(),
 	)
-	serverSpan.SetKind(pdata.SpanKindServer)
+	serverSpan.SetKind(ptrace.SpanKindServer)
 	serverSpan.SetTraceState("key=val")
-	serverAttrs := pdata.NewMap()
+	serverAttrs := pcommon.NewMap()
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
 	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
 	serverAttrs.InsertString(labelSource, "test_source")
 	serverAttrs.CopyTo(serverSpan.Attributes())
 
-	traces := constructTraces([]pdata.Span{rootSpan, clientSpan, serverSpan})
-	resourceAttrs := pdata.NewMap()
+	traces := constructTraces([]ptrace.Span{rootSpan, clientSpan, serverSpan})
+	resourceAttrs := pcommon.NewMap()
 	resourceAttrs.InsertString("resource", "R1")
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
 	resourceAttrs.InsertString(labelSource, "test-source")
@@ -171,7 +172,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	validateTraces(t, expected, traces)
 }
 
-func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
+func validateTraces(t *testing.T, expected []*span, traces ptrace.Traces) {
 	actual, err := consumeTraces(traces)
 	require.NoError(t, err)
 	require.Equal(t, len(expected), len(actual))
@@ -195,11 +196,11 @@ func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
 func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 	minSpan := createSpan(
 		"root",
-		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
-		pdata.SpanID{},
+		pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pcommon.SpanID{},
 	)
-	traces := constructTraces([]pdata.Span{minSpan})
+	traces := constructTraces([]ptrace.Span{minSpan})
 
 	instrumentationLibrary := traces.ResourceSpans().At(0).ScopeSpans().At(0).
 		Scope()
@@ -222,11 +223,11 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 }
 
 func TestExportTraceDataRespectsContext(t *testing.T) {
-	traces := constructTraces([]pdata.Span{createSpan(
+	traces := constructTraces([]ptrace.Span{createSpan(
 		"root",
-		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
-		pdata.SpanID{},
+		pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pcommon.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pcommon.SpanID{},
 	)})
 
 	sender := &mockSender{}
@@ -251,11 +252,11 @@ func TestExportTraceDataRespectsContext(t *testing.T) {
 
 func createSpan(
 	name string,
-	traceID pdata.TraceID,
-	spanID pdata.SpanID,
-	parentSpanID pdata.SpanID,
-) pdata.Span {
-	span := pdata.NewSpan()
+	traceID pcommon.TraceID,
+	spanID pcommon.SpanID,
+	parentSpanID pcommon.SpanID,
+) ptrace.Span {
+	span := ptrace.NewSpan()
 	span.SetName(name)
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
@@ -263,8 +264,8 @@ func createSpan(
 	return span
 }
 
-func constructTraces(spans []pdata.Span) pdata.Traces {
-	traces := pdata.NewTraces()
+func constructTraces(spans []ptrace.Span) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.ScopeSpans().EnsureCapacity(1)
@@ -276,7 +277,7 @@ func constructTraces(spans []pdata.Span) pdata.Traces {
 	return traces
 }
 
-func consumeTraces(ptrace pdata.Traces) ([]*span, error) {
+func consumeTraces(ptrace ptrace.Traces) ([]*span, error) {
 	ctx := context.Background()
 	sender := &mockSender{}
 
