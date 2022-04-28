@@ -6,8 +6,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220425174313-0674425b8ef2
+	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
+	go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9
 	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
 	google.golang.org/grpc v1.46.0
 	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21
