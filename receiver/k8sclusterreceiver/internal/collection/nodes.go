@@ -76,7 +76,7 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 		}
 		val := utils.GetInt64TimeSeries(quantity.Value())
 
-		if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+		if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
 			if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
 				val = utils.GetDoubleTimeSeries(float64(quantity.MilliValue()) / 1000.0)

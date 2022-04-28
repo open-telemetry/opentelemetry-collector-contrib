@@ -46,7 +46,7 @@ func createDefaultConfig() config.Exporter {
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
-		skipSanitizeLabel: featuregate.IsEnabled(dropSanitizationGate.ID),
+		skipSanitizeLabel: featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID),
 	}
 }
 
