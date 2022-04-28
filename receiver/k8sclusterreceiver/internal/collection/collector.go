@@ -95,12 +95,12 @@ var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
 }
 
 func init() {
-	featuregate.Register(reportCPUMetricsAsDoubleFeatureGate)
+	featuregate.GetRegistry().MustRegister(reportCPUMetricsAsDoubleFeatureGate)
 }
 
 // NewDataCollector returns a DataCollector.
 func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
-	if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+	if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 		logger.Info("The receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate is enabled. This " +
 			"otel collector will report double cpu units, which is good for future support!")
 	} else {
