@@ -5,13 +5,13 @@ go 1.17
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.50.0
 	github.com/prometheus/common v0.34.0
 	github.com/prometheus/prometheus v1.8.2-0.20220111145625-076109fa1910
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9
-	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
+	go.opentelemetry.io/collector v0.50.0
+	go.opentelemetry.io/collector/pdata v0.50.0
+	go.opentelemetry.io/collector/semconv v0.50.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.46.0
@@ -51,5 +51,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

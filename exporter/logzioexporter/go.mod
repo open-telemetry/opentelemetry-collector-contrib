@@ -6,11 +6,11 @@ require (
 	github.com/hashicorp/go-hclog v1.2.0
 	github.com/jaegertracing/jaeger v1.33.0
 	github.com/logzio/jaeger-logzio v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.50.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9
-	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
+	go.opentelemetry.io/collector v0.50.0
+	go.opentelemetry.io/collector/pdata v0.50.0
+	go.opentelemetry.io/collector/semconv v0.50.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -39,7 +39,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -79,5 +79,3 @@ exclude github.com/StackExchange/wmi v1.2.0
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
