@@ -75,6 +75,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
+- `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 
 ### 💡 Enhancements 💡
 

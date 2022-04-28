@@ -330,6 +330,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.50.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.50.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.50.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.50.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.50.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.50.0 // indirect
@@ -726,6 +727,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsec
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver => ../../receiver/awsfirehosereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ../../receiver/awsxrayreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver => ../../receiver/bigipreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver => ../../receiver/couchdbreceiver
 
