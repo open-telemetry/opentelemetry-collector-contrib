@@ -30,7 +30,8 @@ import (
 )
 
 const (
-	typeStr = "saphana"
+	typeStr         = "saphana"
+	defaultEndpoint = "localhost:33015"
 )
 
 // NewFactory creates a factory for SAP HANA receiver.
@@ -46,7 +47,7 @@ func createDefaultConfig() config.Receiver {
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
 		TCPAddr: confignet.TCPAddr{
-			Endpoint: "localhost:33015",
+			Endpoint: defaultEndpoint,
 		},
 		TLSClientSetting: configtls.TLSClientSetting{
 			Insecure: true,

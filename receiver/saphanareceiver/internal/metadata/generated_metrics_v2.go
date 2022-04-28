@@ -2738,10 +2738,10 @@ func WithDbSystem(val string) ResourceOption {
 	}
 }
 
-// WithHost sets provided value as "host" attribute for current resource.
-func WithHost(val string) ResourceOption {
+// WithSaphanaHost sets provided value as "saphana.host" attribute for current resource.
+func WithSaphanaHost(val string) ResourceOption {
 	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("host", val)
+		r.Attributes().UpsertString("saphana.host", val)
 	}
 }
 

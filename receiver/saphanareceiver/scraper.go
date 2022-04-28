@@ -94,7 +94,7 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		resourceOptions := []metadata.ResourceOption{metadata.WithDbSystem("saphana")}
 		for attribute, value := range resourceAttributes {
 			if attribute == "host" {
-				resourceOptions = append(resourceOptions, metadata.WithHost(value))
+				resourceOptions = append(resourceOptions, metadata.WithSaphanaHost(value))
 			} else {
 				errs.Add(fmt.Errorf("Unsupported resource attribute: %s", attribute))
 			}

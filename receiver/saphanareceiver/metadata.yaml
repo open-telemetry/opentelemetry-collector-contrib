@@ -1,6 +1,6 @@
 name: saphanareceiver
 resource_attributes:
-  host:
+  saphana.host:
     type: string
     description: The SAP HANA host.
   db.system:
