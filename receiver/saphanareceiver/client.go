@@ -163,8 +163,7 @@ ROW_ITERATOR:
 
 		// Build a list of addresses that rows.Scan will load column data into
 		for i := range rowFields {
-			var val sql.NullString
-			rowFields[i] = &val
+			rowFields[i] = new(sql.NullString)
 		}
 
 		if err := rows.Scan(rowFields...); err != nil {
