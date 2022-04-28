@@ -158,21 +158,13 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitor
 
 ROW_ITERATOR:
 	for rows.Next() {
-		rowFields := make([]interface{}, 0)
+		expectedFields := len(query.orderedMetricLabels) + len(query.orderedResourceLabels) + len(query.orderedStats)
+		rowFields := make([]interface{}, expectedFields)
 
 		// Build a list of addresses that rows.Scan will load column data into
-		for range query.orderedResourceLabels {
+		for i := range rowFields {
 			var val sql.NullString
-			rowFields = append(rowFields, &val)
-		}
-
-		for range query.orderedMetricLabels {
-			var val sql.NullString
-			rowFields = append(rowFields, &val)
-		}
-		for range query.orderedStats {
-			var val sql.NullString
-			rowFields = append(rowFields, &val)
+			rowFields[i] = &val
 		}
 
 		if err := rows.Scan(rowFields...); err != nil {
