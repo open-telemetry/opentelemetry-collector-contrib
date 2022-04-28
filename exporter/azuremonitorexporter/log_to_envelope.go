@@ -25,7 +25,6 @@ import (
 
 const (
 	traceIDTag      = "TraceId"
-	spanIDTag       = "SpanId"
 	categoryNameTag = "CategoryName"
 )
 
