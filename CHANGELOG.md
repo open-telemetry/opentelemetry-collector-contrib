@@ -32,6 +32,7 @@
 - `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
 - `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
 - `nginxreceiver`: Include nginxreceiver in components (#9572)
+- `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
 
 ## v0.50.0
 
