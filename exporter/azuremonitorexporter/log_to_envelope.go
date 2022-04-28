@@ -24,7 +24,6 @@ import (
 )
 
 const (
-	traceIDTag      = "TraceId"
 	categoryNameTag = "CategoryName"
 )
 
