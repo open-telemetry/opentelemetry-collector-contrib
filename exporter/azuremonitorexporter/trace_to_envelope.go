@@ -37,7 +37,7 @@ const (
 	messagingSpanType spanType = 4
 	faasSpanType      spanType = 5
 
-	instrumentationLibraryName    string = "instrumentationlibrary.namenew"
+	instrumentationLibraryName    string = "instrumentationlibrary.name"
 	instrumentationLibraryVersion string = "instrumentationlibrary.version"
 )
 
