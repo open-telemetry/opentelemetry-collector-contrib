@@ -16,7 +16,6 @@ package utils // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -41,9 +40,8 @@ func ValidateAPIKey(logger *zap.Logger, client *datadog.Client) error {
 		return nil
 	}
 	if err != nil {
-		msg := "Error while validating API key"
-		logger.Warn(msg, zap.Error(err))
-		return fmt.Errorf("%s: %w", msg, err)
+		logger.Warn("Error while validating API key", zap.Error(err))
+		return nil
 	}
 	logger.Warn(ErrInvalidAPI.Error())
 	return ErrInvalidAPI
