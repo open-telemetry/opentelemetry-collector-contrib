@@ -63,24 +63,27 @@ func CreateNodeAndResourcePdata(job, instance string, serviceDiscoveryLabels lab
 	return &resource
 }
 
+// kubernetesDiscoveryToResourceAttributes maps from metadata labels discovered
+// through the kubernetes implementation of service discovery to opentelemetry
+// resource attribute keys.
+var kubernetesDiscoveryToResourceAttributes = map[string]string{
+	"__meta_kubernetes_pod_name":           conventions.AttributeK8SPodName,
+	"__meta_kubernetes_pod_uid":            conventions.AttributeK8SPodUID,
+	"__meta_kubernetes_pod_container_name": conventions.AttributeK8SContainerName,
+	"__meta_kubernetes_namespace":          conventions.AttributeK8SNamespaceName,
+	// Only one of the node name service discovery labels will be present
+	"__meta_kubernetes_pod_node_name":      conventions.AttributeK8SNodeName,
+	"__meta_kubernetes_node_name":          conventions.AttributeK8SNodeName,
+	"__meta_kubernetes_endpoint_node_name": conventions.AttributeK8SNodeName,
+}
+
+// addKubernetesResource adds resource information detected by prometheus'
+// kubernetes service discovery.
 func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labels) {
-	if podName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_name"); podName != "" {
-		attrs.UpsertString(conventions.AttributeK8SPodName, podName)
-	}
-	if podUID := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_uid"); podUID != "" {
-		attrs.UpsertString(conventions.AttributeK8SPodUID, podUID)
-	}
-	if containerName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_container_name"); containerName != "" {
-		attrs.UpsertString(conventions.AttributeK8SContainerName, containerName)
-	}
-	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_node_name"); nodeName != "" {
-		attrs.UpsertString(conventions.AttributeK8SNodeName, nodeName)
-	}
-	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_node_name"); nodeName != "" {
-		attrs.UpsertString(conventions.AttributeK8SNodeName, nodeName)
-	}
-	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_endpoint_node_name"); nodeName != "" {
-		attrs.UpsertString(conventions.AttributeK8SNodeName, nodeName)
+	for sdKey, attributeKey := range kubernetesDiscoveryToResourceAttributes {
+		if attr := serviceDiscoveryLabels.Get(sdKey); attr != "" {
+			attrs.UpsertString(attributeKey, attr)
+		}
 	}
 	controllerName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_name")
 	controllerKind := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_kind")
@@ -97,8 +100,5 @@ func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labe
 		case "CronJob":
 			attrs.UpsertString(conventions.AttributeK8SCronJobName, controllerName)
 		}
-	}
-	if nodeName := serviceDiscoveryLabels.Get("__meta_kubernetes_namespace"); nodeName != "" {
-		attrs.UpsertString(conventions.AttributeK8SNamespaceName, nodeName)
 	}
 }
