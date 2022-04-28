@@ -80,9 +80,10 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	}
 
 	settings := service.CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      ipp.factories,
-		ConfigProvider: configProvider,
+		BuildInfo:             component.NewDefaultBuildInfo(),
+		Factories:             ipp.factories,
+		ConfigProvider:        configProvider,
+		SkipSettingGRPCLogger: true,
 	}
 
 	ipp.svc, err = service.New(settings)
