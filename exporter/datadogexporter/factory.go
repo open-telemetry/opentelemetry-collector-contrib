@@ -198,6 +198,7 @@ func (f *factory) createTracesExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	var pushTracesFn consumer.ConsumeTracesFunc
 
 	if cfg.OnlyMetadata {
