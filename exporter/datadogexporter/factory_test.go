@@ -441,7 +441,7 @@ func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	t.Run("failed_on_invalid_key is true", func(t *testing.T) {
+	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(
@@ -452,7 +452,7 @@ func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
 		assert.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, exp)
 	})
-	t.Run("failed_on_invalid_key is false", func(t *testing.T) {
+	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(
@@ -514,7 +514,7 @@ func TestCreateAPITracesExporterFailOnInvalidkey(t *testing.T) {
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	t.Run("failed_on_invalid_key is true", func(t *testing.T) {
+	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
 		ctx := context.Background()
 		exp, err := factory.CreateTracesExporter(
@@ -525,7 +525,7 @@ func TestCreateAPITracesExporterFailOnInvalidkey(t *testing.T) {
 		assert.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, exp)
 	})
-	t.Run("failed_on_invalid_key is false", func(t *testing.T) {
+	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
 		ctx := context.Background()
 		exp, err := factory.CreateTracesExporter(
