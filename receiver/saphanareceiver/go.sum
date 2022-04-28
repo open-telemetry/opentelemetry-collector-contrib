@@ -138,8 +138,8 @@ github.com/mitchellh/go-testing-interface v1.0.0/go.mod h1:kRemZodwjscx+RGhAo8eI
 github.com/mitchellh/go-wordwrap v1.0.0/go.mod h1:ZXFpozHsX6DPmq2I0TCekCxypsnAUbP2oI0UX1GXzOo=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mitchellh/mapstructure v1.4.1/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
-github.com/mitchellh/mapstructure v1.4.3 h1:OVowDSCllw/YjdLkam3/sm7wEtOy59d8ndGgCcyj8cs=
-github.com/mitchellh/mapstructure v1.4.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
+github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
+github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/reflectwalk v1.0.0/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
@@ -181,10 +181,10 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
 go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
-go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4 h1:HeEQrXdkbkcl8LvmnAsfUE7abAMEu64phMXgZULKjVo=
-go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4/go.mod h1:AS7Mx+W+Imh9WPI96Tli0PYs/rZB6kZ1jHAynMKHxEc=
-go.opentelemetry.io/collector/model v0.49.1-0.20220422001137-87ab5de64ce4 h1:FaJE85ZkaEkcefjZJYnJ9DLJE2l8kW9HNm9iRbpnVVA=
-go.opentelemetry.io/collector/model v0.49.1-0.20220422001137-87ab5de64ce4/go.mod h1:nOYQv9KoFPs6ihJwOi24qB209EOhS9HkwhGj54YiEAw=
+go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9 h1:XonDUk96dcTwq89dUXk75M/0ZiwznU9XUj8YAA+V2Go=
+go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9/go.mod h1:0nkkn+A4B7S+U4ioI8C2CD0dIOoQeXOMz6qbpGiJC3E=
+go.opentelemetry.io/collector/model v0.49.1-0.20220428142054-b34df3a7e7e9 h1:C8tkM2GQZJD6Lrjc3vNmuSJxMKdY60nIDCN8nrED3gM=
+go.opentelemetry.io/collector/model v0.49.1-0.20220428142054-b34df3a7e7e9/go.mod h1:p/b7uQaDHBaNX2hl+vVdAWVdhWhbgCjXuzZV6plE8Ng=
 go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9 h1:SJVHtNIkC46nSmKasugtYI9PVfUxvXnoxgKkIn4vhJ4=
 go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9/go.mod h1:jrnUDnlHCTSKf9H7LYTmldQUmNQmPvilNNG/cKlv8Lc=
 go.opentelemetry.io/otel v1.6.3 h1:FLOfo8f9JzFVFVyU+MSRJc2HdEAXQgm7pIv2uFKRSZE=

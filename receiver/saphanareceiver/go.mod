@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/SAP/go-hdb v0.105.5
-	go.opentelemetry.io/collector v0.49.1-0.20220422001137-87ab5de64ce4
-	go.opentelemetry.io/collector/model v0.49.1-0.20220422001137-87ab5de64ce4
+	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
+	go.opentelemetry.io/collector/model v0.49.1-0.20220428142054-b34df3a7e7e9
 	go.uber.org/zap v1.21.0 // indirect
 )
 
@@ -22,7 +22,7 @@ require (
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.3 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
