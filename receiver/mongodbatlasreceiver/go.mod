@@ -8,7 +8,7 @@ require (
 	github.com/mongodb-forks/digest v1.0.3
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/atlas v0.15.0
-	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
+	go.opentelemetry.io/collector v0.50.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -44,8 +44,6 @@ require (
 
 require (
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9
+	go.opentelemetry.io/collector/pdata v0.50.0
 	go.uber.org/multierr v1.8.0 // indirect
 )
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
