@@ -55,11 +55,8 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 
 	messageData.Message = logRecord.Body().StringVal()
 
-	hexTraceID := logRecord.TraceID().HexString()
-	messageData.Properties[traceIDTag] = hexTraceID
-	envelope.Tags[contracts.OperationId] = hexTraceID
-
-	messageData.Properties[spanIDTag] = logRecord.SpanID().HexString()
+	envelope.Tags[contracts.OperationId] = logRecord.TraceID().HexString()
+	envelope.Tags[contracts.OperationParentId] = logRecord.SpanID().HexString()
 
 	messageData.Properties[categoryNameTag] = logRecord.Name()
 	envelope.Name = messageData.EnvelopeName("")
