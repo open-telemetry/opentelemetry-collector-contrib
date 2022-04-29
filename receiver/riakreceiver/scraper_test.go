@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/model"
 )
@@ -57,6 +58,20 @@ func TestScraperStart(t *testing.T) {
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
 			expectError: true,
+		},
+		{
+			desc: "MetricsDisabled",
+			scraper: &riakScraper{
+				cfg: &Config{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						TLSSetting: configtls.TLSClientSetting{},
+						Endpoint:   defaultEndpoint,
+					},
+					Metrics: customMetricSettings(),
+				},
+				settings: componenttest.NewNopTelemetrySettings(),
+			},
+			expectError: false,
 		},
 		{
 			desc: "Valid Config",
@@ -90,6 +105,7 @@ func TestScaperScrape(t *testing.T) {
 		desc              string
 		setupMockClient   func(t *testing.T) client
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
+		metricsEnabled    bool
 		expectedErr       error
 	}{
 		{
@@ -100,7 +116,8 @@ func TestScaperScrape(t *testing.T) {
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
-			expectedErr: errClientNotInit,
+			expectedErr:    errClientNotInit,
+			metricsEnabled: true,
 		},
 		{
 			desc: "API Call Failure",
@@ -112,7 +129,30 @@ func TestScaperScrape(t *testing.T) {
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
-			expectedErr: errors.New("some api error"),
+			metricsEnabled: true,
+			expectedErr:    errors.New("some api error"),
+		},
+		{
+			desc: "Metrics Disabled",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+				// use helper function from client tests
+				data := loadAPIResponseData(t, statsAPIResponseFile)
+				var stats *model.Stats
+				err := json.Unmarshal(data, &stats)
+				require.NoError(t, err)
+
+				mockClient.On("GetStats", mock.Anything).Return(stats, nil)
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "scraper", "expected_disabled.json")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			metricsEnabled: false,
+			expectedErr:    nil,
 		},
 		{
 			desc: "Successful Collection",
@@ -133,16 +173,24 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			expectedErr: nil,
+			metricsEnabled: true,
+			expectedErr:    nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
+			scraper := &riakScraper{}
+			if !tc.metricsEnabled {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Metrics = customMetricSettings()
+				scraper = newScraper(zap.NewNop(), cfg, componenttest.NewNopTelemetrySettings())
+			} else {
+				scraper = newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
+			}
+
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
-
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -154,5 +202,28 @@ func TestScaperScrape(t *testing.T) {
 			err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 			require.NoError(t, err)
 		})
+	}
+}
+
+func customMetricSettings() metadata.MetricsSettings {
+	return metadata.MetricsSettings{
+		RiakMemoryLimit: metadata.MetricSettings{
+			Enabled: false,
+		},
+		RiakNodeOperationCount: metadata.MetricSettings{
+			Enabled: false,
+		},
+		RiakNodeOperationTimeMean: metadata.MetricSettings{
+			Enabled: true,
+		},
+		RiakNodeReadRepairCount: metadata.MetricSettings{
+			Enabled: true,
+		},
+		RiakVnodeIndexOperationCount: metadata.MetricSettings{
+			Enabled: true,
+		},
+		RiakVnodeOperationCount: metadata.MetricSettings{
+			Enabled: true,
+		},
 	}
 }
