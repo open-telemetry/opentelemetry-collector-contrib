@@ -12,6 +12,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `azuremonitorexporter` : Fix log exporter bug related to incorrectly mapping SpanId (#9579).
+
 ## v0.50.0
 
 ### 🛑 Breaking changes 🛑
