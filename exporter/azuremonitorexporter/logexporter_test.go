@@ -88,8 +88,6 @@ func TestLogRecordToEnvelope(t *testing.T) {
 
 			hexSpanID := logRecord.SpanID().HexString()
 			assert.Equal(t, envelope.Tags[contracts.OperationParentId], hexSpanID)
-
-			assert.Equal(t, messageData.Properties[categoryNameTag], logRecord.Name())
 		})
 	}
 }
