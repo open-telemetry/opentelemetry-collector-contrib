@@ -8,6 +8,15 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| **node.cache.memory.usage** | The memory usage of the node’s cache | By | Sum(Int) | <ul> </ul> |
+| **node.cache.network.throughput** | The memory usage of the node’s cache | By | Sum(Int) | <ul> </ul> |
+| **node.load_balancer.utilization** | The utilization of load balancers by the node | % | Gauge(Double) | <ul> <li>load_balancer</li> </ul> |
+| **node.memory.usage** | The memory usage of the node | By | Sum(Int) | <ul> </ul> |
+| **nsx.interface.packet.count** | The number of packets flowing through the network interface. | {messages} | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **nsx.interface.throughput** | The number of messages published to a queue. | {messages} | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **nsx.node.cpu.utilization** | The average amount of CPU being used by the node. | % | Gauge(Double) | <ul> <li>cpu.process.class</li> </ul> |
+| **nsx.node.disk.usage** | The amount of storage space used by the node. | By | Sum(Int) | <ul> <li>disk</li> </ul> |
+| **nsx.node.disk.utilization** | The percentage of storage space utilized. | % | Gauge(Double) | <ul> <li>disk</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -18,7 +27,19 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| nsx.interface.id | The name of the network interface. | String |
+| nsx.node.name | The name of the NSX Node. | String |
+| nsx.node.type | The type of NSX Node. | String |
+
 ## Metric attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| cpu.process.class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes | datapath, services |
+| direction (direction) | The direction of network flow | received, transmitted |
+| disk (disk) | The name of the mounted storage |  |
+| load_balancer | The name of the load balancer being utilized |  |

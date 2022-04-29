@@ -8,11 +8,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	nsxt "github.com/vmware/go-vmware-nsxt"
-	"github.com/vmware/go-vmware-nsxt/manager"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxreceiver/internal/model"
 )
@@ -22,6 +21,7 @@ type nsxClient struct {
 	driver   *nsxt.APIClient
 	client   *http.Client
 	endpoint *url.URL
+	logger   *zap.Logger
 }
 
 var (
@@ -33,7 +33,7 @@ const defaultMaxRetries = 3
 const defaultRetryMinDelay = 5
 const defaultRetryMaxDelay = 10
 
-func newClient(c *Config, settings component.TelemetrySettings, host component.Host) (*nsxClient, error) {
+func newClient(c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
 	client, err := c.MetricsConfig.HTTPClientSettings.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
@@ -48,51 +48,51 @@ func newClient(c *Config, settings component.TelemetrySettings, host component.H
 		config:   c,
 		client:   client,
 		endpoint: endpoint,
+		logger:   logger,
 	}, nil
 }
 
-func (c *nsxClient) LogicalSwitches(ctx context.Context) (*manager.SwitchingProfilesListResult, error) {
-	body, err := c.doRequest(ctx, "/fabric/logical-switches", nil)
+func (c *nsxClient) TransportNodes(ctx context.Context) ([]dm.TransportNode, error) {
+	body, err := c.doRequest(
+		ctx,
+		"/api/v1/transport-nodes",
+		withDefaultHeaders(),
+	)
 	if err != nil {
 		return nil, err
 	}
-	var switches manager.SwitchingProfilesListResult
-	err = json.Unmarshal(body, &switches)
-	return &switches, err
+	var nodes dm.TransportNodeList
+	err = json.Unmarshal(body, &nodes)
+	return nodes.Results, err
 }
 
-func (c *nsxClient) Nodes(ctx context.Context) ([]dm.NodeStat, error) {
-	body, err := c.doRequest(ctx, "/api/v1/transport-nodes", nil)
+func (c *nsxClient) NodeStatus(ctx context.Context, nodeID string) (*dm.NodeStatus, error) {
+	body, err := c.doRequest(
+		ctx,
+		fmt.Sprintf("/api/v1/transport-nodes/%s/status", nodeID),
+		withDefaultHeaders(),
+	)
 	if err != nil {
-		return nil, err
-	}
-	var nodes manager.NodeListResult
-	err = json.Unmarshal(body, &nodes)
-
-	nodeIDs := []string{}
-	for _, n := range nodes.Results {
-		nodeIDs = append(nodeIDs, n.Id)
+		return nil, fmt.Errorf("unable to get a node's status from the REST API")
 	}
 
-	nodeStatsBody, err := c.doRequest(ctx, "/api/v1/fabric/nodes/status", withQuery("node_ids", strings.Join(nodeIDs, ",")))
+	var nodestatus dm.TransportNodeStatus
+	err = json.Unmarshal(body, &nodestatus)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to unmarshal result of the node status request: %w", err)
 	}
 
-	var nodeStats dm.NodeStatListResult
-	err = json.Unmarshal(nodeStatsBody, &nodeStats)
-	if err != nil {
-		return nil, err
-	}
+	c.logger.Info(fmt.Sprintf("here is the node status: %v", nodestatus.NodeStatus.SystemStatus))
 
-	return nodeStats.Results, err
+	return &nodestatus.NodeStatus, nil
+
 }
 
 func (c *nsxClient) Interfaces(ctx context.Context, nodeID string) ([]dm.NetworkInterface, error) {
 	body, err := c.doRequest(
 		ctx,
 		fmt.Sprintf("/api/v1/fabric/nodes/%s/network/interfaces", nodeID),
-		nil,
+		withDefaultHeaders(),
 	)
 	if err != nil {
 		return nil, err
@@ -103,12 +103,24 @@ func (c *nsxClient) Interfaces(ctx context.Context, nodeID string) ([]dm.Network
 	return interfaces.Results, err
 }
 
-type requestOption func(req *http.Request)
+type requestOption func(req *http.Request) *http.Request
 
 func withQuery(key string, value string) requestOption {
-	return func(req *http.Request) {
+	return func(req *http.Request) *http.Request {
 		q := req.URL.Query()
 		q.Add(key, value)
+		req.URL.RawQuery = q.Encode()
+		return req
+	}
+}
+
+func withDefaultHeaders() requestOption {
+	return func(req *http.Request) *http.Request {
+		h := req.Header
+		h.Add("User-Agent", "opentelemetry-collector")
+		h.Add("Accept", "application/json")
+		h.Add("Connection", "keep-alive")
+		return req
 	}
 }
 
@@ -125,7 +137,7 @@ func (c *nsxClient) doRequest(ctx context.Context, path string, options ...reque
 	req.SetBasicAuth(c.config.MetricsConfig.Username, c.config.MetricsConfig.Password)
 
 	for _, op := range options {
-		op(req)
+		req = op(req)
 	}
 
 	resp, err := c.client.Do(req)
@@ -138,13 +150,14 @@ func (c *nsxClient) doRequest(ctx context.Context, path string, options ...reque
 		return io.ReadAll(resp.Body)
 	}
 
-	_, err = io.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	switch resp.StatusCode {
 	case 401:
 		return nil, errUnauthenticated
 	case 403:
 		return nil, errUnauthorized
 	default:
-		return nil, fmt.Errorf("got non 200 status code %d", resp.StatusCode)
+		c.logger.Info(fmt.Sprintf("%v", req))
+		return nil, fmt.Errorf("got non 200 status code %d: %w, %s", resp.StatusCode, err, string(body))
 	}
 }

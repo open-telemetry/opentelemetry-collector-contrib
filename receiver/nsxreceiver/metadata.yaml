@@ -9,19 +9,30 @@ resource_attributes:
     type: string
     enum:
       - manager
-      - transport
+      - host
+      - edge
   nsx.interface.id:
-    description: The name of the NiC.
+    description: The name of the network interface.
     type: string
-  nsx.load_balancer.type:
-    description: The load balancer layer assignment
-    type: string
-    enum:
-      - L4
-      - L7
-  
 
-attributes: {}
+attributes:
+  direction:
+    value: direction
+    description: The direction of network flow
+    enum:
+      - received
+      - transmitted
+  disk:
+    value: disk
+    description: The name of the mounted storage
+  cpu.process.class:
+    description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes
+    enum:
+      - datapath
+      - services
+  load_balancer:
+    description: The name of the load balancer being utilized
+
 metrics:
   nsx.interface.throughput:
     description: The number of messages published to a queue.
@@ -30,4 +41,60 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
+    enabled: true
+    attributes: [direction]
+  nsx.interface.packet.count:
+    description: The number of packets flowing through the network interface.
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+    attributes: [direction]
+  nsx.node.cpu.utilization:
+    description: The average amount of CPU being used by the node.
+    unit: "%"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [cpu.process.class]
+  nsx.node.disk.utilization:
+    description: The percentage of storage space utilized.
+    unit: "%"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [disk]
+  nsx.node.disk.usage:
+    description: The amount of storage space used by the node.
+    unit: By
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    enabled: true
+    attributes: [disk]
+  node.load_balancer.utilization:
+    description: The utilization of load balancers by the node
+    unit: "%"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [load_balancer]
+  node.memory.usage:
+    description: The memory usage of the node
+    unit: By
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    enabled: true
+  node.cache.memory.usage:
+    description: The memory usage of the node’s cache
+    unit: By
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
     enabled: true

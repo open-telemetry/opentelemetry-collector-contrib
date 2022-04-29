@@ -1,39 +1,56 @@
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxhreceiver/internal/model"
 
-// NodeStatListResult Runtime status information of fabric nodes
-type NodeStatListResult struct {
-	Results []NodeStat `json:"results"`
+type TransportNodeList struct {
+	Results []TransportNode `json:"results"`
 }
 
-// NodeStat is a status for a node
-type NodeStat struct {
-	ID                       string             `json:"node_id"`
-	HostNodeDeploymentStatus string             `json:"host_node_deployment_status"`
-	SoftwareVersion          string             `json:"software_version"`
-	SystemStatus             SystemStatus       `json:"system_status"`
-	ExternalID               string             `json:"external_id"`
-	Interfaces               []NetworkInterface `json:"interfaces,omitempty"`
+type TransportNode struct {
+	ID           string `json:"id"`
+	Name         string `json:"display_name"`
+	Description  string `json:"description"`
+	ResourceType string `json:"resource_type"`
+
+	ManagerRole    *struct{} `json:"manager_role,omitempty"`
+	ControllerRole *struct{} `json:"controller_role,omitempty"`
+}
+
+type TransportZoneEndpoint struct {
+	ZoneID string `json:"transport_zone_id"`
+}
+
+// NodeStatListResult Runtime status information of fabric nodes
+type NodeStatListResult struct {
+	Results []NodeStatus `json:"results"`
+}
+
+type TransportNodeStatus struct {
+	NodeStatus NodeStatus `json:"node_status"`
+}
+
+// NodeStatus is a status for a node
+type NodeStatus struct {
+	SystemStatus *SystemStatus `json:"system_status"`
 }
 
 // SystemStatus is the system status portion of a node's status response
 type SystemStatus struct {
-	CPUCores        int                `json:"cpu_cores"`
-	DpdkCPUCores    int                `json:"dpdk_cpu_cores"`
-	NonDpdkCPUCores int                `json:"non_dpdk_cpu_cores"`
-	DiskSpaceTotal  int                `json:"disk_space_total"`
-	DiskSpaceUsed   int                `json:"disk_space_used"`
-	FileSystems     []FileSystemsUsage `json:"file_systems"`
-	LoadAverage     []float64          `json:"load_average"`
-	CPUUsage        NodeSystemCPUUsage `json:"cpu_usage"`
-	EdgeMemUsage    MemSystemUsage     `json:"edge_mem_usage"`
-	MemCache        int                `json:"mem_cache"`
-	MemTotal        int                `json:"mem_total"`
-	MemUsed         int                `json:"mem_used"`
-	Source          string             `json:"source"`
-	SwapTotal       int                `json:"swap_total"`
-	SwapUsed        int                `json:"swap_used"`
-	SystemTime      int64              `json:"system_time"`
-	Uptime          int64              `json:"uptime"`
+	CPUCores        int                 `json:"cpu_cores"`
+	DpdkCPUCores    int                 `json:"dpdk_cpu_cores"`
+	NonDpdkCPUCores int                 `json:"non_dpdk_cpu_cores"`
+	DiskSpaceTotal  int                 `json:"disk_space_total"`
+	DiskSpaceUsed   int                 `json:"disk_space_used"`
+	FileSystems     []FileSystemsUsage  `json:"file_systems"`
+	LoadAverage     []float64           `json:"load_average"`
+	CPUUsage        *NodeSystemCPUUsage `json:"cpu_usage"`
+	EdgeMemUsage    *MemSystemUsage     `json:"edge_mem_usage"`
+	MemCache        int                 `json:"mem_cache"`
+	MemTotal        int                 `json:"mem_total"`
+	MemUsed         int                 `json:"mem_used"`
+	Source          string              `json:"source"`
+	SwapTotal       int                 `json:"swap_total"`
+	SwapUsed        int                 `json:"swap_used"`
+	SystemTime      int64               `json:"system_time"`
+	Uptime          int64               `json:"uptime"`
 }
 
 type NodeSystemCPUUsage struct {

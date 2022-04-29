@@ -2,7 +2,9 @@ package nsxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -31,7 +33,7 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 }
 
 func (s *scraper) start(ctx context.Context, host component.Host) error {
-	client, err := newClient(s.config, s.settings, host)
+	client, err := newClient(s.config, s.settings, host, s.logger.Named("client"))
 	if err != nil {
 		return err
 	}
@@ -41,26 +43,34 @@ func (s *scraper) start(ctx context.Context, host component.Host) error {
 
 func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
+	colTime := pdata.NewTimestampFromTime(time.Now())
 	errs := &scrapererror.ScrapeErrors{}
 	r := s.retrieve(ctx, errs)
-	s.process(r)
-	return pdata.NewMetrics(), nil
+
+	s.process(r, colTime, errs)
+	return s.mb.Emit(), errs.Combine()
 }
 
 type retrieval struct {
-	nodes   []dm.NodeStat
-	routers []dm.NetworkInterface
-	sync.RWMutex
+	nodes []nodeInfo
+}
+
+type nodeInfo struct {
+	node       dm.TransportNode
+	interfaces []dm.NetworkInterface
+	stats      dm.NodeStatus
 }
 
 func (s *scraper) retrieve(ctx context.Context, errs *scrapererror.ScrapeErrors) *retrieval {
 	r := &retrieval{}
 
-	wg := &sync.WaitGroup{}
+	nodes, err := s.retrieveNodes(ctx, r, errs)
 
-	wg.Add(2)
-	go s.retrieveNodes(ctx, r, wg, errs)
-	go s.retrieveRouters(ctx, r, wg, errs)
+	wg := &sync.WaitGroup{}
+	for _, n := range r.nodes {
+		go s.retrieveInterfaces(ctx, n, wg, errs)
+		go s.retrieveNodeStats(ctx, n, wg, errs)
+	}
 	wg.Wait()
 
 	return r
@@ -69,46 +79,83 @@ func (s *scraper) retrieve(ctx context.Context, errs *scrapererror.ScrapeErrors)
 func (s *scraper) retrieveNodes(
 	ctx context.Context,
 	r *retrieval,
-	wg *sync.WaitGroup,
 	errs *scrapererror.ScrapeErrors,
-) {
-	defer wg.Done()
-
-	nodes, err := s.client.Nodes(ctx)
+) ([]dm.TransportNode, error) {
+	nodes, err := s.client.TransportNodes(ctx)
 	if err != nil {
-		s.logger.Error("unable to retrieve nodes", zap.Field{Key: "error", String: err.Error()})
+		errs.AddPartial(1, err)
+		return
 	}
-	r.Lock()
 	r.nodes = nodes
-	r.Unlock()
-
-	for _, n := range nodes {
-		interfaces, err := s.client.Interfaces(ctx, n.ID)
-		if err != nil {
-			errs.AddPartial(1, err)
-			continue
-		}
-		n.Interfaces = interfaces
-	}
 }
 
-func (s *scraper) retrieveRouters(
+func (s *scraper) retrieveInterfaces(
 	ctx context.Context,
-	r *retrieval,
+	node dm.TransportNode,
 	wg *sync.WaitGroup,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	defer wg.Done()
+	interfaces, err := s.client.Interfaces(ctx, node.ID)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+
+	interfaces
 }
 
-func (s *scraper) process(retrieval *retrieval) {
+func (s *scraper) retrieveNodeStats(
+	ctx context.Context,
+	node dm.TransportNode,
+	wg *sync.WaitGroup,
+	errs *scrapererror.ScrapeErrors,
+) {
+	defer wg.Done()
+	ns, err := s.client.NodeStatus(ctx, node.ID)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	node.Stats = ns
+}
+
+func (s *scraper) process(retrieval *retrieval, colTime pdata.Timestamp, errs *scrapererror.ScrapeErrors) {
 	for _, n := range retrieval.nodes {
 		for _, i := range n.Interfaces {
 			s.recordNodeInterface(n, i)
 		}
+		s.recordNode(colTime, n)
 	}
 }
 
-func (s *scraper) recordNodeInterface(node dm.NodeStat, i dm.NetworkInterface) {
+func (s *scraper) recordNodeInterface(node dm.TransportNode, i dm.NetworkInterface) {
 
+}
+
+func (s *scraper) recordNode(colTime pdata.Timestamp, node dm.TransportNode) {
+	s.logger.Info(fmt.Sprintf("Node ID: %s", node.ID))
+	ss := node.Stats.SystemStatus
+	s.mb.RecordNsxNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeCPUProcessClass.Datapath)
+	s.mb.RecordNsxNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk, metadata.AttributeCPUProcessClass.Services)
+	s.mb.RecordNodeMemoryUsageDataPoint(colTime, int64(ss.MemUsed))
+	s.mb.RecordNodeCacheMemoryUsageDataPoint(colTime, int64(ss.MemUsed))
+
+	s.mb.EmitForResource(
+		metadata.WithNsxNodeName(node.Name),
+		metadata.WithNsxNodeType(nodeType(node)),
+	)
+}
+
+func nodeType(node dm.TransportNode) string {
+	switch {
+	case node.ResourceType == "TransportNode":
+		return "transport"
+	case node.ManagerRole != nil:
+		return "manager"
+	case node.ControllerRole != nil:
+		return "controller"
+	default:
+		return ""
+	}
 }
