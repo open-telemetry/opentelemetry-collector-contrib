@@ -59,20 +59,7 @@ func TestScraperStart(t *testing.T) {
 			},
 			expectError: true,
 		},
-		{
-			desc: "MetricsDisabled",
-			scraper: &riakScraper{
-				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						TLSSetting: configtls.TLSClientSetting{},
-						Endpoint:   defaultEndpoint,
-					},
-					Metrics: customMetricSettings(),
-				},
-				settings: componenttest.NewNopTelemetrySettings(),
-			},
-			expectError: false,
-		},
+
 		{
 			desc: "Valid Config",
 			scraper: &riakScraper{
@@ -180,7 +167,7 @@ func TestScaperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := &riakScraper{}
+			var scraper *riakScraper
 			if !tc.metricsEnabled {
 				cfg := createDefaultConfig().(*Config)
 				cfg.Metrics = customMetricSettings()
