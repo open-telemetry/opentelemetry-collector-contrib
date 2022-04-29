@@ -23,10 +23,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	categoryNameTag = "CategoryName"
-)
-
 var severityLevelMap = map[string]contracts.SeverityLevel{
 	"Verbose":     contracts.Verbose,
 	"Information": contracts.Information,
@@ -56,7 +52,6 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 	envelope.Tags[contracts.OperationId] = logRecord.TraceID().HexString()
 	envelope.Tags[contracts.OperationParentId] = logRecord.SpanID().HexString()
 
-	messageData.Properties[categoryNameTag] = logRecord.Name()
 	envelope.Name = messageData.EnvelopeName("")
 
 	data.BaseData = messageData
