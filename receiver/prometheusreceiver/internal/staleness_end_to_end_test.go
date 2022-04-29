@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
@@ -165,7 +164,6 @@ service:
 		service.ConfigProviderSettings{
 			Locations:    []string{confFile.Name()},
 			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
-			Unmarshaler:  configunmarshaler.NewDefault(), //nolint:staticcheck
 		})
 	require.NoError(t, err)
 

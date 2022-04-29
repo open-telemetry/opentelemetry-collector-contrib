@@ -123,6 +123,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				rm := md.ResourceMetrics().At(i)
 				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 					ilm := rm.ScopeMetrics().At(j)
+					require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
 					for k := 0; k < ilm.Metrics().Len(); k++ {
 						m := ilm.Metrics().At(k)
 						if strings.HasPrefix(m.Name(), tt.metricPrefix) {

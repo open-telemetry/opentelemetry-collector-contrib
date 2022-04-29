@@ -88,6 +88,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			SumConfig: ddconfig.SumConfig{
 				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 			},
+			SummaryConfig: ddconfig.SummaryConfig{
+				Mode: ddconfig.SummaryModeGauges,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -165,6 +168,9 @@ func TestLoadConfig(t *testing.T) {
 		SumConfig: ddconfig.SumConfig{
 			CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 		},
+		SummaryConfig: ddconfig.SummaryConfig{
+			Mode: ddconfig.SummaryModeGauges,
+		},
 	}, apiConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
 		SampleRate: 1,
@@ -213,6 +219,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 			SumConfig: ddconfig.SumConfig{
 				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			},
+			SummaryConfig: ddconfig.SummaryConfig{
+				Mode: ddconfig.SummaryModeGauges,
 			},
 		},
 
@@ -312,6 +321,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			SumConfig: ddconfig.SumConfig{
 				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 			},
+			SummaryConfig: ddconfig.SummaryConfig{
+				Mode: ddconfig.SummaryModeNoQuantiles,
+			},
 		}, apiConfig.Metrics)
 	assert.Equal(t,
 		ddconfig.TracesConfig{
@@ -361,6 +373,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		},
 		SumConfig: ddconfig.SumConfig{
 			CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+		},
+		SummaryConfig: ddconfig.SummaryConfig{
+			Mode: ddconfig.SummaryModeGauges,
 		},
 	}, defaultConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
