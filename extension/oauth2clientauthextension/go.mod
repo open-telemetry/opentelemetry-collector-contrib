@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
+	go.opentelemetry.io/collector v0.50.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
 	google.golang.org/grpc v1.46.0
@@ -14,7 +14,7 @@ require (
 	cloud.google.com/go/compute v1.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -30,14 +30,14 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9 // indirect
+	go.opentelemetry.io/collector/pdata v0.50.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
 	go.opentelemetry.io/otel v1.6.3 // indirect
 	go.opentelemetry.io/otel/metric v0.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
-	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220413183235-5e96e2839df9 // indirect
@@ -48,5 +48,3 @@ require (
 )
 
 require go.uber.org/multierr v1.8.0
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

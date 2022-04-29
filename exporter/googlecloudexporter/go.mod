@@ -6,15 +6,15 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.11
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.28.0
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.50.0
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9
-	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
-	google.golang.org/api v0.74.0
-	google.golang.org/genproto v0.0.0-20220413183235-5e96e2839df9
+	go.opentelemetry.io/collector v0.50.0
+	go.opentelemetry.io/collector/pdata v0.50.0
+	go.opentelemetry.io/collector/semconv v0.50.0
+	google.golang.org/api v0.76.0
+	google.golang.org/genproto v0.0.0-20220414192740-2d67ff6cf2b4
 	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0
 )
@@ -24,7 +24,7 @@ require (
 	cloud.google.com/go/monitoring v1.4.0 // indirect
 	cloud.google.com/go/trace v1.2.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.4.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.0 // indirect
+	github.com/aws/aws-sdk-go v1.43.45 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -49,10 +49,10 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
-	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect
+	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
+	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -62,5 +62,3 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

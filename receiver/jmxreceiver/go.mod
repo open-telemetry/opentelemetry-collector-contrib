@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxrec
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.50.0
 	github.com/shirou/gopsutil/v3 v3.22.3
 	github.com/stretchr/testify v1.7.1
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector v0.49.1-0.20220428142054-b34df3a7e7e9
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220428142054-b34df3a7e7e9
+	go.opentelemetry.io/collector v0.50.0
+	go.opentelemetry.io/collector/pdata v0.50.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 
@@ -28,7 +28,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -71,7 +71,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect
-	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220413183235-5e96e2839df9 // indirect
@@ -82,5 +82,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

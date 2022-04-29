@@ -4,6 +4,24 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+- `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
+
+### 🧰 Bug fixes 🧰
+
+- `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
+
+## v0.50.0
+
+### 🛑 Breaking changes 🛑
+
 - `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
 - `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
