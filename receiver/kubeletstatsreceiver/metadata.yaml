@@ -330,35 +330,35 @@ metrics:
       value_type: int
     attributes: []
   k8s.volume.available:
-    enabled: false
+    enabled: true
     description: "The number of available bytes in the volume."
     unit: By
     gauge:
       value_type: int
     attributes: []
   k8s.volume.capacity:
-    enabled: false
+    enabled: true
     description: "The total capacity in bytes of the volume."
     unit: By
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes:
-    enabled: false
+    enabled: true
     description: "The total inodes in the filesystem."
     unit: 1
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes.free:
-    enabled: false
+    enabled: true
     description: "The free inodes in the filesystem."
     unit: 1
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes.used:
-    enabled: false
+    enabled: true
     description: "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems."
     unit: 1
     gauge:

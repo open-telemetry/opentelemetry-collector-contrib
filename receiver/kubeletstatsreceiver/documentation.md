@@ -45,11 +45,11 @@ These are the metrics available for this scraper.
 | **k8s.pod.memory.working_set** | Pod memory working_set | By | Gauge(Int) | <ul> </ul> |
 | **k8s.pod.network.errors** | Pod network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
 | **k8s.pod.network.io** | Pod network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| k8s.volume.available | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
-| k8s.volume.capacity | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
-| k8s.volume.inodes | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| k8s.volume.inodes.free | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| k8s.volume.inodes.used | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
+| **k8s.volume.available** | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
+| **k8s.volume.capacity** | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
+| **k8s.volume.inodes** | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
+| **k8s.volume.inodes.free** | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
+| **k8s.volume.inodes.used** | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default.
 
