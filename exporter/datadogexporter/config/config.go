@@ -276,9 +276,8 @@ type TagsConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// GetHostTags gets the host tags extracted from the configuration
-// Deprecated: [v0.49.0] Access fields explicitly instead.
-func (t *TagsConfig) GetHostTags() []string {
+// getHostTags gets the host tags extracted from the configuration
+func (t *TagsConfig) getHostTags() []string {
 	tags := t.Tags
 
 	if len(tags) == 0 {
