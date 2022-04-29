@@ -76,11 +76,10 @@ from typing import Collection, Dict, Iterable, List, Optional
 
 import psutil
 
-from opentelemetry._metrics import get_meter
+from opentelemetry._metrics import Observation, get_meter
 
 # FIXME Remove this pyling disabling line when Github issue is cleared
 # pylint: disable=no-name-in-module
-from opentelemetry._metrics.observation import Observation
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.system_metrics.package import _instruments
 from opentelemetry.instrumentation.system_metrics.version import __version__
