@@ -72,7 +72,7 @@ check_collector_versions_correct() {
 COLLECTOR_MODULE="go.opentelemetry.io/collector "
 
 COLLECTOR_MODEL_PDATA="go.opentelemetry.io/collector/pdata"
-COLLECTOR_MODEL_PDATA="go.opentelemetry.io/collector/semconv"
+COLLECTOR_MODEL_SEMCONV="go.opentelemetry.io/collector/semconv"
 MAIN_MOD_FILE="./go.mod"
 COLLECTOR_MOD_VERSION=$(get_collector_version "$COLLECTOR_MODULE" "$MAIN_MOD_FILE")
 
