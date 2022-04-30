@@ -13,7 +13,8 @@ attributes:
     enum: [red, green, blue]
 
   booleanValueType:
-    description: 
+    description: Attribute with boolean value
+    value_type: bool
 
 metrics:
   # A metric enabled by default.
