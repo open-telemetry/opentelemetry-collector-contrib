@@ -691,18 +691,6 @@ func Test_extractFieldRules(t *testing.T) {
 			},
 			false,
 		},
-		{
-			"bad-keyregex-capture-group",
-			args{"labels", []FieldExtractConfig{
-				{
-					TagName:  "$1-$2-$11",
-					KeyRegex: "(key)(.*)",
-					From:     kube.MetadataFromPod,
-				},
-			}},
-			[]kube.FieldExtractionRule{},
-			true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
