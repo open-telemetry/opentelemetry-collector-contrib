@@ -6,11 +6,17 @@
 
 ### 🚩 Deprecations 🚩
 
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
 
+- `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
+
 ### 🧰 Bug fixes 🧰
+
+- `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 
 ## v0.50.0
 
@@ -26,7 +32,6 @@
 
 - `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
 - `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
-- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
 
 ### 🚀 New components 🚀
 
@@ -46,6 +51,7 @@
 - `processor/transform`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
+- `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 
 ### 🧰 Bug fixes 🧰
@@ -55,7 +61,6 @@
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
 - `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
 - `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
-- `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 
 ## v0.49.0
 
