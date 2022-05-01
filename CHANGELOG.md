@@ -50,7 +50,6 @@
 - `attributesprocessor`: Support filter by severity (#9132)
 - `processor/transform`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
-- `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 
