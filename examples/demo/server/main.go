@@ -17,7 +17,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"go.opentelemetry.io/otel/baggage"
 	"log"
 	"math/rand"
@@ -157,11 +156,14 @@ func main() {
 		ctx := req.Context()
 		requestCount.Add(ctx, 1, commonLabels...)
 		span := trace.SpanFromContext(ctx)
-		span.SetAttributes(serverAttribute)
 		bag := baggage.FromContext(ctx)
-		for i, member := range bag.Members() {
-			span.AddEvent(fmt.Sprint("baggage member: ", i), trace.WithAttributes(attribute.String(member.Key(), member.Value())))
+
+		baggageAttributes := []attribute.KeyValue{}
+		baggageAttributes = append(baggageAttributes, serverAttribute)
+		for _, member := range bag.Members() {
+			baggageAttributes = append(baggageAttributes, attribute.String("baggage key:"+member.Key(), member.Value()))
 		}
+		span.SetAttributes(baggageAttributes...)
 
 		w.Write([]byte("Hello World"))
 	})
