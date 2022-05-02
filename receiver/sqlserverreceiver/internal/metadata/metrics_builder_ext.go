@@ -41,7 +41,7 @@ func (mb *MetricsBuilder) RecordAnyDataPoint(ts pcommon.Timestamp, val float64, 
 	case "sqlserver.page.life_expectancy":
 		mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, val)
 	case "sqlserver.page.operation.rate":
-		mb.RecordSqlserverPageOperationRateDataPoint(ts, val, attributes["type"])
+		mb.RecordSqlserverPageOperationRateDataPoint(ts, val, MapAttributePageOperations[attributes["type"]])
 	case "sqlserver.page.split.rate":
 		mb.RecordSqlserverPageSplitRateDataPoint(ts, val)
 	case "sqlserver.transaction_log.flush.data.rate":

@@ -205,6 +205,518 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeActivePendingRequestState specifies the a value active_pending_request_state attribute.
+type AttributeActivePendingRequestState int
+
+const (
+	_ AttributeActivePendingRequestState = iota
+	AttributeActivePendingRequestStateActive
+	AttributeActivePendingRequestStatePending
+)
+
+// String returns the string representation of the AttributeActivePendingRequestState.
+func (av AttributeActivePendingRequestState) String() string {
+	switch av {
+	case AttributeActivePendingRequestStateActive:
+		return "active"
+	case AttributeActivePendingRequestStatePending:
+		return "pending"
+	}
+	return ""
+}
+
+// MapAttributeActivePendingRequestState is a helper map of string to AttributeActivePendingRequestState attribute value.
+var MapAttributeActivePendingRequestState = map[string]AttributeActivePendingRequestState{
+	"active":  AttributeActivePendingRequestStateActive,
+	"pending": AttributeActivePendingRequestStatePending,
+}
+
+// AttributeColumnMemorySubtype specifies the a value column_memory_subtype attribute.
+type AttributeColumnMemorySubtype int
+
+const (
+	_ AttributeColumnMemorySubtype = iota
+	AttributeColumnMemorySubtypeData
+	AttributeColumnMemorySubtypeDict
+	AttributeColumnMemorySubtypeIndex
+	AttributeColumnMemorySubtypeMisc
+)
+
+// String returns the string representation of the AttributeColumnMemorySubtype.
+func (av AttributeColumnMemorySubtype) String() string {
+	switch av {
+	case AttributeColumnMemorySubtypeData:
+		return "data"
+	case AttributeColumnMemorySubtypeDict:
+		return "dict"
+	case AttributeColumnMemorySubtypeIndex:
+		return "index"
+	case AttributeColumnMemorySubtypeMisc:
+		return "misc"
+	}
+	return ""
+}
+
+// MapAttributeColumnMemorySubtype is a helper map of string to AttributeColumnMemorySubtype attribute value.
+var MapAttributeColumnMemorySubtype = map[string]AttributeColumnMemorySubtype{
+	"data":  AttributeColumnMemorySubtypeData,
+	"dict":  AttributeColumnMemorySubtypeDict,
+	"index": AttributeColumnMemorySubtypeIndex,
+	"misc":  AttributeColumnMemorySubtypeMisc,
+}
+
+// AttributeColumnMemoryType specifies the a value column_memory_type attribute.
+type AttributeColumnMemoryType int
+
+const (
+	_ AttributeColumnMemoryType = iota
+	AttributeColumnMemoryTypeMain
+	AttributeColumnMemoryTypeDelta
+)
+
+// String returns the string representation of the AttributeColumnMemoryType.
+func (av AttributeColumnMemoryType) String() string {
+	switch av {
+	case AttributeColumnMemoryTypeMain:
+		return "main"
+	case AttributeColumnMemoryTypeDelta:
+		return "delta"
+	}
+	return ""
+}
+
+// MapAttributeColumnMemoryType is a helper map of string to AttributeColumnMemoryType attribute value.
+var MapAttributeColumnMemoryType = map[string]AttributeColumnMemoryType{
+	"main":  AttributeColumnMemoryTypeMain,
+	"delta": AttributeColumnMemoryTypeDelta,
+}
+
+// AttributeConnectionStatus specifies the a value connection_status attribute.
+type AttributeConnectionStatus int
+
+const (
+	_ AttributeConnectionStatus = iota
+	AttributeConnectionStatusRunning
+	AttributeConnectionStatusIdle
+	AttributeConnectionStatusQueueing
+)
+
+// String returns the string representation of the AttributeConnectionStatus.
+func (av AttributeConnectionStatus) String() string {
+	switch av {
+	case AttributeConnectionStatusRunning:
+		return "running"
+	case AttributeConnectionStatusIdle:
+		return "idle"
+	case AttributeConnectionStatusQueueing:
+		return "queueing"
+	}
+	return ""
+}
+
+// MapAttributeConnectionStatus is a helper map of string to AttributeConnectionStatus attribute value.
+var MapAttributeConnectionStatus = map[string]AttributeConnectionStatus{
+	"running":  AttributeConnectionStatusRunning,
+	"idle":     AttributeConnectionStatusIdle,
+	"queueing": AttributeConnectionStatusQueueing,
+}
+
+// AttributeCPUType specifies the a value cpu_type attribute.
+type AttributeCPUType int
+
+const (
+	_ AttributeCPUType = iota
+	AttributeCPUTypeUser
+	AttributeCPUTypeSystem
+	AttributeCPUTypeIoWait
+	AttributeCPUTypeIdle
+)
+
+// String returns the string representation of the AttributeCPUType.
+func (av AttributeCPUType) String() string {
+	switch av {
+	case AttributeCPUTypeUser:
+		return "user"
+	case AttributeCPUTypeSystem:
+		return "system"
+	case AttributeCPUTypeIoWait:
+		return "io_wait"
+	case AttributeCPUTypeIdle:
+		return "idle"
+	}
+	return ""
+}
+
+// MapAttributeCPUType is a helper map of string to AttributeCPUType attribute value.
+var MapAttributeCPUType = map[string]AttributeCPUType{
+	"user":    AttributeCPUTypeUser,
+	"system":  AttributeCPUTypeSystem,
+	"io_wait": AttributeCPUTypeIoWait,
+	"idle":    AttributeCPUTypeIdle,
+}
+
+// AttributeDiskStateUsedFree specifies the a value disk_state_used_free attribute.
+type AttributeDiskStateUsedFree int
+
+const (
+	_ AttributeDiskStateUsedFree = iota
+	AttributeDiskStateUsedFreeUsed
+	AttributeDiskStateUsedFreeFree
+)
+
+// String returns the string representation of the AttributeDiskStateUsedFree.
+func (av AttributeDiskStateUsedFree) String() string {
+	switch av {
+	case AttributeDiskStateUsedFreeUsed:
+		return "used"
+	case AttributeDiskStateUsedFreeFree:
+		return "free"
+	}
+	return ""
+}
+
+// MapAttributeDiskStateUsedFree is a helper map of string to AttributeDiskStateUsedFree attribute value.
+var MapAttributeDiskStateUsedFree = map[string]AttributeDiskStateUsedFree{
+	"used": AttributeDiskStateUsedFreeUsed,
+	"free": AttributeDiskStateUsedFreeFree,
+}
+
+// AttributeHostSwapState specifies the a value host_swap_state attribute.
+type AttributeHostSwapState int
+
+const (
+	_ AttributeHostSwapState = iota
+	AttributeHostSwapStateUsed
+	AttributeHostSwapStateFree
+)
+
+// String returns the string representation of the AttributeHostSwapState.
+func (av AttributeHostSwapState) String() string {
+	switch av {
+	case AttributeHostSwapStateUsed:
+		return "used"
+	case AttributeHostSwapStateFree:
+		return "free"
+	}
+	return ""
+}
+
+// MapAttributeHostSwapState is a helper map of string to AttributeHostSwapState attribute value.
+var MapAttributeHostSwapState = map[string]AttributeHostSwapState{
+	"used": AttributeHostSwapStateUsed,
+	"free": AttributeHostSwapStateFree,
+}
+
+// AttributeInternalExternalRequestType specifies the a value internal_external_request_type attribute.
+type AttributeInternalExternalRequestType int
+
+const (
+	_ AttributeInternalExternalRequestType = iota
+	AttributeInternalExternalRequestTypeInternal
+	AttributeInternalExternalRequestTypeExternal
+)
+
+// String returns the string representation of the AttributeInternalExternalRequestType.
+func (av AttributeInternalExternalRequestType) String() string {
+	switch av {
+	case AttributeInternalExternalRequestTypeInternal:
+		return "internal"
+	case AttributeInternalExternalRequestTypeExternal:
+		return "external"
+	}
+	return ""
+}
+
+// MapAttributeInternalExternalRequestType is a helper map of string to AttributeInternalExternalRequestType attribute value.
+var MapAttributeInternalExternalRequestType = map[string]AttributeInternalExternalRequestType{
+	"internal": AttributeInternalExternalRequestTypeInternal,
+	"external": AttributeInternalExternalRequestTypeExternal,
+}
+
+// AttributeMemoryStateUsedFree specifies the a value memory_state_used_free attribute.
+type AttributeMemoryStateUsedFree int
+
+const (
+	_ AttributeMemoryStateUsedFree = iota
+	AttributeMemoryStateUsedFreeUsed
+	AttributeMemoryStateUsedFreeFree
+)
+
+// String returns the string representation of the AttributeMemoryStateUsedFree.
+func (av AttributeMemoryStateUsedFree) String() string {
+	switch av {
+	case AttributeMemoryStateUsedFreeUsed:
+		return "used"
+	case AttributeMemoryStateUsedFreeFree:
+		return "free"
+	}
+	return ""
+}
+
+// MapAttributeMemoryStateUsedFree is a helper map of string to AttributeMemoryStateUsedFree attribute value.
+var MapAttributeMemoryStateUsedFree = map[string]AttributeMemoryStateUsedFree{
+	"used": AttributeMemoryStateUsedFreeUsed,
+	"free": AttributeMemoryStateUsedFreeFree,
+}
+
+// AttributeRowMemoryType specifies the a value row_memory_type attribute.
+type AttributeRowMemoryType int
+
+const (
+	_ AttributeRowMemoryType = iota
+	AttributeRowMemoryTypeFixed
+	AttributeRowMemoryTypeVariable
+)
+
+// String returns the string representation of the AttributeRowMemoryType.
+func (av AttributeRowMemoryType) String() string {
+	switch av {
+	case AttributeRowMemoryTypeFixed:
+		return "fixed"
+	case AttributeRowMemoryTypeVariable:
+		return "variable"
+	}
+	return ""
+}
+
+// MapAttributeRowMemoryType is a helper map of string to AttributeRowMemoryType attribute value.
+var MapAttributeRowMemoryType = map[string]AttributeRowMemoryType{
+	"fixed":    AttributeRowMemoryTypeFixed,
+	"variable": AttributeRowMemoryTypeVariable,
+}
+
+// AttributeSchemaMemoryType specifies the a value schema_memory_type attribute.
+type AttributeSchemaMemoryType int
+
+const (
+	_ AttributeSchemaMemoryType = iota
+	AttributeSchemaMemoryTypeMain
+	AttributeSchemaMemoryTypeDelta
+	AttributeSchemaMemoryTypeHistoryMain
+	AttributeSchemaMemoryTypeHistoryDelta
+)
+
+// String returns the string representation of the AttributeSchemaMemoryType.
+func (av AttributeSchemaMemoryType) String() string {
+	switch av {
+	case AttributeSchemaMemoryTypeMain:
+		return "main"
+	case AttributeSchemaMemoryTypeDelta:
+		return "delta"
+	case AttributeSchemaMemoryTypeHistoryMain:
+		return "history_main"
+	case AttributeSchemaMemoryTypeHistoryDelta:
+		return "history_delta"
+	}
+	return ""
+}
+
+// MapAttributeSchemaMemoryType is a helper map of string to AttributeSchemaMemoryType attribute value.
+var MapAttributeSchemaMemoryType = map[string]AttributeSchemaMemoryType{
+	"main":          AttributeSchemaMemoryTypeMain,
+	"delta":         AttributeSchemaMemoryTypeDelta,
+	"history_main":  AttributeSchemaMemoryTypeHistoryMain,
+	"history_delta": AttributeSchemaMemoryTypeHistoryDelta,
+}
+
+// AttributeSchemaOperationType specifies the a value schema_operation_type attribute.
+type AttributeSchemaOperationType int
+
+const (
+	_ AttributeSchemaOperationType = iota
+	AttributeSchemaOperationTypeRead
+	AttributeSchemaOperationTypeWrite
+	AttributeSchemaOperationTypeMerge
+)
+
+// String returns the string representation of the AttributeSchemaOperationType.
+func (av AttributeSchemaOperationType) String() string {
+	switch av {
+	case AttributeSchemaOperationTypeRead:
+		return "read"
+	case AttributeSchemaOperationTypeWrite:
+		return "write"
+	case AttributeSchemaOperationTypeMerge:
+		return "merge"
+	}
+	return ""
+}
+
+// MapAttributeSchemaOperationType is a helper map of string to AttributeSchemaOperationType attribute value.
+var MapAttributeSchemaOperationType = map[string]AttributeSchemaOperationType{
+	"read":  AttributeSchemaOperationTypeRead,
+	"write": AttributeSchemaOperationTypeWrite,
+	"merge": AttributeSchemaOperationTypeMerge,
+}
+
+// AttributeSchemaRecordType specifies the a value schema_record_type attribute.
+type AttributeSchemaRecordType int
+
+const (
+	_ AttributeSchemaRecordType = iota
+	AttributeSchemaRecordTypeMain
+	AttributeSchemaRecordTypeDelta
+	AttributeSchemaRecordTypeHistoryMain
+	AttributeSchemaRecordTypeHistoryDelta
+)
+
+// String returns the string representation of the AttributeSchemaRecordType.
+func (av AttributeSchemaRecordType) String() string {
+	switch av {
+	case AttributeSchemaRecordTypeMain:
+		return "main"
+	case AttributeSchemaRecordTypeDelta:
+		return "delta"
+	case AttributeSchemaRecordTypeHistoryMain:
+		return "history_main"
+	case AttributeSchemaRecordTypeHistoryDelta:
+		return "history_delta"
+	}
+	return ""
+}
+
+// MapAttributeSchemaRecordType is a helper map of string to AttributeSchemaRecordType attribute value.
+var MapAttributeSchemaRecordType = map[string]AttributeSchemaRecordType{
+	"main":          AttributeSchemaRecordTypeMain,
+	"delta":         AttributeSchemaRecordTypeDelta,
+	"history_main":  AttributeSchemaRecordTypeHistoryMain,
+	"history_delta": AttributeSchemaRecordTypeHistoryDelta,
+}
+
+// AttributeServiceMemoryUsedType specifies the a value service_memory_used_type attribute.
+type AttributeServiceMemoryUsedType int
+
+const (
+	_ AttributeServiceMemoryUsedType = iota
+	AttributeServiceMemoryUsedTypeLogical
+	AttributeServiceMemoryUsedTypePhysical
+)
+
+// String returns the string representation of the AttributeServiceMemoryUsedType.
+func (av AttributeServiceMemoryUsedType) String() string {
+	switch av {
+	case AttributeServiceMemoryUsedTypeLogical:
+		return "logical"
+	case AttributeServiceMemoryUsedTypePhysical:
+		return "physical"
+	}
+	return ""
+}
+
+// MapAttributeServiceMemoryUsedType is a helper map of string to AttributeServiceMemoryUsedType attribute value.
+var MapAttributeServiceMemoryUsedType = map[string]AttributeServiceMemoryUsedType{
+	"logical":  AttributeServiceMemoryUsedTypeLogical,
+	"physical": AttributeServiceMemoryUsedTypePhysical,
+}
+
+// AttributeServiceStatus specifies the a value service_status attribute.
+type AttributeServiceStatus int
+
+const (
+	_ AttributeServiceStatus = iota
+	AttributeServiceStatusActive
+	AttributeServiceStatusInactive
+)
+
+// String returns the string representation of the AttributeServiceStatus.
+func (av AttributeServiceStatus) String() string {
+	switch av {
+	case AttributeServiceStatusActive:
+		return "active"
+	case AttributeServiceStatusInactive:
+		return "inactive"
+	}
+	return ""
+}
+
+// MapAttributeServiceStatus is a helper map of string to AttributeServiceStatus attribute value.
+var MapAttributeServiceStatus = map[string]AttributeServiceStatus{
+	"active":   AttributeServiceStatusActive,
+	"inactive": AttributeServiceStatusInactive,
+}
+
+// AttributeThreadStatus specifies the a value thread_status attribute.
+type AttributeThreadStatus int
+
+const (
+	_ AttributeThreadStatus = iota
+	AttributeThreadStatusActive
+	AttributeThreadStatusInactive
+)
+
+// String returns the string representation of the AttributeThreadStatus.
+func (av AttributeThreadStatus) String() string {
+	switch av {
+	case AttributeThreadStatusActive:
+		return "active"
+	case AttributeThreadStatusInactive:
+		return "inactive"
+	}
+	return ""
+}
+
+// MapAttributeThreadStatus is a helper map of string to AttributeThreadStatus attribute value.
+var MapAttributeThreadStatus = map[string]AttributeThreadStatus{
+	"active":   AttributeThreadStatusActive,
+	"inactive": AttributeThreadStatusInactive,
+}
+
+// AttributeTransactionType specifies the a value transaction_type attribute.
+type AttributeTransactionType int
+
+const (
+	_ AttributeTransactionType = iota
+	AttributeTransactionTypeUpdate
+	AttributeTransactionTypeCommit
+	AttributeTransactionTypeRollback
+)
+
+// String returns the string representation of the AttributeTransactionType.
+func (av AttributeTransactionType) String() string {
+	switch av {
+	case AttributeTransactionTypeUpdate:
+		return "update"
+	case AttributeTransactionTypeCommit:
+		return "commit"
+	case AttributeTransactionTypeRollback:
+		return "rollback"
+	}
+	return ""
+}
+
+// MapAttributeTransactionType is a helper map of string to AttributeTransactionType attribute value.
+var MapAttributeTransactionType = map[string]AttributeTransactionType{
+	"update":   AttributeTransactionTypeUpdate,
+	"commit":   AttributeTransactionTypeCommit,
+	"rollback": AttributeTransactionTypeRollback,
+}
+
+// AttributeVolumeOperationType specifies the a value volume_operation_type attribute.
+type AttributeVolumeOperationType int
+
+const (
+	_ AttributeVolumeOperationType = iota
+	AttributeVolumeOperationTypeRead
+	AttributeVolumeOperationTypeWrite
+)
+
+// String returns the string representation of the AttributeVolumeOperationType.
+func (av AttributeVolumeOperationType) String() string {
+	switch av {
+	case AttributeVolumeOperationTypeRead:
+		return "read"
+	case AttributeVolumeOperationTypeWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeVolumeOperationType is a helper map of string to AttributeVolumeOperationType attribute value.
+var MapAttributeVolumeOperationType = map[string]AttributeVolumeOperationType{
+	"read":  AttributeVolumeOperationTypeRead,
+	"write": AttributeVolumeOperationTypeWrite,
+}
+
 type metricSaphanaAlertCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2840,11 +3352,11 @@ func (mb *MetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pcommon.Timestam
 }
 
 // RecordSaphanaColumnMemoryUsedDataPoint adds a data point to saphana.column.memory.used metric.
-func (mb *MetricsBuilder) RecordSaphanaColumnMemoryUsedDataPoint(ts pcommon.Timestamp, val string, columnMemoryTypeAttributeValue string, columnMemorySubtypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaColumnMemoryUsedDataPoint(ts pcommon.Timestamp, val string, columnMemoryTypeAttributeValue AttributeColumnMemoryType, columnMemorySubtypeAttributeValue AttributeColumnMemorySubtype) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaColumnMemoryUsed, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaColumnMemoryUsed.recordDataPoint(mb.startTime, ts, i, columnMemoryTypeAttributeValue, columnMemorySubtypeAttributeValue)
+		mb.metricSaphanaColumnMemoryUsed.recordDataPoint(mb.startTime, ts, i, columnMemoryTypeAttributeValue.String(), columnMemorySubtypeAttributeValue.String())
 	}
 	return nil
 }
@@ -2860,51 +3372,51 @@ func (mb *MetricsBuilder) RecordSaphanaComponentMemoryUsedDataPoint(ts pcommon.T
 }
 
 // RecordSaphanaConnectionCountDataPoint adds a data point to saphana.connection.count metric.
-func (mb *MetricsBuilder) RecordSaphanaConnectionCountDataPoint(ts pcommon.Timestamp, val string, connectionStatusAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaConnectionCountDataPoint(ts pcommon.Timestamp, val string, connectionStatusAttributeValue AttributeConnectionStatus) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaConnectionCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaConnectionCount.recordDataPoint(mb.startTime, ts, i, connectionStatusAttributeValue)
+		mb.metricSaphanaConnectionCount.recordDataPoint(mb.startTime, ts, i, connectionStatusAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaCPUUsedDataPoint adds a data point to saphana.cpu.used metric.
-func (mb *MetricsBuilder) RecordSaphanaCPUUsedDataPoint(ts pcommon.Timestamp, val string, cpuTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaCPUUsedDataPoint(ts pcommon.Timestamp, val string, cpuTypeAttributeValue AttributeCPUType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaCPUUsed, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaCPUUsed.recordDataPoint(mb.startTime, ts, i, cpuTypeAttributeValue)
+		mb.metricSaphanaCPUUsed.recordDataPoint(mb.startTime, ts, i, cpuTypeAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaDiskSizeCurrentDataPoint adds a data point to saphana.disk.size.current metric.
-func (mb *MetricsBuilder) RecordSaphanaDiskSizeCurrentDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, diskStateUsedFreeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaDiskSizeCurrentDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, diskStateUsedFreeAttributeValue AttributeDiskStateUsedFree) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaDiskSizeCurrent, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaDiskSizeCurrent.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, diskStateUsedFreeAttributeValue)
+		mb.metricSaphanaDiskSizeCurrent.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, diskStateUsedFreeAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaHostMemoryCurrentDataPoint adds a data point to saphana.host.memory.current metric.
-func (mb *MetricsBuilder) RecordSaphanaHostMemoryCurrentDataPoint(ts pcommon.Timestamp, val string, memoryStateUsedFreeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaHostMemoryCurrentDataPoint(ts pcommon.Timestamp, val string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaHostMemoryCurrent, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaHostMemoryCurrent.recordDataPoint(mb.startTime, ts, i, memoryStateUsedFreeAttributeValue)
+		mb.metricSaphanaHostMemoryCurrent.recordDataPoint(mb.startTime, ts, i, memoryStateUsedFreeAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaHostSwapCurrentDataPoint adds a data point to saphana.host.swap.current metric.
-func (mb *MetricsBuilder) RecordSaphanaHostSwapCurrentDataPoint(ts pcommon.Timestamp, val string, hostSwapStateAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaHostSwapCurrentDataPoint(ts pcommon.Timestamp, val string, hostSwapStateAttributeValue AttributeHostSwapState) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaHostSwapCurrent, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaHostSwapCurrent.recordDataPoint(mb.startTime, ts, i, hostSwapStateAttributeValue)
+		mb.metricSaphanaHostSwapCurrent.recordDataPoint(mb.startTime, ts, i, hostSwapStateAttributeValue.String())
 	}
 	return nil
 }
@@ -2920,11 +3432,11 @@ func (mb *MetricsBuilder) RecordSaphanaInstanceCodeSizeDataPoint(ts pcommon.Time
 }
 
 // RecordSaphanaInstanceMemoryCurrentDataPoint adds a data point to saphana.instance.memory.current metric.
-func (mb *MetricsBuilder) RecordSaphanaInstanceMemoryCurrentDataPoint(ts pcommon.Timestamp, val string, memoryStateUsedFreeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaInstanceMemoryCurrentDataPoint(ts pcommon.Timestamp, val string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaInstanceMemoryCurrent, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaInstanceMemoryCurrent.recordDataPoint(mb.startTime, ts, i, memoryStateUsedFreeAttributeValue)
+		mb.metricSaphanaInstanceMemoryCurrent.recordDataPoint(mb.startTime, ts, i, memoryStateUsedFreeAttributeValue.String())
 	}
 	return nil
 }
@@ -2990,21 +3502,21 @@ func (mb *MetricsBuilder) RecordSaphanaNetworkRequestAverageTimeDataPoint(ts pco
 }
 
 // RecordSaphanaNetworkRequestCountDataPoint adds a data point to saphana.network.request.count metric.
-func (mb *MetricsBuilder) RecordSaphanaNetworkRequestCountDataPoint(ts pcommon.Timestamp, val string, activePendingRequestStateAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaNetworkRequestCountDataPoint(ts pcommon.Timestamp, val string, activePendingRequestStateAttributeValue AttributeActivePendingRequestState) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaNetworkRequestCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaNetworkRequestCount.recordDataPoint(mb.startTime, ts, i, activePendingRequestStateAttributeValue)
+		mb.metricSaphanaNetworkRequestCount.recordDataPoint(mb.startTime, ts, i, activePendingRequestStateAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaNetworkRequestFinishedCountDataPoint adds a data point to saphana.network.request.finished.count metric.
-func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedCountDataPoint(ts pcommon.Timestamp, val string, internalExternalRequestTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedCountDataPoint(ts pcommon.Timestamp, val string, internalExternalRequestTypeAttributeValue AttributeInternalExternalRequestType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaNetworkRequestFinishedCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaNetworkRequestFinishedCount.recordDataPoint(mb.startTime, ts, i, internalExternalRequestTypeAttributeValue)
+		mb.metricSaphanaNetworkRequestFinishedCount.recordDataPoint(mb.startTime, ts, i, internalExternalRequestTypeAttributeValue.String())
 	}
 	return nil
 }
@@ -3040,21 +3552,21 @@ func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogTimeDataPoint(ts pcommo
 }
 
 // RecordSaphanaRowStoreMemoryUsedDataPoint adds a data point to saphana.row_store.memory.used metric.
-func (mb *MetricsBuilder) RecordSaphanaRowStoreMemoryUsedDataPoint(ts pcommon.Timestamp, val string, rowMemoryTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaRowStoreMemoryUsedDataPoint(ts pcommon.Timestamp, val string, rowMemoryTypeAttributeValue AttributeRowMemoryType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaRowStoreMemoryUsed, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaRowStoreMemoryUsed.recordDataPoint(mb.startTime, ts, i, rowMemoryTypeAttributeValue)
+		mb.metricSaphanaRowStoreMemoryUsed.recordDataPoint(mb.startTime, ts, i, rowMemoryTypeAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaSchemaMemoryUsedCurrentDataPoint adds a data point to saphana.schema.memory.used.current metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts pcommon.Timestamp, val string, schemaAttributeValue string, schemaMemoryTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts pcommon.Timestamp, val string, schemaAttributeValue string, schemaMemoryTypeAttributeValue AttributeSchemaMemoryType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaSchemaMemoryUsedCurrent, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaSchemaMemoryUsedCurrent.recordDataPoint(mb.startTime, ts, i, schemaAttributeValue, schemaMemoryTypeAttributeValue)
+		mb.metricSaphanaSchemaMemoryUsedCurrent.recordDataPoint(mb.startTime, ts, i, schemaAttributeValue, schemaMemoryTypeAttributeValue.String())
 	}
 	return nil
 }
@@ -3070,11 +3582,11 @@ func (mb *MetricsBuilder) RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts pcommon.T
 }
 
 // RecordSaphanaSchemaOperationCountDataPoint adds a data point to saphana.schema.operation.count metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaOperationCountDataPoint(ts pcommon.Timestamp, val string, schemaAttributeValue string, schemaOperationTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaSchemaOperationCountDataPoint(ts pcommon.Timestamp, val string, schemaAttributeValue string, schemaOperationTypeAttributeValue AttributeSchemaOperationType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaSchemaOperationCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaSchemaOperationCount.recordDataPoint(mb.startTime, ts, i, schemaAttributeValue, schemaOperationTypeAttributeValue)
+		mb.metricSaphanaSchemaOperationCount.recordDataPoint(mb.startTime, ts, i, schemaAttributeValue, schemaOperationTypeAttributeValue.String())
 	}
 	return nil
 }
@@ -3090,11 +3602,11 @@ func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCompressedCountDataPoint(ts p
 }
 
 // RecordSaphanaSchemaRecordCountDataPoint adds a data point to saphana.schema.record.count metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCountDataPoint(ts pcommon.Timestamp, val string, schemaAttributeValue string, schemaRecordTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCountDataPoint(ts pcommon.Timestamp, val string, schemaAttributeValue string, schemaRecordTypeAttributeValue AttributeSchemaRecordType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaSchemaRecordCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaSchemaRecordCount.recordDataPoint(mb.startTime, ts, i, schemaAttributeValue, schemaRecordTypeAttributeValue)
+		mb.metricSaphanaSchemaRecordCount.recordDataPoint(mb.startTime, ts, i, schemaAttributeValue, schemaRecordTypeAttributeValue.String())
 	}
 	return nil
 }
@@ -3110,11 +3622,11 @@ func (mb *MetricsBuilder) RecordSaphanaServiceCodeSizeDataPoint(ts pcommon.Times
 }
 
 // RecordSaphanaServiceCountDataPoint adds a data point to saphana.service.count metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceCountDataPoint(ts pcommon.Timestamp, val string, serviceStatusAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaServiceCountDataPoint(ts pcommon.Timestamp, val string, serviceStatusAttributeValue AttributeServiceStatus) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaServiceCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaServiceCount.recordDataPoint(mb.startTime, ts, i, serviceStatusAttributeValue)
+		mb.metricSaphanaServiceCount.recordDataPoint(mb.startTime, ts, i, serviceStatusAttributeValue.String())
 	}
 	return nil
 }
@@ -3150,11 +3662,11 @@ func (mb *MetricsBuilder) RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts p
 }
 
 // RecordSaphanaServiceMemoryHeapCurrentDataPoint adds a data point to saphana.service.memory.heap.current metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts pcommon.Timestamp, val string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts pcommon.Timestamp, val string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaServiceMemoryHeapCurrent, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaServiceMemoryHeapCurrent.recordDataPoint(mb.startTime, ts, i, serviceAttributeValue, memoryStateUsedFreeAttributeValue)
+		mb.metricSaphanaServiceMemoryHeapCurrent.recordDataPoint(mb.startTime, ts, i, serviceAttributeValue, memoryStateUsedFreeAttributeValue.String())
 	}
 	return nil
 }
@@ -3170,21 +3682,21 @@ func (mb *MetricsBuilder) RecordSaphanaServiceMemoryLimitDataPoint(ts pcommon.Ti
 }
 
 // RecordSaphanaServiceMemorySharedCurrentDataPoint adds a data point to saphana.service.memory.shared.current metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemorySharedCurrentDataPoint(ts pcommon.Timestamp, val string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaServiceMemorySharedCurrentDataPoint(ts pcommon.Timestamp, val string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaServiceMemorySharedCurrent, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaServiceMemorySharedCurrent.recordDataPoint(mb.startTime, ts, i, serviceAttributeValue, memoryStateUsedFreeAttributeValue)
+		mb.metricSaphanaServiceMemorySharedCurrent.recordDataPoint(mb.startTime, ts, i, serviceAttributeValue, memoryStateUsedFreeAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaServiceMemoryUsedDataPoint adds a data point to saphana.service.memory.used metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryUsedDataPoint(ts pcommon.Timestamp, val string, serviceAttributeValue string, serviceMemoryUsedTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaServiceMemoryUsedDataPoint(ts pcommon.Timestamp, val string, serviceAttributeValue string, serviceMemoryUsedTypeAttributeValue AttributeServiceMemoryUsedType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaServiceMemoryUsed, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaServiceMemoryUsed.recordDataPoint(mb.startTime, ts, i, serviceAttributeValue, serviceMemoryUsedTypeAttributeValue)
+		mb.metricSaphanaServiceMemoryUsed.recordDataPoint(mb.startTime, ts, i, serviceAttributeValue, serviceMemoryUsedTypeAttributeValue.String())
 	}
 	return nil
 }
@@ -3200,11 +3712,11 @@ func (mb *MetricsBuilder) RecordSaphanaServiceStackSizeDataPoint(ts pcommon.Time
 }
 
 // RecordSaphanaServiceThreadCountDataPoint adds a data point to saphana.service.thread.count metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceThreadCountDataPoint(ts pcommon.Timestamp, val string, threadStatusAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaServiceThreadCountDataPoint(ts pcommon.Timestamp, val string, threadStatusAttributeValue AttributeThreadStatus) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaServiceThreadCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaServiceThreadCount.recordDataPoint(mb.startTime, ts, i, threadStatusAttributeValue)
+		mb.metricSaphanaServiceThreadCount.recordDataPoint(mb.startTime, ts, i, threadStatusAttributeValue.String())
 	}
 	return nil
 }
@@ -3220,11 +3732,11 @@ func (mb *MetricsBuilder) RecordSaphanaTransactionBlockedDataPoint(ts pcommon.Ti
 }
 
 // RecordSaphanaTransactionCountDataPoint adds a data point to saphana.transaction.count metric.
-func (mb *MetricsBuilder) RecordSaphanaTransactionCountDataPoint(ts pcommon.Timestamp, val string, transactionTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaTransactionCountDataPoint(ts pcommon.Timestamp, val string, transactionTypeAttributeValue AttributeTransactionType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaTransactionCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaTransactionCount.recordDataPoint(mb.startTime, ts, i, transactionTypeAttributeValue)
+		mb.metricSaphanaTransactionCount.recordDataPoint(mb.startTime, ts, i, transactionTypeAttributeValue.String())
 	}
 	return nil
 }
@@ -3240,31 +3752,31 @@ func (mb *MetricsBuilder) RecordSaphanaUptimeDataPoint(ts pcommon.Timestamp, val
 }
 
 // RecordSaphanaVolumeOperationCountDataPoint adds a data point to saphana.volume.operation.count metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationCountDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaVolumeOperationCountDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaVolumeOperationCount, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaVolumeOperationCount.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue)
+		mb.metricSaphanaVolumeOperationCount.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaVolumeOperationSizeDataPoint adds a data point to saphana.volume.operation.size metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationSizeDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaVolumeOperationSizeDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaVolumeOperationSize, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaVolumeOperationSize.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue)
+		mb.metricSaphanaVolumeOperationSize.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
 	}
 	return nil
 }
 
 // RecordSaphanaVolumeOperationTimeDataPoint adds a data point to saphana.volume.operation.time metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationTimeDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSaphanaVolumeOperationTimeDataPoint(ts pcommon.Timestamp, val string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		return fmt.Errorf("failed to parse int for SaphanaVolumeOperationTime, value was %s: %w", val, err)
 	} else {
-		mb.metricSaphanaVolumeOperationTime.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue)
+		mb.metricSaphanaVolumeOperationTime.recordDataPoint(mb.startTime, ts, i, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
 	}
 	return nil
 }
@@ -3378,187 +3890,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeActivePendingRequestState are the possible values that the attribute "active_pending_request_state" can have.
-var AttributeActivePendingRequestState = struct {
-	Active  string
-	Pending string
-}{
-	"active",
-	"pending",
-}
-
-// AttributeColumnMemorySubtype are the possible values that the attribute "column_memory_subtype" can have.
-var AttributeColumnMemorySubtype = struct {
-	Data  string
-	Dict  string
-	Index string
-	Misc  string
-}{
-	"data",
-	"dict",
-	"index",
-	"misc",
-}
-
-// AttributeColumnMemoryType are the possible values that the attribute "column_memory_type" can have.
-var AttributeColumnMemoryType = struct {
-	Main  string
-	Delta string
-}{
-	"main",
-	"delta",
-}
-
-// AttributeConnectionStatus are the possible values that the attribute "connection_status" can have.
-var AttributeConnectionStatus = struct {
-	Running  string
-	Idle     string
-	Queueing string
-}{
-	"running",
-	"idle",
-	"queueing",
-}
-
-// AttributeCPUType are the possible values that the attribute "cpu_type" can have.
-var AttributeCPUType = struct {
-	User   string
-	System string
-	IoWait string
-	Idle   string
-}{
-	"user",
-	"system",
-	"io_wait",
-	"idle",
-}
-
-// AttributeDiskStateUsedFree are the possible values that the attribute "disk_state_used_free" can have.
-var AttributeDiskStateUsedFree = struct {
-	Used string
-	Free string
-}{
-	"used",
-	"free",
-}
-
-// AttributeHostSwapState are the possible values that the attribute "host_swap_state" can have.
-var AttributeHostSwapState = struct {
-	Used string
-	Free string
-}{
-	"used",
-	"free",
-}
-
-// AttributeInternalExternalRequestType are the possible values that the attribute "internal_external_request_type" can have.
-var AttributeInternalExternalRequestType = struct {
-	Internal string
-	External string
-}{
-	"internal",
-	"external",
-}
-
-// AttributeMemoryStateUsedFree are the possible values that the attribute "memory_state_used_free" can have.
-var AttributeMemoryStateUsedFree = struct {
-	Used string
-	Free string
-}{
-	"used",
-	"free",
-}
-
-// AttributeRowMemoryType are the possible values that the attribute "row_memory_type" can have.
-var AttributeRowMemoryType = struct {
-	Fixed    string
-	Variable string
-}{
-	"fixed",
-	"variable",
-}
-
-// AttributeSchemaMemoryType are the possible values that the attribute "schema_memory_type" can have.
-var AttributeSchemaMemoryType = struct {
-	Main         string
-	Delta        string
-	HistoryMain  string
-	HistoryDelta string
-}{
-	"main",
-	"delta",
-	"history_main",
-	"history_delta",
-}
-
-// AttributeSchemaOperationType are the possible values that the attribute "schema_operation_type" can have.
-var AttributeSchemaOperationType = struct {
-	Read  string
-	Write string
-	Merge string
-}{
-	"read",
-	"write",
-	"merge",
-}
-
-// AttributeSchemaRecordType are the possible values that the attribute "schema_record_type" can have.
-var AttributeSchemaRecordType = struct {
-	Main         string
-	Delta        string
-	HistoryMain  string
-	HistoryDelta string
-}{
-	"main",
-	"delta",
-	"history_main",
-	"history_delta",
-}
-
-// AttributeServiceMemoryUsedType are the possible values that the attribute "service_memory_used_type" can have.
-var AttributeServiceMemoryUsedType = struct {
-	Logical  string
-	Physical string
-}{
-	"logical",
-	"physical",
-}
-
-// AttributeServiceStatus are the possible values that the attribute "service_status" can have.
-var AttributeServiceStatus = struct {
-	Active   string
-	Inactive string
-}{
-	"active",
-	"inactive",
-}
-
-// AttributeThreadStatus are the possible values that the attribute "thread_status" can have.
-var AttributeThreadStatus = struct {
-	Active   string
-	Inactive string
-}{
-	"active",
-	"inactive",
-}
-
-// AttributeTransactionType are the possible values that the attribute "transaction_type" can have.
-var AttributeTransactionType = struct {
-	Update   string
-	Commit   string
-	Rollback string
-}{
-	"update",
-	"commit",
-	"rollback",
-}
-
-// AttributeVolumeOperationType are the possible values that the attribute "volume_operation_type" can have.
-var AttributeVolumeOperationType = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}

@@ -17,6 +17,7 @@
 
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
+- `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
 
 ### 🧰 Bug fixes 🧰
 

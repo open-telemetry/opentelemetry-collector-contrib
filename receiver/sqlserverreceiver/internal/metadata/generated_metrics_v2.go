@@ -103,6 +103,32 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributePageOperations specifies the a value page.operations attribute.
+type AttributePageOperations int
+
+const (
+	_ AttributePageOperations = iota
+	AttributePageOperationsRead
+	AttributePageOperationsWrite
+)
+
+// String returns the string representation of the AttributePageOperations.
+func (av AttributePageOperations) String() string {
+	switch av {
+	case AttributePageOperationsRead:
+		return "read"
+	case AttributePageOperationsWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributePageOperations is a helper map of string to AttributePageOperations attribute value.
+var MapAttributePageOperations = map[string]AttributePageOperations{
+	"read":  AttributePageOperationsRead,
+	"write": AttributePageOperationsWrite,
+}
+
 type metricSqlserverBatchRequestRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1274,8 +1300,8 @@ func (mb *MetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.
 }
 
 // RecordSqlserverPageOperationRateDataPoint adds a data point to sqlserver.page.operation.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.Timestamp, val float64, pageOperationsAttributeValue string) {
-	mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.Timestamp, val float64, pageOperationsAttributeValue AttributePageOperations) {
+	mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
 }
 
 // RecordSqlserverPageSplitRateDataPoint adds a data point to sqlserver.page.split.rate metric.
@@ -1347,12 +1373,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributePageOperations are the possible values that the attribute "page.operations" can have.
-var AttributePageOperations = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}

@@ -38,6 +38,39 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+{{ range $name, $info := .Attributes }}
+{{- if $info.Enum -}}
+// Attribute{{ $name.Render }} specifies the a value {{ $name }} attribute.
+type Attribute{{ $name.Render }} int
+
+const (
+	_ Attribute{{ $name.Render }} = iota
+	{{- range $info.Enum }}
+	Attribute{{ $name.Render }}{{ . | publicVar }}
+	{{- end }}
+)
+
+// String returns the string representation of the Attribute{{ $name.Render }}.
+func (av Attribute{{ $name.Render }}) String() string {
+	switch av {
+	{{- range $info.Enum }}
+	case Attribute{{ $name.Render }}{{ . | publicVar }}:
+		return "{{ . }}"
+	{{- end }}
+	}
+	return ""
+}
+
+// MapAttribute{{ $name.Render }} is a helper map of string to Attribute{{ $name.Render }} attribute value.
+var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
+	{{- range $info.Enum }}
+	"{{ . }}": Attribute{{ $name.Render }}{{ . | publicVar }},
+	{{- end }}
+}
+
+{{ end }}
+{{- end }}
+
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
 	data     pmetric.Metric   // data buffer for generated metric.
@@ -206,7 +239,9 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- else }}
 	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{- end }}
 	{{- end -}}
-	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }})
+	{{- range $metric.Attributes -}}
+	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}string{{ end }}
+	{{- end }})
 	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
 	{{- if $metric.Data.HasMetricInputType }}
 	{{- if $metric.Data.HasMetricValueType }}
@@ -225,7 +260,9 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	} else {
 		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, i {{ end }}
-		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
+		{{- range $metric.Attributes -}}
+		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
+		{{- end }})
 	}
 	{{- end }}
 	return nil
@@ -233,7 +270,9 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- else }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
-		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
+		{{- range $metric.Attributes -}}
+		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
+		{{- end }})
 	{{- end }}
 }
 {{ end }}
@@ -265,18 +304,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-{{ range $name, $info := .Attributes -}}
-{{ if $info.Enum -}}
-// Attribute{{ $name.Render }} are the possible values that the attribute "{{ $name }}" can have.
-var Attribute{{ $name.Render }} = struct {
-{{- range $info.Enum }}
-	{{ . | publicVar }} string
-{{- end }}
-}{
-{{- range $info.Enum }}
-	"{{ . }}",
-{{- end }}
-}
-{{ end }}
-{{ end }}

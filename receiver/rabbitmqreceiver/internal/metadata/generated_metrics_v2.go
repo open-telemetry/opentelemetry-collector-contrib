@@ -47,6 +47,32 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeMessageState specifies the a value message.state attribute.
+type AttributeMessageState int
+
+const (
+	_ AttributeMessageState = iota
+	AttributeMessageStateReady
+	AttributeMessageStateUnacknowledged
+)
+
+// String returns the string representation of the AttributeMessageState.
+func (av AttributeMessageState) String() string {
+	switch av {
+	case AttributeMessageStateReady:
+		return "ready"
+	case AttributeMessageStateUnacknowledged:
+		return "unacknowledged"
+	}
+	return ""
+}
+
+// MapAttributeMessageState is a helper map of string to AttributeMessageState attribute value.
+var MapAttributeMessageState = map[string]AttributeMessageState{
+	"ready":          AttributeMessageStateReady,
+	"unacknowledged": AttributeMessageStateUnacknowledged,
+}
+
 type metricRabbitmqConsumerCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -477,8 +503,8 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageAcknowledgedDataPoint(ts pcommon.
 }
 
 // RecordRabbitmqMessageCurrentDataPoint adds a data point to rabbitmq.message.current metric.
-func (mb *MetricsBuilder) RecordRabbitmqMessageCurrentDataPoint(ts pcommon.Timestamp, val int64, messageStateAttributeValue string) {
-	mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, val, messageStateAttributeValue)
+func (mb *MetricsBuilder) RecordRabbitmqMessageCurrentDataPoint(ts pcommon.Timestamp, val int64, messageStateAttributeValue AttributeMessageState) {
+	mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, val, messageStateAttributeValue.String())
 }
 
 // RecordRabbitmqMessageDeliveredDataPoint adds a data point to rabbitmq.message.delivered metric.
@@ -515,12 +541,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeMessageState are the possible values that the attribute "message.state" can have.
-var AttributeMessageState = struct {
-	Ready          string
-	Unacknowledged string
-}{
-	"ready",
-	"unacknowledged",
-}
