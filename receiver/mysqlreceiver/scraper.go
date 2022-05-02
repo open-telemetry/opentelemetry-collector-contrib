@@ -153,7 +153,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "Handler_discover":
 			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "discover"))
 		case "Handler_external_lock":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "lock"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "external_lock"))
 		case "Handler_mrr_init":
 			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "mrr_init"))
 		case "Handler_prepare":
@@ -185,7 +185,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 		// double_writes
 		case "Innodb_dblwr_pages_written":
-			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, "written"))
+			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, "pages_written"))
 		case "Innodb_dblwr_writes":
 			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, "writes"))
 
@@ -193,7 +193,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "Innodb_log_waits":
 			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, "waits"))
 		case "Innodb_log_write_requests":
-			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, "requests"))
+			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, "write_requests"))
 		case "Innodb_log_writes":
 			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, "writes"))
 
