@@ -233,6 +233,7 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 
 	case pmetric.MetricDataTypeSum:
 		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
+		metric.Sum().SetIsMonotonic(searchedMetric.Sum().IsMonotonic())
 
 	case pmetric.MetricDataTypeGauge:
 	case pmetric.MetricDataTypeSummary:
