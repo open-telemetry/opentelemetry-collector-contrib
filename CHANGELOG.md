@@ -10,9 +10,12 @@
 
 ### 🚀 New components 🚀
 
+- `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
+
 ### 💡 Enhancements 💡
 
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
+- `internal/stanza`: Add support for `remove` operator (#9524)
 
 ### 🧰 Bug fixes 🧰
 
@@ -51,6 +54,7 @@
 - `attributesprocessor`: Support filter by severity (#9132)
 - `processor/transform`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
+- `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 
 ### 🧰 Bug fixes 🧰
 
