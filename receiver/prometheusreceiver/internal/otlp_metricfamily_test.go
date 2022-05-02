@@ -121,7 +121,6 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetSum(1004.78)
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetBucketCounts([]uint64{33})
-				point.SetExplicitBounds([]float64{})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
@@ -144,7 +143,6 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetFlags(pdataStaleFlags)
 				point.SetBucketCounts([]uint64{0})
-				point.SetExplicitBounds([]float64{})
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
