@@ -11,6 +11,7 @@
 ### 🚀 New components 🚀
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
+- `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
 
 ### 💡 Enhancements 💡
 
@@ -38,7 +39,6 @@
 
 ### 🚀 New components 🚀
 
-- `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
