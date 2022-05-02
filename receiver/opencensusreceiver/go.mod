@@ -13,9 +13,9 @@ require (
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.50.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0
-	go.opentelemetry.io/otel v1.6.3
-	go.opentelemetry.io/otel/trace v1.6.3
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0
+	go.opentelemetry.io/otel v1.7.0
+	go.opentelemetry.io/otel/trace v1.7.0
 	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0
 )
