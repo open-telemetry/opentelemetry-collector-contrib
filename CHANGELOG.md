@@ -32,6 +32,7 @@
 - `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
 - `kubeletstatsreceiver`: instrumentation name updated from `kubeletstats` to `otelcol/kubeletstatsreceiver` (#9400)
 - `datadogexporter`: Remove `GetHostTags` method from `TagsConfig` struct (#9423)
+- `googlecloudexporter`: Graduate the `exporter.googlecloud.OTLPDirect` feature-gate to Beta.  This includes changes to the configuration structure, and many changes to default behavior. (#9471)
 
 ### 🚩 Deprecations 🚩
 
