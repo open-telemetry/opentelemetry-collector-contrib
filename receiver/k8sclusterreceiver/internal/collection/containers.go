@@ -114,7 +114,7 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 			val := utils.GetInt64TimeSeries(v.Value())
 			valType := metricspb.MetricDescriptor_GAUGE_INT64
 			if k == corev1.ResourceCPU {
-				if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+				if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 					// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
 					valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 					val = utils.GetDoubleTimeSeries(float64(v.MilliValue()) / 1000.0)

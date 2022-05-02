@@ -4,10 +4,30 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+- `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
+- `internal/stanza`: Add support for `remove` operator (#9524)
+
+### 🧰 Bug fixes 🧰
+
+- `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
+
+## v0.50.0
+
+### 🛑 Breaking changes 🛑
+
 - `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
 - `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
 - `kubeletstatsreceiver`: instrumentation name updated from `kubeletstats` to `otelcol/kubeletstatsreceiver` (#9400)
+- `datadogexporter`: Remove `GetHostTags` method from `TagsConfig` struct (#9423)
 
 ### 🚩 Deprecations 🚩
 
@@ -31,7 +51,7 @@
 - `attributesprocessor`: Support filter by severity (#9132)
 - `processor/transform`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
-- `internal/stanza`: Add support for `remove` operator (#9524)
+- `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 
 ### 🧰 Bug fixes 🧰
 

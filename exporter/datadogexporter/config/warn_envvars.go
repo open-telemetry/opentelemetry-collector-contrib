@@ -144,7 +144,7 @@ func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
 	if cfg.Traces.Endpoint != futureCfg.Traces.Endpoint {
 		warnings = append(warnings, errUsedEnvVar("traces.endpoint", "DD_APM_URL"))
 	}
-	if tagsDiffer(cfg.GetHostTags(), futureCfg.GetHostTags()) {
+	if tagsDiffer(cfg.getHostTags(), futureCfg.getHostTags()) {
 		warnings = append(warnings, fmt.Errorf("\"tags\" will not default to \"DD_TAGS\"'s value in a future minor version. Use 'env' configuration source instead to remove this warning"))
 	}
 

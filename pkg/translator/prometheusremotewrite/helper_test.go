@@ -33,10 +33,10 @@ import (
 // setSanitizeLabelFeatureGateForTest changes the dropSanitizationGate feature gate during a test.
 // usage: defer setSanitizeLabelFeatureGateForTest(true)()
 func setSanitizeLabelFeatureGateForTest(enabled bool) func() {
-	originalValue := featuregate.IsEnabled(dropSanitization)
-	featuregate.Apply(map[string]bool{dropSanitization: enabled})
+	originalValue := featuregate.GetRegistry().IsEnabled(dropSanitization)
+	featuregate.GetRegistry().Apply(map[string]bool{dropSanitization: enabled})
 	return func() {
-		featuregate.Apply(map[string]bool{dropSanitization: originalValue})
+		featuregate.GetRegistry().Apply(map[string]bool{dropSanitization: originalValue})
 	}
 }
 
