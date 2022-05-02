@@ -93,7 +93,6 @@ func TestScaperScrape(t *testing.T) {
 		setupMockClient   func(t *testing.T) client
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		setupCfg          func() *Config
-		metricsEnabled    bool
 		expectedErr       error
 	}{
 		{
@@ -107,8 +106,7 @@ func TestScaperScrape(t *testing.T) {
 			setupCfg: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			expectedErr:    errClientNotInit,
-			metricsEnabled: true,
+			expectedErr: errClientNotInit,
 		},
 		{
 			desc: "API Call Failure",
@@ -123,8 +121,7 @@ func TestScaperScrape(t *testing.T) {
 			setupCfg: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			metricsEnabled: true,
-			expectedErr:    errors.New("some api error"),
+			expectedErr: errors.New("some api error"),
 		},
 		{
 			desc: "Metrics Disabled",
@@ -150,8 +147,7 @@ func TestScaperScrape(t *testing.T) {
 				cfg.Metrics = customMetricSettings()
 				return cfg
 			},
-			metricsEnabled: false,
-			expectedErr:    nil,
+			expectedErr: nil,
 		},
 		{
 			desc: "Successful Collection",
@@ -175,8 +171,7 @@ func TestScaperScrape(t *testing.T) {
 			setupCfg: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			metricsEnabled: true,
-			expectedErr:    nil,
+			expectedErr: nil,
 		},
 	}
 
