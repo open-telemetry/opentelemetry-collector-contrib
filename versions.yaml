@@ -98,6 +98,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk

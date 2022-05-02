@@ -131,7 +131,8 @@ require (
 	github.com/prometheus/prometheus v0.35.1-0.20220503184552-2381d7be5731
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
+	go.uber.org/multierr v1.8.0
+	golang.org/x/sys v0.0.0-20220502124256-b6088ccd6cba
 )
 
 require (
@@ -236,7 +237,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/getsentry/sentry-go v0.13.0 // indirect
-	github.com/go-kit/kit v0.11.0 // indirect
+	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -460,7 +461,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect

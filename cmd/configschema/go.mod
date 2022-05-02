@@ -116,7 +116,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/getsentry/sentry-go v0.13.0 // indirect
-	github.com/go-kit/kit v0.11.0 // indirect
+	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -461,7 +461,7 @@ require (
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220502124256-b6088ccd6cba // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
 	golang.org/x/tools v0.1.10 // indirect
