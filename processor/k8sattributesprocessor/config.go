@@ -91,7 +91,7 @@ type ExtractConfig struct {
 //       k8s.pod.labels.<label key>
 //   For example, if tag_name is not specified and the key is git_sha,
 //   then the attribute name will be `k8s.pod.annotations.git_sha`.
-//   When key_regex is present, tag_name supports regular expression capturing groups.
+//   When key_regex is present, tag_name supports back reference to both named capturing and positioned capturing.
 //   For example, if your pod spec contains the following labels,
 //
 //		app.kubernetes.io/component: mysql
