@@ -25,7 +25,7 @@ attributes:
     # Optional: array of attribute values if they are static values.
     enum:
     # Optional: attribute type. Default: string.
-    value_type: <string|int|double|bool|bytes>
+    type: <string|int|double|bool|bytes>
 
 # Required: map of metric names with the key being the metric name and value
 # being described below.

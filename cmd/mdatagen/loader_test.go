@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -40,7 +41,7 @@ func Test_loadMetadata(t *testing.T) {
 						Description: "Attribute with a known set of values.",
 						Value:       "",
 						Enum:        []string{"red", "green", "blue"},
-						ValueType:   ""},
+					},
 					"freeFormAttribute": {
 						Description: "Attribute that can take on any value.",
 						Value:       ""},
@@ -48,10 +49,11 @@ func Test_loadMetadata(t *testing.T) {
 						Description: "Attribute that has alternate value set.",
 						Value:       "state"},
 					"booleanValueType": {
-						Description: "Attribute with a known set of values.",
-						Value:       "",
-						Enum:        []string{"red", "green", "blue"},
-						ValueType:   "bool",
+						Description: "Attribute with a boolean value.",
+						Value:       "0",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeBool,
+						},
 					}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {

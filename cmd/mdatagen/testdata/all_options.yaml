@@ -13,8 +13,9 @@ attributes:
     enum: [red, green, blue]
 
   booleanValueType:
-    description: Attribute with boolean value
-    value_type: bool
+    description: Attribute with a boolean value.
+    type: bool
+    value: false
 
 metrics:
   # A metric enabled by default.
@@ -27,7 +28,13 @@ metrics:
       value_type: double
       monotonic: true
       aggregation: cumulative
-    attributes: [freeFormAttribute, freeFormAttributeWithValue, enumAttribute]
+    attributes:
+      [
+        freeFormAttribute,
+        freeFormAttributeWithValue,
+        enumAttribute,
+        booleanValueType,
+      ]
 
   # An optional metric.
   system.cpu.utilization:
@@ -36,4 +43,4 @@ metrics:
     unit: 1
     gauge:
       value_type: double
-    attributes: [enumAttribute]
+    attributes: [enumAttribute, booleanValueType]

@@ -297,8 +297,8 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 var Attributes = struct {
 {{- range $name, $info := .Attributes }}
 	// {{ $name.Render }} ({{ $info.Description }})
-        {{- if $info.ValueType }}
-        {{ $name.Render }} {{ $info.ValueType }}
+        {{- if $info.Type.ValueType }}
+	{{ $name.Render }} $info.Type.ValueType.Primitive()
         {{- else }}
         {{ $name.Render }} string
         {{- end }}
