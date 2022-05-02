@@ -144,7 +144,26 @@ func TestScaperScrape(t *testing.T) {
 			},
 			setupCfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Metrics = customMetricSettings()
+				cfg.Metrics = metadata.MetricsSettings{
+					RiakMemoryLimit: metadata.MetricSettings{
+						Enabled: false,
+					},
+					RiakNodeOperationCount: metadata.MetricSettings{
+						Enabled: false,
+					},
+					RiakNodeOperationTimeMean: metadata.MetricSettings{
+						Enabled: true,
+					},
+					RiakNodeReadRepairCount: metadata.MetricSettings{
+						Enabled: true,
+					},
+					RiakVnodeIndexOperationCount: metadata.MetricSettings{
+						Enabled: true,
+					},
+					RiakVnodeOperationCount: metadata.MetricSettings{
+						Enabled: true,
+					},
+				}
 				return cfg
 			},
 			expectedErr: nil,
@@ -191,28 +210,5 @@ func TestScaperScrape(t *testing.T) {
 			err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 			require.NoError(t, err)
 		})
-	}
-}
-
-func customMetricSettings() metadata.MetricsSettings {
-	return metadata.MetricsSettings{
-		RiakMemoryLimit: metadata.MetricSettings{
-			Enabled: false,
-		},
-		RiakNodeOperationCount: metadata.MetricSettings{
-			Enabled: false,
-		},
-		RiakNodeOperationTimeMean: metadata.MetricSettings{
-			Enabled: true,
-		},
-		RiakNodeReadRepairCount: metadata.MetricSettings{
-			Enabled: true,
-		},
-		RiakVnodeIndexOperationCount: metadata.MetricSettings{
-			Enabled: true,
-		},
-		RiakVnodeOperationCount: metadata.MetricSettings{
-			Enabled: true,
-		},
 	}
 }
