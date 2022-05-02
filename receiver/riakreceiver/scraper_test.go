@@ -92,6 +92,7 @@ func TestScaperScrape(t *testing.T) {
 		desc              string
 		setupMockClient   func(t *testing.T) client
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
+		setupCfg          func() *Config
 		metricsEnabled    bool
 		expectedErr       error
 	}{
@@ -102,6 +103,9 @@ func TestScaperScrape(t *testing.T) {
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
+			},
+			setupCfg: func() *Config {
+				return createDefaultConfig().(*Config)
 			},
 			expectedErr:    errClientNotInit,
 			metricsEnabled: true,
@@ -115,6 +119,9 @@ func TestScaperScrape(t *testing.T) {
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
+			},
+			setupCfg: func() *Config {
+				return createDefaultConfig().(*Config)
 			},
 			metricsEnabled: true,
 			expectedErr:    errors.New("some api error"),
@@ -138,6 +145,11 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
+			setupCfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Metrics = customMetricSettings()
+				return cfg
+			},
 			metricsEnabled: false,
 			expectedErr:    nil,
 		},
@@ -160,6 +172,9 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
+			setupCfg: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
 			metricsEnabled: true,
 			expectedErr:    nil,
 		},
@@ -167,15 +182,7 @@ func TestScaperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			var scraper *riakScraper
-			if !tc.metricsEnabled {
-				cfg := createDefaultConfig().(*Config)
-				cfg.Metrics = customMetricSettings()
-				scraper = newScraper(zap.NewNop(), cfg, componenttest.NewNopTelemetrySettings())
-			} else {
-				scraper = newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
-			}
-
+			scraper := newScraper(zap.NewNop(), tc.setupCfg(), componenttest.NewNopTelemetrySettings())
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {
