@@ -855,18 +855,15 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog1")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog2")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()
 	require.NoError(t, exp.Start(ctx, host))
