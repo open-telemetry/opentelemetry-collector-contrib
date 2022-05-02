@@ -24,8 +24,8 @@ These are the metrics available for this scraper.
 | **sqlserver.transaction_log.flush.data.rate** | Total number of log bytes flushed. | By/s | Gauge(Double) | <ul> </ul> |
 | **sqlserver.transaction_log.flush.rate** | Number of log flushes. | {flushes}/s | Gauge(Double) | <ul> </ul> |
 | **sqlserver.transaction_log.flush.wait.rate** | Number of commits waiting for a transaction log flush. | {commits}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.growth.count** | Total number of transaction log expansions for a database. | {growths} | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.shrink.count** | Total number of transaction log shrinks for a database. | {shrinks} | Gauge(Double) | <ul> </ul> |
+| **sqlserver.transaction_log.growth.count** | Total number of transaction log expansions for a database. | {growths} | Sum(Double) | <ul> </ul> |
+| **sqlserver.transaction_log.shrink.count** | Total number of transaction log shrinks for a database. | {shrinks} | Sum(Double) | <ul> </ul> |
 | **sqlserver.transaction_log.usage** | Percent of transaction log space used. | % | Gauge(Double) | <ul> </ul> |
 | **sqlserver.user.connection.count** | Number of users connected to the SQL Server. | {connections} | Gauge(Double) | <ul> </ul> |
 
