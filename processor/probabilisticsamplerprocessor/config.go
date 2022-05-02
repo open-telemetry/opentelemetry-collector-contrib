@@ -16,11 +16,15 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"go.opentelemetry.io/collector/config"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
 
 // Config has the configuration guiding the trace sampler processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
 	// Values greater or equal 100 are treated as "sample all traces".

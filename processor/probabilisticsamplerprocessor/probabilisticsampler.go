@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -52,15 +54,28 @@ const (
 type tracesamplerprocessor struct {
 	scaledSamplingRate uint32
 	hashSeed           uint32
+	include            filterspan.Matcher
+	exclude            filterspan.Matcher
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
 // configuration.
 func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.TracesProcessor, error) {
+	include, err := filterspan.NewMatcher(cfg.Include)
+	if err != nil {
+		return nil, err
+	}
+	exclude, err := filterspan.NewMatcher(cfg.Exclude)
+	if err != nil {
+		return nil, err
+	}
+
 	tsp := &tracesamplerprocessor{
 		// Adjust sampling percentage on private so recalculations are avoided.
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeed:           cfg.HashSeed,
+		include:            include,
+		exclude:            exclude,
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -70,10 +85,13 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
-		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
-			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
+func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+	td.ResourceSpans().RemoveIf(func(rs pdata.ResourceSpans) bool {
+		rs.InstrumentationLibrarySpans().RemoveIf(func(ils pdata.InstrumentationLibrarySpans) bool {
+			ils.Spans().RemoveIf(func(s pdata.Span) bool {
+				if filterspan.SkipSpan(tsp.include, tsp.exclude, s, rs.Resource(), ils.InstrumentationLibrary()) {
+					return false
+				}
 				sp := parseSpanSamplingPriority(s)
 				if sp == doNotSampleSpan {
 					// The OpenTelemetry mentions this as a "hint" we take a stronger
