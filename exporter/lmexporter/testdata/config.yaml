@@ -1,0 +1,24 @@
+receivers:
+  fluentforward:
+    endpoint: 0.0.0.0:8006
+  otlp:
+    protocols:
+      http:
+      grpc:
+exporters:
+  logging:
+  lmexporter:
+    url: "https://<lm_account>.logicmonitor.com/rest"
+    apiToken:
+      access_id: <lm_access_id>
+      access_key: <lm_access_key>
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [nop]
+      exporters: [lmexporter]
+    logs:
+      receivers: [fluentforward]
+      processors: [nop]
+      exporters: [logging,lmexporter]
