@@ -17,6 +17,8 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"net"
 
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
@@ -41,7 +43,7 @@ func isDiscernibleHost(host string) bool {
 }
 
 // CreateNodeAndResourcePdata creates the resource data added to OTLP payloads.
-func CreateNodeAndResourcePdata(job, instance, scheme string) *pcommon.Resource {
+func CreateNodeAndResourcePdata(job, instance string, serviceDiscoveryLabels labels.Labels) *pcommon.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
@@ -54,7 +56,49 @@ func CreateNodeAndResourcePdata(job, instance, scheme string) *pcommon.Resource 
 	}
 	attrs.UpsertString(conventions.AttributeServiceInstanceID, instance)
 	attrs.UpsertString(conventions.AttributeNetHostPort, port)
-	attrs.UpsertString(conventions.AttributeHTTPScheme, scheme)
+	attrs.UpsertString(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+
+	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
 	return &resource
+}
+
+// kubernetesDiscoveryToResourceAttributes maps from metadata labels discovered
+// through the kubernetes implementation of service discovery to opentelemetry
+// resource attribute keys.
+var kubernetesDiscoveryToResourceAttributes = map[string]string{
+	"__meta_kubernetes_pod_name":           conventions.AttributeK8SPodName,
+	"__meta_kubernetes_pod_uid":            conventions.AttributeK8SPodUID,
+	"__meta_kubernetes_pod_container_name": conventions.AttributeK8SContainerName,
+	"__meta_kubernetes_namespace":          conventions.AttributeK8SNamespaceName,
+	// Only one of the node name service discovery labels will be present
+	"__meta_kubernetes_pod_node_name":      conventions.AttributeK8SNodeName,
+	"__meta_kubernetes_node_name":          conventions.AttributeK8SNodeName,
+	"__meta_kubernetes_endpoint_node_name": conventions.AttributeK8SNodeName,
+}
+
+// addKubernetesResource adds resource information detected by prometheus'
+// kubernetes service discovery.
+func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labels) {
+	for sdKey, attributeKey := range kubernetesDiscoveryToResourceAttributes {
+		if attr := serviceDiscoveryLabels.Get(sdKey); attr != "" {
+			attrs.UpsertString(attributeKey, attr)
+		}
+	}
+	controllerName := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_name")
+	controllerKind := serviceDiscoveryLabels.Get("__meta_kubernetes_pod_controller_kind")
+	if controllerKind != "" && controllerName != "" {
+		switch controllerKind {
+		case "ReplicaSet":
+			attrs.UpsertString(conventions.AttributeK8SReplicaSetName, controllerName)
+		case "DaemonSet":
+			attrs.UpsertString(conventions.AttributeK8SDaemonSetName, controllerName)
+		case "StatefulSet":
+			attrs.UpsertString(conventions.AttributeK8SStatefulSetName, controllerName)
+		case "Job":
+			attrs.UpsertString(conventions.AttributeK8SJobName, controllerName)
+		case "CronJob":
+			attrs.UpsertString(conventions.AttributeK8SCronJobName, controllerName)
+		}
+	}
 }

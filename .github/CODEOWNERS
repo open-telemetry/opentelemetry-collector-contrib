@@ -100,6 +100,7 @@ processor/resourcedetectionprocessor/                @open-telemetry/collector-c
 processor/resourceprocessor                          @open-telemetry/collector-contrib-approvers @dmitryax
 processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-contrib-approvers @mx-psi
 processor/routingprocessor/                          @open-telemetry/collector-contrib-approvers @jpkrohling
+processor/schemaprocessor/                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/spanprocessor/                             @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
@@ -146,6 +147,7 @@ receiver/rabbitmqreceiver/                           @open-telemetry/collector-c
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/riakreceiver/                               @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
+receiver/saphanareceiver/                            @open-telemetry/collector-contrib-approvers @pmm-sumo @dehaansa
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
 receiver/skywalkingreceiver                          @open-telemetry/collector-contrib-approvers @JaredTan95

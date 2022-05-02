@@ -37,7 +37,7 @@ import (
 
 func TestPodAndContainerMetricsReportCPUMetricsAsInt(t *testing.T) {
 	// disable the feature gate
-	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: false})
+	featuregate.GetRegistry().Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: false})
 
 	pod := newPodWithContainer(
 		"1",
@@ -99,7 +99,7 @@ func TestPodAndContainerMetricsReportCPUMetricsAsInt(t *testing.T) {
 
 func TestPodAndContainerMetricsReportCPUMetricsAsDouble(t *testing.T) {
 	// enable the feature gate
-	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: true})
+	featuregate.GetRegistry().Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: true})
 
 	pod := newPodWithContainer(
 		"1",
