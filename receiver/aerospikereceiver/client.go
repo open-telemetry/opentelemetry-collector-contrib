@@ -12,11 +12,6 @@ type defaultASClient struct {
 	timeout time.Duration
 }
 
-const (
-	namespaceKey  = "namespace"
-	namespacesKey = "namespaces"
-)
-
 // Aerospike is the interface that provides information about a given node
 type Aerospike interface {
 	// NamespaceInfo gets information about a specific namespace

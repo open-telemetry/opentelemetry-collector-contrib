@@ -204,6 +204,7 @@ func parseNodeStats(stats map[string]string) *NodeStats {
 	return &nodeStats
 }
 
+// NamespaceKey is the INFO response key for a specific namespace
 func NamespaceKey(namespace string) string {
 	return "namespace/" + namespace
 }

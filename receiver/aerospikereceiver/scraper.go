@@ -24,9 +24,8 @@ type aerospikeReceiver struct {
 	consumer consumer.Metrics
 	host     string // host/IP of configured Aerospike node
 	port     int    // port of configured Aerospike node
-	// client   Aerospike // client connected to configured Aerospike node
-	mb     *metadata.MetricsBuilder
-	logger *zap.Logger
+	mb       *metadata.MetricsBuilder
+	logger   *zap.Logger
 }
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
