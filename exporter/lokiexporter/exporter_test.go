@@ -687,3 +687,46 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 		})
 	}
 }
+
+func TestExporter_timestampFromLogRecord(t *testing.T) {
+	ts := time.Date(2021, 12, 11, 10, 9, 8, 1, time.UTC)
+	timeNow = func() time.Time {
+		return ts
+	}
+
+	tests := []struct {
+		name              string
+		timestamp         time.Time
+		observedTimestamp time.Time
+		expectedTimestamp time.Time
+	}{
+		{
+			name:              "timestamp is correct",
+			timestamp:         timeNow(),
+			expectedTimestamp: timeNow(),
+		},
+		{
+			name:              "timestamp is empty",
+			observedTimestamp: timeNow(),
+			expectedTimestamp: timeNow(),
+		},
+		{
+			name:              "timestamp is empty and observed timestamp is empty",
+			expectedTimestamp: timeNow(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lr := plog.NewLogRecord()
+			if !tt.timestamp.IsZero() {
+				lr.SetTimestamp(pcommon.NewTimestampFromTime(tt.timestamp))
+			}
+			if !tt.observedTimestamp.IsZero() {
+				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(tt.observedTimestamp))
+			}
+
+			assert.Equal(t, time.Unix(0, int64(pcommon.NewTimestampFromTime(tt.expectedTimestamp))), timestampFromLogRecord(lr))
+		})
+	}
+}
