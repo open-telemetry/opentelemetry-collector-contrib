@@ -7,9 +7,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.49.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.29.1
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2
-	go.opentelemetry.io/collector/model v0.49.1-0.20220422001137-87ab5de64ce4
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220425174313-0674425b8ef2
+	go.opentelemetry.io/collector v0.50.0
+	go.opentelemetry.io/collector/model v0.50.0
+	go.opentelemetry.io/collector/pdata v0.50.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -34,7 +34,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gonum.org/v1/gonum v0.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect

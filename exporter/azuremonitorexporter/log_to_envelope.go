@@ -24,9 +24,8 @@ import (
 )
 
 const (
-	traceIDTag      = "TraceId"
-	spanIDTag       = "SpanId"
-	categoryNameTag = "CategoryName"
+	traceIDTag = "TraceId"
+	spanIDTag  = "SpanId"
 )
 
 var severityLevelMap = map[string]contracts.SeverityLevel{
@@ -60,8 +59,6 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 	envelope.Tags[contracts.OperationId] = hexTraceID
 
 	messageData.Properties[spanIDTag] = logRecord.SpanID().HexString()
-
-	messageData.Properties[categoryNameTag] = logRecord.Name()
 	envelope.Name = messageData.EnvelopeName("")
 
 	data.BaseData = messageData
