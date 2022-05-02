@@ -23,7 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
 )
@@ -61,7 +63,7 @@ func TestTransformerProcessing(t *testing.T) {
 
 	trans := newTestTransformer(t)
 	t.Run("metrics", func(t *testing.T) {
-		in := pdata.NewMetrics()
+		in := pmetric.NewMetrics()
 		in.ResourceMetrics().AppendEmpty()
 		in.ResourceMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
 		in.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
@@ -77,15 +79,15 @@ func TestTransformerProcessing(t *testing.T) {
 	})
 
 	t.Run("traces", func(t *testing.T) {
-		in := pdata.NewTraces()
+		in := ptrace.NewTraces()
 		in.ResourceSpans().AppendEmpty()
 		in.ResourceSpans().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
 		in.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
 		s := in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty()
 		s.SetName("http.request")
 		s.SetKind(ptrace.SpanKindConsumer)
-		s.SetSpanID(pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
-		s.SetTraceState(pdata.TraceStateEmpty)
+		s.SetSpanID(pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
+		s.SetTraceState(ptrace.TraceStateEmpty)
 		s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 
 		out, err := trans.processTraces(context.Background(), in)
@@ -94,7 +96,7 @@ func TestTransformerProcessing(t *testing.T) {
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		in := pdata.NewLogs()
+		in := plog.NewLogs()
 		in.ResourceLogs().AppendEmpty()
 		in.ResourceLogs().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
 		in.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
