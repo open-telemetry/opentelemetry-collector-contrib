@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/pdata v0.50.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
-	google.golang.org/api v0.76.0
+	google.golang.org/api v0.77.0
 	google.golang.org/genproto v0.0.0-20220414192740-2d67ff6cf2b4
 	google.golang.org/grpc v1.46.0
 )
