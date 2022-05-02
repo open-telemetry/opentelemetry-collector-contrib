@@ -10,6 +10,8 @@
 
 ### 🚀 New components 🚀
 
+- `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
+
 ### 💡 Enhancements 💡
 
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
