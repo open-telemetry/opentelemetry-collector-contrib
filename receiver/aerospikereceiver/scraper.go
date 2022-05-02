@@ -195,20 +195,10 @@ func (r *aerospikeReceiver) emitNamespace(info *model.NamespaceInfo, now pcommon
 
 // start opens a new connection to the configured endpoint
 func (r *aerospikeReceiver) start(context.Context, component.Host) error {
-	// client, err := newASClient(r.host, r.port, r.config.Timeout)
-	// if err != nil {
-	// 	r.params.Logger.Sugar().Warnf("failed to connect: %s", err)
-	// } else {
-	// 	r.client = client
-	// }
-
 	return nil
 }
 
 // shutdown closes the connection to Aerospike, if the underlying client is set
 func (r *aerospikeReceiver) shutdown(context.Context) error {
-	// if r.client != nil {
-	// 	r.client.Close()
-	// }
 	return nil
 }

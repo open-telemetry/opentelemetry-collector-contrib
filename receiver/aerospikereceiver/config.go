@@ -21,8 +21,11 @@ var (
 )
 
 var (
-	errEmptyEndpoint = errors.New("endpoint must be specified")
 	errBadEndpoint   = errors.New("endpoint must be specified as host:port")
+	errBadPort       = errors.New("invalid port in endpoint")
+	errEmptyEndpoint = errors.New("endpoint must be specified")
+	errEmptyPassword = errors.New("password must be set if username is set")
+	errEmptyUsername = errors.New("username must be set if password is set")
 )
 
 // Config is the receiver configuration
@@ -45,13 +48,30 @@ func (c *Config) Validate() error {
 		return multierr.Append(allErrs, errEmptyEndpoint)
 	}
 
-	_, portStr, err := net.SplitHostPort(c.Endpoint)
+	host, portStr, err := net.SplitHostPort(c.Endpoint)
 	if err != nil {
-		return multierr.Append(allErrs, fmt.Errorf("invalid endpoint '%s': %w", c.Endpoint, err))
+		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err))
 	}
 
-	if _, err := strconv.ParseInt(portStr, 10, 32); err != nil {
-		return multierr.Append(allErrs, fmt.Errorf("invalid port '%s': %w", portStr, err))
+	if host == "" {
+		allErrs = multierr.Append(allErrs, errBadEndpoint)
+	}
+
+	port, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil {
+		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadPort, err))
+	}
+
+	if port < 0 || port > 65535 {
+		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %d", errBadPort, port))
+	}
+
+	if c.Username != "" && c.Password == "" {
+		allErrs = multierr.Append(allErrs, errEmptyPassword)
+	}
+
+	if c.Password != "" && c.Username == "" {
+		allErrs = multierr.Append(allErrs, errEmptyUsername)
 	}
 
 	return allErrs
