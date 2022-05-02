@@ -515,13 +515,6 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
 
-	switch c.Metrics.HistConfig.Mode {
-	case HistogramModeCounters, HistogramModeNoBuckets, HistogramModeDistributions:
-		// Do nothing
-	default:
-		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
-	}
-
 	// Add warnings about autodetected environment variables.
 	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
 
