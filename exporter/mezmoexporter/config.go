@@ -27,6 +27,21 @@ import (
 const (
 	// defaultTimeout
 	defaultTimeout time.Duration = 5 * time.Second
+
+	// defaultIngestURL
+	defaultIngestURL = "https://logdna.com/log/ingest"
+
+	// See https://docs.logdna.com/docs/ingestion#service-limits for details
+
+	// Maximum payload in bytes that can be POST'd to the REST endpoint
+	maxBodySize         = 10 * 1024 * 1024
+	maxMessageSize      = 16 * 1024
+	maxMetaDataSize     = 32 * 1024
+	maxHostnameLen      = 256
+	maxAppnameLen       = 512
+	maxLogLevelLen      = 80
+	maxTagLen           = 80
+	maxNestedFieldDepth = 3
 )
 
 // Config defines configuration for Mezmo exporter.
@@ -36,11 +51,11 @@ type Config struct {
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
-	// Endpoint is the URL to send telemetry to.
-	Endpoint string `mapstructure:"endpoint"`
+	// IngestURL is the URL to send telemetry to.
+	IngestURL string `mapstructure:"ingest_url"`
 
 	// Token is the authentication token provided by Mezmo.
-	IngestionKey string `mapstructure:"ingestion_key"`
+	IngestKey string `mapstructure:"ingest_key"`
 }
 
 // CreateDefaultHTTPClientSettings returns default http client settings
@@ -51,12 +66,16 @@ func CreateDefaultHTTPClientSettings() confighttp.HTTPClientSettings {
 }
 
 func (c *Config) validate() error {
-	if _, err := url.Parse(c.Endpoint); c.Endpoint == "" || err != nil {
-		return fmt.Errorf("\"endpoint\" must be a valid URL")
+	var err error
+	var parsed *url.URL
+
+	parsed, err = url.Parse(c.IngestURL)
+	if c.IngestURL == "" || err != nil {
+		return fmt.Errorf("\"ingest_url\" must be a valid URL")
 	}
 
-	if _, err := url.Parse(c.Endpoint); c.Endpoint == "" || err != nil {
-		return fmt.Errorf("\"endpoint\" must be a valid URL")
+	if parsed.Host == "" {
+		return fmt.Errorf("\"ingest_url\" must contain a valid host")
 	}
 
 	return nil

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -80,10 +81,9 @@ func (m *mezmoExporter) stop(context.Context) (err error) {
 func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 	var errs error
 
-	var hostname = "fixme.com"
 	var lines []MezmoLogLine
 
-	// Batch up the log lines
+	// Convert the log resources to mezmo lines...
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		ills := resourceLogs.At(i).ScopeLogs()
@@ -94,21 +94,12 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 			for k := 0; k < logs.Len(); k++ {
 				var log = logs.At(k)
 
-				//fmt.Printf("Body:            [%s]\n", log.Body().StringVal())
-				//fmt.Printf("Severity Number: [%v]\n", log.SeverityNumber().String())
-				//fmt.Printf("Severity Text:   [%v]\n", log.SeverityText())
-				//fmt.Printf("Timestamp:       [%v]\n", log.Timestamp())
-				//fmt.Printf("Trace ID:        [%v]\n", log.TraceID())
-				//fmt.Printf("Span ID:	        [%v]\n", log.SpanID())
-				//fmt.Printf("Log Attributes:\n")
-
+				// Convert Attributes to meta fields being mindful of the maxMetaDataSize restriction
 				var attrs = map[string]string{}
-
 				attrs["trace.id"] = log.TraceID().HexString()
 				attrs["span.id"] = log.SpanID().HexString()
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
-					attrs[k] = v.StringVal()
-					//fmt.Printf("\t%s: [%s]\n", k, attrs[k])
+					attrs[k] = truncateString(v.StringVal(), maxMetaDataSize)
 					return true
 				})
 
@@ -118,9 +109,9 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 
 				var line = MezmoLogLine{
 					Timestamp: log.Timestamp().AsTime().UTC().UnixMilli(),
-					Line:      log.Body().StringVal(),
-					App:       app,
-					Level:     log.SeverityNumber().String(),
+					Line:      truncateString(log.Body().StringVal(), maxMessageSize),
+					App:       truncateString(app, maxAppnameLen),
+					Level:     truncateString(log.SeverityText(), maxLogLevelLen),
 					Meta:      attrs,
 				}
 				lines = append(lines, line)
@@ -128,22 +119,51 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 		}
 	}
 
-	// Send them to Mezmo
-	var mezmoLogBody = MezmoLogBody{
-		Lines: lines,
+	// Send them to Mezmo in batches < 10MB in size
+	var b strings.Builder
+	b.WriteString("{\"lines\": [")
+
+	var lineBytes []byte
+	for i, line := range lines {
+		if lineBytes, errs = json.Marshal(line); errs != nil {
+			return fmt.Errorf("error Creating JSON payload: %s", errs)
+		}
+
+		var newBufSize = b.Len() + len(lineBytes)
+		if newBufSize >= maxBodySize-2 {
+			str := b.String()
+			str = str[:len(str)-1] + "]}"
+			if errs = m.sendLinesToMezmo(str); errs != nil {
+				return errs
+			}
+			b.Reset()
+			b.WriteString("{\"lines\": [")
+		}
+
+		b.Write(lineBytes)
+
+		if i < len(lines)-1 {
+			b.WriteRune(',')
+		}
 	}
 
-	var postBody []byte
-	if postBody, errs = json.Marshal(mezmoLogBody); errs != nil {
-		return fmt.Errorf("error Creating JSON payload: %s", errs)
+	str := b.String() + "]}"
+	if errs = m.sendLinesToMezmo(str); errs != nil {
+		return errs
 	}
 
-	url := fmt.Sprintf("%s?hostname=%s", m.config.Endpoint, hostname)
+	return nil
+}
 
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(postBody))
+func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
+	var hostname = "otel"
+
+	url := fmt.Sprintf("%s?hostname=%s", m.config.IngestURL, hostname)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer([]byte(post)))
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("apikey", m.config.IngestionKey)
+	req.Header.Add("apikey", m.config.IngestKey)
 
 	var res *http.Response
 	if res, errs = http.DefaultClient.Do(req); errs != nil {

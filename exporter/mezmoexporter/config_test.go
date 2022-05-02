@@ -36,13 +36,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
+	loadedCfg := cfg.Exporters[config.NewComponentID(typeStr)]
 
-	// Endpoint doesn't have a default value so set it directly.
-	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.HTTPClientSettings.Endpoint = "https://logdna.com/log/ingest"
-	defaultCfg.Endpoint = "https://logdna.com/log/ingest"
-	defaultCfg.IngestionKey = "00000000000000000000000000000000"
+	// IngestURL doesn't have a default value so set it directly.
+	expectedCfg := factory.CreateDefaultConfig().(*Config)
+	expectedCfg.IngestURL = defaultIngestURL
+	expectedCfg.IngestKey = "00000000000000000000000000000000"
 
-	assert.Equal(t, defaultCfg, e0)
+	assert.Equal(t, expectedCfg, loadedCfg)
 }

@@ -16,6 +16,7 @@ package mezmoexporter
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -33,6 +34,7 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
+// Create a default Memzo config
 func createDefaultConfig() config.Exporter {
 	qs := exporterhelper.NewDefaultQueueSettings()
 	qs.Enabled = false
@@ -45,7 +47,11 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
+// Create a log exporter for exporting to Mezmo
 func createLogsExporter(ctx context.Context, settings component.ExporterCreateSettings, exporter config.Exporter) (component.LogsExporter, error) {
+	if exporter == nil {
+		return nil, errors.New("nil config")
+	}
 	expCfg := exporter.(*Config)
 
 	if err := expCfg.validate(); err != nil {

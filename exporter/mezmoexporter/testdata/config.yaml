@@ -6,8 +6,8 @@ processors:
 
 exporters:
   mezmo:
-    endpoint: "https://logdna.com/log/ingest"
-    ingestion_key: "00000000000000000000000000000000"
+    ingest_url: "https://logdna.com/log/ingest"
+    ingest_key: "00000000000000000000000000000000"
 
 service:
   pipelines:
