@@ -65,6 +65,7 @@
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
 - `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
 - `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
+- `riakreceiver`: Fix issue where user configured metric settings were ignored. (#9561)
 - `sqlserverreceiver`: Update `sqlserver.transaction_log.growth.count` and `sqlserver.transaction_log.shrink.count` to be monotonic sums. (#9522)
 
 ## v0.49.0
