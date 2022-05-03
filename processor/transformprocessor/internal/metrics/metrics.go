@@ -80,6 +80,20 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		case "version":
 			return accessInstrumentationScopeVersion(), nil
 		}
+	case "descriptor":
+		if len(path) == 1 {
+			return accessDescriptor(), nil
+		}
+		switch path[1].Name {
+		case "metric_name":
+			return accessDescriptorMetricName(), nil
+		case "metric_description":
+			return accessDescriptorMetricDescription(), nil
+		case "metric_unit":
+			return accessDescriptorMetricUnit(), nil
+		case "metric_type":
+			return accessDescriptorMetricType(), nil
+		}
 	}
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
@@ -157,6 +171,71 @@ func accessInstrumentationScopeVersion() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.GetInstrumentationScope().SetVersion(str)
+			}
+		},
+	}
+}
+
+func accessDescriptor() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(pmetric.Metric)
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newMetric, ok := val.(pmetric.Metric); ok {
+				newMetric.CopyTo(ctx.GetItem().(pmetric.Metric))
+			}
+		},
+	}
+}
+
+func accessDescriptorMetricName() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(pmetric.Metric).Name()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				ctx.GetItem().(pmetric.Metric).SetName(str)
+			}
+		},
+	}
+}
+
+func accessDescriptorMetricDescription() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(pmetric.Metric).Description()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				ctx.GetItem().(pmetric.Metric).SetDescription(str)
+			}
+		},
+	}
+}
+
+func accessDescriptorMetricUnit() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(pmetric.Metric).Unit()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				ctx.GetItem().(pmetric.Metric).SetUnit(str)
+			}
+		},
+	}
+}
+
+func accessDescriptorMetricType() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(pmetric.Metric).DataType()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if dataType, ok := val.(pmetric.MetricDataType); ok {
+				ctx.GetItem().(pmetric.Metric).SetDataType(dataType)
 			}
 		},
 	}
