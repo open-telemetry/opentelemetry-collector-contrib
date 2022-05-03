@@ -74,7 +74,7 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	r.emitNode(info, client, now)
 
-	if r.config.DiscoverNodes {
+	if r.config.CollectClusterMetrics {
 		r.logger.Debug("Collecting peer nodes")
 		for _, n := range info.Services {
 			r.scrapeDiscoveredNode(n, now, errs)

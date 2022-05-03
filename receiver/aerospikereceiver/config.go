@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	defaultEndpoint      = "localhost:3000"
-	defaultTimeout       = 20 * time.Second
-	defaultDiscoverNodes = false
+	defaultEndpoint              = "localhost:3000"
+	defaultTimeout               = 20 * time.Second
+	defaultCollectClusterMetrics = false
 )
 
 var (
@@ -34,7 +34,7 @@ type Config struct {
 	Endpoint                                string                     `mapstructure:"endpoint"`
 	Username                                string                     `mapstructure:"username"`
 	Password                                string                     `mapstructure:"password"`
-	DiscoverNodes                           bool                       `mapstructure:"discover_nodes"`
+	CollectClusterMetrics                   bool                       `mapstructure:"collect_cluster_metrics"`
 	Timeout                                 time.Duration              `mapstructure:"timeout"`
 	TLS                                     configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 	Metrics                                 metadata.MetricsSettings   `mapstructure:"metrics"`
@@ -83,10 +83,10 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: time.Minute,
 		},
-		Endpoint:      defaultEndpoint,
-		Timeout:       defaultTimeout,
-		DiscoverNodes: defaultDiscoverNodes,
-		TLS:           configtls.TLSClientSetting{},
-		Metrics:       metadata.DefaultMetricsSettings(),
+		Endpoint:              defaultEndpoint,
+		Timeout:               defaultTimeout,
+		CollectClusterMetrics: defaultCollectClusterMetrics,
+		TLS:                   configtls.TLSClientSetting{},
+		Metrics:               metadata.DefaultMetricsSettings(),
 	}
 }
