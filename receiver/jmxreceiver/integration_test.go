@@ -167,8 +167,8 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				Password: "cassandra",
 				Username: "cassandra",
 				ResourceAttributes: map[string]string{
-					myattr:      "myvalue",
-					myotherattr: "myothervalue",
+					"myattr":      "myvalue",
+					"myotherattr": "myothervalue",
 				},
 				LogLevel: "debug",
 			}

@@ -96,7 +96,7 @@ func (oec otlpExporterConfig) headersToString() string {
 }
 
 func (c *Config) parseProperties() []string {
-	parsed := make([]string, 1)
+	parsed := make([]string, 0, 1)
 	if len(c.ResourceAttributes) > 0 {
 		attributes := make([]string, 0, len(c.ResourceAttributes))
 		for k, v := range c.ResourceAttributes {
@@ -145,6 +145,9 @@ func (c *Config) validate() error {
 	}
 	if c.TargetSystem == "" {
 		missingFields = append(missingFields, "`target_system`")
+	}
+	if c.JARPath == "" {
+		missingFields = append(missingFields, "`jar_path`")
 	}
 	if missingFields != nil {
 		baseMsg := fmt.Sprintf("%v missing required field", c.ID())
