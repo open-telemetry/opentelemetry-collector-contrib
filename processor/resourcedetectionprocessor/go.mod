@@ -5,16 +5,16 @@ go 1.17
 require (
 	cloud.google.com/go/compute v1.6.0
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.43.45
+	github.com/aws/aws-sdk-go v1.44.4
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.14+incompatible
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.50.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.50.0
-	go.opentelemetry.io/collector/pdata v0.50.0
-	go.opentelemetry.io/collector/semconv v0.50.0
+	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/semconv v0.50.1-0.20220429151328-041f39835df7
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	k8s.io/apimachinery v0.23.6
@@ -37,7 +37,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.5.7 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -70,10 +70,10 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
-	go.opentelemetry.io/otel v1.6.3 // indirect
-	go.opentelemetry.io/otel/metric v0.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.3 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect
