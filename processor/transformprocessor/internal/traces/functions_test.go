@@ -171,7 +171,7 @@ func Test_newFunctionCall(t *testing.T) {
 		{
 			name: "truncate attributes",
 			inv: common.Invocation{
-				Function: "truncateAll",
+				Function: "truncate_all",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -200,7 +200,7 @@ func Test_newFunctionCall(t *testing.T) {
 		{
 			name: "truncate attributes with zero",
 			inv: common.Invocation{
-				Function: "truncateAll",
+				Function: "truncate_all",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -229,7 +229,7 @@ func Test_newFunctionCall(t *testing.T) {
 		{
 			name: "truncate attributes nothing",
 			inv: common.Invocation{
-				Function: "truncateAll",
+				Function: "truncate_all",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -258,7 +258,7 @@ func Test_newFunctionCall(t *testing.T) {
 		{
 			name: "truncate attributes exact",
 			inv: common.Invocation{
-				Function: "truncateAll",
+				Function: "truncate_all",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -287,7 +287,7 @@ func Test_newFunctionCall(t *testing.T) {
 		{
 			name: "truncate resource attributes",
 			inv: common.Invocation{
-				Function: "truncateAll",
+				Function: "truncate_all",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -319,7 +319,7 @@ func Test_newFunctionCall(t *testing.T) {
 		{
 			name: "truncate resource negative",
 			inv: common.Invocation{
-				Function: "truncateAll",
+				Function: "truncate_all",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{

@@ -115,7 +115,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 		{
 			name: "not int",
 			inv: Invocation{
-				Function: "truncateAll",
+				Function: "truncate_all",
 				Arguments: []Value{
 					{
 						Path: &Path{
