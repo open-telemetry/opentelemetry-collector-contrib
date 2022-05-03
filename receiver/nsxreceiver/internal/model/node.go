@@ -21,7 +21,7 @@ type ClusterNodeList struct {
 
 // ClusterNode is a Controller Node or Manager Node
 type ClusterNode struct {
-	NodeProperties `json:",squash"`
+	NodeProperties `mapstructure:",squash"`
 	ControllerRole *ControllerRole `json:"controller_role,omitempty"`
 }
 
@@ -37,7 +37,7 @@ type TransportNodeList struct {
 
 // TransportNode is a representation of an NSX host or edge transport node
 type TransportNode struct {
-	NodeProperties `json:",squash"`
+	NodeProperties `mapstructure:",squash"`
 	Description    string `json:"description" `
 }
 
@@ -107,6 +107,7 @@ type NodeStatus struct {
 	} `json:"system_status"`
 }
 
+// TransportNodeStatus wraps a node_status because it is wrapped in the HTTP response
 type TransportNodeStatus struct {
 	NodeStatus NodeStatus `mapstructure:"node_status" json:"node_status"`
 }
@@ -132,6 +133,7 @@ type SystemStatus struct {
 	Uptime          int64              `json:"uptime"`
 }
 
+// NodeSystemCPUUsage is a report of the CPU usage of the node
 type NodeSystemCPUUsage struct {
 	HighestCPUCoreUsageDpdk    float64 `json:"highest_cpu_core_usage_dpdk"`
 	AvgCPUCoreUsageDpdk        float64 `json:"avg_cpu_core_usage_dpdk"`
@@ -139,6 +141,7 @@ type NodeSystemCPUUsage struct {
 	AvgCPUCoreUsageNonDpdk     float64 `json:"avg_cpu_core_usage_non_dpdk"`
 }
 
+// FileSystemsUsage is a report of the storage used by the node
 type FileSystemsUsage struct {
 	// Name of the filesystem
 	FileSystem string `json:"file_system"`
@@ -148,6 +151,7 @@ type FileSystemsUsage struct {
 	Used       int    `json:"used"`
 }
 
+// MemSystemUsage is a report of how the node is using its memory
 type MemSystemUsage struct {
 	SystemMemUsage     float64 `json:"system_mem_usage"`
 	SwapUsage          float64 `json:"swap_usage"`

@@ -91,6 +91,42 @@ func TestScrapeBadConfig(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestScrapeTransportNodeErrors(t *testing.T) {
+	mockClient := NewMockClient(t)
+
+	// mockClient.On("ClusterNodes", mock.Anything).Return(nil, errUnauthorized)
+	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
+	scraper := newScraper(
+		&Config{
+			MetricsConfig: &MetricsConfig{Settings: metadata.DefaultMetricsSettings()},
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	scraper.client = mockClient
+
+	_, err := scraper.scrape(context.Background())
+	require.Error(t, err)
+	require.ErrorContains(t, err, errUnauthorized.Error())
+}
+
+func TestScrapeClusterNodeErrors(t *testing.T) {
+	mockClient := NewMockClient(t)
+
+	mockClient.On("ClusterNodes", mock.Anything).Return(nil, errUnauthorized)
+	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
+	scraper := newScraper(
+		&Config{
+			MetricsConfig: &MetricsConfig{Settings: metadata.DefaultMetricsSettings()},
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	scraper.client = mockClient
+
+	_, err := scraper.scrape(context.Background())
+	require.Error(t, err)
+	require.ErrorContains(t, err, errUnauthorized.Error())
+}
+
 func TestScraperRecordNoStat(t *testing.T) {
 	scraper := newScraper(
 		&Config{
@@ -122,12 +158,12 @@ func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeS
 		var stats dm.TransportNodeStatus
 		err = json.Unmarshal(testFile, &stats)
 		require.NoError(t, err)
-		return &stats.NodeStatus, nil
+		return &stats.NodeStatus, err
 	default:
 		var stats dm.NodeStatus
 		err = json.Unmarshal(testFile, &stats)
 		require.NoError(t, err)
-		return &stats, nil
+		return &stats, err
 	}
 }
 
@@ -144,7 +180,7 @@ func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.
 	var interfaces dm.NodeNetworkInterfacePropertiesListResult
 	err = json.Unmarshal(testFile, &interfaces)
 	require.NoError(t, err)
-	return interfaces.Results, nil
+	return interfaces.Results, err
 }
 
 func loadInterfaceStats(t *testing.T, nodeID, interfaceID string, class nodeClass) (*dm.NetworkInterfaceStats, error) {
@@ -160,7 +196,7 @@ func loadInterfaceStats(t *testing.T, nodeID, interfaceID string, class nodeClas
 	var stats dm.NetworkInterfaceStats
 	err = json.Unmarshal(testFile, &stats)
 	require.NoError(t, err)
-	return &stats, nil
+	return &stats, err
 }
 
 func loadTestClusterNodes() ([]dm.ClusterNode, error) {

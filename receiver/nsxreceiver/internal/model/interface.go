@@ -15,6 +15,8 @@
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxhreceiver/internal/model"
 
 import "github.com/vmware/go-vmware-nsxt/manager" // NodeNetworkInterfacePropertiesListResult wraps the results of a node's network interface
+
+// NodeNetworkInterfacePropertiesListResult contains the results of the Node's Network Interfaces
 type NodeNetworkInterfacePropertiesListResult struct {
 	// Node network interface property results
 	Results []NetworkInterface `json:"results"`

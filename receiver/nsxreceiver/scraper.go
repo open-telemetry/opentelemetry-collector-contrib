@@ -62,7 +62,6 @@ type nodeClass int
 const (
 	transportClass nodeClass = iota
 	managerClass
-	controllerClass
 )
 
 func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
@@ -75,18 +74,19 @@ func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	r := s.retrieve(ctx, errs)
 
 	colTime := pdata.NewTimestampFromTime(time.Now())
-	s.process(r, colTime, errs)
+	s.process(r, colTime)
+
 	return s.mb.Emit(), errs.Combine()
 }
 
 type nodeInfo struct {
 	nodeProps  dm.NodeProperties
 	nodeType   string
-	interfaces []interfaceInfo
+	interfaces []interfaceInformation
 	stats      *dm.NodeStatus
 }
 
-type interfaceInfo struct {
+type interfaceInformation struct {
 	iFace dm.NetworkInterface
 	stats *dm.NetworkInterfaceStats
 }
@@ -156,9 +156,9 @@ func (s *scraper) retrieveInterfaces(
 		errs.AddPartial(1, err)
 		return
 	}
-	nodeInfo.interfaces = []interfaceInfo{}
+	nodeInfo.interfaces = []interfaceInformation{}
 	for _, i := range interfaces {
-		interfaceInfo := interfaceInfo{
+		interfaceInfo := interfaceInformation{
 			iFace: i,
 		}
 		stats, err := s.client.InterfaceStatus(ctx, nodeProps.ID, i.InterfaceId, nodeClass)
@@ -190,7 +190,6 @@ func (s *scraper) retrieveNodeStats(
 func (s *scraper) process(
 	nodes []*nodeInfo,
 	colTime pdata.Timestamp,
-	errs *scrapererror.ScrapeErrors,
 ) {
 	for _, n := range nodes {
 		for _, i := range n.interfaces {
@@ -200,7 +199,7 @@ func (s *scraper) process(
 	}
 }
 
-func (s *scraper) recordNodeInterface(colTime pdata.Timestamp, nodeProps dm.NodeProperties, i interfaceInfo) {
+func (s *scraper) recordNodeInterface(colTime pdata.Timestamp, nodeProps dm.NodeProperties, i interfaceInformation) {
 	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.RxDropped, metadata.AttributeDirection.Received, metadata.AttributePacketType.Dropped)
 	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.RxErrors, metadata.AttributeDirection.Received, metadata.AttributePacketType.Errored)
 	successRxPackets := i.stats.RxPackets - i.stats.RxDropped - i.stats.RxErrors

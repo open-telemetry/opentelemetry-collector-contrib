@@ -182,7 +182,7 @@ func TestDoRequestBadUrl(t *testing.T) {
 	require.ErrorContains(t, err, "parse")
 }
 
-func TestPermissionDenied(t *testing.T) {
+func TestPermissionDenied_ClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
 		MetricsConfig: &MetricsConfig{
@@ -195,6 +195,70 @@ func TestPermissionDenied(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = client.ClusterNodes(context.Background())
+	require.ErrorContains(t, err, errUnauthorized.Error())
+}
+
+func TestPermissionDenied_Interfaces(t *testing.T) {
+	nsxMock := mockServer(t)
+	client, err := newClient(&Config{
+		MetricsConfig: &MetricsConfig{
+			Password: badPassword,
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: nsxMock.URL,
+			},
+		},
+	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
+	require.NoError(t, err)
+
+	_, err = client.Interfaces(context.Background(), managerNode1, managerClass)
+	require.ErrorContains(t, err, errUnauthorized.Error())
+}
+
+func TestPermissionDenied_InterfaceStatus(t *testing.T) {
+	nsxMock := mockServer(t)
+	client, err := newClient(&Config{
+		MetricsConfig: &MetricsConfig{
+			Password: badPassword,
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: nsxMock.URL,
+			},
+		},
+	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
+	require.NoError(t, err)
+
+	_, err = client.InterfaceStatus(context.Background(), managerNode1, managerNodeNic1, managerClass)
+	require.ErrorContains(t, err, errUnauthorized.Error())
+}
+
+func TestPermissionDenied_NodeStatus(t *testing.T) {
+	nsxMock := mockServer(t)
+	client, err := newClient(&Config{
+		MetricsConfig: &MetricsConfig{
+			Password: badPassword,
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: nsxMock.URL,
+			},
+		},
+	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
+	require.NoError(t, err)
+
+	_, err = client.NodeStatus(context.Background(), managerNode1, managerClass)
+	require.ErrorContains(t, err, errUnauthorized.Error())
+}
+
+func TestPermissionDenied_TransportNodes(t *testing.T) {
+	nsxMock := mockServer(t)
+	client, err := newClient(&Config{
+		MetricsConfig: &MetricsConfig{
+			Password: badPassword,
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: nsxMock.URL,
+			},
+		},
+	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
+	require.NoError(t, err)
+
+	_, err = client.TransportNodes(context.Background())
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
 

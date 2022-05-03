@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/url"
 
-	nsxt "github.com/vmware/go-vmware-nsxt"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -43,7 +42,6 @@ type Client interface {
 
 type nsxClient struct {
 	config   *Config
-	driver   *nsxt.APIClient
 	client   *http.Client
 	endpoint *url.URL
 	logger   *zap.Logger
@@ -155,11 +153,11 @@ func (c *nsxClient) InterfaceStatus(
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("unable to get interface stats ")
+		return nil, fmt.Errorf("unable to get interface stats: %w", err)
 	}
 	var interfaceStats dm.NetworkInterfaceStats
 	err = json.Unmarshal(body, &interfaceStats)
-	return &interfaceStats, nil
+	return &interfaceStats, err
 }
 
 type requestOption func(req *http.Request) *http.Request
