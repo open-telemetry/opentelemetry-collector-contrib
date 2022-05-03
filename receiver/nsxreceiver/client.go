@@ -50,8 +50,7 @@ type nsxClient struct {
 }
 
 var (
-	errUnauthenticated = errors.New("STATUS 401, unauthenticated")
-	errUnauthorized    = errors.New("STATUS 403, unauthorized")
+	errUnauthorized = errors.New("STATUS 403, unauthorized")
 )
 
 func newClient(c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
@@ -203,8 +202,6 @@ func (c *nsxClient) doRequest(ctx context.Context, path string, options ...reque
 
 	body, _ := io.ReadAll(resp.Body)
 	switch resp.StatusCode {
-	case 401:
-		return nil, errUnauthenticated
 	case 403:
 		return nil, errUnauthorized
 	default:
@@ -225,16 +222,16 @@ func (c *nsxClient) nodeStatusEndpoint(class nodeClass, nodeID string) string {
 func (c *nsxClient) interfacesEndpoint(class nodeClass, nodeID string) string {
 	switch class {
 	case transportClass:
-		return fmt.Sprintf("/api/v1/transport-nodes/%s/status", nodeID)
+		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces", nodeID)
 	default:
-		return fmt.Sprintf("/api/v1/cluster/nodes/%s/status", nodeID)
+		return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", nodeID)
 	}
 }
 
 func (c *nsxClient) interfaceStatusEndpoint(class nodeClass, nodeID, interfaceID string) string {
 	switch class {
 	case transportClass:
-		return fmt.Sprintf("/api/v1/fabric/nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
+		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
 	default:
 		return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
 	}

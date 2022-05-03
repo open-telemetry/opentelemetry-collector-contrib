@@ -38,12 +38,12 @@ func (n *nsxReceiver) Start(ctx context.Context, host component.Host) error {
 		if scraperErr := n.scraper.Start(ctx, host); scraperErr != nil {
 			// Start should not stop the collector if the metrics client connection attempt does not succeed,
 			// so we log on start when we cannot connect
-			n.logger.Error(fmt.Sprintf("unable to initially connect to NSX API: %s", scraperErr.Error()))
+			n.logger.Error(fmt.Sprintf("unable to initially start connecting to the NSX API: %s", scraperErr.Error()))
 		}
 	}
 
 	if n.logsReceiver != nil {
-		// if syslogreceiver is not bundled and logging is in the pipeline for vcenter, we probably want to not start the collector
+		// if syslogreceiver is not bundled and logging is in the pipeline for NSX, we probably want to not start the collector
 		if startErr := n.logsReceiver.Start(ctx, host); startErr != nil {
 			err = multierr.Append(err, startErr)
 		}

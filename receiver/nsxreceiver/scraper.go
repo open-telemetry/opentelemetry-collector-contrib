@@ -16,7 +16,6 @@ package nsxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -53,7 +52,7 @@ func (s *scraper) start(ctx context.Context, host component.Host) error {
 	s.host = host
 	err := s.ensureClient()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("unable to instantiate client %s", err.Error()))
+		return err
 	}
 	return nil
 }
