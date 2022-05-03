@@ -17,22 +17,22 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
-func fillNodeResource(dest pdata.Resource, s stats.NodeStats) {
+func fillNodeResource(dest pcommon.Resource, s stats.NodeStats) {
 	dest.Attributes().UpsertString(conventions.AttributeK8SNodeName, s.NodeName)
 }
 
-func fillPodResource(dest pdata.Resource, s stats.PodStats) {
+func fillPodResource(dest pcommon.Resource, s stats.PodStats) {
 	dest.Attributes().UpsertString(conventions.AttributeK8SPodUID, s.PodRef.UID)
 	dest.Attributes().UpsertString(conventions.AttributeK8SPodName, s.PodRef.Name)
 	dest.Attributes().UpsertString(conventions.AttributeK8SNamespaceName, s.PodRef.Namespace)
 }
 
-func fillContainerResource(dest pdata.Resource, sPod stats.PodStats, sContainer stats.ContainerStats, metadata Metadata) error {
+func fillContainerResource(dest pcommon.Resource, sPod stats.PodStats, sContainer stats.ContainerStats, metadata Metadata) error {
 	labels := map[string]string{
 		conventions.AttributeK8SPodUID:        sPod.PodRef.UID,
 		conventions.AttributeK8SPodName:       sPod.PodRef.Name,
@@ -48,7 +48,7 @@ func fillContainerResource(dest pdata.Resource, sPod stats.PodStats, sContainer 
 	return nil
 }
 
-func fillVolumeResource(dest pdata.Resource, sPod stats.PodStats, vs stats.VolumeStats, metadata Metadata) error {
+func fillVolumeResource(dest pcommon.Resource, sPod stats.PodStats, vs stats.VolumeStats, metadata Metadata) error {
 	labels := map[string]string{
 		conventions.AttributeK8SPodUID:        sPod.PodRef.UID,
 		conventions.AttributeK8SPodName:       sPod.PodRef.Name,

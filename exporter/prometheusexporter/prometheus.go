@@ -24,7 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type prometheusExporter struct {
@@ -47,7 +47,6 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 	collector := newCollector(config, set.Logger)
 	registry := prometheus.NewRegistry()
 	_ = registry.Register(collector)
-
 	return &prometheusExporter{
 		name:         config.ID().String(),
 		endpoint:     addr,
@@ -58,6 +57,7 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 			registry,
 			promhttp.HandlerOpts{
 				ErrorHandling: promhttp.ContinueOnError,
+				ErrorLog:      newPromLogger(set.Logger),
 			},
 		),
 	}, nil
@@ -81,7 +81,7 @@ func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	n := 0
 	rmetrics := md.ResourceMetrics()
 	for i := 0; i < rmetrics.Len(); i++ {

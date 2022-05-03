@@ -18,8 +18,9 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -70,9 +71,9 @@ func (rmb *resourceMetricsBuilder) AddMetric(metric cWMetric) {
 	mb.AddDataPoint(metric)
 }
 
-// Build updates the passed in pdata.ResourceMetrics with the metrics in
+// Build updates the passed in pmetric.ResourceMetrics with the metrics in
 // the builder.
-func (rmb *resourceMetricsBuilder) Build(rm pdata.ResourceMetrics) {
+func (rmb *resourceMetricsBuilder) Build(rm pmetric.ResourceMetrics) {
 	ilm := rm.ScopeMetrics().AppendEmpty()
 	rmb.setAttributes(rm.Resource())
 	for _, mb := range rmb.metricBuilders {
@@ -80,8 +81,8 @@ func (rmb *resourceMetricsBuilder) Build(rm pdata.ResourceMetrics) {
 	}
 }
 
-// setAttributes creates a pdata.Resource from the fields in the resourceMetricsBuilder.
-func (rmb *resourceMetricsBuilder) setAttributes(resource pdata.Resource) {
+// setAttributes creates a pcommon.Resource from the fields in the resourceMetricsBuilder.
+func (rmb *resourceMetricsBuilder) setAttributes(resource pcommon.Resource) {
 	attributes := resource.Attributes()
 	attributes.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attributes.InsertString(conventions.AttributeCloudAccountID, rmb.accountID)
@@ -124,7 +125,7 @@ type metricBuilder struct {
 	unit string
 	// dataPoints is the slice of summary data points
 	// for the metric.
-	dataPoints pdata.SummaryDataPointSlice
+	dataPoints pmetric.SummaryDataPointSlice
 	// seen is the set of added data point keys.
 	seen map[dataPointKey]bool
 }
@@ -134,7 +135,7 @@ func newMetricBuilder(name, unit string) *metricBuilder {
 	return &metricBuilder{
 		name:       name,
 		unit:       unit,
-		dataPoints: pdata.NewSummaryDataPointSlice(),
+		dataPoints: pmetric.NewSummaryDataPointSlice(),
 		seen:       make(map[dataPointKey]bool),
 	}
 }
@@ -152,18 +153,18 @@ func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
 	}
 }
 
-// Build builds the pdata.Metric with the data points that were added
+// Build builds the pmetric.Metric with the data points that were added
 // with AddDataPoint.
-func (mb *metricBuilder) Build(metric pdata.Metric) {
+func (mb *metricBuilder) Build(metric pmetric.Metric) {
 	metric.SetName(mb.name)
 	metric.SetUnit(mb.unit)
-	metric.SetDataType(pdata.MetricDataTypeSummary)
+	metric.SetDataType(pmetric.MetricDataTypeSummary)
 	mb.dataPoints.MoveAndAppendTo(metric.Summary().DataPoints())
 }
 
 // toDataPoint converts a cWMetric into a pdata datapoint and attaches the
 // dimensions as attributes.
-func (mb *metricBuilder) toDataPoint(dp pdata.SummaryDataPoint, metric cWMetric) {
+func (mb *metricBuilder) toDataPoint(dp pmetric.SummaryDataPoint, metric cWMetric) {
 	dp.SetCount(uint64(metric.Value.Count))
 	dp.SetSum(metric.Value.Sum)
 	qv := dp.QuantileValues()
@@ -173,7 +174,7 @@ func (mb *metricBuilder) toDataPoint(dp pdata.SummaryDataPoint, metric cWMetric)
 	max := qv.AppendEmpty()
 	max.SetQuantile(1)
 	max.SetValue(metric.Value.Max)
-	dp.SetTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
 	for k, v := range metric.Dimensions {
 		dp.Attributes().InsertString(ToSemConvAttributeKey(k), v)
 	}

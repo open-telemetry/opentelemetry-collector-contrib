@@ -20,8 +20,11 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -73,7 +76,7 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 }
 
 // processTraces process traces and add k8s metadata using resource IP or incoming IP as pod origin.
-func (kp *kubernetesprocessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		kp.processResource(ctx, rss.At(i).Resource())
@@ -83,7 +86,7 @@ func (kp *kubernetesprocessor) processTraces(ctx context.Context, td pdata.Trace
 }
 
 // processMetrics process metrics and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
-func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		kp.processResource(ctx, rm.At(i).Resource())
@@ -93,7 +96,7 @@ func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pdata.Metr
 }
 
 // processLogs process logs and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
-func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
 		kp.processResource(ctx, rl.At(i).Resource())
@@ -103,7 +106,7 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld pdata.Logs) (
 }
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
-func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource) {
+func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
 	podIdentifierKey, podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	if podIdentifierKey != "" {
 		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
@@ -132,7 +135,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
-func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.Map, pod *kube.Pod) {
+func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *kube.Pod) {
 	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
 	if containerName == "" {
 		return
@@ -171,11 +174,11 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int
-func intFromAttribute(val pdata.Value) (int, error) {
+func intFromAttribute(val pcommon.Value) (int, error) {
 	switch val.Type() {
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return int(val.IntVal()), nil
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		i, err := strconv.Atoi(val.StringVal())
 		if err != nil {
 			return 0, err

@@ -26,8 +26,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -37,10 +40,10 @@ func TestCommonAttributes(t *testing.T) {
 		Version: "0.0.1",
 	}
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	resource.Attributes().InsertString("resource", "R1")
 
-	ilm := pdata.NewInstrumentationScope()
+	ilm := pcommon.NewInstrumentationScope()
 	ilm.SetName("test name")
 	ilm.SetVersion("test version")
 
@@ -53,7 +56,7 @@ func TestCommonAttributes(t *testing.T) {
 	assert.Equal(t, "test version", commonAttrs[conventions.OtelLibraryVersion])
 
 	assert.Equal(t, 1, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pdata.ValueTypeString}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pcommon.ValueTypeString}])
 }
 
 func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
@@ -62,9 +65,9 @@ func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
 		Version: "0.0.1",
 	}
 
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 
-	ilm := pdata.NewInstrumentationScope()
+	ilm := pcommon.NewInstrumentationScope()
 	ilm.SetName("test name")
 	ilm.SetVersion("test version")
 
@@ -82,14 +85,14 @@ func TestCaptureSpanMetadata(t *testing.T) {
 	tests := []struct {
 		name     string
 		err      error
-		spanFunc func() pdata.Span
+		spanFunc func() ptrace.Span
 		wantKey  spanStatsKey
 	}{
 		{
 			name: "no events or links",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("no events or links")
 				return s
 			},
@@ -98,9 +101,9 @@ func TestCaptureSpanMetadata(t *testing.T) {
 		},
 		{
 			name: "has events but no links",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetName("invalid SpanID")
 				s.Events().AppendEmpty()
 				return s
@@ -110,10 +113,10 @@ func TestCaptureSpanMetadata(t *testing.T) {
 		},
 		{
 			name: "no events but has links",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("no events but has links")
 				s.Links().AppendEmpty()
 				return s
@@ -122,11 +125,11 @@ func TestCaptureSpanMetadata(t *testing.T) {
 		},
 		{
 			name: "has events and links",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
-				s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+				s.SetParentSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("has events and links")
 				s.Events().AppendEmpty()
 				s.Links().AppendEmpty()
@@ -153,10 +156,10 @@ func TestCaptureSpanAttributeMetadata(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
 	transform := newTransformer(zap.NewNop(), nil, &details)
 
-	s := pdata.NewSpan()
-	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
-	s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s := ptrace.NewSpan()
+	s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetParentSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	s.SetName("test span")
 
 	se := s.Events().AppendEmpty()
@@ -168,18 +171,18 @@ func TestCaptureSpanAttributeMetadata(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpan, attributeType: pdata.ValueTypeInt}])
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpanEvent, attributeType: pdata.ValueTypeBool}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpan, attributeType: pcommon.ValueTypeInt}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpanEvent, attributeType: pcommon.ValueTypeBool}])
 }
 
 func TestDoesNotCaptureSpanAttributeMetadata(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
 	transform := newTransformer(zap.NewNop(), nil, &details)
 
-	s := pdata.NewSpan()
-	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-	s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
-	s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s := ptrace.NewSpan()
+	s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetParentSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	s.SetName("test span")
 	s.Events().AppendEmpty()
 
@@ -197,14 +200,14 @@ func TestTransformSpan(t *testing.T) {
 	tests := []struct {
 		name     string
 		err      error
-		spanFunc func() pdata.Span
+		spanFunc func() ptrace.Span
 		want     telemetry.Span
 	}{
 		{
 			name: "invalid TraceID",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("invalid TraceID")
 				return s
 			},
@@ -218,9 +221,9 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "invalid SpanID",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetName("invalid SpanID")
 				return s
 			},
@@ -234,10 +237,10 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "root",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("root")
 				return s
 			},
@@ -252,11 +255,11 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "client",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
-				s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+				s.SetParentSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("client")
 				return s
 			},
@@ -272,12 +275,12 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "error code",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
 				s.SetName("error code")
-				s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
-				s.Status().SetCode(pdata.StatusCodeError)
+				s.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
+				s.Status().SetCode(ptrace.StatusCodeError)
 				return s
 			},
 			want: telemetry.Span{
@@ -293,12 +296,12 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "error message",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
 				s.SetName("error message")
-				s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
-				s.Status().SetCode(pdata.StatusCodeError)
+				s.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
+				s.Status().SetCode(ptrace.StatusCodeError)
 				s.Status().SetMessage("error message")
 				return s
 			},
@@ -316,11 +319,11 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
 				s.SetName("attrs")
-				s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 4}))
+				s.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 4}))
 				s.Attributes().UpsertBool("prod", true)
 				s.Attributes().UpsertInt("weight", 10)
 				s.Attributes().UpsertDouble("score", 99.8)
@@ -343,13 +346,13 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "with timestamps",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
 				s.SetName("with time")
-				s.SetStartTimestamp(pdata.NewTimestampFromTime(now))
-				s.SetEndTimestamp(pdata.NewTimestampFromTime(now.Add(time.Second * 5)))
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Second * 5)))
 				return s
 			},
 			want: telemetry.Span{
@@ -364,12 +367,12 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "span kind server",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 6}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 6}))
 				s.SetName("span kind server")
-				s.SetKind(pdata.SpanKindServer)
+				s.SetKind(ptrace.SpanKindServer)
 				return s
 			},
 			want: telemetry.Span{
@@ -385,15 +388,15 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "with events",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 7}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 7}))
 				s.SetName("with events")
 
 				event := s.Events().AppendEmpty()
 				event.SetName("this is the event name")
-				event.SetTimestamp(pdata.NewTimestampFromTime(now))
+				event.SetTimestamp(pcommon.NewTimestampFromTime(now))
 				return s
 			},
 			want: telemetry.Span{
@@ -413,10 +416,10 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "with dropped attributes",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 8}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 8}))
 				s.SetName("with dropped attributes")
 				s.SetDroppedAttributesCount(2)
 				return s
@@ -434,10 +437,10 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "with dropped events",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 9}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 9}))
 				s.SetName("with dropped events")
 				s.SetDroppedEventsCount(3)
 				return s
@@ -455,17 +458,17 @@ func TestTransformSpan(t *testing.T) {
 		},
 		{
 			name: "with dropped attributes on events",
-			spanFunc: func() pdata.Span {
-				s := pdata.NewSpan()
-				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 10}))
+			spanFunc: func() ptrace.Span {
+				s := ptrace.NewSpan()
+				s.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 10}))
 				s.SetName("with dropped attributes on events")
 
-				ev := pdata.NewSpanEventSlice()
+				ev := ptrace.NewSpanEventSlice()
 				ev.EnsureCapacity(1)
 				event := ev.AppendEmpty()
 				event.SetName("this is the event name")
-				event.SetTimestamp(pdata.NewTimestampFromTime(now))
+				event.SetTimestamp(pcommon.NewTimestampFromTime(now))
 				event.SetDroppedAttributesCount(1)
 				tgt := s.Events().AppendEmpty()
 				event.CopyTo(tgt)
@@ -503,14 +506,14 @@ func TestTransformSpan(t *testing.T) {
 	}
 }
 
-func testTransformMetric(t *testing.T, metric pdata.Metric, want []telemetry.Metric) {
+func testTransformMetric(t *testing.T, metric pmetric.Metric, want []telemetry.Metric) {
 	comparer := func(t *testing.T, want []telemetry.Metric, got []telemetry.Metric) {
 		assert.Equal(t, want, got)
 	}
 	testTransformMetricWithComparer(t, metric, want, comparer)
 }
 
-func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []telemetry.Metric, compare func(t *testing.T, want []telemetry.Metric, got []telemetry.Metric)) {
+func testTransformMetricWithComparer(t *testing.T, metric pmetric.Metric, want []telemetry.Metric, compare func(t *testing.T, want []telemetry.Metric, got []telemetry.Metric)) {
 	details := newMetricMetadata(context.Background())
 	transform := newTransformer(zap.NewNop(), &component.BuildInfo{
 		Command: testCollectorName,
@@ -527,7 +530,7 @@ func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []t
 	}
 }
 
-func testTransformMetricWithError(t *testing.T, metric pdata.Metric, expectedErrorType interface{}) {
+func testTransformMetricWithError(t *testing.T, metric pmetric.Metric, expectedErrorType interface{}) {
 	details := newMetricMetadata(context.Background())
 	transform := newTransformer(zap.NewNop(), &component.BuildInfo{
 		Command: testCollectorName,
@@ -544,7 +547,7 @@ func testTransformMetricWithError(t *testing.T, metric pdata.Metric, expectedErr
 }
 
 func TestTransformGauge(t *testing.T) {
-	ts := pdata.NewTimestampFromTime(time.Unix(1, 0))
+	ts := pcommon.NewTimestampFromTime(time.Unix(1, 0))
 	expected := []telemetry.Metric{
 		telemetry.Gauge{
 			Name:      "gauge",
@@ -557,11 +560,11 @@ func TestTransformGauge(t *testing.T) {
 		},
 	}
 	{
-		m := pdata.NewMetric()
+		m := pmetric.NewMetric()
 		m.SetName("gauge")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		gd := m.Gauge()
 		dp := gd.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
@@ -569,11 +572,11 @@ func TestTransformGauge(t *testing.T) {
 		t.Run("Double", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
-		m := pdata.NewMetric()
+		m := pmetric.NewMetric()
 		m.SetName("gauge")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		gi := m.Gauge()
 		dp := gi.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
@@ -583,8 +586,8 @@ func TestTransformGauge(t *testing.T) {
 }
 
 func TestTransformSum(t *testing.T) {
-	start := pdata.NewTimestampFromTime(time.Unix(1, 0))
-	end := pdata.NewTimestampFromTime(time.Unix(3, 0))
+	start := pcommon.NewTimestampFromTime(time.Unix(1, 0))
+	end := pcommon.NewTimestampFromTime(time.Unix(3, 0))
 
 	expected := []telemetry.Metric{
 		telemetry.Count{
@@ -612,13 +615,13 @@ func TestTransformSum(t *testing.T) {
 	}
 
 	{
-		m := pdata.NewMetric()
+		m := pmetric.NewMetric()
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeSum)
+		m.SetDataType(pmetric.MetricDataTypeSum)
 		d := m.Sum()
-		d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+		d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
@@ -626,13 +629,13 @@ func TestTransformSum(t *testing.T) {
 		t.Run("Sum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
-		m := pdata.NewMetric()
+		m := pmetric.NewMetric()
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeSum)
+		m.SetDataType(pmetric.MetricDataTypeSum)
 		d := m.Sum()
-		d.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
@@ -640,13 +643,13 @@ func TestTransformSum(t *testing.T) {
 		t.Run("Sum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
 	}
 	{
-		m := pdata.NewMetric()
+		m := pmetric.NewMetric()
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeSum)
+		m.SetDataType(pmetric.MetricDataTypeSum)
 		d := m.Sum()
-		d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+		d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
@@ -654,13 +657,13 @@ func TestTransformSum(t *testing.T) {
 		t.Run("IntSum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
-		m := pdata.NewMetric()
+		m := pmetric.NewMetric()
 		m.SetName("sum")
 		m.SetDescription("description")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeSum)
+		m.SetDataType(pmetric.MetricDataTypeSum)
 		d := m.Sum()
-		d.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
@@ -677,8 +680,8 @@ func TestTransformDeltaSummary(t *testing.T) {
 }
 
 func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count uint64, sum float64, min float64, max float64) {
-	start := pdata.NewTimestampFromTime(time.Unix(1, 0))
-	end := pdata.NewTimestampFromTime(time.Unix(3, 0))
+	start := pcommon.NewTimestampFromTime(time.Unix(1, 0))
+	end := pcommon.NewTimestampFromTime(time.Unix(3, 0))
 
 	expected := []telemetry.Metric{
 		telemetry.Summary{
@@ -724,11 +727,11 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 		}
 	}
 
-	m := pdata.NewMetric()
+	m := pmetric.NewMetric()
 	m.SetName("summary")
 	m.SetDescription("description")
 	m.SetUnit("s")
-	m.SetDataType(pdata.MetricDataTypeSummary)
+	m.SetDataType(pmetric.MetricDataTypeSummary)
 	ds := m.Summary()
 	dp := ds.DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
@@ -752,14 +755,14 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 }
 
 func TestUnsupportedMetricTypes(t *testing.T) {
-	start := pdata.NewTimestampFromTime(time.Unix(1, 0))
-	end := pdata.NewTimestampFromTime(time.Unix(3, 0))
+	start := pcommon.NewTimestampFromTime(time.Unix(1, 0))
+	end := pcommon.NewTimestampFromTime(time.Unix(3, 0))
 	{
-		m := pdata.NewMetric()
+		m := pmetric.NewMetric()
 		m.SetName("no")
 		m.SetDescription("no")
 		m.SetUnit("1")
-		m.SetDataType(pdata.MetricDataTypeHistogram)
+		m.SetDataType(pmetric.MetricDataTypeHistogram)
 		h := m.Histogram()
 		dp := h.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
@@ -768,7 +771,7 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		dp.SetSum(8.0)
 		dp.SetExplicitBounds([]float64{3, 7, 11})
 		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
-		h.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+		h.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 
 		t.Run("DoubleHistogram", func(t *testing.T) {
 			testTransformMetricWithError(t, m, consumererror.NewPermanent(&errUnsupportedMetricType{}))
@@ -777,7 +780,7 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 }
 
 func TestTransformUnknownMetricType(t *testing.T) {
-	metric := pdata.NewMetric()
+	metric := pmetric.NewMetric()
 	details := newMetricMetadata(context.Background())
 	transform := newTransformer(zap.NewNop(), &component.BuildInfo{
 		Command: testCollectorName,
@@ -788,20 +791,20 @@ func TestTransformUnknownMetricType(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Nil(t, got)
-	assert.Equal(t, 1, details.metricMetadataCount[metricStatsKey{MetricType: pdata.MetricDataTypeNone}])
+	assert.Equal(t, 1, details.metricMetadataCount[metricStatsKey{MetricType: pmetric.MetricDataTypeNone}])
 }
 
 func TestTransformer_Log(t *testing.T) {
 	tests := []struct {
 		name    string
-		logFunc func() pdata.LogRecord
+		logFunc func() plog.LogRecord
 		want    telemetry.Log
 	}{
 		{
 			name: "Basic Conversion",
-			logFunc: func() pdata.LogRecord {
-				log := pdata.NewLogRecord()
-				timestamp := pdata.NewTimestampFromTime(time.Unix(0, 0).UTC())
+			logFunc: func() plog.LogRecord {
+				log := plog.NewLogRecord()
+				timestamp := pcommon.NewTimestampFromTime(time.Unix(0, 0).UTC())
 				log.SetTimestamp(timestamp)
 				return log
 			},
@@ -813,8 +816,8 @@ func TestTransformer_Log(t *testing.T) {
 		},
 		{
 			name: "With Log attributes",
-			logFunc: func() pdata.LogRecord {
-				log := pdata.NewLogRecord()
+			logFunc: func() plog.LogRecord {
+				log := plog.NewLogRecord()
 				log.Attributes().InsertString("foo", "bar")
 				log.Body().SetStringVal("Hello World")
 				return log
@@ -827,9 +830,9 @@ func TestTransformer_Log(t *testing.T) {
 		},
 		{
 			name: "With severity number",
-			logFunc: func() pdata.LogRecord {
-				log := pdata.NewLogRecord()
-				log.SetSeverityNumber(pdata.SeverityNumberWARN)
+			logFunc: func() plog.LogRecord {
+				log := plog.NewLogRecord()
+				log.SetSeverityNumber(plog.SeverityNumberWARN)
 				log.Body().SetStringVal("bloopbleep")
 				return log
 			},
@@ -841,8 +844,8 @@ func TestTransformer_Log(t *testing.T) {
 		},
 		{
 			name: "With severity text",
-			logFunc: func() pdata.LogRecord {
-				log := pdata.NewLogRecord()
+			logFunc: func() plog.LogRecord {
+				log := plog.NewLogRecord()
 				log.SetSeverityText("SEVERE")
 				log.Body().SetStringVal("bloopbleep")
 				return log
@@ -855,11 +858,11 @@ func TestTransformer_Log(t *testing.T) {
 		},
 		{
 			name: "With traceID and spanID",
-			logFunc: func() pdata.LogRecord {
-				log := pdata.NewLogRecord()
-				timestamp := pdata.NewTimestampFromTime(time.Unix(0, 0).UTC())
-				log.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-				log.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+			logFunc: func() plog.LogRecord {
+				log := plog.NewLogRecord()
+				timestamp := pcommon.NewTimestampFromTime(time.Unix(0, 0).UTC())
+				log.SetTraceID(pcommon.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				log.SetSpanID(pcommon.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				log.SetTimestamp(timestamp)
 				return log
 			},
@@ -874,9 +877,9 @@ func TestTransformer_Log(t *testing.T) {
 		},
 		{
 			name: "With dropped attribute count",
-			logFunc: func() pdata.LogRecord {
-				log := pdata.NewLogRecord()
-				timestamp := pdata.NewTimestampFromTime(time.Unix(0, 0).UTC())
+			logFunc: func() plog.LogRecord {
+				log := plog.NewLogRecord()
+				timestamp := pcommon.NewTimestampFromTime(time.Unix(0, 0).UTC())
 				log.SetTimestamp(timestamp)
 				log.SetDroppedAttributesCount(4)
 				return log
@@ -901,7 +904,7 @@ func TestTransformer_Log(t *testing.T) {
 }
 
 func TestCaptureLogAttributeMetadata(t *testing.T) {
-	log := pdata.NewLogRecord()
+	log := plog.NewLogRecord()
 	log.Attributes().InsertString("foo", "bar")
 	log.Body().SetStringVal("Hello World")
 
@@ -911,11 +914,11 @@ func TestCaptureLogAttributeMetadata(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationLog, attributeType: pdata.ValueTypeString}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationLog, attributeType: pcommon.ValueTypeString}])
 }
 
 func TestDoesNotCaptureLogAttributeMetadata(t *testing.T) {
-	log := pdata.NewLogRecord()
+	log := plog.NewLogRecord()
 	log.Body().SetStringVal("Hello World")
 
 	details := newLogMetadata(context.TODO())

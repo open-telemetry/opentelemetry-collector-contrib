@@ -17,16 +17,16 @@ package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetr
 import (
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
-func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pdata.Resource {
-	resource := pdata.NewResource()
+func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pcommon.Resource {
+	resource := pcommon.NewResource()
 
 	image, err := docker.ParseImageName(cm.Image)
 	if err != nil {
@@ -51,8 +51,8 @@ func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pdata.R
 	return resource
 }
 
-func taskResource(tm ecsutil.TaskMetadata) pdata.Resource {
-	resource := pdata.NewResource()
+func taskResource(tm ecsutil.TaskMetadata) pcommon.Resource {
+	resource := pcommon.NewResource()
 	region, accountID, taskID := getResourceFromARN(tm.TaskARN)
 	resource.Attributes().UpsertString(attributeECSCluster, getNameFromCluster(tm.Cluster))
 	resource.Attributes().UpsertString(conventions.AttributeAWSECSTaskARN, tm.TaskARN)

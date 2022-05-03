@@ -16,8 +16,8 @@ package correlation // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 var (
@@ -26,7 +26,7 @@ var (
 )
 
 type spanWrap struct {
-	pdata.ResourceSpans
+	ptrace.ResourceSpans
 }
 
 func (s spanWrap) Environment() (string, bool) {
@@ -72,7 +72,7 @@ func (s spanWrap) NumTags() int {
 }
 
 type spanListWrap struct {
-	pdata.ResourceSpansSlice
+	ptrace.ResourceSpansSlice
 }
 
 func (s spanListWrap) Len() int {

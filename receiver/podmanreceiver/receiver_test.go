@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
@@ -105,13 +105,13 @@ func (c mockClient) ping(context.Context) error {
 	return nil
 }
 
-type mockConsumer chan pdata.Metrics
+type mockConsumer chan pmetric.Metrics
 
 func (m mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
-func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	m <- md
 	return nil
 }

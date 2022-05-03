@@ -17,8 +17,9 @@ package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"strconv"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
@@ -26,10 +27,10 @@ const (
 	defaultServiceInstance = "otel-collector-instance"
 )
 
-func resourceToMetricLabels(resource pdata.Resource) []*metricpb.Label {
+func resourceToMetricLabels(resource pcommon.Resource) []*metricpb.Label {
 	attrs := resource.Attributes()
 	labels := make([]*metricpb.Label, 0, attrs.Len())
-	attrs.Range(func(k string, v pdata.Value) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		labels = append(labels,
 			&metricpb.Label{
 				Name:  k,
@@ -40,7 +41,7 @@ func resourceToMetricLabels(resource pdata.Resource) []*metricpb.Label {
 	return labels
 }
 
-func resourceToServiceInfo(resource pdata.Resource) (service string, serviceInstance string) {
+func resourceToServiceInfo(resource pcommon.Resource) (service string, serviceInstance string) {
 	attrs := resource.Attributes()
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		service = serviceName.AsString()
@@ -55,13 +56,13 @@ func resourceToServiceInfo(resource pdata.Resource) (service string, serviceInst
 	return service, serviceInstance
 }
 
-func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
+func numberMetricsToData(name string, data pmetric.NumberDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
 	metrics = make([]*metricpb.MeterData, 0, data.Len())
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.Value) bool {
+		attributeMap.Range(func(k string, v pcommon.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})
@@ -75,9 +76,9 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 		meterData.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
 		sv.SingleValue.Name = name
 		switch dataPoint.ValueType() {
-		case pdata.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			sv.SingleValue.Value = float64(dataPoint.IntVal())
-		case pdata.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			sv.SingleValue.Value = dataPoint.DoubleVal()
 		}
 		meterData.Metric = sv
@@ -86,13 +87,13 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 	return metrics
 }
 
-func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
+func doubleHistogramMetricsToData(name string, data pmetric.HistogramDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
 	metrics = make([]*metricpb.MeterData, 0, 3*data.Len())
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.Value) bool {
+		attributeMap.Range(func(k string, v pcommon.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})
@@ -140,13 +141,13 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 	return metrics
 }
 
-func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
+func doubleSummaryMetricsToData(name string, data pmetric.SummaryDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
 	metrics = make([]*metricpb.MeterData, 0, 3*data.Len())
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.Value) bool {
+		attributeMap.Range(func(k string, v pcommon.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})
@@ -192,24 +193,24 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 	return metrics
 }
 
-func metricDataToSwMetricData(md pdata.Metric, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
+func metricDataToSwMetricData(md pmetric.Metric, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
 	switch md.DataType() {
-	case pdata.MetricDataTypeNone:
+	case pmetric.MetricDataTypeNone:
 		break
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		return numberMetricsToData(md.Name(), md.Gauge().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		return numberMetricsToData(md.Name(), md.Sum().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		return doubleHistogramMetricsToData(md.Name(), md.Histogram().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		return doubleSummaryMetricsToData(md.Name(), md.Summary().DataPoints(), defaultLabels)
 	}
 	return nil
 }
 
 func metricsRecordToMetricData(
-	md pdata.Metrics,
+	md pmetric.Metrics,
 ) (metrics *metricpb.MeterDataCollection) {
 	resMetrics := md.ResourceMetrics()
 	for i := 0; i < resMetrics.Len(); i++ {

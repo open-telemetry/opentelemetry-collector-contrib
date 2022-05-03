@@ -28,7 +28,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -71,7 +73,7 @@ const minCompressionLen = 1500
 
 func (c *client) pushMetricsData(
 	ctx context.Context,
-	md pdata.Metrics,
+	md pmetric.Metrics,
 ) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
@@ -117,7 +119,7 @@ func (c *client) pushMetricsData(
 
 func (c *client) pushTraceData(
 	ctx context.Context,
-	td pdata.Traces,
+	td ptrace.Traces,
 ) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
@@ -169,7 +171,7 @@ func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Ev
 	return c.postEvents(ctx, body, nil, compressed)
 }
 
-func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
+func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
@@ -226,7 +228,7 @@ var profilingHeaders = map[string]string{
 	libraryHeaderName: profilingLibraryName,
 }
 
-func isProfilingData(sl pdata.ScopeLogs) bool {
+func isProfilingData(sl plog.ScopeLogs) bool {
 	return sl.Scope().Name() == profilingLibraryName
 }
 
@@ -252,12 +254,13 @@ func makeBlankBufferState(bufCap uint) bufferState {
 // ld log records are parsed to Splunk events.
 // The input data may contain both logs and profiling data.
 // They are batched separately and sent with different HTTP headers
-func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer, map[string]string) error) error {
+func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send func(context.Context, *bytes.Buffer, map[string]string) error) error {
 	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
 	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
+	var droppedProfilingDataRecords, droppedLogRecords int
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
@@ -265,25 +268,40 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 			var newPermanentErrors []error
 
 			if isProfilingData(ills.At(j)) {
+				if !c.config.ProfilingDataEnabled {
+					droppedProfilingDataRecords += ills.At(j).LogRecords().Len()
+					continue
+				}
 				profilingBufState.resource, profilingBufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &profilingBufState, profilingHeaders, send)
 			} else {
+				if !c.config.LogDataEnabled {
+					droppedLogRecords += ills.At(j).LogRecords().Len()
+					continue
+				}
 				bufState.resource, bufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &bufState, nil, send)
 			}
 
 			if err != nil {
-				return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+				return consumererror.NewLogs(err, *c.subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
 	}
 
+	if droppedProfilingDataRecords != 0 {
+		c.logger.Debug("Profiling data is not allowed", zap.Int("dropped_records", droppedProfilingDataRecords))
+	}
+	if droppedLogRecords != 0 {
+		c.logger.Debug("Log data is not allowed", zap.Int("dropped_records", droppedLogRecords))
+	}
+
 	// There's some leftover unsent non-profiling data
 	if bufState.buf.Len() > 0 {
 		if err := send(ctx, bufState.buf, nil); err != nil {
-			return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, *c.subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
 		}
 	}
 
@@ -291,14 +309,14 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 	if profilingBufState.buf.Len() > 0 {
 		if err := send(ctx, profilingBufState.buf, profilingHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, *c.subLogs(&ld, nil, profilingBufState.bufFront))
 		}
 	}
 
 	return multierr.Combine(permanentErrors...)
 }
 
-func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
+func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
 	res := lds.At(state.resource)
 	logs := res.ScopeLogs().At(state.library).LogRecords()
 	bufCap := int(c.config.MaxContentLengthLogs)
@@ -363,7 +381,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 	return permanentErrors, nil
 }
 
-func (c *client) pushMetricsRecords(ctx context.Context, mds pdata.ResourceMetricsSlice, state *bufferState, send func(context.Context, *bytes.Buffer) error) (permanentErrors []error, sendingError error) {
+func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMetricsSlice, state *bufferState, send func(context.Context, *bytes.Buffer) error) (permanentErrors []error, sendingError error) {
 	res := mds.At(state.resource)
 	metrics := res.ScopeMetrics().At(state.library).Metrics()
 	bufCap := int(c.config.MaxContentLengthMetrics)
@@ -430,7 +448,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pdata.ResourceMetri
 	return permanentErrors, nil
 }
 
-func (c *client) pushTracesData(ctx context.Context, tds pdata.ResourceSpansSlice, state *bufferState, send func(context.Context, *bytes.Buffer) error) (permanentErrors []error, sendingError error) {
+func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSlice, state *bufferState, send func(context.Context, *bytes.Buffer) error) (permanentErrors []error, sendingError error) {
 	res := tds.At(state.resource)
 	spans := res.ScopeSpans().At(state.library).Spans()
 	bufCap := int(c.config.MaxContentLengthTraces)
@@ -498,7 +516,7 @@ func (c *client) pushTracesData(ctx context.Context, tds pdata.ResourceSpansSlic
 // pushMetricsDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
-func (c *client) pushMetricsDataInBatches(ctx context.Context, md pdata.Metrics, send func(context.Context, *bytes.Buffer) error) error {
+func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, send func(context.Context, *bytes.Buffer) error) error {
 	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics)
 	var permanentErrors []error
 
@@ -533,7 +551,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pdata.Metrics,
 // pushTracesDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
-func (c *client) pushTracesDataInBatches(ctx context.Context, td pdata.Traces, send func(context.Context, *bytes.Buffer) error) error {
+func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, send func(context.Context, *bytes.Buffer) error) error {
 	var bufState = makeBlankBufferState(c.config.MaxContentLengthTraces)
 	var permanentErrors []error
 
@@ -600,43 +618,47 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[s
 
 // subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data
 // plus starting from `bufFront` for non-profiling data. Both can be nil, in which case they are ignored
-func subLogs(ld *pdata.Logs, bufFront *index, profilingBufFront *index) *pdata.Logs {
+func (c *client) subLogs(ld *plog.Logs, bufFront *index, profilingBufFront *index) *plog.Logs {
 	if ld == nil {
 		return ld
 	}
 
-	subset := pdata.NewLogs()
-	subLogsByType(ld, bufFront, &subset, false)
-	subLogsByType(ld, profilingBufFront, &subset, true)
+	subset := plog.NewLogs()
+	if c.config.LogDataEnabled {
+		subLogsByType(ld, bufFront, &subset, false)
+	}
+	if c.config.ProfilingDataEnabled {
+		subLogsByType(ld, profilingBufFront, &subset, true)
+	}
 
 	return &subset
 }
 
 // subMetrics returns a subset of `md`starting from `bufFront`. It can be nil, in which case it is ignored
-func subMetrics(md *pdata.Metrics, bufFront *index) *pdata.Metrics {
+func subMetrics(md *pmetric.Metrics, bufFront *index) *pmetric.Metrics {
 	if md == nil {
 		return md
 	}
 
-	subset := pdata.NewMetrics()
+	subset := pmetric.NewMetrics()
 	subMetricsByType(md, bufFront, &subset)
 
 	return &subset
 }
 
 // subTraces returns a subset of `td`starting from `bufFront`. It can be nil, in which case it is ignored
-func subTraces(td *pdata.Traces, bufFront *index) *pdata.Traces {
+func subTraces(td *ptrace.Traces, bufFront *index) *ptrace.Traces {
 	if td == nil {
 		return td
 	}
 
-	subset := pdata.NewTraces()
+	subset := ptrace.NewTraces()
 	subTracesByType(td, bufFront, &subset)
 
 	return &subset
 }
 
-func subLogsByType(src *pdata.Logs, from *index, dst *pdata.Logs, profiling bool) {
+func subLogsByType(src *plog.Logs, from *index, dst *plog.Logs, profiling bool) {
 	if from == nil {
 		return // All the data of this type was sent successfully
 	}
@@ -683,7 +705,7 @@ func subLogsByType(src *pdata.Logs, from *index, dst *pdata.Logs, profiling bool
 	}
 }
 
-func subMetricsByType(src *pdata.Metrics, from *index, dst *pdata.Metrics) {
+func subMetricsByType(src *pmetric.Metrics, from *index, dst *pmetric.Metrics) {
 	if from == nil {
 		return // All the data of this type was sent successfully
 	}
@@ -725,7 +747,7 @@ func subMetricsByType(src *pdata.Metrics, from *index, dst *pdata.Metrics) {
 	}
 }
 
-func subTracesByType(src *pdata.Traces, from *index, dst *pdata.Traces) {
+func subTracesByType(src *ptrace.Traces, from *index, dst *ptrace.Traces) {
 	if from == nil {
 		return // All the data of this type was sent successfully
 	}

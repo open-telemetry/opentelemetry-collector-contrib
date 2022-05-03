@@ -17,21 +17,20 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
-	metadata Metadata, typeStr string,
-	metricGroupsToCollect map[MetricGroup]bool) []pdata.Metrics {
+	metadata Metadata,
+	metricGroupsToCollect map[MetricGroup]bool) []pmetric.Metrics {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
 		time:                  time.Now(),
-		typeStr:               typeStr,
 	}
 
 	acc.nodeStats(summary.Node)

@@ -22,11 +22,23 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
+
+// setSanitizeLabelFeatureGateForTest changes the dropSanitizationGate feature gate during a test.
+// usage: defer setSanitizeLabelFeatureGateForTest(true)()
+func setSanitizeLabelFeatureGateForTest(enabled bool) func() {
+	originalValue := featuregate.GetRegistry().IsEnabled(dropSanitization)
+	featuregate.GetRegistry().Apply(map[string]bool{dropSanitization: enabled})
+	return func() {
+		featuregate.GetRegistry().Apply(map[string]bool{dropSanitization: originalValue})
+	}
+}
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
 // otherwise.
@@ -35,7 +47,7 @@ func Test_validateMetrics(t *testing.T) {
 	// define a single test
 	type combTest struct {
 		name   string
-		metric pdata.Metric
+		metric pmetric.Metric
 		want   bool
 	}
 
@@ -77,7 +89,7 @@ func Test_validateMetrics(t *testing.T) {
 // case.
 func Test_addSample(t *testing.T) {
 	type testCase struct {
-		metric pdata.Metric
+		metric pmetric.Metric
 		sample prompb.Sample
 		labels []prompb.Label
 	}
@@ -141,7 +153,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 	tests := []struct {
 		name   string
 		lbs    []prompb.Label
-		metric pdata.Metric
+		metric pmetric.Metric
 		want   string
 	}{
 		{
@@ -184,15 +196,15 @@ func Test_timeSeriesSignature(t *testing.T) {
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
-		resource       pdata.Resource
-		orig           pdata.Map
+		resource       pcommon.Resource
+		orig           pcommon.Map
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
 	}{
 		{
 			"labels_clean",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -200,9 +212,9 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_resource",
-			getResource(map[string]pdata.Value{
-				"service.name":        pdata.NewValueString("prometheus"),
-				"service.instance.id": pdata.NewValueString("127.0.0.1:8080"),
+			getResource(map[string]pcommon.Value{
+				"service.name":        pcommon.NewValueString("prometheus"),
+				"service.instance.id": pcommon.NewValueString("127.0.0.1:8080"),
 			}),
 			lbs1,
 			map[string]string{},
@@ -211,9 +223,9 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_nonstring_resource",
-			getResource(map[string]pdata.Value{
-				"service.name":        pdata.NewValueInt(12345),
-				"service.instance.id": pdata.NewValueBool(true),
+			getResource(map[string]pcommon.Value{
+				"service.name":        pcommon.NewValueInt(12345),
+				"service.instance.id": pcommon.NewValueBool(true),
 			}),
 			lbs1,
 			map[string]string{},
@@ -222,7 +234,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_duplicate_in_extras",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs1,
 			map[string]string{},
 			[]string{label11, value31},
@@ -230,7 +242,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_dirty",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
@@ -238,15 +250,15 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"no_original_case",
-			getResource(map[string]pdata.Value{}),
-			pdata.NewMap(),
+			getResource(map[string]pcommon.Value{}),
+			pcommon.NewMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
 		},
 		{
 			"empty_extra_case",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs1,
 			map[string]string{},
 			[]string{"", ""},
@@ -254,7 +266,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"single_left_over_case",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32},
@@ -262,7 +274,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"valid_external_labels",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs1,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -270,7 +282,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"overwritten_external_labels",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbs1,
 			exlbs2,
 			[]string{label31, value31, label32, value32},
@@ -278,11 +290,46 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"colliding attributes",
-			getResource(map[string]pdata.Value{}),
+			getResource(map[string]pcommon.Value{}),
 			lbsColliding,
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
+		},
+		{
+			"sanitize_labels_starts_with_underscore",
+			getResource(map[string]pcommon.Value{}),
+			lbs3,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, keyStr+label51, value51, label41, value41, label31, value31, label32, value32),
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+		})
+	}
+}
+
+func Test_createLabelSetDropSanitization(t *testing.T) {
+	defer setSanitizeLabelFeatureGateForTest(true)()
+	tests := []struct {
+		name           string
+		resource       pcommon.Resource
+		orig           pcommon.Map
+		externalLabels map[string]string
+		extras         []string
+		want           []prompb.Label
+	}{
+		{
+			"donot_sanitize_labels_starts_with_underscore",
+			getResource(map[string]pcommon.Value{}),
+			lbs3,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
@@ -299,7 +346,7 @@ func Test_createLabelSet(t *testing.T) {
 func Test_getPromMetricName(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric pdata.Metric
+		metric pmetric.Metric
 		ns     string
 		want   string
 	}{
@@ -422,7 +469,7 @@ func Test_getPromExemplars(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
 		name      string
-		histogram *pdata.HistogramDataPoint
+		histogram *pmetric.HistogramDataPoint
 		expected  []prompb.Exemplar
 	}{
 		{
@@ -501,18 +548,18 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		conventions.AttributeServiceInstanceID: "service-instance-id",
 		"resource_attr":                        "resource-attr-val-1",
 	}
-	resourceWithServiceAttrs := pdata.NewResource()
-	pdata.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithServiceAttrs.Attributes())
+	resourceWithServiceAttrs := pcommon.NewResource()
+	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithServiceAttrs.Attributes())
 	for _, tc := range []struct {
 		desc      string
-		resource  pdata.Resource
+		resource  pcommon.Resource
 		settings  Settings
-		timestamp pdata.Timestamp
+		timestamp pcommon.Timestamp
 		expected  map[string]*prompb.TimeSeries
 	}{
 		{
 			desc:     "empty resource",
-			resource: pdata.NewResource(),
+			resource: pcommon.NewResource(),
 			expected: map[string]*prompb.TimeSeries{},
 		},
 		{
@@ -609,19 +656,19 @@ func TestAddResourceTargetInfo(t *testing.T) {
 }
 
 func TestMostRecentTimestampInMetric(t *testing.T) {
-	laterTimestamp := pdata.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
-	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
+	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// the first datapoint timestamp is at testdata.TestMetricTime
 	metricMultipleTimestamps.Sum().DataPoints().At(1).SetTimestamp(laterTimestamp)
 	for _, tc := range []struct {
 		desc     string
-		input    pdata.Metric
-		expected pdata.Timestamp
+		input    pmetric.Metric
+		expected pcommon.Timestamp
 	}{
 		{
 			desc:     "empty",
-			input:    pdata.NewMetric(),
-			expected: pdata.Timestamp(0),
+			input:    pmetric.NewMetric(),
+			expected: pcommon.Timestamp(0),
 		},
 		{
 			desc:     "multiple timestamps",

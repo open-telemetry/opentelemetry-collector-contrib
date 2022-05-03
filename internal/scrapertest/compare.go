@@ -18,17 +18,17 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
 
 // CompareOption is applied by the CompareMetricSlices function
 // to mutates an expected and/or actual result before comparing.
 type CompareOption interface {
-	apply(expected, actual pdata.Metrics)
+	apply(expected, actual pmetric.Metrics)
 }
 
-func CompareMetrics(expected, actual pdata.Metrics, options ...CompareOption) error {
+func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) error {
 	expected, actual = expected.Clone(), actual.Clone()
 
 	for _, option := range options {
@@ -43,7 +43,7 @@ func CompareMetrics(expected, actual pdata.Metrics, options ...CompareOption) er
 	numResources := expectedMetrics.Len()
 
 	// Keep track of matching resources so that each can only be matched once
-	matchingResources := make(map[pdata.ResourceMetrics]pdata.ResourceMetrics, numResources)
+	matchingResources := make(map[pmetric.ResourceMetrics]pmetric.ResourceMetrics, numResources)
 
 	var errs error
 	for e := 0; e < numResources; e++ {
@@ -85,7 +85,7 @@ func CompareMetrics(expected, actual pdata.Metrics, options ...CompareOption) er
 	return errs
 }
 
-func CompareResourceMetrics(expected, actual pdata.ResourceMetrics) error {
+func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 	eilms := expected.ScopeMetrics()
 	ailms := actual.ScopeMetrics()
 
@@ -117,7 +117,7 @@ func CompareResourceMetrics(expected, actual pdata.ResourceMetrics) error {
 // CompareMetricSlices compares each part of two given MetricSlices and returns
 // an error if they don't match. The error describes what didn't match. The
 // expected and actual values are clones before options are applied.
-func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
+func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 	if expected.Len() != actual.Len() {
 		return fmt.Errorf("metric slices not of same length")
 	}
@@ -154,14 +154,14 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 			return fmt.Errorf("metric DataType does not match expected: %s, actual: %s", expectedMetric.DataType(), actualMetric.DataType())
 		}
 
-		var expectedDataPoints pdata.NumberDataPointSlice
-		var actualDataPoints pdata.NumberDataPointSlice
+		var expectedDataPoints pmetric.NumberDataPointSlice
+		var actualDataPoints pmetric.NumberDataPointSlice
 
 		switch actualMetric.DataType() {
-		case pdata.MetricDataTypeGauge:
+		case pmetric.MetricDataTypeGauge:
 			expectedDataPoints = expectedMetric.Gauge().DataPoints()
 			actualDataPoints = actualMetric.Gauge().DataPoints()
-		case pdata.MetricDataTypeSum:
+		case pmetric.MetricDataTypeSum:
 			if actualMetric.Sum().AggregationTemporality() != expectedMetric.Sum().AggregationTemporality() {
 				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expectedMetric.Sum().AggregationTemporality(), actualMetric.Sum().AggregationTemporality())
 			}
@@ -181,7 +181,7 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice) error {
 
 // CompareNumberDataPointSlices compares each part of two given NumberDataPointSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) error {
+func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice) error {
 	if expected.Len() != actual.Len() {
 		return fmt.Errorf("length of datapoints don't match")
 	}
@@ -189,7 +189,7 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 	numPoints := expected.Len()
 
 	// Keep track of matching data points so that each point can only be matched once
-	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, numPoints)
+	matchingDPS := make(map[pmetric.NumberDataPoint]pmetric.NumberDataPoint, numPoints)
 
 	var errs error
 	for e := 0; e < numPoints; e++ {
@@ -232,7 +232,7 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 
 // CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPoints(expected, actual pdata.NumberDataPoint) error {
+func CompareNumberDataPoints(expected, actual pmetric.NumberDataPoint) error {
 	if expected.ValueType() != actual.ValueType() {
 		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(expected.ValueType()), numberTypeToString(actual.ValueType()))
 	}
@@ -245,11 +245,11 @@ func CompareNumberDataPoints(expected, actual pdata.NumberDataPoint) error {
 	return nil
 }
 
-func numberTypeToString(t pdata.MetricValueType) string {
+func numberTypeToString(t pmetric.NumberDataPointValueType) string {
 	switch t {
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return "int"
-	case pdata.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return "double"
 	default:
 		return "none"

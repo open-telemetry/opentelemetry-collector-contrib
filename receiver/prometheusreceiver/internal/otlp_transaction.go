@@ -26,8 +26,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +40,7 @@ type transactionPdata struct {
 	startTimeMetricRegex string
 	sink                 consumer.Metrics
 	externalLabels       labels.Labels
-	nodeResource         *pdata.Resource
+	nodeResource         *pcommon.Resource
 	logger               *zap.Logger
 	receiverID           config.ComponentID
 	metricBuilder        *metricBuilderPdata
@@ -115,7 +116,7 @@ func (t *transactionPdata) initTransaction(labels labels.Labels) error {
 		t.job = job
 		t.instance = instance
 	}
-	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels().Get(model.SchemeLabel))
+	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels())
 	t.metricBuilder = newMetricBuilderPdata(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
 	t.isNew = false
 	return nil
@@ -162,35 +163,35 @@ func (t *transactionPdata) Rollback() error {
 	return nil
 }
 
-func pdataTimestampFromFloat64(ts float64) pdata.Timestamp {
+func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
 	secs := int64(ts)
 	nanos := int64((ts - float64(secs)) * 1e9)
-	return pdata.NewTimestampFromTime(time.Unix(secs, nanos))
+	return pcommon.NewTimestampFromTime(time.Unix(secs, nanos))
 }
 
-func (t transactionPdata) adjustStartTimestampPdata(metricsL *pdata.MetricSlice) {
+func (t transactionPdata) adjustStartTimestampPdata(metricsL *pmetric.MetricSlice) {
 	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
 	for i := 0; i < metricsL.Len(); i++ {
 		metric := metricsL.At(i)
 		switch metric.DataType() {
-		case pdata.MetricDataTypeGauge:
+		case pmetric.MetricDataTypeGauge:
 			continue
 
-		case pdata.MetricDataTypeSum:
+		case pmetric.MetricDataTypeSum:
 			dataPoints := metric.Sum().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
 				dp := dataPoints.At(j)
 				dp.SetStartTimestamp(startTimeTs)
 			}
 
-		case pdata.MetricDataTypeSummary:
+		case pmetric.MetricDataTypeSummary:
 			dataPoints := metric.Summary().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
 				dp := dataPoints.At(j)
 				dp.SetStartTimestamp(startTimeTs)
 			}
 
-		case pdata.MetricDataTypeHistogram:
+		case pmetric.MetricDataTypeHistogram:
 			dataPoints := metric.Histogram().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
 				dp := dataPoints.At(j)
@@ -203,8 +204,8 @@ func (t transactionPdata) adjustStartTimestampPdata(metricsL *pdata.MetricSlice)
 	}
 }
 
-func (t *transactionPdata) metricSliceToMetrics(metricsL *pdata.MetricSlice) *pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func (t *transactionPdata) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rms.ScopeMetrics().AppendEmpty()
 	metricsL.CopyTo(ilm.Metrics())

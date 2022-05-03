@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestServiceFromResource(t *testing.T) {
@@ -54,7 +54,7 @@ func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
 }
 
 func TestServiceFromNullResource(t *testing.T) {
-	service := makeService(pdata.NewResource())
+	service := makeService(pcommon.NewResource())
 
 	assert.Nil(t, service)
 }

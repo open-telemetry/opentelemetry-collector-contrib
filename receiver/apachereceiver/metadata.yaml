@@ -32,6 +32,7 @@ metrics:
     unit: s
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [ server_name ]
@@ -41,6 +42,7 @@ metrics:
     unit: connections
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation: cumulative
     attributes: [ server_name ]
@@ -50,6 +52,7 @@ metrics:
     unit: connections
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation: cumulative
     attributes: [ server_name, workers_state]
@@ -59,6 +62,7 @@ metrics:
     unit: 1
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
     attributes: [ server_name ]

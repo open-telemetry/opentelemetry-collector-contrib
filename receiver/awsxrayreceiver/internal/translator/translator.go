@@ -19,8 +19,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -34,7 +35,7 @@ const (
 // `toPdata` in this receiver to a common package later
 
 // ToTraces converts X-Ray segment (and its subsegments) to an OT ResourceSpans.
-func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
+func ToTraces(rawSeg []byte) (*ptrace.Traces, int, error) {
 	var seg awsxray.Segment
 	err := json.Unmarshal(rawSeg, &seg)
 	if err != nil {
@@ -49,9 +50,9 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 		return nil, count, err
 	}
 
-	traceData := pdata.NewTraces()
+	traceData := ptrace.NewTraces()
 	rspanSlice := traceData.ResourceSpans()
-	// ## allocate a new pdata.ResourceSpans for the segment document
+	// ## allocate a new ptrace.ResourceSpans for the segment document
 	// (potentially with embedded subsegments)
 	rspan := rspanSlice.AppendEmpty()
 
@@ -82,7 +83,7 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 
 func segToSpans(seg awsxray.Segment,
 	traceID, parentID *string,
-	spans *pdata.SpanSlice) (*pdata.Span, error) {
+	spans *ptrace.SpanSlice) (*ptrace.Span, error) {
 
 	span := spans.AppendEmpty()
 
@@ -91,7 +92,7 @@ func segToSpans(seg awsxray.Segment,
 		return nil, err
 	}
 
-	var populatedChildSpan *pdata.Span
+	var populatedChildSpan *ptrace.Span
 	for _, s := range seg.Subsegments {
 		populatedChildSpan, err = segToSpans(s,
 			traceID, seg.ID,
@@ -101,14 +102,14 @@ func segToSpans(seg awsxray.Segment,
 		}
 
 		if seg.Cause != nil &&
-			populatedChildSpan.Status().Code() != pdata.StatusCodeUnset {
+			populatedChildSpan.Status().Code() != ptrace.StatusCodeUnset {
 			// if seg.Cause is not nil, then one of the subsegments must contain a
 			// HTTP error code. Also, span.Status().Code() is already
 			// set to `StatusCodeUnknownError` by `addCause()` in
 			// `populateSpan()` above, so here we are just trying to figure out
 			// whether we can get an even more specific error code.
 
-			if span.Status().Code() == pdata.StatusCodeError {
+			if span.Status().Code() == ptrace.StatusCodeError {
 				// update the error code to a possibly more specific code
 				span.Status().SetCode(populatedChildSpan.Status().Code())
 			}
@@ -121,7 +122,7 @@ func segToSpans(seg awsxray.Segment,
 func populateSpan(
 	seg *awsxray.Segment,
 	traceID, parentID *string,
-	span *pdata.Span) error {
+	span *ptrace.Span) error {
 
 	attrs := span.Attributes()
 	attrs.Clear()
@@ -169,13 +170,13 @@ func populateSpan(
 		return err
 	}
 
-	span.SetTraceID(pdata.NewTraceID(traceIDBytes))
-	span.SetSpanID(pdata.NewSpanID(spanIDBytes))
+	span.SetTraceID(pcommon.NewTraceID(traceIDBytes))
+	span.SetSpanID(pcommon.NewSpanID(spanIDBytes))
 
 	if parentIDBytes != [8]byte{} {
-		span.SetParentSpanID(pdata.NewSpanID(parentIDBytes))
+		span.SetParentSpanID(pcommon.NewSpanID(parentIDBytes))
 	} else {
-		span.SetKind(pdata.SpanKindServer)
+		span.SetKind(ptrace.SpanKindServer)
 	}
 
 	addStartTime(seg.StartTime, span)
@@ -199,8 +200,8 @@ func populateSpan(
 	return nil
 }
 
-func populateResource(seg *awsxray.Segment, rs *pdata.Resource) {
-	// allocate a new attribute map within the Resource in the pdata.ResourceSpans allocated above
+func populateResource(seg *awsxray.Segment, rs *pcommon.Resource) {
+	// allocate a new attribute map within the Resource in the ptrace.ResourceSpans allocated above
 	attrs := rs.Attributes()
 	attrs.Clear()
 	attrs.EnsureCapacity(initAttrCapacity)

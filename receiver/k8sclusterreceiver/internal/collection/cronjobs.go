@@ -17,8 +17,9 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
@@ -36,6 +37,8 @@ var activeJobs = &metricspb.MetricDescriptor{
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
+
+// TODO: All the CronJob related functions below can be de-duplicated using generics from go 1.18
 
 func getMetricsForCronJob(cj *batchv1.CronJob) []*resourceMetrics {
 	metrics := []*metricspb.Metric{
@@ -55,6 +58,24 @@ func getMetricsForCronJob(cj *batchv1.CronJob) []*resourceMetrics {
 	}
 }
 
+func getMetricsForCronJobBeta(cj *batchv1beta1.CronJob) []*resourceMetrics {
+	metrics := []*metricspb.Metric{
+		{
+			MetricDescriptor: activeJobs,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(len(cj.Status.Active))),
+			},
+		},
+	}
+
+	return []*resourceMetrics{
+		{
+			resource: getResourceForCronJobBeta(cj),
+			metrics:  metrics,
+		},
+	}
+}
+
 func getResourceForCronJob(cj *batchv1.CronJob) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
@@ -67,7 +88,26 @@ func getResourceForCronJob(cj *batchv1.CronJob) *resourcepb.Resource {
 	}
 }
 
+func getResourceForCronJobBeta(cj *batchv1beta1.CronJob) *resourcepb.Resource {
+	return &resourcepb.Resource{
+		Type: k8sType,
+		Labels: map[string]string{
+			conventions.AttributeK8SCronJobUID:    string(cj.UID),
+			conventions.AttributeK8SCronJobName:   cj.Name,
+			conventions.AttributeK8SNamespaceName: cj.Namespace,
+			conventions.AttributeK8SClusterName:   cj.ClusterName,
+		},
+	}
+}
+
 func getMetadataForCronJob(cj *batchv1.CronJob) map[metadata.ResourceID]*KubernetesMetadata {
+	rm := getGenericMetadata(&cj.ObjectMeta, k8sKindCronJob)
+	rm.metadata[cronJobKeySchedule] = cj.Spec.Schedule
+	rm.metadata[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)
+	return map[metadata.ResourceID]*KubernetesMetadata{metadata.ResourceID(cj.UID): rm}
+}
+
+func getMetadataForCronJobBeta(cj *batchv1beta1.CronJob) map[metadata.ResourceID]*KubernetesMetadata {
 	rm := getGenericMetadata(&cj.ObjectMeta, k8sKindCronJob)
 	rm.metadata[cronJobKeySchedule] = cj.Spec.Schedule
 	rm.metadata[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)

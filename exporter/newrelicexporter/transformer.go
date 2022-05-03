@@ -24,8 +24,11 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -63,7 +66,7 @@ func newTransformer(logger *zap.Logger, buildInfo *component.BuildInfo, details 
 	return &transformer{logger: logger, OverrideAttributes: overrideAttributes, details: details}
 }
 
-func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.InstrumentationScope) map[string]interface{} {
+func (t *transformer) CommonAttributes(resource pcommon.Resource, lib pcommon.InstrumentationScope) map[string]interface{} {
 	resourceAttrs := resource.Attributes()
 	commonAttrs := resourceAttrs.AsRaw()
 	t.TrackAttributes(attributeLocationResource, resourceAttrs)
@@ -87,7 +90,7 @@ var (
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
-func (t *transformer) Span(span pdata.Span) (telemetry.Span, error) {
+func (t *transformer) Span(span ptrace.Span) (telemetry.Span, error) {
 	startTime := span.StartTimestamp().AsTime()
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.
@@ -117,7 +120,7 @@ func (t *transformer) Span(span pdata.Span) (telemetry.Span, error) {
 	return sp, nil
 }
 
-func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
+func (t *transformer) Log(log plog.LogRecord) (telemetry.Log, error) {
 	var message string
 
 	if bodyString := log.Body().StringVal(); bodyString != "" {
@@ -162,13 +165,13 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 	}, nil
 }
 
-func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
+func (t *transformer) SpanAttributes(span ptrace.Span) map[string]interface{} {
 	spanAttrs := span.Attributes()
 	length := spanAttrs.Len()
 
 	var hasStatusCode, hasStatusDesc bool
 	s := span.Status()
-	if s.Code() != pdata.StatusCodeUnset {
+	if s.Code() != ptrace.StatusCodeUnset {
 		hasStatusCode = true
 		length++
 		if s.Message() != "" {
@@ -177,7 +180,7 @@ func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
 		}
 	}
 
-	validSpanKind := span.Kind() != pdata.SpanKindUnspecified
+	validSpanKind := span.Kind() != ptrace.SpanKindUnspecified
 	if validSpanKind {
 		length++
 	}
@@ -218,7 +221,7 @@ func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
 }
 
 // SpanEvents transforms the recorded events of span into New Relic tracing events.
-func (t *transformer) SpanEvents(span pdata.Span) []telemetry.Event {
+func (t *transformer) SpanEvents(span ptrace.Span) []telemetry.Event {
 	length := span.Events().Len()
 	if length == 0 {
 		return nil
@@ -254,7 +257,7 @@ func (e errUnsupportedMetricType) Error() string {
 	return fmt.Sprintf("unsupported metric %v (%v)", e.metricName, e.metricType)
 }
 
-func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
+func (t *transformer) Metric(m pmetric.Metric) ([]telemetry.Metric, error) {
 	var output []telemetry.Metric
 	baseAttributes := t.BaseMetricAttributes(m)
 
@@ -262,7 +265,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 	k := metricStatsKey{MetricType: dataType}
 
 	switch dataType {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		t.details.metricMetadataCount[k]++
 		// "StartTimestampUnixNano" is ignored for all data points.
 		gauge := m.Gauge()
@@ -273,9 +276,9 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 
 			var val float64
 			switch point.ValueType() {
-			case pdata.MetricValueTypeDouble:
+			case pmetric.NumberDataPointValueTypeDouble:
 				val = point.DoubleVal()
-			case pdata.MetricValueTypeInt:
+			case pmetric.NumberDataPointValueTypeInt:
 				val = float64(point.IntVal())
 			}
 			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
@@ -288,7 +291,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			}
 			output = append(output, nrMetric)
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		sum := m.Sum()
 		temporality := sum.AggregationTemporality()
 		k.MetricTemporality = temporality
@@ -301,13 +304,13 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
 			var val float64
 			switch point.ValueType() {
-			case pdata.MetricValueTypeDouble:
+			case pmetric.NumberDataPointValueTypeDouble:
 				val = point.DoubleVal()
-			case pdata.MetricValueTypeInt:
+			case pmetric.NumberDataPointValueTypeInt:
 				val = float64(point.IntVal())
 			}
 
-			if temporality != pdata.MetricAggregationTemporalityDelta {
+			if temporality != pmetric.MetricAggregationTemporalityDelta {
 				t.logger.Debug("Converting metric to gauge where AggregationTemporality != Delta",
 					zap.String("MetricName", m.Name()),
 					zap.Stringer("Temporality", temporality),
@@ -332,12 +335,12 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 				output = append(output, nrMetric)
 			}
 		}
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		hist := m.Histogram()
 		k.MetricTemporality = hist.AggregationTemporality()
 		t.details.metricMetadataCount[k]++
 		return nil, consumererror.NewPermanent(&errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()})
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		t.details.metricMetadataCount[k]++
 		summary := m.Summary()
 		points := summary.DataPoints()
@@ -385,7 +388,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 	return output, nil
 }
 
-func (t *transformer) BaseMetricAttributes(metric pdata.Metric) map[string]interface{} {
+func (t *transformer) BaseMetricAttributes(metric pmetric.Metric) map[string]interface{} {
 	length := 0
 
 	if metric.Unit() != "" {
@@ -408,12 +411,12 @@ func (t *transformer) BaseMetricAttributes(metric pdata.Metric) map[string]inter
 	return attrs
 }
 
-func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, attrMap pdata.Map) map[string]interface{} {
+func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, attrMap pcommon.Map) map[string]interface{} {
 	rawMap := make(map[string]interface{}, len(baseAttributes)+attrMap.Len())
 	for k, v := range baseAttributes {
 		rawMap[k] = v
 	}
-	attrMap.Range(func(k string, v pdata.Value) bool {
+	attrMap.Range(func(k string, v pcommon.Value) bool {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			rawMap[k] = v.AsString()
@@ -424,8 +427,8 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 	return rawMap
 }
 
-func (t *transformer) TrackAttributes(location attributeLocation, attributeMap pdata.Map) {
-	attributeMap.Range(func(_ string, v pdata.Value) bool {
+func (t *transformer) TrackAttributes(location attributeLocation, attributeMap pcommon.Map) {
+	attributeMap.Range(func(_ string, v pcommon.Value) bool {
 		statsKey := attributeStatsKey{location: location, attributeType: v.Type()}
 		t.details.attributeMetadataCount[statsKey]++
 		return true

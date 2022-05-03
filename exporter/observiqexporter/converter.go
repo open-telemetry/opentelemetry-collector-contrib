@@ -21,7 +21,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // Type preEncodedJSON aliases []byte, represents JSON that has already been encoded
@@ -58,8 +59,8 @@ type observIQLogEntry struct {
 var fnvHash = fnv.New128a()
 var fnvHashOut = make([]byte, 0, 16)
 
-// Convert pdata.Logs to observIQLogBatch
-func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, buildVersion string) (*observIQLogBatch, []error) {
+// Convert plog.Logs to observIQLogBatch
+func logdataToObservIQFormat(ld plog.Logs, agentID string, agentName string, buildVersion string) (*observIQLogBatch, []error) {
 	var rls = ld.ResourceLogs()
 	var sliceOut = make([]*observIQLog, 0, ld.LogRecordCount())
 	var errorsOut = make([]error, 0)
@@ -111,7 +112,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 // Output timestamp format, an ISO8601 compliant timestamp with millisecond precision
 const timestampFieldOutputLayout = "2006-01-02T15:04:05.000Z07:00"
 
-func resourceAndInstrumentationLogToEntry(resMap map[string]interface{}, log pdata.LogRecord, agentID string, agentName string, buildVersion string) *observIQLogEntry {
+func resourceAndInstrumentationLogToEntry(resMap map[string]interface{}, log plog.LogRecord, agentID string, agentName string, buildVersion string) *observIQLogEntry {
 	return &observIQLogEntry{
 		Timestamp: timestampFromRecord(log),
 		Severity:  severityFromRecord(log),
@@ -123,15 +124,20 @@ func resourceAndInstrumentationLogToEntry(resMap map[string]interface{}, log pda
 	}
 }
 
-func timestampFromRecord(log pdata.LogRecord) string {
-	if log.Timestamp() == 0 {
-		return timeNow().UTC().Format(timestampFieldOutputLayout)
+func timestampFromRecord(log plog.LogRecord) string {
+	if log.Timestamp() != 0 {
+		return log.Timestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
 	}
-	return log.Timestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
+
+	if log.ObservedTimestamp() != 0 {
+		return log.ObservedTimestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
+	}
+
+	return timeNow().UTC().Format(timestampFieldOutputLayout)
 }
 
-func messageFromRecord(log pdata.LogRecord) string {
-	if log.Body().Type() == pdata.ValueTypeString {
+func messageFromRecord(log plog.LogRecord) string {
+	if log.Body().Type() == pcommon.ValueTypeString {
 		return log.Body().StringVal()
 	}
 
@@ -139,8 +145,8 @@ func messageFromRecord(log pdata.LogRecord) string {
 }
 
 // bodyFromRecord returns what the "body" field should be on the observiq entry from the given LogRecord.
-func bodyFromRecord(log pdata.LogRecord) interface{} {
-	if log.Body().Type() != pdata.ValueTypeString {
+func bodyFromRecord(log plog.LogRecord) interface{} {
+	if log.Body().Type() != pcommon.ValueTypeString {
 		return attributeValueToBaseType(log.Body())
 	}
 	return nil
@@ -181,7 +187,7 @@ var severityNumberToObservIQName = map[int32]string{
 	representing the opentelemetry defined severity.
 	If there is no severity number, we use "default"
 */
-func severityFromRecord(log pdata.LogRecord) string {
+func severityFromRecord(log plog.LogRecord) string {
 	var sevAsInt32 = int32(log.SeverityNumber())
 	if sevAsInt32 < int32(len(severityNumberToObservIQName)) && sevAsInt32 >= 0 {
 		return severityNumberToObservIQName[sevAsInt32]
@@ -192,9 +198,9 @@ func severityFromRecord(log pdata.LogRecord) string {
 /*
 	Transform AttributeMap to native Go map, skipping keys with nil values, and replacing dots in keys with _
 */
-func attributeMapToBaseType(m pdata.Map) map[string]interface{} {
+func attributeMapToBaseType(m pcommon.Map) map[string]interface{} {
 	mapOut := make(map[string]interface{}, m.Len())
-	m.Range(func(k string, v pdata.Value) bool {
+	m.Range(func(k string, v pcommon.Value) bool {
 		val := attributeValueToBaseType(v)
 		if val != nil {
 			dedotedKey := strings.ReplaceAll(k, ".", "_")
@@ -208,20 +214,20 @@ func attributeMapToBaseType(m pdata.Map) map[string]interface{} {
 /*
 	attrib is the attribute value to convert to it's native Go type - skips nils in arrays/maps
 */
-func attributeValueToBaseType(attrib pdata.Value) interface{} {
+func attributeValueToBaseType(attrib pcommon.Value) interface{} {
 	switch attrib.Type() {
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return attrib.StringVal()
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return attrib.BoolVal()
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return attrib.IntVal()
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return attrib.DoubleVal()
-	case pdata.ValueTypeMap:
+	case pcommon.ValueTypeMap:
 		attribMap := attrib.MapVal()
 		return attributeMapToBaseType(attribMap)
-	case pdata.ValueTypeSlice:
+	case pcommon.ValueTypeSlice:
 		arrayVal := attrib.SliceVal()
 		slice := make([]interface{}, 0, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
@@ -231,7 +237,7 @@ func attributeValueToBaseType(attrib pdata.Value) interface{} {
 			}
 		}
 		return slice
-	case pdata.ValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		return nil
 	}
 	return nil

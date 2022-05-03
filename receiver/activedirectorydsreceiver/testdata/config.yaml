@@ -1,0 +1,20 @@
+receivers:
+  active_directory_ds:
+    collection_interval: 2m
+    metrics:
+      active_directory.ds.replication.object.rate:
+        enabled: false
+  active_directory_ds/defaults:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [active_directory_ds]
+      processors: [nop]
+      exporters: [nop]

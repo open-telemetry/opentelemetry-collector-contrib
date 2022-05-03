@@ -27,11 +27,12 @@ import (
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
-// Converter converts a batch of entry.Entry into pdata.Logs aggregating translated
+// Converter converts a batch of entry.Entry into plog.Logs aggregating translated
 // entries into logs coming from the same Resource.
 //
 // The diagram below illustrates the internal communication inside the Converter:
@@ -49,7 +50,7 @@ import (
 //  │ │ │ ┌─────────────────────────────────────────────────┴─┐
 //  └─┼─┼─► workerLoop()                                      │
 //    └─┤ │   consumes sent log entries from workerChan,      │
-//      │ │   translates received entries to pdata.LogRecords,│
+//      │ │   translates received entries to plog.LogRecords,│
 //      └─┤   hashes them to generate an ID, and sends them   │
 //        │   onto batchChan                                  │
 //        └─────────────────────────┬─────────────────────────┘
@@ -72,7 +73,7 @@ import (
 //
 type Converter struct {
 	// pLogsChan is a channel on which aggregated logs will be sent to.
-	pLogsChan chan pdata.Logs
+	pLogsChan chan plog.Logs
 
 	stopOnce sync.Once
 	stopChan chan struct{}
@@ -87,8 +88,8 @@ type Converter struct {
 	// on flushChan.
 	aggregationChan chan []workerItem
 
-	// flushChan is an internal channel used for transporting batched pdata.Logs.
-	flushChan chan pdata.Logs
+	// flushChan is an internal channel used for transporting batched plog.Logs.
+	flushChan chan plog.Logs
 
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
@@ -124,10 +125,10 @@ func NewConverter(opts ...ConverterOption) *Converter {
 		workerChan:      make(chan []*entry.Entry),
 		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
 		aggregationChan: make(chan []workerItem),
-		pLogsChan:       make(chan pdata.Logs),
+		pLogsChan:       make(chan plog.Logs),
 		stopChan:        make(chan struct{}),
 		logger:          zap.NewNop(),
-		flushChan:       make(chan pdata.Logs),
+		flushChan:       make(chan plog.Logs),
 	}
 
 	for _, opt := range opts {
@@ -161,18 +162,18 @@ func (c *Converter) Stop() {
 }
 
 // OutChannel returns the channel on which converted entries will be sent to.
-func (c *Converter) OutChannel() <-chan pdata.Logs {
+func (c *Converter) OutChannel() <-chan plog.Logs {
 	return c.pLogsChan
 }
 
 type workerItem struct {
 	Resource   map[string]interface{}
-	LogRecord  pdata.LogRecord
+	LogRecord  plog.LogRecord
 	ResourceID uint64
 }
 
 // workerLoop is responsible for obtaining log entries from Batch() calls,
-// converting them to pdata.LogRecords and sending them together with the
+// converting them to plog.LogRecords and sending them together with the
 // associated Resource through the aggregationChan for aggregation.
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
@@ -213,7 +214,7 @@ func (c *Converter) workerLoop() {
 func (c *Converter) aggregationLoop() {
 	defer c.wg.Done()
 
-	resourceIDToLogs := make(map[uint64]pdata.Logs)
+	resourceIDToLogs := make(map[uint64]plog.Logs)
 
 	for {
 		select {
@@ -232,7 +233,7 @@ func (c *Converter) aggregationLoop() {
 					continue
 				}
 
-				pLogs = pdata.NewLogs()
+				pLogs = plog.NewLogs()
 				logs := pLogs.ResourceLogs()
 				rls := logs.AppendEmpty()
 
@@ -277,8 +278,8 @@ func (c *Converter) flushLoop() {
 	}
 }
 
-// flush flushes provided pdata.Logs entries onto a channel.
-func (c *Converter) flush(ctx context.Context, pLogs pdata.Logs) error {
+// flush flushes provided plog.Logs entries onto a channel.
+func (c *Converter) flush(ctx context.Context, pLogs plog.Logs) error {
 	doneChan := ctx.Done()
 
 	select {
@@ -305,18 +306,18 @@ func (c *Converter) Batch(e []*entry.Entry) error {
 	}
 }
 
-// convert converts one entry.Entry into pdata.LogRecord allocating it.
-func convert(ent *entry.Entry) pdata.LogRecord {
-	dest := pdata.NewLogRecord()
+// convert converts one entry.Entry into plog.LogRecord allocating it.
+func convert(ent *entry.Entry) plog.LogRecord {
+	dest := plog.NewLogRecord()
 	convertInto(ent, dest)
 	return dest
 }
 
-// Convert converts one entry.Entry into pdata.Logs.
+// Convert converts one entry.Entry into plog.Logs.
 // To be used in a stateless setting like tests where ease of use is more
 // important than performance or throughput.
-func Convert(ent *entry.Entry) pdata.Logs {
-	pLogs := pdata.NewLogs()
+func Convert(ent *entry.Entry) plog.Logs {
+	pLogs := plog.NewLogs()
 	logs := pLogs.ResourceLogs()
 
 	rls := logs.AppendEmpty()
@@ -330,9 +331,12 @@ func Convert(ent *entry.Entry) pdata.Logs {
 	return pLogs
 }
 
-// convertInto converts entry.Entry into provided pdata.LogRecord.
-func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
-	dest.SetTimestamp(pdata.NewTimestampFromTime(ent.Timestamp))
+// convertInto converts entry.Entry into provided plog.LogRecord.
+func convertInto(ent *entry.Entry, dest plog.LogRecord) {
+	if !ent.Timestamp.IsZero() {
+		dest.SetTimestamp(pcommon.NewTimestampFromTime(ent.Timestamp))
+	}
+	dest.SetObservedTimestamp(pcommon.NewTimestampFromTime(ent.ObservedTimestamp))
 	dest.SetSeverityNumber(sevMap[ent.Severity])
 	dest.SetSeverityText(sevTextMap[ent.Severity])
 
@@ -342,12 +346,12 @@ func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
 	if ent.TraceId != nil {
 		var buffer [16]byte
 		copy(buffer[0:16], ent.TraceId)
-		dest.SetTraceID(pdata.NewTraceID(buffer))
+		dest.SetTraceID(pcommon.NewTraceID(buffer))
 	}
 	if ent.SpanId != nil {
 		var buffer [8]byte
 		copy(buffer[0:8], ent.SpanId)
-		dest.SetSpanID(pdata.NewSpanID(buffer))
+		dest.SetSpanID(pcommon.NewSpanID(buffer))
 	}
 	if ent.TraceFlags != nil {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
@@ -359,7 +363,7 @@ func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
 	}
 }
 
-func insertToAttributeVal(value interface{}, dest pdata.Value) {
+func insertToAttributeVal(value interface{}, dest pcommon.Value) {
 	switch t := value.(type) {
 	case bool:
 		dest.SetBoolVal(t)
@@ -400,14 +404,14 @@ func insertToAttributeVal(value interface{}, dest pdata.Value) {
 	}
 }
 
-func toAttributeMap(obsMap map[string]interface{}) pdata.Value {
-	attVal := pdata.NewValueMap()
+func toAttributeMap(obsMap map[string]interface{}) pcommon.Value {
+	attVal := pcommon.NewValueMap()
 	attMap := attVal.MapVal()
 	insertToAttributeMap(obsMap, attMap)
 	return attVal
 }
 
-func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.Map) {
+func insertToAttributeMap(obsMap map[string]interface{}, dest pcommon.Map) {
 	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
 		switch t := v.(type) {
@@ -453,8 +457,8 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.Map) {
 	}
 }
 
-func toAttributeArray(obsArr []interface{}) pdata.Value {
-	arrVal := pdata.NewValueSlice()
+func toAttributeArray(obsArr []interface{}) pcommon.Value {
+	arrVal := pcommon.NewValueSlice()
 	arr := arrVal.SliceVal()
 	arr.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {
@@ -463,32 +467,32 @@ func toAttributeArray(obsArr []interface{}) pdata.Value {
 	return arrVal
 }
 
-var sevMap = map[entry.Severity]pdata.SeverityNumber{
-	entry.Default: pdata.SeverityNumberUNDEFINED,
-	entry.Trace:   pdata.SeverityNumberTRACE,
-	entry.Trace2:  pdata.SeverityNumberTRACE2,
-	entry.Trace3:  pdata.SeverityNumberTRACE3,
-	entry.Trace4:  pdata.SeverityNumberTRACE4,
-	entry.Debug:   pdata.SeverityNumberDEBUG,
-	entry.Debug2:  pdata.SeverityNumberDEBUG2,
-	entry.Debug3:  pdata.SeverityNumberDEBUG3,
-	entry.Debug4:  pdata.SeverityNumberDEBUG4,
-	entry.Info:    pdata.SeverityNumberINFO,
-	entry.Info2:   pdata.SeverityNumberINFO2,
-	entry.Info3:   pdata.SeverityNumberINFO3,
-	entry.Info4:   pdata.SeverityNumberINFO4,
-	entry.Warn:    pdata.SeverityNumberWARN,
-	entry.Warn2:   pdata.SeverityNumberWARN2,
-	entry.Warn3:   pdata.SeverityNumberWARN3,
-	entry.Warn4:   pdata.SeverityNumberWARN4,
-	entry.Error:   pdata.SeverityNumberERROR,
-	entry.Error2:  pdata.SeverityNumberERROR2,
-	entry.Error3:  pdata.SeverityNumberERROR3,
-	entry.Error4:  pdata.SeverityNumberERROR4,
-	entry.Fatal:   pdata.SeverityNumberFATAL,
-	entry.Fatal2:  pdata.SeverityNumberFATAL2,
-	entry.Fatal3:  pdata.SeverityNumberFATAL3,
-	entry.Fatal4:  pdata.SeverityNumberFATAL4,
+var sevMap = map[entry.Severity]plog.SeverityNumber{
+	entry.Default: plog.SeverityNumberUNDEFINED,
+	entry.Trace:   plog.SeverityNumberTRACE,
+	entry.Trace2:  plog.SeverityNumberTRACE2,
+	entry.Trace3:  plog.SeverityNumberTRACE3,
+	entry.Trace4:  plog.SeverityNumberTRACE4,
+	entry.Debug:   plog.SeverityNumberDEBUG,
+	entry.Debug2:  plog.SeverityNumberDEBUG2,
+	entry.Debug3:  plog.SeverityNumberDEBUG3,
+	entry.Debug4:  plog.SeverityNumberDEBUG4,
+	entry.Info:    plog.SeverityNumberINFO,
+	entry.Info2:   plog.SeverityNumberINFO2,
+	entry.Info3:   plog.SeverityNumberINFO3,
+	entry.Info4:   plog.SeverityNumberINFO4,
+	entry.Warn:    plog.SeverityNumberWARN,
+	entry.Warn2:   plog.SeverityNumberWARN2,
+	entry.Warn3:   plog.SeverityNumberWARN3,
+	entry.Warn4:   plog.SeverityNumberWARN4,
+	entry.Error:   plog.SeverityNumberERROR,
+	entry.Error2:  plog.SeverityNumberERROR2,
+	entry.Error3:  plog.SeverityNumberERROR3,
+	entry.Error4:  plog.SeverityNumberERROR4,
+	entry.Fatal:   plog.SeverityNumberFATAL,
+	entry.Fatal2:  plog.SeverityNumberFATAL2,
+	entry.Fatal3:  plog.SeverityNumberFATAL3,
+	entry.Fatal4:  plog.SeverityNumberFATAL4,
 }
 
 var sevTextMap = map[entry.Severity]string{

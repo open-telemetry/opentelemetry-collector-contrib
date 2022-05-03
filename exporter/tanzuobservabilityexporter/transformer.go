@@ -21,17 +21,18 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 type traceTransformer struct {
-	resAttrs pdata.Map
+	resAttrs pcommon.Map
 }
 
-func newTraceTransformer(resource pdata.Resource) *traceTransformer {
+func newTraceTransformer(resource pcommon.Resource) *traceTransformer {
 	t := &traceTransformer{
 		resAttrs: resource.Attributes(),
 	}
@@ -55,7 +56,7 @@ type span struct {
 	Source         string
 }
 
-func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
+func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 	traceID, err := traceIDtoUUID(orig.TraceID())
 	if err != nil {
 		return span{}, errInvalidTraceID
@@ -109,10 +110,10 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	}, nil
 }
 
-func getSourceAndResourceTagsAndSourceKey(attributes pdata.Map) (
+func getSourceAndResourceTagsAndSourceKey(attributes pcommon.Map) (
 	string, map[string]string, string) {
 	attributesWithoutSource := map[string]string{}
-	attributes.Range(func(k string, v pdata.Value) bool {
+	attributes.Range(func(k string, v pcommon.Value) bool {
 		attributesWithoutSource[k] = v.AsString()
 		return true
 	})
@@ -132,29 +133,29 @@ func getSourceAndResourceTagsAndSourceKey(attributes pdata.Map) (
 	return source, attributesWithoutSource, sourceKey
 }
 
-func getSourceAndResourceTags(attributes pdata.Map) (string, map[string]string) {
+func getSourceAndResourceTags(attributes pcommon.Map) (string, map[string]string) {
 	source, attributesWithoutSource, _ := getSourceAndResourceTagsAndSourceKey(attributes)
 	return source, attributesWithoutSource
 }
 
-func getSourceAndKey(attributes pdata.Map) (string, string) {
+func getSourceAndKey(attributes pcommon.Map) (string, string) {
 	source, _, sourceKey := getSourceAndResourceTagsAndSourceKey(attributes)
 	return source, sourceKey
 }
 
-func spanKind(span pdata.Span) string {
+func spanKind(span ptrace.Span) string {
 	switch span.Kind() {
-	case pdata.SpanKindClient:
+	case ptrace.SpanKindClient:
 		return "client"
-	case pdata.SpanKindServer:
+	case ptrace.SpanKindServer:
 		return "server"
-	case pdata.SpanKindProducer:
+	case ptrace.SpanKindProducer:
 		return "producer"
-	case pdata.SpanKindConsumer:
+	case ptrace.SpanKindConsumer:
 		return "consumer"
-	case pdata.SpanKindInternal:
+	case ptrace.SpanKindInternal:
 		return "internal"
-	case pdata.SpanKindUnspecified:
+	case ptrace.SpanKindUnspecified:
 		return "unspecified"
 	default:
 		return "unknown"
@@ -175,7 +176,7 @@ func (t *traceTransformer) setRequiredTags(tags map[string]string) {
 	}
 }
 
-func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
+func eventsToLogs(events ptrace.SpanEventSlice) []senders.SpanLog {
 	var result []senders.SpanLog
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
@@ -190,7 +191,7 @@ func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
 	return result
 }
 
-func calculateTimes(span pdata.Span) (int64, int64) {
+func calculateTimes(span ptrace.Span) (int64, int64) {
 	startMillis := int64(span.StartTimestamp()) / time.Millisecond.Nanoseconds()
 	endMillis := int64(span.EndTimestamp()) / time.Millisecond.Nanoseconds()
 	durationMillis := endMillis - startMillis
@@ -201,10 +202,10 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributes ...pdata.Map) map[string]string {
+func attributesToTags(attributes ...pcommon.Map) map[string]string {
 	tags := map[string]string{}
 	for _, att := range attributes {
-		att.Range(func(k string, v pdata.Value) bool {
+		att.Range(func(k string, v pcommon.Value) bool {
 			tags[k] = v.AsString()
 			return true
 		})
@@ -219,24 +220,24 @@ func replaceSource(tags map[string]string) {
 	}
 }
 
-func attributesToTagsReplaceSource(attributes ...pdata.Map) map[string]string {
+func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string {
 	tags := attributesToTags(attributes...)
 	replaceSource(tags)
 	return tags
 }
 
-func newMap(tags map[string]string) pdata.Map {
+func newMap(tags map[string]string) pcommon.Map {
 	valueMap := make(map[string]interface{}, len(tags))
 	for key, value := range tags {
 		valueMap[key] = value
 	}
-	return pdata.NewMapFromRaw(valueMap)
+	return pcommon.NewMapFromRaw(valueMap)
 }
 
-func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
+func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {
 	tags := make(map[string]string)
 
-	if status.Code() != pdata.StatusCodeError {
+	if status.Code() != ptrace.StatusCodeError {
 		return tags
 	}
 
@@ -253,7 +254,7 @@ func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
 	return tags
 }
 
-func traceIDtoUUID(id pdata.TraceID) (uuid.UUID, error) {
+func traceIDtoUUID(id pcommon.TraceID) (uuid.UUID, error) {
 	formatted, err := uuid.Parse(id.HexString())
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidTraceID
@@ -261,7 +262,7 @@ func traceIDtoUUID(id pdata.TraceID) (uuid.UUID, error) {
 	return formatted, nil
 }
 
-func spanIDtoUUID(id pdata.SpanID) (uuid.UUID, error) {
+func spanIDtoUUID(id pcommon.SpanID) (uuid.UUID, error) {
 	formatted, err := uuid.FromBytes(padTo16Bytes(id.Bytes()))
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidSpanID
@@ -269,7 +270,7 @@ func spanIDtoUUID(id pdata.SpanID) (uuid.UUID, error) {
 	return formatted, nil
 }
 
-func parentSpanIDtoUUID(id pdata.SpanID) uuid.UUID {
+func parentSpanIDtoUUID(id pcommon.SpanID) uuid.UUID {
 	if id.IsEmpty() {
 		return uuid.Nil
 	}

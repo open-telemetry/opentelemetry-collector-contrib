@@ -20,14 +20,16 @@ import (
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -84,7 +86,7 @@ type DataCollector struct {
 
 var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
 	ID:      reportCPUMetricsAsDoubleFeatureGateID,
-	Enabled: false,
+	Enabled: true,
 	Description: "The k8s container and node cpu metrics being reported by the k8sclusterreceiver are transitioning " +
 		"from being reported as integer millicpu units to being reported as double cpu units to adhere to " +
 		"opentelemetry cpu metric specifications. You can control whether the k8sclusterreceiver reports container " +
@@ -95,12 +97,12 @@ var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
 }
 
 func init() {
-	featuregate.Register(reportCPUMetricsAsDoubleFeatureGate)
+	featuregate.GetRegistry().MustRegister(reportCPUMetricsAsDoubleFeatureGate)
 }
 
 // NewDataCollector returns a DataCollector.
 func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
-	if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+	if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 		logger.Info("The receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate is enabled. This " +
 			"otel collector will report double cpu units, which is good for future support!")
 	} else {
@@ -120,9 +122,9 @@ func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTyp
 	}
 }
 
-// SetupMetadataStore initializes a metadata store for the kubernetes object.
-func (dc *DataCollector) SetupMetadataStore(o runtime.Object, store cache.Store) {
-	dc.metadataStore.setupStore(o, store)
+// SetupMetadataStore initializes a metadata store for the kubernetes kind.
+func (dc *DataCollector) SetupMetadataStore(gvk schema.GroupVersionKind, store cache.Store) {
+	dc.metadataStore.setupStore(gvk, store)
 }
 
 func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
@@ -145,7 +147,7 @@ func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetri
 	}
 }
 
-func (dc *DataCollector) CollectMetricData(currentTime time.Time) pdata.Metrics {
+func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metrics {
 	return dc.metricsStore.getMetricData(currentTime)
 }
 
@@ -176,6 +178,8 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 		rm = getMetricsForJob(o)
 	case *batchv1.CronJob:
 		rm = getMetricsForCronJob(o)
+	case *batchv1beta1.CronJob:
+		rm = getMetricsForCronJobBeta(o)
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
 		rm = getMetricsForHPA(o)
 	case *quotav1.ClusterResourceQuota:
@@ -213,6 +217,8 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[metadata.ResourceID]*
 		km = getMetadataForJob(o)
 	case *batchv1.CronJob:
 		km = getMetadataForCronJob(o)
+	case *batchv1beta1.CronJob:
+		km = getMetadataForCronJobBeta(o)
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
 		km = getMetadataForHPA(o)
 	}

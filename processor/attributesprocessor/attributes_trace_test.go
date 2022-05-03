@@ -23,8 +23,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -51,20 +52,20 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 	})
 }
 
-func generateTraceData(serviceName, spanName string, attrs map[string]interface{}) pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraceData(serviceName, spanName string, attrs map[string]interface{}) ptrace.Traces {
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
-	pdata.NewMapFromRaw(attrs).CopyTo(span.Attributes())
+	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 	span.Attributes().Sort()
 	return td
 }
 
-func sortAttributes(td pdata.Traces) {
+func sortAttributes(td ptrace.Traces) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -83,15 +84,15 @@ func sortAttributes(td pdata.Traces) {
 func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  pdata.Traces
-		output pdata.Traces
+		input  ptrace.Traces
+		output ptrace.Traces
 	}
 	// TODO: Add test for "nil" Span/Attributes. This needs support from data slices to allow to construct that.
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
-			input:  pdata.NewTraces(),
-			output: pdata.NewTraces(),
+			input:  ptrace.NewTraces(),
+			output: ptrace.NewTraces(),
 		},
 		{
 			name:   "one-empty-resource-spans",
