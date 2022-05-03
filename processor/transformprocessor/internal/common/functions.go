@@ -22,8 +22,9 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"keep_keys": keepKeys,
-	"set":       set,
+	"keep_keys":    keepKeys,
+	"set":          set,
+	"truncate_all": truncateAll,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -65,6 +66,36 @@ func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
 				return true
 			})
 			target.Set(ctx, filtered)
+		}
+		return nil
+	}, nil
+}
+
+func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		if limit < 0 {
+			return nil
+		}
+
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			attrs.Range(func(key string, val pcommon.Value) bool {
+				stringVal := val.StringVal()
+				if int64(len(stringVal)) > limit {
+					updated.InsertString(key, stringVal[:limit])
+				} else {
+					updated.Insert(key, val)
+				}
+				return true
+			})
+			target.Set(ctx, updated)
+			// TODO: Write log when truncation is performed
 		}
 		return nil
 	}, nil
@@ -117,6 +148,11 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				}
 				args = append(args, reflect.ValueOf(arg))
 				continue
+			case "int64":
+				if argDef.Int == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.Int))
 			}
 		}
 		val := reflect.ValueOf(f)
