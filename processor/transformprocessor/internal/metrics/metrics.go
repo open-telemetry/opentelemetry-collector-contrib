@@ -21,13 +21,14 @@ import (
 )
 
 type metricTransformContext struct {
-	metric   pmetric.Metric
-	il       pcommon.InstrumentationScope
-	resource pcommon.Resource
+	dataPoint interface{}
+	metric    pmetric.Metric
+	il        pcommon.InstrumentationScope
+	resource  pcommon.Resource
 }
 
 func (ctx metricTransformContext) GetItem() interface{} {
-	return ctx.metric
+	return ctx.dataPoint
 }
 
 func (ctx metricTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
@@ -36,6 +37,10 @@ func (ctx metricTransformContext) GetInstrumentationScope() pcommon.Instrumentat
 
 func (ctx metricTransformContext) GetResource() pcommon.Resource {
 	return ctx.resource
+}
+
+func (ctx metricTransformContext) GetDescriptor() interface{} {
+	return ctx.metric
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
@@ -94,6 +99,12 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		case "metric_type":
 			return accessDescriptorMetricType(), nil
 		}
+	case "attributes":
+		mapKey := path[0].MapKey
+		if mapKey == nil {
+			return accessAttributes(), nil
+		}
+		return accessAttributesKey(mapKey), nil
 	}
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
@@ -179,11 +190,11 @@ func accessInstrumentationScopeVersion() pathGetSetter {
 func accessDescriptor() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(pmetric.Metric)
+			return ctx.GetDescriptor().(pmetric.Metric)
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(ctx.GetItem().(pmetric.Metric))
+				newMetric.CopyTo(ctx.GetDescriptor().(pmetric.Metric))
 			}
 		},
 	}
@@ -192,11 +203,11 @@ func accessDescriptor() pathGetSetter {
 func accessDescriptorMetricName() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(pmetric.Metric).Name()
+			return ctx.GetDescriptor().(pmetric.Metric).Name()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(pmetric.Metric).SetName(str)
+				ctx.GetDescriptor().(pmetric.Metric).SetName(str)
 			}
 		},
 	}
@@ -205,11 +216,11 @@ func accessDescriptorMetricName() pathGetSetter {
 func accessDescriptorMetricDescription() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(pmetric.Metric).Description()
+			return ctx.GetDescriptor().(pmetric.Metric).Description()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(pmetric.Metric).SetDescription(str)
+				ctx.GetDescriptor().(pmetric.Metric).SetDescription(str)
 			}
 		},
 	}
@@ -218,11 +229,11 @@ func accessDescriptorMetricDescription() pathGetSetter {
 func accessDescriptorMetricUnit() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(pmetric.Metric).Unit()
+			return ctx.GetDescriptor().(pmetric.Metric).Unit()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetItem().(pmetric.Metric).SetUnit(str)
+				ctx.GetDescriptor().(pmetric.Metric).SetUnit(str)
 			}
 		},
 	}
@@ -231,11 +242,83 @@ func accessDescriptorMetricUnit() pathGetSetter {
 func accessDescriptorMetricType() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(pmetric.Metric).DataType()
+			return ctx.GetDescriptor().(pmetric.Metric).DataType()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if dataType, ok := val.(pmetric.MetricDataType); ok {
-				ctx.GetItem().(pmetric.Metric).SetDataType(dataType)
+				ctx.GetDescriptor().(pmetric.Metric).SetDataType(dataType)
+			}
+		},
+	}
+}
+
+func accessAttributes() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return ctx.GetItem().(pmetric.NumberDataPoint).Attributes()
+			case pmetric.HistogramDataPoint:
+				return ctx.GetItem().(pmetric.HistogramDataPoint).Attributes()
+			case pmetric.ExponentialHistogramDataPoint:
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes()
+			case pmetric.SummaryDataPoint:
+				return ctx.GetItem().(pmetric.SummaryDataPoint).Attributes()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.NumberDataPoint).Attributes().Clear()
+					attrs.CopyTo(ctx.GetItem().(pmetric.NumberDataPoint).Attributes())
+				}
+			case pmetric.HistogramDataPoint:
+				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.HistogramDataPoint).Attributes().Clear()
+					attrs.CopyTo(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes())
+				}
+			case pmetric.ExponentialHistogramDataPoint:
+				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes().Clear()
+					attrs.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes())
+				}
+			case pmetric.SummaryDataPoint:
+				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.SummaryDataPoint).Attributes().Clear()
+					attrs.CopyTo(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes())
+				}
+			}
+		},
+	}
+}
+
+func accessAttributesKey(mapKey *string) pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return getAttr(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey)
+			case pmetric.HistogramDataPoint:
+				return getAttr(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey)
+			case pmetric.ExponentialHistogramDataPoint:
+				return getAttr(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey)
+			case pmetric.SummaryDataPoint:
+				return getAttr(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey)
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				setAttr(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey, val)
+			case pmetric.HistogramDataPoint:
+				setAttr(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey, val)
+			case pmetric.ExponentialHistogramDataPoint:
+				setAttr(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey, val)
+			case pmetric.SummaryDataPoint:
+				setAttr(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey, val)
 			}
 		},
 	}

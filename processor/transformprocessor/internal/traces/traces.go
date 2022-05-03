@@ -43,6 +43,10 @@ func (ctx spanTransformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
+func (ctx spanTransformContext) GetDescriptor() interface{} {
+	return nil
+}
+
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
 type pathGetSetter struct {
 	getter common.ExprFunc
