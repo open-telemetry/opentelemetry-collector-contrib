@@ -17,6 +17,7 @@
 
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
+- `transformprocessor`: Add support for functions to validate parameters (#9563)
 
 ### 🧰 Bug fixes 🧰
 
@@ -56,7 +57,6 @@
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
 - `attributesprocessor`: Support filter by severity (#9132)
 - `transformprocessor`: Add transformation of logs (#9368)
-- `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 - `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 
