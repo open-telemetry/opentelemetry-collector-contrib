@@ -104,6 +104,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 		labels              labels.Labels
 		scrapes             []*scrape
 		want                func() pmetric.HistogramDataPoint
+		wantErr             bool
 		intervalStartTimeMs int64
 	}{
 		{
@@ -157,20 +158,43 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				return point
 			},
 		},
+		{
+			name:                "histogram with inconsistent timestamps",
+			metricName:          "histogram_inconsistent_ts",
+			intervalStartTimeMs: 11,
+			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			scrapes: []*scrape{
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
+				{at: 12, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
+				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "value"},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
-			for _, tv := range tt.scrapes {
+			for i, tv := range tt.scrapes {
 				var lbls labels.Labels
 				if tv.extraLabel.Name != "" {
 					lbls = labels.NewBuilder(tt.labels).Set(tv.extraLabel.Name, tv.extraLabel.Value).Labels()
 				} else {
 					lbls = tt.labels.Copy()
 				}
-				require.NoError(t, mp.Add(tv.metric, lbls, tv.at, tv.value))
+				err := mp.Add(tv.metric, lbls, tv.at, tv.value)
+				if tt.wantErr {
+					if i != 0 {
+						require.Error(t, err)
+					}
+				} else {
+					require.NoError(t, err)
+				}
+			}
+			if tt.wantErr {
+				// Don't check the result if we got an error
+				return
 			}
 
 			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
@@ -209,6 +233,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 		name          string
 		labelsScrapes []*labelsScrapes
 		want          func() pmetric.SummaryDataPoint
+		wantErr       bool
 	}{
 		{
 			name: "summary",
@@ -372,6 +397,21 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				return point
 			},
 		},
+		{
+			name: "summary with inconsistent timestamps",
+			labelsScrapes: []*labelsScrapes{
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 11, value: 10, metric: "summary_count"},
+						{at: 14, value: 15, metric: "summary_sum"},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -379,9 +419,21 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.name, mc, zap.NewNop())
 			for _, lbs := range tt.labelsScrapes {
-				for _, scrape := range lbs.scrapes {
-					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
+				for i, scrape := range lbs.scrapes {
+					err := mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value)
+					if tt.wantErr {
+						// The first scrape won't have an error
+						if i != 0 {
+							require.Error(t, err)
+						}
+					} else {
+						require.NoError(t, err)
+					}
 				}
+			}
+			if tt.wantErr {
+				// Don't check the result if we got an error
+				return
 			}
 
 			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
