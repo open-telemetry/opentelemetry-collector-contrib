@@ -54,28 +54,7 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 		expectedError  string
 	}{
 		{
-			"uses target system",
-			Config{
-				Endpoint:           "service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/",
-				TargetSystem:       "mytargetsystem",
-				CollectionInterval: 123 * time.Second,
-				OTLPExporterConfig: otlpExporterConfig{
-					Endpoint: "myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
-						Timeout: 234 * time.Second,
-					},
-				},
-			},
-			`otel.exporter.otlp.endpoint = http://myotlpendpoint
-otel.exporter.otlp.timeout = 234000
-otel.jmx.interval.milliseconds = 123000
-otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
-otel.jmx.target.system = mytargetsystem
-otel.metrics.exporter = otlp`,
-			"",
-		},
-		{
-			"uses endpoint as service url",
+			"handles all relevant input appropriately",
 			Config{
 				Endpoint:           "myhost:12345",
 				TargetSystem:       "mytargetsystem",
@@ -90,13 +69,23 @@ otel.metrics.exporter = otlp`,
 						"three": "four",
 					},
 				},
+				// While these aren't realistic usernames/passwords, we want to test the
+				// multiline handling in place to reduce the attack surface of the
+				// interface to the JMX metrics gatherer
+				Username: "myuser\nname",
+				Password: `mypass 
+word`,
 			},
 			`otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
 otel.exporter.otlp.timeout = 234000
 otel.jmx.interval.milliseconds = 123000
+otel.jmx.password = mypass \
+word
 otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
 otel.jmx.target.system = mytargetsystem
+otel.jmx.username = myuser\
+name
 otel.metrics.exporter = otlp`,
 			"",
 		},

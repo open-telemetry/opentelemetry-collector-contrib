@@ -205,9 +205,12 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 
 	content := []string{}
 	for k, v := range config {
-		//TODO - safe escaping & multiline handling of value
 		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
-		content = append(content, fmt.Sprintf("%s = %s", k, v))
+		// As all of the keys are receiver-defined we don't need to escape the reserved characters of ':', '=', or
+		// non-newline white space characters. However, we do want to ensure that we handle multiline values
+		// correctly just in case a user attempts to provide multiline values for one of the available fields
+		safeValue := strings.ReplaceAll(v, "\n", "\\\n")
+		content = append(content, fmt.Sprintf("%s = %s", k, safeValue))
 	}
 	sort.Strings(content)
 
