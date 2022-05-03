@@ -5,22 +5,22 @@ go 1.17
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.49.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.49.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.49.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.50.0
 	github.com/shirou/gopsutil/v3 v3.22.3
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2
+	go.opentelemetry.io/collector v0.50.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
-	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0
+	go.opentelemetry.io/collector/semconv v0.50.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -72,9 +72,9 @@ require (
 
 require (
 	github.com/jaegertracing/jaeger v1.33.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.49.0
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220425174313-0674425b8ef2
-	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.50.0
+	go.opentelemetry.io/collector/pdata v0.50.0
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
@@ -88,5 +88,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

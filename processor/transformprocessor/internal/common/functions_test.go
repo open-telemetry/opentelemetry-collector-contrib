@@ -132,6 +132,26 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "not int",
+			inv: Invocation{
+				Function: "truncateAll",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						String: strp("not an int"),
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

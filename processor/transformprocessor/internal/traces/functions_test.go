@@ -282,6 +282,186 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.CopyTo(span.Attributes())
 			},
 		},
+		{
+			name: "truncate attributes",
+			inv: common.Invocation{
+				Function: "truncateAll",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(1),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "h")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "truncate attributes with zero",
+			inv: common.Invocation{
+				Function: "truncateAll",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(0),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "truncate attributes nothing",
+			inv: common.Invocation{
+				Function: "truncateAll",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(100),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "truncate attributes exact",
+			inv: common.Invocation{
+				Function: "truncateAll",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(11),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "truncate resource attributes",
+			inv: common.Invocation{
+				Function: "truncateAll",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "resource",
+								},
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(11),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "truncate resource negative",
+			inv: common.Invocation{
+				Function: "truncateAll",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "resource",
+								},
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(-1),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -24,6 +24,8 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 
 - `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `truncate(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
 
+- `truncateAll(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that all string values are truncated to the limit. e.g., `truncate(attributes, 100)` will truncate all string values in `attributes` such that all string values have less than or equal to 100 characters.  Non-string values are ignored.
+
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
 - `!=` - matches telemetry where the values are not equal to each other
@@ -52,6 +54,8 @@ processors:
         - set(name, attributes["http.route"])
         - limit(attributes, 100)
         - limit(resource.attributes, 100)
+        - truncateAll(attributes, 4096)
+        - truncateAll(resource.attributes, 4096)
 service:
   pipelines:
     logs:
@@ -79,3 +83,5 @@ All spans
 3) Set `name` to the `http.route` attribute if it is set
 4) Limit all span attributes such that each span has no more than 100 attributes.
 5) Limit all resource attributes such that each resource no more than 100 attributes.
+6) Truncate all span attributes such that no string value has more than 4096 characters.
+7) Truncate all resource attributes such that no string value has more than 4096 characters.
