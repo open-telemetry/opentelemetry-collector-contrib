@@ -1,6 +1,6 @@
 # MongoDB Receiver
 
-This receiver fetches metrics important to run virtual networking using NSX-T. The receiver is planned to ingest metrics via the [NSX Rest API](https://docs.vmware.com/en/VMware-NSX-Data-Center-for-vSphere/6.4/nsx_64_api.pdf). As for logs, it wraps the [syslogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver) which can be used to ingest NSX forwarded logs.
+This receiver fetches metrics important to run virtual networking using NSX-T. The receiver ingests metrics via the [NSX Rest API](https://docs.vmware.com/en/VMware-NSX-Data-Center-for-vSphere/6.4/nsx_64_api.pdf). As for logs, it wraps the [syslogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver) which can be used to ingest NSX forwarded logs.
 
 Supported pipeline types: `metrics` and `logs`
 
