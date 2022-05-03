@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver (#9685)
+
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
@@ -17,6 +19,7 @@
 
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
+- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 
 ### 🧰 Bug fixes 🧰
 
