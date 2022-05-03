@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
         run: make -j2 gomoddownload
@@ -75,7 +75,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
@@ -109,7 +109,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
@@ -156,7 +156,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
@@ -190,7 +190,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Run Integration Tests
         run: make integration-tests-with-cover
 
@@ -220,7 +220,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
@@ -249,7 +249,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
 
@@ -417,7 +417,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Download Binaries
         uses: actions/download-artifact@v3
         with:
@@ -476,7 +476,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh

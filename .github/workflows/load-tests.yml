@@ -39,7 +39,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
         run: make -j2 gomoddownload
@@ -72,7 +72,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: v2-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - run: sudo chmod 0777 -R /opt
       - name: Fluentbit Cache
         id: fluentbit-cache
