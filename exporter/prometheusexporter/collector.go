@@ -215,6 +215,24 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		points[bucket] = cumCount
 	}
 
+	arrLen := ip.Exemplars().Len()
+	exemplars := make([]prometheus.Exemplar, arrLen)
+	for i := 0; i < arrLen; i++ {
+		e := ip.Exemplars().At(i)
+
+		labels := make(prometheus.Labels, e.FilteredAttributes().Len())
+		e.FilteredAttributes().Range(func(k string, v pdata.AttributeValue) bool {
+			labels[k] = v.AsString()
+			return true
+		})
+
+		exemplars[i] = prometheus.Exemplar{
+			Value:     e.DoubleVal(),
+			Labels:    labels,
+			Timestamp: e.Timestamp().AsTime(),
+		}
+	}
+
 	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	if err != nil {
 		return nil, err
