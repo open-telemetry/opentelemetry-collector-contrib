@@ -264,8 +264,7 @@ func generateLogs(resourceFunc ...generateResourceFunc) plog.Logs {
 		res := ls.Resource()
 		resFun(res)
 	}
-	log := ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("foobar")
+	ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	return l
 }
 
