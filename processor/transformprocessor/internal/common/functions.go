@@ -22,10 +22,10 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"keep_keys":   keepKeys,
-	"set":         set,
+	"keep_keys":    keepKeys,
+	"set":          set,
+	"truncate_all": truncateAll,
 	"limit":       limit,
-	"truncateAll": truncateAll,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)

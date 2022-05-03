@@ -89,7 +89,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 	)
-	r.scrapeManager = scrape.NewManager(&scrape.Options{}, logger, r.ocaStore)
+	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, r.ocaStore)
 	if err := r.scrapeManager.ApplyConfig(r.cfg.PrometheusConfig); err != nil {
 		return err
 	}

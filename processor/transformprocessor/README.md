@@ -22,9 +22,9 @@ it references an unset map value, there will be no action.
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
 the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`
 
-- `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `truncate(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
+- `truncate_all(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that all string values are truncated to the limit. e.g., `truncate(attributes, 100)` will truncate all string values in `attributes` such that all string values have less than or equal to 100 characters.  Non-string values are ignored.
 
-- `truncateAll(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that all string values are truncated to the limit. e.g., `truncate(attributes, 100)` will truncate all string values in `attributes` such that all string values have less than or equal to 100 characters.  Non-string values are ignored.
+- `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is an integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `truncate(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
 
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
@@ -54,8 +54,8 @@ processors:
         - set(name, attributes["http.route"])
         - limit(attributes, 100)
         - limit(resource.attributes, 100)
-        - truncateAll(attributes, 4096)
-        - truncateAll(resource.attributes, 4096)
+        - truncate_all(attributes, 4096)
+        - truncate_all(resource.attributes, 4096)
 service:
   pipelines:
     logs:
