@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `datadogexporter`: Replace HistogramMode defined as string with enum.
+
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
@@ -24,6 +26,7 @@
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
 - `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
+- `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
 - `nginxreceiver`: Include nginxreceiver in components (#9572)
 
 ## v0.50.0

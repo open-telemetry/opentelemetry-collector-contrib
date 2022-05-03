@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/google/go-cmp v0.5.8
 	github.com/honeycombio/libhoney-go v1.15.8
-	github.com/klauspost/compress v1.15.1
+	github.com/klauspost/compress v1.15.2
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
 	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
