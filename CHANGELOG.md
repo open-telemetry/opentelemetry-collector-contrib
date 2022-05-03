@@ -27,6 +27,7 @@
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
 - `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
 - `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
+- `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 
 ## v0.50.0
 
