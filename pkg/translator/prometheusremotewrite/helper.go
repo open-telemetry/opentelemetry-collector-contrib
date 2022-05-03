@@ -65,7 +65,7 @@ var dropSanitizationGate = featuregate.Gate{
 }
 
 func init() {
-	featuregate.Register(dropSanitizationGate)
+	featuregate.GetRegistry().MustRegister(dropSanitizationGate)
 }
 
 type bucketBoundsData struct {
@@ -288,9 +288,9 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}
 	switch pt.ValueType() {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		sample.Value = float64(pt.IntVal())
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		sample.Value = pt.DoubleVal()
 	}
 	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
@@ -553,7 +553,7 @@ func sanitize(s string) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = keyStr + "_" + s
 	}
-	if !featuregate.IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
+	if !featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
 		s = keyStr + s
 	}
 	return s

@@ -24,14 +24,13 @@ import (
 
 func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
-	metadata Metadata, typeStr string,
+	metadata Metadata,
 	metricGroupsToCollect map[MetricGroup]bool) []pmetric.Metrics {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
 		time:                  time.Now(),
-		typeStr:               typeStr,
 	}
 
 	acc.nodeStats(summary.Node)

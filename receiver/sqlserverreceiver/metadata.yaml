@@ -89,13 +89,17 @@ metrics:
     enabled: true
     description: Total number of transaction log expansions for a database.
     unit: "{growths}"
-    gauge:
+    sum:
+      monotonic: true
+      aggregation: cumulative
       value_type: double
   sqlserver.transaction_log.shrink.count:
     enabled: true
     description: Total number of transaction log shrinks for a database.
     unit: "{shrinks}"
-    gauge:
+    sum:
+      monotonic: true
+      aggregation: cumulative
       value_type: double
   sqlserver.transaction_log.usage:
     enabled: true

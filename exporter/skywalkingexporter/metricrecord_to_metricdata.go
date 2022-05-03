@@ -76,9 +76,9 @@ func numberMetricsToData(name string, data pmetric.NumberDataPointSlice, default
 		meterData.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
 		sv.SingleValue.Name = name
 		switch dataPoint.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			sv.SingleValue.Value = float64(dataPoint.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			sv.SingleValue.Value = dataPoint.DoubleVal()
 		}
 		meterData.Metric = sv

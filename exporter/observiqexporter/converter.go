@@ -125,10 +125,15 @@ func resourceAndInstrumentationLogToEntry(resMap map[string]interface{}, log plo
 }
 
 func timestampFromRecord(log plog.LogRecord) string {
-	if log.Timestamp() == 0 {
-		return timeNow().UTC().Format(timestampFieldOutputLayout)
+	if log.Timestamp() != 0 {
+		return log.Timestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
 	}
-	return log.Timestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
+
+	if log.ObservedTimestamp() != 0 {
+		return log.ObservedTimestamp().AsTime().UTC().Format(timestampFieldOutputLayout)
+	}
+
+	return timeNow().UTC().Format(timestampFieldOutputLayout)
 }
 
 func messageFromRecord(log plog.LogRecord) string {
