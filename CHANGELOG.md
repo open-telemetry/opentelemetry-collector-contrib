@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `datadogexporter`: Replace HistogramMode defined as string with enum.
+
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
