@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seve
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.50.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220425174313-0674425b8ef2
-	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
+	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/semconv v0.50.1-0.20220429151328-041f39835df7
 	go.uber.org/zap v1.21.0
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
@@ -17,11 +17,11 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.7 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
@@ -40,14 +40,14 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.6.3 // indirect
-	go.opentelemetry.io/otel/metric v0.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.3 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
@@ -68,5 +68,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4

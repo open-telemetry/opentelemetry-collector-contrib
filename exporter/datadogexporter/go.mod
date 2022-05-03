@@ -6,16 +6,16 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.19
 	github.com/DataDog/datadog-agent/pkg/quantile v0.35.0
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
-	github.com/aws/aws-sdk-go v1.44.0
+	github.com/aws/aws-sdk-go v1.44.4
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.49.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.50.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.49.1-0.20220425174313-0674425b8ef2
-	go.opentelemetry.io/collector/pdata v0.49.1-0.20220425174313-0674425b8ef2
-	go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
+	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/semconv v0.50.1-0.20220429151328-041f39835df7
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.37.1
@@ -48,12 +48,12 @@ require (
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.6.3 // indirect
-	go.opentelemetry.io/otel/metric v0.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.3 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
@@ -70,5 +70,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 // see https://github.com/go-chi/chi/issues/713
 // see https://github.com/DataDog/dd-trace-go/issues/1220
 replace github.com/go-chi/chi/v4 => github.com/go-chi/chi v4.0.0+incompatible
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
