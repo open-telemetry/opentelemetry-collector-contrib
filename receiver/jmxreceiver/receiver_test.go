@@ -66,13 +66,13 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 					},
 				},
 			},
-			`otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
-otel.jmx.interval.milliseconds = 123000
-otel.jmx.target.system = mytargetsystem
-otel.metrics.exporter = otlp
-otel.exporter.otlp.endpoint = http://myotlpendpoint
+			`otel.exporter.otlp.endpoint = http://myotlpendpoint
 otel.exporter.otlp.timeout = 234000
-`, "",
+otel.jmx.interval.milliseconds = 123000
+otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
+otel.jmx.target.system = mytargetsystem
+otel.metrics.exporter = otlp`,
+			"",
 		},
 		{
 			"uses endpoint as service url",
@@ -91,14 +91,14 @@ otel.exporter.otlp.timeout = 234000
 					},
 				},
 			},
-			`otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
-otel.jmx.interval.milliseconds = 123000
-otel.jmx.target.system = mytargetsystem
-otel.metrics.exporter = otlp
-otel.exporter.otlp.endpoint = https://myotlpendpoint
-otel.exporter.otlp.timeout = 234000
+			`otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
-`, "",
+otel.exporter.otlp.timeout = 234000
+otel.jmx.interval.milliseconds = 123000
+otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
+otel.jmx.target.system = mytargetsystem
+otel.metrics.exporter = otlp`,
+			"",
 		},
 		{
 			"errors on portless endpoint",
