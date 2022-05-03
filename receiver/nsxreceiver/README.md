@@ -75,7 +75,7 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 ## Logging Configuration
 
-Logging is ingested via syslog forwarding from the vCenter. This [document](https://docs.vmware.com/en/VMware-NSX-Data-Center-for-vSphere/6.4/com.vmware.nsx.logging.doc/GUID-EA70974C-07F8-469D-8A9D-0ED54F0C8F34.html) from VMware outlines how to configure syslog forwarding from your NSX Data Center.
+Logging is ingested via syslog forwarding from the NSX. This [document](https://docs.vmware.com/en/VMware-NSX-Data-Center-for-vSphere/6.4/com.vmware.nsx.logging.doc/GUID-EA70974C-07F8-469D-8A9D-0ED54F0C8F34.html) from VMware outlines how to configure syslog forwarding from your NSX Data Center.
 
 ### Logging Prerequisites
 
