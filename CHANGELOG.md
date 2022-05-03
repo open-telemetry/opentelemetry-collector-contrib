@@ -11,6 +11,7 @@
 ### 🚀 New components 🚀
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
+- `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
 
 ### 💡 Enhancements 💡
 
@@ -21,6 +22,8 @@
 ### 🧰 Bug fixes 🧰
 
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
+- `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
+- `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
 
 ## v0.50.0
 
@@ -31,6 +34,7 @@
 - `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
 - `kubeletstatsreceiver`: instrumentation name updated from `kubeletstats` to `otelcol/kubeletstatsreceiver` (#9400)
 - `datadogexporter`: Remove `GetHostTags` method from `TagsConfig` struct (#9423)
+- `googlecloudexporter`: Graduate the `exporter.googlecloud.OTLPDirect` feature-gate to Beta.  This includes changes to the configuration structure, and many changes to default behavior. (#9471)
 
 ### 🚩 Deprecations 🚩
 
@@ -63,6 +67,8 @@
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
 - `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
 - `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
+- `riakreceiver`: Fix issue where user configured metric settings were ignored. (#9561)
+- `sqlserverreceiver`: Update `sqlserver.transaction_log.growth.count` and `sqlserver.transaction_log.shrink.count` to be monotonic sums. (#9522)
 
 ## v0.49.0
 
