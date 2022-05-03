@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -33,6 +34,7 @@ import (
 type scraper struct {
 	config   *Config
 	settings component.TelemetrySettings
+	host     component.Host
 	client   Client
 	mb       *metadata.MetricsBuilder
 	logger   *zap.Logger
@@ -48,11 +50,10 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 }
 
 func (s *scraper) start(ctx context.Context, host component.Host) error {
-	client, err := newClient(s.config, s.settings, host, s.logger.Named("client"))
+	s.host = host
+	err := s.ensureClient()
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("unable to instantiate client %s", err.Error()))
-	} else {
-		s.client = client
 	}
 	return nil
 }
@@ -67,6 +68,11 @@ const (
 
 func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
+	if err := s.ensureClient(); err != nil {
+		errs.Add(err)
+		return pmetric.NewMetrics(), errs.Combine()
+	}
+
 	r := s.retrieve(ctx, errs)
 
 	colTime := pdata.NewTimestampFromTime(time.Now())
@@ -244,6 +250,18 @@ func (s *scraper) recordNode(
 		metadata.WithNsxNodeID(info.nodeProps.ID),
 		metadata.WithNsxNodeType(info.nodeType),
 	)
+}
+
+func (s *scraper) ensureClient() error {
+	if s.client != nil {
+		return nil
+	}
+	client, err := newClient(s.config, s.settings, s.host, s.logger.Named("client"))
+	if err != nil {
+		return err
+	}
+	s.client = client
+	return nil
 }
 
 func clusterNodeType(node dm.ClusterNode) string {
