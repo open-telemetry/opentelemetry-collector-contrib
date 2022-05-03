@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.43.45
+	github.com/aws/aws-sdk-go v1.44.4
 	github.com/aws/aws-xray-sdk-go v1.7.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.7 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

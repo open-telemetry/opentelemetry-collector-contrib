@@ -36,7 +36,7 @@ func init() {
 	featuregate.GetRegistry().MustRegister(featuregate.Gate{
 		ID:          pdataExporterFeatureGate,
 		Description: "When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.",
-		Enabled:     false,
+		Enabled:     true,
 	})
 }
 
