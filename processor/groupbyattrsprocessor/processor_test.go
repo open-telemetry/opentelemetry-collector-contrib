@@ -85,7 +85,6 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog
 
 		for j := 0; j < illCount; j++ {
 			log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-			log.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			log.Attributes().InsertString("commonGroupedAttr", "abc")
 			log.Attributes().InsertString("commonNonGroupedAttr", "xyz")
 		}
@@ -571,7 +570,6 @@ func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) 
 			sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 			sl.Scope().SetName(ilName)
 			log := sl.LogRecords().AppendEmpty()
-			log.SetName(fmt.Sprint("foo-", j))
 			attrs.CopyTo(log.Attributes())
 		}
 	}
