@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.19
 	github.com/DataDog/datadog-agent/pkg/quantile v0.35.0
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
-	github.com/aws/aws-sdk-go v1.44.4
+	github.com/aws/aws-sdk-go v1.44.5
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0
