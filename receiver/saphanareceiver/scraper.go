@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -66,16 +66,16 @@ func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string)
 
 // Scrape is called periodically, querying SAP HANA and building Metrics to send to
 // the next consumer.
-func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (s *sapHanaScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	client := newSapHanaClient(s.cfg, s.factory)
 	if err := client.Connect(ctx); err != nil {
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 
 	defer client.Close()
 
 	errs := &scrapererror.ScrapeErrors{}
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, query := range queries {
 		if query.Enabled == nil || query.Enabled(s.cfg) {

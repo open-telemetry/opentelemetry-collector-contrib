@@ -17,7 +17,7 @@ metrics:
     description: Number of users connected to the SQL Server.
     unit: "{connections}"
     gauge:
-      value_type: double
+      value_type: int
   sqlserver.lock.wait_time.avg:
     enabled: true
     description: Average wait time for all lock requests that had to wait.
@@ -59,7 +59,7 @@ metrics:
     description: Time a page will stay in the buffer pool.
     unit: s
     gauge:
-      value_type: double
+      value_type: int
   sqlserver.page.split.rate:
     enabled: true
     description: Number of pages split as a result of overflowing index pages.
@@ -92,7 +92,7 @@ metrics:
     sum:
       monotonic: true
       aggregation: cumulative
-      value_type: double
+      value_type: int
   sqlserver.transaction_log.shrink.count:
     enabled: true
     description: Total number of transaction log shrinks for a database.
@@ -100,13 +100,13 @@ metrics:
     sum:
       monotonic: true
       aggregation: cumulative
-      value_type: double
+      value_type: int
   sqlserver.transaction_log.usage:
     enabled: true
     description: Percent of transaction log space used.
     unit: "%"
     gauge:
-      value_type: double
+      value_type: int
   sqlserver.transaction_log.flush.wait.rate:
     enabled: true
     description: Number of commits waiting for a transaction log flush.

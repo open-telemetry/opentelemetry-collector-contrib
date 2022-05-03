@@ -20,7 +20,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -44,15 +46,15 @@ func newTransformer(
 	}, nil
 }
 
-func (t transformer) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (t transformer) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	return ld, nil
 }
 
-func (t transformer) processMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (t transformer) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (t transformer) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (t transformer) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	return td, nil
 }
 

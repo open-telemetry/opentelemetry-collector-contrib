@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
@@ -147,13 +147,15 @@ func TestSimpleQueryOutput(t *testing.T) {
 		orderedStats: []queryStat{
 			{
 				key: "value",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
+					m map[string]string) {
 					// Function is a no-op as it's not required for this test
 				},
 			},
 			{
 				key: "rate",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
+					m map[string]string) {
 					// Function is a no-op as it's not required for this test
 				},
 			},
@@ -199,13 +201,15 @@ func TestNullOutput(t *testing.T) {
 		orderedStats: []queryStat{
 			{
 				key: "value",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
+					m map[string]string) {
 					// Function is a no-op as it's not required for this test
 				},
 			},
 			{
 				key: "rate",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pdata.Timestamp, val string, m map[string]string) {
+				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
+					m map[string]string) {
 					// Function is a no-op as it's not required for this test
 				},
 			},

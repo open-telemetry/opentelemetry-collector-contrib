@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `datadogexporter`: Replace HistogramMode defined as string with enum.
+
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
@@ -21,7 +23,10 @@
 ### 🧰 Bug fixes 🧰
 
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
-- `azuremonitorexporter` : Fix log exporter bug related to incorrectly mapping SpanId (#9579)
+- `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
+- `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
+- `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
+- `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
 - `examples/demo`: fix baggage not work in trace demo app. (#9418)
 
 ## v0.50.0
@@ -66,6 +71,7 @@
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
 - `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
 - `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
+- `riakreceiver`: Fix issue where user configured metric settings were ignored. (#9561)
 - `sqlserverreceiver`: Update `sqlserver.transaction_log.growth.count` and `sqlserver.transaction_log.shrink.count` to be monotonic sums. (#9522)
 
 ## v0.49.0
