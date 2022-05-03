@@ -1,0 +1,1796 @@
+{
+    "resourceMetrics": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.interface.id",
+                        "value": {
+                            "stringValue": "vmnic0"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "esxi-18938.cf5e88ac.australia-southeast1.gve.goog"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.interface.packet.count",
+                            "description": "The number of packets flowing through the network interface on the node.",
+                            "unit": "{packets}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "63594238"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsx.interface.throughput",
+                            "description": "The number of Bytes flowing through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.interface.id",
+                        "value": {
+                            "stringValue": "vmk10"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "esxi-18938.cf5e88ac.australia-southeast1.gve.goog"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.interface.packet.count",
+                            "description": "The number of packets flowing through the network interface on the node.",
+                            "unit": "{packets}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "63594238"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsx.interface.throughput",
+                            "description": "The number of Bytes flowing through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "esxi-18938.cf5e88ac.australia-southeast1.gve.goog"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.id",
+                        "value": {
+                            "stringValue": "0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.type",
+                        "value": {
+                            "stringValue": "transport"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.node.cpu.utilization",
+                            "description": "The average amount of CPU being used by the node.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "cpu.process.class",
+                                                "value": {
+                                                    "stringValue": "datapath"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "cpu.process.class",
+                                                "value": {
+                                                    "stringValue": "services"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "nsx.node.memory.usage",
+                            "description": "The memory usage of the node",
+                            "unit": "KBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.interface.id",
+                        "value": {
+                            "stringValue": "vmnic0"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "esxi-27971.cf5e88ac.australia-southeast1.gve.goog"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.interface.packet.count",
+                            "description": "The number of packets flowing through the network interface on the node.",
+                            "unit": "{packets}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "63594238"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsx.interface.throughput",
+                            "description": "The number of Bytes flowing through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.interface.id",
+                        "value": {
+                            "stringValue": "vmk10"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "esxi-27971.cf5e88ac.australia-southeast1.gve.goog"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.interface.packet.count",
+                            "description": "The number of packets flowing through the network interface on the node.",
+                            "unit": "{packets}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "63594238"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsx.interface.throughput",
+                            "description": "The number of Bytes flowing through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "esxi-27971.cf5e88ac.australia-southeast1.gve.goog"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.id",
+                        "value": {
+                            "stringValue": "f5045ed2-43ab-4a35-a2c5-d20c30a32292"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.type",
+                        "value": {
+                            "stringValue": "transport"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.node.cpu.utilization",
+                            "description": "The average amount of CPU being used by the node.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "cpu.process.class",
+                                                "value": {
+                                                    "stringValue": "datapath"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "cpu.process.class",
+                                                "value": {
+                                                    "stringValue": "services"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "nsx.node.memory.usage",
+                            "description": "The memory usage of the node",
+                            "unit": "KBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.interface.id",
+                        "value": {
+                            "stringValue": "lo"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "nsxmgr-03"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.interface.packet.count",
+                            "description": "The number of packets flowing through the network interface on the node.",
+                            "unit": "{packets}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "288"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "12483778397"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "12313320048"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsx.interface.throughput",
+                            "description": "The number of Bytes flowing through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "2837237037443"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "5877910030884"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.interface.id",
+                        "value": {
+                            "stringValue": "eth0"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "nsxmgr-03"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.interface.packet.count",
+                            "description": "The number of packets flowing through the network interface on the node.",
+                            "unit": "{packets}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "288"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "12483778397"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "dropped"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "errored"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            },
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "success"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "12313320048"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsx.interface.throughput",
+                            "description": "The number of Bytes flowing through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "2837237037443"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "5877910030884"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "nsx.node.name",
+                        "value": {
+                            "stringValue": "nsxmgr-03"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.id",
+                        "value": {
+                            "stringValue": "b7a79908-9808-4c9e-bb49-b70008993fcb"
+                        }
+                    },
+                    {
+                        "key": "nsx.node.type",
+                        "value": {
+                            "stringValue": "manager"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/nsxreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "nsx.node.cpu.utilization",
+                            "description": "The average amount of CPU being used by the node.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "cpu.process.class",
+                                                "value": {
+                                                    "stringValue": "datapath"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "cpu.process.class",
+                                                "value": {
+                                                    "stringValue": "services"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "nsx.node.disk.usage",
+                            "description": "The amount of storage space used by the node.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/dev"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/run"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "6612"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "7075020"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/dev/shm"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "6436"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/run/lock"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/sys/fs/cgroup"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/var/log"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "9788208"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/nonconfig"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "2280724"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/repository"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "5876104"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/tmp"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "15708"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/var/dump"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "902516"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/config"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "166988"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/boot"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "8424"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/image"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "54340"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/run/user/1007"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "nsx.node.disk.utilization",
+                            "description": "The percentage of storage space utilized.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/dev"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/run"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0.26797134506052456
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 66.21743141110211
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/dev/shm"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0.052167766869415225
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/run/lock"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/sys/fs/cgroup"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/var/log"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 34.81667425730868
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/nonconfig"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 2.2126377725298423
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/repository"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 18.184516721289395
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/tmp"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0.4064022585492464
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/var/dump"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 9.30463398641599
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/config"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0.5502299137810142
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/boot"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0.8718114304165321
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/image"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0.12318272609130737
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk",
+                                                "value": {
+                                                    "stringValue": "/run/user/1007"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asDouble": 0
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "nsx.node.memory.usage",
+                            "description": "The memory usage of the node",
+                            "unit": "KBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1651592756089350000",
+                                        "timeUnixNano": "1651592756089985000",
+                                        "asInt": "19636300"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

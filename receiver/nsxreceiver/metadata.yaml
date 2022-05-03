@@ -4,6 +4,9 @@ resource_attributes:
   nsx.node.name:
     description: The name of the NSX Node.
     type: string
+  nsx.node.id:
+    description: The ID of the NSX Node.
+    type: string
   nsx.node.type:
     description: The type of NSX Node.
     type: string
@@ -25,6 +28,13 @@ attributes:
   disk:
     value: disk
     description: The name of the mounted storage
+  packet.type:
+    value: type
+    description: The type of packet counter
+    enum:
+      - dropped
+      - errored
+      - success
   cpu.process.class:
     description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes
     enum:
@@ -35,8 +45,8 @@ attributes:
 
 metrics:
   nsx.interface.throughput:
-    description: The number of messages published to a queue.
-    unit: "{messages}"
+    description: The number of Bytes flowing through the network interface.
+    unit: "By"
     sum:
       monotonic: true
       aggregation: cumulative
@@ -44,14 +54,14 @@ metrics:
     enabled: true
     attributes: [direction]
   nsx.interface.packet.count:
-    description: The number of packets flowing through the network interface.
-    unit: "{messages}"
+    description: The number of packets flowing through the network interface on the node.
+    unit: "{packets}"
     sum:
       monotonic: true
       aggregation: cumulative
       value_type: int
     enabled: true
-    attributes: [direction]
+    attributes: [direction, packet.type]
   nsx.node.cpu.utilization:
     description: The average amount of CPU being used by the node.
     unit: "%"
@@ -75,24 +85,24 @@ metrics:
       aggregation: cumulative
     enabled: true
     attributes: [disk]
-  node.load_balancer.utilization:
+  nsx.node.load_balancer.utilization:
     description: The utilization of load balancers by the node
     unit: "%"
     gauge:
       value_type: double
     enabled: true
     attributes: [load_balancer]
-  node.memory.usage:
+  nsx.node.memory.usage:
     description: The memory usage of the node
-    unit: By
+    unit: KBy
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
     enabled: true
-  node.cache.memory.usage:
-    description: The memory usage of the node’s cache
-    unit: By
+  nsx.node.cache.memory.usage:
+    description: The memory usage of the node's cache
+    unit: KBy
     sum:
       monotonic: false
       value_type: int
