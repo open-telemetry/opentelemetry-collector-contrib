@@ -991,7 +991,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 }
 
 func Test_extractField(t *testing.T) {
-	c := WatchClient{}
 	type args struct {
 		v string
 		r FieldExtractionRule
@@ -1028,7 +1027,7 @@ func Test_extractField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := c.extractField(tt.args.v, tt.args.r); got != tt.want {
+			if got := tt.args.r.extractField(tt.args.v); got != tt.want {
 				t.Errorf("extractField() = %v, want %v", got, tt.want)
 			}
 		})

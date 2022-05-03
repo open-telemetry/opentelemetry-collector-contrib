@@ -376,10 +376,6 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	return tags
 }
 
-func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
-	return r.extractField(v)
-}
-
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := &Pod{
 		Name:      pod.Name,
