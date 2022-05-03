@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"time"
 )
 
 type metricTransformContext struct {
@@ -105,6 +106,18 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 			return accessAttributes(), nil
 		}
 		return accessAttributesKey(mapKey), nil
+	case "start_time_unix_nano":
+		return accessStartTimeUnixNano(), nil
+	case "time_unix_nano":
+		return accessTimeUnixNano(), nil
+	case "value_double":
+		return accessDoubleValue(), nil
+	case "value_int":
+		return accessIntValue(), nil
+	case "exemplars":
+		return accessExemplars(), nil
+	case "flags":
+		return accessFlags(), nil
 	}
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
@@ -324,6 +337,159 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 	}
 }
 
+func accessStartTimeUnixNano() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return ctx.GetItem().(pmetric.NumberDataPoint).StartTimestamp().AsTime().UnixNano()
+			case pmetric.HistogramDataPoint:
+				return ctx.GetItem().(pmetric.HistogramDataPoint).StartTimestamp().AsTime().UnixNano()
+			case pmetric.ExponentialHistogramDataPoint:
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).StartTimestamp().AsTime().UnixNano()
+			case pmetric.SummaryDataPoint:
+				return ctx.GetItem().(pmetric.SummaryDataPoint).StartTimestamp().AsTime().UnixNano()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newTime, ok := val.(int64); ok {
+				switch ctx.GetItem().(type) {
+				case pmetric.NumberDataPoint:
+					ctx.GetItem().(pmetric.NumberDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				case pmetric.HistogramDataPoint:
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				case pmetric.ExponentialHistogramDataPoint:
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				case pmetric.SummaryDataPoint:
+					ctx.GetItem().(pmetric.SummaryDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				}
+			}
+		},
+	}
+}
+
+func accessTimeUnixNano() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return ctx.GetItem().(pmetric.NumberDataPoint).Timestamp().AsTime().UnixNano()
+			case pmetric.HistogramDataPoint:
+				return ctx.GetItem().(pmetric.HistogramDataPoint).Timestamp().AsTime().UnixNano()
+			case pmetric.ExponentialHistogramDataPoint:
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Timestamp().AsTime().UnixNano()
+			case pmetric.SummaryDataPoint:
+				return ctx.GetItem().(pmetric.SummaryDataPoint).Timestamp().AsTime().UnixNano()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newTime, ok := val.(int64); ok {
+				switch ctx.GetItem().(type) {
+				case pmetric.NumberDataPoint:
+					ctx.GetItem().(pmetric.NumberDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				case pmetric.HistogramDataPoint:
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				case pmetric.ExponentialHistogramDataPoint:
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				case pmetric.SummaryDataPoint:
+					ctx.GetItem().(pmetric.SummaryDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				}
+			}
+		},
+	}
+}
+
+func accessDoubleValue() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return ctx.GetItem().(pmetric.NumberDataPoint).DoubleVal()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newDouble, ok := val.(float64); ok {
+				switch ctx.GetItem().(type) {
+				case pmetric.NumberDataPoint:
+					ctx.GetItem().(pmetric.NumberDataPoint).SetDoubleVal(newDouble)
+				}
+			}
+		},
+	}
+}
+
+func accessIntValue() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return ctx.GetItem().(pmetric.NumberDataPoint).IntVal()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newInt, ok := val.(int64); ok {
+				switch ctx.GetItem().(type) {
+				case pmetric.NumberDataPoint:
+					ctx.GetItem().(pmetric.NumberDataPoint).SetIntVal(newInt)
+				}
+			}
+		},
+	}
+}
+
+func accessExemplars() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return ctx.GetItem().(pmetric.NumberDataPoint).Exemplars()
+			case pmetric.HistogramDataPoint:
+				return ctx.GetItem().(pmetric.HistogramDataPoint).Exemplars()
+			case pmetric.ExponentialHistogramDataPoint:
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Exemplars()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {},
+	}
+}
+
+func accessFlags() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			switch ctx.GetItem().(type) {
+			case pmetric.NumberDataPoint:
+				return ctx.GetItem().(pmetric.NumberDataPoint).Flags()
+			case pmetric.HistogramDataPoint:
+				return ctx.GetItem().(pmetric.HistogramDataPoint).Flags()
+			case pmetric.ExponentialHistogramDataPoint:
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags()
+			case pmetric.SummaryDataPoint:
+				return ctx.GetItem().(pmetric.SummaryDataPoint).Flags()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newFlags, ok := val.(pmetric.MetricDataPointFlags); ok {
+				switch ctx.GetItem().(type) {
+				case pmetric.NumberDataPoint:
+					ctx.GetItem().(pmetric.NumberDataPoint).SetFlags(newFlags)
+				case pmetric.HistogramDataPoint:
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlags(newFlags)
+				case pmetric.ExponentialHistogramDataPoint:
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlags(newFlags)
+				case pmetric.SummaryDataPoint:
+					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlags(newFlags)
+				}
+			}
+		},
+	}
+}
+
 func getAttr(attrs pcommon.Map, mapKey string) interface{} {
 	val, ok := attrs.Get(mapKey)
 	if !ok {
@@ -394,58 +560,6 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 			arr.SliceVal().AppendEmpty().SetBytesVal(b)
 		}
 		attrs.Upsert(mapKey, arr)
-	default:
-		// TODO(anuraaga): Support set of map type.
-	}
-}
-
-func setValue(value pcommon.Value, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		value.SetStringVal(v)
-	case bool:
-		value.SetBoolVal(v)
-	case int64:
-		value.SetIntVal(v)
-	case float64:
-		value.SetDoubleVal(v)
-	case []byte:
-		value.SetBytesVal(v)
-	case []string:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, str := range v {
-			value.SliceVal().AppendEmpty().SetStringVal(str)
-		}
-	case []bool:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBoolVal(b)
-		}
-	case []int64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, i := range v {
-			value.SliceVal().AppendEmpty().SetIntVal(i)
-		}
-	case []float64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, f := range v {
-			value.SliceVal().AppendEmpty().SetDoubleVal(f)
-		}
-	case [][]byte:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBytesVal(b)
-		}
 	default:
 		// TODO(anuraaga): Support set of map type.
 	}
