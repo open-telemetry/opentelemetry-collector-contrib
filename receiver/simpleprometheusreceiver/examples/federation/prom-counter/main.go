@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
@@ -34,7 +34,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func initMeter() {
+func initMeter() metric.Meter {
 	config := prometheus.Config{}
 	c := controller.New(
 		processor.NewFactory(
@@ -54,16 +54,16 @@ func initMeter() {
 	go func() {
 		_ = http.ListenAndServe(":8080", nil)
 	}()
+	return exporter.MeterProvider().Meter("federation/prom-counter")
 }
 
 func main() {
 	// set up prometheus
-	initMeter()
+	meter := initMeter()
 	// logging
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	logger.Info("Start Prometheus metrics app")
-	meter := global.Meter("federation/prom-counter")
 	valueRecorder, err := meter.SyncInt64().Histogram("prom_counter")
 	if err != nil {
 		log.Panicf("failed to initialize histogram %v", err)
