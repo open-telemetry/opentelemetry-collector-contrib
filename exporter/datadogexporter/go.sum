@@ -40,8 +40,8 @@ github.com/Azure/go-autorest/logger v0.1.0/go.mod h1:oExouG+K6PryycPJfVSxi/koC6L
 github.com/Azure/go-autorest/tracing v0.5.0/go.mod h1:r/s2XiOKccPW3HrqB+W0TQzfbtp2fGCgRFtBroKn4Dk=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/DataDog/agent-payload/v5 v5.0.19 h1:Qm89IzxFz1tUlhg6XZLEePENOlUlXmd/MPs8tOsWOeQ=
-github.com/DataDog/agent-payload/v5 v5.0.19/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
+github.com/DataDog/agent-payload/v5 v5.0.20 h1:R+QNKsG2t1+UAi0wOeSLlYU6lWPTZpaeHXX/ZluE9hY=
+github.com/DataDog/agent-payload/v5 v5.0.20/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.0.0-20211129110424-6491aa3bf583/go.mod h1:EP9f4GqaDJyP1F5jTNMtzdIpw3JpNs3rMSJOnYywCiw=
 github.com/DataDog/datadog-agent/pkg/quantile v0.35.0 h1:GKbiy59+Q0jc9MLV8I5aUeUC8/ubnIMmm8y2IZcT//8=
 github.com/DataDog/datadog-agent/pkg/quantile v0.35.0/go.mod h1:UsCz7/ojY6EFWgJht3m4GP1HPCQNgI1fIG7kBzsTOLs=
@@ -87,8 +87,8 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.34.28/go.mod h1:H7NKnBqNVzoTJpGfLrQkkD+ytBA93eiDYi/+8rV9s48=
-github.com/aws/aws-sdk-go v1.44.4 h1:ePN0CVJMdiz2vYUcJH96eyxRrtKGSDMgyhP6rah2OgE=
-github.com/aws/aws-sdk-go v1.44.4/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.44.5 h1:T4mckpWUfplPG4GA3FDWDCM1QaCzisjGzzeCVBhHKwQ=
+github.com/aws/aws-sdk-go v1.44.5/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/aws/aws-sdk-go-v2 v1.0.0/go.mod h1:smfAbmpW+tcRVuNUjo3MOArSZmW72t62rkCzc2i0TWM=
 github.com/aws/aws-sdk-go-v2 v1.9.2/go.mod h1:cK/D0BBs0b/oWPIcX/Z/obahJK1TT7IPVjy53i/mX/4=
 github.com/aws/aws-sdk-go-v2/config v1.0.0/go.mod h1:WysE/OpUgE37tjtmtJd8GXgT8s1euilE5XtUkRNUQ1w=
