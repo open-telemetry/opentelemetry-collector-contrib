@@ -159,11 +159,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 otel.jmx.interval.milliseconds = %v
 `, jmx.config.Endpoint, jmx.config.CollectionInterval.Milliseconds())
 
-	if jmx.config.TargetSystem != "" {
-		javaConfig += fmt.Sprintf("otel.jmx.target.system = %v\n", jmx.config.TargetSystem)
-	} else if jmx.config.GroovyScript != "" {
-		javaConfig += fmt.Sprintf("otel.jmx.groovy.script = %v\n", jmx.config.GroovyScript)
-	}
+	javaConfig += fmt.Sprintf("otel.jmx.target.system = %v\n", jmx.config.TargetSystem)
 
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	if !strings.HasPrefix(endpoint, "http") {

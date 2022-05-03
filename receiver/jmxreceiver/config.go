@@ -31,10 +31,8 @@ type Config struct {
 	JARPath string `mapstructure:"jar_path"`
 	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
 	Endpoint string `mapstructure:"endpoint"`
-	// The target system for the metric gatherer whose built in groovy script to run.  Cannot be set with GroovyScript.
+	// The target system for the metric gatherer whose built in groovy script to run.
 	TargetSystem string `mapstructure:"target_system"`
-	// The script for the metric gatherer to run on the configured interval.  Cannot be set with TargetSystem.
-	GroovyScript string `mapstructure:"groovy_script"`
 	// The duration in between groovy script invocations and metric exports (10 seconds by default).
 	// Will be converted to milliseconds.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
@@ -60,10 +58,13 @@ type Config struct {
 	RemoteProfile string `mapstructure:"remote_profile"`
 	// The SASL/DIGEST-MD5 realm
 	Realm string `mapstructure:"realm"`
-	// Map of property names to values to pass as system properties when running JMX Metric Gatherer
-	Properties map[string]string `mapstructure:"properties"`
 	// Array of additional JARs to be added to the the class path when launching the JMX Metric Gatherer JAR
 	AdditionalJars []string `mapstructure:"additional_jars"`
+	// Map of resource attributees used by the Java SDK Autoconfigure to set resource attributes
+	ResourceAttributes map[string]string `mapstructure:"resource_attributes"`
+	// Log level used by the JMX metric gatherer. Should be one of:
+	// `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
+	LogLevel string `mapstructure:"log_level"`
 }
 
 // We don't embed the existing OTLP Exporter config as most fields are unsupported
@@ -95,10 +96,21 @@ func (oec otlpExporterConfig) headersToString() string {
 }
 
 func (c *Config) parseProperties() []string {
-	parsed := make([]string, 0, len(c.Properties))
-	for property, value := range c.Properties {
-		parsed = append(parsed, fmt.Sprintf("-D%s=%s", property, value))
+	parsed := make([]string, 1)
+	if len(c.ResourceAttributes) > 0 {
+		attributes := make([]string, 0, len(c.ResourceAttributes))
+		for k, v := range c.ResourceAttributes {
+			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
+		}
+		parsed = append(parsed, fmt.Sprintf("-Dotel.resource.attributes=%s", strings.Join(attributes, ",")))
 	}
+
+	logLevel := "info"
+	if len(c.LogLevel) > 0 {
+		logLevel = strings.ToLower(c.LogLevel)
+	}
+
+	parsed = append(parsed, fmt.Sprintf("-Dorg.slf4j.simpleLogger.defaultLogLevel=%s", logLevel))
 	// Sorted for testing and reproducibility
 	sort.Strings(parsed)
 	return parsed
@@ -124,13 +136,15 @@ func (c *Config) parseClasspath() string {
 	return strings.Join(classPathElems, ":")
 }
 
+var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
+
 func (c *Config) validate() error {
 	var missingFields []string
 	if c.Endpoint == "" {
 		missingFields = append(missingFields, "`endpoint`")
 	}
-	if c.TargetSystem == "" && c.GroovyScript == "" {
-		missingFields = append(missingFields, "`target_system` or `groovy_script`")
+	if c.TargetSystem == "" {
+		missingFields = append(missingFields, "`target_system`")
 	}
 	if missingFields != nil {
 		baseMsg := fmt.Sprintf("%v missing required field", c.ID())
@@ -146,6 +160,10 @@ func (c *Config) validate() error {
 
 	if c.OTLPExporterConfig.Timeout < 0 {
 		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.ID(), c.OTLPExporterConfig.Timeout.Milliseconds())
+	}
+
+	if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
+		return fmt.Errorf("%v `log_level` must be one of 'trace', 'debug', 'info', 'warn', 'error', 'off'", c.ID())
 	}
 
 	return nil

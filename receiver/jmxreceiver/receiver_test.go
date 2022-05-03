@@ -35,7 +35,6 @@ func TestReceiver(t *testing.T) {
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
 		},
-		Properties: make(map[string]string),
 	}
 
 	receiver := newJMXMetricReceiver(params, config, consumertest.NewNop())
@@ -59,7 +58,6 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 			Config{
 				Endpoint:           "service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/",
 				TargetSystem:       "mytargetsystem",
-				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
@@ -77,32 +75,10 @@ otel.exporter.otlp.timeout = 234000
 `, "",
 		},
 		{
-			"uses groovy script",
-			Config{
-				Endpoint:           "service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/",
-				GroovyScript:       "mygroovyscript",
-				CollectionInterval: 123 * time.Second,
-				OTLPExporterConfig: otlpExporterConfig{
-					Endpoint: "http://myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
-						Timeout: 234 * time.Second,
-					},
-				},
-			},
-			`otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
-otel.jmx.interval.milliseconds = 123000
-otel.jmx.groovy.script = mygroovyscript
-otel.metrics.exporter = otlp
-otel.exporter.otlp.endpoint = http://myotlpendpoint
-otel.exporter.otlp.timeout = 234000
-`, "",
-		},
-		{
 			"uses endpoint as service url",
 			Config{
 				Endpoint:           "myhost:12345",
 				TargetSystem:       "mytargetsystem",
-				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "https://myotlpendpoint",
@@ -129,7 +105,6 @@ otel.exporter.otlp.headers = one=two,three=four
 			Config{
 				Endpoint:           "myhostwithoutport",
 				TargetSystem:       "mytargetsystem",
-				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
@@ -145,7 +120,6 @@ otel.exporter.otlp.headers = one=two,three=four
 			Config{
 				Endpoint:           "myhost:withoutvalidport",
 				TargetSystem:       "mytargetsystem",
-				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
@@ -161,7 +135,6 @@ otel.exporter.otlp.headers = one=two,three=four
 			Config{
 				Endpoint:           ":::",
 				TargetSystem:       "mytargetsystem",
-				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",

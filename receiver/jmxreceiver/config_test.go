@@ -40,14 +40,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 6)
+	assert.Equal(t, len(cfg.Receivers), 7)
 
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r0))
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system`", err.Error())
 
 	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r1))
@@ -57,10 +57,11 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all")),
 			JARPath:            "myjarpath",
 			Endpoint:           "myendpoint:12345",
-			GroovyScript:       "mygroovyscriptpath",
+			TargetSystem:       "jvm",
 			CollectionInterval: 15 * time.Second,
 			Username:           "myusername",
 			Password:           "mypassword",
+			LogLevel:           "info",
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "myotlpendpoint",
 				Headers: map[string]string{
@@ -78,20 +79,13 @@ func TestLoadConfig(t *testing.T) {
 			TruststorePassword: "mytruststorepassword",
 			RemoteProfile:      "myremoteprofile",
 			Realm:              "myrealm",
-			Properties: map[string]string{
-				"property.one":                           "value.one",
-				"property.two":                           "value.two.a=value.two.b,value.two.c=value.two.d",
-				"org.slf4j.simpleLogger.defaultLogLevel": "info",
-			},
 			AdditionalJars: []string{
 				"/path/to/additional.jar",
 			},
+			ResourceAttributes: map[string]string{
+				"one": "two",
+			},
 		}, r1)
-
-	assert.Equal(
-		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-Dproperty.one=value.one", "-Dproperty.two=value.two.a=value.two.b,value.two.c=value.two.d"},
-		r1.parseProperties(),
-	)
 
 	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missingendpoint")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r2))
@@ -99,9 +93,9 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingendpoint")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			GroovyScript:       "mygroovyscriptpath",
+			TargetSystem:       "jvm",
+			LogLevel:           "info",
 			CollectionInterval: 10 * time.Second,
-			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -120,8 +114,8 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missinggroovy")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
-			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 			CollectionInterval: 10 * time.Second,
+			LogLevel:           "info",
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -131,7 +125,7 @@ func TestLoadConfig(t *testing.T) {
 		}, r3)
 	err = r3.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/missinggroovy missing required field: `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx/missinggroovy missing required field: `target_system`", err.Error())
 
 	r4 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidinterval")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r4))
@@ -140,8 +134,8 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidinterval")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:23456",
-			GroovyScript:       "mygroovyscriptpath",
-			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
+			TargetSystem:       "jvm",
+			LogLevel:           "info",
 			CollectionInterval: -100 * time.Millisecond,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -161,8 +155,8 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidotlptimeout")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:34567",
-			GroovyScript:       "mygroovyscriptpath",
-			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
+			TargetSystem:       "jvm",
+			LogLevel:           "info",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -174,6 +168,27 @@ func TestLoadConfig(t *testing.T) {
 	err = r5.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx/invalidotlptimeout `otlp.timeout` must be positive: -100ms", err.Error())
+
+	r6 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidloglevel")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r6))
+	assert.Equal(t,
+		&Config{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidloglevel")),
+			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			Endpoint:           "myendpoint:55555",
+			TargetSystem:       "jvm",
+			LogLevel:           "truth",
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
+		}, r6)
+	err = r6.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidloglevel `log_level` must be one of 'trace', 'debug', 'info', 'warn', 'error', 'off'", err.Error())
 }
 
 func TestClassPathParse(t *testing.T) {
