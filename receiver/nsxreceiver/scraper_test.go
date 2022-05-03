@@ -20,10 +20,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"testing"
+	"time"
 
 	mock "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -71,6 +74,39 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestScrapeBadConfig(t *testing.T) {
+	scraper := newScraper(
+		&Config{
+			MetricsConfig: &MetricsConfig{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://\x00",
+				},
+				Settings: metadata.DefaultMetricsSettings(),
+			},
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	scraper.host = componenttest.NewNopHost()
+	_, err := scraper.scrape(context.Background())
+	require.Error(t, err)
+}
+
+func TestScraperRecordNoStat(t *testing.T) {
+	scraper := newScraper(
+		&Config{
+			MetricsConfig: &MetricsConfig{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost",
+				},
+				Settings: metadata.DefaultMetricsSettings(),
+			},
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	scraper.host = componenttest.NewNopHost()
+	scraper.recordNode(pdata.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})
+}
+
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {
 	var classType string
 	switch class {
@@ -81,10 +117,18 @@ func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeS
 	}
 	testFile, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "status.json"))
 	require.NoError(t, err)
-	var stats dm.NodeStatus
-	err = json.Unmarshal(testFile, &stats)
-	require.NoError(t, err)
-	return &stats, nil
+	switch class {
+	case transportClass:
+		var stats dm.TransportNodeStatus
+		err = json.Unmarshal(testFile, &stats)
+		require.NoError(t, err)
+		return &stats.NodeStatus, nil
+	default:
+		var stats dm.NodeStatus
+		err = json.Unmarshal(testFile, &stats)
+		require.NoError(t, err)
+		return &stats, nil
+	}
 }
 
 func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.NetworkInterface, error) {

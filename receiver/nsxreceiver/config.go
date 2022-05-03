@@ -15,6 +15,10 @@
 package nsxreceiver
 
 import (
+	"errors"
+	"fmt"
+	"net/url"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -54,7 +58,32 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) validateMetrics() error {
-	return nil
+	mc := c.MetricsConfig
+	// do not require the configuration validation to specify metrics if not needed
+	// creating a default config by default creates a non-nil metrics config
+	if mc == nil || mc.Endpoint == "" {
+		return nil
+	}
+
+	var err error
+	res, err := url.Parse(mc.Endpoint)
+	if err != nil {
+		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.MetricsConfig.Endpoint, err))
+		return err
+	}
+
+	if res.Scheme != "http" && res.Scheme != "https" {
+		err = multierr.Append(err, errors.New("url scheme must be http or https"))
+	}
+
+	if mc.Username == "" {
+		err = multierr.Append(err, errors.New("username not provided and is required"))
+	}
+
+	if mc.Password == "" {
+		err = multierr.Append(err, errors.New("password not provided and is required"))
+	}
+	return err
 }
 
 func (c *Config) validateLogs() error {

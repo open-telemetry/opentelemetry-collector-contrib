@@ -19,6 +19,12 @@
         "software_version": "3.1.2.0.0.17883598",
         "system_status": {
             "cpu_cores": 72,
+            "cpu_usage": {
+                "highest_cpu_core_usage_dpdk": 0.02,
+                "avg_cpu_core_usage_dpdk": 0.01,
+                "highest_cpu_core_usage_non_dpdk": 6.63,
+                "avg_cpu_core_usage_non_dpdk": 4.34
+            },
             "file_systems": [
                 {
                     "file_system": "root",
@@ -119,6 +125,12 @@
                     "used": 7584
                 }
             ],
+            "edge_mem_usage": {
+                "system_mem_usage": 50.99,
+                "swap_usage": 0.0,
+                "cache_usage": 8.69,
+                "datapath_total_usage": 48.52
+            },
             "load_average": [
                 0.07,
                 0.08,
