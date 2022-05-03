@@ -27,7 +27,7 @@
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
 - `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
 - `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
-- `prometheusreceiver`: Fix the memory issue introduced in the last release (#9718)
+- `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
 
 ## v0.50.0
 
