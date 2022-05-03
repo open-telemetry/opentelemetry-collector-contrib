@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeyc
 go 1.17
 
 require (
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/honeycombio/libhoney-go v1.15.8
 	github.com/klauspost/compress v1.15.1
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.50.0
-	go.opentelemetry.io/collector/pdata v0.50.0
+	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/protobuf v1.28.0
@@ -34,9 +34,9 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.6.3 // indirect
-	go.opentelemetry.io/otel/metric v0.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.3 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
