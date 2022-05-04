@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `datadogexporter`: Replace HistogramMode defined as string with enum.
+- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 
 ### 🚩 Deprecations 🚩
 
@@ -17,8 +18,11 @@
 
 ### 💡 Enhancements 💡
 
+- `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
+- `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
+- `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
 
 ### 🧰 Bug fixes 🧰
 
@@ -27,6 +31,9 @@
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
 - `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
 - `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
+- `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
+- `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
+- `nginxreceiver`: Include nginxreceiver in components (#9572)
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 
 ## v0.50.0
@@ -60,7 +67,7 @@
 - `datadogexporter`: Update deprecation messages to reflect new deprecation plan (#9422)
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
 - `attributesprocessor`: Support filter by severity (#9132)
-- `processor/transform`: Add transformation of logs (#9368)
+- `transformprocessor`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 - `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 

@@ -71,6 +71,78 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionSent
+	AttributeDirectionReceived
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionSent:
+		return "sent"
+	case AttributeDirectionReceived:
+		return "received"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"sent":     AttributeDirectionSent,
+	"received": AttributeDirectionReceived,
+}
+
+// AttributeRequest specifies the a value request attribute.
+type AttributeRequest int
+
+const (
+	_ AttributeRequest = iota
+	AttributeRequestDelete
+	AttributeRequestGet
+	AttributeRequestHead
+	AttributeRequestOptions
+	AttributeRequestPost
+	AttributeRequestPut
+	AttributeRequestTrace
+)
+
+// String returns the string representation of the AttributeRequest.
+func (av AttributeRequest) String() string {
+	switch av {
+	case AttributeRequestDelete:
+		return "delete"
+	case AttributeRequestGet:
+		return "get"
+	case AttributeRequestHead:
+		return "head"
+	case AttributeRequestOptions:
+		return "options"
+	case AttributeRequestPost:
+		return "post"
+	case AttributeRequestPut:
+		return "put"
+	case AttributeRequestTrace:
+		return "trace"
+	}
+	return ""
+}
+
+// MapAttributeRequest is a helper map of string to AttributeRequest attribute value.
+var MapAttributeRequest = map[string]AttributeRequest{
+	"delete":  AttributeRequestDelete,
+	"get":     AttributeRequestGet,
+	"head":    AttributeRequestHead,
+	"options": AttributeRequestOptions,
+	"post":    AttributeRequestPost,
+	"put":     AttributeRequestPut,
+	"trace":   AttributeRequestTrace,
+}
+
 type metricIisConnectionActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -814,18 +886,18 @@ func (mb *MetricsBuilder) RecordIisNetworkBlockedDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordIisNetworkFileCountDataPoint adds a data point to iis.network.file.count metric.
-func (mb *MetricsBuilder) RecordIisNetworkFileCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricIisNetworkFileCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordIisNetworkFileCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricIisNetworkFileCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordIisNetworkIoDataPoint adds a data point to iis.network.io metric.
-func (mb *MetricsBuilder) RecordIisNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricIisNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordIisNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricIisNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordIisRequestCountDataPoint adds a data point to iis.request.count metric.
-func (mb *MetricsBuilder) RecordIisRequestCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	mb.metricIisRequestCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
+func (mb *MetricsBuilder) RecordIisRequestCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue AttributeRequest) {
+	mb.metricIisRequestCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue.String())
 }
 
 // RecordIisRequestQueueAgeMaxDataPoint adds a data point to iis.request.queue.age.max metric.
@@ -875,31 +947,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Sent     string
-	Received string
-}{
-	"sent",
-	"received",
-}
-
-// AttributeRequest are the possible values that the attribute "request" can have.
-var AttributeRequest = struct {
-	Delete  string
-	Get     string
-	Head    string
-	Options string
-	Post    string
-	Put     string
-	Trace   string
-}{
-	"delete",
-	"get",
-	"head",
-	"options",
-	"post",
-	"put",
-	"trace",
-}
