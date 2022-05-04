@@ -14,7 +14,7 @@ This operator makes use of [Go regular expression](https://github.com/google/re2
 | `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `regex`       | required         | A [Go regular expression](https://github.com/google/re2/wiki/Syntax). The named capture groups will be extracted as fields in the parsed body. |
 | `parse_from`  | `body`           | The [field](/docs/types/field.md) from which the value will be parsed. |
-| `parse_to`    | `body`           | The [field](/docs/types/field.md) to which the value will be parsed. |
+| `parse_to`    | `attributes`     | The [field](/docs/types/field.md) to which the value will be parsed. |
 | `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `if`          |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `timestamp`   | `nil`            | An optional [timestamp](/docs/types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
@@ -53,6 +53,9 @@ Configuration:
 {
   "timestamp": "",
   "body": {
+    "message": "Host=127.0.0.1, Type=HTTP"
+  },
+  "attributes:" {
     "host": "127.0.0.1",
     "type": "HTTP"
   }
@@ -93,7 +96,8 @@ Configuration:
 ```json
 {
   "timestamp": "2020-01-31T00:00:00-00:00",
-  "body": {
+  "body": "Time=2020-01-31, Host=127.0.0.1, Type=HTTP"
+  "attributes": {
     "host": "127.0.0.1",
     "type": "HTTP"
   }
@@ -134,75 +138,11 @@ Configuration:
 ```json
 {
   "body": {
-    "host": "testhost",
-    "type": "hostname"
-  }
-}
-```
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-```json
-{
-  "body": {
-    "message": "Key=value",
-    "type": "keypair"
-  }
-}
-```
-
-</td>
-<td>
-
-```json
-{
-  "body": {
-    "message": "Key=value",
-    "type": "keypair"
-  }
-}
-```
-
-</td>
-</tr>
-</table>
-
-#### Parse the message field only if "type" is "hostname"
-
-Configuration:
-```yaml
-- type: regex_parser
-  regex: '^Host=(?<host>)$'
-  parse_from: body.message
-  if: 'body.type == "hostname"'
-```
-
-<table>
-<tr><td> Input body </td> <td> Output body </td></tr>
-<tr>
-<td>
-
-```json
-{
-  "body": {
     "message": "Host=testhost",
     "type": "hostname"
-  }
-}
-```
-
-</td>
-<td>
-
-```json
-{
-  "body": {
-    "host": "testhost",
-    "type": "hostname"
+  },
+  "attributes": {
+    "host": "testhost"
   }
 }
 ```
