@@ -31,7 +31,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.0.0-00010101000000-000000000000
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
@@ -52,6 +51,7 @@ require (
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.50.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-log-collection v0.29.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.3.0 // indirect
@@ -65,5 +65,3 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../syslogreceiver
-
-replace go.opentelemetry.io/collector/semconv => go.opentelemetry.io/collector/semconv v0.0.0-20220422001137-87ab5de64ce4
