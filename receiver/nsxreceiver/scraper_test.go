@@ -125,6 +125,36 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
 
+func TestStartClientAlreadySet(t *testing.T) {
+	mockClient := mockServer(t)
+	scraper := newScraper(
+		&Config{
+			Metrics: metadata.DefaultMetricsSettings(),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: mockClient.URL,
+			},
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	_ = scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NotNil(t, scraper.client)
+}
+
+func TestStartBadUrl(t *testing.T) {
+	scraper := newScraper(
+		&Config{
+			Metrics: metadata.DefaultMetricsSettings(),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: "\x00",
+			},
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+
+	_ = scraper.start(context.Background(), componenttest.NewNopHost())
+	require.Nil(t, scraper.client)
+}
+
 func TestScraperRecordNoStat(t *testing.T) {
 	scraper := newScraper(
 		&Config{

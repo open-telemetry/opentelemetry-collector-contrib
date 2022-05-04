@@ -16,6 +16,7 @@ package nsxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -51,8 +52,9 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 func (s *scraper) start(ctx context.Context, host component.Host) error {
 	s.host = host
 	err := s.ensureClient()
+	// allow reconnectivity
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to ensure client connectivity: %s", err)
 	}
 	return nil
 }
