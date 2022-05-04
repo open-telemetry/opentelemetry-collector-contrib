@@ -47,6 +47,62 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationRead
+	AttributeOperationWrite
+	AttributeOperationDelete
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationRead:
+		return "read"
+	case AttributeOperationWrite:
+		return "write"
+	case AttributeOperationDelete:
+		return "delete"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"read":   AttributeOperationRead,
+	"write":  AttributeOperationWrite,
+	"delete": AttributeOperationDelete,
+}
+
+// AttributeRequest specifies the a value request attribute.
+type AttributeRequest int
+
+const (
+	_ AttributeRequest = iota
+	AttributeRequestPut
+	AttributeRequestGet
+)
+
+// String returns the string representation of the AttributeRequest.
+func (av AttributeRequest) String() string {
+	switch av {
+	case AttributeRequestPut:
+		return "put"
+	case AttributeRequestGet:
+		return "get"
+	}
+	return ""
+}
+
+// MapAttributeRequest is a helper map of string to AttributeRequest attribute value.
+var MapAttributeRequest = map[string]AttributeRequest{
+	"put": AttributeRequestPut,
+	"get": AttributeRequestGet,
+}
+
 type metricRiakMemoryLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -462,13 +518,13 @@ func (mb *MetricsBuilder) RecordRiakMemoryLimitDataPoint(ts pcommon.Timestamp, v
 }
 
 // RecordRiakNodeOperationCountDataPoint adds a data point to riak.node.operation.count metric.
-func (mb *MetricsBuilder) RecordRiakNodeOperationCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	mb.metricRiakNodeOperationCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
+func (mb *MetricsBuilder) RecordRiakNodeOperationCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue AttributeRequest) {
+	mb.metricRiakNodeOperationCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue.String())
 }
 
 // RecordRiakNodeOperationTimeMeanDataPoint adds a data point to riak.node.operation.time.mean metric.
-func (mb *MetricsBuilder) RecordRiakNodeOperationTimeMeanDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	mb.metricRiakNodeOperationTimeMean.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
+func (mb *MetricsBuilder) RecordRiakNodeOperationTimeMeanDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue AttributeRequest) {
+	mb.metricRiakNodeOperationTimeMean.recordDataPoint(mb.startTime, ts, val, requestAttributeValue.String())
 }
 
 // RecordRiakNodeReadRepairCountDataPoint adds a data point to riak.node.read_repair.count metric.
@@ -477,13 +533,13 @@ func (mb *MetricsBuilder) RecordRiakNodeReadRepairCountDataPoint(ts pcommon.Time
 }
 
 // RecordRiakVnodeIndexOperationCountDataPoint adds a data point to riak.vnode.index.operation.count metric.
-func (mb *MetricsBuilder) RecordRiakVnodeIndexOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricRiakVnodeIndexOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordRiakVnodeIndexOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricRiakVnodeIndexOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordRiakVnodeOperationCountDataPoint adds a data point to riak.vnode.operation.count metric.
-func (mb *MetricsBuilder) RecordRiakVnodeOperationCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	mb.metricRiakVnodeOperationCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
+func (mb *MetricsBuilder) RecordRiakVnodeOperationCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue AttributeRequest) {
+	mb.metricRiakVnodeOperationCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -508,23 +564,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Read   string
-	Write  string
-	Delete string
-}{
-	"read",
-	"write",
-	"delete",
-}
-
-// AttributeRequest are the possible values that the attribute "request" can have.
-var AttributeRequest = struct {
-	Put string
-	Get string
-}{
-	"put",
-	"get",
-}

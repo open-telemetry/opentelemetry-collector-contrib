@@ -55,6 +55,104 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeHTTPMethod specifies the a value http.method attribute.
+type AttributeHTTPMethod int
+
+const (
+	_ AttributeHTTPMethod = iota
+	AttributeHTTPMethodCOPY
+	AttributeHTTPMethodDELETE
+	AttributeHTTPMethodGET
+	AttributeHTTPMethodHEAD
+	AttributeHTTPMethodOPTIONS
+	AttributeHTTPMethodPOST
+	AttributeHTTPMethodPUT
+)
+
+// String returns the string representation of the AttributeHTTPMethod.
+func (av AttributeHTTPMethod) String() string {
+	switch av {
+	case AttributeHTTPMethodCOPY:
+		return "COPY"
+	case AttributeHTTPMethodDELETE:
+		return "DELETE"
+	case AttributeHTTPMethodGET:
+		return "GET"
+	case AttributeHTTPMethodHEAD:
+		return "HEAD"
+	case AttributeHTTPMethodOPTIONS:
+		return "OPTIONS"
+	case AttributeHTTPMethodPOST:
+		return "POST"
+	case AttributeHTTPMethodPUT:
+		return "PUT"
+	}
+	return ""
+}
+
+// MapAttributeHTTPMethod is a helper map of string to AttributeHTTPMethod attribute value.
+var MapAttributeHTTPMethod = map[string]AttributeHTTPMethod{
+	"COPY":    AttributeHTTPMethodCOPY,
+	"DELETE":  AttributeHTTPMethodDELETE,
+	"GET":     AttributeHTTPMethodGET,
+	"HEAD":    AttributeHTTPMethodHEAD,
+	"OPTIONS": AttributeHTTPMethodOPTIONS,
+	"POST":    AttributeHTTPMethodPOST,
+	"PUT":     AttributeHTTPMethodPUT,
+}
+
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationWrites
+	AttributeOperationReads
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationWrites:
+		return "writes"
+	case AttributeOperationReads:
+		return "reads"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"writes": AttributeOperationWrites,
+	"reads":  AttributeOperationReads,
+}
+
+// AttributeView specifies the a value view attribute.
+type AttributeView int
+
+const (
+	_ AttributeView = iota
+	AttributeViewTemporaryViewReads
+	AttributeViewViewReads
+)
+
+// String returns the string representation of the AttributeView.
+func (av AttributeView) String() string {
+	switch av {
+	case AttributeViewTemporaryViewReads:
+		return "temporary_view_reads"
+	case AttributeViewViewReads:
+		return "view_reads"
+	}
+	return ""
+}
+
+// MapAttributeView is a helper map of string to AttributeView attribute value.
+var MapAttributeView = map[string]AttributeView{
+	"temporary_view_reads": AttributeViewTemporaryViewReads,
+	"view_reads":           AttributeViewViewReads,
+}
+
 type metricCouchdbAverageRequestTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -583,8 +681,8 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pcommon.Timestam
 }
 
 // RecordCouchdbDatabaseOperationsDataPoint adds a data point to couchdb.database.operations metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordCouchdbFileDescriptorOpenDataPoint adds a data point to couchdb.file_descriptor.open metric.
@@ -598,8 +696,8 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pcommon.Tim
 }
 
 // RecordCouchdbHttpdRequestsDataPoint adds a data point to couchdb.httpd.requests metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pcommon.Timestamp, val int64, httpMethodAttributeValue string) {
-	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pcommon.Timestamp, val int64, httpMethodAttributeValue AttributeHTTPMethod) {
+	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue.String())
 }
 
 // RecordCouchdbHttpdResponsesDataPoint adds a data point to couchdb.httpd.responses metric.
@@ -608,8 +706,8 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pcommon.Timest
 }
 
 // RecordCouchdbHttpdViewsDataPoint adds a data point to couchdb.httpd.views metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pcommon.Timestamp, val int64, viewAttributeValue string) {
-	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pcommon.Timestamp, val int64, viewAttributeValue AttributeView) {
+	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -640,40 +738,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeHTTPMethod are the possible values that the attribute "http.method" can have.
-var AttributeHTTPMethod = struct {
-	COPY    string
-	DELETE  string
-	GET     string
-	HEAD    string
-	OPTIONS string
-	POST    string
-	PUT     string
-}{
-	"COPY",
-	"DELETE",
-	"GET",
-	"HEAD",
-	"OPTIONS",
-	"POST",
-	"PUT",
-}
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Writes string
-	Reads  string
-}{
-	"writes",
-	"reads",
-}
-
-// AttributeView are the possible values that the attribute "view" can have.
-var AttributeView = struct {
-	TemporaryViewReads string
-	ViewReads          string
-}{
-	"temporary_view_reads",
-	"view_reads",
-}
