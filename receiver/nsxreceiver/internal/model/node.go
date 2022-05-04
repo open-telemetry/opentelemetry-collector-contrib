@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxhreceiver/internal/model"
+package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxreceiver/internal/model"
 
 // ClusterNodeList is a result struct from
 type ClusterNodeList struct {
