@@ -17,7 +17,6 @@ package kubeletstatsreceiver
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -31,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 const (

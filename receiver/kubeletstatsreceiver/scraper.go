@@ -17,7 +17,6 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 type scraperOptions struct {

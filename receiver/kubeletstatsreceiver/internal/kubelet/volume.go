@@ -14,11 +14,13 @@
 
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
+	"strconv"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	v1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
-	"strconv"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.VolumeMetrics, s stats.VolumeStats, currentTime pcommon.Timestamp) {
@@ -79,7 +81,7 @@ func GetPersistentVolumeLabels(pv v1.PersistentVolumeSource, labels map[string]s
 func awsElasticBlockStoreDims(vs v1.AWSElasticBlockStoreVolumeSource, labels map[string]string) {
 	labels[labelVolumeType] = labelValueAWSEBSVolume
 	// AWS specific labels.
-	labels[labelAwsVolumeId] = vs.VolumeID
+	labels[labelAwsVolumeID] = vs.VolumeID
 	labels[labelFsType] = vs.FSType
 	labels[labelPartition] = strconv.Itoa(int(vs.Partition))
 }
