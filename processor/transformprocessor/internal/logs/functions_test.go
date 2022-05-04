@@ -26,7 +26,6 @@ import (
 
 func Test_newFunctionCall(t *testing.T) {
 	input := plog.NewLogRecord()
-	input.SetName("bear")
 	attrs := pcommon.NewMap()
 	attrs.InsertString("test", "1")
 	attrs.InsertInt("test2", 3)

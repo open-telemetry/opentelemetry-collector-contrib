@@ -86,6 +86,9 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},
+				"attributeInfo": func(an attributeName) attribute {
+					return md.Attributes[an]
+				},
 				"parseImportsRequired": func(metrics map[metricName]metric) bool {
 					for _, m := range metrics {
 						if m.Data().HasMetricInputType() {

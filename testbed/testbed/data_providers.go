@@ -117,7 +117,6 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		metric := metrics.AppendEmpty()
-		metric.SetName("load_generator_" + strconv.Itoa(i))
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
 		metric.SetDataType(pmetric.MetricDataTypeGauge)
@@ -161,7 +160,6 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(plog.SeverityNumberINFO3)
 		record.SetSeverityText("INFO3")
-		record.SetName("load_generator_" + strconv.Itoa(i))
 		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
 		record.SetFlags(uint32(2))
 		record.SetTimestamp(now)

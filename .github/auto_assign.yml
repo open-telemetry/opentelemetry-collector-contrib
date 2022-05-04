@@ -12,7 +12,6 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
-    - anuraaga
     - dashpole
     - djaglowski
     - dmitryax

@@ -136,13 +136,8 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 
 // ServerStatus
 func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
-	types := []string{
-		metadata.AttributeConnectionType.Active,
-		metadata.AttributeConnectionType.Available,
-		metadata.AttributeConnectionType.Current,
-	}
-	for _, ct := range types {
-		connKey := []string{"connections", ct}
+	for ctVal, ct := range metadata.MapAttributeConnectionType {
+		connKey := []string{"connections", ctVal}
 		conn, err := dig(doc, connKey)
 		if err != nil {
 			errors.AddPartial(1, err)
@@ -159,12 +154,8 @@ func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, db
 }
 
 func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
-	types := []string{
-		metadata.AttributeMemoryType.Resident,
-		metadata.AttributeMemoryType.Virtual,
-	}
-	for _, mt := range types {
-		memKey := []string{"mem", mt}
+	for mtVal, mt := range metadata.MapAttributeMemoryType {
+		memKey := []string{"mem", mtVal}
 		mem, err := dig(doc, memKey)
 		if err != nil {
 			errors.AddPartial(1, err)
@@ -185,18 +176,11 @@ func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, db
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
 	// Collect Operations
-	for _, operation := range []string{
-		metadata.AttributeOperation.Insert,
-		metadata.AttributeOperation.Query,
-		metadata.AttributeOperation.Update,
-		metadata.AttributeOperation.Delete,
-		metadata.AttributeOperation.Getmore,
-		metadata.AttributeOperation.Command,
-	} {
-		count, err := dig(doc, []string{"opcounters", operation})
+	for operationVal, operation := range metadata.MapAttributeOperation {
+		count, err := dig(doc, []string{"opcounters", operationVal})
 		if err != nil {
 			errors.AddPartial(1, err)
-			s.logger.Error("failed to find operation", zap.Error(err), zap.String("operation", operation))
+			s.logger.Error("failed to find operation", zap.Error(err), zap.String("operation", operationVal))
 			continue
 		}
 		countVal, err := parseInt(count)
@@ -224,7 +208,7 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 	if err != nil {
 		errors.AddPartial(1, err)
 	} else {
-		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissesValue, metadata.AttributeType.Miss)
+		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissesValue, metadata.AttributeTypeMiss)
 	}
 
 	tcr, err := dig(doc, []string{"wiredTiger", "cache", "pages requested from the cache"})
@@ -242,7 +226,7 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 
 	if canCalculateCacheHits && totalCacheReqs > cacheMissesValue {
 		cacheHits := totalCacheReqs - cacheMissesValue
-		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeType.Hit)
+		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeTypeHit)
 	}
 }
 
