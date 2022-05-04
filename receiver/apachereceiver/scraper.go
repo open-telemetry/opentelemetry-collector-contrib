@@ -79,9 +79,11 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "ConnsTotal":
 			addPartialIfError(errors, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
 		case "BusyWorkers":
-			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "busy"))
+			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+				metadata.AttributeWorkersStateBusy))
 		case "IdleWorkers":
-			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName, "idle"))
+			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+				metadata.AttributeWorkersStateIdle))
 		case "Total Accesses":
 			addPartialIfError(errors, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
 		case "Total kBytes":
@@ -139,50 +141,50 @@ func parseStats(resp string) map[string]string {
 	return metrics
 }
 
-type scoreboardCountsByLabel map[string]int64
+type scoreboardCountsByLabel map[metadata.AttributeScoreboardState]int64
 
 // parseScoreboard quantifies the symbolic mapping of the scoreboard.
 func parseScoreboard(values string) scoreboardCountsByLabel {
 	scoreboard := scoreboardCountsByLabel{
-		"waiting":      0,
-		"starting":     0,
-		"reading":      0,
-		"sending":      0,
-		"keepalive":    0,
-		"dnslookup":    0,
-		"closing":      0,
-		"logging":      0,
-		"finishing":    0,
-		"idle_cleanup": 0,
-		"open":         0,
+		metadata.AttributeScoreboardStateWaiting:     0,
+		metadata.AttributeScoreboardStateStarting:    0,
+		metadata.AttributeScoreboardStateReading:     0,
+		metadata.AttributeScoreboardStateSending:     0,
+		metadata.AttributeScoreboardStateKeepalive:   0,
+		metadata.AttributeScoreboardStateDnslookup:   0,
+		metadata.AttributeScoreboardStateClosing:     0,
+		metadata.AttributeScoreboardStateLogging:     0,
+		metadata.AttributeScoreboardStateFinishing:   0,
+		metadata.AttributeScoreboardStateIdleCleanup: 0,
+		metadata.AttributeScoreboardStateOpen:        0,
 	}
 
 	for _, char := range values {
 		switch string(char) {
 		case "_":
-			scoreboard["waiting"]++
+			scoreboard[metadata.AttributeScoreboardStateWaiting]++
 		case "S":
-			scoreboard["starting"]++
+			scoreboard[metadata.AttributeScoreboardStateStarting]++
 		case "R":
-			scoreboard["reading"]++
+			scoreboard[metadata.AttributeScoreboardStateReading]++
 		case "W":
-			scoreboard["sending"]++
+			scoreboard[metadata.AttributeScoreboardStateSending]++
 		case "K":
-			scoreboard["keepalive"]++
+			scoreboard[metadata.AttributeScoreboardStateKeepalive]++
 		case "D":
-			scoreboard["dnslookup"]++
+			scoreboard[metadata.AttributeScoreboardStateDnslookup]++
 		case "C":
-			scoreboard["closing"]++
+			scoreboard[metadata.AttributeScoreboardStateClosing]++
 		case "L":
-			scoreboard["logging"]++
+			scoreboard[metadata.AttributeScoreboardStateLogging]++
 		case "G":
-			scoreboard["finishing"]++
+			scoreboard[metadata.AttributeScoreboardStateFinishing]++
 		case "I":
-			scoreboard["idle_cleanup"]++
+			scoreboard[metadata.AttributeScoreboardStateIdleCleanup]++
 		case ".":
-			scoreboard["open"]++
+			scoreboard[metadata.AttributeScoreboardStateOpen]++
 		default:
-			scoreboard["unknown"]++
+			scoreboard[metadata.AttributeScoreboardStateUnknown]++
 		}
 	}
 	return scoreboard

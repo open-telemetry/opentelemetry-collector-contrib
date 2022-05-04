@@ -67,6 +67,148 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeCommand specifies the a value command attribute.
+type AttributeCommand int
+
+const (
+	_ AttributeCommand = iota
+	AttributeCommandGet
+	AttributeCommandSet
+	AttributeCommandFlush
+	AttributeCommandTouch
+)
+
+// String returns the string representation of the AttributeCommand.
+func (av AttributeCommand) String() string {
+	switch av {
+	case AttributeCommandGet:
+		return "get"
+	case AttributeCommandSet:
+		return "set"
+	case AttributeCommandFlush:
+		return "flush"
+	case AttributeCommandTouch:
+		return "touch"
+	}
+	return ""
+}
+
+// MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
+var MapAttributeCommand = map[string]AttributeCommand{
+	"get":   AttributeCommandGet,
+	"set":   AttributeCommandSet,
+	"flush": AttributeCommandFlush,
+	"touch": AttributeCommandTouch,
+}
+
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionSent
+	AttributeDirectionReceived
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionSent:
+		return "sent"
+	case AttributeDirectionReceived:
+		return "received"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"sent":     AttributeDirectionSent,
+	"received": AttributeDirectionReceived,
+}
+
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationIncrement
+	AttributeOperationDecrement
+	AttributeOperationGet
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationIncrement:
+		return "increment"
+	case AttributeOperationDecrement:
+		return "decrement"
+	case AttributeOperationGet:
+		return "get"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"increment": AttributeOperationIncrement,
+	"decrement": AttributeOperationDecrement,
+	"get":       AttributeOperationGet,
+}
+
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateSystem
+	AttributeStateUser
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateSystem:
+		return "system"
+	case AttributeStateUser:
+		return "user"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"system": AttributeStateSystem,
+	"user":   AttributeStateUser,
+}
+
+// AttributeType specifies the a value type attribute.
+type AttributeType int
+
+const (
+	_ AttributeType = iota
+	AttributeTypeHit
+	AttributeTypeMiss
+)
+
+// String returns the string representation of the AttributeType.
+func (av AttributeType) String() string {
+	switch av {
+	case AttributeTypeHit:
+		return "hit"
+	case AttributeTypeMiss:
+		return "miss"
+	}
+	return ""
+}
+
+// MapAttributeType is a helper map of string to AttributeType attribute value.
+var MapAttributeType = map[string]AttributeType{
+	"hit":  AttributeTypeHit,
+	"miss": AttributeTypeMiss,
+}
+
 type metricMemcachedBytes struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -746,8 +888,8 @@ func (mb *MetricsBuilder) RecordMemcachedBytesDataPoint(ts pcommon.Timestamp, va
 }
 
 // RecordMemcachedCommandsDataPoint adds a data point to memcached.commands metric.
-func (mb *MetricsBuilder) RecordMemcachedCommandsDataPoint(ts pcommon.Timestamp, val int64, commandAttributeValue string) {
-	mb.metricMemcachedCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue)
+func (mb *MetricsBuilder) RecordMemcachedCommandsDataPoint(ts pcommon.Timestamp, val int64, commandAttributeValue AttributeCommand) {
+	mb.metricMemcachedCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
 }
 
 // RecordMemcachedConnectionsCurrentDataPoint adds a data point to memcached.connections.current metric.
@@ -761,8 +903,8 @@ func (mb *MetricsBuilder) RecordMemcachedConnectionsTotalDataPoint(ts pcommon.Ti
 }
 
 // RecordMemcachedCPUUsageDataPoint adds a data point to memcached.cpu.usage metric.
-func (mb *MetricsBuilder) RecordMemcachedCPUUsageDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue string) {
-	mb.metricMemcachedCPUUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (mb *MetricsBuilder) RecordMemcachedCPUUsageDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
+	mb.metricMemcachedCPUUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordMemcachedCurrentItemsDataPoint adds a data point to memcached.current_items metric.
@@ -776,18 +918,18 @@ func (mb *MetricsBuilder) RecordMemcachedEvictionsDataPoint(ts pcommon.Timestamp
 }
 
 // RecordMemcachedNetworkDataPoint adds a data point to memcached.network metric.
-func (mb *MetricsBuilder) RecordMemcachedNetworkDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricMemcachedNetwork.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMemcachedNetworkDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricMemcachedNetwork.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMemcachedOperationHitRatioDataPoint adds a data point to memcached.operation_hit_ratio metric.
-func (mb *MetricsBuilder) RecordMemcachedOperationHitRatioDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue string) {
-	mb.metricMemcachedOperationHitRatio.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordMemcachedOperationHitRatioDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue AttributeOperation) {
+	mb.metricMemcachedOperationHitRatio.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordMemcachedOperationsDataPoint adds a data point to memcached.operations metric.
-func (mb *MetricsBuilder) RecordMemcachedOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue string, operationAttributeValue string) {
-	mb.metricMemcachedOperations.recordDataPoint(mb.startTime, ts, val, typeAttributeValue, operationAttributeValue)
+func (mb *MetricsBuilder) RecordMemcachedOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType, operationAttributeValue AttributeOperation) {
+	mb.metricMemcachedOperations.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String(), operationAttributeValue.String())
 }
 
 // RecordMemcachedThreadsDataPoint adds a data point to memcached.threads metric.
@@ -826,54 +968,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeCommand are the possible values that the attribute "command" can have.
-var AttributeCommand = struct {
-	Get   string
-	Set   string
-	Flush string
-	Touch string
-}{
-	"get",
-	"set",
-	"flush",
-	"touch",
-}
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Sent     string
-	Received string
-}{
-	"sent",
-	"received",
-}
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Increment string
-	Decrement string
-	Get       string
-}{
-	"increment",
-	"decrement",
-	"get",
-}
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	System string
-	User   string
-}{
-	"system",
-	"user",
-}
-
-// AttributeType are the possible values that the attribute "type" can have.
-var AttributeType = struct {
-	Hit  string
-	Miss string
-}{
-	"hit",
-	"miss",
-}
