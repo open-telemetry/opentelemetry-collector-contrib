@@ -203,6 +203,14 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.jmx.password"] = jmx.config.Password
 	}
 
+	if jmx.config.RemoteProfile != "" {
+		config["otel.jmx.remote.profile"] = jmx.config.RemoteProfile
+	}
+
+	if jmx.config.Realm != "" {
+		config["otel.jmx.realm"] = jmx.config.Realm
+	}
+
 	content := []string{}
 	for k, v := range config {
 		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)

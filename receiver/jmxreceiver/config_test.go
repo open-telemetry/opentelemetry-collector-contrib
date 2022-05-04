@@ -87,6 +87,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		}, r1)
 
+	assert.Equal(
+		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-Dotel.resource.attributes=one=two"},
+		r1.parseProperties(),
+	)
+
 	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missingendpoint")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r2))
 	assert.Equal(t,

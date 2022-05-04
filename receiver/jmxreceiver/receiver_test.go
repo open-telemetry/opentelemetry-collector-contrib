@@ -75,6 +75,8 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				Username: "myuser\nname",
 				Password: `mypass 
 word`,
+				Realm: "myrealm",
+				RemoteProfile: "myprofile",
 			},
 			`otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
@@ -82,6 +84,8 @@ otel.exporter.otlp.timeout = 234000
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.password = mypass \
 word
+otel.jmx.realm = myrealm
+otel.jmx.remote.profile = myprofile
 otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
 otel.jmx.target.system = mytargetsystem
 otel.jmx.username = myuser\
