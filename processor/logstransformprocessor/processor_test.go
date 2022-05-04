@@ -65,6 +65,7 @@ func parseTime(format, input string) *time.Time {
 type testLogMessage struct {
 	body         *pdata.Value
 	time         *time.Time
+	observedTime *time.Time
 	severity     pdata.SeverityNumber
 	severityText *string
 	spanID       *pdata.SpanID
@@ -90,10 +91,11 @@ func TestLogsTransformProcessor(t *testing.T) {
 			config: cfg,
 			sourceMessages: []testLogMessage{
 				{
-					body:    &baseMessage,
-					spanID:  &spanID,
-					traceID: &traceID,
-					flags:   uint32(0x01),
+					body:         &baseMessage,
+					spanID:       &spanID,
+					traceID:      &traceID,
+					flags:        uint32(0x01),
+					observedTime: parseTime("2006-01-02", "2022-01-02"),
 				},
 			},
 			parsedMessages: []testLogMessage{
@@ -106,10 +108,11 @@ func TestLogsTransformProcessor(t *testing.T) {
 						"time": pcommon.NewValueString("2022-01-01"),
 						"sev":  pcommon.NewValueString("INFO"),
 					},
-					spanID:  &spanID,
-					traceID: &traceID,
-					flags:   uint32(0x01),
-					time:    parseTime("2006-01-02", "2022-01-01"),
+					spanID:       &spanID,
+					traceID:      &traceID,
+					flags:        uint32(0x01),
+					observedTime: parseTime("2006-01-02", "2022-01-02"),
+					time:         parseTime("2006-01-02", "2022-01-01"),
 				},
 			},
 		},
@@ -148,6 +151,9 @@ func generateLogData(messages []testLogMessage) pdata.Logs {
 		}
 		if content.time != nil {
 			log.SetTimestamp(pdata.NewTimestampFromTime(*content.time))
+		}
+		if content.observedTime != nil {
+			log.SetObservedTimestamp(pdata.NewTimestampFromTime(*content.observedTime))
 		}
 		if content.severity != 0 {
 			log.SetSeverityNumber(content.severity)
