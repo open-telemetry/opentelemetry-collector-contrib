@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/pdata v0.50.0
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 

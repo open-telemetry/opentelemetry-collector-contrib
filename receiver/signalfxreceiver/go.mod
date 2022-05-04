@@ -11,9 +11,9 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.50.0
-	go.opentelemetry.io/collector/pdata v0.50.0
-	go.opentelemetry.io/collector/semconv v0.50.0
+	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/semconv v0.50.1-0.20220429151328-041f39835df7
 	go.uber.org/zap v1.21.0
 
 )
@@ -34,7 +34,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/jaegertracing/jaeger v1.33.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/klauspost/compress v1.15.1 // indirect
+	github.com/klauspost/compress v1.15.2 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -48,7 +48,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.3 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.4 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.13 // indirect
 	github.com/signalfx/sapm-proto v0.4.0 // indirect
@@ -58,10 +58,10 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
-	go.opentelemetry.io/otel v1.6.3 // indirect
-	go.opentelemetry.io/otel/metric v0.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.3 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect

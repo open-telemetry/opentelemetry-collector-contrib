@@ -56,8 +56,8 @@ type proc interface {
 }
 
 type processesMetadata struct {
-	countByStatus    map[string]int64 // ignored if enableProcessesCount is false
-	processesCreated *int64           // ignored if enableProcessesCreated is false
+	countByStatus    map[metadata.AttributeStatus]int64 // ignored if enableProcessesCount is false
+	processesCreated *int64                             // ignored if enableProcessesCreated is false
 }
 
 // newProcessesScraper creates a set of Processes related metrics

@@ -116,7 +116,7 @@ func (t *transactionPdata) initTransaction(labels labels.Labels) error {
 		t.job = job
 		t.instance = instance
 	}
-	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels().Get(model.SchemeLabel))
+	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels())
 	t.metricBuilder = newMetricBuilderPdata(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
 	t.isNew = false
 	return nil

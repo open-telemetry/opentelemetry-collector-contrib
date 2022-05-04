@@ -163,6 +163,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "mysql",
 		},
 		{
+			receiver: "nginx",
+		},
+		{
 			receiver:     "opencensus",
 			skipLifecyle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
 		},
@@ -203,6 +206,9 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "sapm",
+		},
+		{
+			receiver: "saphana",
 		},
 		{
 			receiver: "signalfx",
