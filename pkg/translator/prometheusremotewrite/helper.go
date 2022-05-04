@@ -65,7 +65,7 @@ var dropSanitizationGate = featuregate.Gate{
 }
 
 func init() {
-	featuregate.Register(dropSanitizationGate)
+	featuregate.GetRegistry().MustRegister(dropSanitizationGate)
 }
 
 type bucketBoundsData struct {
@@ -553,7 +553,7 @@ func sanitize(s string) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = keyStr + "_" + s
 	}
-	if !featuregate.IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
+	if !featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
 		s = keyStr + s
 	}
 	return s

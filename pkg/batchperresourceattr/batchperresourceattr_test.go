@@ -312,10 +312,8 @@ func fillResourceLogs(rs plog.ResourceLogs, key string, val pcommon.Value) {
 	rs.Resource().Attributes().Upsert("__other_key__", pcommon.NewValueInt(123))
 	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
-	firstLogRecord.SetName("first-log-record")
 	firstLogRecord.SetFlags(rand.Uint32())
 	secondLogRecord := ils.LogRecords().AppendEmpty()
-	secondLogRecord.SetName("second-log-record")
 	secondLogRecord.SetFlags(rand.Uint32())
 }
 

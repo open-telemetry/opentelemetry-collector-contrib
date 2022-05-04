@@ -20,24 +20,22 @@ import (
 	"reflect"
 	"time"
 
-	quotav1 "github.com/openshift/api/quota/v1"
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
-	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -63,7 +61,8 @@ type metadataConsumer func(metadata []*metadata.MetadataUpdate) error
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
-	nodeConditionTypesToReport, allocatableTypesToReport []string, initialSyncTimeout time.Duration) *resourceWatcher {
+	nodeConditionTypesToReport, allocatableTypesToReport []string,
+	initialSyncTimeout time.Duration) (*resourceWatcher, error) {
 	rw := &resourceWatcher{
 		client:              client,
 		osQuotaClient:       osQuotaClient,
@@ -75,39 +74,117 @@ func newResourceWatcher(
 		initialTimeout:      initialSyncTimeout,
 	}
 
-	rw.prepareSharedInformerFactory()
+	err := rw.prepareSharedInformerFactory()
+	if err != nil {
+		return nil, err
+	}
 
-	return rw
+	return rw, nil
 }
 
-func (rw *resourceWatcher) prepareSharedInformerFactory() {
+func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, 0)
 
-	// Add shared informers for each resource type that has to be watched.
-	rw.setupInformers(&corev1.Pod{}, factory.Core().V1().Pods().Informer())
-	rw.setupInformers(&corev1.Node{}, factory.Core().V1().Nodes().Informer())
-	rw.setupInformers(&corev1.Namespace{}, factory.Core().V1().Namespaces().Informer())
-	rw.setupInformers(&corev1.ReplicationController{},
-		factory.Core().V1().ReplicationControllers().Informer(),
-	)
-	rw.setupInformers(&corev1.ResourceQuota{}, factory.Core().V1().ResourceQuotas().Informer())
-	rw.setupInformers(&corev1.Service{}, factory.Core().V1().Services().Informer())
-	rw.setupInformers(&appsv1.DaemonSet{}, factory.Apps().V1().DaemonSets().Informer())
-	rw.setupInformers(&appsv1.Deployment{}, factory.Apps().V1().Deployments().Informer())
-	rw.setupInformers(&appsv1.ReplicaSet{}, factory.Apps().V1().ReplicaSets().Informer())
-	rw.setupInformers(&appsv1.StatefulSet{}, factory.Apps().V1().StatefulSets().Informer())
-	rw.setupInformers(&batchv1.Job{}, factory.Batch().V1().Jobs().Informer())
-	rw.setupInformers(&batchv1.CronJob{}, factory.Batch().V1().CronJobs().Informer())
-	rw.setupInformers(&autoscalingv2beta2.HorizontalPodAutoscaler{},
-		factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer(),
-	)
+	// Map of supported group version kinds by name of a kind.
+	// If none of the group versions are supported by k8s server for a specific kind,
+	// informer for that kind won't be set and a warning message is thrown.
+	// This map should be kept in sync with what can be provided by the supported k8s server versions.
+	supportedKinds := map[string][]schema.GroupVersionKind{
+		"Pod":                     {gvk.Pod},
+		"Node":                    {gvk.Node},
+		"Namespace":               {gvk.Namespace},
+		"ReplicationController":   {gvk.ReplicationController},
+		"ResourceQuota":           {gvk.ResourceQuota},
+		"Service":                 {gvk.Service},
+		"DaemonSet":               {gvk.DaemonSet},
+		"Deployment":              {gvk.Deployment},
+		"ReplicaSet":              {gvk.ReplicaSet},
+		"StatefulSet":             {gvk.StatefulSet},
+		"Job":                     {gvk.Job},
+		"CronJob":                 {gvk.CronJob, gvk.CronJobBeta},
+		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
+	}
+
+	for kind, gvks := range supportedKinds {
+		anySupported := false
+		for _, gvk := range gvks {
+			supported, err := rw.isKindSupported(gvk)
+			if err != nil {
+				return err
+			}
+			if supported {
+				anySupported = true
+				rw.setupInformerForKind(gvk, factory)
+			}
+		}
+		if !anySupported {
+			rw.logger.Warn("Server doesn't support any of the group versions defined for the kind",
+				zap.String("kind", kind))
+		}
+	}
 
 	if rw.osQuotaClient != nil {
 		quotaFactory := quotainformersv1.NewSharedInformerFactory(rw.osQuotaClient, 0)
-		rw.setupInformers(&quotav1.ClusterResourceQuota{}, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
+		rw.setupInformer(gvk.ClusterResourceQuota, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
 		rw.informerFactories = append(rw.informerFactories, quotaFactory)
 	}
 	rw.informerFactories = append(rw.informerFactories, factory)
+
+	return nil
+}
+
+func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, error) {
+	resources, err := rw.client.Discovery().ServerResourcesForGroupVersion(gvk.GroupVersion().String())
+	if err != nil {
+		if apierrors.IsNotFound(err) { // if the discovery endpoint isn't present, assume group version is not supported
+			rw.logger.Debug("Group version is not supported", zap.String("group", gvk.GroupVersion().String()))
+			return false, nil
+		}
+		return false, errors.Wrap(err, "Failed to fetch group version details")
+	}
+
+	for _, r := range resources.APIResources {
+		if r.Kind == gvk.Kind {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, factory informers.SharedInformerFactory) {
+	switch kind {
+	case gvk.Pod:
+		rw.setupInformer(kind, factory.Core().V1().Pods().Informer())
+	case gvk.Node:
+		rw.setupInformer(kind, factory.Core().V1().Nodes().Informer())
+	case gvk.Namespace:
+		rw.setupInformer(kind, factory.Core().V1().Namespaces().Informer())
+	case gvk.ReplicationController:
+		rw.setupInformer(kind, factory.Core().V1().ReplicationControllers().Informer())
+	case gvk.ResourceQuota:
+		rw.setupInformer(kind, factory.Core().V1().ResourceQuotas().Informer())
+	case gvk.Service:
+		rw.setupInformer(kind, factory.Core().V1().Services().Informer())
+	case gvk.DaemonSet:
+		rw.setupInformer(kind, factory.Apps().V1().DaemonSets().Informer())
+	case gvk.Deployment:
+		rw.setupInformer(kind, factory.Apps().V1().Deployments().Informer())
+	case gvk.ReplicaSet:
+		rw.setupInformer(kind, factory.Apps().V1().ReplicaSets().Informer())
+	case gvk.StatefulSet:
+		rw.setupInformer(kind, factory.Apps().V1().StatefulSets().Informer())
+	case gvk.Job:
+		rw.setupInformer(kind, factory.Batch().V1().Jobs().Informer())
+	case gvk.CronJob:
+		rw.setupInformer(kind, factory.Batch().V1().CronJobs().Informer())
+	case gvk.CronJobBeta:
+		rw.setupInformer(kind, factory.Batch().V1beta1().CronJobs().Informer())
+	case gvk.HorizontalPodAutoscaler:
+		rw.setupInformer(kind, factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer())
+	default:
+		rw.logger.Error("Could not setup an informer for provided group version kind",
+			zap.String("group version kind", kind.String()))
+	}
 }
 
 // startWatchingResources starts up all informers.
@@ -129,14 +206,14 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context, inf share
 	return timedContextForInitialSync
 }
 
-// setupInformers adds event handlers to informers and setups a metadataStore.
-func (rw *resourceWatcher) setupInformers(o runtime.Object, informer cache.SharedIndexInformer) {
+// setupInformer adds event handlers to informers and setups a metadataStore.
+func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer cache.SharedIndexInformer) {
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    rw.onAdd,
 		UpdateFunc: rw.onUpdate,
 		DeleteFunc: rw.onDelete,
 	})
-	rw.dataCollector.SetupMetadataStore(o, informer.GetStore())
+	rw.dataCollector.SetupMetadataStore(gvk, informer.GetStore())
 }
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
