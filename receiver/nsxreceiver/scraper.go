@@ -202,18 +202,18 @@ func (s *scraper) process(
 }
 
 func (s *scraper) recordNodeInterface(colTime pdata.Timestamp, nodeProps dm.NodeProperties, i interfaceInformation) {
-	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.RxDropped, metadata.AttributeDirection.Received, metadata.AttributePacketType.Dropped)
-	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.RxErrors, metadata.AttributeDirection.Received, metadata.AttributePacketType.Errored)
+	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.RxDropped, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeDropped)
+	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.RxErrors, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeErrored)
 	successRxPackets := i.stats.RxPackets - i.stats.RxDropped - i.stats.RxErrors
-	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, successRxPackets, metadata.AttributeDirection.Received, metadata.AttributePacketType.Success)
+	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, successRxPackets, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeSuccess)
 
-	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.TxDropped, metadata.AttributeDirection.Transmitted, metadata.AttributePacketType.Dropped)
-	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.TxErrors, metadata.AttributeDirection.Transmitted, metadata.AttributePacketType.Errored)
+	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.TxDropped, metadata.AttributeDirectionTransmitted, metadata.AttributePacketTypeDropped)
+	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, i.stats.TxErrors, metadata.AttributeDirectionTransmitted, metadata.AttributePacketTypeErrored)
 	successTxPackets := i.stats.TxPackets - i.stats.TxDropped - i.stats.TxErrors
-	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, successTxPackets, metadata.AttributeDirection.Transmitted, metadata.AttributePacketType.Success)
+	s.mb.RecordNsxInterfacePacketCountDataPoint(colTime, successTxPackets, metadata.AttributeDirectionTransmitted, metadata.AttributePacketTypeSuccess)
 
-	s.mb.RecordNsxInterfaceThroughputDataPoint(colTime, i.stats.RxBytes, metadata.AttributeDirection.Received)
-	s.mb.RecordNsxInterfaceThroughputDataPoint(colTime, i.stats.TxBytes, metadata.AttributeDirection.Transmitted)
+	s.mb.RecordNsxInterfaceThroughputDataPoint(colTime, i.stats.RxBytes, metadata.AttributeDirectionReceived)
+	s.mb.RecordNsxInterfaceThroughputDataPoint(colTime, i.stats.TxBytes, metadata.AttributeDirectionTransmitted)
 
 	s.mb.EmitForResource(
 		metadata.WithNsxInterfaceID(i.iFace.InterfaceId),
@@ -230,8 +230,8 @@ func (s *scraper) recordNode(
 	}
 
 	ss := info.stats.SystemStatus
-	s.mb.RecordNsxNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeCPUProcessClass.Datapath)
-	s.mb.RecordNsxNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk, metadata.AttributeCPUProcessClass.Services)
+	s.mb.RecordNsxNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeCPUProcessClassDatapath)
+	s.mb.RecordNsxNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk, metadata.AttributeCPUProcessClassServices)
 	s.mb.RecordNsxNodeMemoryUsageDataPoint(colTime, int64(ss.MemUsed))
 
 	if ss.EdgeMemUsage != nil {

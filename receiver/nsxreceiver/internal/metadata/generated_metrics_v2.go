@@ -55,6 +55,88 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeCPUProcessClass specifies the a value cpu.process.class attribute.
+type AttributeCPUProcessClass int
+
+const (
+	_ AttributeCPUProcessClass = iota
+	AttributeCPUProcessClassDatapath
+	AttributeCPUProcessClassServices
+)
+
+// String returns the string representation of the AttributeCPUProcessClass.
+func (av AttributeCPUProcessClass) String() string {
+	switch av {
+	case AttributeCPUProcessClassDatapath:
+		return "datapath"
+	case AttributeCPUProcessClassServices:
+		return "services"
+	}
+	return ""
+}
+
+// MapAttributeCPUProcessClass is a helper map of string to AttributeCPUProcessClass attribute value.
+var MapAttributeCPUProcessClass = map[string]AttributeCPUProcessClass{
+	"datapath": AttributeCPUProcessClassDatapath,
+	"services": AttributeCPUProcessClassServices,
+}
+
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionReceived
+	AttributeDirectionTransmitted
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionReceived:
+		return "received"
+	case AttributeDirectionTransmitted:
+		return "transmitted"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"received":    AttributeDirectionReceived,
+	"transmitted": AttributeDirectionTransmitted,
+}
+
+// AttributePacketType specifies the a value packet.type attribute.
+type AttributePacketType int
+
+const (
+	_ AttributePacketType = iota
+	AttributePacketTypeDropped
+	AttributePacketTypeErrored
+	AttributePacketTypeSuccess
+)
+
+// String returns the string representation of the AttributePacketType.
+func (av AttributePacketType) String() string {
+	switch av {
+	case AttributePacketTypeDropped:
+		return "dropped"
+	case AttributePacketTypeErrored:
+		return "errored"
+	case AttributePacketTypeSuccess:
+		return "success"
+	}
+	return ""
+}
+
+// MapAttributePacketType is a helper map of string to AttributePacketType attribute value.
+var MapAttributePacketType = map[string]AttributePacketType{
+	"dropped": AttributePacketTypeDropped,
+	"errored": AttributePacketTypeErrored,
+	"success": AttributePacketTypeSuccess,
+}
+
 type metricNsxInterfacePacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -595,13 +677,13 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordNsxInterfacePacketCountDataPoint adds a data point to nsx.interface.packet.count metric.
-func (mb *MetricsBuilder) RecordNsxInterfacePacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string, packetTypeAttributeValue string) {
-	mb.metricNsxInterfacePacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue, packetTypeAttributeValue)
+func (mb *MetricsBuilder) RecordNsxInterfacePacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, packetTypeAttributeValue AttributePacketType) {
+	mb.metricNsxInterfacePacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), packetTypeAttributeValue.String())
 }
 
 // RecordNsxInterfaceThroughputDataPoint adds a data point to nsx.interface.throughput metric.
-func (mb *MetricsBuilder) RecordNsxInterfaceThroughputDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricNsxInterfaceThroughput.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordNsxInterfaceThroughputDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricNsxInterfaceThroughput.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordNsxNodeCacheMemoryUsageDataPoint adds a data point to nsx.node.cache.memory.usage metric.
@@ -610,8 +692,8 @@ func (mb *MetricsBuilder) RecordNsxNodeCacheMemoryUsageDataPoint(ts pcommon.Time
 }
 
 // RecordNsxNodeCPUUtilizationDataPoint adds a data point to nsx.node.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordNsxNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuProcessClassAttributeValue string) {
-	mb.metricNsxNodeCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuProcessClassAttributeValue)
+func (mb *MetricsBuilder) RecordNsxNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuProcessClassAttributeValue AttributeCPUProcessClass) {
+	mb.metricNsxNodeCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuProcessClassAttributeValue.String())
 }
 
 // RecordNsxNodeDiskUsageDataPoint adds a data point to nsx.node.disk.usage metric.
@@ -665,32 +747,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeCPUProcessClass are the possible values that the attribute "cpu.process.class" can have.
-var AttributeCPUProcessClass = struct {
-	Datapath string
-	Services string
-}{
-	"datapath",
-	"services",
-}
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Received    string
-	Transmitted string
-}{
-	"received",
-	"transmitted",
-}
-
-// AttributePacketType are the possible values that the attribute "packet.type" can have.
-var AttributePacketType = struct {
-	Dropped string
-	Errored string
-	Success string
-}{
-	"dropped",
-	"errored",
-	"success",
-}
