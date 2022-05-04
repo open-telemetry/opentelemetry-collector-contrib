@@ -33,9 +33,11 @@ var (
 )
 
 var (
-	// Some standard dimension keys.
-	// upper bound dimension key for histogram buckets.
+	// Some standard dimension keys. upper bound dimension key for histogram buckets.
 	upperBoundDimensionKey = "upper_bound"
+
+	// Some standard dimension keys. quantile dimension key for summary quantiles.
+	quantileDimensionKey = "quantile"
 
 	// infinity bound dimension value is used on all histograms.
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
@@ -230,7 +232,7 @@ func convertSummaryDataPoints(
 			}
 			qv := qvs.At(j)
 			qdim := sfxpb.Dimension{
-				Key:   "quantile",
+				Key:   quantileDimensionKey,
 				Value: strconv.FormatFloat(qv.Quantile(), 'f', -1, 64),
 			}
 			qPt.Dimensions = append(dims, &qdim)
