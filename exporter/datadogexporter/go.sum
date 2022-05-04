@@ -41,8 +41,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DataDog/agent-payload/v5 v5.0.20 h1:R+QNKsG2t1+UAi0wOeSLlYU6lWPTZpaeHXX/ZluE9hY=
 github.com/DataDog/agent-payload/v5 v5.0.20/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.0.0-20211129110424-6491aa3bf583/go.mod h1:EP9f4GqaDJyP1F5jTNMtzdIpw3JpNs3rMSJOnYywCiw=
-github.com/DataDog/datadog-agent/pkg/quantile v0.35.0 h1:GKbiy59+Q0jc9MLV8I5aUeUC8/ubnIMmm8y2IZcT//8=
-github.com/DataDog/datadog-agent/pkg/quantile v0.35.0/go.mod h1:UsCz7/ojY6EFWgJht3m4GP1HPCQNgI1fIG7kBzsTOLs=
+github.com/DataDog/datadog-agent/pkg/quantile v0.35.1 h1:o+BzJ40Q7dlI17x05HdBgdbIl1cxjgLzdHowe/ypdG8=
+github.com/DataDog/datadog-agent/pkg/quantile v0.35.1/go.mod h1:UsCz7/ojY6EFWgJht3m4GP1HPCQNgI1fIG7kBzsTOLs=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
