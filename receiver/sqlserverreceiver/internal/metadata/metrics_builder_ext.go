@@ -21,7 +21,7 @@ import (
 func (mb *MetricsBuilder) RecordAnyDataPoint(ts pcommon.Timestamp, val float64, name string, attributes map[string]string) {
 	switch name {
 	case "sqlserver.user.connection.count":
-		mb.RecordSqlserverUserConnectionCountDataPoint(ts, val)
+		mb.RecordSqlserverUserConnectionCountDataPoint(ts, int64(val))
 	case "sqlserver.batch.request.rate":
 		mb.RecordSqlserverBatchRequestRateDataPoint(ts, val)
 	case "sqlserver.batch.sql_compilation.rate":
@@ -39,7 +39,7 @@ func (mb *MetricsBuilder) RecordAnyDataPoint(ts pcommon.Timestamp, val float64, 
 	case "sqlserver.page.lazy_write.rate":
 		mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, val)
 	case "sqlserver.page.life_expectancy":
-		mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, val)
+		mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, int64(val))
 	case "sqlserver.page.operation.rate":
 		mb.RecordSqlserverPageOperationRateDataPoint(ts, val, MapAttributePageOperations[attributes["type"]])
 	case "sqlserver.page.split.rate":
@@ -51,11 +51,11 @@ func (mb *MetricsBuilder) RecordAnyDataPoint(ts pcommon.Timestamp, val float64, 
 	case "sqlserver.transaction_log.flush.wait.rate":
 		mb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, val)
 	case "sqlserver.transaction_log.growth.count":
-		mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, val)
+		mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, int64(val))
 	case "sqlserver.transaction_log.shrink.count":
-		mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, val)
+		mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, int64(val))
 	case "sqlserver.transaction_log.usage":
-		mb.RecordSqlserverTransactionLogUsageDataPoint(ts, val)
+		mb.RecordSqlserverTransactionLogUsageDataPoint(ts, int64(val))
 	case "sqlserver.transaction.rate":
 		mb.RecordSqlserverTransactionRateDataPoint(ts, val)
 	case "sqlserver.transaction.write.rate":
