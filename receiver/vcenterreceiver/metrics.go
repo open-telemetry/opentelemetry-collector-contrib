@@ -22,6 +22,8 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
 func (v *vcenterMetricScraper) recordHostSystemMemoryUsage(
@@ -58,8 +60,8 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted
 
-	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskUsed, "used")
-	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskFree, "total")
+	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskUsed, metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskFree, metadata.AttributeDiskStateAvailable)
 	if diskFree != 0 {
 		diskUtilization := float64(diskUsed) / float64(diskFree) * 100
 		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
@@ -73,8 +75,8 @@ func (v *vcenterMetricScraper) recordDatastoreProperties(
 	s := ds.Summary
 	diskUsage := s.Capacity - s.FreeSpace
 	diskUtilization := float64(diskUsage) / float64(s.Capacity) * 100
-	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, diskUsage, "used")
-	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.Capacity, "total")
+	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, diskUsage, metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.Capacity, metadata.AttributeDiskStateUsed)
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(now, diskUtilization)
 }
 
@@ -182,21 +184,21 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.bytesTx.average":
-					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.bytesRx.average":
-					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.usage.average":
 					v.mb.RecordVcenterVMNetworkUsageDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
 				case "net.packetsTx.summation":
-					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.packetsRx.summation":
-					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Performance monitoring level 2 metrics required
 				case "disk.totalReadLatency.average", "virtualDisk.totalReadLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "read")
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeLatencyDirectionRead)
 				case "disk.totalWriteLatency.average", "virtualDisk.totalWriteLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeLatencyDirectionWrite)
 				case "disk.maxTotalLatency":
 					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}
@@ -215,25 +217,25 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 				case "net.usage.average":
 					v.mb.RecordVcenterHostNetworkUsageDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
 				case "net.bytesTx.average":
-					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.bytesRx.average":
-					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				// case "net.bytesTx.average":
 				case "net.packetsTx.summation":
-					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.packetsRx.summation":
-					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Following requires performance level 2
 				case "net.errorsRx.summation":
-					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.errorsTx.summation":
-					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 
 				case "disk.totalWriteLatency.average":
-					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeLatencyDirectionWrite)
 				case "disk.totalReadLatency.average":
-					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeLatencyDirectionRead)
 				case "disk.maxTotalLatency.latest":
 					v.mb.RecordVcenterHostDiskLatencyMaxDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}

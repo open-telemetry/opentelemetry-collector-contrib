@@ -167,6 +167,162 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDiskState specifies the a value disk_state attribute.
+type AttributeDiskState int
+
+const (
+	_ AttributeDiskState = iota
+	AttributeDiskStateAvailable
+	AttributeDiskStateUsed
+)
+
+// String returns the string representation of the AttributeDiskState.
+func (av AttributeDiskState) String() string {
+	switch av {
+	case AttributeDiskStateAvailable:
+		return "available"
+	case AttributeDiskStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeDiskState is a helper map of string to AttributeDiskState attribute value.
+var MapAttributeDiskState = map[string]AttributeDiskState{
+	"available": AttributeDiskStateAvailable,
+	"used":      AttributeDiskStateUsed,
+}
+
+// AttributeHostEffective specifies the a value host_effective attribute.
+type AttributeHostEffective int
+
+const (
+	_ AttributeHostEffective = iota
+	AttributeHostEffectiveTrue
+	AttributeHostEffectiveFalse
+)
+
+// String returns the string representation of the AttributeHostEffective.
+func (av AttributeHostEffective) String() string {
+	switch av {
+	case AttributeHostEffectiveTrue:
+		return "true"
+	case AttributeHostEffectiveFalse:
+		return "false"
+	}
+	return ""
+}
+
+// MapAttributeHostEffective is a helper map of string to AttributeHostEffective attribute value.
+var MapAttributeHostEffective = map[string]AttributeHostEffective{
+	"true":  AttributeHostEffectiveTrue,
+	"false": AttributeHostEffectiveFalse,
+}
+
+// AttributeLatencyDirection specifies the a value latency_direction attribute.
+type AttributeLatencyDirection int
+
+const (
+	_ AttributeLatencyDirection = iota
+	AttributeLatencyDirectionRead
+	AttributeLatencyDirectionWrite
+)
+
+// String returns the string representation of the AttributeLatencyDirection.
+func (av AttributeLatencyDirection) String() string {
+	switch av {
+	case AttributeLatencyDirectionRead:
+		return "read"
+	case AttributeLatencyDirectionWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeLatencyDirection is a helper map of string to AttributeLatencyDirection attribute value.
+var MapAttributeLatencyDirection = map[string]AttributeLatencyDirection{
+	"read":  AttributeLatencyDirectionRead,
+	"write": AttributeLatencyDirectionWrite,
+}
+
+// AttributeLatencyType specifies the a value latency_type attribute.
+type AttributeLatencyType int
+
+const (
+	_ AttributeLatencyType = iota
+	AttributeLatencyTypeKernel
+	AttributeLatencyTypeDevice
+)
+
+// String returns the string representation of the AttributeLatencyType.
+func (av AttributeLatencyType) String() string {
+	switch av {
+	case AttributeLatencyTypeKernel:
+		return "kernel"
+	case AttributeLatencyTypeDevice:
+		return "device"
+	}
+	return ""
+}
+
+// MapAttributeLatencyType is a helper map of string to AttributeLatencyType attribute value.
+var MapAttributeLatencyType = map[string]AttributeLatencyType{
+	"kernel": AttributeLatencyTypeKernel,
+	"device": AttributeLatencyTypeDevice,
+}
+
+// AttributeThroughputDirection specifies the a value throughput_direction attribute.
+type AttributeThroughputDirection int
+
+const (
+	_ AttributeThroughputDirection = iota
+	AttributeThroughputDirectionTransmitted
+	AttributeThroughputDirectionReceived
+)
+
+// String returns the string representation of the AttributeThroughputDirection.
+func (av AttributeThroughputDirection) String() string {
+	switch av {
+	case AttributeThroughputDirectionTransmitted:
+		return "transmitted"
+	case AttributeThroughputDirectionReceived:
+		return "received"
+	}
+	return ""
+}
+
+// MapAttributeThroughputDirection is a helper map of string to AttributeThroughputDirection attribute value.
+var MapAttributeThroughputDirection = map[string]AttributeThroughputDirection{
+	"transmitted": AttributeThroughputDirectionTransmitted,
+	"received":    AttributeThroughputDirectionReceived,
+}
+
+// AttributeVMCountPowerState specifies the a value vm_count_power_state attribute.
+type AttributeVMCountPowerState int
+
+const (
+	_ AttributeVMCountPowerState = iota
+	AttributeVMCountPowerStateOn
+	AttributeVMCountPowerStateOff
+)
+
+// String returns the string representation of the AttributeVMCountPowerState.
+func (av AttributeVMCountPowerState) String() string {
+	switch av {
+	case AttributeVMCountPowerStateOn:
+		return "on"
+	case AttributeVMCountPowerStateOff:
+		return "off"
+	}
+	return ""
+}
+
+// MapAttributeVMCountPowerState is a helper map of string to AttributeVMCountPowerState attribute value.
+var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
+	"on":  AttributeVMCountPowerStateOn,
+	"off": AttributeVMCountPowerStateOff,
+}
+
 type metricVcenterClusterCPUEffective struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2245,8 +2401,8 @@ func (mb *MetricsBuilder) RecordVcenterClusterCPUUsedDataPoint(ts pcommon.Timest
 }
 
 // RecordVcenterClusterHostCountDataPoint adds a data point to vcenter.cluster.host.count metric.
-func (mb *MetricsBuilder) RecordVcenterClusterHostCountDataPoint(ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue string) {
-	mb.metricVcenterClusterHostCount.recordDataPoint(mb.startTime, ts, val, hostEffectiveAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterClusterHostCountDataPoint(ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue AttributeHostEffective) {
+	mb.metricVcenterClusterHostCount.recordDataPoint(mb.startTime, ts, val, hostEffectiveAttributeValue.String())
 }
 
 // RecordVcenterClusterMemoryEffectiveDataPoint adds a data point to vcenter.cluster.memory.effective metric.
@@ -2265,13 +2421,13 @@ func (mb *MetricsBuilder) RecordVcenterClusterMemoryUsedDataPoint(ts pcommon.Tim
 }
 
 // RecordVcenterClusterVMCountDataPoint adds a data point to vcenter.cluster.vm.count metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue string) {
-	mb.metricVcenterClusterVMCount.recordDataPoint(mb.startTime, ts, val, vmCountPowerStateAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue AttributeVMCountPowerState) {
+	mb.metricVcenterClusterVMCount.recordDataPoint(mb.startTime, ts, val, vmCountPowerStateAttributeValue.String())
 }
 
 // RecordVcenterDatastoreDiskUsageDataPoint adds a data point to vcenter.datastore.disk.usage metric.
-func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue string) {
-	mb.metricVcenterDatastoreDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
+	mb.metricVcenterDatastoreDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
 }
 
 // RecordVcenterDatastoreDiskUtilizationDataPoint adds a data point to vcenter.datastore.disk.utilization metric.
@@ -2290,8 +2446,8 @@ func (mb *MetricsBuilder) RecordVcenterHostCPUUtilizationDataPoint(ts pcommon.Ti
 }
 
 // RecordVcenterHostDiskLatencyAvgDataPoint adds a data point to vcenter.host.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
-	mb.metricVcenterHostDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue AttributeLatencyDirection) {
+	mb.metricVcenterHostDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostDiskLatencyMaxDataPoint adds a data point to vcenter.host.disk.latency.max metric.
@@ -2315,18 +2471,18 @@ func (mb *MetricsBuilder) RecordVcenterHostMemoryUtilizationDataPoint(ts pcommon
 }
 
 // RecordVcenterHostNetworkPacketCountDataPoint adds a data point to vcenter.host.network.packet.count metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterHostNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	mb.metricVcenterHostNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostNetworkPacketErrorsDataPoint adds a data point to vcenter.host.network.packet.errors metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketErrorsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterHostNetworkPacketErrors.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketErrorsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	mb.metricVcenterHostNetworkPacketErrors.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostNetworkThroughputDataPoint adds a data point to vcenter.host.network.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterHostNetworkThroughput.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterHostNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	mb.metricVcenterHostNetworkThroughput.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostNetworkUsageDataPoint adds a data point to vcenter.host.network.usage metric.
@@ -2360,8 +2516,8 @@ func (mb *MetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Time
 }
 
 // RecordVcenterVMDiskLatencyAvgDataPoint adds a data point to vcenter.vm.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
-	mb.metricVcenterVMDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue AttributeLatencyDirection) {
+	mb.metricVcenterVMDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue.String())
 }
 
 // RecordVcenterVMDiskLatencyMaxDataPoint adds a data point to vcenter.vm.disk.latency.max metric.
@@ -2375,8 +2531,8 @@ func (mb *MetricsBuilder) RecordVcenterVMDiskThroughputDataPoint(ts pcommon.Time
 }
 
 // RecordVcenterVMDiskUsageDataPoint adds a data point to vcenter.vm.disk.usage metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue string) {
-	mb.metricVcenterVMDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
+	mb.metricVcenterVMDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
 }
 
 // RecordVcenterVMDiskUtilizationDataPoint adds a data point to vcenter.vm.disk.utilization metric.
@@ -2395,13 +2551,13 @@ func (mb *MetricsBuilder) RecordVcenterVMMemoryUsageDataPoint(ts pcommon.Timesta
 }
 
 // RecordVcenterVMNetworkPacketCountDataPoint adds a data point to vcenter.vm.network.packet.count metric.
-func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterVMNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	mb.metricVcenterVMNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterVMNetworkThroughputDataPoint adds a data point to vcenter.vm.network.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterVMNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue string) {
-	mb.metricVcenterVMNetworkThroughput.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	mb.metricVcenterVMNetworkThroughput.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterVMNetworkUsageDataPoint adds a data point to vcenter.vm.network.usage metric.
@@ -2443,57 +2599,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeDiskState are the possible values that the attribute "disk_state" can have.
-var AttributeDiskState = struct {
-	Available string
-	Used      string
-}{
-	"available",
-	"used",
-}
-
-// AttributeHostEffective are the possible values that the attribute "host_effective" can have.
-var AttributeHostEffective = struct {
-	True  string
-	False string
-}{
-	"true",
-	"false",
-}
-
-// AttributeLatencyDirection are the possible values that the attribute "latency_direction" can have.
-var AttributeLatencyDirection = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}
-
-// AttributeLatencyType are the possible values that the attribute "latency_type" can have.
-var AttributeLatencyType = struct {
-	Kernel string
-	Device string
-}{
-	"kernel",
-	"device",
-}
-
-// AttributeThroughputDirection are the possible values that the attribute "throughput_direction" can have.
-var AttributeThroughputDirection = struct {
-	Transmitted string
-	Received    string
-}{
-	"transmitted",
-	"received",
-}
-
-// AttributeVMCountPowerState are the possible values that the attribute "vm_count_power_state" can have.
-var AttributeVMCountPowerState = struct {
-	On  string
-	Off string
-}{
-	"on",
-	"off",
-}

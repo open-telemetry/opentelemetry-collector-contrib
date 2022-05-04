@@ -103,8 +103,8 @@ func (v *vcenterMetricScraper) collectCluster(
 	c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
 	s := moCluster.Summary.GetComputeResourceSummary()
 	v.mb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
-	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), "false")
-	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), "true")
+	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), metadata.AttributeHostEffectiveFalse)
+	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), metadata.AttributeHostEffectiveTrue)
 	v.mb.EmitForResource(
 		metadata.WithVcenterClusterName(c.Name()),
 	)
@@ -258,8 +258,8 @@ func (v *vcenterMetricScraper) collectVMs(
 		)
 	}
 
-	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(len(vms))-int64(poweredOffVMs), metadata.AttributeVMCountPowerState.On)
-	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(poweredOffVMs), metadata.AttributeVMCountPowerState.Off)
+	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(len(vms))-int64(poweredOffVMs), metadata.AttributeVMCountPowerStateOn)
+	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(poweredOffVMs), metadata.AttributeVMCountPowerStateOff)
 }
 
 func (v *vcenterMetricScraper) collectVM(
