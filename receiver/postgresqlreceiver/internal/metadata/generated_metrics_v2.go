@@ -51,6 +51,116 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationIns
+	AttributeOperationUpd
+	AttributeOperationDel
+	AttributeOperationHotUpd
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationIns:
+		return "ins"
+	case AttributeOperationUpd:
+		return "upd"
+	case AttributeOperationDel:
+		return "del"
+	case AttributeOperationHotUpd:
+		return "hot_upd"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"ins":     AttributeOperationIns,
+	"upd":     AttributeOperationUpd,
+	"del":     AttributeOperationDel,
+	"hot_upd": AttributeOperationHotUpd,
+}
+
+// AttributeSource specifies the a value source attribute.
+type AttributeSource int
+
+const (
+	_ AttributeSource = iota
+	AttributeSourceHeapRead
+	AttributeSourceHeapHit
+	AttributeSourceIdxRead
+	AttributeSourceIdxHit
+	AttributeSourceToastRead
+	AttributeSourceToastHit
+	AttributeSourceTidxRead
+	AttributeSourceTidxHit
+)
+
+// String returns the string representation of the AttributeSource.
+func (av AttributeSource) String() string {
+	switch av {
+	case AttributeSourceHeapRead:
+		return "heap_read"
+	case AttributeSourceHeapHit:
+		return "heap_hit"
+	case AttributeSourceIdxRead:
+		return "idx_read"
+	case AttributeSourceIdxHit:
+		return "idx_hit"
+	case AttributeSourceToastRead:
+		return "toast_read"
+	case AttributeSourceToastHit:
+		return "toast_hit"
+	case AttributeSourceTidxRead:
+		return "tidx_read"
+	case AttributeSourceTidxHit:
+		return "tidx_hit"
+	}
+	return ""
+}
+
+// MapAttributeSource is a helper map of string to AttributeSource attribute value.
+var MapAttributeSource = map[string]AttributeSource{
+	"heap_read":  AttributeSourceHeapRead,
+	"heap_hit":   AttributeSourceHeapHit,
+	"idx_read":   AttributeSourceIdxRead,
+	"idx_hit":    AttributeSourceIdxHit,
+	"toast_read": AttributeSourceToastRead,
+	"toast_hit":  AttributeSourceToastHit,
+	"tidx_read":  AttributeSourceTidxRead,
+	"tidx_hit":   AttributeSourceTidxHit,
+}
+
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateDead
+	AttributeStateLive
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateDead:
+		return "dead"
+	case AttributeStateLive:
+		return "live"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"dead": AttributeStateDead,
+	"live": AttributeStateLive,
+}
+
 type metricPostgresqlBackends struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -527,8 +637,8 @@ func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
-	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue AttributeSource) {
+	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue.String())
 }
 
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
@@ -542,8 +652,8 @@ func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
-func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) {
-	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue AttributeOperation) {
+	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue.String())
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.
@@ -552,8 +662,8 @@ func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestam
 }
 
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
-func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
-	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -587,46 +697,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Ins    string
-	Upd    string
-	Del    string
-	HotUpd string
-}{
-	"ins",
-	"upd",
-	"del",
-	"hot_upd",
-}
-
-// AttributeSource are the possible values that the attribute "source" can have.
-var AttributeSource = struct {
-	HeapRead  string
-	HeapHit   string
-	IdxRead   string
-	IdxHit    string
-	ToastRead string
-	ToastHit  string
-	TidxRead  string
-	TidxHit   string
-}{
-	"heap_read",
-	"heap_hit",
-	"idx_read",
-	"idx_hit",
-	"toast_read",
-	"toast_hit",
-	"tidx_read",
-	"tidx_hit",
-}
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Dead string
-	Live string
-}{
-	"dead",
-	"live",
-}

@@ -34,7 +34,7 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 		return processesMetadata{}, err
 	}
 
-	countByStatus := map[string]int64{}
+	countByStatus := map[metadata.AttributeStatus]int64{}
 	for _, process := range processes {
 		var status []string
 		status, err = process.Status()
@@ -45,7 +45,7 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 		}
 		state, ok := toAttributeStatus(status)
 		if !ok {
-			countByStatus[metadata.AttributeStatus.Unknown]++
+			countByStatus[metadata.AttributeStatusUnknown]++
 			continue
 		}
 		countByStatus[state]++
@@ -65,15 +65,15 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 		procsCreated = &v
 	}
 
-	countByStatus[metadata.AttributeStatus.Blocked] = int64(miscStat.ProcsBlocked)
-	countByStatus[metadata.AttributeStatus.Running] = int64(miscStat.ProcsRunning)
+	countByStatus[metadata.AttributeStatusBlocked] = int64(miscStat.ProcsBlocked)
+	countByStatus[metadata.AttributeStatusRunning] = int64(miscStat.ProcsRunning)
 
 	totalKnown := int64(0)
 	for _, count := range countByStatus {
 		totalKnown += count
 	}
 	if int64(miscStat.ProcsTotal) > totalKnown {
-		countByStatus[metadata.AttributeStatus.Unknown] = int64(miscStat.ProcsTotal) - totalKnown
+		countByStatus[metadata.AttributeStatusUnknown] = int64(miscStat.ProcsTotal) - totalKnown
 	}
 
 	return processesMetadata{
@@ -82,25 +82,25 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 	}, nil
 }
 
-func toAttributeStatus(status []string) (string, bool) {
+func toAttributeStatus(status []string) (metadata.AttributeStatus, bool) {
 	if len(status) == 0 || len(status[0]) == 0 {
-		return "", false
+		return metadata.AttributeStatus(0), false
 	}
 	state, ok := charToState[status[0]]
 	return state, ok
 }
 
-var charToState = map[string]string{
-	process.Blocked:  metadata.AttributeStatus.Blocked,
-	process.Daemon:   metadata.AttributeStatus.Daemon,
-	process.Detached: metadata.AttributeStatus.Detached,
-	process.Idle:     metadata.AttributeStatus.Idle,
-	process.Lock:     metadata.AttributeStatus.Locked,
-	process.Orphan:   metadata.AttributeStatus.Orphan,
-	process.Running:  metadata.AttributeStatus.Running,
-	process.Sleep:    metadata.AttributeStatus.Sleeping,
-	process.Stop:     metadata.AttributeStatus.Stopped,
-	process.System:   metadata.AttributeStatus.System,
-	process.Wait:     metadata.AttributeStatus.Paging,
-	process.Zombie:   metadata.AttributeStatus.Zombies,
+var charToState = map[string]metadata.AttributeStatus{
+	process.Blocked:  metadata.AttributeStatusBlocked,
+	process.Daemon:   metadata.AttributeStatusDaemon,
+	process.Detached: metadata.AttributeStatusDetached,
+	process.Idle:     metadata.AttributeStatusIdle,
+	process.Lock:     metadata.AttributeStatusLocked,
+	process.Orphan:   metadata.AttributeStatusOrphan,
+	process.Running:  metadata.AttributeStatusRunning,
+	process.Sleep:    metadata.AttributeStatusSleeping,
+	process.Stop:     metadata.AttributeStatusStopped,
+	process.System:   metadata.AttributeStatusSystem,
+	process.Wait:     metadata.AttributeStatusPaging,
+	process.Zombie:   metadata.AttributeStatusZombies,
 }

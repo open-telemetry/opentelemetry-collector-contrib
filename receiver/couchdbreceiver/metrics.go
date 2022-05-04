@@ -56,9 +56,8 @@ func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pcommon.Tim
 }
 
 func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
-	methods := []string{metadata.AttributeHTTPMethod.COPY, metadata.AttributeHTTPMethod.DELETE, metadata.AttributeHTTPMethod.GET, metadata.AttributeHTTPMethod.HEAD, metadata.AttributeHTTPMethod.OPTIONS, metadata.AttributeHTTPMethod.POST, metadata.AttributeHTTPMethod.PUT}
-	for _, method := range methods {
-		httpdRequestMethodKey := []string{"httpd_request_methods", method, "value"}
+	for methodVal, method := range metadata.MapAttributeHTTPMethod {
+		httpdRequestMethodKey := []string{"httpd_request_methods", methodVal, "value"}
 		httpdRequestMethodValue, err := getValueFromBody(httpdRequestMethodKey, stats)
 		if err != nil {
 			errors.AddPartial(1, err)
@@ -94,9 +93,8 @@ func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pcommon.Timest
 }
 
 func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
-	views := []string{metadata.AttributeView.TemporaryViewReads, metadata.AttributeView.ViewReads}
-	for _, view := range views {
-		viewKey := []string{"httpd", view, "value"}
+	for viewVal, view := range metadata.MapAttributeView {
+		viewKey := []string{"httpd", viewVal, "value"}
 		viewValue, err := getValueFromBody(viewKey, stats)
 		if err != nil {
 			errors.AddPartial(1, err)
@@ -145,7 +143,7 @@ func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pcommon.Ti
 }
 
 func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
-	operations := []string{metadata.AttributeOperation.Reads, metadata.AttributeOperation.Writes}
+	operations := []metadata.AttributeOperation{metadata.AttributeOperationReads, metadata.AttributeOperationWrites}
 	keyPaths := [][]string{{"database_reads", "value"}, {"database_writes", "value"}}
 	for i := 0; i < len(operations); i++ {
 		key := keyPaths[i]
