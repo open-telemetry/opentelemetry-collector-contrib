@@ -189,9 +189,14 @@ func TestDetailedPVCLabels(t *testing.T) {
 			}, nil)
 			metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
 
-			volumeResource := pcommon.NewResource()
-			err := fillVolumeResource(volumeResource, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
+			ro, err := getVolumeResourceOptions(podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
+
+			volumeResource := pcommon.NewResource()
+			for _, op := range ro {
+				op(volumeResource)
+			}
+
 			require.Equal(t, pcommon.NewMapFromRaw(tt.want).Sort(), volumeResource.Attributes().Sort())
 		})
 	}

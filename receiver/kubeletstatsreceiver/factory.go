@@ -78,7 +78,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions)
+	scrp, err := newKubletScraper(rest, set, rOptions, cfg.Metrics)
 	if err != nil {
 		return nil, err
 	}

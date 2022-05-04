@@ -17,6 +17,7 @@ package kubeletstatsreceiver
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -63,6 +64,7 @@ func TestScraper(t *testing.T) {
 		&fakeRestClient{},
 		componenttest.NewNopReceiverCreateSettings(),
 		options,
+		metadata.DefaultMetricsSettings(),
 	)
 	require.NoError(t, err)
 
@@ -112,6 +114,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				&fakeRestClient{},
 				componenttest.NewNopReceiverCreateSettings(),
 				options,
+				metadata.DefaultMetricsSettings(),
 			)
 			require.NoError(t, err)
 
@@ -195,6 +198,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
 				},
+				metadata.DefaultMetricsSettings(),
 			)
 			require.NoError(t, err)
 
@@ -344,6 +348,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					},
 					k8sAPIClient: test.k8sAPIClient,
 				},
+				metadata.DefaultMetricsSettings(),
 			)
 			require.NoError(t, err)
 
@@ -456,6 +461,7 @@ func TestClientErrors(t *testing.T) {
 				},
 				settings,
 				options,
+				metadata.DefaultMetricsSettings(),
 			)
 			require.NoError(t, err)
 

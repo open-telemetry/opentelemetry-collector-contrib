@@ -15,6 +15,7 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,12 +26,14 @@ import (
 func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata,
-	metricGroupsToCollect map[MetricGroup]bool) []pmetric.Metrics {
+	metricGroupsToCollect map[MetricGroup]bool,
+	mb *metadata.MetricsBuilder) []pmetric.Metrics {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
 		time:                  time.Now(),
+		mb:                    mb,
 	}
 
 	acc.nodeStats(summary.Node)

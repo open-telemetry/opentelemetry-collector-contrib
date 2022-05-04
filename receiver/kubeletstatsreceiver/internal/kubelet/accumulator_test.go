@@ -16,6 +16,7 @@ package kubelet
 
 import (
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -210,6 +211,7 @@ func TestMetadataErrorCases(t *testing.T) {
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
+				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 			}
 
 			tt.testScenario(acc)
@@ -231,6 +233,7 @@ func TestNilHandling(t *testing.T) {
 			ContainerMetricGroup: true,
 			VolumeMetricGroup:    true,
 		},
+		mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 	}
 	assert.NotPanics(t, func() {
 		acc.nodeStats(stats.NodeStats{})

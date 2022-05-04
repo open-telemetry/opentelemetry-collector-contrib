@@ -13,24 +13,20 @@
 // limitations under the License.
 
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
-
 import (
-	"strconv"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
+	"strconv"
 )
 
-func addVolumeMetrics(dest pmetric.MetricSlice, volumeMetrics metadata.VolumeMetrics, s stats.VolumeStats, currentTime pcommon.Timestamp) {
-	addIntGauge(dest, volumeMetrics.Available, s.AvailableBytes, currentTime)
-	addIntGauge(dest, volumeMetrics.Capacity, s.CapacityBytes, currentTime)
-	addIntGauge(dest, volumeMetrics.Inodes, s.Inodes, currentTime)
-	addIntGauge(dest, volumeMetrics.InodesFree, s.InodesFree, currentTime)
-	addIntGauge(dest, volumeMetrics.InodesUsed, s.InodesUsed, currentTime)
+func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.VolumeMetrics, s stats.VolumeStats, currentTime pcommon.Timestamp) {
+	recordIntDataPoint(mb, volumeMetrics.Available, s.AvailableBytes, currentTime)
+	recordIntDataPoint(mb, volumeMetrics.Capacity, s.CapacityBytes, currentTime)
+	recordIntDataPoint(mb, volumeMetrics.Inodes, s.Inodes, currentTime)
+	recordIntDataPoint(mb, volumeMetrics.InodesFree, s.InodesFree, currentTime)
+	recordIntDataPoint(mb, volumeMetrics.InodesUsed, s.InodesUsed, currentTime)
 }
 
 func getLabelsFromVolume(volume v1.Volume, labels map[string]string) {
@@ -83,22 +79,22 @@ func GetPersistentVolumeLabels(pv v1.PersistentVolumeSource, labels map[string]s
 func awsElasticBlockStoreDims(vs v1.AWSElasticBlockStoreVolumeSource, labels map[string]string) {
 	labels[labelVolumeType] = labelValueAWSEBSVolume
 	// AWS specific labels.
-	labels["aws.volume.id"] = vs.VolumeID
-	labels["fs.type"] = vs.FSType
-	labels["partition"] = strconv.Itoa(int(vs.Partition))
+	labels[labelAwsVolumeId] = vs.VolumeID
+	labels[labelFsType] = vs.FSType
+	labels[labelPartition] = strconv.Itoa(int(vs.Partition))
 }
 
 func gcePersistentDiskDims(vs v1.GCEPersistentDiskVolumeSource, labels map[string]string) {
 	labels[labelVolumeType] = labelValueGCEPDVolume
 	// GCP specific labels.
-	labels["gce.pd.name"] = vs.PDName
-	labels["fs.type"] = vs.FSType
-	labels["partition"] = strconv.Itoa(int(vs.Partition))
+	labels[labelGcePdName] = vs.PDName
+	labels[labelFsType] = vs.FSType
+	labels[labelPartition] = strconv.Itoa(int(vs.Partition))
 }
 
 func glusterfsDims(vs v1.GlusterfsVolumeSource, labels map[string]string) {
 	labels[labelVolumeType] = labelValueGlusterFSVolume
 	// GlusterFS specific labels.
-	labels["glusterfs.endpoints.name"] = vs.EndpointsName
-	labels["glusterfs.path"] = vs.Path
+	labels[labelGlusterfsEndpointsName] = vs.EndpointsName
+	labels[labelGlusterfsPath] = vs.Path
 }

@@ -30,4 +30,10 @@ const (
 	labelValueAWSEBSVolume          = "awsElasticBlockStore"
 	labelValueGCEPDVolume           = "gcePersistentDisk"
 	labelValueGlusterFSVolume       = "glusterfs"
+	labelAwsVolumeId                = "aws.volume.id"
+	labelFsType                     = "fs.type"
+	labelPartition                  = "partition"
+	labelGcePdName                  = "gce.pd.name"
+	labelGlusterfsEndpointsName     = "glusterfs.endpoints.name"
+	labelGlusterfsPath              = "glusterfs.path"
 )
