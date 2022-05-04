@@ -75,7 +75,7 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				Username: "myuser\nname",
 				Password: `mypass 
 word`,
-				Realm: "myrealm",
+				Realm:         "myrealm",
 				RemoteProfile: "myprofile",
 			},
 			`otel.exporter.otlp.endpoint = https://myotlpendpoint

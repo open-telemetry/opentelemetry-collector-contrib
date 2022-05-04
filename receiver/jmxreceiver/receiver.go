@@ -62,9 +62,10 @@ func newJMXMetricReceiver(
 	}
 }
 
-func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
+func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) error {
 	jmx.logger.Debug("starting JMX Receiver")
 
+	var err error
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
 	if err != nil {
 		return err
@@ -85,7 +86,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (e
 	}
 
 	// Close the file
-	if err := tmpFile.Close(); err != nil {
+	if err = tmpFile.Close(); err != nil {
 		return fmt.Errorf("failed to write config file for jmxreceiver config: %w", err)
 	}
 
