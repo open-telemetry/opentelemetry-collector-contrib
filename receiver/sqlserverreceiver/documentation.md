@@ -16,7 +16,7 @@ These are the metrics available for this scraper.
 | **sqlserver.page.buffer_cache.hit_ratio** | Pages found in the buffer pool without having to read from disk. | % | Gauge(Double) | <ul> </ul> |
 | **sqlserver.page.checkpoint.flush.rate** | Number of pages flushed by operations requiring dirty pages to be flushed. | {pages}/s | Gauge(Double) | <ul> </ul> |
 | **sqlserver.page.lazy_write.rate** | Number of lazy writes moving dirty pages to disk. | {writes}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.page.life_expectancy** | Time a page will stay in the buffer pool. | s | Gauge(Double) | <ul> </ul> |
+| **sqlserver.page.life_expectancy** | Time a page will stay in the buffer pool. | s | Gauge(Int) | <ul> </ul> |
 | **sqlserver.page.operation.rate** | Number of physical database page operations issued. | {operations}/s | Gauge(Double) | <ul> <li>page.operations</li> </ul> |
 | **sqlserver.page.split.rate** | Number of pages split as a result of overflowing index pages. | {pages}/s | Gauge(Double) | <ul> </ul> |
 | **sqlserver.transaction.rate** | Number of transactions started for the database (not including XTP-only transactions). | {transactions}/s | Gauge(Double) | <ul> </ul> |
@@ -24,10 +24,10 @@ These are the metrics available for this scraper.
 | **sqlserver.transaction_log.flush.data.rate** | Total number of log bytes flushed. | By/s | Gauge(Double) | <ul> </ul> |
 | **sqlserver.transaction_log.flush.rate** | Number of log flushes. | {flushes}/s | Gauge(Double) | <ul> </ul> |
 | **sqlserver.transaction_log.flush.wait.rate** | Number of commits waiting for a transaction log flush. | {commits}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.growth.count** | Total number of transaction log expansions for a database. | {growths} | Sum(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.shrink.count** | Total number of transaction log shrinks for a database. | {shrinks} | Sum(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.usage** | Percent of transaction log space used. | % | Gauge(Double) | <ul> </ul> |
-| **sqlserver.user.connection.count** | Number of users connected to the SQL Server. | {connections} | Gauge(Double) | <ul> </ul> |
+| **sqlserver.transaction_log.growth.count** | Total number of transaction log expansions for a database. | {growths} | Sum(Int) | <ul> </ul> |
+| **sqlserver.transaction_log.shrink.count** | Total number of transaction log shrinks for a database. | {shrinks} | Sum(Int) | <ul> </ul> |
+| **sqlserver.transaction_log.usage** | Percent of transaction log space used. | % | Gauge(Int) | <ul> </ul> |
+| **sqlserver.user.connection.count** | Number of users connected to the SQL Server. | {connections} | Gauge(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
