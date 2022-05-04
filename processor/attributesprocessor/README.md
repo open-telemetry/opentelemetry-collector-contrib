@@ -46,8 +46,11 @@ For the actions `insert`, `update` and `upsert`,
 - key: <key>
   action: {insert, update, upsert}
   # FromContext specifies the context value to use to populate the attribute value. 
-  # The context values would be searched in receiver's transport protocol additional information
-  # like GRPC Metadata or HTTP Headers. 
+  # If the key is prefixed with `metadata.`, the values are searched
+  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers. 
+  # If the key is prefixed with `auth.`, the values are searched
+  # in the authentication information set by the server authenticator. 
+  # Refer to the server authenticator's documentation part of your pipeline for more information about which attributes are available.
   # If the key doesn't exist, no action is performed.
   # If the key has multiple values the values will be joined with `;` separator.
   from_context: <other key>
