@@ -8,7 +8,7 @@ if grep -q "$MODULE " go.mod; then
   go get "$MODULE"@"$VERSION"
 fi
 
-# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/model"
+# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/semconv"
 # and "go.opentelemetry.io/collector/pdata" as well.
 if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
   SEMCONV=$MODULE"/semconv"
