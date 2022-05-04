@@ -43,7 +43,7 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 	return &scraper{
 		config:   cfg,
 		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsConfig.Settings),
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
 		logger:   settings.Logger,
 	}
 }

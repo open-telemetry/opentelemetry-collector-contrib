@@ -33,10 +33,12 @@ func TestType(t *testing.T) {
 	require.EqualValues(t, "nsx", ft)
 }
 
-func TestValidConfig(t *testing.T) {
+func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	err := factory.CreateDefaultConfig().Validate()
-	require.NoError(t, err)
+	// default does not supply username/password or endpoint
+	require.ErrorContains(t, err, "username not provided")
+	require.ErrorContains(t, err, "password not provided")
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
@@ -45,10 +47,8 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		&Config{
-			MetricsConfig: &MetricsConfig{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					CollectionInterval: 10 * time.Second,
-				},
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: 10 * time.Second,
 			},
 		},
 		consumertest.NewNop(),
@@ -59,18 +59,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 func TestCreateMetricsReceiverNotNSX(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		&syslogreceiver.SysLogConfig{},
-		consumertest.NewNop(),
-	)
-	require.Error(t, err)
-	require.ErrorContains(t, err, errConfigNotNSX.Error())
-}
-
-func TestCreateLogsReceiverNotNSX(t *testing.T) {
-	factory := NewFactory()
-	_, err := factory.CreateLogsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		&syslogreceiver.SysLogConfig{},

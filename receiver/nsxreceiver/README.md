@@ -42,16 +42,13 @@ Under the `metrics` key of the NSX configuration are these parameters:
 ```yaml
 receivers:
   nsx:
-    metrics:
-      endpoint: https://nsx-manager
-      username: admin
-      password: password
-      timeout: 60s
-      settings:
-        nsx.node.cpu.utilization:
-          enabled: false
-    logs:
-      listen_address: 0.0.0.0:5120
+    endpoint: https://nsx-manager
+    username: admin
+    password: password
+    timeout: 60s
+    settings:
+      nsx.node.cpu.utilization:
+        enabled: false
 
 exporters:
   file:
@@ -79,7 +76,7 @@ Logging is ingested via syslog forwarding from the NSX. This [document](https://
 
 ### Logging Prerequisites
 
-This component wraps the [syslogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver) as the engine for ingesting these forwarded syslogs. Currently this receiver only supports these protocols:
+This technology should use the [syslogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver) as the engine for ingesting these forwarded syslogs. Currently this receiver only supports these protocols:
 
 - udp
 - tcp
@@ -87,15 +84,14 @@ This component wraps the [syslogreceiver](https://github.com/open-telemetry/open
 
 So please be sure to pick the same format on both configuration of the collector and the forwarder.
 
-Almost all configuration options are identical as the [syslogreceiver configuration options](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver#configuration).
+All configuration options can be found here the [syslogreceiver configuration options](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver#configuration).
 
 ### Example Logging Configuration
 
 ```yaml
 receivers:
-  nsx:
-    logging:
-      udp:
-        listen_address: 0.0.0.0:5142
-      protocol: rfc5424
+  syslog:
+    udp:
+      listen_address: 0.0.0.0:5142
+    protocol: rfc5424
 ```

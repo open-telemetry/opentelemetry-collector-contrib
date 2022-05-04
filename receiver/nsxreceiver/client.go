@@ -52,12 +52,12 @@ var (
 )
 
 func newClient(c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
-	client, err := c.MetricsConfig.HTTPClientSettings.ToClient(host.GetExtensions(), settings)
+	client, err := c.HTTPClientSettings.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoint, err := url.Parse(c.MetricsConfig.Endpoint)
+	endpoint, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (c *nsxClient) doRequest(ctx context.Context, path string, options ...reque
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(c.config.MetricsConfig.Username, c.config.MetricsConfig.Password)
+	req.SetBasicAuth(c.config.Username, c.config.Password)
 
 	for _, op := range options {
 		req = op(req)

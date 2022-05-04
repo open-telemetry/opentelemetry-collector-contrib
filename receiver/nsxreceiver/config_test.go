@@ -22,11 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func TestID(t *testing.T) {
-	config := createDefaultConfig()
-	require.NotEmpty(t, config.ID())
-}
-
 func TestMetricValidation(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	cases := []struct {
@@ -35,16 +30,15 @@ func TestMetricValidation(t *testing.T) {
 		expectedError error
 	}{
 		{
-			desc: "default config",
-			cfg:  defaultConfig,
+			desc:          "default config",
+			cfg:           defaultConfig,
+			expectedError: errors.New("url scheme must be http or https"),
 		},
 		{
 			desc: "not valid scheme",
 			cfg: &Config{
-				MetricsConfig: &MetricsConfig{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: "wss://not-supported-websockets",
-					},
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "wss://not-supported-websockets",
 				},
 			},
 			expectedError: errors.New("url scheme must be http or https"),
@@ -52,10 +46,8 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "unparseable url",
 			cfg: &Config{
-				MetricsConfig: &MetricsConfig{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: "\x00",
-					},
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "\x00",
 				},
 			},
 			expectedError: errors.New("parse"),
@@ -63,11 +55,9 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "username not provided",
 			cfg: &Config{
-				MetricsConfig: &MetricsConfig{
-					Password: "password",
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: "http://localhost",
-					},
+				Password: "password",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost",
 				},
 			},
 			expectedError: errors.New("username not provided"),
@@ -75,22 +65,22 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "password not provided",
 			cfg: &Config{
-				MetricsConfig: &MetricsConfig{
-					Username: "otelu",
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: "http://localhost",
-					},
+				Username: "otelu",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost",
 				},
 			},
 			expectedError: errors.New("password not provided"),
 		},
 	}
 	for _, tc := range cases {
-		err := tc.cfg.Validate()
-		if tc.expectedError != nil {
-			require.ErrorContains(t, err, tc.expectedError.Error())
-		} else {
-			require.NoError(t, err)
-		}
+		t.Run(tc.desc, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.expectedError != nil {
+				require.ErrorContains(t, err, tc.expectedError.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }

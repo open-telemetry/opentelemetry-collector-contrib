@@ -58,7 +58,7 @@ func TestScrape(t *testing.T) {
 
 	scraper := newScraper(
 		&Config{
-			MetricsConfig: &MetricsConfig{Settings: metadata.DefaultMetricsSettings()},
+			Metrics: metadata.DefaultMetricsSettings(),
 		},
 		componenttest.NewNopTelemetrySettings(),
 	)
@@ -77,12 +77,10 @@ func TestScrape(t *testing.T) {
 func TestScrapeBadConfig(t *testing.T) {
 	scraper := newScraper(
 		&Config{
-			MetricsConfig: &MetricsConfig{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://\x00",
-				},
-				Settings: metadata.DefaultMetricsSettings(),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: "http://\x00",
 			},
+			Metrics: metadata.DefaultMetricsSettings(),
 		},
 		componenttest.NewNopTelemetrySettings(),
 	)
@@ -98,7 +96,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{
-			MetricsConfig: &MetricsConfig{Settings: metadata.DefaultMetricsSettings()},
+			Metrics: metadata.DefaultMetricsSettings(),
 		},
 		componenttest.NewNopTelemetrySettings(),
 	)
@@ -116,7 +114,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
 	scraper := newScraper(
 		&Config{
-			MetricsConfig: &MetricsConfig{Settings: metadata.DefaultMetricsSettings()},
+			Metrics: metadata.DefaultMetricsSettings(),
 		},
 		componenttest.NewNopTelemetrySettings(),
 	)
@@ -130,12 +128,10 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 func TestScraperRecordNoStat(t *testing.T) {
 	scraper := newScraper(
 		&Config{
-			MetricsConfig: &MetricsConfig{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://localhost",
-				},
-				Settings: metadata.DefaultMetricsSettings(),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: "http://localhost",
 			},
+			Metrics: metadata.DefaultMetricsSettings(),
 		},
 		componenttest.NewNopTelemetrySettings(),
 	)
