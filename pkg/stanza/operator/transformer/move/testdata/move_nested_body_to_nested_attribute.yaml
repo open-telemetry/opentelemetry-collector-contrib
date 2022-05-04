@@ -1,3 +1,0 @@
-type: move
-from: body.one.two
-to: attributes.three.four

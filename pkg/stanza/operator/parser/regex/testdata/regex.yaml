@@ -1,2 +1,0 @@
-type: regex_parser
-regex: '^Host=(?P<host>[^,]+), Type=(?P<type>.*)$'

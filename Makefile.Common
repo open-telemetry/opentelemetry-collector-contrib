@@ -93,7 +93,7 @@ fmt:
 
 .PHONY: lint
 lint: checklicense impi misspell
-	$(LINT) run --allow-parallel-runners
+	$(LINT) run --allow-parallel-runners --exclude-use-default
 
 .PHONY: tidy
 tidy:

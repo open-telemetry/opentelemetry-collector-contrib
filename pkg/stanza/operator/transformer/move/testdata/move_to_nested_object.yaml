@@ -1,3 +1,0 @@
-type: move
-from: body.newnestedkey
-to: body.nested.newnestedkey

@@ -1,2 +1,0 @@
-type: key_value_parser
-parse_from: body.from
