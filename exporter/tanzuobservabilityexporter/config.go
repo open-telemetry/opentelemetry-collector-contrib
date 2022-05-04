@@ -97,5 +97,5 @@ func parseEndpoint(endpoint string) (hostName string, port int, err error) {
 		return "", 0, errors.New("valid port required")
 	}
 	hostName = u.Hostname()
-	return
+	return hostName, port, nil
 }

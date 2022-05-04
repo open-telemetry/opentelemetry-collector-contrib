@@ -31,6 +31,7 @@ import (
 const (
 	defaultApplicationName  = "defaultApp"
 	defaultServiceName      = "defaultService"
+	defaultMetricsPort      = 2878
 	labelApplication        = "application"
 	labelError              = "error"
 	labelEventName          = "name"
@@ -73,7 +74,7 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse traces.endpoint: %v", err)
 	}
-	metricsPort := 2878
+	metricsPort := defaultMetricsPort
 	if cfg.hasMetricsEndpoint() {
 		_, metricsPort, err = cfg.parseMetricsEndpoint()
 		if err != nil {
