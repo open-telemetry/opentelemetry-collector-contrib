@@ -15,7 +15,11 @@
 package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -54,6 +58,8 @@ type Config struct {
 	TruststorePath string `mapstructure:"truststore_path"`
 	// The truststore password for SSL
 	TruststorePassword string `mapstructure:"truststore_password"`
+	// The truststore type for SSL
+	TruststoreType string `mapstructure:"truststore_type"`
 	// The JMX remote profile.  Should be one of:
 	// `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or
 	// `"TLS SASL/CRAM-MD5"`, though no enforcement is applied.
@@ -124,8 +130,94 @@ func (c *Config) parseClasspath() string {
 	return strings.Join(classPathElems, ":")
 }
 
+type supportedJar struct {
+	jar             string
+	version         string
+	addedValidation func(c *Config, j supportedJar) error
+}
+
+var jmxMetricsGathererVersions map[string]supportedJar = map[string]supportedJar{
+	"0646639df98404bd9b1263b46e2fd4612bc378f9951a561f0a0be9725718db36": supportedJar{
+		version:         "1.13.0",
+		jar:             "JMX metrics gatherer",
+		addedValidation: oldFormatProperties,
+	},
+	"c0b1a19c4965c7961abaaccfbb4d358e5f3b0b5b105578a4782702f126bfa8b7": supportedJar{
+		version:         "1.12.0",
+		jar:             "JMX metrics gatherer",
+		addedValidation: oldFormatProperties,
+	},
+	"ca689ca2da8a412c7f4ea0e816f47e8639b4270a48fb877c9a910b44757bc0a4": supportedJar{
+		version:         "1.11.0",
+		jar:             "JMX metrics gatherer",
+		addedValidation: oldFormatProperties,
+	},
+	"4b14d26fb383ed925fe1faf1b7fe2103559ed98ce6cf761ac9afc0158d2a218c": supportedJar{
+		version:         "1.10.0",
+		jar:             "JMX metrics gatherer",
+		addedValidation: oldFormatProperties,
+	},
+}
+
+var additionalJarVersions map[string]supportedJar = map[string]supportedJar{
+	"hash": supportedJar{
+		version: "1.13.0",
+		jar:     "JBoss Client",
+	},
+}
+
+func oldFormatProperties(c *Config, j supportedJar) error {
+	if c.KeystorePassword != "" ||
+		c.KeystorePath != "" ||
+		c.KeystoreType != "" ||
+		c.TruststorePassword != "" ||
+		c.TruststorePath != "" ||
+		c.TruststoreType != "" {
+		return fmt.Errorf("version %s of the JMX Metrics Gatherer does not support SSL parameters (Keystore & Truststore) "+
+			"from the jmxreceiver. Update to the latest JMX Metrics Gatherer if you would like SSL support", j.version)
+	}
+	return nil
+}
+
+func hashFile(path string) (string, error) {
+	f, err := os.Open(os.Args[1])
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+func (c *Config) validateJar(hashMap map[string]supportedJar, jar string) error {
+	hash, err := hashFile(jar)
+	if err != nil {
+		return fmt.Errorf("error hashing file: %w", err)
+	}
+
+	jarDetails, ok := hashMap[hash]
+	if !ok {
+		return errors.New("jar hash does not match known versions")
+	}
+	if jarDetails.addedValidation != nil {
+		if err = jarDetails.addedValidation(c, jarDetails); err != nil {
+			return fmt.Errorf("jar failed validation: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (c *Config) validate() error {
 	var missingFields []string
+	if c.JARPath == "" {
+		missingFields = append(missingFields, "`jar_path`")
+	}
 	if c.Endpoint == "" {
 		missingFields = append(missingFields, "`endpoint`")
 	}
@@ -138,6 +230,18 @@ func (c *Config) validate() error {
 			baseMsg += "s"
 		}
 		return fmt.Errorf("%v: %v", baseMsg, strings.Join(missingFields, ", "))
+	}
+
+	err := c.validateJar(jmxMetricsGathererVersions, c.JARPath)
+	if err != nil {
+		return fmt.Errorf("%v error validating `jar_path`: %w", c.ID(), err)
+	}
+
+	for _, additionalJar := range c.AdditionalJars {
+		err := c.validateJar(additionalJarVersions, additionalJar)
+		if err != nil {
+			return fmt.Errorf("%v error validating `additional_jars`: %w", c.ID(), additionalJar, err)
+		}
 	}
 
 	if c.CollectionInterval < 0 {
