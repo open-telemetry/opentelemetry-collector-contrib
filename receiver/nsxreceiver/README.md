@@ -12,7 +12,7 @@ The purpose of this receiver is to allow users to monitor metrics from NSX-T env
 
 ## Prerequisites
 
-Needs a “Network Admin” user for NSX Manager Resources in the vSphere Client (can be created via Web UI or CLI)
+Needs at least an “Auditor” user for NSX Manager Resources in the vSphere Client (can be created via Web UI or CLI)
 
 The collector must be able to reach the NSX Manager with port 443 open.
 

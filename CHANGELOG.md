@@ -14,6 +14,7 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `nsxreceiver`: Added implementation of SAP HANA Metric Receiver (#9568)
 
 ### 💡 Enhancements 💡
 
