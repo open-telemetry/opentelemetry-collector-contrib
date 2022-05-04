@@ -25,7 +25,7 @@ var registry = map[string]interface{}{
 	"keep_keys":    keepKeys,
 	"set":          set,
 	"truncate_all": truncateAll,
-	"limit":       limit,
+	"limit":        limit,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
