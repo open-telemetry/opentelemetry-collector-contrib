@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -30,6 +31,7 @@ const (
 	typeStr = "couchdb"
 )
 
+// NewFactory creates the couchdbreceiver factory
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
@@ -39,6 +41,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
+		Metrics: metadata.DefaultMetricsSettings(),
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 1 * time.Minute,
