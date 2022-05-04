@@ -123,33 +123,35 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 //
 // The given client is used to collect namespace metrics, which may be connected to a discovered node
 func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client Aerospike, now pcommon.Timestamp) {
-	if info.Statistics.ClientConnections != nil {
-		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *info.Statistics.ClientConnections, metadata.AttributeConnectionType.Client)
-	}
-	if info.Statistics.FabricConnections != nil {
-		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *info.Statistics.FabricConnections, metadata.AttributeConnectionType.Fabric)
-	}
-	if info.Statistics.HeartbeatConnections != nil {
-		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *info.Statistics.HeartbeatConnections, metadata.AttributeConnectionType.Heartbeat)
-	}
+	if stats := info.Statistics; stats != nil {
+		if stats.ClientConnections != nil {
+			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.ClientConnections, metadata.AttributeConnectionType.Client)
+		}
+		if stats.FabricConnections != nil {
+			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.FabricConnections, metadata.AttributeConnectionType.Fabric)
+		}
+		if stats.HeartbeatConnections != nil {
+			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.HeartbeatConnections, metadata.AttributeConnectionType.Heartbeat)
+		}
 
-	if info.Statistics.ClientConnectionsClosed != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *info.Statistics.ClientConnectionsClosed, metadata.AttributeConnectionType.Client, metadata.AttributeConnectionOp.Close)
-	}
-	if info.Statistics.ClientConnectionsOpened != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *info.Statistics.ClientConnectionsOpened, metadata.AttributeConnectionType.Client, metadata.AttributeConnectionOp.Open)
-	}
-	if info.Statistics.FabricConnectionsClosed != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *info.Statistics.FabricConnectionsClosed, metadata.AttributeConnectionType.Fabric, metadata.AttributeConnectionOp.Close)
-	}
-	if info.Statistics.FabricConnectionsOpened != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *info.Statistics.FabricConnectionsOpened, metadata.AttributeConnectionType.Fabric, metadata.AttributeConnectionOp.Open)
-	}
-	if info.Statistics.HeartbeatConnectionsClosed != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *info.Statistics.HeartbeatConnectionsClosed, metadata.AttributeConnectionType.Heartbeat, metadata.AttributeConnectionOp.Close)
-	}
-	if info.Statistics.HeartbeatConnectionsOpened != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *info.Statistics.HeartbeatConnectionsOpened, metadata.AttributeConnectionType.Heartbeat, metadata.AttributeConnectionOp.Open)
+		if stats.ClientConnectionsClosed != nil {
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsClosed, metadata.AttributeConnectionType.Client, metadata.AttributeConnectionOp.Close)
+		}
+		if stats.ClientConnectionsOpened != nil {
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsOpened, metadata.AttributeConnectionType.Client, metadata.AttributeConnectionOp.Open)
+		}
+		if stats.FabricConnectionsClosed != nil {
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsClosed, metadata.AttributeConnectionType.Fabric, metadata.AttributeConnectionOp.Close)
+		}
+		if stats.FabricConnectionsOpened != nil {
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsOpened, metadata.AttributeConnectionType.Fabric, metadata.AttributeConnectionOp.Open)
+		}
+		if stats.HeartbeatConnectionsClosed != nil {
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsClosed, metadata.AttributeConnectionType.Heartbeat, metadata.AttributeConnectionOp.Close)
+		}
+		if stats.HeartbeatConnectionsOpened != nil {
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsOpened, metadata.AttributeConnectionType.Heartbeat, metadata.AttributeConnectionOp.Open)
+		}
 	}
 
 	r.mb.EmitForResource(metadata.WithNodeName(info.Name))
