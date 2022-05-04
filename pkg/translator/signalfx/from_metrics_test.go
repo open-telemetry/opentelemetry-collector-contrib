@@ -380,8 +380,8 @@ func Test_FromMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md := tt.metricsFn()
-			gotSfxDataPoints, err := FromMetrics(md)
+			from := &FromTranslator{}
+			gotSfxDataPoints, err := from.FromMetrics(tt.metricsFn())
 			require.NoError(t, err)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
