@@ -69,8 +69,8 @@ These are the metrics available for this scraper.
 | **mongodbatlas.system.network.io.max** | System Network IO Aggregate of MongoDB Metrics MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN | By/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
 | **mongodbatlas.system.paging.io.average** | Swap IO Aggregate of MongoDB Metrics SWAP_IO_IN, SWAP_IO_OUT | {pages}/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
 | **mongodbatlas.system.paging.io.max** | Swap IO Aggregate of MongoDB Metrics MAX_SWAP_IO_IN, MAX_SWAP_IO_OUT | {pages}/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
-| **mongodbatlas.system.paging.usage.average** | Swap usage Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>direction</li> </ul> |
-| **mongodbatlas.system.paging.usage.max** | Swap usage Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>direction</li> </ul> |
+| **mongodbatlas.system.paging.usage.average** | Swap usage Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>memory_state</li> </ul> |
+| **mongodbatlas.system.paging.usage.max** | Swap usage Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>memory_state</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
