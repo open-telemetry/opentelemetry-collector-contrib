@@ -215,11 +215,22 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	content := []string{}
 	for k, v := range config {
 		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
-		// As all of the keys are receiver-defined we don't need to escape the reserved characters of ':', '=', or
-		// non-newline white space characters. However, we do want to ensure that we handle multiline values
-		// correctly just in case a user attempts to provide multiline values for one of the available fields
-		safeValue := strings.ReplaceAll(v, "\n", "\\\n")
-		content = append(content, fmt.Sprintf("%s = %s", k, safeValue))
+
+		// Keys are receiver-defined so this escape should be unnecessary but in case that assumption
+		// breaks in the future this will ensure keys are properly escaped
+		safeKey := strings.ReplaceAll(k, "=", "\\=")
+		safeKey = strings.ReplaceAll(safeKey, ":", "\\:")
+		// Any whitespace must be removed from keys
+		safeKey = strings.ReplaceAll(safeKey, " ", "")
+		safeKey = strings.ReplaceAll(safeKey, "\t", "")
+		safeKey = strings.ReplaceAll(safeKey, "\n", "")
+
+		// Unneeded escape tokens will be removed by the properties file loader, so it should be pre-escaped to ensure
+		// the values provided reach the metrics gatherer as provided. Also in case a user attempts to provide multiline
+		// values for one of the available fields, we need to escape the newlines
+		safeValue := strings.ReplaceAll(v, "\\", "\\\\")
+		safeValue = strings.ReplaceAll(safeValue, "\n", "\\n")
+		content = append(content, fmt.Sprintf("%s = %s", safeKey, safeValue))
 	}
 	sort.Strings(content)
 
