@@ -32,7 +32,7 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc:          "default config",
 			cfg:           defaultConfig,
-			expectedError: errors.New("url scheme must be http or https"),
+			expectedError: errors.New("no manager endpoint was specified"),
 		},
 		{
 			desc: "not valid scheme",
