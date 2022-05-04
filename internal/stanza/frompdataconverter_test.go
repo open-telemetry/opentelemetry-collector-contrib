@@ -94,6 +94,7 @@ func complexPdataForNDifferentHosts(count int, n int) pdata.Logs {
 
 		t, _ := time.ParseInLocation("2006-01-02", "2022-01-01", time.Local)
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
+		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(t))
 
 		attr.Remove("double")
 		attr.Remove("host")
