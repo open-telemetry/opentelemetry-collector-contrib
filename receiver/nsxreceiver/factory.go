@@ -17,6 +17,7 @@ package nsxreceiver
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -41,8 +42,11 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			CollectionInterval: time.Minute,
+		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 

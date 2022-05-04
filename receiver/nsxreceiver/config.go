@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -29,7 +28,6 @@ import (
 
 // Config is the configuration for the NSX receiver
 type Config struct {
-	config.ReceiverSettings                 `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
