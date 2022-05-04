@@ -43,8 +43,11 @@ const (
 	quantileDimensionKey = "quantile"
 )
 
+// FromTranslator converts from pdata to SignalFx proto data model.
+type FromTranslator struct{}
+
 // FromMetrics converts pmetric.Metrics to SignalFx proto data points.
-func FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
+func (ft *FromTranslator) FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -55,7 +58,7 @@ func FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				sfxDataPoints = append(sfxDataPoints, FromMetric(ilm.Metrics().At(k), extraDimensions)...)
+				sfxDataPoints = append(sfxDataPoints, ft.FromMetric(ilm.Metrics().At(k), extraDimensions)...)
 			}
 		}
 	}
@@ -65,7 +68,7 @@ func FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
 
 // FromMetric converts pmetric.Metric to SignalFx proto data points.
 // TODO: Remove this and change signalfxexporter to us FromMetrics.
-func FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var dps []*sfxpb.DataPoint
 
 	mt := fromMetricTypeToMetricType(m)
