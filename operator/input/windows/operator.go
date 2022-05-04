@@ -230,7 +230,7 @@ func (e *EventLogInput) sendEvent(ctx context.Context, eventXML EventXML) {
 	}
 
 	entry.Timestamp = eventXML.parseTimestamp()
-	entry.Severity = eventXML.parseSeverity()
+	entry.Severity = eventXML.parseRenderedSeverity()
 	e.Write(ctx, entry)
 }
 
