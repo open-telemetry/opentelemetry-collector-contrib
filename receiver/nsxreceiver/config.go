@@ -40,6 +40,7 @@ func (c *Config) Validate() error {
 	var err error
 	if c.Endpoint == "" {
 		err = multierr.Append(err, errors.New("no manager endpoint was specified"))
+		return err
 	}
 
 	res, err := url.Parse(c.Endpoint)
