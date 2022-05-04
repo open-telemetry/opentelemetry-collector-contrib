@@ -36,9 +36,8 @@ func TestType(t *testing.T) {
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	err := factory.CreateDefaultConfig().Validate()
-	// default does not supply username/password or endpoint
-	require.ErrorContains(t, err, "username not provided")
-	require.ErrorContains(t, err, "password not provided")
+	// default does not endpoint
+	require.ErrorContains(t, err, "no manager endpoint was specified")
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
