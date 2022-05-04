@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows
@@ -26,17 +27,22 @@ import (
 
 // EventXML is the rendered xml of an event.
 type EventXML struct {
-	EventID     EventID     `xml:"System>EventID"`
-	Provider    Provider    `xml:"System>Provider"`
-	Computer    string      `xml:"System>Computer"`
-	Channel     string      `xml:"System>Channel"`
-	RecordID    uint64      `xml:"System>EventRecordID"`
-	TimeCreated TimeCreated `xml:"System>TimeCreated"`
-	Message     string      `xml:"RenderingInfo>Message"`
-	Level       string      `xml:"RenderingInfo>Level"`
-	Task        string      `xml:"RenderingInfo>Task"`
-	Opcode      string      `xml:"RenderingInfo>Opcode"`
-	Keywords    []string    `xml:"RenderingInfo>Keywords>Keyword"`
+	EventID          EventID     `xml:"System>EventID"`
+	Provider         Provider    `xml:"System>Provider"`
+	Computer         string      `xml:"System>Computer"`
+	Channel          string      `xml:"System>Channel"`
+	RecordID         uint64      `xml:"System>EventRecordID"`
+	TimeCreated      TimeCreated `xml:"System>TimeCreated"`
+	Message          string      `xml:"RenderingInfo>Message"`
+	RenderedLevel    string      `xml:"RenderingInfo>Level"`
+	Level            string      `xml:"System>Level"`
+	RenderedTask     string      `xml:"RenderingInfo>Task"`
+	Task             string      `xml:"System>Task"`
+	RenderedOpcode   string      `xml:"RenderingInfo>Opcode"`
+	Opcode           string      `xml:"System>Opcode"`
+	RenderedKeywords []string    `xml:"RenderingInfo>Keywords>Keyword"`
+	Keywords         []string    `xml:"System>Keywords"`
+	EventData        []string    `xml:"EventData>Data"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -47,9 +53,11 @@ func (e *EventXML) parseTimestamp() time.Time {
 	return time.Now()
 }
 
-// parseSeverity will parse the severity of the event.
-func (e *EventXML) parseSeverity() entry.Severity {
-	switch e.Level {
+// parseRenderedSeverity will parse the severity of the event.
+func (e *EventXML) parseRenderedSeverity() entry.Severity {
+	switch e.RenderedLevel {
+	case "":
+		return e.parseSeverity()
 	case "Critical":
 		return entry.Fatal
 	case "Error":
@@ -63,9 +71,46 @@ func (e *EventXML) parseSeverity() entry.Severity {
 	}
 }
 
+// parseSeverity will parse the severity of the event when RenderingInfo is not populated
+func (e *EventXML) parseSeverity() entry.Severity {
+	switch e.Level {
+	case "1":
+		return entry.Fatal
+	case "2":
+		return entry.Error
+	case "3":
+		return entry.Warn
+	case "4":
+		return entry.Info
+	default:
+		return entry.Default
+	}
+}
+
 // parseBody will parse a body from the event.
 func (e *EventXML) parseBody() map[string]interface{} {
 	message, details := e.parseMessage()
+
+	level := e.RenderedLevel
+	if level == "" {
+		level = e.Level
+	}
+
+	task := e.RenderedTask
+	if task == "" {
+		task = e.Task
+	}
+
+	opcode := e.RenderedOpcode
+	if opcode == "" {
+		opcode = e.Opcode
+	}
+
+	keywords := e.RenderedKeywords
+	if keywords == nil {
+		keywords = e.Keywords
+	}
+
 	body := map[string]interface{}{
 		"event_id": map[string]interface{}{
 			"qualifiers": e.EventID.Qualifiers,
@@ -80,11 +125,12 @@ func (e *EventXML) parseBody() map[string]interface{} {
 		"computer":    e.Computer,
 		"channel":     e.Channel,
 		"record_id":   e.RecordID,
-		"level":       e.Level,
+		"level":       level,
 		"message":     message,
-		"task":        e.Task,
-		"opcode":      e.Opcode,
-		"keywords":    e.Keywords,
+		"task":        task,
+		"opcode":      opcode,
+		"keywords":    keywords,
+		"event_data":  e.EventData,
 	}
 	if len(details) > 0 {
 		body["details"] = details
