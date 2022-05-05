@@ -272,29 +272,6 @@ otelcontribcol-testbed:
 	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_testbed_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),testbed ./cmd/otelcontribcol
 
-.PHONY: otelcontribcol-all-sys
-otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-darwin_arm64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
-
-.PHONY: otelcontribcol-darwin_amd64
-otelcontribcol-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-darwin_arm64
-otelcontribcol-darwin_arm64:
-	GOOS=darwin  GOARCH=arm64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-linux_amd64
-otelcontribcol-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-linux_arm64
-otelcontribcol-linux_arm64:
-	GOOS=linux   GOARCH=arm64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-windows_amd64
-otelcontribcol-windows_amd64:
-	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) otelcontribcol
-
 .PHONY: update-dep
 update-dep:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="updatedep"
