@@ -25,11 +25,13 @@
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
+- `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
+- `processor/attributes`: Support attributes set by server authenticator (#9420)
 
 ### 🧰 Bug fixes 🧰
 
@@ -44,6 +46,7 @@
 - `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
 - `examples/demo`: fix baggage not work in trace demo app. (#9418)
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
+- `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
 
 ## v0.50.0
 
