@@ -51,6 +51,10 @@ type APIConfig struct {
 	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
+
+	// FailOnInvalidKey states whether to exit at startup on invalid API key.
+	// The default value is false.
+	FailOnInvalidKey bool `mapstructure:"fail_on_invalid_key"`
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options

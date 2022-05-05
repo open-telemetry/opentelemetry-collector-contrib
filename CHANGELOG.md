@@ -24,6 +24,8 @@
 - `internal/stanza`: Add support for `remove` operator (#9524)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
+- `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 
 ### 🧰 Bug fixes 🧰
 
@@ -35,6 +37,9 @@
 - `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
 - `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
 - `nginxreceiver`: Include nginxreceiver in components (#9572)
+- `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
+- `examples/demo`: fix baggage not work in trace demo app. (#9418)
+- `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 
 ## v0.50.0
 
