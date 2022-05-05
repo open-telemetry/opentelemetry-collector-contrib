@@ -14,6 +14,7 @@
 package gcp
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,7 +56,7 @@ func TestHostInfoFromAttributes(t *testing.T) {
 		conventions.AttributeCloudAccountID:        testCloudAccount,
 	})
 	hostInfo := HostInfoFromAttributes(attrs)
-	assert.ElementsMatch(t, hostInfo.HostAliases, []string{testHostID})
+	assert.ElementsMatch(t, hostInfo.HostAliases, []string{fmt.Sprintf("%s.%s", testHostID, testCloudAccount)})
 	assert.ElementsMatch(t, hostInfo.GCPTags,
 		[]string{"instance-id:hostID", "zone:zone", "instance-type:machineType", "project:projectID"})
 }

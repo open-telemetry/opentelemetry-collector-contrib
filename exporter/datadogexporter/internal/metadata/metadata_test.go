@@ -127,7 +127,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 	assert.Equal(t, metadataGCP.Meta.Hostname, "host-name")
 	assert.ElementsMatch(t, metadataGCP.Meta.HostAliases, []string{"host-id.project-id"})
 	assert.ElementsMatch(t, metadataGCP.Tags.GCP,
-		[]string{"instance-id:host-id", "zone:cloud-zone", "instance-type:host-type"})
+		[]string{"instance-id:host-id", "project:project-id", "zone:cloud-zone", "instance-type:host-type"})
 
 	// Azure
 	attrsAzure := testutils.NewAttributeMap(map[string]string{
