@@ -898,6 +898,13 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceOption applies changes to provided resource.
 type ResourceOption func(pcommon.Resource)
 
+// WithDatabase sets provided value as "database" attribute for current resource.
+func WithDatabase(val string) ResourceOption {
+	return func(r pcommon.Resource) {
+		r.Attributes().UpsertString("database", val)
+	}
+}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
