@@ -78,7 +78,7 @@ gofmt:
 
 .PHONY: golint
 golint:
-	$(MAKE) for-all-target TARGET="lint"
+	$(MAKE) checklicense # in root module only
 
 .PHONY: goporto
 goporto:

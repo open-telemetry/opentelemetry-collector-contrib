@@ -76,7 +76,8 @@ addlicense:
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
+	echo "checking licenses for $(ALL_SRC) $(ALL_SRC) $(ALL_SRC)"
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) $(ALL_SRC) $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
