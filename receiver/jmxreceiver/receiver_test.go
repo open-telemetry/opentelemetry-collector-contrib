@@ -77,6 +77,10 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 word`,
 				Realm:         "myrealm",
 				RemoteProfile: "myprofile",
+				ResourceAttributes: map[string]string{
+					"abc": "123",
+					"one": "two",
+				},
 			},
 			`otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
@@ -88,7 +92,8 @@ otel.jmx.remote.profile = myprofile
 otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
 otel.jmx.target.system = mytargetsystem
 otel.jmx.username = myuser\nname
-otel.metrics.exporter = otlp`,
+otel.metrics.exporter = otlp
+otel.resource.attributes = abc=123,one=two`,
 			"",
 		},
 		{

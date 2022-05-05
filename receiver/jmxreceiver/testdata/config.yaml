@@ -41,6 +41,9 @@ receivers:
     endpoint: myendpoint:55555
     target_system: jvm
     log_level: truth
+  jmx/invalidtargetsystem:
+    endpoint: myendpoint:55555
+    target_system: jvm,nonsense
 
 processors:
   nop:

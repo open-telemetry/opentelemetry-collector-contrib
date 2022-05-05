@@ -16,7 +16,6 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -97,14 +96,6 @@ func (oec otlpExporterConfig) headersToString() string {
 
 func (c *Config) parseProperties() []string {
 	parsed := make([]string, 0, 1)
-	if len(c.ResourceAttributes) > 0 {
-		attributes := make([]string, 0, len(c.ResourceAttributes))
-		for k, v := range c.ResourceAttributes {
-			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
-		}
-		parsed = append(parsed, fmt.Sprintf("-Dotel.resource.attributes=%s", strings.Join(attributes, ",")))
-	}
-
 	logLevel := "info"
 	if len(c.LogLevel) > 0 {
 		logLevel = strings.ToLower(c.LogLevel)
@@ -120,12 +111,6 @@ func (c *Config) parseProperties() []string {
 func (c *Config) parseClasspath() string {
 	classPathElems := make([]string, 0)
 
-	// See if the CLASSPATH env exists and if so get it's current value
-	currentClassPath, ok := os.LookupEnv("CLASSPATH")
-	if ok && currentClassPath != "" {
-		classPathElems = append(classPathElems, currentClassPath)
-	}
-
 	// Add JMX JAR to classpath
 	classPathElems = append(classPathElems, c.JARPath)
 
@@ -137,6 +122,8 @@ func (c *Config) parseClasspath() string {
 }
 
 var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
+var validTargetSystems = map[string]struct{}{"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
+	"jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
 
 func (c *Config) validate() error {
 	var missingFields []string
@@ -166,8 +153,23 @@ func (c *Config) validate() error {
 	}
 
 	if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
-		return fmt.Errorf("%v `log_level` must be one of 'trace', 'debug', 'info', 'warn', 'error', 'off'", c.ID())
+		return fmt.Errorf("%v `log_level` must be one of %s", c.ID(), listKeys(validLogLevels))
+	}
+
+	for _, system := range strings.Split(c.TargetSystem, ",") {
+		if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
+			return fmt.Errorf("%v `target_system` list may only be a subset of %s", c.ID(), listKeys(validTargetSystems))
+		}
 	}
 
 	return nil
+}
+
+func listKeys(presenceMap map[string]struct{}) string {
+	list := make([]string, 0, len(presenceMap))
+	for k, _ := range presenceMap {
+		list = append(list, fmt.Sprintf("'%s'", k))
+	}
+	sort.Strings(list)
+	return strings.Join(list, ", ")
 }

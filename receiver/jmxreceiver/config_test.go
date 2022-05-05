@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 7)
+	assert.Equal(t, len(cfg.Receivers), 8)
 
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r0))
@@ -88,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 		}, r1)
 
 	assert.Equal(
-		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-Dotel.resource.attributes=one=two"},
+		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=info"},
 		r1.parseProperties(),
 	)
 
@@ -193,7 +193,28 @@ func TestLoadConfig(t *testing.T) {
 		}, r6)
 	err = r6.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidloglevel `log_level` must be one of 'trace', 'debug', 'info', 'warn', 'error', 'off'", err.Error())
+	assert.Equal(t, "jmx/invalidloglevel `log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'", err.Error())
+
+	r7 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidtargetsystem")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r7))
+	assert.Equal(t,
+		&Config{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidtargetsystem")),
+			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			Endpoint:           "myendpoint:55555",
+			TargetSystem:       "jvm,nonsense",
+			LogLevel:           "info",
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
+		}, r7)
+	err = r7.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
 }
 
 func TestClassPathParse(t *testing.T) {
@@ -233,7 +254,7 @@ func TestClassPathParse(t *testing.T) {
 				},
 			},
 			existingEnvVal: "/pre/existing/class/path/",
-			expected:       "/pre/existing/class/path/:/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
+			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
 		},
 	}
 

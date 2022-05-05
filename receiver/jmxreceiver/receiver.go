@@ -96,6 +96,9 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		Args:           append(jmx.config.parseProperties(), jmxMainClass, "-config", jmx.configFile),
 		EnvironmentVariables: map[string]string{
 			"CLASSPATH": jmx.config.parseClasspath(),
+			// Overwrite these environment variables to reduce attack surface
+			"JAVA_TOOL_OPTIONS": "",
+			"LD_PRELOAD":        "",
 		},
 	}
 
@@ -210,6 +213,14 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 
 	if jmx.config.Realm != "" {
 		config["otel.jmx.realm"] = jmx.config.Realm
+	}
+
+	if len(jmx.config.ResourceAttributes) > 0 {
+		attributes := make([]string, 0, len(jmx.config.ResourceAttributes))
+		for k, v := range jmx.config.ResourceAttributes {
+			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
+		}
+		config["otel.resource.attributes"] = strings.Join(attributes, ",")
 	}
 
 	content := []string{}
