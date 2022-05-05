@@ -16,7 +16,7 @@
 // +build !windows
 
 // TODO review if tests should succeed on Windows
-
+// nolint:errcheck
 package proxy
 
 import (
