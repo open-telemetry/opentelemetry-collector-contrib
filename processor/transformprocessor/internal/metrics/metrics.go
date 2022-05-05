@@ -15,10 +15,12 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"time"
+	
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type metricTransformContext struct {
@@ -99,6 +101,10 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 			return accessDescriptorMetricUnit(), nil
 		case "metric_type":
 			return accessDescriptorMetricType(), nil
+		case "metric_aggregation_temporality":
+			return accessDescriptorMetricAggTemporality(), nil
+		case "metric_is_monotonic":
+			return accessDescriptorMetricIsMonotonic(), nil
 		}
 	case "attributes":
 		mapKey := path[0].MapKey
@@ -294,6 +300,58 @@ func accessDescriptorMetricType() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if dataType, ok := val.(pmetric.MetricDataType); ok {
 				ctx.GetDescriptor().(pmetric.Metric).SetDataType(dataType)
+			}
+		},
+	}
+}
+
+func accessDescriptorMetricAggTemporality() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			metric := ctx.GetDescriptor().(pmetric.Metric)
+			switch metric.DataType() {
+			case pmetric.MetricDataTypeSum:
+				return metric.Sum().AggregationTemporality()
+			case pmetric.MetricDataTypeHistogram:
+				return metric.Histogram().AggregationTemporality()
+			case pmetric.MetricDataTypeExponentialHistogram:
+				return metric.ExponentialHistogram().AggregationTemporality()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newAggTemporality, ok := val.(pmetric.MetricAggregationTemporality); ok {
+				metric := ctx.GetDescriptor().(pmetric.Metric)
+				switch metric.DataType() {
+				case pmetric.MetricDataTypeSum:
+					metric.Sum().SetAggregationTemporality(newAggTemporality)
+				case pmetric.MetricDataTypeHistogram:
+					metric.Histogram().SetAggregationTemporality(newAggTemporality)
+				case pmetric.MetricDataTypeExponentialHistogram:
+					metric.ExponentialHistogram().SetAggregationTemporality(newAggTemporality)
+				}
+			}
+		},
+	}
+}
+
+func accessDescriptorMetricIsMonotonic() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			metric := ctx.GetDescriptor().(pmetric.Metric)
+			switch metric.DataType() {
+			case pmetric.MetricDataTypeSum:
+				return metric.Sum().IsMonotonic()
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if newIsMonotonic, ok := val.(bool); ok {
+				metric := ctx.GetDescriptor().(pmetric.Metric)
+				switch metric.DataType() {
+				case pmetric.MetricDataTypeSum:
+					metric.Sum().SetIsMonotonic(newIsMonotonic)
+				}
 			}
 		},
 	}
