@@ -1123,6 +1123,316 @@ func createExpoHistogramDataPointTelemetry() (interface{}, pcommon.Instrumentati
 	return expoHistogramDataPoint, createIlTelemetry(), resource
 }
 
+func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
+	refExpoHistogramDataPoint, _, _ := createSummaryDataPointTelemetry()
+
+	_, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes := createNewTelemetry()
+
+	newQuartileValues := pmetric.NewValueAtQuantileSlice()
+	newQuartileValues.AppendEmpty().SetValue(100)
+
+	tests := []struct {
+		name     string
+		path     []common.Field
+		orig     interface{}
+		new      interface{}
+		modified func(interface{}, pcommon.InstrumentationScope, pcommon.Resource)
+	}{
+		{
+			name: "start_time_unix_nano",
+			path: []common.Field{
+				{
+					Name: "start_time_unix_nano",
+				},
+			},
+			orig: int64(100_000_000),
+			new:  int64(200_000_000),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "time_unix_nano",
+			path: []common.Field{
+				{
+					Name: "time_unix_nano",
+				},
+			},
+			orig: int64(500_000_000),
+			new:  int64(200_000_000),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "flags",
+			path: []common.Field{
+				{
+					Name: "flags",
+				},
+			},
+			orig: pmetric.NewMetricDataPointFlags(),
+			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+			},
+		},
+		{
+			name: "count",
+			path: []common.Field{
+				{
+					Name: "count",
+				},
+			},
+			orig: uint64(2),
+			new:  uint64(3),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).SetCount(3)
+			},
+		},
+		{
+			name: "sum",
+			path: []common.Field{
+				{
+					Name: "sum",
+				},
+			},
+			orig: 10.1,
+			new:  10.2,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).SetSum(10.2)
+			},
+		},
+		{
+			name: "quantile_values",
+			path: []common.Field{
+				{
+					Name: "quantile_values",
+				},
+			},
+			orig: refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).QuantileValues(),
+			new:  newQuartileValues,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				newQuartileValues.CopyTo(datapoint.(pmetric.SummaryDataPoint).QuantileValues())
+			},
+		},
+		{
+			name: "attributes",
+			path: []common.Field{
+				{
+					Name: "attributes",
+				},
+			},
+			orig: refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes(),
+			new:  newAttrs,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().Clear()
+				newAttrs.CopyTo(datapoint.(pmetric.SummaryDataPoint).Attributes())
+			},
+		},
+		{
+			name: "attributes string",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("str"),
+				},
+			},
+			orig: "val",
+			new:  "newVal",
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertString("str", "newVal")
+			},
+		},
+		{
+			name: "attributes bool",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("bool"),
+				},
+			},
+			orig: true,
+			new:  false,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertBool("bool", false)
+			},
+		},
+		{
+			name: "attributes int",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("int"),
+				},
+			},
+			orig: int64(10),
+			new:  int64(20),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertInt("int", 20)
+			},
+		},
+		{
+			name: "attributes float",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("double"),
+				},
+			},
+			orig: 1.2,
+			new:  2.4,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertDouble("double", 2.4)
+			},
+		},
+		{
+			name: "attributes bytes",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("bytes"),
+				},
+			},
+			orig: []byte{1, 3, 2},
+			new:  []byte{2, 3, 4},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+			},
+		},
+		{
+			name: "attributes array string",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_str"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_str")
+				return val.SliceVal()
+			}(),
+			new: []string{"new"},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_str", newArrStr)
+			},
+		},
+		{
+			name: "attributes array bool",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_bool"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_bool")
+				return val.SliceVal()
+			}(),
+			new: []bool{false},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_bool", newArrBool)
+			},
+		},
+		{
+			name: "attributes array int",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_int"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_int")
+				return val.SliceVal()
+			}(),
+			new: []int64{20},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_int", newArrInt)
+			},
+		},
+		{
+			name: "attributes array float",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_float"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_float")
+				return val.SliceVal()
+			}(),
+			new: []float64{2.0},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_float", newArrFloat)
+			},
+		},
+		{
+			name: "attributes array bytes",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_bytes"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_bytes")
+				return val.SliceVal()
+			}(),
+			new: [][]byte{{9, 6, 4}},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_bytes", newArrBytes)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := newPathGetSetter(tt.path)
+			assert.NoError(t, err)
+
+			numberDataPoint, il, resource := createSummaryDataPointTelemetry()
+
+			ctx := metricTransformContext{
+				dataPoint: numberDataPoint,
+				metric:    pmetric.NewMetric(),
+				il:        il,
+				resource:  resource,
+			}
+
+			got := accessor.Get(ctx)
+			assert.Equal(t, tt.orig, got)
+
+			accessor.Set(ctx, tt.new)
+
+			exNumberDataPoint, exIl, exResource := createSummaryDataPointTelemetry()
+			tt.modified(exNumberDataPoint, exIl, exResource)
+
+			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+			assert.Equal(t, exIl, il)
+			assert.Equal(t, exResource, resource)
+		})
+	}
+}
+
+func createSummaryDataPointTelemetry() (interface{}, pcommon.InstrumentationScope, pcommon.Resource) {
+	summaryDataPoint := pmetric.NewSummaryDataPoint()
+	summaryDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
+	summaryDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+	summaryDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+	summaryDataPoint.SetCount(2)
+	summaryDataPoint.SetSum(10.1)
+
+	summaryDataPoint.QuantileValues().AppendEmpty().SetValue(1)
+
+	createAttributeTelemetry(summaryDataPoint.Attributes())
+
+	resource := pcommon.NewResource()
+	summaryDataPoint.Attributes().CopyTo(resource.Attributes())
+
+	return summaryDataPoint, createIlTelemetry(), resource
+}
+
 func createAttributeTelemetry(attributes pcommon.Map) {
 	attributes.UpsertString("str", "val")
 	attributes.UpsertBool("bool", true)
@@ -1190,8 +1500,4 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pc
 
 func strp(s string) *string {
 	return &s
-}
-
-func intp(i int64) *int64 {
-	return &i
 }
