@@ -136,31 +136,31 @@ type supportedJar struct {
 	addedValidation func(c *Config, j supportedJar) error
 }
 
-var jmxMetricsGathererVersions map[string]supportedJar = map[string]supportedJar{
-	"0646639df98404bd9b1263b46e2fd4612bc378f9951a561f0a0be9725718db36": supportedJar{
+var jmxMetricsGathererVersions = map[string]supportedJar{
+	"0646639df98404bd9b1263b46e2fd4612bc378f9951a561f0a0be9725718db36": {
 		version:         "1.13.0",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
-	"c0b1a19c4965c7961abaaccfbb4d358e5f3b0b5b105578a4782702f126bfa8b7": supportedJar{
+	"c0b1a19c4965c7961abaaccfbb4d358e5f3b0b5b105578a4782702f126bfa8b7": {
 		version:         "1.12.0",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
-	"ca689ca2da8a412c7f4ea0e816f47e8639b4270a48fb877c9a910b44757bc0a4": supportedJar{
+	"ca689ca2da8a412c7f4ea0e816f47e8639b4270a48fb877c9a910b44757bc0a4": {
 		version:         "1.11.0",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
-	"4b14d26fb383ed925fe1faf1b7fe2103559ed98ce6cf761ac9afc0158d2a218c": supportedJar{
+	"4b14d26fb383ed925fe1faf1b7fe2103559ed98ce6cf761ac9afc0158d2a218c": {
 		version:         "1.10.0",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
 }
 
-var additionalJarVersions map[string]supportedJar = map[string]supportedJar{
-	"hash": supportedJar{
+var additionalJarVersions = map[string]supportedJar{
+	"hash": {
 		version: "1.13.0",
 		jar:     "JBoss Client",
 	},
@@ -180,7 +180,7 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 }
 
 func hashFile(path string) (string, error) {
-	f, err := os.Open(os.Args[1])
+	f, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
@@ -240,7 +240,7 @@ func (c *Config) validate() error {
 	for _, additionalJar := range c.AdditionalJars {
 		err := c.validateJar(additionalJarVersions, additionalJar)
 		if err != nil {
-			return fmt.Errorf("%v error validating `additional_jars`: %w", c.ID(), additionalJar, err)
+			return fmt.Errorf("%v error validating `additional_jars`: %w", c.ID(), err)
 		}
 	}
 
