@@ -97,6 +97,7 @@ func truncateAll(target GetSetter, limit int64) ExprFunc {
 			})
 			target.Set(ctx, updated)
 			// TODO: Write log when truncation is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		}
 		return nil
 	}
@@ -127,6 +128,7 @@ func limit(target GetSetter, limit int64) ExprFunc {
 			})
 			target.Set(ctx, updated)
 			// TODO: Write log when limiting is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		}
 		return nil
 	}
