@@ -275,6 +275,726 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeAssertType specifies the a value assert_type attribute.
+type AttributeAssertType int
+
+const (
+	_ AttributeAssertType = iota
+	AttributeAssertTypeRegular
+	AttributeAssertTypeWarning
+	AttributeAssertTypeMsg
+	AttributeAssertTypeUser
+)
+
+// String returns the string representation of the AttributeAssertType.
+func (av AttributeAssertType) String() string {
+	switch av {
+	case AttributeAssertTypeRegular:
+		return "regular"
+	case AttributeAssertTypeWarning:
+		return "warning"
+	case AttributeAssertTypeMsg:
+		return "msg"
+	case AttributeAssertTypeUser:
+		return "user"
+	}
+	return ""
+}
+
+// MapAttributeAssertType is a helper map of string to AttributeAssertType attribute value.
+var MapAttributeAssertType = map[string]AttributeAssertType{
+	"regular": AttributeAssertTypeRegular,
+	"warning": AttributeAssertTypeWarning,
+	"msg":     AttributeAssertTypeMsg,
+	"user":    AttributeAssertTypeUser,
+}
+
+// AttributeBtreeCounterType specifies the a value btree_counter_type attribute.
+type AttributeBtreeCounterType int
+
+const (
+	_ AttributeBtreeCounterType = iota
+	AttributeBtreeCounterTypeAccesses
+	AttributeBtreeCounterTypeHits
+	AttributeBtreeCounterTypeMisses
+)
+
+// String returns the string representation of the AttributeBtreeCounterType.
+func (av AttributeBtreeCounterType) String() string {
+	switch av {
+	case AttributeBtreeCounterTypeAccesses:
+		return "accesses"
+	case AttributeBtreeCounterTypeHits:
+		return "hits"
+	case AttributeBtreeCounterTypeMisses:
+		return "misses"
+	}
+	return ""
+}
+
+// MapAttributeBtreeCounterType is a helper map of string to AttributeBtreeCounterType attribute value.
+var MapAttributeBtreeCounterType = map[string]AttributeBtreeCounterType{
+	"accesses": AttributeBtreeCounterTypeAccesses,
+	"hits":     AttributeBtreeCounterTypeHits,
+	"misses":   AttributeBtreeCounterTypeMisses,
+}
+
+// AttributeCacheDirection specifies the a value cache_direction attribute.
+type AttributeCacheDirection int
+
+const (
+	_ AttributeCacheDirection = iota
+	AttributeCacheDirectionReadInto
+	AttributeCacheDirectionWrittenFrom
+)
+
+// String returns the string representation of the AttributeCacheDirection.
+func (av AttributeCacheDirection) String() string {
+	switch av {
+	case AttributeCacheDirectionReadInto:
+		return "read_into"
+	case AttributeCacheDirectionWrittenFrom:
+		return "written_from"
+	}
+	return ""
+}
+
+// MapAttributeCacheDirection is a helper map of string to AttributeCacheDirection attribute value.
+var MapAttributeCacheDirection = map[string]AttributeCacheDirection{
+	"read_into":    AttributeCacheDirectionReadInto,
+	"written_from": AttributeCacheDirectionWrittenFrom,
+}
+
+// AttributeCacheStatus specifies the a value cache_status attribute.
+type AttributeCacheStatus int
+
+const (
+	_ AttributeCacheStatus = iota
+	AttributeCacheStatusDirty
+	AttributeCacheStatusUsed
+)
+
+// String returns the string representation of the AttributeCacheStatus.
+func (av AttributeCacheStatus) String() string {
+	switch av {
+	case AttributeCacheStatusDirty:
+		return "dirty"
+	case AttributeCacheStatusUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeCacheStatus is a helper map of string to AttributeCacheStatus attribute value.
+var MapAttributeCacheStatus = map[string]AttributeCacheStatus{
+	"dirty": AttributeCacheStatusDirty,
+	"used":  AttributeCacheStatusUsed,
+}
+
+// AttributeClusterRole specifies the a value cluster_role attribute.
+type AttributeClusterRole int
+
+const (
+	_ AttributeClusterRole = iota
+	AttributeClusterRolePrimary
+	AttributeClusterRoleReplica
+)
+
+// String returns the string representation of the AttributeClusterRole.
+func (av AttributeClusterRole) String() string {
+	switch av {
+	case AttributeClusterRolePrimary:
+		return "primary"
+	case AttributeClusterRoleReplica:
+		return "replica"
+	}
+	return ""
+}
+
+// MapAttributeClusterRole is a helper map of string to AttributeClusterRole attribute value.
+var MapAttributeClusterRole = map[string]AttributeClusterRole{
+	"primary": AttributeClusterRolePrimary,
+	"replica": AttributeClusterRoleReplica,
+}
+
+// AttributeCPUState specifies the a value cpu_state attribute.
+type AttributeCPUState int
+
+const (
+	_ AttributeCPUState = iota
+	AttributeCPUStateKernel
+	AttributeCPUStateUser
+	AttributeCPUStateNice
+	AttributeCPUStateIowait
+	AttributeCPUStateIrq
+	AttributeCPUStateSoftirq
+	AttributeCPUStateGuest
+	AttributeCPUStateSteal
+)
+
+// String returns the string representation of the AttributeCPUState.
+func (av AttributeCPUState) String() string {
+	switch av {
+	case AttributeCPUStateKernel:
+		return "kernel"
+	case AttributeCPUStateUser:
+		return "user"
+	case AttributeCPUStateNice:
+		return "nice"
+	case AttributeCPUStateIowait:
+		return "iowait"
+	case AttributeCPUStateIrq:
+		return "irq"
+	case AttributeCPUStateSoftirq:
+		return "softirq"
+	case AttributeCPUStateGuest:
+		return "guest"
+	case AttributeCPUStateSteal:
+		return "steal"
+	}
+	return ""
+}
+
+// MapAttributeCPUState is a helper map of string to AttributeCPUState attribute value.
+var MapAttributeCPUState = map[string]AttributeCPUState{
+	"kernel":  AttributeCPUStateKernel,
+	"user":    AttributeCPUStateUser,
+	"nice":    AttributeCPUStateNice,
+	"iowait":  AttributeCPUStateIowait,
+	"irq":     AttributeCPUStateIrq,
+	"softirq": AttributeCPUStateSoftirq,
+	"guest":   AttributeCPUStateGuest,
+	"steal":   AttributeCPUStateSteal,
+}
+
+// AttributeCursorState specifies the a value cursor_state attribute.
+type AttributeCursorState int
+
+const (
+	_ AttributeCursorState = iota
+	AttributeCursorStateTimedOut
+	AttributeCursorStateOpen
+)
+
+// String returns the string representation of the AttributeCursorState.
+func (av AttributeCursorState) String() string {
+	switch av {
+	case AttributeCursorStateTimedOut:
+		return "timed_out"
+	case AttributeCursorStateOpen:
+		return "open"
+	}
+	return ""
+}
+
+// MapAttributeCursorState is a helper map of string to AttributeCursorState attribute value.
+var MapAttributeCursorState = map[string]AttributeCursorState{
+	"timed_out": AttributeCursorStateTimedOut,
+	"open":      AttributeCursorStateOpen,
+}
+
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionReceive
+	AttributeDirectionTransmit
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionReceive:
+		return "receive"
+	case AttributeDirectionTransmit:
+		return "transmit"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"receive":  AttributeDirectionReceive,
+	"transmit": AttributeDirectionTransmit,
+}
+
+// AttributeDiskDirection specifies the a value disk_direction attribute.
+type AttributeDiskDirection int
+
+const (
+	_ AttributeDiskDirection = iota
+	AttributeDiskDirectionRead
+	AttributeDiskDirectionWrite
+	AttributeDiskDirectionTotal
+)
+
+// String returns the string representation of the AttributeDiskDirection.
+func (av AttributeDiskDirection) String() string {
+	switch av {
+	case AttributeDiskDirectionRead:
+		return "read"
+	case AttributeDiskDirectionWrite:
+		return "write"
+	case AttributeDiskDirectionTotal:
+		return "total"
+	}
+	return ""
+}
+
+// MapAttributeDiskDirection is a helper map of string to AttributeDiskDirection attribute value.
+var MapAttributeDiskDirection = map[string]AttributeDiskDirection{
+	"read":  AttributeDiskDirectionRead,
+	"write": AttributeDiskDirectionWrite,
+	"total": AttributeDiskDirectionTotal,
+}
+
+// AttributeDiskStatus specifies the a value disk_status attribute.
+type AttributeDiskStatus int
+
+const (
+	_ AttributeDiskStatus = iota
+	AttributeDiskStatusFree
+	AttributeDiskStatusUsed
+)
+
+// String returns the string representation of the AttributeDiskStatus.
+func (av AttributeDiskStatus) String() string {
+	switch av {
+	case AttributeDiskStatusFree:
+		return "free"
+	case AttributeDiskStatusUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeDiskStatus is a helper map of string to AttributeDiskStatus attribute value.
+var MapAttributeDiskStatus = map[string]AttributeDiskStatus{
+	"free": AttributeDiskStatusFree,
+	"used": AttributeDiskStatusUsed,
+}
+
+// AttributeDocumentStatus specifies the a value document_status attribute.
+type AttributeDocumentStatus int
+
+const (
+	_ AttributeDocumentStatus = iota
+	AttributeDocumentStatusReturned
+	AttributeDocumentStatusInserted
+	AttributeDocumentStatusUpdated
+	AttributeDocumentStatusDeleted
+)
+
+// String returns the string representation of the AttributeDocumentStatus.
+func (av AttributeDocumentStatus) String() string {
+	switch av {
+	case AttributeDocumentStatusReturned:
+		return "returned"
+	case AttributeDocumentStatusInserted:
+		return "inserted"
+	case AttributeDocumentStatusUpdated:
+		return "updated"
+	case AttributeDocumentStatusDeleted:
+		return "deleted"
+	}
+	return ""
+}
+
+// MapAttributeDocumentStatus is a helper map of string to AttributeDocumentStatus attribute value.
+var MapAttributeDocumentStatus = map[string]AttributeDocumentStatus{
+	"returned": AttributeDocumentStatusReturned,
+	"inserted": AttributeDocumentStatusInserted,
+	"updated":  AttributeDocumentStatusUpdated,
+	"deleted":  AttributeDocumentStatusDeleted,
+}
+
+// AttributeExecutionType specifies the a value execution_type attribute.
+type AttributeExecutionType int
+
+const (
+	_ AttributeExecutionType = iota
+	AttributeExecutionTypeReads
+	AttributeExecutionTypeWrites
+	AttributeExecutionTypeCommands
+)
+
+// String returns the string representation of the AttributeExecutionType.
+func (av AttributeExecutionType) String() string {
+	switch av {
+	case AttributeExecutionTypeReads:
+		return "reads"
+	case AttributeExecutionTypeWrites:
+		return "writes"
+	case AttributeExecutionTypeCommands:
+		return "commands"
+	}
+	return ""
+}
+
+// MapAttributeExecutionType is a helper map of string to AttributeExecutionType attribute value.
+var MapAttributeExecutionType = map[string]AttributeExecutionType{
+	"reads":    AttributeExecutionTypeReads,
+	"writes":   AttributeExecutionTypeWrites,
+	"commands": AttributeExecutionTypeCommands,
+}
+
+// AttributeGlobalLockState specifies the a value global_lock_state attribute.
+type AttributeGlobalLockState int
+
+const (
+	_ AttributeGlobalLockState = iota
+	AttributeGlobalLockStateCurrentQueueTotal
+	AttributeGlobalLockStateCurrentQueueReaders
+	AttributeGlobalLockStateCurrentQueueWriters
+)
+
+// String returns the string representation of the AttributeGlobalLockState.
+func (av AttributeGlobalLockState) String() string {
+	switch av {
+	case AttributeGlobalLockStateCurrentQueueTotal:
+		return "current_queue_total"
+	case AttributeGlobalLockStateCurrentQueueReaders:
+		return "current_queue_readers"
+	case AttributeGlobalLockStateCurrentQueueWriters:
+		return "current_queue_writers"
+	}
+	return ""
+}
+
+// MapAttributeGlobalLockState is a helper map of string to AttributeGlobalLockState attribute value.
+var MapAttributeGlobalLockState = map[string]AttributeGlobalLockState{
+	"current_queue_total":   AttributeGlobalLockStateCurrentQueueTotal,
+	"current_queue_readers": AttributeGlobalLockStateCurrentQueueReaders,
+	"current_queue_writers": AttributeGlobalLockStateCurrentQueueWriters,
+}
+
+// AttributeMemoryIssueType specifies the a value memory_issue_type attribute.
+type AttributeMemoryIssueType int
+
+const (
+	_ AttributeMemoryIssueType = iota
+	AttributeMemoryIssueTypeExtraInfo
+	AttributeMemoryIssueTypeGlobalAccessesNotInMemory
+	AttributeMemoryIssueTypeExceptionsThrown
+)
+
+// String returns the string representation of the AttributeMemoryIssueType.
+func (av AttributeMemoryIssueType) String() string {
+	switch av {
+	case AttributeMemoryIssueTypeExtraInfo:
+		return "extra_info"
+	case AttributeMemoryIssueTypeGlobalAccessesNotInMemory:
+		return "global_accesses_not_in_memory"
+	case AttributeMemoryIssueTypeExceptionsThrown:
+		return "exceptions_thrown"
+	}
+	return ""
+}
+
+// MapAttributeMemoryIssueType is a helper map of string to AttributeMemoryIssueType attribute value.
+var MapAttributeMemoryIssueType = map[string]AttributeMemoryIssueType{
+	"extra_info":                    AttributeMemoryIssueTypeExtraInfo,
+	"global_accesses_not_in_memory": AttributeMemoryIssueTypeGlobalAccessesNotInMemory,
+	"exceptions_thrown":             AttributeMemoryIssueTypeExceptionsThrown,
+}
+
+// AttributeMemoryState specifies the a value memory_state attribute.
+type AttributeMemoryState int
+
+const (
+	_ AttributeMemoryState = iota
+	AttributeMemoryStateResident
+	AttributeMemoryStateVirtual
+	AttributeMemoryStateMapped
+	AttributeMemoryStateComputed
+	AttributeMemoryStateShared
+	AttributeMemoryStateFree
+	AttributeMemoryStateUsed
+)
+
+// String returns the string representation of the AttributeMemoryState.
+func (av AttributeMemoryState) String() string {
+	switch av {
+	case AttributeMemoryStateResident:
+		return "resident"
+	case AttributeMemoryStateVirtual:
+		return "virtual"
+	case AttributeMemoryStateMapped:
+		return "mapped"
+	case AttributeMemoryStateComputed:
+		return "computed"
+	case AttributeMemoryStateShared:
+		return "shared"
+	case AttributeMemoryStateFree:
+		return "free"
+	case AttributeMemoryStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeMemoryState is a helper map of string to AttributeMemoryState attribute value.
+var MapAttributeMemoryState = map[string]AttributeMemoryState{
+	"resident": AttributeMemoryStateResident,
+	"virtual":  AttributeMemoryStateVirtual,
+	"mapped":   AttributeMemoryStateMapped,
+	"computed": AttributeMemoryStateComputed,
+	"shared":   AttributeMemoryStateShared,
+	"free":     AttributeMemoryStateFree,
+	"used":     AttributeMemoryStateUsed,
+}
+
+// AttributeMemoryStatus specifies the a value memory_status attribute.
+type AttributeMemoryStatus int
+
+const (
+	_ AttributeMemoryStatus = iota
+	AttributeMemoryStatusAvailable
+	AttributeMemoryStatusBuffers
+	AttributeMemoryStatusCached
+	AttributeMemoryStatusFree
+	AttributeMemoryStatusShared
+	AttributeMemoryStatusUsed
+)
+
+// String returns the string representation of the AttributeMemoryStatus.
+func (av AttributeMemoryStatus) String() string {
+	switch av {
+	case AttributeMemoryStatusAvailable:
+		return "available"
+	case AttributeMemoryStatusBuffers:
+		return "buffers"
+	case AttributeMemoryStatusCached:
+		return "cached"
+	case AttributeMemoryStatusFree:
+		return "free"
+	case AttributeMemoryStatusShared:
+		return "shared"
+	case AttributeMemoryStatusUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeMemoryStatus is a helper map of string to AttributeMemoryStatus attribute value.
+var MapAttributeMemoryStatus = map[string]AttributeMemoryStatus{
+	"available": AttributeMemoryStatusAvailable,
+	"buffers":   AttributeMemoryStatusBuffers,
+	"cached":    AttributeMemoryStatusCached,
+	"free":      AttributeMemoryStatusFree,
+	"shared":    AttributeMemoryStatusShared,
+	"used":      AttributeMemoryStatusUsed,
+}
+
+// AttributeObjectType specifies the a value object_type attribute.
+type AttributeObjectType int
+
+const (
+	_ AttributeObjectType = iota
+	AttributeObjectTypeCollection
+	AttributeObjectTypeIndex
+	AttributeObjectTypeExtent
+	AttributeObjectTypeObject
+	AttributeObjectTypeView
+	AttributeObjectTypeStorage
+	AttributeObjectTypeData
+)
+
+// String returns the string representation of the AttributeObjectType.
+func (av AttributeObjectType) String() string {
+	switch av {
+	case AttributeObjectTypeCollection:
+		return "collection"
+	case AttributeObjectTypeIndex:
+		return "index"
+	case AttributeObjectTypeExtent:
+		return "extent"
+	case AttributeObjectTypeObject:
+		return "object"
+	case AttributeObjectTypeView:
+		return "view"
+	case AttributeObjectTypeStorage:
+		return "storage"
+	case AttributeObjectTypeData:
+		return "data"
+	}
+	return ""
+}
+
+// MapAttributeObjectType is a helper map of string to AttributeObjectType attribute value.
+var MapAttributeObjectType = map[string]AttributeObjectType{
+	"collection": AttributeObjectTypeCollection,
+	"index":      AttributeObjectTypeIndex,
+	"extent":     AttributeObjectTypeExtent,
+	"object":     AttributeObjectTypeObject,
+	"view":       AttributeObjectTypeView,
+	"storage":    AttributeObjectTypeStorage,
+	"data":       AttributeObjectTypeData,
+}
+
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationCmd
+	AttributeOperationQuery
+	AttributeOperationUpdate
+	AttributeOperationDelete
+	AttributeOperationGetmore
+	AttributeOperationInsert
+	AttributeOperationScanAndOrder
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationCmd:
+		return "cmd"
+	case AttributeOperationQuery:
+		return "query"
+	case AttributeOperationUpdate:
+		return "update"
+	case AttributeOperationDelete:
+		return "delete"
+	case AttributeOperationGetmore:
+		return "getmore"
+	case AttributeOperationInsert:
+		return "insert"
+	case AttributeOperationScanAndOrder:
+		return "scan_and_order"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"cmd":            AttributeOperationCmd,
+	"query":          AttributeOperationQuery,
+	"update":         AttributeOperationUpdate,
+	"delete":         AttributeOperationDelete,
+	"getmore":        AttributeOperationGetmore,
+	"insert":         AttributeOperationInsert,
+	"scan_and_order": AttributeOperationScanAndOrder,
+}
+
+// AttributeOplogType specifies the a value oplog_type attribute.
+type AttributeOplogType int
+
+const (
+	_ AttributeOplogType = iota
+	AttributeOplogTypeSlaveLagMasterTime
+	AttributeOplogTypeMasterTime
+	AttributeOplogTypeMasterLagTimeDiff
+)
+
+// String returns the string representation of the AttributeOplogType.
+func (av AttributeOplogType) String() string {
+	switch av {
+	case AttributeOplogTypeSlaveLagMasterTime:
+		return "slave_lag_master_time"
+	case AttributeOplogTypeMasterTime:
+		return "master_time"
+	case AttributeOplogTypeMasterLagTimeDiff:
+		return "master_lag_time_diff"
+	}
+	return ""
+}
+
+// MapAttributeOplogType is a helper map of string to AttributeOplogType attribute value.
+var MapAttributeOplogType = map[string]AttributeOplogType{
+	"slave_lag_master_time": AttributeOplogTypeSlaveLagMasterTime,
+	"master_time":           AttributeOplogTypeMasterTime,
+	"master_lag_time_diff":  AttributeOplogTypeMasterLagTimeDiff,
+}
+
+// AttributeScannedType specifies the a value scanned_type attribute.
+type AttributeScannedType int
+
+const (
+	_ AttributeScannedType = iota
+	AttributeScannedTypeIndexItems
+	AttributeScannedTypeObjects
+)
+
+// String returns the string representation of the AttributeScannedType.
+func (av AttributeScannedType) String() string {
+	switch av {
+	case AttributeScannedTypeIndexItems:
+		return "index_items"
+	case AttributeScannedTypeObjects:
+		return "objects"
+	}
+	return ""
+}
+
+// MapAttributeScannedType is a helper map of string to AttributeScannedType attribute value.
+var MapAttributeScannedType = map[string]AttributeScannedType{
+	"index_items": AttributeScannedTypeIndexItems,
+	"objects":     AttributeScannedTypeObjects,
+}
+
+// AttributeStorageStatus specifies the a value storage_status attribute.
+type AttributeStorageStatus int
+
+const (
+	_ AttributeStorageStatus = iota
+	AttributeStorageStatusTotal
+	AttributeStorageStatusDataSize
+	AttributeStorageStatusIndexSize
+	AttributeStorageStatusDataSizeWoSystem
+)
+
+// String returns the string representation of the AttributeStorageStatus.
+func (av AttributeStorageStatus) String() string {
+	switch av {
+	case AttributeStorageStatusTotal:
+		return "total"
+	case AttributeStorageStatusDataSize:
+		return "data_size"
+	case AttributeStorageStatusIndexSize:
+		return "index_size"
+	case AttributeStorageStatusDataSizeWoSystem:
+		return "data_size_wo_system"
+	}
+	return ""
+}
+
+// MapAttributeStorageStatus is a helper map of string to AttributeStorageStatus attribute value.
+var MapAttributeStorageStatus = map[string]AttributeStorageStatus{
+	"total":               AttributeStorageStatusTotal,
+	"data_size":           AttributeStorageStatusDataSize,
+	"index_size":          AttributeStorageStatusIndexSize,
+	"data_size_wo_system": AttributeStorageStatusDataSizeWoSystem,
+}
+
+// AttributeTicketType specifies the a value ticket_type attribute.
+type AttributeTicketType int
+
+const (
+	_ AttributeTicketType = iota
+	AttributeTicketTypeAvailableReads
+	AttributeTicketTypeAvailableWrites
+)
+
+// String returns the string representation of the AttributeTicketType.
+func (av AttributeTicketType) String() string {
+	switch av {
+	case AttributeTicketTypeAvailableReads:
+		return "available_reads"
+	case AttributeTicketTypeAvailableWrites:
+		return "available_writes"
+	}
+	return ""
+}
+
+// MapAttributeTicketType is a helper map of string to AttributeTicketType attribute value.
+var MapAttributeTicketType = map[string]AttributeTicketType{
+	"available_reads":  AttributeTicketTypeAvailableReads,
+	"available_writes": AttributeTicketTypeAvailableWrites,
+}
+
 type metricMongodbatlasDbCounts struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -3392,7 +4112,7 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbatlasSystemPagingUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
+func (m *metricMongodbatlasSystemPagingUsageAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3400,7 +4120,7 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.MemoryState, pcommon.NewValueString(memoryStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3443,7 +4163,7 @@ func (m *metricMongodbatlasSystemPagingUsageMax) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbatlasSystemPagingUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
+func (m *metricMongodbatlasSystemPagingUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3451,7 +4171,7 @@ func (m *metricMongodbatlasSystemPagingUsageMax) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.MemoryState, pcommon.NewValueString(memoryStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3804,68 +4524,68 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordMongodbatlasDbCountsDataPoint adds a data point to mongodbatlas.db.counts metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDbCountsDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue string) {
-	mb.metricMongodbatlasDbCounts.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDbCountsDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue AttributeObjectType) {
+	mb.metricMongodbatlasDbCounts.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasDbSizeDataPoint adds a data point to mongodbatlas.db.size metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDbSizeDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue string) {
-	mb.metricMongodbatlasDbSize.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDbSizeDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue AttributeObjectType) {
+	mb.metricMongodbatlasDbSize.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionIopsAverageDataPoint adds a data point to mongodbatlas.disk.partition.iops.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionIopsAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	mb.metricMongodbatlasDiskPartitionIopsAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionIopsMaxDataPoint adds a data point to mongodbatlas.disk.partition.iops.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionIopsMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	mb.metricMongodbatlasDiskPartitionIopsMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionLatencyAverageDataPoint adds a data point to mongodbatlas.disk.partition.latency.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionLatencyAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	mb.metricMongodbatlasDiskPartitionLatencyAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionLatencyMaxDataPoint adds a data point to mongodbatlas.disk.partition.latency.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionLatencyMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	mb.metricMongodbatlasDiskPartitionLatencyMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionSpaceAverageDataPoint adds a data point to mongodbatlas.disk.partition.space.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionSpaceAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	mb.metricMongodbatlasDiskPartitionSpaceAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionSpaceMaxDataPoint adds a data point to mongodbatlas.disk.partition.space.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionSpaceMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	mb.metricMongodbatlasDiskPartitionSpaceMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionUsageAverageDataPoint adds a data point to mongodbatlas.disk.partition.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionUsageAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	mb.metricMongodbatlasDiskPartitionUsageAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionUsageMaxDataPoint adds a data point to mongodbatlas.disk.partition.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionUsageMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	mb.metricMongodbatlasDiskPartitionUsageMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint adds a data point to mongodbatlas.disk.partition.utilization.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	mb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint adds a data point to mongodbatlas.disk.partition.utilization.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
-	mb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	mb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessAssertsDataPoint adds a data point to mongodbatlas.process.asserts metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessAssertsDataPoint(ts pcommon.Timestamp, val float64, assertTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessAsserts.recordDataPoint(mb.startTime, ts, val, assertTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessAssertsDataPoint(ts pcommon.Timestamp, val float64, assertTypeAttributeValue AttributeAssertType) {
+	mb.metricMongodbatlasProcessAsserts.recordDataPoint(mb.startTime, ts, val, assertTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessBackgroundFlushDataPoint adds a data point to mongodbatlas.process.background_flush metric.
@@ -3874,13 +4594,13 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessBackgroundFlushDataPoint(ts p
 }
 
 // RecordMongodbatlasProcessCacheIoDataPoint adds a data point to mongodbatlas.process.cache.io metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheIoDataPoint(ts pcommon.Timestamp, val float64, cacheDirectionAttributeValue string) {
-	mb.metricMongodbatlasProcessCacheIo.recordDataPoint(mb.startTime, ts, val, cacheDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheIoDataPoint(ts pcommon.Timestamp, val float64, cacheDirectionAttributeValue AttributeCacheDirection) {
+	mb.metricMongodbatlasProcessCacheIo.recordDataPoint(mb.startTime, ts, val, cacheDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCacheSizeDataPoint adds a data point to mongodbatlas.process.cache.size metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheSizeDataPoint(ts pcommon.Timestamp, val float64, cacheStatusAttributeValue string) {
-	mb.metricMongodbatlasProcessCacheSize.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheSizeDataPoint(ts pcommon.Timestamp, val float64, cacheStatusAttributeValue AttributeCacheStatus) {
+	mb.metricMongodbatlasProcessCacheSize.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessConnectionsDataPoint adds a data point to mongodbatlas.process.connections metric.
@@ -3889,88 +4609,88 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessConnectionsDataPoint(ts pcomm
 }
 
 // RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.children.normalized.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.children.normalized.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.children.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUChildrenUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUChildrenUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.children.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUChildrenUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUChildrenUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.normalized.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.normalized.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCursorsDataPoint adds a data point to mongodbatlas.process.cursors metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCursorsDataPoint(ts pcommon.Timestamp, val float64, cursorStateAttributeValue string) {
-	mb.metricMongodbatlasProcessCursors.recordDataPoint(mb.startTime, ts, val, cursorStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessCursorsDataPoint(ts pcommon.Timestamp, val float64, cursorStateAttributeValue AttributeCursorState) {
+	mb.metricMongodbatlasProcessCursors.recordDataPoint(mb.startTime, ts, val, cursorStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbDocumentRateDataPoint adds a data point to mongodbatlas.process.db.document.rate metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbDocumentRateDataPoint(ts pcommon.Timestamp, val float64, documentStatusAttributeValue string) {
-	mb.metricMongodbatlasProcessDbDocumentRate.recordDataPoint(mb.startTime, ts, val, documentStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessDbDocumentRateDataPoint(ts pcommon.Timestamp, val float64, documentStatusAttributeValue AttributeDocumentStatus) {
+	mb.metricMongodbatlasProcessDbDocumentRate.recordDataPoint(mb.startTime, ts, val, documentStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbOperationsRateDataPoint adds a data point to mongodbatlas.process.db.operations.rate metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsRateDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue string, clusterRoleAttributeValue string) {
-	mb.metricMongodbatlasProcessDbOperationsRate.recordDataPoint(mb.startTime, ts, val, operationAttributeValue, clusterRoleAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsRateDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue AttributeOperation, clusterRoleAttributeValue AttributeClusterRole) {
+	mb.metricMongodbatlasProcessDbOperationsRate.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), clusterRoleAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbOperationsTimeDataPoint adds a data point to mongodbatlas.process.db.operations.time metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts pcommon.Timestamp, val float64, executionTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessDbOperationsTime.recordDataPoint(mb.startTime, ts, val, executionTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts pcommon.Timestamp, val float64, executionTypeAttributeValue AttributeExecutionType) {
+	mb.metricMongodbatlasProcessDbOperationsTime.recordDataPoint(mb.startTime, ts, val, executionTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint adds a data point to mongodbatlas.process.db.query_executor.scanned metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessDbQueryExecutorScanned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue AttributeScannedType) {
+	mb.metricMongodbatlasProcessDbQueryExecutorScanned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint adds a data point to mongodbatlas.process.db.query_targeting.scanned_per_returned metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue AttributeScannedType) {
+	mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbStorageDataPoint adds a data point to mongodbatlas.process.db.storage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbStorageDataPoint(ts pcommon.Timestamp, val float64, storageStatusAttributeValue string) {
-	mb.metricMongodbatlasProcessDbStorage.recordDataPoint(mb.startTime, ts, val, storageStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessDbStorageDataPoint(ts pcommon.Timestamp, val float64, storageStatusAttributeValue AttributeStorageStatus) {
+	mb.metricMongodbatlasProcessDbStorage.recordDataPoint(mb.startTime, ts, val, storageStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessFtsCPUUsageDataPoint adds a data point to mongodbatlas.process.fts.cpu.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasProcessFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasProcessFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessGlobalLockDataPoint adds a data point to mongodbatlas.process.global_lock metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessGlobalLockDataPoint(ts pcommon.Timestamp, val float64, globalLockStateAttributeValue string) {
-	mb.metricMongodbatlasProcessGlobalLock.recordDataPoint(mb.startTime, ts, val, globalLockStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessGlobalLockDataPoint(ts pcommon.Timestamp, val float64, globalLockStateAttributeValue AttributeGlobalLockState) {
+	mb.metricMongodbatlasProcessGlobalLock.recordDataPoint(mb.startTime, ts, val, globalLockStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint adds a data point to mongodbatlas.process.index.btree_miss_ratio metric.
@@ -3979,8 +4699,8 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(
 }
 
 // RecordMongodbatlasProcessIndexCountersDataPoint adds a data point to mongodbatlas.process.index.counters metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessIndexCountersDataPoint(ts pcommon.Timestamp, val float64, btreeCounterTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessIndexCounters.recordDataPoint(mb.startTime, ts, val, btreeCounterTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessIndexCountersDataPoint(ts pcommon.Timestamp, val float64, btreeCounterTypeAttributeValue AttributeBtreeCounterType) {
+	mb.metricMongodbatlasProcessIndexCounters.recordDataPoint(mb.startTime, ts, val, btreeCounterTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessJournalingCommitsDataPoint adds a data point to mongodbatlas.process.journaling.commits metric.
@@ -3999,13 +4719,13 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessJournalingWrittenDataPoint(ts
 }
 
 // RecordMongodbatlasProcessMemoryUsageDataPoint adds a data point to mongodbatlas.process.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
-	mb.metricMongodbatlasProcessMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	mb.metricMongodbatlasProcessMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessNetworkIoDataPoint adds a data point to mongodbatlas.process.network.io metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessNetworkIoDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
-	mb.metricMongodbatlasProcessNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessNetworkIoDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	mb.metricMongodbatlasProcessNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessNetworkRequestsDataPoint adds a data point to mongodbatlas.process.network.requests metric.
@@ -4019,13 +4739,13 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessOplogRateDataPoint(ts pcommon
 }
 
 // RecordMongodbatlasProcessOplogTimeDataPoint adds a data point to mongodbatlas.process.oplog.time metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessOplogTimeDataPoint(ts pcommon.Timestamp, val float64, oplogTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessOplogTime.recordDataPoint(mb.startTime, ts, val, oplogTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessOplogTimeDataPoint(ts pcommon.Timestamp, val float64, oplogTypeAttributeValue AttributeOplogType) {
+	mb.metricMongodbatlasProcessOplogTime.recordDataPoint(mb.startTime, ts, val, oplogTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessPageFaultsDataPoint adds a data point to mongodbatlas.process.page_faults metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessPageFaultsDataPoint(ts pcommon.Timestamp, val float64, memoryIssueTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessPageFaults.recordDataPoint(mb.startTime, ts, val, memoryIssueTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessPageFaultsDataPoint(ts pcommon.Timestamp, val float64, memoryIssueTypeAttributeValue AttributeMemoryIssueType) {
+	mb.metricMongodbatlasProcessPageFaults.recordDataPoint(mb.startTime, ts, val, memoryIssueTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessRestartsDataPoint adds a data point to mongodbatlas.process.restarts metric.
@@ -4034,38 +4754,38 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessRestartsDataPoint(ts pcommon.
 }
 
 // RecordMongodbatlasProcessTicketsDataPoint adds a data point to mongodbatlas.process.tickets metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessTicketsDataPoint(ts pcommon.Timestamp, val float64, ticketTypeAttributeValue string) {
-	mb.metricMongodbatlasProcessTickets.recordDataPoint(mb.startTime, ts, val, ticketTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasProcessTicketsDataPoint(ts pcommon.Timestamp, val float64, ticketTypeAttributeValue AttributeTicketType) {
+	mb.metricMongodbatlasProcessTickets.recordDataPoint(mb.startTime, ts, val, ticketTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.system.cpu.normalized.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.system.cpu.normalized.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasSystemCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasSystemCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUUsageAverageDataPoint adds a data point to mongodbatlas.system.cpu.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasSystemCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasSystemCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUUsageMaxDataPoint adds a data point to mongodbatlas.system.cpu.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasSystemCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasSystemCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint adds a data point to mongodbatlas.system.fts.cpu.normalized.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemFtsCPUUsageDataPoint adds a data point to mongodbatlas.system.fts.cpu.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	mb.metricMongodbatlasSystemFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	mb.metricMongodbatlasSystemFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemFtsDiskUsedDataPoint adds a data point to mongodbatlas.system.fts.disk.used metric.
@@ -4074,48 +4794,48 @@ func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts pcommo
 }
 
 // RecordMongodbatlasSystemFtsMemoryUsageDataPoint adds a data point to mongodbatlas.system.fts.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue string) {
-	mb.metricMongodbatlasSystemFtsMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	mb.metricMongodbatlasSystemFtsMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemMemoryUsageAverageDataPoint adds a data point to mongodbatlas.system.memory.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue string) {
-	mb.metricMongodbatlasSystemMemoryUsageAverage.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue AttributeMemoryStatus) {
+	mb.metricMongodbatlasSystemMemoryUsageAverage.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemMemoryUsageMaxDataPoint adds a data point to mongodbatlas.system.memory.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue string) {
-	mb.metricMongodbatlasSystemMemoryUsageMax.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue AttributeMemoryStatus) {
+	mb.metricMongodbatlasSystemMemoryUsageMax.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemNetworkIoAverageDataPoint adds a data point to mongodbatlas.system.network.io.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
-	mb.metricMongodbatlasSystemNetworkIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	mb.metricMongodbatlasSystemNetworkIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemNetworkIoMaxDataPoint adds a data point to mongodbatlas.system.network.io.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
-	mb.metricMongodbatlasSystemNetworkIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	mb.metricMongodbatlasSystemNetworkIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingIoAverageDataPoint adds a data point to mongodbatlas.system.paging.io.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
-	mb.metricMongodbatlasSystemPagingIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	mb.metricMongodbatlasSystemPagingIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingIoMaxDataPoint adds a data point to mongodbatlas.system.paging.io.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
-	mb.metricMongodbatlasSystemPagingIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	mb.metricMongodbatlasSystemPagingIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingUsageAverageDataPoint adds a data point to mongodbatlas.system.paging.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
-	mb.metricMongodbatlasSystemPagingUsageAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	mb.metricMongodbatlasSystemPagingUsageAverage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingUsageMaxDataPoint adds a data point to mongodbatlas.system.paging.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue string) {
-	mb.metricMongodbatlasSystemPagingUsageMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	mb.metricMongodbatlasSystemPagingUsageMax.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -4200,275 +4920,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeAssertType are the possible values that the attribute "assert_type" can have.
-var AttributeAssertType = struct {
-	Regular string
-	Warning string
-	Msg     string
-	User    string
-}{
-	"regular",
-	"warning",
-	"msg",
-	"user",
-}
-
-// AttributeBtreeCounterType are the possible values that the attribute "btree_counter_type" can have.
-var AttributeBtreeCounterType = struct {
-	Accesses string
-	Hits     string
-	Misses   string
-}{
-	"accesses",
-	"hits",
-	"misses",
-}
-
-// AttributeCacheDirection are the possible values that the attribute "cache_direction" can have.
-var AttributeCacheDirection = struct {
-	ReadInto    string
-	WrittenFrom string
-}{
-	"read_into",
-	"written_from",
-}
-
-// AttributeCacheStatus are the possible values that the attribute "cache_status" can have.
-var AttributeCacheStatus = struct {
-	Dirty string
-	Used  string
-}{
-	"dirty",
-	"used",
-}
-
-// AttributeClusterRole are the possible values that the attribute "cluster_role" can have.
-var AttributeClusterRole = struct {
-	Primary string
-	Replica string
-}{
-	"primary",
-	"replica",
-}
-
-// AttributeCPUState are the possible values that the attribute "cpu_state" can have.
-var AttributeCPUState = struct {
-	Kernel  string
-	User    string
-	Nice    string
-	Iowait  string
-	Irq     string
-	Softirq string
-	Guest   string
-	Steal   string
-}{
-	"kernel",
-	"user",
-	"nice",
-	"iowait",
-	"irq",
-	"softirq",
-	"guest",
-	"steal",
-}
-
-// AttributeCursorState are the possible values that the attribute "cursor_state" can have.
-var AttributeCursorState = struct {
-	TimedOut string
-	Open     string
-}{
-	"timed_out",
-	"open",
-}
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Receive  string
-	Transmit string
-}{
-	"receive",
-	"transmit",
-}
-
-// AttributeDiskDirection are the possible values that the attribute "disk_direction" can have.
-var AttributeDiskDirection = struct {
-	Read  string
-	Write string
-	Total string
-}{
-	"read",
-	"write",
-	"total",
-}
-
-// AttributeDiskStatus are the possible values that the attribute "disk_status" can have.
-var AttributeDiskStatus = struct {
-	Free string
-	Used string
-}{
-	"free",
-	"used",
-}
-
-// AttributeDocumentStatus are the possible values that the attribute "document_status" can have.
-var AttributeDocumentStatus = struct {
-	Returned string
-	Inserted string
-	Updated  string
-	Deleted  string
-}{
-	"returned",
-	"inserted",
-	"updated",
-	"deleted",
-}
-
-// AttributeExecutionType are the possible values that the attribute "execution_type" can have.
-var AttributeExecutionType = struct {
-	Reads    string
-	Writes   string
-	Commands string
-}{
-	"reads",
-	"writes",
-	"commands",
-}
-
-// AttributeGlobalLockState are the possible values that the attribute "global_lock_state" can have.
-var AttributeGlobalLockState = struct {
-	CurrentQueueTotal   string
-	CurrentQueueReaders string
-	CurrentQueueWriters string
-}{
-	"current_queue_total",
-	"current_queue_readers",
-	"current_queue_writers",
-}
-
-// AttributeMemoryIssueType are the possible values that the attribute "memory_issue_type" can have.
-var AttributeMemoryIssueType = struct {
-	ExtraInfo                 string
-	GlobalAccessesNotInMemory string
-	ExceptionsThrown          string
-}{
-	"extra_info",
-	"global_accesses_not_in_memory",
-	"exceptions_thrown",
-}
-
-// AttributeMemoryState are the possible values that the attribute "memory_state" can have.
-var AttributeMemoryState = struct {
-	Resident string
-	Virtual  string
-	Mapped   string
-	Computed string
-	Shared   string
-	Free     string
-	Used     string
-}{
-	"resident",
-	"virtual",
-	"mapped",
-	"computed",
-	"shared",
-	"free",
-	"used",
-}
-
-// AttributeMemoryStatus are the possible values that the attribute "memory_status" can have.
-var AttributeMemoryStatus = struct {
-	Available string
-	Buffers   string
-	Cached    string
-	Free      string
-	Shared    string
-	Used      string
-}{
-	"available",
-	"buffers",
-	"cached",
-	"free",
-	"shared",
-	"used",
-}
-
-// AttributeObjectType are the possible values that the attribute "object_type" can have.
-var AttributeObjectType = struct {
-	Collection string
-	Index      string
-	Extent     string
-	Object     string
-	View       string
-	Storage    string
-	Data       string
-}{
-	"collection",
-	"index",
-	"extent",
-	"object",
-	"view",
-	"storage",
-	"data",
-}
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Cmd          string
-	Query        string
-	Update       string
-	Delete       string
-	Getmore      string
-	Insert       string
-	ScanAndOrder string
-}{
-	"cmd",
-	"query",
-	"update",
-	"delete",
-	"getmore",
-	"insert",
-	"scan_and_order",
-}
-
-// AttributeOplogType are the possible values that the attribute "oplog_type" can have.
-var AttributeOplogType = struct {
-	SlaveLagMasterTime string
-	MasterTime         string
-	MasterLagTimeDiff  string
-}{
-	"slave_lag_master_time",
-	"master_time",
-	"master_lag_time_diff",
-}
-
-// AttributeScannedType are the possible values that the attribute "scanned_type" can have.
-var AttributeScannedType = struct {
-	IndexItems string
-	Objects    string
-}{
-	"index_items",
-	"objects",
-}
-
-// AttributeStorageStatus are the possible values that the attribute "storage_status" can have.
-var AttributeStorageStatus = struct {
-	Total            string
-	DataSize         string
-	IndexSize        string
-	DataSizeWoSystem string
-}{
-	"total",
-	"data_size",
-	"index_size",
-	"data_size_wo_system",
-}
-
-// AttributeTicketType are the possible values that the attribute "ticket_type" can have.
-var AttributeTicketType = struct {
-	AvailableReads  string
-	AvailableWrites string
-}{
-	"available_reads",
-	"available_writes",
-}

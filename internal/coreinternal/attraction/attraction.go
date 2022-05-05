@@ -281,7 +281,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 		// and could impact performance.
 		switch action.Action {
 		case DELETE:
-			attrs.Delete(action.Key)
+			attrs.Remove(action.Key)
 		case INSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
