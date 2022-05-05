@@ -167,7 +167,7 @@ func (c *Config) validate() error {
 
 func listKeys(presenceMap map[string]struct{}) string {
 	list := make([]string, 0, len(presenceMap))
-	for k, _ := range presenceMap {
+	for k := range presenceMap {
 		list = append(list, fmt.Sprintf("'%s'", k))
 	}
 	sort.Strings(list)
