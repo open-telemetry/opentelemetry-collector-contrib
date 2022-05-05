@@ -123,7 +123,7 @@ func TestScrape(t *testing.T) {
 			if runtime.GOOS == "linux" {
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertSumMetricHasAttributeValue(t, metrics.At(0), 2, metadata.Attributes.State,
+				internal.AssertSumMetricHasAttributeValue(t, metrics.At(0), 2, "state",
 					pcommon.NewValueString(metadata.AttributeStateInactive.String()))
 			}
 
@@ -179,7 +179,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 			if runtime.GOOS == "linux" {
 				assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertGaugeMetricHasAttributeValue(t, metrics.At(0), 2, metadata.Attributes.State,
+				internal.AssertGaugeMetricHasAttributeValue(t, metrics.At(0), 2, "state",
 					pcommon.NewValueString(metadata.AttributeStateInactive.String()))
 			}
 
@@ -191,39 +191,39 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 func assertMemoryUsageMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State,
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueString(metadata.AttributeStateUsed.String()))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State,
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueString(metadata.AttributeStateFree.String()))
 }
 
 func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
 	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 2)
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State,
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueString(metadata.AttributeStateUsed.String()))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State,
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueString(metadata.AttributeStateFree.String()))
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State,
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state",
 		pcommon.NewValueString(metadata.AttributeStateBuffered.String()))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State,
+	internal.AssertSumMetricHasAttributeValue(t, metric, 3, "state",
 		pcommon.NewValueString(metadata.AttributeStateCached.String()))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State,
+	internal.AssertSumMetricHasAttributeValue(t, metric, 4, "state",
 		pcommon.NewValueString(metadata.AttributeStateSlabReclaimable.String()))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State,
+	internal.AssertSumMetricHasAttributeValue(t, metric, 5, "state",
 		pcommon.NewValueString(metadata.AttributeStateSlabUnreclaimable.String()))
 }
 
 func assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State,
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, "state",
 		pcommon.NewValueString(metadata.AttributeStateBuffered.String()))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State,
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, "state",
 		pcommon.NewValueString(metadata.AttributeStateCached.String()))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State,
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, "state",
 		pcommon.NewValueString(metadata.AttributeStateSlabReclaimable.String()))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State,
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, "state",
 		pcommon.NewValueString(metadata.AttributeStateSlabUnreclaimable.String()))
 }
