@@ -31,8 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-const instrumentationLibraryName = "otelcol/mongodb"
-
 type mongodbScraper struct {
 	logger       *zap.Logger
 	config       *Config
@@ -75,11 +73,8 @@ func (s *mongodbScraper) shutdown(ctx context.Context) error {
 }
 
 func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	metrics := pmetric.NewMetrics()
-	rms := metrics.ResourceMetrics()
-
 	if s.client == nil {
-		return metrics, errors.New("no client was initialized before calling scrape")
+		return pmetric.NewMetrics(), errors.New("no client was initialized before calling scrape")
 	}
 
 	if s.mongoVersion == nil {
@@ -91,11 +86,11 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	var errors scrapererror.ScrapeErrors
-	s.collectMetrics(ctx, rms, errors)
-	return metrics, errors.Combine()
+	s.collectMetrics(ctx, errors)
+	return s.mb.Emit(), errors.Combine()
 }
 
-func (s *mongodbScraper) collectMetrics(ctx context.Context, rms pmetric.ResourceMetricsSlice, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror.ScrapeErrors) {
 	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
 		s.logger.Error("Failed to fetch database names", zap.Error(err))
@@ -104,20 +99,13 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, rms pmetric.Resourc
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	s.collectAdminDatabase(ctx, rms, now, errors)
+	s.collectAdminDatabase(ctx, now, errors)
 	for _, dbName := range dbNames {
-		s.collectDatabase(ctx, rms, now, dbName, errors)
+		s.collectDatabase(ctx, now, dbName, errors)
 	}
 }
 
-func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pmetric.ResourceMetricsSlice, now pcommon.Timestamp, databaseName string, errors scrapererror.ScrapeErrors) {
-	rm := rms.AppendEmpty()
-	resourceAttrs := rm.Resource().Attributes()
-	resourceAttrs.InsertString(metadata.A.Database, databaseName)
-
-	ilms := rm.ScopeMetrics().AppendEmpty()
-	ilms.Scope().SetName(instrumentationLibraryName)
-
+func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errors scrapererror.ScrapeErrors) {
 	dbStats, err := s.client.DBStats(ctx, databaseName)
 	if err != nil {
 		errors.AddPartial(1, err)
@@ -132,21 +120,17 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pmetric.Resour
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errors)
 
-	s.mb.EmitDatabase(ilms.Metrics())
+	s.mb.EmitForResource(metadata.WithDatabase(databaseName))
 }
 
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, rms pmetric.ResourceMetricsSlice, now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
-	rm := rms.AppendEmpty()
-	ilms := rm.ScopeMetrics().AppendEmpty()
-	ilms.Scope().SetName(instrumentationLibraryName)
-
+func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
 	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {
 		errors.AddPartial(1, err)
 		return
 	}
 	s.recordAdminStats(now, serverStatus, errors)
-	s.mb.EmitAdmin(ilms.Metrics())
+	s.mb.EmitForResource()
 }
 
 func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
