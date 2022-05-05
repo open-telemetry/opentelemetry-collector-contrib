@@ -43,9 +43,10 @@ func HostInfoFromAttributes(attrs pcommon.Map) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
 	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
-		// Add host id as a host alias to preserve backwards compatibility
-		// The Datadog Agent does not do this
-		hostInfo.HostAliases = append(hostInfo.HostAliases, hostID.StringVal())
+		if cloudAccount, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
+			alias := fmt.Sprintf("%s.%s", hostID.StringVal(), cloudAccount.StringVal())
+			hostInfo.HostAliases = append(hostInfo.HostAliases, alias)
+		}
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("instance-id:%s", hostID.StringVal()))
 	}
 
