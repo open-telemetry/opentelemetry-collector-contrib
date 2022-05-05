@@ -22,6 +22,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 type MetadataLabel string
@@ -79,7 +80,7 @@ func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
 
 // setExtraLabels sets extra labels in `labels` map based on provided metadata label.
 func (m *Metadata) setExtraLabels(
-	labels map[string]string, podUID string,
+	labels map[string]string, podRef stats.PodReference,
 	extraMetadataLabel MetadataLabel, extraMetadataFrom string) error {
 	// Ensure MetadataLabel exists before proceeding.
 	if !m.Labels[extraMetadataLabel] || len(m.Labels) == 0 {
@@ -93,15 +94,26 @@ func (m *Metadata) setExtraLabels(
 
 	switch extraMetadataLabel {
 	case MetadataLabelContainerID:
-		containerID, err := m.getContainerID(podUID, extraMetadataFrom)
+		containerID, err := m.getContainerID(podRef.UID, extraMetadataFrom)
 		if err != nil {
 			return err
 		}
 		labels[conventions.AttributeContainerID] = containerID
 	case MetadataLabelVolumeType:
-		err := m.setExtraVolumeMetadata(podUID, extraMetadataFrom, labels)
+		volume, err := m.getPodVolume(podRef.UID, extraMetadataFrom)
 		if err != nil {
 			return err
+		}
+
+		getLabelsFromVolume(volume, labels)
+
+		// Get more labels from PersistentVolumeClaim volume type.
+		if volume.PersistentVolumeClaim != nil {
+			volCacheID := fmt.Sprintf("%s/%s", podRef.UID, extraMetadataFrom)
+			if err := m.DetailedPVCLabelsSetter(volCacheID, labels[labelPersistentVolumeClaimName], podRef.Namespace,
+				labels); err != nil {
+				return fmt.Errorf("failed to set labels from volume claim: %w", err)
+			}
 		}
 	}
 	return nil
@@ -131,18 +143,16 @@ func stripContainerID(id string) string {
 	return containerSchemeRegexp.ReplaceAllString(id, "")
 }
 
-func (m *Metadata) setExtraVolumeMetadata(podUID string, volumeName string, labels map[string]string) error {
-	uid := types.UID(podUID)
+func (m *Metadata) getPodVolume(podUID string, volumeName string) (v1.Volume, error) {
 	for _, pod := range m.PodsMetadata.Items {
-		if pod.UID == uid {
+		if pod.UID == types.UID(podUID) {
 			for _, volume := range pod.Spec.Volumes {
 				if volumeName == volume.Name {
-					getLabelsFromVolume(volume, labels)
-					return nil
+					return volume, nil
 				}
 			}
 		}
 	}
 
-	return fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
+	return v1.Volume{}, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
 }
