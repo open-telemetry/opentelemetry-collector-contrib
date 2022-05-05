@@ -40,6 +40,7 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to Elasticsearch.
 
+// nolint:errcheck
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
