@@ -105,11 +105,14 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 		// buffer_pool.pages
 		case "Innodb_buffer_pool_pages_data":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v, "data"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesData))
 		case "Innodb_buffer_pool_pages_free":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v, "free"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesFree))
 		case "Innodb_buffer_pool_pages_misc":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v, "misc"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesMisc))
 
 		// buffer_pool.page_flushes
 		case "Innodb_buffer_pool_pages_flushed":
@@ -117,143 +120,154 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 		// buffer_pool.operations
 		case "Innodb_buffer_pool_read_ahead_rnd":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v, "read_ahead_rnd"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAheadRnd))
 		case "Innodb_buffer_pool_read_ahead":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v, "read_ahead"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAhead))
 		case "Innodb_buffer_pool_read_ahead_evicted":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v, "read_ahead_evicted"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAheadEvicted))
 		case "Innodb_buffer_pool_read_requests":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v, "read_requests"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadRequests))
 		case "Innodb_buffer_pool_reads":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v, "reads"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReads))
 		case "Innodb_buffer_pool_wait_free":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v, "wait_free"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsWaitFree))
 		case "Innodb_buffer_pool_write_requests":
-			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v, "write_requests"))
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsWriteRequests))
 
 		// commands
 		case "Com_stmt_execute":
-			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, "execute"))
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandExecute))
 		case "Com_stmt_close":
-			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, "close"))
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandClose))
 		case "Com_stmt_fetch":
-			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, "fetch"))
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandFetch))
 		case "Com_stmt_prepare":
-			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, "prepare"))
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandPrepare))
 		case "Com_stmt_reset":
-			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, "reset"))
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandReset))
 		case "Com_stmt_send_long_data":
-			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, "send_long_data"))
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSendLongData))
 
 		// handlers
 		case "Handler_commit":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "commit"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerCommit))
 		case "Handler_delete":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "delete"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerDelete))
 		case "Handler_discover":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "discover"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerDiscover))
 		case "Handler_external_lock":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "external_lock"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerExternalLock))
 		case "Handler_mrr_init":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "mrr_init"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerMrrInit))
 		case "Handler_prepare":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "prepare"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerPrepare))
 		case "Handler_read_first":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "read_first"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadFirst))
 		case "Handler_read_key":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "read_key"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadKey))
 		case "Handler_read_last":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "read_last"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadLast))
 		case "Handler_read_next":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "read_next"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadNext))
 		case "Handler_read_prev":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "read_prev"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadPrev))
 		case "Handler_read_rnd":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "read_rnd"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadRnd))
 		case "Handler_read_rnd_next":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "read_rnd_next"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadRndNext))
 		case "Handler_rollback":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "rollback"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerRollback))
 		case "Handler_savepoint":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "savepoint"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerSavepoint))
 		case "Handler_savepoint_rollback":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "savepoint_rollback"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerSavepointRollback))
 		case "Handler_update":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "update"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerUpdate))
 		case "Handler_write":
-			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, "write"))
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerWrite))
 
 		// double_writes
 		case "Innodb_dblwr_pages_written":
-			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, "pages_written"))
+			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, metadata.AttributeDoubleWritesPagesWritten))
 		case "Innodb_dblwr_writes":
-			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, "writes"))
+			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, metadata.AttributeDoubleWritesWrites))
 
 		// log_operations
 		case "Innodb_log_waits":
-			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, "waits"))
+			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWaits))
 		case "Innodb_log_write_requests":
-			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, "write_requests"))
+			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWriteRequests))
 		case "Innodb_log_writes":
-			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, "writes"))
+			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWrites))
 
 		// operations
 		case "Innodb_data_fsyncs":
-			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, "fsyncs"))
+			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsFsyncs))
 		case "Innodb_data_reads":
-			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, "reads"))
+			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsReads))
 		case "Innodb_data_writes":
-			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, "writes"))
+			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsWrites))
 
 		// page_operations
 		case "Innodb_pages_created":
-			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v, "created"))
+			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v, metadata.AttributePageOperationsCreated))
 		case "Innodb_pages_read":
-			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v, "read"))
+			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v,
+				metadata.AttributePageOperationsRead))
 		case "Innodb_pages_written":
-			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v, "written"))
+			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v,
+				metadata.AttributePageOperationsWritten))
 
 		// row_locks
 		case "Innodb_row_lock_waits":
-			addPartialIfError(errors, m.mb.RecordMysqlRowLocksDataPoint(now, v, "waits"))
+			addPartialIfError(errors, m.mb.RecordMysqlRowLocksDataPoint(now, v, metadata.AttributeRowLocksWaits))
 		case "Innodb_row_lock_time":
-			addPartialIfError(errors, m.mb.RecordMysqlRowLocksDataPoint(now, v, "time"))
+			addPartialIfError(errors, m.mb.RecordMysqlRowLocksDataPoint(now, v, metadata.AttributeRowLocksTime))
 
 		// row_operations
 		case "Innodb_rows_deleted":
-			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, "deleted"))
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, metadata.AttributeRowOperationsDeleted))
 		case "Innodb_rows_inserted":
-			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, "inserted"))
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, metadata.AttributeRowOperationsInserted))
 		case "Innodb_rows_read":
-			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, "read"))
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v,
+				metadata.AttributeRowOperationsRead))
 		case "Innodb_rows_updated":
-			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, "updated"))
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v,
+				metadata.AttributeRowOperationsUpdated))
 
 		// locks
 		case "Table_locks_immediate":
-			addPartialIfError(errors, m.mb.RecordMysqlLocksDataPoint(now, v, "immediate"))
+			addPartialIfError(errors, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksImmediate))
 		case "Table_locks_waited":
-			addPartialIfError(errors, m.mb.RecordMysqlLocksDataPoint(now, v, "waited"))
+			addPartialIfError(errors, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
 
 		// sorts
 		case "Sort_merge_passes":
-			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, "merge_passes"))
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsMergePasses))
 		case "Sort_range":
-			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, "range"))
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsRange))
 		case "Sort_rows":
-			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, "rows"))
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsRows))
 		case "Sort_scan":
-			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, "scan"))
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsScan))
 
 		// threads
 		case "Threads_cached":
-			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, "cached"))
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCached))
 		case "Threads_connected":
-			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, "connected"))
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsConnected))
 		case "Threads_created":
-			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, "created"))
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCreated))
 		case "Threads_running":
-			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, "running"))
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsRunning))
 		}
 	}
 
@@ -272,14 +286,14 @@ func (m *mySQLScraper) recordDataPages(now pcommon.Timestamp, globalStats map[st
 		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
 		return
 	}
-	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, dirty, "dirty")
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, dirty, metadata.AttributeBufferPoolDataDirty)
 
 	data, err := parseInt(globalStats["Innodb_buffer_pool_pages_data"])
 	if err != nil {
 		errors.AddPartial(1, err)
 		return
 	}
-	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, data-dirty, "clean")
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, data-dirty, metadata.AttributeBufferPoolDataClean)
 }
 
 func (m *mySQLScraper) recordDataUsage(now pcommon.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
@@ -288,14 +302,14 @@ func (m *mySQLScraper) recordDataUsage(now pcommon.Timestamp, globalStats map[st
 		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
 		return
 	}
-	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, dirty, "dirty")
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, dirty, metadata.AttributeBufferPoolDataDirty)
 
 	data, err := parseInt(globalStats["Innodb_buffer_pool_bytes_data"])
 	if err != nil {
 		errors.AddPartial(1, err)
 		return
 	}
-	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, data-dirty, "clean")
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, data-dirty, metadata.AttributeBufferPoolDataClean)
 }
 
 // parseInt converts string to int64.

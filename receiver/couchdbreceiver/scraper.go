@@ -40,7 +40,7 @@ func newCouchdbScraper(settings component.TelemetrySettings, config *Config) *co
 	return &couchdbScraper{
 		settings: settings,
 		config:   config,
-		mb:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		mb:       metadata.NewMetricsBuilder(config.Metrics),
 	}
 }
 

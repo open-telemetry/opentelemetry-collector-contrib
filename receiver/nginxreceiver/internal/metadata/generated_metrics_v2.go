@@ -39,6 +39,40 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateActive
+	AttributeStateReading
+	AttributeStateWriting
+	AttributeStateWaiting
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateActive:
+		return "active"
+	case AttributeStateReading:
+		return "reading"
+	case AttributeStateWriting:
+		return "writing"
+	case AttributeStateWaiting:
+		return "waiting"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"active":  AttributeStateActive,
+	"reading": AttributeStateReading,
+	"writing": AttributeStateWriting,
+	"waiting": AttributeStateWaiting,
+}
+
 type metricNginxConnectionsAccepted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -333,8 +367,8 @@ func (mb *MetricsBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pcommon.Tim
 }
 
 // RecordNginxConnectionsCurrentDataPoint adds a data point to nginx.connections_current metric.
-func (mb *MetricsBuilder) RecordNginxConnectionsCurrentDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue string) {
-	mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (mb *MetricsBuilder) RecordNginxConnectionsCurrentDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
+	mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordNginxConnectionsHandledDataPoint adds a data point to nginx.connections_handled metric.
@@ -366,16 +400,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Active  string
-	Reading string
-	Writing string
-	Waiting string
-}{
-	"active",
-	"reading",
-	"writing",
-	"waiting",
-}

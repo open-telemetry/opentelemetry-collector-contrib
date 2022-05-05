@@ -29,11 +29,11 @@ func (mb *MetricsBuilder) RecordAny(ts pcommon.Timestamp, val float64, name stri
 	case "iis.network.blocked":
 		mb.RecordIisNetworkBlockedDataPoint(ts, int64(val))
 	case "iis.network.file.count":
-		mb.RecordIisNetworkFileCountDataPoint(ts, int64(val), attributes[A.Direction])
+		mb.RecordIisNetworkFileCountDataPoint(ts, int64(val), MapAttributeDirection[attributes[A.Direction]])
 	case "iis.network.io":
-		mb.RecordIisNetworkIoDataPoint(ts, int64(val), attributes[A.Direction])
+		mb.RecordIisNetworkIoDataPoint(ts, int64(val), MapAttributeDirection[attributes[A.Direction]])
 	case "iis.request.count":
-		mb.RecordIisRequestCountDataPoint(ts, int64(val), attributes[A.Request])
+		mb.RecordIisRequestCountDataPoint(ts, int64(val), MapAttributeRequest[attributes[A.Request]])
 	case "iis.request.queue.age.max":
 		mb.RecordIisRequestQueueAgeMaxDataPoint(ts, int64(val))
 	case "iis.request.queue.count":
