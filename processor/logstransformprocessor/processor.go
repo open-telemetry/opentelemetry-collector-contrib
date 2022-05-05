@@ -130,7 +130,10 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 
 func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	// Add the logs to the chain
-	ltp.fromConverter.Batch(ld)
+	err := ltp.fromConverter.Batch(ld)
+	if err != nil {
+		return ld, err
+	}
 
 	doneChan := ctx.Done()
 	for {
@@ -167,7 +170,9 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 
 			for _, e := range entries {
 				// Add item to the first operator of the pipeline manually
-				ltp.pipe.Operators()[0].Process(ctx, e)
+				if err := ltp.pipe.Operators()[0].Process(ctx, e); err != nil {
+					ltp.logger.Error("unexpected error encountered adding entries to pipeline", zap.Error(err))
+				}
 			}
 		}
 	}
@@ -190,7 +195,9 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
 				continue
 			}
 
-			ltp.converter.Batch(e)
+			if err := ltp.converter.Batch(e); err != nil {
+				ltp.logger.Error("unexpected error encountered batching logs to converter", zap.Error(err))
+			}
 		}
 	}
 }
