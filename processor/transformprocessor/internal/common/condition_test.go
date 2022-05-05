@@ -147,6 +147,10 @@ func (ctx testTransformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
+func (ctx testTransformContext) GetDescriptor() interface{} {
+	return nil
+}
+
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
 type testGetSetter struct {
 	getter ExprFunc
