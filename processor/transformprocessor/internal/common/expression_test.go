@@ -22,10 +22,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func hello() ExprFunc {
+func hello() (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "world"
-	}
+	}, nil
 }
 
 func Test_newGetter(t *testing.T) {
