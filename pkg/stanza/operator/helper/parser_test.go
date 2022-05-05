@@ -121,7 +121,8 @@ func TestParserMissingField(t *testing.T) {
 }
 
 func TestParserInvalidParseDrop(t *testing.T) {
-	writer, fakeOut := writerWithFakeOut(t)
+	writer, fakeOut, err := writerWithFakeOut(t)
+	require.NoError(t, err)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: *writer,
@@ -134,14 +135,15 @@ func TestParserInvalidParseDrop(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	err = parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parse failure")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
 func TestParserInvalidParseSend(t *testing.T) {
-	writer, fakeOut := writerWithFakeOut(t)
+	writer, fakeOut, err := writerWithFakeOut(t)
+	require.NoError(t, err)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: *writer,
@@ -154,7 +156,7 @@ func TestParserInvalidParseSend(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	err = parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parse failure")
 	fakeOut.ExpectEntry(t, testEntry)
@@ -162,7 +164,8 @@ func TestParserInvalidParseSend(t *testing.T) {
 }
 
 func TestParserInvalidTimeParseDrop(t *testing.T) {
-	writer, fakeOut := writerWithFakeOut(t)
+	writer, fakeOut, err := writerWithFakeOut(t)
+	require.NoError(t, err)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: *writer,
@@ -182,14 +185,15 @@ func TestParserInvalidTimeParseDrop(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	err = parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
 func TestParserInvalidTimeParseSend(t *testing.T) {
-	writer, fakeOut := writerWithFakeOut(t)
+	writer, fakeOut, err := writerWithFakeOut(t)
+	require.NoError(t, err)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: *writer,
@@ -209,14 +213,15 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	err = parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 func TestParserInvalidSeverityParseDrop(t *testing.T) {
-	writer, fakeOut := writerWithFakeOut(t)
+	writer, fakeOut, err := writerWithFakeOut(t)
+	require.NoError(t, err)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: *writer,
@@ -233,7 +238,7 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	err = parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "severity parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
@@ -696,7 +701,7 @@ func TestMapStructureDecodeParserConfig(t *testing.T) {
 	require.Equal(t, expect, actual)
 }
 
-func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
+func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput, error) {
 	fakeOut := testutil.NewFakeOutput(t)
 	writer := &WriterOperator{
 		BasicOperator: BasicOperator{
@@ -706,6 +711,6 @@ func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}
-	writer.SetOutputs([]operator.Operator{fakeOut})
-	return writer, fakeOut
+	err := writer.SetOutputs([]operator.Operator{fakeOut})
+	return writer, fakeOut, err
 }

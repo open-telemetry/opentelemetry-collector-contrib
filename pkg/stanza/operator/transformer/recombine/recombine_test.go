@@ -298,7 +298,7 @@ func TestTransformer(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, e := range tc.input {
-				recombine.Process(context.Background(), e)
+				require.NoError(t, recombine.Process(context.Background(), e))
 			}
 
 			for _, expected := range tc.expectedOutput {
@@ -327,7 +327,7 @@ func TestTransformer(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send an entry that isn't the last in a multiline
-		recombine.Process(context.Background(), entry.New())
+		require.NoError(t, recombine.Process(context.Background(), entry.New()))
 
 		// Ensure that the entry isn't immediately sent
 		select {
@@ -337,7 +337,7 @@ func TestTransformer(t *testing.T) {
 		}
 
 		// Stop the operator
-		recombine.Stop()
+		require.NoError(t, recombine.Stop())
 
 		// Ensure that the entries in the buffer are flushed
 		select {
@@ -359,7 +359,7 @@ func BenchmarkRecombine(b *testing.B) {
 
 	fake := testutil.NewFakeOutput(b)
 	require.NoError(b, recombine.SetOutputs([]operator.Operator{fake}))
-	recombine.Start(nil)
+	require.NoError(b, recombine.Start(nil))
 
 	go func() {
 		for {
@@ -404,7 +404,7 @@ func TestTimeout(t *testing.T) {
 
 	ctx := context.Background()
 
-	recombine.Start(nil)
+	require.NoError(t, recombine.Start(nil))
 	require.NoError(t, recombine.Process(ctx, e))
 	select {
 	case <-fake.Received:

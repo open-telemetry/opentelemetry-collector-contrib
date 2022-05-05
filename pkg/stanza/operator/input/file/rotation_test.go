@@ -60,7 +60,9 @@ func TestMultiFileRotate(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temps := make([]*os.File, 0, numFiles)
 	for i := 0; i < numFiles; i++ {
@@ -117,7 +119,9 @@ func TestMultiFileRotateSlow(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	var wg sync.WaitGroup
 	for fileNum := 0; fileNum < numFiles; fileNum++ {
@@ -163,7 +167,9 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	var wg sync.WaitGroup
 	for fileNum := 0; fileNum < numFiles; fileNum++ {
@@ -260,7 +266,9 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		}
 
 		require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-		defer operator.Stop()
+		defer func() {
+			require.NoError(t, operator.Stop())
+		}()
 
 		for _, message := range expected {
 			logger.Println(message)
@@ -353,7 +361,9 @@ func TestMoveFile(t *testing.T) {
 	temp1.Close()
 
 	operator.poll(context.Background())
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 
@@ -379,7 +389,9 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	temp1.Close()
 
 	operator.poll(context.Background())
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 
@@ -413,13 +425,16 @@ func TestTruncateThenWrite(t *testing.T) {
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 	waitForMessage(t, logReceived, "testlog2")
 
 	require.NoError(t, temp1.Truncate(0))
-	temp1.Seek(0, 0)
+	_, err := temp1.Seek(0, 0)
+	require.NoError(t, err)
 
 	writeString(t, temp1, "testlog3\n")
 	operator.poll(context.Background())
@@ -440,7 +455,9 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 	waitForMessage(t, logReceived, "testlog2")
@@ -453,7 +470,8 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 
 	// Truncate original file
 	require.NoError(t, temp1.Truncate(0))
-	temp1.Seek(0, 0)
+	_, err = temp1.Seek(0, 0)
+	require.NoError(t, err)
 
 	// Write to original and new file
 	writeString(t, temp2, "testlog3\n")
@@ -478,7 +496,9 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 
 	// Start the operator
 	require.NoError(t, operator.Start(persister))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	waitForMessage(t, logReceived, log1)
 
 	// Stop the operator, then rename and write a new log

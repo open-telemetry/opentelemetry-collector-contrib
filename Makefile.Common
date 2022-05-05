@@ -76,6 +76,7 @@ addlicense:
 
 .PHONY: checklicense
 checklicense:
+	echo "checking licenses for $(ALL_SRC)"
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
@@ -92,8 +93,8 @@ fmt:
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: checklicense impi misspell
-	$(LINT) run --allow-parallel-runners --exclude-use-default
+lint:
+	$(LINT) run --allow-parallel-runners
 
 .PHONY: tidy
 tidy:

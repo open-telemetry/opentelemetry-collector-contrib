@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/observiq/nanojack"
+	nanojack "github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"

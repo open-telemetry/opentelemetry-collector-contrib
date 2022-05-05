@@ -12,9 +12,7 @@ COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-# ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
-
-ALL_MODULES := $(shell find ./pkg/stanza -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
@@ -79,8 +77,11 @@ gofmt:
 	$(MAKE) for-all-target TARGET="fmt"
 
 .PHONY: golint
-golint:
+golint: golint-prechecks
 	$(MAKE) for-all-target TARGET="lint"
+
+.PHONY: golint-prechecks
+golint-prechecks: checklicense misspell impi
 
 .PHONY: goporto
 goporto:
@@ -322,3 +323,4 @@ multimod-prerelease: install-tools
 crosslink: install-tools
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd)
+

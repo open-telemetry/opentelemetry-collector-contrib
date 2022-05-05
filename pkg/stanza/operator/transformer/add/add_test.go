@@ -319,7 +319,7 @@ func TestProcessAndBuild(t *testing.T) {
 
 			add := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			add.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, add.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = add.Process(context.Background(), val)
 			if tc.expectErr {

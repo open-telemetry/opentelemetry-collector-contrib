@@ -268,7 +268,7 @@ func TestProcessAndBuild(t *testing.T) {
 
 			remove := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			remove.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, remove.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = remove.Process(context.Background(), val)
 			if tc.expectErr {

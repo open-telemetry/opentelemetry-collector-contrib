@@ -81,7 +81,9 @@ func SyslogInputTest(t *testing.T, cfg *Config, tc syslog.Case) {
 	conn.Close()
 	require.NoError(t, err)
 
-	defer p.Stop()
+	defer func() {
+		require.NoError(t, p.Stop())
+	}()
 	select {
 	case e := <-fake.Received:
 		// close pipeline to avoid data race

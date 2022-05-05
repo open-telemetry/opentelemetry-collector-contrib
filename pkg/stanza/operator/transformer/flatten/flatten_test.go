@@ -280,7 +280,7 @@ func TestBuildAndProcess(t *testing.T) {
 
 			flatten := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			flatten.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, flatten.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = flatten.Process(context.Background(), val)
 
