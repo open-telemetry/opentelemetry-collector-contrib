@@ -30,7 +30,7 @@ var (
 )
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
-	refNumberDataPoint, _, _ := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeInt)
+	refNumberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeInt)
 
 	newExemplars, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes := createNewTelemetry()
 
@@ -39,7 +39,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		path      []common.Field
 		orig      interface{}
 		new       interface{}
-		modified  func(interface{}, pcommon.InstrumentationScope, pcommon.Resource)
+		modified  func(pmetric.NumberDataPoint)
 		valueType pmetric.NumberDataPointValueType
 	}{
 		{
@@ -51,8 +51,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: int64(100_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -64,8 +64,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: int64(500_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -77,8 +77,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: 1.1,
 			new:  2.2,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).SetDoubleVal(2.2)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetDoubleVal(2.2)
 			},
 			valueType: pmetric.NumberDataPointValueTypeDouble,
 		},
@@ -91,8 +91,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: int64(1),
 			new:  int64(2),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).SetIntVal(2)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetIntVal(2)
 			},
 		},
 		{
@@ -104,8 +104,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: pmetric.NewMetricDataPointFlags(),
 			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
 		},
 		{
@@ -115,10 +115,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 					Name: "exemplars",
 				},
 			},
-			orig: refNumberDataPoint.(pmetric.NumberDataPoint).Exemplars(),
+			orig: refNumberDataPoint.Exemplars(),
 			new:  newExemplars,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				newExemplars.CopyTo(datapoint.(pmetric.NumberDataPoint).Exemplars())
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				newExemplars.CopyTo(datapoint.Exemplars())
 			},
 		},
 		{
@@ -128,11 +128,11 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 					Name: "attributes",
 				},
 			},
-			orig: refNumberDataPoint.(pmetric.NumberDataPoint).Attributes(),
+			orig: refNumberDataPoint.Attributes(),
 			new:  newAttrs,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().Clear()
-				newAttrs.CopyTo(datapoint.(pmetric.NumberDataPoint).Attributes())
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().Clear()
+				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},
 		{
@@ -145,8 +145,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: "val",
 			new:  "newVal",
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().UpsertString("str", "newVal")
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().UpsertString("str", "newVal")
 			},
 		},
 		{
@@ -159,8 +159,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: true,
 			new:  false,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().UpsertBool("bool", false)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().UpsertBool("bool", false)
 			},
 		},
 		{
@@ -173,8 +173,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: int64(10),
 			new:  int64(20),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().UpsertInt("int", 20)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().UpsertInt("int", 20)
 			},
 		},
 		{
@@ -187,8 +187,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: float64(1.2),
 			new:  float64(2.4),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().UpsertDouble("double", 2.4)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().UpsertDouble("double", 2.4)
 			},
 		},
 		{
@@ -201,8 +201,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
 			},
 		},
 		{
@@ -214,12 +214,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.(pmetric.NumberDataPoint).Attributes().Get("arr_str")
+				val, _ := refNumberDataPoint.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
 			new: []string{"new"},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().Upsert("arr_str", newArrStr)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().Upsert("arr_str", newArrStr)
 			},
 		},
 		{
@@ -231,12 +231,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.(pmetric.NumberDataPoint).Attributes().Get("arr_bool")
+				val, _ := refNumberDataPoint.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
 			new: []bool{false},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().Upsert("arr_bool", newArrBool)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().Upsert("arr_bool", newArrBool)
 			},
 		},
 		{
@@ -248,12 +248,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.(pmetric.NumberDataPoint).Attributes().Get("arr_int")
+				val, _ := refNumberDataPoint.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
 			new: []int64{20},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().Upsert("arr_int", newArrInt)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().Upsert("arr_int", newArrInt)
 			},
 		},
 		{
@@ -265,12 +265,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.(pmetric.NumberDataPoint).Attributes().Get("arr_float")
+				val, _ := refNumberDataPoint.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
 			new: []float64{2.0},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().Upsert("arr_float", newArrFloat)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().Upsert("arr_float", newArrFloat)
 			},
 		},
 		{
@@ -282,12 +282,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.(pmetric.NumberDataPoint).Attributes().Get("arr_bytes")
+				val, _ := refNumberDataPoint.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
 			new: [][]byte{{9, 6, 4}},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.NumberDataPoint).Attributes().Upsert("arr_bytes", newArrBytes)
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
 		},
 	}
@@ -296,13 +296,13 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			numberDataPoint, il, resource := createNumberDataPointTelemetry(tt.valueType)
+			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
 			ctx := metricTransformContext{
 				dataPoint: numberDataPoint,
 				metric:    pmetric.NewMetric(),
-				il:        il,
-				resource:  resource,
+				il:        pcommon.NewInstrumentationScope(),
+				resource:  pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -310,17 +310,15 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			accessor.Set(ctx, tt.new)
 
-			exNumberDataPoint, exIl, exResource := createNumberDataPointTelemetry(tt.valueType)
-			tt.modified(exNumberDataPoint, exIl, exResource)
+			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
+			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
-			assert.Equal(t, exIl, il)
-			assert.Equal(t, exResource, resource)
 		})
 	}
 }
 
-func createNumberDataPointTelemetry(valueType pmetric.NumberDataPointValueType) (interface{}, pcommon.InstrumentationScope, pcommon.Resource) {
+func createNumberDataPointTelemetry(valueType pmetric.NumberDataPointValueType) pmetric.NumberDataPoint {
 	numberDataPoint := pmetric.NewNumberDataPoint()
 	numberDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	numberDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
@@ -336,21 +334,11 @@ func createNumberDataPointTelemetry(valueType pmetric.NumberDataPointValueType) 
 
 	numberDataPoint.Exemplars().AppendEmpty().SetIntVal(0)
 
-	resource := pcommon.NewResource()
-	numberDataPoint.Attributes().CopyTo(resource.Attributes())
-
-	//metric := pmetric.NewMetric()
-	//metric.SetName("name")
-	//metric.SetDescription("description")
-	//metric.SetUnit("unit")
-	//metric.SetDataType(pmetric.MetricDataTypeSum)
-	//numberDataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
-
-	return numberDataPoint, createIlTelemetry(), resource
+	return numberDataPoint
 }
 
 func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
-	refHistogramDataPoint, _, _ := createHistogramDataPointTelemetry()
+	refHistogramDataPoint := createHistogramDataPointTelemetry()
 
 	newExemplars, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes := createNewTelemetry()
 
@@ -359,7 +347,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		path     []common.Field
 		orig     interface{}
 		new      interface{}
-		modified func(interface{}, pcommon.InstrumentationScope, pcommon.Resource)
+		modified func(pmetric.HistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -370,8 +358,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: int64(100_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -383,8 +371,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: int64(500_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -396,8 +384,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: pmetric.NewMetricDataPointFlags(),
 			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
 		},
 		{
@@ -409,8 +397,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: uint64(2),
 			new:  uint64(3),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).SetCount(3)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.SetCount(3)
 			},
 		},
 		{
@@ -422,8 +410,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: 10.1,
 			new:  10.2,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).SetSum(10.2)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.SetSum(10.2)
 			},
 		},
 		{
@@ -435,8 +423,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: []uint64{1, 1},
 			new:  []uint64{1, 2},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).SetBucketCounts([]uint64{1, 2})
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.SetBucketCounts([]uint64{1, 2})
 			},
 		},
 		{
@@ -448,8 +436,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: []float64{1, 2},
 			new:  []float64{1, 2, 3},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).SetExplicitBounds([]float64{1, 2, 3})
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.SetExplicitBounds([]float64{1, 2, 3})
 			},
 		},
 		{
@@ -459,10 +447,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					Name: "exemplars",
 				},
 			},
-			orig: refHistogramDataPoint.(pmetric.HistogramDataPoint).Exemplars(),
+			orig: refHistogramDataPoint.Exemplars(),
 			new:  newExemplars,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				newExemplars.CopyTo(datapoint.(pmetric.HistogramDataPoint).Exemplars())
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				newExemplars.CopyTo(datapoint.Exemplars())
 			},
 		},
 		{
@@ -472,11 +460,11 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					Name: "attributes",
 				},
 			},
-			orig: refHistogramDataPoint.(pmetric.HistogramDataPoint).Attributes(),
+			orig: refHistogramDataPoint.Attributes(),
 			new:  newAttrs,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().Clear()
-				newAttrs.CopyTo(datapoint.(pmetric.HistogramDataPoint).Attributes())
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().Clear()
+				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},
 		{
@@ -489,8 +477,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: "val",
 			new:  "newVal",
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().UpsertString("str", "newVal")
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().UpsertString("str", "newVal")
 			},
 		},
 		{
@@ -503,8 +491,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: true,
 			new:  false,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().UpsertBool("bool", false)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().UpsertBool("bool", false)
 			},
 		},
 		{
@@ -517,8 +505,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: int64(10),
 			new:  int64(20),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().UpsertInt("int", 20)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().UpsertInt("int", 20)
 			},
 		},
 		{
@@ -531,8 +519,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: float64(1.2),
 			new:  float64(2.4),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().UpsertDouble("double", 2.4)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().UpsertDouble("double", 2.4)
 			},
 		},
 		{
@@ -545,8 +533,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
 			},
 		},
 		{
@@ -558,12 +546,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refHistogramDataPoint.(pmetric.HistogramDataPoint).Attributes().Get("arr_str")
+				val, _ := refHistogramDataPoint.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
 			new: []string{"new"},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().Upsert("arr_str", newArrStr)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_str", newArrStr)
 			},
 		},
 		{
@@ -575,12 +563,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refHistogramDataPoint.(pmetric.HistogramDataPoint).Attributes().Get("arr_bool")
+				val, _ := refHistogramDataPoint.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
 			new: []bool{false},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().Upsert("arr_bool", newArrBool)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_bool", newArrBool)
 			},
 		},
 		{
@@ -592,12 +580,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refHistogramDataPoint.(pmetric.HistogramDataPoint).Attributes().Get("arr_int")
+				val, _ := refHistogramDataPoint.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
 			new: []int64{20},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().Upsert("arr_int", newArrInt)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_int", newArrInt)
 			},
 		},
 		{
@@ -609,12 +597,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refHistogramDataPoint.(pmetric.HistogramDataPoint).Attributes().Get("arr_float")
+				val, _ := refHistogramDataPoint.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
 			new: []float64{2.0},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().Upsert("arr_float", newArrFloat)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_float", newArrFloat)
 			},
 		},
 		{
@@ -626,12 +614,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refHistogramDataPoint.(pmetric.HistogramDataPoint).Attributes().Get("arr_bytes")
+				val, _ := refHistogramDataPoint.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
 			new: [][]byte{{9, 6, 4}},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.HistogramDataPoint).Attributes().Upsert("arr_bytes", newArrBytes)
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
 		},
 	}
@@ -640,13 +628,13 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			numberDataPoint, il, resource := createHistogramDataPointTelemetry()
+			numberDataPoint := createHistogramDataPointTelemetry()
 
 			ctx := metricTransformContext{
 				dataPoint: numberDataPoint,
 				metric:    pmetric.NewMetric(),
-				il:        il,
-				resource:  resource,
+				il:        pcommon.NewInstrumentationScope(),
+				resource:  pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -654,17 +642,15 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			accessor.Set(ctx, tt.new)
 
-			exNumberDataPoint, exIl, exResource := createHistogramDataPointTelemetry()
-			tt.modified(exNumberDataPoint, exIl, exResource)
+			exNumberDataPoint := createHistogramDataPointTelemetry()
+			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
-			assert.Equal(t, exIl, il)
-			assert.Equal(t, exResource, resource)
 		})
 	}
 }
 
-func createHistogramDataPointTelemetry() (interface{}, pcommon.InstrumentationScope, pcommon.Resource) {
+func createHistogramDataPointTelemetry() pmetric.HistogramDataPoint {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	histogramDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	histogramDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
@@ -678,14 +664,11 @@ func createHistogramDataPointTelemetry() (interface{}, pcommon.InstrumentationSc
 
 	histogramDataPoint.Exemplars().AppendEmpty().SetIntVal(0)
 
-	resource := pcommon.NewResource()
-	histogramDataPoint.Attributes().CopyTo(resource.Attributes())
-
-	return histogramDataPoint, createIlTelemetry(), resource
+	return histogramDataPoint
 }
 
 func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
-	refExpoHistogramDataPoint, _, _ := createExpoHistogramDataPointTelemetry()
+	refExpoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
 	newExemplars, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes := createNewTelemetry()
 
@@ -702,7 +685,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		path     []common.Field
 		orig     interface{}
 		new      interface{}
-		modified func(interface{}, pcommon.InstrumentationScope, pcommon.Resource)
+		modified func(pmetric.ExponentialHistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -713,8 +696,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: int64(100_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -726,8 +709,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: int64(500_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -739,8 +722,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: pmetric.NewMetricDataPointFlags(),
 			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
 		},
 		{
@@ -752,8 +735,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: uint64(2),
 			new:  uint64(3),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).SetCount(3)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.SetCount(3)
 			},
 		},
 		{
@@ -765,8 +748,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: 10.1,
 			new:  10.2,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).SetSum(10.2)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.SetSum(10.2)
 			},
 		},
 		{
@@ -778,8 +761,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: int32(1),
 			new:  int32(2),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).SetScale(2)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.SetScale(2)
 			},
 		},
 		{
@@ -791,8 +774,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: uint64(1),
 			new:  uint64(2),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).SetZeroCount(2)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.SetZeroCount(2)
 			},
 		},
 		{
@@ -802,10 +785,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "positive",
 				},
 			},
-			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Positive(),
+			orig: refExpoHistogramDataPoint.Positive(),
 			new:  newPositive,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				newPositive.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Positive())
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				newPositive.CopyTo(datapoint.Positive())
 			},
 		},
 		{
@@ -820,8 +803,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: int32(1),
 			new:  int32(2),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Positive().SetOffset(2)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Positive().SetOffset(2)
 			},
 		},
 		{
@@ -836,8 +819,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: []uint64{1, 1},
 			new:  []uint64{0, 1, 2},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Positive().SetBucketCounts([]uint64{0, 1, 2})
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Positive().SetBucketCounts([]uint64{0, 1, 2})
 			},
 		},
 		{
@@ -847,10 +830,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "negative",
 				},
 			},
-			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Negative(),
+			orig: refExpoHistogramDataPoint.Negative(),
 			new:  newPositive,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				newPositive.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Negative())
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				newPositive.CopyTo(datapoint.Negative())
 			},
 		},
 		{
@@ -865,8 +848,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: int32(1),
 			new:  int32(2),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Negative().SetOffset(2)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Negative().SetOffset(2)
 			},
 		},
 		{
@@ -881,8 +864,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: []uint64{1, 1},
 			new:  []uint64{0, 1, 2},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Negative().SetBucketCounts([]uint64{0, 1, 2})
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Negative().SetBucketCounts([]uint64{0, 1, 2})
 			},
 		},
 		{
@@ -892,10 +875,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "exemplars",
 				},
 			},
-			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Exemplars(),
+			orig: refExpoHistogramDataPoint.Exemplars(),
 			new:  newExemplars,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				newExemplars.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Exemplars())
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				newExemplars.CopyTo(datapoint.Exemplars())
 			},
 		},
 		{
@@ -905,11 +888,11 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "attributes",
 				},
 			},
-			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes(),
+			orig: refExpoHistogramDataPoint.Attributes(),
 			new:  newAttrs,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Clear()
-				newAttrs.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes())
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().Clear()
+				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},
 		{
@@ -922,8 +905,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: "val",
 			new:  "newVal",
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertString("str", "newVal")
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().UpsertString("str", "newVal")
 			},
 		},
 		{
@@ -936,8 +919,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: true,
 			new:  false,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertBool("bool", false)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().UpsertBool("bool", false)
 			},
 		},
 		{
@@ -950,8 +933,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: int64(10),
 			new:  int64(20),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertInt("int", 20)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().UpsertInt("int", 20)
 			},
 		},
 		{
@@ -964,8 +947,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: 1.2,
 			new:  2.4,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertDouble("double", 2.4)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().UpsertDouble("double", 2.4)
 			},
 		},
 		{
@@ -978,8 +961,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
 			},
 		},
 		{
@@ -991,12 +974,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_str")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
 			new: []string{"new"},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_str", newArrStr)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_str", newArrStr)
 			},
 		},
 		{
@@ -1008,12 +991,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_bool")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
 			new: []bool{false},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_bool", newArrBool)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_bool", newArrBool)
 			},
 		},
 		{
@@ -1025,12 +1008,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_int")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
 			new: []int64{20},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_int", newArrInt)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_int", newArrInt)
 			},
 		},
 		{
@@ -1042,12 +1025,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_float")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
 			new: []float64{2.0},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_float", newArrFloat)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_float", newArrFloat)
 			},
 		},
 		{
@@ -1059,12 +1042,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_bytes")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
 			new: [][]byte{{9, 6, 4}},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_bytes", newArrBytes)
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
 		},
 	}
@@ -1073,13 +1056,13 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			numberDataPoint, il, resource := createExpoHistogramDataPointTelemetry()
+			numberDataPoint := createExpoHistogramDataPointTelemetry()
 
 			ctx := metricTransformContext{
 				dataPoint: numberDataPoint,
 				metric:    pmetric.NewMetric(),
-				il:        il,
-				resource:  resource,
+				il:        pcommon.NewInstrumentationScope(),
+				resource:  pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -1087,17 +1070,15 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			accessor.Set(ctx, tt.new)
 
-			exNumberDataPoint, exIl, exResource := createExpoHistogramDataPointTelemetry()
-			tt.modified(exNumberDataPoint, exIl, exResource)
+			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
+			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
-			assert.Equal(t, exIl, il)
-			assert.Equal(t, exResource, resource)
 		})
 	}
 }
 
-func createExpoHistogramDataPointTelemetry() (interface{}, pcommon.InstrumentationScope, pcommon.Resource) {
+func createExpoHistogramDataPointTelemetry() pmetric.ExponentialHistogramDataPoint {
 	expoHistogramDataPoint := pmetric.NewExponentialHistogramDataPoint()
 	expoHistogramDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	expoHistogramDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
@@ -1117,14 +1098,11 @@ func createExpoHistogramDataPointTelemetry() (interface{}, pcommon.Instrumentati
 
 	expoHistogramDataPoint.Exemplars().AppendEmpty().SetIntVal(0)
 
-	resource := pcommon.NewResource()
-	expoHistogramDataPoint.Attributes().CopyTo(resource.Attributes())
-
-	return expoHistogramDataPoint, createIlTelemetry(), resource
+	return expoHistogramDataPoint
 }
 
 func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
-	refExpoHistogramDataPoint, _, _ := createSummaryDataPointTelemetry()
+	refExpoHistogramDataPoint := createSummaryDataPointTelemetry()
 
 	_, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes := createNewTelemetry()
 
@@ -1136,7 +1114,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		path     []common.Field
 		orig     interface{}
 		new      interface{}
-		modified func(interface{}, pcommon.InstrumentationScope, pcommon.Resource)
+		modified func(pmetric.SummaryDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -1147,8 +1125,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: int64(100_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -1160,8 +1138,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: int64(500_000_000),
 			new:  int64(200_000_000),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -1173,8 +1151,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: pmetric.NewMetricDataPointFlags(),
 			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
 		},
 		{
@@ -1186,8 +1164,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: uint64(2),
 			new:  uint64(3),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).SetCount(3)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.SetCount(3)
 			},
 		},
 		{
@@ -1199,8 +1177,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: 10.1,
 			new:  10.2,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).SetSum(10.2)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.SetSum(10.2)
 			},
 		},
 		{
@@ -1210,10 +1188,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "quantile_values",
 				},
 			},
-			orig: refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).QuantileValues(),
+			orig: refExpoHistogramDataPoint.QuantileValues(),
 			new:  newQuartileValues,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				newQuartileValues.CopyTo(datapoint.(pmetric.SummaryDataPoint).QuantileValues())
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				newQuartileValues.CopyTo(datapoint.QuantileValues())
 			},
 		},
 		{
@@ -1223,11 +1201,11 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "attributes",
 				},
 			},
-			orig: refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes(),
+			orig: refExpoHistogramDataPoint.Attributes(),
 			new:  newAttrs,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().Clear()
-				newAttrs.CopyTo(datapoint.(pmetric.SummaryDataPoint).Attributes())
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().Clear()
+				newAttrs.CopyTo(datapoint.Attributes())
 			},
 		},
 		{
@@ -1240,8 +1218,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: "val",
 			new:  "newVal",
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertString("str", "newVal")
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().UpsertString("str", "newVal")
 			},
 		},
 		{
@@ -1254,8 +1232,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: true,
 			new:  false,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertBool("bool", false)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().UpsertBool("bool", false)
 			},
 		},
 		{
@@ -1268,8 +1246,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: int64(10),
 			new:  int64(20),
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertInt("int", 20)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().UpsertInt("int", 20)
 			},
 		},
 		{
@@ -1282,8 +1260,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: 1.2,
 			new:  2.4,
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertDouble("double", 2.4)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().UpsertDouble("double", 2.4)
 			},
 		},
 		{
@@ -1296,8 +1274,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
 			},
 		},
 		{
@@ -1309,12 +1287,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_str")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
 			new: []string{"new"},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_str", newArrStr)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().Upsert("arr_str", newArrStr)
 			},
 		},
 		{
@@ -1326,12 +1304,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_bool")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
 			new: []bool{false},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_bool", newArrBool)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().Upsert("arr_bool", newArrBool)
 			},
 		},
 		{
@@ -1343,12 +1321,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_int")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
 			new: []int64{20},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_int", newArrInt)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().Upsert("arr_int", newArrInt)
 			},
 		},
 		{
@@ -1360,12 +1338,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_float")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
 			new: []float64{2.0},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_float", newArrFloat)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().Upsert("arr_float", newArrFloat)
 			},
 		},
 		{
@@ -1377,12 +1355,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.(pmetric.SummaryDataPoint).Attributes().Get("arr_bytes")
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
 			new: [][]byte{{9, 6, 4}},
-			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				datapoint.(pmetric.SummaryDataPoint).Attributes().Upsert("arr_bytes", newArrBytes)
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
 		},
 	}
@@ -1391,13 +1369,13 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			numberDataPoint, il, resource := createSummaryDataPointTelemetry()
+			numberDataPoint := createSummaryDataPointTelemetry()
 
 			ctx := metricTransformContext{
 				dataPoint: numberDataPoint,
 				metric:    pmetric.NewMetric(),
-				il:        il,
-				resource:  resource,
+				il:        pcommon.NewInstrumentationScope(),
+				resource:  pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -1405,17 +1383,15 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			accessor.Set(ctx, tt.new)
 
-			exNumberDataPoint, exIl, exResource := createSummaryDataPointTelemetry()
-			tt.modified(exNumberDataPoint, exIl, exResource)
+			exNumberDataPoint := createSummaryDataPointTelemetry()
+			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
-			assert.Equal(t, exIl, il)
-			assert.Equal(t, exResource, resource)
 		})
 	}
 }
 
-func createSummaryDataPointTelemetry() (interface{}, pcommon.InstrumentationScope, pcommon.Resource) {
+func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 	summaryDataPoint := pmetric.NewSummaryDataPoint()
 	summaryDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	summaryDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
@@ -1427,10 +1403,168 @@ func createSummaryDataPointTelemetry() (interface{}, pcommon.InstrumentationScop
 
 	createAttributeTelemetry(summaryDataPoint.Attributes())
 
-	resource := pcommon.NewResource()
-	summaryDataPoint.Attributes().CopyTo(resource.Attributes())
+	return summaryDataPoint
+}
 
-	return summaryDataPoint, createIlTelemetry(), resource
+func Test_newPathGetSetter_Descriptor(t *testing.T) {
+	refMetric := createDescriptorTelemetry()
+
+	newMetric := pmetric.NewMetric()
+	newMetric.SetName("new name")
+
+	tests := []struct {
+		name     string
+		path     []common.Field
+		orig     interface{}
+		new      interface{}
+		modified func(metric pmetric.Metric)
+	}{
+		{
+			name: "descriptor",
+			path: []common.Field{
+				{
+					Name: "descriptor",
+				},
+			},
+			orig: refMetric,
+			new:  newMetric,
+			modified: func(metric pmetric.Metric) {
+				newMetric.CopyTo(metric)
+			},
+		},
+		{
+			name: "descriptor metric_name",
+			path: []common.Field{
+				{
+					Name: "descriptor",
+				},
+				{
+					Name: "metric_name",
+				},
+			},
+			orig: "name",
+			new:  "new name",
+			modified: func(metric pmetric.Metric) {
+				metric.SetName("new name")
+			},
+		},
+		{
+			name: "descriptor metric_description",
+			path: []common.Field{
+				{
+					Name: "descriptor",
+				},
+				{
+					Name: "metric_description",
+				},
+			},
+			orig: "description",
+			new:  "new description",
+			modified: func(metric pmetric.Metric) {
+				metric.SetDescription("new description")
+			},
+		},
+		{
+			name: "descriptor metric_unit",
+			path: []common.Field{
+				{
+					Name: "descriptor",
+				},
+				{
+					Name: "metric_unit",
+				},
+			},
+			orig: "unit",
+			new:  "new unit",
+			modified: func(metric pmetric.Metric) {
+				metric.SetUnit("new unit")
+			},
+		},
+		{
+			name: "descriptor metric_type",
+			path: []common.Field{
+				{
+					Name: "descriptor",
+				},
+				{
+					Name: "metric_type",
+				},
+			},
+			orig: pmetric.MetricDataTypeSum,
+			new:  pmetric.MetricDataTypeGauge,
+			modified: func(metric pmetric.Metric) {
+				metric.SetDataType(pmetric.MetricDataTypeGauge)
+			},
+		},
+		{
+			name: "descriptor metric_aggregation_temporality",
+			path: []common.Field{
+				{
+					Name: "descriptor",
+				},
+				{
+					Name: "metric_aggregation_temporality",
+				},
+			},
+			orig: pmetric.MetricAggregationTemporalityCumulative,
+			new:  pmetric.MetricAggregationTemporalityDelta,
+			modified: func(metric pmetric.Metric) {
+				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+			},
+		},
+		{
+			name: "descriptor metric_is_monotonic",
+			path: []common.Field{
+				{
+					Name: "descriptor",
+				},
+				{
+					Name: "metric_is_monotonic",
+				},
+			},
+			orig: true,
+			new:  false,
+			modified: func(metric pmetric.Metric) {
+				metric.Sum().SetIsMonotonic(false)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := newPathGetSetter(tt.path)
+			assert.NoError(t, err)
+
+			metric := createDescriptorTelemetry()
+
+			ctx := metricTransformContext{
+				dataPoint: pmetric.NewNumberDataPoint(),
+				metric:    metric,
+				il:        pcommon.NewInstrumentationScope(),
+				resource:  pcommon.NewResource(),
+			}
+
+			got := accessor.Get(ctx)
+			assert.Equal(t, tt.orig, got)
+
+			accessor.Set(ctx, tt.new)
+
+			exMetric := createDescriptorTelemetry()
+			tt.modified(exMetric)
+
+			assert.Equal(t, exMetric, metric)
+		})
+	}
+}
+
+func createDescriptorTelemetry() pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName("name")
+	metric.SetDescription("description")
+	metric.SetUnit("unit")
+	metric.SetDataType(pmetric.MetricDataTypeSum)
+	metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	metric.Sum().SetIsMonotonic(true)
+	return metric
 }
 
 func createAttributeTelemetry(attributes pcommon.Map) {
