@@ -46,7 +46,7 @@ jobs:
       - name: Install Tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - run: make otelcontribcol
+      - run: make otelcontribcol-testbed
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:
@@ -114,7 +114,7 @@ jobs:
           path: bin/
       - run: chmod +x bin/*
       - name: Loadtest
-        run: make -C testbed run-tests 
+        run: make -C testbed run-tests
         env:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename

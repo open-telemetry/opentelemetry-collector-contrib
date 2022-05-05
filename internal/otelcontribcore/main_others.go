@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package main
+package otelcontribcore // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore"
 
 import "go.opentelemetry.io/collector/service"
 
