@@ -20,6 +20,8 @@
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+  to `otelcol/elasticsearchreceiver` (#9757)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
