@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Sample contains a simple http server that exports to the OpenTelemetry agent.
+// nolint:errcheck
 package main
 
 import (
