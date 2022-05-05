@@ -684,6 +684,445 @@ func createHistogramDataPointTelemetry() (interface{}, pcommon.InstrumentationSc
 	return histogramDataPoint, createIlTelemetry(), resource
 }
 
+func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
+	refExpoHistogramDataPoint, _, _ := createExpoHistogramDataPointTelemetry()
+
+	newExemplars, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes := createNewTelemetry()
+
+	newPositive := pmetric.NewBuckets()
+	newPositive.SetOffset(10)
+	newPositive.SetBucketCounts([]uint64{4, 5})
+
+	newNegative := pmetric.NewBuckets()
+	newNegative.SetOffset(10)
+	newNegative.SetBucketCounts([]uint64{4, 5})
+
+	tests := []struct {
+		name     string
+		path     []common.Field
+		orig     interface{}
+		new      interface{}
+		modified func(interface{}, pcommon.InstrumentationScope, pcommon.Resource)
+	}{
+		{
+			name: "start_time_unix_nano",
+			path: []common.Field{
+				{
+					Name: "start_time_unix_nano",
+				},
+			},
+			orig: int64(100_000_000),
+			new:  int64(200_000_000),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "time_unix_nano",
+			path: []common.Field{
+				{
+					Name: "time_unix_nano",
+				},
+			},
+			orig: int64(500_000_000),
+			new:  int64(200_000_000),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "flags",
+			path: []common.Field{
+				{
+					Name: "flags",
+				},
+			},
+			orig: pmetric.NewMetricDataPointFlags(),
+			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+			},
+		},
+		{
+			name: "count",
+			path: []common.Field{
+				{
+					Name: "count",
+				},
+			},
+			orig: uint64(2),
+			new:  uint64(3),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).SetCount(3)
+			},
+		},
+		{
+			name: "sum",
+			path: []common.Field{
+				{
+					Name: "sum",
+				},
+			},
+			orig: 10.1,
+			new:  10.2,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).SetSum(10.2)
+			},
+		},
+		{
+			name: "scale",
+			path: []common.Field{
+				{
+					Name: "scale",
+				},
+			},
+			orig: int32(1),
+			new:  int32(2),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).SetScale(2)
+			},
+		},
+		{
+			name: "zero_count",
+			path: []common.Field{
+				{
+					Name: "zero_count",
+				},
+			},
+			orig: uint64(1),
+			new:  uint64(2),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).SetZeroCount(2)
+			},
+		},
+		{
+			name: "positive",
+			path: []common.Field{
+				{
+					Name: "positive",
+				},
+			},
+			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Positive(),
+			new:  newPositive,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				newPositive.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Positive())
+			},
+		},
+		{
+			name: "positive offset",
+			path: []common.Field{
+				{
+					Name: "positive",
+				},
+				{
+					Name: "offset",
+				},
+			},
+			orig: int32(1),
+			new:  int32(2),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Positive().SetOffset(2)
+			},
+		},
+		{
+			name: "positive bucket_counts",
+			path: []common.Field{
+				{
+					Name: "positive",
+				},
+				{
+					Name: "bucket_counts",
+				},
+			},
+			orig: []uint64{1, 1},
+			new:  []uint64{0, 1, 2},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Positive().SetBucketCounts([]uint64{0, 1, 2})
+			},
+		},
+		{
+			name: "negative",
+			path: []common.Field{
+				{
+					Name: "negative",
+				},
+			},
+			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Negative(),
+			new:  newPositive,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				newPositive.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Negative())
+			},
+		},
+		{
+			name: "negative offset",
+			path: []common.Field{
+				{
+					Name: "negative",
+				},
+				{
+					Name: "offset",
+				},
+			},
+			orig: int32(1),
+			new:  int32(2),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Negative().SetOffset(2)
+			},
+		},
+		{
+			name: "negative bucket_counts",
+			path: []common.Field{
+				{
+					Name: "negative",
+				},
+				{
+					Name: "bucket_counts",
+				},
+			},
+			orig: []uint64{1, 1},
+			new:  []uint64{0, 1, 2},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Negative().SetBucketCounts([]uint64{0, 1, 2})
+			},
+		},
+		{
+			name: "exemplars",
+			path: []common.Field{
+				{
+					Name: "exemplars",
+				},
+			},
+			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Exemplars(),
+			new:  newExemplars,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				newExemplars.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Exemplars())
+			},
+		},
+		{
+			name: "attributes",
+			path: []common.Field{
+				{
+					Name: "attributes",
+				},
+			},
+			orig: refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes(),
+			new:  newAttrs,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Clear()
+				newAttrs.CopyTo(datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes())
+			},
+		},
+		{
+			name: "attributes string",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("str"),
+				},
+			},
+			orig: "val",
+			new:  "newVal",
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertString("str", "newVal")
+			},
+		},
+		{
+			name: "attributes bool",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("bool"),
+				},
+			},
+			orig: true,
+			new:  false,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertBool("bool", false)
+			},
+		},
+		{
+			name: "attributes int",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("int"),
+				},
+			},
+			orig: int64(10),
+			new:  int64(20),
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertInt("int", 20)
+			},
+		},
+		{
+			name: "attributes float",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("double"),
+				},
+			},
+			orig: 1.2,
+			new:  2.4,
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertDouble("double", 2.4)
+			},
+		},
+		{
+			name: "attributes bytes",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("bytes"),
+				},
+			},
+			orig: []byte{1, 3, 2},
+			new:  []byte{2, 3, 4},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+			},
+		},
+		{
+			name: "attributes array string",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_str"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_str")
+				return val.SliceVal()
+			}(),
+			new: []string{"new"},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_str", newArrStr)
+			},
+		},
+		{
+			name: "attributes array bool",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_bool"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_bool")
+				return val.SliceVal()
+			}(),
+			new: []bool{false},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_bool", newArrBool)
+			},
+		},
+		{
+			name: "attributes array int",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_int"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_int")
+				return val.SliceVal()
+			}(),
+			new: []int64{20},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_int", newArrInt)
+			},
+		},
+		{
+			name: "attributes array float",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_float"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_float")
+				return val.SliceVal()
+			}(),
+			new: []float64{2.0},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_float", newArrFloat)
+			},
+		},
+		{
+			name: "attributes array bytes",
+			path: []common.Field{
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_bytes"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refExpoHistogramDataPoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("arr_bytes")
+				return val.SliceVal()
+			}(),
+			new: [][]byte{{9, 6, 4}},
+			modified: func(datapoint interface{}, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				datapoint.(pmetric.ExponentialHistogramDataPoint).Attributes().Upsert("arr_bytes", newArrBytes)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := newPathGetSetter(tt.path)
+			assert.NoError(t, err)
+
+			numberDataPoint, il, resource := createExpoHistogramDataPointTelemetry()
+
+			ctx := metricTransformContext{
+				dataPoint: numberDataPoint,
+				metric:    pmetric.NewMetric(),
+				il:        il,
+				resource:  resource,
+			}
+
+			got := accessor.Get(ctx)
+			assert.Equal(t, tt.orig, got)
+
+			accessor.Set(ctx, tt.new)
+
+			exNumberDataPoint, exIl, exResource := createExpoHistogramDataPointTelemetry()
+			tt.modified(exNumberDataPoint, exIl, exResource)
+
+			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+			assert.Equal(t, exIl, il)
+			assert.Equal(t, exResource, resource)
+		})
+	}
+}
+
+func createExpoHistogramDataPointTelemetry() (interface{}, pcommon.InstrumentationScope, pcommon.Resource) {
+	expoHistogramDataPoint := pmetric.NewExponentialHistogramDataPoint()
+	expoHistogramDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
+	expoHistogramDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+	expoHistogramDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+	expoHistogramDataPoint.SetCount(2)
+	expoHistogramDataPoint.SetSum(10.1)
+	expoHistogramDataPoint.SetScale(1)
+	expoHistogramDataPoint.SetZeroCount(1)
+
+	expoHistogramDataPoint.Positive().SetBucketCounts([]uint64{1, 1})
+	expoHistogramDataPoint.Positive().SetOffset(1)
+
+	expoHistogramDataPoint.Negative().SetBucketCounts([]uint64{1, 1})
+	expoHistogramDataPoint.Negative().SetOffset(1)
+
+	createAttributeTelemetry(expoHistogramDataPoint.Attributes())
+
+	expoHistogramDataPoint.Exemplars().AppendEmpty().SetIntVal(0)
+
+	resource := pcommon.NewResource()
+	expoHistogramDataPoint.Attributes().CopyTo(resource.Attributes())
+
+	return expoHistogramDataPoint, createIlTelemetry(), resource
+}
+
 func createAttributeTelemetry(attributes pcommon.Map) {
 	attributes.UpsertString("str", "val")
 	attributes.UpsertBool("bool", true)
