@@ -82,8 +82,8 @@ type ExtractConfig struct {
 
 // FieldExtractConfig allows specifying an extraction rule to extract a value from exactly one field.
 //
-// The field accepts a list FilterExtractConfig map. The map accepts three keys
-//     tag_name, key and regex
+// The field accepts a list FilterExtractConfig map. The map accepts several keys
+//     from, tag_name, key, key_regex and regex
 //
 // - tag_name represents the name of the tag that will be added to the span.
 //   When not specified a default tag name will be used of the format:
@@ -91,6 +91,23 @@ type ExtractConfig struct {
 //       k8s.pod.labels.<label key>
 //   For example, if tag_name is not specified and the key is git_sha,
 //   then the attribute name will be `k8s.pod.annotations.git_sha`.
+//   When key_regex is present, tag_name supports back reference to both named capturing and positioned capturing.
+//   For example, if your pod spec contains the following labels,
+//
+//		app.kubernetes.io/component: mysql
+//		app.kubernetes.io/version: 5.7.21
+//
+//   and you'd like to add tags for all labels with prefix app.kubernetes.io/ and also trim the prefix,
+//   then you can specify the following extraction rules:
+//
+//   processors:
+//     k8sattributes:
+//       extract:
+//         labels:
+//         - name: $1
+//           key_regex: kubernetes.io/(.*)
+//
+//  this will add the `component` and `version` tags to the spans or metrics.
 //
 // - key represents the annotation name. This must exactly match an annotation name.
 //
@@ -103,9 +120,10 @@ type ExtractConfig struct {
 //   and you'd like to extract the GIT_SHA and the CI_BUILD values as tags, then you must
 //   specify the following two extraction rules:
 //
-//   procesors:
-//     k8s-tagger:
-//       annotations:
+//   processors:
+//     k8sattributes:
+//       extract:
+//         annotations:
 //         - name: git.sha
 //           key: kubernetes.io/change-cause
 //           regex: GIT_SHA=(?P<value>\w+)

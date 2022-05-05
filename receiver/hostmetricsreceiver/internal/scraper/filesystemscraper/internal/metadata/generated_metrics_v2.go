@@ -36,6 +36,36 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateFree
+	AttributeStateReserved
+	AttributeStateUsed
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateFree:
+		return "free"
+	case AttributeStateReserved:
+		return "reserved"
+	case AttributeStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"free":     AttributeStateFree,
+	"reserved": AttributeStateReserved,
+	"used":     AttributeStateUsed,
+}
+
 type metricSystemFilesystemInodesUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -287,13 +317,13 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordSystemFilesystemInodesUsageDataPoint adds a data point to system.filesystem.inodes.usage metric.
-func (mb *MetricsBuilder) RecordSystemFilesystemInodesUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemFilesystemInodesUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemFilesystemInodesUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemFilesystemInodesUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue.String())
 }
 
 // RecordSystemFilesystemUsageDataPoint adds a data point to system.filesystem.usage metric.
-func (mb *MetricsBuilder) RecordSystemFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemFilesystemUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemFilesystemUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue.String())
 }
 
 // RecordSystemFilesystemUtilizationDataPoint adds a data point to system.filesystem.utilization metric.
@@ -332,14 +362,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Free     string
-	Reserved string
-	Used     string
-}{
-	"free",
-	"reserved",
-	"used",
-}
