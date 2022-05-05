@@ -77,10 +77,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		}
 	}()
 
-	// Per component.Component Start instructions, for async operations we should not use the
-	// incoming context, it may get cancelled.
 	r.ocaStore = internal.NewOcaStore(
-		context.Background(),
 		r.consumer,
 		r.settings,
 		gcInterval(r.cfg.PrometheusConfig),
