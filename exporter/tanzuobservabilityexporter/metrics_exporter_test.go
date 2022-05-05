@@ -60,6 +60,8 @@ func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
 func createMockMetricsExporter(
 	sender *mockMetricSender) (component.MetricsExporter, error) {
 	cfg := createDefaultConfig()
+	ourConfig := cfg.(*Config)
+	ourConfig.Metrics.Endpoint = "http://localhost:2878"
 	creator := func(
 		hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 		return newMetricsConsumer(

@@ -43,6 +43,7 @@
 - `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
 - `examples/demo`: fix baggage not work in trace demo app. (#9418)
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
+- `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
 
 ## v0.50.0
 
