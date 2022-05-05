@@ -23,6 +23,7 @@
 - `internal/stanza`: Add support for `remove` operator (#9524)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 
 ### 🧰 Bug fixes 🧰
 
