@@ -15,6 +15,7 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
 
@@ -24,6 +25,7 @@
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
+- `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 
 ### 🧰 Bug fixes 🧰
