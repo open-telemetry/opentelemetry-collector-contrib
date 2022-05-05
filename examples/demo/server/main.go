@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Sample contains a simple http server that exports to the OpenTelemetry agent.
+// nolint:errcheck
 package main
 
 import (
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -101,7 +103,7 @@ func initProvider() func() {
 	)
 
 	// set global propagator to tracecontext (the default is no-op).
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	otel.SetTracerProvider(tracerProvider)
 
 	return func() {
@@ -155,7 +157,15 @@ func main() {
 		ctx := req.Context()
 		requestCount.Add(ctx, 1, commonLabels...)
 		span := trace.SpanFromContext(ctx)
-		span.SetAttributes(serverAttribute)
+		bag := baggage.FromContext(ctx)
+
+		baggageAttributes := []attribute.KeyValue{}
+		baggageAttributes = append(baggageAttributes, serverAttribute)
+		for _, member := range bag.Members() {
+			baggageAttributes = append(baggageAttributes, attribute.String("baggage key:"+member.Key(), member.Value()))
+		}
+		span.SetAttributes(baggageAttributes...)
+
 		w.Write([]byte("Hello World"))
 	})
 	wrappedHandler := otelhttp.NewHandler(handler, "/hello")

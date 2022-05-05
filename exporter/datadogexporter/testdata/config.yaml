@@ -21,6 +21,7 @@ exporters:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       site: datadoghq.eu
+      fail_on_invalid_key: true
 
     traces:
       sample_rate: 1
@@ -63,7 +64,7 @@ exporters:
   datadog/invalid:
     metrics:
       endpoint: "invalid:"
-    
+
     traces:
       endpoint: "invalid:"
 
