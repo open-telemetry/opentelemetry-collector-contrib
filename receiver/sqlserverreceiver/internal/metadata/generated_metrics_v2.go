@@ -103,6 +103,32 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributePageOperations specifies the a value page.operations attribute.
+type AttributePageOperations int
+
+const (
+	_ AttributePageOperations = iota
+	AttributePageOperationsRead
+	AttributePageOperationsWrite
+)
+
+// String returns the string representation of the AttributePageOperations.
+func (av AttributePageOperations) String() string {
+	switch av {
+	case AttributePageOperationsRead:
+		return "read"
+	case AttributePageOperationsWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributePageOperations is a helper map of string to AttributePageOperations attribute value.
+var MapAttributePageOperations = map[string]AttributePageOperations{
+	"read":  AttributePageOperationsRead,
+	"write": AttributePageOperationsWrite,
+}
+
 type metricSqlserverBatchRequestRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -509,14 +535,14 @@ func (m *metricSqlserverPageLifeExpectancy) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -905,14 +931,14 @@ func (m *metricSqlserverTransactionLogGrowthCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricSqlserverTransactionLogGrowthCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverTransactionLogGrowthCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -956,14 +982,14 @@ func (m *metricSqlserverTransactionLogShrinkCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricSqlserverTransactionLogShrinkCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverTransactionLogShrinkCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1005,14 +1031,14 @@ func (m *metricSqlserverTransactionLogUsage) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricSqlserverTransactionLogUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverTransactionLogUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1054,14 +1080,14 @@ func (m *metricSqlserverUserConnectionCount) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricSqlserverUserConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverUserConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1269,13 +1295,13 @@ func (mb *MetricsBuilder) RecordSqlserverPageLazyWriteRateDataPoint(ts pcommon.T
 }
 
 // RecordSqlserverPageLifeExpectancyDataPoint adds a data point to sqlserver.page.life_expectancy metric.
-func (mb *MetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverPageLifeExpectancy.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverPageOperationRateDataPoint adds a data point to sqlserver.page.operation.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.Timestamp, val float64, pageOperationsAttributeValue string) {
-	mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.Timestamp, val float64, pageOperationsAttributeValue AttributePageOperations) {
+	mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
 }
 
 // RecordSqlserverPageSplitRateDataPoint adds a data point to sqlserver.page.split.rate metric.
@@ -1309,22 +1335,22 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts
 }
 
 // RecordSqlserverTransactionLogGrowthCountDataPoint adds a data point to sqlserver.transaction_log.growth.count metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogGrowthCountDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordSqlserverTransactionLogGrowthCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverTransactionLogGrowthCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogShrinkCountDataPoint adds a data point to sqlserver.transaction_log.shrink.count metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogShrinkCountDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordSqlserverTransactionLogShrinkCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverTransactionLogShrinkCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogUsageDataPoint adds a data point to sqlserver.transaction_log.usage metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogUsageDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordSqlserverTransactionLogUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverTransactionLogUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverUserConnectionCountDataPoint adds a data point to sqlserver.user.connection.count metric.
-func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -1347,12 +1373,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributePageOperations are the possible values that the attribute "page.operations" can have.
-var AttributePageOperations = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}
