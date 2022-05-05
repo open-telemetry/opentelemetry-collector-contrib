@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `datadogexporter`: Replace HistogramMode defined as string with enum.
+- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 
 ### 🚩 Deprecations 🚩
 
@@ -14,14 +15,20 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+  to `otelcol/elasticsearchreceiver` (#9757)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
+- `transformprocessor`: Add support for functions to validate parameters (#9563)
+- `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 
 ### 🧰 Bug fixes 🧰
 
@@ -31,7 +38,11 @@
 - `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
 - `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
 - `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
+- `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
 - `nginxreceiver`: Include nginxreceiver in components (#9572)
+- `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
+- `examples/demo`: fix baggage not work in trace demo app. (#9418)
+- `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 - `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
 
 ## v0.50.0

@@ -110,7 +110,7 @@ func jThriftSpanToInternal(span *jaeger.Span, dest ptrace.Span) {
 	setInternalSpanStatus(attrs, dest.Status())
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
 		dest.SetKind(jSpanKindToInternal(spanKindAttr.StringVal()))
-		attrs.Delete(tracetranslator.TagSpanKind)
+		attrs.Remove(tracetranslator.TagSpanKind)
 	}
 
 	// drop the attributes slice if all of them were replaced during translation
@@ -163,7 +163,7 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest ptrace.SpanEventSlice) {
 		jThriftTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
 			event.SetName(name.StringVal())
-			attrs.Delete(tracetranslator.TagMessage)
+			attrs.Remove(tracetranslator.TagMessage)
 		}
 	}
 }

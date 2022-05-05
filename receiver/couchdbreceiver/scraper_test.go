@@ -27,12 +27,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
@@ -130,6 +132,35 @@ func TestStart(t *testing.T) {
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
 		require.NotNil(t, err)
 	})
+}
+
+func TestMetricSettings(t *testing.T) {
+	mockClient := new(MockClient)
+	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
+	cfg := &Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{},
+		Metrics: metadata.MetricsSettings{
+			CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
+			CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
+			CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
+			CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
+			CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
+			CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
+			CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
+			CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
+		},
+	}
+	scraper := newCouchdbScraper(componenttest.NewNopTelemetrySettings(), cfg)
+	scraper.client = mockClient
+
+	metrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.json"))
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expected, metrics))
+	require.Equal(t, metrics.MetricCount(), 1)
 }
 
 func getStats(filename string) (map[string]interface{}, error) {

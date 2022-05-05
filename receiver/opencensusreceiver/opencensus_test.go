@@ -14,6 +14,7 @@
 
 //lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
 
+// nolint:errcheck
 package opencensusreceiver
 
 import (
