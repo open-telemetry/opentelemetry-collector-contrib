@@ -35,6 +35,7 @@
 - `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
 - `nginxreceiver`: Include nginxreceiver in components (#9572)
 - `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
+- `examples/demo`: fix baggage not work in trace demo app. (#9418)
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 
 ## v0.50.0
