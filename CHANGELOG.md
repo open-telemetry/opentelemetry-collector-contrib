@@ -25,6 +25,7 @@
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
+- `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 
 ### 🧰 Bug fixes 🧰
 
