@@ -1405,6 +1405,38 @@ func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 
 	return summaryDataPoint
 }
+func createAttributeTelemetry(attributes pcommon.Map) {
+	attributes.UpsertString("str", "val")
+	attributes.UpsertBool("bool", true)
+	attributes.UpsertInt("int", 10)
+	attributes.UpsertDouble("double", 1.2)
+	attributes.UpsertBytes("bytes", []byte{1, 3, 2})
+
+	arrStr := pcommon.NewValueSlice()
+	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
+	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
+	attributes.Upsert("arr_str", arrStr)
+
+	arrBool := pcommon.NewValueSlice()
+	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
+	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
+	attributes.Upsert("arr_bool", arrBool)
+
+	arrInt := pcommon.NewValueSlice()
+	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
+	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
+	attributes.Upsert("arr_int", arrInt)
+
+	arrFloat := pcommon.NewValueSlice()
+	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
+	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
+	attributes.Upsert("arr_float", arrFloat)
+
+	arrBytes := pcommon.NewValueSlice()
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{1, 2, 3})
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{2, 3, 4})
+	attributes.Upsert("arr_bytes", arrBytes)
+}
 
 func Test_newPathGetSetter_Descriptor(t *testing.T) {
 	refMetric := createDescriptorTelemetry()
@@ -1565,46 +1597,6 @@ func createDescriptorTelemetry() pmetric.Metric {
 	metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	metric.Sum().SetIsMonotonic(true)
 	return metric
-}
-
-func createAttributeTelemetry(attributes pcommon.Map) {
-	attributes.UpsertString("str", "val")
-	attributes.UpsertBool("bool", true)
-	attributes.UpsertInt("int", 10)
-	attributes.UpsertDouble("double", 1.2)
-	attributes.UpsertBytes("bytes", []byte{1, 3, 2})
-
-	arrStr := pcommon.NewValueSlice()
-	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
-	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
-	attributes.Upsert("arr_str", arrStr)
-
-	arrBool := pcommon.NewValueSlice()
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-	attributes.Upsert("arr_bool", arrBool)
-
-	arrInt := pcommon.NewValueSlice()
-	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
-	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
-	attributes.Upsert("arr_int", arrInt)
-
-	arrFloat := pcommon.NewValueSlice()
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-	attributes.Upsert("arr_float", arrFloat)
-
-	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{1, 2, 3})
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{2, 3, 4})
-	attributes.Upsert("arr_bytes", arrBytes)
-}
-
-func createIlTelemetry() pcommon.InstrumentationScope {
-	il := pcommon.NewInstrumentationScope()
-	il.SetName("library")
-	il.SetVersion("version")
-	return il
 }
 
 func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pcommon.Value, pcommon.Value, pcommon.Value, pcommon.Value) {
