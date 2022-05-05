@@ -2041,6 +2041,20 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceOption applies changes to provided resource.
 type ResourceOption func(pcommon.Resource)
 
+// WithElasticsearchClusterName sets provided value as "elasticsearch.cluster.name" attribute for current resource.
+func WithElasticsearchClusterName(val string) ResourceOption {
+	return func(r pcommon.Resource) {
+		r.Attributes().UpsertString("elasticsearch.cluster.name", val)
+	}
+}
+
+// WithElasticsearchNodeName sets provided value as "elasticsearch.node.name" attribute for current resource.
+func WithElasticsearchNodeName(val string) ResourceOption {
+	return func(r pcommon.Resource) {
+		r.Attributes().UpsertString("elasticsearch.node.name", val)
+	}
+}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
@@ -2265,10 +2279,6 @@ var Attributes = struct {
 	DiskUsageState string
 	// DocumentState (The state of the document.)
 	DocumentState string
-	// ElasticsearchClusterName (The name of the elasticsearch cluster.)
-	ElasticsearchClusterName string
-	// ElasticsearchNodeName (The name of the elasticsearch node.)
-	ElasticsearchNodeName string
 	// FsDirection (The direction of filesystem IO.)
 	FsDirection string
 	// HealthStatus (The health status of the cluster.)
@@ -2291,8 +2301,6 @@ var Attributes = struct {
 	"direction",
 	"state",
 	"state",
-	"elasticsearch.cluster.name",
-	"elasticsearch.node.name",
 	"direction",
 	"status",
 	"name",
