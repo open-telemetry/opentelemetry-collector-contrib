@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.50.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.50.0
-	go.opentelemetry.io/collector/pdata v0.50.0
+	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
 )
 
 require (
@@ -19,9 +19,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.50.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.6.3 // indirect
-	go.opentelemetry.io/otel/metric v0.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.3 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect

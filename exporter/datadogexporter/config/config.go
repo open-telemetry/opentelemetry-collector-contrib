@@ -34,13 +34,6 @@ var (
 	errNoMetadata  = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 )
 
-// TODO: Import these from translator when we eliminate cyclic dependency.
-const (
-	histogramModeNoBuckets     = "nobuckets"
-	histogramModeCounters      = "counters"
-	histogramModeDistributions = "distributions"
-)
-
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
@@ -93,6 +86,30 @@ type MetricsConfig struct {
 	SummaryConfig SummaryConfig `mapstructure:"summaries"`
 }
 
+type HistogramMode string
+
+const (
+	// HistogramModeNoBuckets reports no bucket histogram metrics. .sum and .count metrics will still be sent
+	// if `send_count_sum_metrics` is enabled.
+	HistogramModeNoBuckets HistogramMode = "nobuckets"
+	// HistogramModeCounters reports histograms as Datadog counts, one metric per bucket.
+	HistogramModeCounters HistogramMode = "counters"
+	// HistogramModeDistributions reports histograms as Datadog distributions (recommended).
+	HistogramModeDistributions HistogramMode = "distributions"
+)
+
+var _ encoding.TextUnmarshaler = (*HistogramMode)(nil)
+
+func (hm *HistogramMode) UnmarshalText(in []byte) error {
+	switch mode := HistogramMode(in); mode {
+	case HistogramModeCounters, HistogramModeDistributions, HistogramModeNoBuckets:
+		*hm = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid histogram mode %q", mode)
+	}
+}
+
 // HistogramConfig customizes export of OTLP Histograms.
 type HistogramConfig struct {
 	// Mode for exporting histograms. Valid values are 'distributions', 'counters' or 'nobuckets'.
@@ -102,7 +119,7 @@ type HistogramConfig struct {
 	//    if `send_count_sum_metrics` is enabled.
 	//
 	// The current default is 'distributions'.
-	Mode string `mapstructure:"mode"`
+	Mode HistogramMode `mapstructure:"mode"`
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
 	// The current default is false.
@@ -110,7 +127,7 @@ type HistogramConfig struct {
 }
 
 func (c *HistogramConfig) validate() error {
-	if c.Mode == histogramModeNoBuckets && !c.SendCountSum {
+	if c.Mode == HistogramModeNoBuckets && !c.SendCountSum {
 		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
 	}
 	return nil
@@ -497,13 +514,6 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 		return err
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
-
-	switch c.Metrics.HistConfig.Mode {
-	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:
-		// Do nothing
-	default:
-		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
-	}
 
 	// Add warnings about autodetected environment variables.
 	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
