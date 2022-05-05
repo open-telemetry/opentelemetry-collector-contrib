@@ -289,9 +289,13 @@ jobs:
           - arm64
         exclude:
           - os: darwin
-            arch: [386, arm]
+            arch: 386
+          - os: darwin
+            arch: arm
           - os: windows
-            arch: [arm, arm64]
+            arch: arm
+          - os: windows
+            arch: arm64
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
