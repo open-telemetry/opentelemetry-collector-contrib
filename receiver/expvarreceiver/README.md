@@ -1,0 +1,49 @@
+# Expvar Receiver
+
+An Expvar Receiver scrapes metrics from [expvar](https://pkg.go.dev/expvar), 
+which exposes data in JSON format from an HTTP endpoint. The metrics are 
+extracted from the `expvar` variable [memstats](https://pkg.go.dev/runtime#MemStats), 
+which exposes various information about the Go runtime.
+
+> :construction: This receiver is in development and incomplete. It should not be used yet.
+
+## Configuration 
+
+### Default
+
+By default, without any configuration, a request will be sent to `http://localhost:8080/debug/vars` 
+every 60 seconds. The default configuration is achieved by the following:
+
+```yaml
+receivers:
+  expvar:
+```
+
+### Customising
+
+The following can be configured:
+- `http_client` - Configure the HTTP client for scraping the expvar variables. The full set of
+  configuration options for the client can be found in the core repo's
+  [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration)
+  - defaults: 
+    - `endpoint = http://localhost:8080/debug/vars` 
+    - `timeout = 3s`
+- `collection_interval` - Configure how often the metrics are scraped.
+  - default: 1m
+- `metrics` - Enable or disable metrics by name.
+
+### Example configuration
+
+```yaml
+receivers:
+  expvar:
+    http_client:
+      endpoint: "http://localhost:8000/custom/path"
+      timeout: 1s
+    collection_interval: 30s
+    metrics:
+      - name: example_metric.enabled
+        enabled: true
+      - name: example_metric.disabled
+        enabled: false
+```
