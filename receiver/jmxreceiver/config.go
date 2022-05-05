@@ -59,7 +59,7 @@ type Config struct {
 	Realm string `mapstructure:"realm"`
 	// Array of additional JARs to be added to the the class path when launching the JMX Metric Gatherer JAR
 	AdditionalJars []string `mapstructure:"additional_jars"`
-	// Map of resource attributees used by the Java SDK Autoconfigure to set resource attributes
+	// Map of resource attributes used by the Java SDK Autoconfigure to set resource attributes
 	ResourceAttributes map[string]string `mapstructure:"resource_attributes"`
 	// Log level used by the JMX metric gatherer. Should be one of:
 	// `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
