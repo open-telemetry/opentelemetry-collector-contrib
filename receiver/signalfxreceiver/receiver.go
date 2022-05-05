@@ -76,6 +76,8 @@ var (
 	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
 	errLogsNotConfigured     = initJSONResponse(responseErrLogsNotConfigured)
 	errMetricsNotConfigured  = initJSONResponse(responseErrMetricsNotConfigured)
+
+	translator = &signalfx.ToTranslator{}
 )
 
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
@@ -237,7 +239,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	md, err := signalfx.ToMetrics(msg.Datapoints)
+	md, err := translator.ToMetrics(msg.Datapoints)
 	if err != nil {
 		r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
 	}
