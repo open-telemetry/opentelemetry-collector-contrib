@@ -64,7 +64,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addNetworkMetrics(a.mb, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
 
-	a.m = append(a.m, a.mb.Emit(getNodeResourceOptions(s)...))
+	a.m = append(a.m, a.mb.Emit(metadata.WithK8sNodeName(s.NodeName)))
 }
 
 func (a *metricDataAccumulator) podStats(s stats.PodStats) {
@@ -78,7 +78,9 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addFilesystemMetrics(a.mb, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(a.mb, metadata.PodNetworkMetrics, s.Network, currentTime)
 
-	a.m = append(a.m, a.mb.Emit(getPodResourceOptions(s)...))
+	a.m = append(a.m, a.mb.Emit(metadata.WithK8sPodUID(s.PodRef.UID),
+		metadata.WithK8sPodName(s.PodRef.Name),
+		metadata.WithK8sNamespaceName(s.PodRef.Namespace)))
 }
 
 func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.ContainerStats) {
