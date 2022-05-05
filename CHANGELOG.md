@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `datadogexporter`: Replace HistogramMode defined as string with enum.
+- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚩 Deprecations 🚩
@@ -33,6 +34,7 @@
 - `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
 - `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
 - `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
+- `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
 - `nginxreceiver`: Include nginxreceiver in components (#9572)
 
 ## v0.50.0
