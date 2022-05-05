@@ -178,16 +178,21 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		var keyRegex *regexp.Regexp
+		var hasKeyRegexReference bool
 		if a.KeyRegex != "" {
 			var err error
 			keyRegex, err = regexp.Compile(a.KeyRegex)
 			if err != nil {
 				return rules, err
 			}
+
+			if keyRegex.NumSubexp() > 0 {
+				hasKeyRegexReference = true
+			}
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, KeyRegex: keyRegex, Regex: r, From: a.From,
+			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, Regex: r, From: a.From,
 		})
 	}
 	return rules, nil

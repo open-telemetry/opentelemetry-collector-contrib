@@ -108,7 +108,8 @@ func Test_transaction_pdata(t *testing.T) {
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
-		expectedNodeResource := CreateNodeAndResourcePdata("test", "localhost:8080", "http")
+		l := []labels.Label{{Name: "__scheme__", Value: "http"}}
+		expectedNodeResource := CreateNodeAndResourcePdata("test", "localhost:8080", l)
 		mds := sink.AllMetrics()
 		if len(mds) != 1 {
 			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())

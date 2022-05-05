@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package routingprocessor
 
 import (
@@ -855,18 +856,15 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog1")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog2")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()
 	require.NoError(t, exp.Start(ctx, host))

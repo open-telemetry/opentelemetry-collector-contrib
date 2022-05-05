@@ -1,0 +1,27 @@
+# This action requires that PRs run `make gotidy` to ensure
+# dependencies are up to date in reaction to any changes
+
+name: gotidy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+
+jobs:
+  gotidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check for go mod dependency changes
+        run: |
+          make gotidy
+          if [[ $(git diff --name-only | grep go\.mod) || $(git diff --name-only | grep go\.sum) ]]
+          then
+            echo "go.mod/go.sum deps changes detected."
+            echo "Please run `make gotidy`"
+            false
+          else
+            echo "No go module changes detected."
+          fi

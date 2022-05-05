@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
@@ -116,7 +117,7 @@ func (t *transactionPdata) initTransaction(labels labels.Labels) error {
 		t.job = job
 		t.instance = instance
 	}
-	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels().Get(model.SchemeLabel))
+	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels())
 	t.metricBuilder = newMetricBuilderPdata(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
 	t.isNew = false
 	return nil

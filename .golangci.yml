@@ -94,8 +94,6 @@ linters-settings:
       - kilometres
 
 linters:
-  disable:
-    - errcheck
   enable:
     - exportloopref
     - gofmt
@@ -107,6 +105,7 @@ linters:
     - staticcheck
     - unconvert
     - unparam
+    - errcheck
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

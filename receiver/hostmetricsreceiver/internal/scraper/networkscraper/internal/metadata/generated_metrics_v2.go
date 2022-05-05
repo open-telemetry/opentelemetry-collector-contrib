@@ -44,6 +44,54 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionReceive
+	AttributeDirectionTransmit
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionReceive:
+		return "receive"
+	case AttributeDirectionTransmit:
+		return "transmit"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"receive":  AttributeDirectionReceive,
+	"transmit": AttributeDirectionTransmit,
+}
+
+// AttributeProtocol specifies the a value protocol attribute.
+type AttributeProtocol int
+
+const (
+	_ AttributeProtocol = iota
+	AttributeProtocolTcp
+)
+
+// String returns the string representation of the AttributeProtocol.
+func (av AttributeProtocol) String() string {
+	switch av {
+	case AttributeProtocolTcp:
+		return "tcp"
+	}
+	return ""
+}
+
+// MapAttributeProtocol is a helper map of string to AttributeProtocol attribute value.
+var MapAttributeProtocol = map[string]AttributeProtocol{
+	"tcp": AttributeProtocolTcp,
+}
+
 type metricSystemNetworkConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -403,28 +451,28 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordSystemNetworkConnectionsDataPoint adds a data point to system.network.connections metric.
-func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pcommon.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, val, protocolAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pcommon.Timestamp, val int64, protocolAttributeValue AttributeProtocol, stateAttributeValue string) {
+	mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, val, protocolAttributeValue.String(), stateAttributeValue)
 }
 
 // RecordSystemNetworkDroppedDataPoint adds a data point to system.network.dropped metric.
-func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkErrorsDataPoint adds a data point to system.network.errors metric.
-func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkIoDataPoint adds a data point to system.network.io metric.
-func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkPacketsDataPoint adds a data point to system.network.packets metric.
-func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -455,19 +503,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Receive  string
-	Transmit string
-}{
-	"receive",
-	"transmit",
-}
-
-// AttributeProtocol are the possible values that the attribute "protocol" can have.
-var AttributeProtocol = struct {
-	Tcp string
-}{
-	"tcp",
-}
