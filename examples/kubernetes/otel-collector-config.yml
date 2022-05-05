@@ -22,7 +22,7 @@ receivers:
       # Parse CRI-O format
       - type: regex_parser
         id: parser-crio
-        regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+        regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*)[ ]{0,1}(?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
           parse_from: attributes.time
@@ -31,7 +31,7 @@ receivers:
       # Parse CRI-Containerd format
       - type: regex_parser
         id: parser-containerd
-        regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+        regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*)[ ]{0,1}(?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
           parse_from: attributes.time
