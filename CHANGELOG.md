@@ -34,6 +34,7 @@
 - `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
 - `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
 - `nginxreceiver`: Include nginxreceiver in components (#9572)
+- `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
 
 ## v0.50.0
 
