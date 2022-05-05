@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `datadogexporter`: Replace HistogramMode defined as string with enum.
+- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 
 ### 🚩 Deprecations 🚩
 
