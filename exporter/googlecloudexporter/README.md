@@ -159,6 +159,11 @@ Additional configuration added for the trace exporter:
 - `trace.use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
 - `trace.attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes http and service keys so that they appear more prominently in the UI.
 
+Additional configuration for the logging exporter:
+
+- `log.default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` 
+attribute set, the exporter will return an error processing that entry.
+
 Example:
 
 ```yaml
@@ -195,6 +200,9 @@ exporters:
       enabled: true
       num_consumers: 2
       queue_size: 50
+
+    log:
+      default_log_name: my-app
 ```
 
 Beyond standard YAML configuration as outlined in the sections that follow,
@@ -208,6 +216,118 @@ following proxy environment variables:
 If set at Collector start time then exporters, regardless of protocol,
 will or will not proxy traffic as defined by these environment variables.
 
+### Logging Exporter
+
+The logging exporter processes OpenTelemetry log entries and exports them to GCP Cloud Logging. Logs can be collected using one 
+of the opentelemetry-collector-contrib log receivers, such as the [filelogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver).
+
+Log entries must contain any Cloud Logging-specific fields as a matching OpenTelemetry attribute (as shown in examples from the 
+[logs data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#google-cloud-logging)). 
+These attributes can be parsed using the various [log collection operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available) available upstream.
+
+For example, the following config parses the [HTTPRequest field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest) from Apache log entries saved in `/var/log/apache.log`. 
+It also parses out the `timestamp` and inserts a non-default `log_name` attribute and GCP [MonitoredResource](https://cloud.google.com/logging/docs/reference/v2/rest/v2/MonitoredResource) attribute.
+
+```yaml
+receivers:
+  filelog:
+    include: [ /var/log/apache.log ]
+    start_at: beginning
+    operators:
+      - id: http_request_parser
+        type: regex_parser
+        regex: '(?m)^(?P<remoteIp>[^ ]*) (?P<host>[^ ]*) (?P<user>[^ ]*) \[(?P<time>[^\]]*)\] "(?P<requestMethod>\S+)(?: +(?P<requestUrl>[^\"]*?)(?: +(?P<protocol>\S+))?)?" (?P<status>[^ ]*) (?P<responseSize>[^ ]*)(?: "(?P<referer>[^\"]*)" "(?P<userAgent>[^\"]*)")?$'
+        parse_to: attributes["gcp.http_request"]
+        timestamp:
+          parse_from: attributes["gcp.http_request"].time
+          layout_type: strptime
+          layout: '%d/%b/%Y:%H:%M:%S %z'
+    converter:
+      max_flush_count: 100
+      flush_interval: 100ms
+
+exporters:
+  googlecloud:
+    project: my-gcp-project
+    log:
+      default_log_name: opentelemetry.io/collector-exported-log
+
+processors:
+  memory_limiter:
+      check_interval: 1s
+      limit_mib: 4000
+      spike_limit_mib: 800
+  resourcedetection:
+    detectors: [gce, gke]
+    timeout: 10s
+  attributes:
+    # Override the default log name.  `gcp.log_name` takes precedence
+    # over the `default_log_name` specified in the exporter.
+    actions:
+      - key: gcp.log_name
+        action: insert
+        value: apache-access-log
+
+service:
+    logs:
+      receivers: [filelog]
+      processors: [memory_limiter, resourcedetection, attributes]
+      exporters: [googlecloud]
+
+```
+
+This would parse logs of the following example structure:
+
+```
+127.0.0.1 - - [26/Apr/2022:22:53:36 +0800] "GET / HTTP/1.1" 200 1247
+```
+
+To the following GCP entry structure:
+
+```
+        {
+          "logName": "projects/my-gcp-project/logs/apache-access-log",
+          "resource": {
+            "type": "gce_instance",
+            "labels": {
+              "instance_id": "",
+              "zone": ""
+            }
+          },
+          "textPayload": "127.0.0.1 - - [26/Apr/2022:22:53:36 +0800] \"GET / HTTP/1.1\" 200 1247",
+          "timestamp": "2022-05-02T12:16:14.574548493Z",
+          "httpRequest": {
+            "requestMethod": "GET",
+            "requestUrl": "/",
+            "status": 200,
+            "responseSize": "1247",
+            "remoteIp": "127.0.0.1",
+            "protocol": "HTTP/1.1"
+          }
+        }
+```
+
+The logging exporter also supports the full range of [GCP log severity levels](https://cloud.google.com/logging/docs/reference/v2/rpc/google.logging.type#google.logging.type.LogSeverity), 
+which differ from the available [OpenTelemetry log severity levels](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#severity-fields). 
+To accommodate this, the following mapping is used to equate an incoming OpenTelemetry [`SeverityNumber`](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber) 
+to a matching GCP log severity:
+
+|OTel `SeverityNumber`/Name|GCP severity level|
+|---|---|
+|Undefined|Default|
+|1-4 / Trace|Debug|
+|5-8 / Debug|Debug|
+|9-10 / Info|Info|
+|11-12 / Info|Notice|
+|13-16 / Warn|Warning|
+|17-20 / Error|Error|
+|21-22 / Fatal|Critical|
+|23 / Fatal|Alert|
+|24 / Fatal|Emergency|
+
+The upstream [severity parser](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/severity.md) (along 
+with the [regex parser](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/regex_parser.md)) allows for 
+additional flexibility in parsing log severity from incoming entries.
 
 ## Recommendations
 
