@@ -28,8 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
-const instrumentationLibraryName = "otelcol/elasticsearch"
-
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
@@ -56,21 +54,18 @@ func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (er
 }
 
 func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	metrics := pmetric.NewMetrics()
-	rms := metrics.ResourceMetrics()
-
 	errs := &scrapererror.ScrapeErrors{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	r.scrapeNodeMetrics(ctx, now, rms, errs)
-	r.scrapeClusterMetrics(ctx, now, rms, errs)
+	r.scrapeNodeMetrics(ctx, now, errs)
+	r.scrapeClusterMetrics(ctx, now, errs)
 
-	return metrics, errs.Combine()
+	return r.mb.Emit(), errs.Combine()
 }
 
 // scrapeNodeMetrics scrapes adds node-level metrics to the given MetricSlice from the NodeStats endpoint
-func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommon.Timestamp, rms pmetric.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
+func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	if len(r.cfg.Nodes) == 0 {
 		return
 	}
@@ -82,14 +77,6 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 	}
 
 	for _, info := range nodeStats.Nodes {
-		rm := rms.AppendEmpty()
-		resourceAttrs := rm.Resource().Attributes()
-		resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, nodeStats.ClusterName)
-		resourceAttrs.InsertString(metadata.A.ElasticsearchNodeName, info.Name)
-
-		ilms := rm.ScopeMetrics().AppendEmpty()
-		ilms.Scope().SetName(instrumentationLibraryName)
-
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheNameFielddata)
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.QueryCache.MemorySizeInBy, metadata.AttributeCacheNameQuery)
 
@@ -171,11 +158,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordJvmThreadsCountDataPoint(now, info.JVMInfo.JVMThreadInfo.Count)
 
-		r.mb.EmitNodeMetrics(ilms.Metrics())
+		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
+			metadata.WithElasticsearchNodeName(info.Name))
 	}
 }
 
-func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pcommon.Timestamp, rms pmetric.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
+func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	if r.cfg.SkipClusterMetrics {
 		return
 	}
@@ -185,13 +173,6 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 		errs.AddPartial(4, err)
 		return
 	}
-
-	rm := rms.AppendEmpty()
-	resourceAttrs := rm.Resource().Attributes()
-	resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, clusterHealth.ClusterName)
-
-	ilms := rm.ScopeMetrics().AppendEmpty()
-	ilms.Scope().SetName(instrumentationLibraryName)
 
 	r.mb.RecordElasticsearchClusterNodesDataPoint(now, clusterHealth.NodeCount)
 
@@ -219,5 +200,5 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 		errs.AddPartial(1, fmt.Errorf("health status %s: %w", clusterHealth.Status, errUnknownClusterStatus))
 	}
 
-	r.mb.EmitClusterMetrics(ilms.Metrics())
+	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(clusterHealth.ClusterName))
 }
