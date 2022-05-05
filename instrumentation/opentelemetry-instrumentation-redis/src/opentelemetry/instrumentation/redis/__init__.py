@@ -38,6 +38,22 @@ Usage
     client = redis.StrictRedis(host="localhost", port=6379)
     client.get("my-key")
 
+Async Redis clients (i.e. redis.asyncio.Redis) are also instrumented in the same way:
+
+.. code:: python
+
+    from opentelemetry.instrumentation.redis import RedisInstrumentor
+    import redis.asyncio
+
+
+    # Instrument redis
+    RedisInstrumentor().instrument()
+
+    # This will report a span with the default settings
+    async def redis_get():
+        client = redis.asyncio.Redis(host="localhost", port=6379)
+        await client.get("my-key")
+
 The `instrument` method accepts the following keyword args:
 
 tracer_provider (TracerProvider) - an optional tracer provider
@@ -101,6 +117,10 @@ _RequestHookT = typing.Optional[
 _ResponseHookT = typing.Optional[
     typing.Callable[[Span, redis.connection.Connection, Any], None]
 ]
+
+_REDIS_ASYNCIO_VERSION = (4, 2, 0)
+if redis.VERSION >= _REDIS_ASYNCIO_VERSION:
+    import redis.asyncio
 
 
 def _set_connection_attributes(span, conn):
@@ -176,6 +196,22 @@ def _instrument(
         f"{pipeline_class}.immediate_execute_command",
         _traced_execute_command,
     )
+    if redis.VERSION >= _REDIS_ASYNCIO_VERSION:
+        wrap_function_wrapper(
+            "redis.asyncio",
+            f"{redis_class}.execute_command",
+            _traced_execute_command,
+        )
+        wrap_function_wrapper(
+            "redis.asyncio.client",
+            f"{pipeline_class}.execute",
+            _traced_execute_pipeline,
+        )
+        wrap_function_wrapper(
+            "redis.asyncio.client",
+            f"{pipeline_class}.immediate_execute_command",
+            _traced_execute_command,
+        )
 
 
 class RedisInstrumentor(BaseInstrumentor):
@@ -222,3 +258,8 @@ class RedisInstrumentor(BaseInstrumentor):
             unwrap(redis.Redis, "pipeline")
             unwrap(redis.client.Pipeline, "execute")
             unwrap(redis.client.Pipeline, "immediate_execute_command")
+        if redis.VERSION >= _REDIS_ASYNCIO_VERSION:
+            unwrap(redis.asyncio.Redis, "execute_command")
+            unwrap(redis.asyncio.Redis, "pipeline")
+            unwrap(redis.asyncio.client.Pipeline, "execute")
+            unwrap(redis.asyncio.client.Pipeline, "immediate_execute_command")
