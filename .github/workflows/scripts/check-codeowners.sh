@@ -31,7 +31,7 @@ check_code_owner_existence() {
   MISSING_COMPONENTS=0
   for module in ${MODULES}
   do
-    if ! grep -q "^$module" "$CODEOWNERS"; then
+    if ! grep -q "^$module " "$CODEOWNERS"; then
       # Account for parent folders which implicitly include 
       # sub folders e.g. 'internal/aws' is listed in $CODEOWNERS
       # which accounts for internal/aws/awsutil, internal/aws/k8s etc.
