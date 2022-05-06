@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -46,28 +47,55 @@ type Config struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
+func (c *Config) hasMetricsEndpoint() bool {
+	return c.Metrics.Endpoint != ""
+}
+
+func (c *Config) hasTracesEndpoint() bool {
+	return c.Traces.Endpoint != ""
+}
+
+func (c *Config) parseMetricsEndpoint() (hostName string, port int, err error) {
+	return parseEndpoint(c.Metrics.Endpoint)
+}
+
+func (c *Config) parseTracesEndpoint() (hostName string, port int, err error) {
+	return parseEndpoint(c.Traces.Endpoint)
+}
+
 func (c *Config) Validate() error {
-	tracesURL, err := parseEndpoint("traces", c.Traces.Endpoint)
-	if err != nil {
-		return err
+	var tracesHostName, metricsHostName string
+	var err error
+	if c.hasTracesEndpoint() {
+		tracesHostName, _, err = c.parseTracesEndpoint()
+		if err != nil {
+			return fmt.Errorf("Failed to parse traces.endpoint: %v", err)
+		}
 	}
-	metricsURL, err := parseEndpoint("metrics", c.Metrics.Endpoint)
-	if err != nil {
-		return err
+	if c.hasMetricsEndpoint() {
+		metricsHostName, _, err = c.parseMetricsEndpoint()
+		if err != nil {
+			return fmt.Errorf("Failed to parse metrics.endpoint: %v", err)
+		}
 	}
-	if tracesURL.Hostname() != metricsURL.Hostname() {
+	if c.hasTracesEndpoint() && c.hasMetricsEndpoint() && tracesHostName != metricsHostName {
 		return errors.New("host for metrics and traces must be the same")
 	}
 	return nil
 }
 
-func parseEndpoint(name string, endpoint string) (*url.URL, error) {
+func parseEndpoint(endpoint string) (hostName string, port int, err error) {
 	if endpoint == "" {
-		return nil, fmt.Errorf("A non-empty %s.endpoint is required", name)
+		return "", 0, errors.New("a non-empty endpoint is required")
 	}
 	u, err := url.Parse(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("invalid %s.endpoint %s", name, err)
+		return "", 0, err
 	}
-	return u, nil
+	port, err = strconv.Atoi(u.Port())
+	if err != nil {
+		return "", 0, errors.New("valid port required")
+	}
+	hostName = u.Hostname()
+	return hostName, port, nil
 }
