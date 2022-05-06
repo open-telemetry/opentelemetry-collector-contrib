@@ -25,10 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-var idSeq int64
-
-// OcaStore translates Prometheus scraping diffs into OpenCensus format.
-type OcaStore struct {
+// appendable translates Prometheus scraping diffs into OpenTelemetry format.
+type appendable struct {
 	sink                 consumer.Metrics
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
@@ -39,20 +37,20 @@ type OcaStore struct {
 	settings component.ReceiverCreateSettings
 }
 
-// NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(
+// NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
+func NewAppendable(
 	sink consumer.Metrics,
 	set component.ReceiverCreateSettings,
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
-	externalLabels labels.Labels) *OcaStore {
+	externalLabels labels.Labels) storage.Appendable {
 	var jobsMap *JobsMap
 	if !useStartTimeMetric {
 		jobsMap = NewJobsMap(gcInterval)
 	}
-	return &OcaStore{
+	return &appendable{
 		sink:                 sink,
 		settings:             set,
 		jobsMap:              jobsMap,
@@ -63,22 +61,6 @@ func NewOcaStore(
 	}
 }
 
-func (o *OcaStore) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(
-		ctx,
-		&txConfig{
-			jobsMap:              o.jobsMap,
-			useStartTimeMetric:   o.useStartTimeMetric,
-			startTimeMetricRegex: o.startTimeMetricRegex,
-			receiverID:           o.receiverID,
-			sink:                 o.sink,
-			externalLabels:       o.externalLabels,
-			settings:             o.settings,
-		},
-	)
-
-}
-
-// Close OcaStore as well as the internal metadataService.
-func (o *OcaStore) Close() {
+func (o *appendable) Appender(ctx context.Context) storage.Appender {
+	return newTransaction(ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverID, o.sink, o.externalLabels, o.settings)
 }
