@@ -17,7 +17,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/common/model"
@@ -34,7 +33,6 @@ import (
 )
 
 type transaction struct {
-	id                   int64
 	isNew                bool
 	ctx                  context.Context
 	useStartTimeMetric   bool
@@ -43,7 +41,6 @@ type transaction struct {
 	externalLabels       labels.Labels
 	nodeResource         *pcommon.Resource
 	logger               *zap.Logger
-	receiverID           config.ComponentID
 	metricBuilder        *metricBuilder
 	job, instance        string
 	jobsMap              *JobsMap
@@ -51,29 +48,25 @@ type transaction struct {
 	startTimeMs          int64
 }
 
-type txConfig struct {
-	jobsMap              *JobsMap
-	useStartTimeMetric   bool
-	startTimeMetricRegex string
-	receiverID           config.ComponentID
-	sink                 consumer.Metrics
-	externalLabels       labels.Labels
-	settings             component.ReceiverCreateSettings
-}
-
-func newTransaction(ctx context.Context, txc *txConfig) *transaction {
+func newTransaction(
+	ctx context.Context,
+	jobsMap *JobsMap,
+	useStartTimeMetric bool,
+	startTimeMetricRegex string,
+	receiverID config.ComponentID,
+	sink consumer.Metrics,
+	externalLabels labels.Labels,
+	settings component.ReceiverCreateSettings) *transaction {
 	return &transaction{
-		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
 		isNew:                true,
-		sink:                 txc.sink,
-		jobsMap:              txc.jobsMap,
-		useStartTimeMetric:   txc.useStartTimeMetric,
-		startTimeMetricRegex: txc.startTimeMetricRegex,
-		receiverID:           txc.receiverID,
-		externalLabels:       txc.externalLabels,
-		logger:               txc.settings.Logger,
-		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: txc.receiverID, Transport: transport, ReceiverCreateSettings: txc.settings}),
+		sink:                 sink,
+		jobsMap:              jobsMap,
+		useStartTimeMetric:   useStartTimeMetric,
+		startTimeMetricRegex: startTimeMetricRegex,
+		externalLabels:       externalLabels,
+		logger:               settings.Logger,
+		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: settings}),
 	}
 }
 
