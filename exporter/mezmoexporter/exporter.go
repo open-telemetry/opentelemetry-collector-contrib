@@ -101,7 +101,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 				s, _ = log.Attributes().Get("appname")
 				var app = s.StringVal()
 
-				var line = MezmoLogLine{
+				line := MezmoLogLine{
 					Timestamp: log.Timestamp().AsTime().UTC().UnixMilli(),
 					Line:      truncateString(log.Body().StringVal(), maxMessageSize),
 					App:       truncateString(app, maxAppnameLen),
