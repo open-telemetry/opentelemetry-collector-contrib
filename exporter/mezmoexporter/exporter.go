@@ -148,6 +148,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
+	// TODO When the Mezmo backend requirement to have a `hostname` value in the URI is removed, this hostname will no longer be needed.
 	var hostname = "otel"
 
 	url := fmt.Sprintf("%s?hostname=%s", m.config.IngestURL, hostname)
