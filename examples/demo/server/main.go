@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Sample contains a simple http server that exports to the OpenTelemetry agent.
-// nolint:errcheck
+
 package main
 
 import (
@@ -141,6 +141,7 @@ func main() {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		//  random sleep to simulate latency
 		var sleep int64
+
 		switch modulus := time.Now().Unix() % 5; modulus {
 		case 0:
 			sleep = rng.Int63n(2000)
@@ -166,12 +167,18 @@ func main() {
 		}
 		span.SetAttributes(baggageAttributes...)
 
-		w.Write([]byte("Hello World"))
+		if _, err := w.Write([]byte("Hello World")); err != nil {
+			http.Error(w, "write operation failed.", http.StatusInternalServerError)
+			return
+		}
+
 	})
 	wrappedHandler := otelhttp.NewHandler(handler, "/hello")
 
 	// serve up the wrapped handler
 	http.Handle("/hello", wrappedHandler)
-	http.ListenAndServe(":7080", nil)
+	if err := http.ListenAndServe(":7080", nil); err != nil {
+		handleErr(err, "server failed to serve")
+	}
 
 }
