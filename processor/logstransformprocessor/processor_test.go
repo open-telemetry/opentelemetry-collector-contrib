@@ -75,7 +75,7 @@ type testLogMessage struct {
 }
 
 func TestLogsTransformProcessor(t *testing.T) {
-	baseMessage := pcommon.NewValueString("2022-01-01 01:02:03 INFO this is a test")
+	baseMessage := pcommon.NewValueString("2022-01-01 01:02:03 INFO this is a test message")
 	spanID := pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	traceID := pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	infoSeverityText := "Info"
@@ -111,7 +111,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 					severity:     plog.SeverityNumberINFO,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pdata.Value{
-						"msg":  pcommon.NewValueString("this is a test"),
+						"msg":  pcommon.NewValueString("this is a test message"),
 						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
 						"sev":  pcommon.NewValueString("INFO"),
 					},
@@ -126,7 +126,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 					severity:     plog.SeverityNumberINFO,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pdata.Value{
-						"msg":  pcommon.NewValueString("this is a test"),
+						"msg":  pcommon.NewValueString("this is a test message"),
 						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
 						"sev":  pcommon.NewValueString("INFO"),
 					},
