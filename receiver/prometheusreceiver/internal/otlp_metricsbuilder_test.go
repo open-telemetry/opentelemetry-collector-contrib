@@ -27,14 +27,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func runBuilderStartTimeTestsPdata(t *testing.T, tests []buildTestDataPdata,
+func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 	startTimeMetricRegex string, expectedBuilderStartTime float64) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for _, page := range tt.inputs {
-				b := newMetricBuilderPdata(mc, true, startTimeMetricRegex, zap.NewNop(), 0)
+				b := newMetricBuilder(mc, true, startTimeMetricRegex, zap.NewNop(), 0)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -52,7 +52,7 @@ func runBuilderStartTimeTestsPdata(t *testing.T, tests []buildTestDataPdata,
 
 func Test_startTimeMetricMatch_pdata(t *testing.T) {
 	matchBuilderStartTime := 123.456
-	matchTests := []buildTestDataPdata{
+	matchTests := []buildTestData{
 		{
 			name: "prefix_match",
 			inputs: []*testScrapedPage{
@@ -76,7 +76,7 @@ func Test_startTimeMetricMatch_pdata(t *testing.T) {
 			},
 		},
 	}
-	nomatchTests := []buildTestDataPdata{
+	nomatchTests := []buildTestData{
 		{
 			name: "nomatch1",
 			inputs: []*testScrapedPage{
@@ -101,11 +101,11 @@ func Test_startTimeMetricMatch_pdata(t *testing.T) {
 		},
 	}
 
-	runBuilderStartTimeTestsPdata(t, matchTests, "^(.+_)*process_start_time_seconds$", matchBuilderStartTime)
-	runBuilderStartTimeTestsPdata(t, nomatchTests, "^(.+_)*process_start_time_seconds$", defaultBuilderStartTime)
+	runBuilderStartTimeTests(t, matchTests, "^(.+_)*process_start_time_seconds$", matchBuilderStartTime)
+	runBuilderStartTimeTests(t, nomatchTests, "^(.+_)*process_start_time_seconds$", defaultBuilderStartTime)
 }
 
-func TestGetBoundaryPdata(t *testing.T) {
+func TestGetBoundary(t *testing.T) {
 	tests := []struct {
 		name      string
 		mtype     pmetric.MetricDataType
@@ -166,7 +166,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := getBoundaryPdata(tt.mtype, tt.labels)
+			value, err := getBoundary(tt.mtype, tt.labels)
 			if tt.wantErr != "" {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.wantErr)
@@ -179,7 +179,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 	}
 }
 
-func TestConvToPdataMetricType(t *testing.T) {
+func TestConvToMetricType(t *testing.T) {
 	tests := []struct {
 		name  string
 		mtype textparse.MetricType
@@ -225,13 +225,13 @@ func TestConvToPdataMetricType(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := convToPdataMetricType(tt.mtype)
+			got := convToMetricType(tt.mtype)
 			require.Equal(t, got.String(), tt.want.String())
 		})
 	}
 }
 
-func TestIsUsefulLabelPdata(t *testing.T) {
+func TestIsUsefulLabel(t *testing.T) {
 	tests := []struct {
 		name      string
 		mtypes    []pmetric.MetricDataType
@@ -313,7 +313,7 @@ func TestIsUsefulLabelPdata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, mtype := range tt.mtypes {
 				for _, labelKey := range tt.labelKeys {
-					got := isUsefulLabelPdata(mtype, labelKey)
+					got := isUsefulLabel(mtype, labelKey)
 					assert.Equal(t, got, tt.want)
 				}
 			}
@@ -321,14 +321,14 @@ func TestIsUsefulLabelPdata(t *testing.T) {
 	}
 }
 
-type buildTestDataPdata struct {
+type buildTestData struct {
 	name   string
 	inputs []*testScrapedPage
 	wants  func() []*pmetric.MetricSlice
 }
 
 func Test_OTLPMetricBuilder_counters(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "single-item",
 			inputs: []*testScrapedPage{
@@ -462,10 +462,10 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
-func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
+func runBuilderTests(t *testing.T, tests []buildTestData) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wants := tt.wants()
@@ -473,7 +473,7 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), startTs)
+				b := newMetricBuilder(mc, true, "", zap.NewNop(), startTs)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				b.intervalStartTimeMs = startTs
 				for _, pt := range page.pts {
@@ -483,14 +483,14 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 				}
 				metrics, _, _, err := b.Build()
 				assert.NoError(t, err)
-				assertEquivalentMetricsPdata(t, wants[i], metrics)
+				assertEquivalentMetrics(t, wants[i], metrics)
 				st += interval
 			}
 		})
 	}
 }
 
-func assertEquivalentMetricsPdata(t *testing.T, want, got *pmetric.MetricSlice) {
+func assertEquivalentMetrics(t *testing.T, want, got *pmetric.MetricSlice) {
 	if !assert.Equal(t, want.Len(), got.Len()) {
 		return
 	}
@@ -513,7 +513,7 @@ var (
 )
 
 func Test_OTLPMetricBuilder_gauges(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "one-gauge",
 			inputs: []*testScrapedPage{
@@ -636,11 +636,11 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 func Test_OTLPMetricBuilder_untype(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "one-unknown",
 			inputs: []*testScrapedPage{
@@ -729,11 +729,11 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 func Test_OTLPMetricBuilder_histogram(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "single item",
 			inputs: []*testScrapedPage{
@@ -1031,11 +1031,11 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 func Test_OTLPMetricBuilder_summary(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "no-sum-and-count",
 			inputs: []*testScrapedPage{
@@ -1172,13 +1172,13 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 	mc := newMockMetadataCache(testMetadata)
-	mb := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+	mb := newMetricBuilder(mc, true, "", zap.NewNop(), 0)
 
 	dupLabels := labels.Labels{
 		{Name: "__name__", Value: "test"},
@@ -1198,7 +1198,7 @@ func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+		b := newMetricBuilder(mc, true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1212,7 +1212,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+		b := newMetricBuilder(mc, true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1221,7 +1221,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+		b := newMetricBuilder(mc, true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")

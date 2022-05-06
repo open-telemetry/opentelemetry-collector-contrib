@@ -32,7 +32,7 @@ type OcaStore struct {
 	ctx context.Context
 
 	sink                 consumer.Metrics
-	jobsMap              *JobsMapPdata
+	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
@@ -51,9 +51,9 @@ func NewOcaStore(
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
 	externalLabels labels.Labels) *OcaStore {
-	var jobsMap *JobsMapPdata
+	var jobsMap *JobsMap
 	if !useStartTimeMetric {
-		jobsMap = NewJobsMapPdata(gcInterval)
+		jobsMap = NewJobsMap(gcInterval)
 	}
 	return &OcaStore{
 		ctx:                  ctx,
@@ -68,7 +68,7 @@ func NewOcaStore(
 }
 
 func (o *OcaStore) Appender(ctx context.Context) storage.Appender {
-	return newTransactionPdata(
+	return newTransaction(
 		ctx,
 		&txConfig{
 			jobsMap:              o.jobsMap,
