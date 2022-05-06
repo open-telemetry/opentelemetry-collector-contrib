@@ -33,7 +33,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sync/atomic"
+
+	"go.uber.org/atomic"
 )
 
 // ReqSender is a direct port of
@@ -44,11 +45,7 @@ type ReqSender struct {
 	workerCount          uint
 	ctx                  context.Context
 	additionalDimensions map[string]string
-
-	RunningWorkers         int64
-	TotalRequestsStarted   int64
-	TotalRequestsCompleted int64
-	TotalRequestsFailed    int64
+	runningWorkers       *atomic.Int64
 }
 
 func NewReqSender(ctx context.Context, client *http.Client,
@@ -57,9 +54,10 @@ func NewReqSender(ctx context.Context, client *http.Client,
 		client:               client,
 		additionalDimensions: diagnosticDimensions,
 		// Unbuffered so that it blocks clients
-		requests:    make(chan *http.Request),
-		workerCount: workerCount,
-		ctx:         ctx,
+		requests:       make(chan *http.Request),
+		workerCount:    workerCount,
+		ctx:            ctx,
+		runningWorkers: atomic.NewInt64(0),
 	}
 }
 
@@ -72,7 +70,7 @@ func (rs *ReqSender) Send(req *http.Request) {
 	case rs.requests <- req:
 		return
 	default:
-		if atomic.LoadInt64(&rs.RunningWorkers) < int64(rs.workerCount) {
+		if rs.runningWorkers.Load() < int64(rs.workerCount) {
 			go rs.processRequests()
 		}
 
@@ -82,20 +80,17 @@ func (rs *ReqSender) Send(req *http.Request) {
 }
 
 func (rs *ReqSender) processRequests() {
-	atomic.AddInt64(&rs.RunningWorkers, int64(1))
-	defer atomic.AddInt64(&rs.RunningWorkers, int64(-1))
+	rs.runningWorkers.Add(1)
+	defer rs.runningWorkers.Add(-1)
 
 	for {
 		select {
 		case <-rs.ctx.Done():
 			return
 		case req := <-rs.requests:
-			atomic.AddInt64(&rs.TotalRequestsStarted, int64(1))
 			if err := rs.sendRequest(req); err != nil {
-				atomic.AddInt64(&rs.TotalRequestsFailed, int64(1))
 				continue
 			}
-			atomic.AddInt64(&rs.TotalRequestsCompleted, int64(1))
 		}
 	}
 }
