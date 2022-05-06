@@ -97,8 +97,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					return true
 				})
 
-				var s pcommon.Value
-				s, _ = log.Attributes().Get("appname")
+				s, _ := log.Attributes().Get("appname")
 				app := s.StringVal()
 
 				line := MezmoLogLine{
