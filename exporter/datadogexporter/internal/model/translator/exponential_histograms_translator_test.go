@@ -175,7 +175,8 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 			tr := newTranslator(t, zap.NewNop())
 			tr.cfg.SendCountSum = testInstance.sendCountSum
 			consumer := &mockFullConsumer{}
-			tr.MapMetrics(ctx, metrics, consumer)
+			err := tr.MapMetrics(ctx, metrics, consumer)
+			assert.NoError(t, err)
 			assert.ElementsMatch(t, testInstance.expectedMetrics, consumer.metrics)
 			// We don't necessarily have strict equality between expected and actual sketches
 			// for ExponentialHistograms, therefore we use testMatchingSketches to compare the

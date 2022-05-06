@@ -62,7 +62,10 @@ func (t *Translator) exponentialHistogramToDDSketch(
 
 	// Create DDSketch with the above mapping and stores
 	sketch := ddsketch.NewDDSketch(mapping, positiveStore, negativeStore)
-	sketch.AddWithCount(0, float64(p.ZeroCount()))
+	err = sketch.AddWithCount(0, float64(p.ZeroCount()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to add ZeroCount to DDSketch: %w", err)
+	}
 
 	return sketch, nil
 }
