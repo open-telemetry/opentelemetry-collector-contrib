@@ -1,11 +1,11 @@
 # Mezmo Exporter
 
-This exporter supports sending OpenTelemetry log data to [Mezmo](https://mezmo.com).
+This exporter supports sending OpenTelemetry log data to [LogDNA (Mezmo)](https://logdna.com).
 
 # Configuration options:
 
-- `endpoint` (required): LogService's [Region](https://cloud.tencent.com/document/product/614/56473).
-- `ingestion_key` (required): LogService's LogSet ID.
+- `ingest_url` (required): Use the default URL of `https://logs.logdna.com/log/ingest` unless a custom URL has been provided for your account.
+- `ingest_key` (required): Ingestion key used to send log data to LogDNA.  See [Ingestion Keys](https://docs.logdna.com/docs/ingestion-key) for more details.
 
 # Example:
 ## Simple Log Data
@@ -19,8 +19,8 @@ receivers:
 
 exporters:
   mezmo:
-    endpoint = "https://logdna.com/log/ingest"
-    ingestion_key = "00000000000000000000000000000000"
+    ingest_url = "https://logs.logdna.com/log/ingest"
+    ingest_key = "00000000000000000000000000000000"
 
 service:
   pipelines:
