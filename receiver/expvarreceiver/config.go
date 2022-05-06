@@ -17,17 +17,16 @@ package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"fmt"
 	"net/url"
-	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	HTTP                    *confighttp.HTTPClientSettings `mapstructure:"http_client"`
-	CollectionInterval      time.Duration                  `mapstructure:"collection_interval"`
-	MetricsConfig           []MetricConfig                 `mapstructure:"metrics"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	HTTP                                    *confighttp.HTTPClientSettings `mapstructure:"http_client"`
+	MetricsConfig                           []MetricConfig                 `mapstructure:"metrics"`
 }
 
 type MetricConfig struct {
