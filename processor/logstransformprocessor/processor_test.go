@@ -97,6 +97,13 @@ func TestLogsTransformProcessor(t *testing.T) {
 					flags:        uint32(0x01),
 					observedTime: parseTime("2006-01-02", "2022-01-02"),
 				},
+				{
+					body:         &baseMessage,
+					spanID:       &spanID,
+					traceID:      &traceID,
+					flags:        uint32(0x02),
+					observedTime: parseTime("2006-01-02", "2022-01-03"),
+				},
 			},
 			parsedMessages: []testLogMessage{
 				{
@@ -112,6 +119,21 @@ func TestLogsTransformProcessor(t *testing.T) {
 					traceID:      &traceID,
 					flags:        uint32(0x01),
 					observedTime: parseTime("2006-01-02", "2022-01-02"),
+					time:         parseTime("2006-01-02", "2022-01-01"),
+				},
+				{
+					body:         &baseMessage,
+					severity:     plog.SeverityNumberINFO,
+					severityText: &infoSeverityText,
+					attributes: &map[string]pdata.Value{
+						"msg":  pcommon.NewValueString("this is a test"),
+						"time": pcommon.NewValueString("2022-01-01"),
+						"sev":  pcommon.NewValueString("INFO"),
+					},
+					spanID:       &spanID,
+					traceID:      &traceID,
+					flags:        uint32(0x02),
+					observedTime: parseTime("2006-01-02", "2022-01-03"),
 					time:         parseTime("2006-01-02", "2022-01-01"),
 				},
 			},
@@ -136,7 +158,10 @@ func TestLogsTransformProcessor(t *testing.T) {
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
 
-			logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
+			//logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
+			for i := 0; i < logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(); i++ {
+				logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).Attributes().Sort()
+			}
 			assert.EqualValues(t, wantLogData, logs[0])
 		})
 	}
@@ -144,8 +169,9 @@ func TestLogsTransformProcessor(t *testing.T) {
 
 func generateLogData(messages []testLogMessage) pdata.Logs {
 	ld := testdata.GenerateLogsOneEmptyResourceLogs()
+	scope := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
 	for _, content := range messages {
-		log := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		log := scope.LogRecords().AppendEmpty()
 		if content.body != nil {
 			content.body.CopyTo(log.Body())
 		}

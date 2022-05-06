@@ -198,7 +198,6 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
 		case <-ctx.Done():
 			ltp.logger.Debug("emitter loop stopped")
 			return
-
 		case e, ok := <-ltp.emitter.OutChannel():
 			if !ok {
 				ltp.logger.Debug("emitter channel got closed")
