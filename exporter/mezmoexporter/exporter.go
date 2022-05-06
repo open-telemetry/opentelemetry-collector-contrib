@@ -63,14 +63,8 @@ func (m *mezmoExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := m.config.HTTPClientSettings.ToClient(host.GetExtensions(), m.settings)
-	if err != nil {
-		return err
-	}
-
-	m.client = client
-
-	return nil
+	m.client, err := m.config.HTTPClientSettings.ToClient(host.GetExtensions(), m.settings)
+	return err
 }
 
 func (m *mezmoExporter) stop(context.Context) (err error) {
@@ -91,10 +85,10 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 			logs := ills.At(j).LogRecords()
 
 			for k := 0; k < logs.Len(); k++ {
-				var log = logs.At(k)
+				log := logs.At(k)
 
 				// Convert Attributes to meta fields being mindful of the maxMetaDataSize restriction
-				var attrs = map[string]string{}
+				attrs := map[string]string{}
 				attrs["trace.id"] = log.TraceID().HexString()
 				attrs["span.id"] = log.SpanID().HexString()
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
@@ -102,11 +96,10 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					return true
 				})
 
-				var s pcommon.Value
-				s, _ = log.Attributes().Get("appname")
-				var app = s.StringVal()
+				s, _ := log.Attributes().Get("appname")
+				app := s.StringVal()
 
-				var line = MezmoLogLine{
+				line := MezmoLogLine{
 					Timestamp: log.Timestamp().AsTime().UTC().UnixMilli(),
 					Line:      truncateString(log.Body().StringVal(), maxMessageSize),
 					App:       truncateString(app, maxAppnameLen),
