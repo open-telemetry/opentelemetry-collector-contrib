@@ -36,7 +36,7 @@ check_code_owner_existence() {
       # sub folders e.g. 'internal/aws' is listed in $CODEOWNERS
       # which accounts for internal/aws/awsutil, internal/aws/k8s etc.
       PREFIX_MODULE_PATH=$(echo $module | cut -d/ -f 1-2)
-      if ! grep -q "^$PREFIX_MODULE_PATH" "$CODEOWNERS"; then
+      if ! grep -wq "^$PREFIX_MODULE_PATH/ " "$CODEOWNERS"; then
         ((MISSING_COMPONENTS=MISSING_COMPONENTS+1))
         echo "\"$module\" not included in CODEOWNERS"
       fi
