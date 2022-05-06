@@ -317,9 +317,91 @@ func Test_newFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "truncate resource negative",
+			name: "limit attributes",
 			inv: common.Invocation{
-				Function: "truncate_all",
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(1),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit attributes zero",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(0),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit attributes nothing",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(100),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit resource attributes",
+			inv: common.Invocation{
+				Function: "limit",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -334,7 +416,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(-1),
+						Int: intp(1),
 					},
 				},
 			},

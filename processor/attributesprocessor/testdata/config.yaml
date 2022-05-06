@@ -342,6 +342,20 @@ processors:
       - key: token
         action: delete
 
+  attributes/from_context:
+    actions:
+    - key: origin
+      from_context: metadata.origin
+      action: insert
+    - key: enduser.id
+      # The following uses `subject` attribute produced 
+      # by the server authenticator from `oidc` extension
+      # to set the identity of an exporter on spans.
+      # Refer to the server authenticator's documentation part of your pipeline 
+      # for more information about which attributes are available.
+      from_context: auth.subject
+      action: insert
+
 receivers:
   nop:
 
