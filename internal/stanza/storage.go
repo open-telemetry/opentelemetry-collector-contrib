@@ -20,26 +20,36 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {
+func GetStorageClient(ctx context.Context, id config.ComponentID, componentKind component.Kind, host component.Host) (storage.Client, error) {
 	var storageExtension storage.Extension
-	for _, ext := range host.GetExtensions() {
-		if se, ok := ext.(storage.Extension); ok {
-			if storageExtension != nil {
-				return errors.New("multiple storage extensions found")
+	if host != nil {
+		for _, ext := range host.GetExtensions() {
+			if se, ok := ext.(storage.Extension); ok {
+				if storageExtension != nil {
+					return nil, errors.New("multiple storage extensions found")
+				}
+				storageExtension = se
 			}
-			storageExtension = se
 		}
 	}
 
 	if storageExtension == nil {
-		r.storageClient = storage.NewNopClient()
-		return nil
+		return storage.NewNopClient(), nil
 	}
 
-	client, err := storageExtension.GetClient(ctx, component.KindReceiver, r.id, "")
+	return storageExtension.GetClient(ctx, componentKind, id, "")
+}
+
+func GetPersister(storageClient storage.Client) operator.Persister {
+	return &persister{storageClient}
+}
+
+func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {
+	client, err := GetStorageClient(ctx, r.id, component.KindReceiver, host)
 	if err != nil {
 		return err
 	}
@@ -49,7 +59,7 @@ func (r *receiver) setStorageClient(ctx context.Context, host component.Host) er
 }
 
 func (r *receiver) getPersister() operator.Persister {
-	return &persister{r.storageClient}
+	return GetPersister(r.storageClient)
 }
 
 type persister struct {

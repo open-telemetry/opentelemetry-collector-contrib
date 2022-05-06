@@ -15,6 +15,7 @@
 //go:build !windows
 // +build !windows
 
+// nolint:errcheck
 package podmanreceiver
 
 import (
