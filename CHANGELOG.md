@@ -63,6 +63,7 @@
 
 - `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
 - `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
+- `datadogexporter`: Deprecate `traces.sample_rate` setting. It was never used anywhere. (#9771)
 
 ### 🚀 New components 🚀
 
