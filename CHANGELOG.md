@@ -47,6 +47,7 @@
 - `examples/demo`: fix baggage not work in trace demo app. (#9418)
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 - `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
+- `filelogreceiver`: Update Kubernetes examples to fix native OTel logs collection issue where 0 length logs cause errors (#9754)
 
 ## v0.50.0
 
