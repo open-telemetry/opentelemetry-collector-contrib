@@ -127,7 +127,7 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 	mg.sortPoints()
 
 	// for OCAgent Proto, the bounds won't include +inf
-	// TODO: (@odeke-em) should we also check OpenTelemetry  for bucket bounds?
+	// TODO: (@odeke-em) should we also check OpenTelemetry Pdata for bucket bounds?
 	bounds := make([]float64, len(mg.complexValue)-1)
 	bucketCounts := make([]uint64, len(mg.complexValue))
 
