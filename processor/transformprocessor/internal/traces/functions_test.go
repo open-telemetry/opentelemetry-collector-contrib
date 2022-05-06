@@ -317,38 +317,6 @@ func Test_newFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "truncate resource negative",
-			inv: common.Invocation{
-				Function: "truncate_all",
-				Arguments: []common.Value{
-					{
-						Path: &common.Path{
-							Fields: []common.Field{
-								{
-									Name: "resource",
-								},
-								{
-									Name: "attributes",
-								},
-							},
-						},
-					},
-					{
-						Int: intp(-1),
-					},
-				},
-			},
-			want: func(span ptrace.Span) {
-				input.CopyTo(span)
-				span.Attributes().Clear()
-				attrs := pcommon.NewMap()
-				attrs.InsertString("test", "hello world")
-				attrs.InsertInt("test2", 3)
-				attrs.InsertBool("test3", true)
-				attrs.CopyTo(span.Attributes())
-			},
-		},
-		{
 			name: "limit attributes",
 			inv: common.Invocation{
 				Function: "limit",
