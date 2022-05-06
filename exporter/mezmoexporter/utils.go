@@ -14,8 +14,6 @@
 
 package mezmoexporter
 
-import "math/rand"
-
 // truncateString Truncates the given string to a maximum length provided by max.
 func truncateString(s string, max int) string {
 	if len(s) < max {
@@ -23,15 +21,4 @@ func truncateString(s string, max int) string {
 	}
 
 	return s[:max]
-}
-
-const letters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-// randString Returns a random string of the specified length.
-func randString(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
 }

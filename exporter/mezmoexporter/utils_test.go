@@ -15,6 +15,7 @@
 package mezmoexporter
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -53,4 +54,15 @@ func TestRandString(t *testing.T) {
 		var s = randString(16 * 1024)
 		require.Len(t, s, 16*1024)
 	})
+}
+
+const letters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+// randString Returns a random string of the specified length.
+func randString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
