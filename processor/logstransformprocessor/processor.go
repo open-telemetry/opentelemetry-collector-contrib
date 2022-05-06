@@ -17,6 +17,7 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"runtime"
 	"sync"
@@ -30,6 +31,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
 
+type outputType struct {
+	logs pdata.Logs
+	err  error
+}
+
 type logsTransformProcessor struct {
 	logger *zap.Logger
 	config *Config
@@ -40,7 +46,7 @@ type logsTransformProcessor struct {
 	converter     *stanza.Converter
 	fromConverter *stanza.FromPdataConverter
 	wg            sync.WaitGroup
-	outputChannel chan pdata.Logs
+	outputChannel chan outputType
 }
 
 func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
@@ -104,7 +110,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	ltp.fromConverter = stanza.NewFromPdataConverter(wkrCount, ltp.logger)
 	ltp.fromConverter.Start()
 
-	ltp.outputChannel = make(chan pdata.Logs)
+	ltp.outputChannel = make(chan outputType)
 
 	// Below we're starting 3 loops:
 	// * first which reads all the logs translated by the fromConverter and then forwards
@@ -141,12 +147,15 @@ func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld pdata.Log
 		case <-doneChan:
 			ltp.logger.Debug("loop stopped")
 			return ld, errors.New("processor interrupted")
-		case pLogs, ok := <-ltp.outputChannel:
+		case output, ok := <-ltp.outputChannel:
 			if !ok {
 				return ld, errors.New("processor encountered an issue receiving logs from stanza operators pipeline")
 			}
+			if output.err != nil {
+				return ld, err
+			}
 
-			return pLogs, nil
+			return output.logs, nil
 		}
 	}
 }
@@ -171,7 +180,8 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 			for _, e := range entries {
 				// Add item to the first operator of the pipeline manually
 				if err := ltp.pipe.Operators()[0].Process(ctx, e); err != nil {
-					ltp.logger.Error("unexpected error encountered adding entries to pipeline", zap.Error(err))
+					ltp.outputChannel <- outputType{err: fmt.Errorf("processor encountered an issue with the pipeline: %w", err)}
+					break
 				}
 			}
 		}
@@ -196,7 +206,7 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
 			}
 
 			if err := ltp.converter.Batch(e); err != nil {
-				ltp.logger.Error("unexpected error encountered batching logs to converter", zap.Error(err))
+				ltp.outputChannel <- outputType{err: fmt.Errorf("processor encountered an issue with the converter: %w", err)}
 			}
 		}
 	}
@@ -218,7 +228,7 @@ func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context) {
 				continue
 			}
 
-			ltp.outputChannel <- pLogs
+			ltp.outputChannel <- outputType{logs: pLogs, err: nil}
 		}
 	}
 }
