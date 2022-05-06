@@ -24,7 +24,6 @@ type TransformContext interface {
 	GetItem() interface{}
 	GetInstrumentationScope() pcommon.InstrumentationScope
 	GetResource() pcommon.Resource
-	GetDescriptor() interface{}
 }
 
 type ExprFunc func(ctx TransformContext) interface{}
