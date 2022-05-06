@@ -15,15 +15,22 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+  to `otelcol/elasticsearchreceiver` (#9757)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
+- `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
+- `transformprocessor`: Add support for functions to validate parameters (#9563)
+- `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
+- `processor/attributes`: Support attributes set by server authenticator (#9420)
 
 ### 🧰 Bug fixes 🧰
 
@@ -38,6 +45,8 @@
 - `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
 - `examples/demo`: fix baggage not work in trace demo app. (#9418)
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
+- `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
+- `filelogreceiver`: Update Kubernetes examples to fix native OTel logs collection issue where 0 length logs cause errors (#9754)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9087)
 
 ## v0.50.0
