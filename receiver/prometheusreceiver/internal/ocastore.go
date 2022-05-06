@@ -29,8 +29,6 @@ var idSeq int64
 
 // OcaStore translates Prometheus scraping diffs into OpenCensus format.
 type OcaStore struct {
-	ctx context.Context
-
 	sink                 consumer.Metrics
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
@@ -43,7 +41,6 @@ type OcaStore struct {
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
 func NewOcaStore(
-	ctx context.Context,
 	sink consumer.Metrics,
 	set component.ReceiverCreateSettings,
 	gcInterval time.Duration,
@@ -56,7 +53,6 @@ func NewOcaStore(
 		jobsMap = NewJobsMap(gcInterval)
 	}
 	return &OcaStore{
-		ctx:                  ctx,
 		sink:                 sink,
 		settings:             set,
 		jobsMap:              jobsMap,
