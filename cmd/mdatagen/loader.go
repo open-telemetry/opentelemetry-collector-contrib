@@ -27,8 +27,6 @@ import (
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type metricName string
@@ -80,9 +78,7 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 
 // String returns capitalized name of the ValueType.
 func (mvt ValueType) String() string {
-	return cases.Title(language.English).String(
-		cases.Title(language.English).String(mvt.ValueType.String()),
-	)
+	return strings.Title(strings.ToLower(mvt.ValueType.String())) // nolint SA1019
 }
 
 // Primitive returns name of primitive type for the ValueType.
