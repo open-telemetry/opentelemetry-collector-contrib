@@ -33,7 +33,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type transactionPdata struct {
+type transaction struct {
 	id                   int64
 	isNew                bool
 	ctx                  context.Context
@@ -44,15 +44,15 @@ type transactionPdata struct {
 	nodeResource         *pcommon.Resource
 	logger               *zap.Logger
 	receiverID           config.ComponentID
-	metricBuilder        *metricBuilderPdata
+	metricBuilder        *metricBuilder
 	job, instance        string
-	jobsMap              *JobsMapPdata
+	jobsMap              *JobsMap
 	obsrecv              *obsreport.Receiver
 	startTimeMs          int64
 }
 
 type txConfig struct {
-	jobsMap              *JobsMapPdata
+	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
@@ -61,8 +61,8 @@ type txConfig struct {
 	settings             component.ReceiverCreateSettings
 }
 
-func newTransactionPdata(ctx context.Context, txc *txConfig) *transactionPdata {
-	return &transactionPdata{
+func newTransaction(ctx context.Context, txc *txConfig) *transaction {
+	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
 		isNew:                true,
@@ -78,7 +78,7 @@ func newTransactionPdata(ctx context.Context, txc *txConfig) *transactionPdata {
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transactionPdata) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (pointCount storage.SeriesRef, err error) {
+func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (pointCount storage.SeriesRef, err error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -99,11 +99,11 @@ func (t *transactionPdata) Append(ref storage.SeriesRef, labels labels.Labels, a
 	return 0, t.metricBuilder.AddDataPoint(labels, atMs, value)
 }
 
-func (t *transactionPdata) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
+func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	return 0, nil
 }
 
-func (t *transactionPdata) initTransaction(labels labels.Labels) error {
+func (t *transaction) initTransaction(labels labels.Labels) error {
 	metadataCache, err := getMetadataCache(t.ctx)
 	if err != nil {
 		return err
@@ -117,13 +117,13 @@ func (t *transactionPdata) initTransaction(labels labels.Labels) error {
 		t.job = job
 		t.instance = instance
 	}
-	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels())
-	t.metricBuilder = newMetricBuilderPdata(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
+	t.nodeResource = CreateNodeAndResource(job, instance, metadataCache.SharedLabels())
+	t.metricBuilder = newMetricBuilder(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
 	t.isNew = false
 	return nil
 }
 
-func (t *transactionPdata) Commit() error {
+func (t *transaction) Commit() error {
 	if t.isNew {
 		return nil
 	}
@@ -144,10 +144,10 @@ func (t *transactionPdata) Commit() error {
 			return err
 		}
 		// Otherwise adjust the startTimestamp for all the metrics.
-		t.adjustStartTimestampPdata(metricsL)
+		t.adjustStartTimestamp(metricsL)
 	} else {
 		// TODO: Derive numPoints in this case.
-		_ = NewMetricsAdjusterPdata(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
+		_ = NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
 	}
 
 	if metricsL.Len() > 0 {
@@ -159,7 +159,7 @@ func (t *transactionPdata) Commit() error {
 	return nil
 }
 
-func (t *transactionPdata) Rollback() error {
+func (t *transaction) Rollback() error {
 	t.startTimeMs = -1
 	return nil
 }
@@ -170,7 +170,7 @@ func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(secs, nanos))
 }
 
-func (t transactionPdata) adjustStartTimestampPdata(metricsL *pmetric.MetricSlice) {
+func (t transaction) adjustStartTimestamp(metricsL *pmetric.MetricSlice) {
 	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
 	for i := 0; i < metricsL.Len(); i++ {
 		metric := metricsL.At(i)
@@ -205,7 +205,7 @@ func (t transactionPdata) adjustStartTimestampPdata(metricsL *pmetric.MetricSlic
 	}
 }
 
-func (t *transactionPdata) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetric.Metrics {
+func (t *transaction) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rms.ScopeMetrics().AppendEmpty()

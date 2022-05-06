@@ -162,7 +162,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricName, mc, zap.NewNop())
+			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
 				var lbls labels.Labels
 				if tv.extraLabel.Name != "" {
@@ -178,7 +178,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
 			sl := pmetric.NewMetricSlice()
-			mp.ToMetricPdata(&sl)
+			mp.ToMetric(&sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -378,7 +378,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc, zap.NewNop())
+			mp := newMetricFamily(tt.name, mc, zap.NewNop())
 			for _, lbs := range tt.labelsScrapes {
 				for _, scrape := range lbs.scrapes {
 					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
@@ -394,7 +394,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
 			sl := pmetric.NewMetricSlice()
-			mp.ToMetricPdata(&sl)
+			mp.ToMetric(&sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -467,7 +467,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricKind, mc, zap.NewNop())
+			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -477,7 +477,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
 			sl := pmetric.NewMetricSlice()
-			mp.ToMetricPdata(&sl)
+			mp.ToMetric(&sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
