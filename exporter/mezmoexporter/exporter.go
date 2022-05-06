@@ -89,7 +89,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 				log := logs.At(k)
 
 				// Convert Attributes to meta fields being mindful of the maxMetaDataSize restriction
-				var attrs = map[string]string{}
+				attrs := map[string]string{}
 				attrs["trace.id"] = log.TraceID().HexString()
 				attrs["span.id"] = log.SpanID().HexString()
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
