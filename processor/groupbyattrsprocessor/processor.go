@@ -204,7 +204,7 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map)
 }
 
 // Searches for metric with same name in the specified InstrumentationLibrary and returns it. If nothing is found, create it.
-func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric pmetric.Metric, gap *groupByAttrsProcessor) pmetric.Metric {
+func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric pmetric.Metric) pmetric.Metric {
 
 	// Loop through all metrics and try to find the one that matches with the one we search for
 	// (name and type)
@@ -235,15 +235,6 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
 		metric.Sum().SetIsMonotonic(searchedMetric.Sum().IsMonotonic())
 
-	case pmetric.MetricDataTypeGauge:
-	case pmetric.MetricDataTypeSummary:
-
-	default:
-		gap.logger.Error("Unhandled metric data type.",
-			zap.String("DataType", metric.DataType().String()),
-			zap.String("Name", metric.Name()),
-			zap.String("Unit", metric.Unit()),
-		)
 	}
 
 	return metric
@@ -276,6 +267,6 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResource, ilm.Scope())
 
 	// Return the metric in this resource
-	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric, gap)
+	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric)
 
 }
