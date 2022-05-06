@@ -31,6 +31,7 @@
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
+- `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
 
 ### 🧰 Bug fixes 🧰
 
