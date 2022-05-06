@@ -99,7 +99,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 
 				var s pcommon.Value
 				s, _ = log.Attributes().Get("appname")
-				var app = s.StringVal()
+				app := s.StringVal()
 
 				line := MezmoLogLine{
 					Timestamp: log.Timestamp().AsTime().UTC().UnixMilli(),
