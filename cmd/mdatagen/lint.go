@@ -19,6 +19,9 @@ import (
 	"strings"
 	"unicode"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/third_party/golint"
 )
 
@@ -30,7 +33,7 @@ func formatIdentifier(s string, exported bool) (string, error) {
 	// Convert various characters to . for strings.Title to operate on.
 	replace := strings.NewReplacer("_", ".", "-", ".", "<", ".", ">", ".", "/", ".", ":", ".")
 	str := replace.Replace(s)
-	str = strings.Title(str)
+	str = cases.Title(language.English).String(str)
 	str = strings.ReplaceAll(str, ".", "")
 
 	var word string
