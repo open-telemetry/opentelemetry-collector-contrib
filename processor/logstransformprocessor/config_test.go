@@ -44,13 +44,13 @@ func TestLoadConfig(t *testing.T) {
 			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
-					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
+					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
 					"severity": map[string]interface{}{
-						"parse_from": "body.sev",
+						"parse_from": "attributes.sev",
 					},
 					"timestamp": map[string]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "body.time",
+						"layout":     "%Y-%m-%d %H:%M:%S",
+						"parse_from": "attributes.time",
 					},
 				},
 			},
