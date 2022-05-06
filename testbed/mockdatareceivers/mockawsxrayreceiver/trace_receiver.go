@@ -107,7 +107,7 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 
 	var result map[string]interface{}
 
-	if err := json.Unmarshal(body, &result); err != nil {
+	if err = json.Unmarshal(body, &result); err != nil {
 		log.Fatalln(err)
 	}
 
