@@ -41,7 +41,7 @@ func createDefaultConfig() config.Exporter {
 
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
+		HTTPClientSettings: createDefaultHTTPClientSettings(),
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:      qs,
 	}
@@ -54,7 +54,7 @@ func createLogsExporter(ctx context.Context, settings component.ExporterCreateSe
 	}
 	expCfg := exporter.(*Config)
 
-	if err := expCfg.validate(); err != nil {
+	if err := expCfg.Validate(); err != nil {
 		return nil, err
 	}
 

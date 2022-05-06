@@ -29,19 +29,16 @@ const (
 	defaultTimeout time.Duration = 5 * time.Second
 
 	// defaultIngestURL
-	defaultIngestURL = "https://logdna.com/log/ingest"
+	defaultIngestURL = "https://logs.logdna.com/log/ingest"
 
 	// See https://docs.logdna.com/docs/ingestion#service-limits for details
 
 	// Maximum payload in bytes that can be POST'd to the REST endpoint
-	maxBodySize         = 10 * 1024 * 1024
-	maxMessageSize      = 16 * 1024
-	maxMetaDataSize     = 32 * 1024
-	maxHostnameLen      = 256
-	maxAppnameLen       = 512
-	maxLogLevelLen      = 80
-	maxTagLen           = 80
-	maxNestedFieldDepth = 3
+	maxBodySize     = 10 * 1024 * 1024
+	maxMessageSize  = 16 * 1024
+	maxMetaDataSize = 32 * 1024
+	maxAppnameLen   = 512
+	maxLogLevelLen  = 80
 )
 
 // Config defines configuration for Mezmo exporter.
@@ -58,14 +55,14 @@ type Config struct {
 	IngestKey string `mapstructure:"ingest_key"`
 }
 
-// CreateDefaultHTTPClientSettings returns default http client settings
-func CreateDefaultHTTPClientSettings() confighttp.HTTPClientSettings {
+// returns default http client settings
+func createDefaultHTTPClientSettings() confighttp.HTTPClientSettings {
 	return confighttp.HTTPClientSettings{
 		Timeout: defaultTimeout,
 	}
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	var err error
 	var parsed *url.URL
 
@@ -78,9 +75,5 @@ func (c *Config) validate() error {
 		return fmt.Errorf("\"ingest_url\" must contain a valid host")
 	}
 
-	return nil
-}
-
-func (c *Config) Validate() error {
 	return nil
 }

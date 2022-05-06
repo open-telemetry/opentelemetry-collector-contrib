@@ -87,7 +87,6 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		ills := resourceLogs.At(i).ScopeLogs()
-		//resource := resourceLogs.At(i).Resource()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
 
