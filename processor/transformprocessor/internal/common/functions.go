@@ -73,6 +73,9 @@ func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
 }
 
 func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
+	}
 	return func(ctx TransformContext) interface{} {
 		if limit < 0 {
 			return nil
@@ -104,6 +107,9 @@ func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
 }
 
 func limit(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
+	}
 	return func(ctx TransformContext) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
