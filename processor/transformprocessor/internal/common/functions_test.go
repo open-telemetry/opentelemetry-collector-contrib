@@ -134,6 +134,26 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "not int",
+			inv: Invocation{
+				Function: "limit",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						String: strp("not an int"),
+					},
+				},
+			},
+		},
+		{
 			name: "function call returns error",
 			inv: Invocation{
 				Function: "testing_error",
