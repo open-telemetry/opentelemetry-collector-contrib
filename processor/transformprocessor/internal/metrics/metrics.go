@@ -42,7 +42,7 @@ func (ctx metricTransformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
-func (ctx metricTransformContext) GetDescriptor() interface{} {
+func (ctx metricTransformContext) GetMetric() pmetric.Metric {
 	return ctx.metric
 }
 
@@ -88,23 +88,23 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		case "version":
 			return accessInstrumentationScopeVersion(), nil
 		}
-	case "descriptor":
+	case "metric":
 		if len(path) == 1 {
-			return accessDescriptor(), nil
+			return accessMetric(), nil
 		}
 		switch path[1].Name {
-		case "metric_name":
-			return accessDescriptorMetricName(), nil
-		case "metric_description":
-			return accessDescriptorMetricDescription(), nil
-		case "metric_unit":
-			return accessDescriptorMetricUnit(), nil
-		case "metric_type":
-			return accessDescriptorMetricType(), nil
-		case "metric_aggregation_temporality":
-			return accessDescriptorMetricAggTemporality(), nil
-		case "metric_is_monotonic":
-			return accessDescriptorMetricIsMonotonic(), nil
+		case "name":
+			return accessMetricName(), nil
+		case "description":
+			return accessMetricDescription(), nil
+		case "unit":
+			return accessMetricUnit(), nil
+		case "type":
+			return accessMetricType(), nil
+		case "aggregation_temporality":
+			return accessMetricAggTemporality(), nil
+		case "is_monotonic":
+			return accessMetricIsMonotonic(), nil
 		}
 	case "attributes":
 		mapKey := path[0].MapKey
@@ -240,75 +240,75 @@ func accessInstrumentationScopeVersion() pathGetSetter {
 	}
 }
 
-func accessDescriptor() pathGetSetter {
+func accessMetric() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric)
+			return ctx.(metricTransformContext).GetMetric()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric))
+				newMetric.CopyTo(ctx.(metricTransformContext).GetMetric())
 			}
 		},
 	}
 }
 
-func accessDescriptorMetricName() pathGetSetter {
+func accessMetricName() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).Name()
+			return ctx.(metricTransformContext).GetMetric().Name()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).SetName(str)
+				ctx.(metricTransformContext).GetMetric().SetName(str)
 			}
 		},
 	}
 }
 
-func accessDescriptorMetricDescription() pathGetSetter {
+func accessMetricDescription() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).Description()
+			return ctx.(metricTransformContext).GetMetric().Description()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).SetDescription(str)
+				ctx.(metricTransformContext).GetMetric().SetDescription(str)
 			}
 		},
 	}
 }
 
-func accessDescriptorMetricUnit() pathGetSetter {
+func accessMetricUnit() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).Unit()
+			return ctx.(metricTransformContext).GetMetric().Unit()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).SetUnit(str)
+				ctx.(metricTransformContext).GetMetric().SetUnit(str)
 			}
 		},
 	}
 }
 
-func accessDescriptorMetricType() pathGetSetter {
+func accessMetricType() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).DataType()
+			return ctx.(metricTransformContext).GetMetric().DataType()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if dataType, ok := val.(pmetric.MetricDataType); ok {
-				ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric).SetDataType(dataType)
+				ctx.(metricTransformContext).GetMetric().SetDataType(dataType)
 			}
 		},
 	}
 }
 
-func accessDescriptorMetricAggTemporality() pathGetSetter {
+func accessMetricAggTemporality() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			metric := ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric)
+			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return metric.Sum().AggregationTemporality()
@@ -321,7 +321,7 @@ func accessDescriptorMetricAggTemporality() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if newAggTemporality, ok := val.(pmetric.MetricAggregationTemporality); ok {
-				metric := ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric)
+				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetAggregationTemporality(newAggTemporality)
@@ -335,10 +335,10 @@ func accessDescriptorMetricAggTemporality() pathGetSetter {
 	}
 }
 
-func accessDescriptorMetricIsMonotonic() pathGetSetter {
+func accessMetricIsMonotonic() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			metric := ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric)
+			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return metric.Sum().IsMonotonic()
@@ -347,7 +347,7 @@ func accessDescriptorMetricIsMonotonic() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if newIsMonotonic, ok := val.(bool); ok {
-				metric := ctx.(metricTransformContext).GetDescriptor().(pmetric.Metric)
+				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetIsMonotonic(newIsMonotonic)

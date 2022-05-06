@@ -1433,8 +1433,8 @@ func createAttributeTelemetry(attributes pcommon.Map) {
 	attributes.Upsert("arr_bytes", arrBytes)
 }
 
-func Test_newPathGetSetter_Descriptor(t *testing.T) {
-	refMetric := createDescriptorTelemetry()
+func Test_newPathGetSetter_Metric(t *testing.T) {
+	refMetric := createMetricTelemetry()
 
 	newMetric := pmetric.NewMetric()
 	newMetric.SetName("new name")
@@ -1447,10 +1447,10 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 		modified func(metric pmetric.Metric)
 	}{
 		{
-			name: "descriptor",
+			name: "metric",
 			path: []common.Field{
 				{
-					Name: "descriptor",
+					Name: "metric",
 				},
 			},
 			orig: refMetric,
@@ -1460,13 +1460,13 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 			},
 		},
 		{
-			name: "descriptor metric_name",
+			name: "metric name",
 			path: []common.Field{
 				{
-					Name: "descriptor",
+					Name: "metric",
 				},
 				{
-					Name: "metric_name",
+					Name: "name",
 				},
 			},
 			orig: "name",
@@ -1476,13 +1476,13 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 			},
 		},
 		{
-			name: "descriptor metric_description",
+			name: "metric description",
 			path: []common.Field{
 				{
-					Name: "descriptor",
+					Name: "metric",
 				},
 				{
-					Name: "metric_description",
+					Name: "description",
 				},
 			},
 			orig: "description",
@@ -1492,13 +1492,13 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 			},
 		},
 		{
-			name: "descriptor metric_unit",
+			name: "metric unit",
 			path: []common.Field{
 				{
-					Name: "descriptor",
+					Name: "metric",
 				},
 				{
-					Name: "metric_unit",
+					Name: "unit",
 				},
 			},
 			orig: "unit",
@@ -1508,13 +1508,13 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 			},
 		},
 		{
-			name: "descriptor metric_type",
+			name: "metric type",
 			path: []common.Field{
 				{
-					Name: "descriptor",
+					Name: "metric",
 				},
 				{
-					Name: "metric_type",
+					Name: "type",
 				},
 			},
 			orig: pmetric.MetricDataTypeSum,
@@ -1524,13 +1524,13 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 			},
 		},
 		{
-			name: "descriptor metric_aggregation_temporality",
+			name: "metric aggregation_temporality",
 			path: []common.Field{
 				{
-					Name: "descriptor",
+					Name: "metric",
 				},
 				{
-					Name: "metric_aggregation_temporality",
+					Name: "aggregation_temporality",
 				},
 			},
 			orig: pmetric.MetricAggregationTemporalityCumulative,
@@ -1540,13 +1540,13 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 			},
 		},
 		{
-			name: "descriptor metric_is_monotonic",
+			name: "metric is_monotonic",
 			path: []common.Field{
 				{
-					Name: "descriptor",
+					Name: "metric",
 				},
 				{
-					Name: "metric_is_monotonic",
+					Name: "is_monotonic",
 				},
 			},
 			orig: true,
@@ -1561,7 +1561,7 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			metric := createDescriptorTelemetry()
+			metric := createMetricTelemetry()
 
 			ctx := metricTransformContext{
 				dataPoint: pmetric.NewNumberDataPoint(),
@@ -1575,7 +1575,7 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 
 			accessor.Set(ctx, tt.new)
 
-			exMetric := createDescriptorTelemetry()
+			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)
 
 			assert.Equal(t, exMetric, metric)
@@ -1583,7 +1583,7 @@ func Test_newPathGetSetter_Descriptor(t *testing.T) {
 	}
 }
 
-func createDescriptorTelemetry() pmetric.Metric {
+func createMetricTelemetry() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("name")
 	metric.SetDescription("description")
