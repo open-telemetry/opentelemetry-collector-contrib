@@ -86,7 +86,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 			logs := ills.At(j).LogRecords()
 
 			for k := 0; k < logs.Len(); k++ {
-				var log = logs.At(k)
+				log := logs.At(k)
 
 				// Convert Attributes to meta fields being mindful of the maxMetaDataSize restriction
 				var attrs = map[string]string{}
