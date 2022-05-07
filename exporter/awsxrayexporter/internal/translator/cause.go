@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
@@ -181,7 +180,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
 	// Skip first line containing top level exception / message
-	r.ReadLine()
+	_, _ = r.ReadLine()
 	exception := &exceptions[0]
 	var line string
 	line, err := r.ReadLine()
@@ -372,7 +371,7 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
 	// Skip first line containing top level exception / message
-	r.ReadLine()
+	_, _ = r.ReadLine()
 	exception := &exceptions[0]
 	var line string
 	line, err := r.ReadLine()
@@ -428,7 +427,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
 	// Skip first line containing top level exception / message
-	r.ReadLine()
+	_, _ = r.ReadLine()
 	exception := &exceptions[0]
 	var line string
 	line, err := r.ReadLine()

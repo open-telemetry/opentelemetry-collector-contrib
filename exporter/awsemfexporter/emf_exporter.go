@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -82,7 +81,10 @@ func newEmfPusher(
 	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
-	expConfig.Validate()
+	err = expConfig.Validate()
+	if err != nil {
+		return nil, err
+	}
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,

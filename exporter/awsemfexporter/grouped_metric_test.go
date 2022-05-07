@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package awsemfexporter
 
 import (
@@ -156,7 +155,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 			for i := 0; i < metrics.Len(); i++ {
 				metric := metrics.At(i)
-				addToGroupedMetric(&metric, groupedMetrics, metadata, true, zap.NewNop(), nil, nil)
+				err := addToGroupedMetric(&metric, groupedMetrics, metadata, true, zap.NewNop(), nil, nil)
+				assert.Nil(t, err)
 			}
 
 			expectedLabels := map[string]string{
@@ -204,7 +204,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		for i := 0; i < metrics.Len(); i++ {
 			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			err := addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			assert.Nil(t, err)
 		}
 
 		assert.Equal(t, 1, len(groupedMetrics))
@@ -267,7 +268,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		for i := 0; i < metrics.Len(); i++ {
 			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			err := addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			assert.Nil(t, err)
 		}
 
 		assert.Equal(t, 3, len(groupedMetrics))
@@ -314,7 +316,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			},
 			instrumentationLibraryName: instrumentationLibName,
 		}
-		addToGroupedMetric(&metric, groupedMetrics, metricMetadata1, true, logger, nil, nil)
+		err := addToGroupedMetric(&metric, groupedMetrics, metricMetadata1, true, logger, nil, nil)
+		assert.Nil(t, err)
 
 		metricMetadata2 := cWMetricMetadata{
 			groupedMetricMetadata: groupedMetricMetadata{
@@ -325,7 +328,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			},
 			instrumentationLibraryName: instrumentationLibName,
 		}
-		addToGroupedMetric(&metric, groupedMetrics, metricMetadata2, true, logger, nil, nil)
+		err = addToGroupedMetric(&metric, groupedMetrics, metricMetadata2, true, logger, nil, nil)
+		assert.Nil(t, err)
 
 		assert.Equal(t, 2, len(groupedMetrics))
 		seenLogGroup1 := false
@@ -380,7 +384,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		for i := 0; i < metrics.Len(); i++ {
 			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, obsLogger, nil, nil)
+			err := addToGroupedMetric(&metric, groupedMetrics, metadata, true, obsLogger, nil, nil)
+			assert.Nil(t, err)
 		}
 		assert.Equal(t, 1, len(groupedMetrics))
 
@@ -413,7 +418,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		obs, logs := observer.New(zap.WarnLevel)
 		obsLogger := zap.New(obs)
-		addToGroupedMetric(&metric, groupedMetrics, metadata, true, obsLogger, nil, nil)
+		err := addToGroupedMetric(&metric, groupedMetrics, metadata, true, obsLogger, nil, nil)
+		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 
 		// Test output warning logs
@@ -433,7 +439,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Nil metric", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		addToGroupedMetric(nil, groupedMetrics, metadata, true, logger, nil, nil)
+		err := addToGroupedMetric(nil, groupedMetrics, metadata, true, logger, nil, nil)
+		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 	})
 
@@ -502,7 +509,8 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
 		for i := 0; i < numMetrics; i++ {
 			metric := metrics.At(i)
-			addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			err := addToGroupedMetric(&metric, groupedMetrics, metadata, true, logger, nil, nil)
+			assert.Nil(b, err)
 		}
 	}
 }
