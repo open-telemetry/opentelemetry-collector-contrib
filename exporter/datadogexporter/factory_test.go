@@ -96,7 +96,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "APM_URL",
 			},
@@ -176,7 +175,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, apiConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
-		SampleRate: 1,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.eu",
 		},
@@ -230,7 +228,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
@@ -332,7 +329,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		}, apiConfig.Metrics)
 	assert.Equal(t,
 		ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.test",
 			},
@@ -385,7 +381,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		},
 	}, defaultConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
-		SampleRate: 1,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.com",
 		},

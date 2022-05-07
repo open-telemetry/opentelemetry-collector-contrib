@@ -106,7 +106,6 @@ func (*factory) createDefaultConfig() config.Exporter {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
 			},
