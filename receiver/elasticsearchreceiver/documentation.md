@@ -47,6 +47,13 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| elasticsearch.cluster.name | The name of the elasticsearch cluster. | String |
+| elasticsearch.node.name | The name of the elasticsearch node. | String |
+
 ## Metric attributes
 
 | Name | Description | Values |
@@ -56,8 +63,6 @@ metrics:
 | direction | The direction of network data. | received, sent |
 | disk_usage_state (state) | The state of a section of space on disk. | used, free |
 | document_state (state) | The state of the document. | active, deleted |
-| elasticsearch.cluster.name | The name of the elasticsearch cluster. |  |
-| elasticsearch.node.name | The name of the elasticsearch node. |  |
 | fs_direction (direction) | The direction of filesystem IO. | read, write |
 | health_status (status) | The health status of the cluster. | green, yellow, red |
 | memory_pool_name (name) | The name of the JVM memory pool. |  |

@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package tracegen // import "github.com/open-telemetry/opentelemetry-collector-contrib/tracegen/internal/tracegen"
 
 import (
@@ -74,7 +73,9 @@ func (w worker) simulateTraces() {
 			semconv.PeerServiceKey.String("tracegen-client"),
 		))
 
-		limiter.Wait(context.Background())
+		if err := limiter.Wait(context.Background()); err != nil {
+			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
+		}
 
 		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
 		child.End(opt)

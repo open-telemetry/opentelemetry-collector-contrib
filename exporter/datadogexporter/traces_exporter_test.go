@@ -78,7 +78,6 @@ func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
 			},
 		},
 		Traces: config.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
@@ -187,8 +186,7 @@ func TestPushTraceData(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 		Traces: config.TracesConfig{
-			SampleRate: 1,
-			TCPAddr:    confignet.TCPAddr{Endpoint: server.URL},
+			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 
 		HostMetadata: config.HostMetadataConfig{
