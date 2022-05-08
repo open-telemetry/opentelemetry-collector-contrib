@@ -1,0 +1,23 @@
+receivers:
+  pulsar:
+    topic: otel-pulsar
+    service_url: pulsar://localhost:6500
+    consumer_name: otel-collector
+    subscription: otel-collector
+    tls_trust_certs_file_path: ca.pem
+    insecure: false
+    auth_name: tls
+    auth_param: '{"tlsCertFile":"cert.pem","tlsKeyFile":"key.pem"}'
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ pulsar ]
+      processors: [ nop ]
+      exporters: [ nop ]
