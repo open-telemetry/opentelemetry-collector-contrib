@@ -5,6 +5,8 @@ that blocks and able to batch messages(configurable).
 
 Supported pipeline types: logs, metrics, traces
 
+## Get Started
+
 The following settings can be optionally configured:
 - `service_url` (default = pulsar://localhost:6650): The url of pulsar cluster.
 - `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the pulsar topic to export to.
