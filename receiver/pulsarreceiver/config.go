@@ -15,6 +15,7 @@
 package pulsarreceiver
 
 import (
+	"errors"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -42,7 +43,7 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) ClientOptions() (pulsar.ClientOptions, error) {
-	duration, _ := time.ParseDuration("20s")
+	duration := 20 * time.Second
 
 	url := cfg.ServiceUrl
 	if len(url) <= 0 {
@@ -72,18 +73,18 @@ func (cfg *Config) ClientOptions() (pulsar.ClientOptions, error) {
 }
 
 func (cfg *Config) ConsumerOptions() (pulsar.ConsumerOptions, error) {
-	options := pulsar.ConsumerOptions{Type: pulsar.Failover}
-
-	if len(cfg.Subscription) <= 0 || len(cfg.Topic) <= 0 {
-		options.Topic = defaultTopic
-		options.SubscriptionName = defaultSubscription
-	} else {
-		options.Topic = cfg.Topic
-		options.SubscriptionName = cfg.Subscription
+	options := pulsar.ConsumerOptions{
+		Type:             pulsar.Failover,
+		Topic:            cfg.Topic,
+		SubscriptionName: cfg.Subscription,
 	}
 
 	if len(cfg.ConsumerName) > 0 {
 		options.Name = cfg.ConsumerName
+	}
+
+	if options.SubscriptionName == "" || options.Topic == "" {
+		return options, errors.New("topic and subscription is required")
 	}
 
 	return options, nil

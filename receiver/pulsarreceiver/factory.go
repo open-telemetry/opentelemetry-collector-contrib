@@ -26,7 +26,7 @@ const (
 	defaultEncoding     = "otlp_proto"
 	defaultTopic        = "otlp_spans"
 	defaultConsumerName = ""
-	defaultSubscription = "otel-pulsar_subscription"
+	defaultSubscription = "otlp_subscription"
 	defaultServiceUrl   = "pulsar://localhost:6650"
 )
 

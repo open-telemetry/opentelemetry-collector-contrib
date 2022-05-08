@@ -19,6 +19,7 @@ The following settings can be optionally configured:
 - `consumer_name`: specifies the consumer name.
 - `auth_name`: the auth type of `pulsar`. Permitted value: ``,`tls`,`token`,`athenz`,`oauth2`.
 - `auth_param`: the parameter for auth.
+- `subscription` (default = otlp_subscription): the subscription name of consumer.
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
 - `insecure`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
