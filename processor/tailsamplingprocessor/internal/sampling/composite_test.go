@@ -160,6 +160,25 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	}
 }
 
+func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
+
+	// The first policy does not match, the second matches through invert
+	n1 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, false)
+	n2 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, true)
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
+
+	for i := 1; i <= 10; i++ {
+		trace := createTrace()
+
+		decision, err := c.Evaluate(traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+		// The second policy is AlwaysSample, so the decision should be Sampled.
+		expected := Sampled
+		assert.Equal(t, decision, expected)
+	}
+}
+
 func TestCompositeEvaluatorThrottling(t *testing.T) {
 
 	// Create only one subpolicy, with 100% Sampled policy.
