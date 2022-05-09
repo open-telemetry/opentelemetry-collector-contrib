@@ -30,7 +30,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "nsx", ft)
+	require.EqualValues(t, typeStr, ft)
 }
 
 func TestDefaultConfig(t *testing.T) {
