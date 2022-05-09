@@ -73,7 +73,6 @@ func (c *nsxClient) TransportNodes(ctx context.Context) ([]dm.TransportNode, err
 	body, err := c.doRequest(
 		ctx,
 		"/api/v1/transport-nodes",
-		withDefaultHeaders(),
 	)
 	if err != nil {
 		return nil, err
@@ -87,7 +86,6 @@ func (c *nsxClient) ClusterNodes(ctx context.Context) ([]dm.ClusterNode, error) 
 	body, err := c.doRequest(
 		ctx,
 		"/api/v1/cluster/nodes",
-		withDefaultHeaders(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get cluster nodes: %w", err)
@@ -102,7 +100,6 @@ func (c *nsxClient) NodeStatus(ctx context.Context, nodeID string, class nodeCla
 	body, err := c.doRequest(
 		ctx,
 		c.nodeStatusEndpoint(class, nodeID),
-		withDefaultHeaders(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get a node's status from the REST API: %w", err)
@@ -129,7 +126,6 @@ func (c *nsxClient) Interfaces(
 	body, err := c.doRequest(
 		ctx,
 		c.interfacesEndpoint(class, nodeID),
-		withDefaultHeaders(),
 	)
 	if err != nil {
 		return nil, err
@@ -148,7 +144,6 @@ func (c *nsxClient) InterfaceStatus(
 	body, err := c.doRequest(
 		ctx,
 		c.interfaceStatusEndpoint(class, nodeID, interfaceID),
-		withDefaultHeaders(),
 	)
 
 	if err != nil {
@@ -159,19 +154,7 @@ func (c *nsxClient) InterfaceStatus(
 	return &interfaceStats, err
 }
 
-type requestOption func(req *http.Request) *http.Request
-
-func withDefaultHeaders() requestOption {
-	return func(req *http.Request) *http.Request {
-		h := req.Header
-		h.Add("User-Agent", "opentelemetry-collector")
-		h.Add("Accept", "application/json")
-		h.Add("Connection", "keep-alive")
-		return req
-	}
-}
-
-func (c *nsxClient) doRequest(ctx context.Context, path string, options ...requestOption) ([]byte, error) {
+func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) {
 	endpoint, err := c.endpoint.Parse(path)
 	if err != nil {
 		return nil, err
@@ -182,10 +165,10 @@ func (c *nsxClient) doRequest(ctx context.Context, path string, options ...reque
 		return nil, err
 	}
 	req.SetBasicAuth(c.config.Username, c.config.Password)
-
-	for _, op := range options {
-		req = op(req)
-	}
+	h := req.Header
+	h.Add("User-Agent", "opentelemetry-collector")
+	h.Add("Accept", "application/json")
+	h.Add("Connection", "keep-alive")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
