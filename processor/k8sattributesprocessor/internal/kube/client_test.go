@@ -409,7 +409,6 @@ func TestExtractionRules(t *testing.T) {
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace:         "ns1",
 			CreationTimestamp: meta_v1.Now(),
-			ClusterName:       "cluster1",
 			Labels: map[string]string{
 				"label1": "lv1",
 				"label2": "k1=v1 k5=v5 extra!",
