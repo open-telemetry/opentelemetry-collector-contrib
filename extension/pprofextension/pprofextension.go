@@ -23,19 +23,13 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"sync/atomic"
-	"unsafe"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
-// Tracks that only a single instance is active per process.
-// See comment on Start method for the reasons for that.
-var activeInstance *pprofExtension
-
-// #nosec G103
-var activeInstancePtr = (*unsafe.Pointer)(unsafe.Pointer(&activeInstance))
+var running = atomic.NewBool(false)
 
 type pprofExtension struct {
 	config Config
@@ -52,7 +46,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// this issue we will allow the start of a single instance once per process
 	// Summary: only a single instance can be running in the same process.
 	// #nosec G103
-	if !atomic.CompareAndSwapPointer(activeInstancePtr, nil, unsafe.Pointer(p)) {
+	if !running.CAS(false, true) {
 		return errors.New("only a single pprof extension instance can be running per process")
 	}
 
@@ -60,7 +54,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	var startErr error
 	defer func() {
 		if startErr != nil {
-			atomic.StorePointer(activeInstancePtr, nil)
+			running.Store(false)
 		}
 	}()
 
@@ -79,7 +73,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	p.stopCh = make(chan struct{})
 	go func() {
 		defer func() {
-			atomic.StorePointer(activeInstancePtr, nil)
+			running.Store(false)
 			close(p.stopCh)
 		}()
 
@@ -103,7 +97,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 }
 
 func (p *pprofExtension) Shutdown(context.Context) error {
-	defer atomic.StorePointer(activeInstancePtr, nil)
+	defer running.Store(false)
 	if p.file != nil {
 		pprof.StopCPUProfile()
 		_ = p.file.Close() // ignore the error
