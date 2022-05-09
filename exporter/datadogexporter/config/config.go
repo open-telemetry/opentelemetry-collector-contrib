@@ -51,6 +51,10 @@ type APIConfig struct {
 	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
+
+	// FailOnInvalidKey states whether to exit at startup on invalid API key.
+	// The default value is false.
+	FailOnInvalidKey bool `mapstructure:"fail_on_invalid_key"`
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -231,6 +235,7 @@ type TracesConfig struct {
 	// SampleRate is the rate at which to sample this event. Default is 1,
 	// meaning no sampling. If you want to send one event out of every 250
 	// times Send() is called, you would specify 250 here.
+	// Deprecated: [v0.50.0] Not used anywhere.
 	SampleRate uint `mapstructure:"sample_rate"`
 
 	// ignored resources
@@ -528,6 +533,8 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	if c.Env != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
 	}
-
+	if c.Traces.SampleRate != 0 {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "traces.sample_rate", "v0.52.0", 9771))
+	}
 	return nil
 }

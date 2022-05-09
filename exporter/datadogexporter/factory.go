@@ -106,7 +106,6 @@ func (*factory) createDefaultConfig() config.Exporter {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
 			},
@@ -198,6 +197,7 @@ func (f *factory) createTracesExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	var pushTracesFn consumer.ConsumeTracesFunc
 
 	if cfg.OnlyMetadata {
@@ -214,7 +214,11 @@ func (f *factory) createTracesExporter(
 			return nil
 		}
 	} else {
-		pushTracesFn = newTracesExporter(ctx, set, cfg, &f.onceMetadata).pushTraceDataScrubbed
+		exporter, err := newTracesExporter(ctx, set, cfg, &f.onceMetadata)
+		if err != nil {
+			return nil, err
+		}
+		pushTracesFn = exporter.pushTraceDataScrubbed
 	}
 
 	return exporterhelper.NewTracesExporter(

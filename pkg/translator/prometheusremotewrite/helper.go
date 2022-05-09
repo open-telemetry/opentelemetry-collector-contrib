@@ -178,8 +178,12 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 
 	// Ensure attributes are sorted by key for consistent merging of keys which
 	// collide when sanitized.
-	attributes.Sort()
-	attributes.Range(func(key string, value pcommon.Value) bool {
+	// Sorting is done on a cloned map, as the original attributes map can read at
+	// the same time in different places.
+	cloneAttributes := pcommon.NewMap()
+	attributes.CopyTo(cloneAttributes)
+	cloneAttributes.Sort()
+	cloneAttributes.Range(func(key string, value pcommon.Value) bool {
 		var finalKey = sanitize(key)
 		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()

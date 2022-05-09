@@ -55,7 +55,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 		}
 
 		baseCfg := logReceiverType.BaseConfig(cfg)
-		operatorCfgs, err := baseCfg.decodeOperatorConfigs()
+		operatorCfgs, err := baseCfg.DecodeOperatorConfigs()
 		if err != nil {
 			return nil, err
 		}
