@@ -109,7 +109,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxreceiver v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.50.0
@@ -788,7 +788,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysql
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver => ./receiver/nginxreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxreceiver => ./receiver/nsxreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver => ./receiver/nsxtreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ./receiver/opencensusreceiver
 

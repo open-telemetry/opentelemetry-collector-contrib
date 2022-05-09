@@ -20,7 +20,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -209,7 +209,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -404,7 +404,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -879,7 +879,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -1068,7 +1068,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -1263,7 +1263,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -1738,7 +1738,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -1927,7 +1927,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {
@@ -2122,7 +2122,7 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxreceiver"
+                        "name": "otelcol/nsxtreceiver"
                     },
                     "metrics": [
                         {

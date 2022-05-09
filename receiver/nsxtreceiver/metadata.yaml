@@ -1,4 +1,4 @@
-name: nsxreceiver
+name: nsxtreceiver
 
 resource_attributes:
   nsx.node.name:

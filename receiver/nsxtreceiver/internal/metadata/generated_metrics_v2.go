@@ -14,7 +14,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for nsxreceiver metrics.
+// MetricsSettings provides settings for nsxtreceiver metrics.
 type MetricsSettings struct {
 	NsxInterfacePacketCount        MetricSettings `mapstructure:"nsx.interface.packet.count"`
 	NsxInterfaceThroughput         MetricSettings `mapstructure:"nsx.interface.throughput"`
@@ -650,7 +650,7 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 		op(rm.Resource())
 	}
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/nsxreceiver")
+	ils.Scope().SetName("otelcol/nsxtreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricNsxInterfacePacketCount.emit(ils.Metrics())
 	mb.metricNsxInterfaceThroughput.emit(ils.Metrics())
