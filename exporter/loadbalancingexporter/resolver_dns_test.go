@@ -151,7 +151,7 @@ func TestOnChange(t *testing.T) {
 	require.Equal(t, 1, counter)
 
 	// now, we run it with the same IPs being resolved, which shouldn't trigger a onChange call
-	err = res.resolve(context.Background())
+	_, err = res.resolve(context.Background())
 	assert.NoError(t, err)
 	require.Equal(t, 1, counter)
 
@@ -160,7 +160,7 @@ func TestOnChange(t *testing.T) {
 		{IP: net.IPv4(127, 0, 0, 2)},
 		{IP: net.IPv4(127, 0, 0, 3)},
 	}
-	err = res.resolve(context.Background())
+	_, err = res.resolve(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 2, counter)
 }

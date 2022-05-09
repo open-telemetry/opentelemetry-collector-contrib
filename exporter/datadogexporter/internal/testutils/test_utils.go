@@ -17,6 +17,7 @@ package testutils // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
@@ -82,7 +83,10 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	resJSON, _ := json.Marshal(res)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(resJSON)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +94,10 @@ func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
 	resJSON, _ := json.Marshal(res)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(resJSON)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 type metricsResponse struct {
@@ -103,7 +110,10 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	w.Write(resJSON)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
