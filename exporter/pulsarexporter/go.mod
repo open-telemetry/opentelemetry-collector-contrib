@@ -15,7 +15,6 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-require github.com/Shopify/sarama v1.32.0
 
 require (
 	github.com/99designs/keyring v1.1.6 // indirect

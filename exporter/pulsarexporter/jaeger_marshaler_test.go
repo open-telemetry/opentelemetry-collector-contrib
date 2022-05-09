@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Shopify/sarama"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,7 +41,6 @@ func TestJaegerMarshaler(t *testing.T) {
 
 	batches[0].Spans[0].Process = batches[0].Process
 	jaegerProtoBytes, err := batches[0].Spans[0].Marshal()
-	messageKey := []byte(batches[0].Spans[0].TraceID.String())
 	require.NoError(t, err)
 	require.NotNil(t, jaegerProtoBytes)
 
@@ -52,14 +51,14 @@ func TestJaegerMarshaler(t *testing.T) {
 	tests := []struct {
 		unmarshaler TracesMarshaler
 		encoding    string
-		messages    []*sarama.ProducerMessage
+		messages    []*pulsar.ProducerMessage
 	}{
 		{
 			unmarshaler: jaegerMarshaler{
 				marshaler: jaegerProtoSpanMarshaler{},
 			},
 			encoding: "jaeger_proto",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}},
+			messages: []*pulsar.ProducerMessage{{Payload: jaegerProtoBytes}},
 		},
 		{
 			unmarshaler: jaegerMarshaler{
@@ -68,7 +67,7 @@ func TestJaegerMarshaler(t *testing.T) {
 				},
 			},
 			encoding: "jaeger_json",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}},
+			messages: []*pulsar.ProducerMessage{{Payload: jsonByteBuffer.Bytes()}},
 		},
 	}
 	for _, test := range tests {
