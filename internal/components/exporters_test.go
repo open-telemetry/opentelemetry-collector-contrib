@@ -17,6 +17,7 @@ package components
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 	"runtime"
 	"testing"
 
@@ -169,6 +170,14 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "prometheusremotewrite",
+		},
+		{
+			exporter: "pulsar",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
+				cfg.ServiceUrl = "unknown:6650"
+				return cfg
+			},
 		},
 		{
 			exporter: "sapm",
