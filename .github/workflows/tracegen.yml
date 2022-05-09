@@ -19,7 +19,7 @@ jobs:
           push: false
           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:dev
 
-  publish-master:
+  publish-latest:
     runs-on: ubuntu-latest
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     permissions:

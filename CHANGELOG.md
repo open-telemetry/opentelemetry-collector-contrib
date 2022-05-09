@@ -5,6 +5,10 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `datadogexporter`: Replace HistogramMode defined as string with enum.
+- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
+- `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
+
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
@@ -13,16 +17,40 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
 
+- `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+  to `otelcol/elasticsearchreceiver` (#9757)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
+- `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
+- `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
+- `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
+- `transformprocessor`: Add support for functions to validate parameters (#9563)
+- `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
+- `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
+- `processor/attributes`: Support attributes set by server authenticator (#9420)
+- `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
 
 ### 🧰 Bug fixes 🧰
 
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
-- `azuremonitorexporter` : Fix log exporter bug related to incorrectly mapping SpanId (#9579)
+- `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
+- `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
+- `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
+- `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
+- `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
+- `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
+- `nginxreceiver`: Include nginxreceiver in components (#9572)
+- `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
+- `examples/demo`: fix baggage not work in trace demo app. (#9418)
+- `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
+- `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
+- `filelogreceiver`: Update Kubernetes examples to fix native OTel logs collection issue where 0 length logs cause errors (#9754)
 - `hostmetricsreciever`: Fix Load Scraper to work with load1, load5 and load15 (#8267)
 
 ## v0.50.0
@@ -40,6 +68,7 @@
 
 - `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
 - `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
+- `datadogexporter`: Deprecate `traces.sample_rate` setting. It was never used anywhere. (#9771)
 
 ### 🚀 New components 🚀
 
@@ -56,7 +85,7 @@
 - `datadogexporter`: Update deprecation messages to reflect new deprecation plan (#9422)
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
 - `attributesprocessor`: Support filter by severity (#9132)
-- `processor/transform`: Add transformation of logs (#9368)
+- `transformprocessor`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 - `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 
