@@ -4,8 +4,9 @@ go 1.17
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.20
-	github.com/DataDog/datadog-agent/pkg/quantile v0.35.1
+	github.com/DataDog/datadog-agent/pkg/quantile v0.36.0-rc.4.0.20220426134022-b55bccd5073f
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
+	github.com/DataDog/sketches-go v1.4.1
 	github.com/aws/aws-sdk-go v1.43.45
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2

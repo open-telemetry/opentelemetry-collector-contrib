@@ -25,6 +25,7 @@ var registry = map[string]interface{}{
 	"keep_keys":    keepKeys,
 	"set":          set,
 	"truncate_all": truncateAll,
+	"limit":        limit,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -72,6 +73,9 @@ func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
 }
 
 func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
+	}
 	return func(ctx TransformContext) interface{} {
 		if limit < 0 {
 			return nil
@@ -96,6 +100,41 @@ func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
 			})
 			target.Set(ctx, updated)
 			// TODO: Write log when truncation is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		}
+		return nil
+	}, nil
+}
+
+func limit(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
+	}
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			if int64(attrs.Len()) <= limit {
+				return nil
+			}
+
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			count := int64(0)
+			attrs.Range(func(key string, val pcommon.Value) bool {
+				if count < limit {
+					updated.Insert(key, val)
+					count++
+					return true
+				}
+				return false
+			})
+			target.Set(ctx, updated)
+			// TODO: Write log when limiting is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		}
 		return nil
 	}, nil

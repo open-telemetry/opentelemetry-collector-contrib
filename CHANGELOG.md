@@ -6,6 +6,7 @@
 
 - `datadogexporter`: Replace HistogramMode defined as string with enum.
 - `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
+- `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
 
 ### 🚩 Deprecations 🚩
 
@@ -30,7 +31,9 @@
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
+- `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
+- `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
 
 ### 🧰 Bug fixes 🧰
 
@@ -47,6 +50,7 @@
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 - `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
 - `filelogreceiver`: Update Kubernetes examples to fix native OTel logs collection issue where 0 length logs cause errors (#9754)
+- `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9087)
 
 ## v0.50.0
@@ -64,6 +68,7 @@
 
 - `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
 - `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
+- `datadogexporter`: Deprecate `traces.sample_rate` setting. It was never used anywhere. (#9771)
 
 ### 🚀 New components 🚀
 
