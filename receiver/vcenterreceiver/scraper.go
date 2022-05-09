@@ -52,7 +52,12 @@ func newVmwareVcenterScraper(
 }
 
 func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) error {
-	return v.client.EnsureConnection(ctx)
+	connectErr := v.client.EnsureConnection(ctx)
+	// don't fail to start if we cannot establish connection, just log an error
+	if connectErr != nil {
+		v.logger.Error(fmt.Sprintf("unable to establish a connection to the vSphere SDK %s", connectErr.Error()))
+	}
+	return nil
 }
 
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {

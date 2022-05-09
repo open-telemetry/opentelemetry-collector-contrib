@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -29,7 +28,6 @@ import (
 
 // Config is the configuration of the receiver
 type Config struct {
-	config.ReceiverSettings                 `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
@@ -40,16 +38,6 @@ type Config struct {
 
 // Validate checks to see if the supplied config will work for the receiver
 func (c *Config) Validate() error {
-	var err error
-	metricsErr := c.validateMetricsConfig()
-	if metricsErr != nil {
-		err = multierr.Append(err, metricsErr)
-	}
-
-	return err
-}
-
-func (c *Config) validateMetricsConfig() error {
 	if c.Endpoint == "" {
 		return errors.New("no endpoint was provided")
 	}

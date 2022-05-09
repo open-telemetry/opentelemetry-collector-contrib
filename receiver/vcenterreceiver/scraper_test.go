@@ -16,7 +16,6 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"testing"
 
@@ -88,14 +87,12 @@ func TestStartFailures_Metrics(t *testing.T) {
 			cfg: Config{
 				Endpoint: "http://no-host",
 			},
-			err: errors.New("unable to connect"),
 		},
 		{
 			desc: "unparsable endpoint",
 			cfg: Config{
 				Endpoint: "<protocol>://some-host",
 			},
-			err: errors.New("parse"),
 		},
 	}
 
