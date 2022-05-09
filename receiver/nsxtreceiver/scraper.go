@@ -242,7 +242,7 @@ func (s *scraper) recordNode(
 	availableStorage := ss.DiskSpaceTotal - ss.DiskSpaceUsed
 	s.mb.RecordNsxNodeDiskUsageDataPoint(colTime, int64(availableStorage), metadata.AttributeDiskStateAvailable)
 	// ensure division by zero is safeguarded
-	s.mb.RecordNsxNodeDiskUtilizationDataPoint(colTime, float64(ss.DiskSpaceUsed)/float64(math.Max(float64(ss.DiskSpaceTotal), 1)))
+	s.mb.RecordNsxNodeDiskUtilizationDataPoint(colTime, float64(ss.DiskSpaceUsed)/math.Max(float64(ss.DiskSpaceTotal), 1))
 
 	s.mb.EmitForResource(
 		metadata.WithNsxNodeName(info.nodeProps.Name),
