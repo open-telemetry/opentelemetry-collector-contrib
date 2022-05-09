@@ -50,6 +50,7 @@
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 - `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
 - `filelogreceiver`: Update Kubernetes examples to fix native OTel logs collection issue where 0 length logs cause errors (#9754)
+- `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
 
 ## v0.50.0
 
