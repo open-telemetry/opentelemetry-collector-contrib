@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package elasticexporter
 
 import (
@@ -36,7 +35,10 @@ import (
 func TestTracesExporter(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		err = tt.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -64,7 +66,10 @@ func TestTracesExporter(t *testing.T) {
 func TestMetricsExporter(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		err = tt.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -87,7 +92,10 @@ func TestMetricsExporter(t *testing.T) {
 func TestMetricsExporterSendError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		err = tt.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
