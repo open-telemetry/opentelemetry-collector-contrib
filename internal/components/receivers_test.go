@@ -17,6 +17,7 @@ package components
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"path"
 	"runtime"
 	"testing"
@@ -191,6 +192,14 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "prometheus_exec",
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
+		},
+		{
+			receiver: "pulsar",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["pulsar"].CreateDefaultConfig().(*pulsarreceiver.Config)
+				cfg.ServiceUrl = "unknown:6650"
+				return cfg
+			},
 		},
 		{
 			receiver: "receiver_creator",
