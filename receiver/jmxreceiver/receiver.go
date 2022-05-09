@@ -220,6 +220,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		for k, v := range jmx.config.ResourceAttributes {
 			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
 		}
+		sort.Strings(attributes)
 		config["otel.resource.attributes"] = strings.Join(attributes, ",")
 	}
 
