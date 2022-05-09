@@ -42,8 +42,8 @@ func isDiscernibleHost(host string) bool {
 	return true
 }
 
-// CreateNodeAndResourcePdata creates the resource data added to OTLP payloads.
-func CreateNodeAndResourcePdata(job, instance string, serviceDiscoveryLabels labels.Labels) *pcommon.Resource {
+// CreateNodeAndResource creates the resource data added to OTLP payloads.
+func CreateNodeAndResource(job, instance string, serviceDiscoveryLabels labels.Labels) *pcommon.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance

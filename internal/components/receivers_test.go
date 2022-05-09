@@ -56,6 +56,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a running windows service
 		},
 		{
+			receiver: "apache",
+		},
+		{
 			receiver: "awscontainerinsightreceiver",
 			// TODO: skipped since it will only function in a container environment with procfs in expected location.
 			skipLifecyle: true,
@@ -88,12 +91,18 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "collectd",
 		},
 		{
+			receiver: "couchdb",
+		},
+		{
 			receiver:     "docker_stats",
 			skipLifecyle: true,
 		},
 		{
 			receiver:     "dotnet_diagnostics",
 			skipLifecyle: true, // Requires a running .NET process to examine
+		},
+		{
+			receiver: "elasticsearch",
 		},
 		{
 			receiver: "filelog",
@@ -157,6 +166,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "memcached",
 		},
 		{
+			receiver: "mongodb",
+		},
+		{
 			receiver: "mongodbatlas",
 		},
 		{
@@ -197,6 +209,9 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "prometheus_exec",
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
+		},
+		{
+			receiver: "rabbitmq",
 		},
 		{
 			receiver: "receiver_creator",
