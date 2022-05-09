@@ -40,11 +40,11 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to Elasticsearch.
 
-// nolint:errcheck
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
 	"io"
+	"log"
 	"math"
 	"sort"
 	"strings"
@@ -250,8 +250,16 @@ func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
 }
 
 func (doc *Document) iterJSONFlat(w *json.Visitor) error {
-	w.OnObjectStart(-1, structform.AnyType)
-	defer w.OnObjectFinished()
+	err := w.OnObjectStart(-1, structform.AnyType)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer func() {
+		err = w.OnObjectFinished()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -259,8 +267,11 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 			continue
 		}
 
-		w.OnKey(fld.key)
-		if err := fld.value.iterJSON(w, true); err != nil {
+		err = w.OnKey(fld.key)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if err = fld.value.iterJSON(w, true); err != nil {
 			return err
 		}
 	}
@@ -272,8 +283,16 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	objPrefix := ""
 	level := 0
 
-	w.OnObjectStart(-1, structform.AnyType)
-	defer w.OnObjectFinished()
+	err := w.OnObjectStart(-1, structform.AnyType)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer func() {
+		err = w.OnObjectFinished()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -298,13 +317,19 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 					delta = delta[idx+1:]
 					level--
-					w.OnObjectFinished()
+					err = w.OnObjectFinished()
+					if err != nil {
+						log.Fatalln(err)
+					}
 				}
 
 				objPrefix = key[:L]
 			} else { // no common prefix, close all objects we reported so far.
 				for ; level > 0; level-- {
-					w.OnObjectFinished()
+					err = w.OnObjectFinished()
+					if err != nil {
+						log.Fatalln(err)
+					}
 				}
 				objPrefix = ""
 			}
@@ -321,19 +346,34 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 			level++
 			objPrefix = key[:len(objPrefix)+idx+1]
 			fieldName := key[start : start+idx]
-			w.OnKey(fieldName)
-			w.OnObjectStart(-1, structform.AnyType)
+			err = w.OnKey(fieldName)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			err = w.OnObjectStart(-1, structform.AnyType)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 
 		// report value
 		fieldName := key[len(objPrefix):]
-		w.OnKey(fieldName)
-		fld.value.iterJSON(w, true)
+		err = w.OnKey(fieldName)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		err = fld.value.iterJSON(w, true)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	// close all pending object levels
 	for ; level > 0; level-- {
-		w.OnObjectFinished()
+		err = w.OnObjectFinished()
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	return nil
@@ -453,13 +493,19 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 		}
 		return v.doc.iterJSON(w, dedot)
 	case KindArr:
-		w.OnArrayStart(-1, structform.AnyType)
+		err := w.OnArrayStart(-1, structform.AnyType)
+		if err != nil {
+			log.Fatalln(err)
+		}
 		for i := range v.arr {
-			if err := v.arr[i].iterJSON(w, dedot); err != nil {
+			if err = v.arr[i].iterJSON(w, dedot); err != nil {
 				return err
 			}
 		}
-		w.OnArrayFinished()
+		err = w.OnArrayFinished()
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	return nil

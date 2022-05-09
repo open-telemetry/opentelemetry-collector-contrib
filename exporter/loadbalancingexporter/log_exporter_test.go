@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -147,7 +146,10 @@ func TestConsumeLogs(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		err = p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
@@ -178,7 +180,10 @@ func TestConsumeLogsExporterNotFound(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		err = p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
@@ -212,7 +217,10 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		err = p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
@@ -241,7 +249,10 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		err = p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	first := simpleLogs()
 	second := simpleLogWithID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
@@ -311,7 +322,10 @@ func TestLogsWithoutTraceID(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		err = p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	// test
 	err = p.ConsumeLogs(context.Background(), simpleLogWithoutID())
@@ -407,7 +421,10 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	// test
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		err = p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 	// ensure using default exporters
 	lb.updateLock.Lock()
 	lb.exporters = defaultExporters
