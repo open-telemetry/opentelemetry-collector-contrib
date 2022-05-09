@@ -178,7 +178,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "nginx",
 		},
 		{
-			receiver: "nsx",
+			receiver: "nsxt",
 		},
 		{
 			receiver:     "opencensus",

@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 )
 
-const typeStr = "nsx"
+const typeStr = "nsxt"
 
 var errConfigNotNSX = errors.New("config was not a NSX receiver config")
 
