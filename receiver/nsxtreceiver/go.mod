@@ -16,7 +16,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.49.0
+	go.opentelemetry.io/collector/model v0.50.0
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
