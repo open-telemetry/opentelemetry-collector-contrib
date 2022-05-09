@@ -102,7 +102,10 @@ func TestLogExporterStart(t *testing.T) {
 
 			// test
 			res := p.Start(context.Background(), componenttest.NewNopHost())
-			defer p.Shutdown(context.Background())
+			defer func() {
+				err := p.Shutdown(context.Background())
+				require.NoError(t, err)
+			}()
 
 			// verify
 			require.Equal(t, tt.err, res)
