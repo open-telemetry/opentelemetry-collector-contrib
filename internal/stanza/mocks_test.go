@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
@@ -27,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/noop"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -77,44 +76,13 @@ func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) e
 	return nil
 }
 
-type mockLogsConsumer struct {
-	received int32
-}
-
-func (m *mockLogsConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	atomic.AddInt32(&m.received, int32(ld.LogRecordCount()))
-	return nil
-}
-
-func (m *mockLogsConsumer) Received() int {
-	ret := atomic.LoadInt32(&m.received)
-	return int(ret)
-}
-
-func (m *mockLogsConsumer) ResetReceivedCount() {
-	atomic.StoreInt32(&m.received, 0)
-}
-
 type mockLogsRejecter struct {
-	rejected int32
-}
-
-func (m *mockLogsRejecter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	consumertest.LogsSink
 }
 
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	atomic.AddInt32(&m.rejected, 1)
+	_ = m.LogsSink.ConsumeLogs(ctx, ld)
 	return fmt.Errorf("no")
-}
-
-func (m *mockLogsRejecter) Rejected() int {
-	ret := atomic.LoadInt32(&m.rejected)
-	return int(ret)
 }
 
 const testType = "test"
