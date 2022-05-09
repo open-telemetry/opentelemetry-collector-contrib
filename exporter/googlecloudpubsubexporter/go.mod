@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.17
 
 require (
-	cloud.google.com/go/pubsub v1.21.0
+	cloud.google.com/go/pubsub v1.21.1
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
 	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
 	go.uber.org/zap v1.21.0
 	google.golang.org/api v0.77.0
-	google.golang.org/genproto v0.0.0-20220421151946-72621c1f0bd3
+	google.golang.org/genproto v0.0.0-20220426171045-31bebdecfb46
 	google.golang.org/grpc v1.46.0
 )
 
