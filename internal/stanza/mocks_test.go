@@ -17,7 +17,6 @@ package stanza
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -69,7 +68,7 @@ func (c *UnstartableConfig) Build(logger *zap.SugaredLogger) (operator.Operator,
 
 // Start will return an error
 func (o *UnstartableOperator) Start(_ operator.Persister) error {
-	return fmt.Errorf("something very unusual happened")
+	return errors.New("something very unusual happened")
 }
 
 // Process will return nil
@@ -109,7 +108,7 @@ func (m *mockLogsRejecter) Capabilities() consumer.Capabilities {
 
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	atomic.AddInt32(&m.rejected, 1)
-	return fmt.Errorf("no")
+	return errors.New("no")
 }
 
 func (m *mockLogsRejecter) Rejected() int {
@@ -157,7 +156,7 @@ func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Conf
 
 	// Allow tests to explicitly prompt a failure
 	if testConfig.Input["type"] == "unknown" {
-		return nil, fmt.Errorf("Unknown input type")
+		return nil, errors.New("unknown input type")
 	}
 	return &operator.Config{Builder: NewUnstartableConfig()}, nil
 }
