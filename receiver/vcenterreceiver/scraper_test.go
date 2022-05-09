@@ -56,7 +56,9 @@ func TestScrape(t *testing.T) {
 		goldenPath := filepath.Join("testdata", "metrics", "expected.json")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
-		scrapertest.CompareMetrics(expectedMetrics, metrics)
+
+		err = scrapertest.CompareMetrics(expectedMetrics, metrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreMetricAttributeValue("vcenter.host.name"))
+		require.NoError(t, err)
 		require.NoError(t, scraper.Shutdown(ctx))
 	})
 }

@@ -92,7 +92,7 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context) error {
 		v.collectHosts(ctx, now, c, errs)
 		v.collectDatastores(ctx, now, c, errs)
 		v.collectVMs(ctx, now, c, errs)
-		v.collectCluster(ctx, now, c)
+		v.collectCluster(ctx, now, c, errs)
 	}
 	v.collectResourcePools(ctx, now, errs)
 
@@ -103,9 +103,14 @@ func (v *vcenterMetricScraper) collectCluster(
 	ctx context.Context,
 	now pdata.Timestamp,
 	c *object.ClusterComputeResource,
+	errs *scrapererror.ScrapeErrors,
 ) {
 	var moCluster mo.ClusterComputeResource
-	c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
+	err := c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
 	s := moCluster.Summary.GetComputeResourceSummary()
 	v.mb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), metadata.AttributeHostEffectiveFalse)
@@ -128,7 +133,7 @@ func (v *vcenterMetricScraper) collectDatastores(
 	}
 
 	for _, ds := range datastores {
-		v.collectDatastore(ctx, colTime, ds)
+		v.collectDatastore(ctx, colTime, ds, errs)
 	}
 }
 
@@ -136,9 +141,14 @@ func (v *vcenterMetricScraper) collectDatastore(
 	ctx context.Context,
 	now pdata.Timestamp,
 	ds *object.Datastore,
+	errs *scrapererror.ScrapeErrors,
 ) {
 	var moDS mo.Datastore
-	ds.Properties(ctx, ds.Reference(), []string{"summary", "name"}, &moDS)
+	err := ds.Properties(ctx, ds.Reference(), []string{"summary", "name"}, &moDS)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
 
 	v.recordDatastoreProperties(now, moDS)
 	v.mb.EmitForResource(
@@ -202,11 +212,15 @@ func (v *vcenterMetricScraper) collectResourcePools(
 	}
 	for _, rp := range rps {
 		var moRP mo.ResourcePool
-		rp.Properties(ctx, rp.Reference(), []string{
+		err = rp.Properties(ctx, rp.Reference(), []string{
 			"summary",
 			"summary.quickStats",
 			"name",
 		}, &moRP)
+		if err != nil {
+			errs.AddPartial(1, err)
+			continue
+		}
 		v.recordResourcePool(ts, moRP)
 		v.mb.EmitForResource(metadata.WithVcenterResourcePoolName(rp.Name()))
 	}
