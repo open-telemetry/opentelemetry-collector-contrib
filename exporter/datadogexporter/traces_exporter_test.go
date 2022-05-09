@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package datadogexporter
 
 import (
@@ -91,7 +90,10 @@ func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
 
 	assert.NoError(t, err)
 
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		err = exporter.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	ctx := context.Background()
 	errConsume := exporter.ConsumeTraces(ctx, td)
