@@ -74,21 +74,6 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestScrapeBadConfig(t *testing.T) {
-	scraper := newScraper(
-		&Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "http://\x00",
-			},
-			Metrics: metadata.DefaultMetricsSettings(),
-		},
-		componenttest.NewNopTelemetrySettings(),
-	)
-	scraper.host = componenttest.NewNopHost()
-	_, err := scraper.scrape(context.Background())
-	require.Error(t, err)
-}
-
 func TestScrapeTransportNodeErrors(t *testing.T) {
 	mockClient := NewMockClient(t)
 

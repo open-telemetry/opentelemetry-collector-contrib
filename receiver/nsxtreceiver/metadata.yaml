@@ -1,20 +1,20 @@
 name: nsxtreceiver
 
 resource_attributes:
-  nsx.node.name:
+  nsxt.node.name:
     description: The name of the NSX Node.
     type: string
-  nsx.node.id:
+  nsxt.node.id:
     description: The ID of the NSX Node.
     type: string
-  nsx.node.type:
+  nsxt.node.type:
     description: The type of NSX Node.
     type: string
     enum:
       - manager
       - host
       - edge
-  nsx.interface.id:
+  nsxt.interface.id:
     description: The name of the network interface.
     type: string
 
@@ -47,7 +47,7 @@ attributes:
     description: The name of the load balancer being utilized.
 
 metrics:
-  nsx.interface.throughput:
+  nsxt.interface.throughput:
     description: The number of Bytes flowing through the network interface.
     unit: "By"
     sum:
@@ -56,7 +56,7 @@ metrics:
       value_type: int
     enabled: true
     attributes: [direction]
-  nsx.interface.packet.count:
+  nsxt.interface.packet.count:
     description: The number of packets flowing through the network interface on the node.
     unit: "{packets}"
     sum:
@@ -65,20 +65,20 @@ metrics:
       value_type: int
     enabled: true
     attributes: [direction, packet.type]
-  nsx.node.cpu.utilization:
+  nsxt.node.cpu.utilization:
     description: The average amount of CPU being used by the node.
     unit: "%"
     gauge:
       value_type: double
     enabled: true
     attributes: [cpu.process.class]
-  nsx.node.disk.utilization:
+  nsxt.node.disk.utilization:
     description: The percentage of storage space utilized.
     unit: "%"
     gauge:
       value_type: double
     enabled: true
-  nsx.node.disk.usage:
+  nsxt.node.disk.usage:
     description: The amount of storage space used by the node.
     unit: By
     sum:
@@ -87,7 +87,7 @@ metrics:
       aggregation: cumulative
     enabled: true
     attributes: [disk_state]
-  nsx.node.memory.usage:
+  nsxt.node.memory.usage:
     description: The memory usage of the node
     unit: KBy
     sum:
@@ -95,7 +95,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     enabled: true
-  nsx.node.cache.memory.usage:
+  nsxt.node.cache.memory.usage:
     description: The memory usage of the node's cache
     unit: KBy
     sum:

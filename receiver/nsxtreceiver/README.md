@@ -4,7 +4,7 @@ This receiver fetches metrics important to run virtual networking using NSX-T. T
 
 Supported pipeline types: `metrics`
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
+> :construction: This receiver is in **ALPHA**. Configuration fields and metric data model are subject to change.
 
 ## Purpose
 
