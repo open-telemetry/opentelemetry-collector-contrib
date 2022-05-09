@@ -20,9 +20,9 @@ These are the metrics available for this scraper.
 | **vcenter.datastore.disk.utilization** | The utilization of the datastore. | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.host.cpu.usage** | The amount of CPU in Hz used by the host. | MHz | Sum(Int) | <ul> </ul> |
 | **vcenter.host.cpu.utilization** | The CPU utilization of the host system. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> <li>latency_direction</li> </ul> |
+| **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel read and write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> <li>disk_direction</li> </ul> |
 | **vcenter.host.disk.latency.max** | Highest latency value across all disks used by the host. As measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> </ul> |
-| **vcenter.host.disk.throughput** | The throughput to the host system's disk. | By/s | Sum(Int) | <ul> </ul> |
+| **vcenter.host.disk.throughput** | The throughput to the host system's disk. | By/s | Sum(Int) | <ul> <li>disk_direction</li> </ul> |
 | **vcenter.host.memory.usage** | The amount of memory the host system is using. | MBy | Sum(Int) | <ul> </ul> |
 | **vcenter.host.memory.utilization** | The percentage of the host system's memory capacity that is being utilized. | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.host.network.packet.count** | The number of packets sent and received, as measured over the most recent 20s interval. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
@@ -34,7 +34,7 @@ These are the metrics available for this scraper.
 | **vcenter.resource_pool.memory.shares** | The amount of shares of memory in the resource pool. | {shares} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.memory.usage** | The usage of the memory by the resource pool. | MBy | Sum(Int) | <ul> </ul> |
 | **vcenter.vm.cpu.utilization** | The CPU utilization of the virtual machine. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.vm.disk.latency.avg** | The latency of operations to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | µs | Gauge(Int) | <ul> <li>latency_direction</li> </ul> |
+| **vcenter.vm.disk.latency.avg** | The latency of operations to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | µs | Gauge(Int) | <ul> <li>disk_direction</li> </ul> |
 | **vcenter.vm.disk.latency.max** | The highest reported total latency (device and kernel times) over an interval of 20 seconds. | ms | Gauge(Int) | <ul> </ul> |
 | **vcenter.vm.disk.throughput** | The throughput of the virtual machine's disk. | By/sec | Sum(Int) | <ul> </ul> |
 | **vcenter.vm.disk.usage** | The amount of storage space used by the virtual machine. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
@@ -69,9 +69,9 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| disk_direction (direction) | The direction of disk latency. | read, write |
 | disk_state | The state of storage and whether it is already allocated or free. | available, used |
 | host_effective (effective) | Whether the host is effective in the vCenter cluster. | true, false |
-| latency_direction (direction) | The direction of disk latency. | read, write |
 | latency_type (type) | The type of disk latency being reported. | kernel, device |
 | throughput_direction (direction) | The direction of network throughput. | transmitted, received |
 | vm_count_power_state (power_state) | Whether the virtual machines are powered on or off. | on, off |

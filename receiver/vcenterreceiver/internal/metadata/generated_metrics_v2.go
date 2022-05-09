@@ -167,6 +167,32 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDiskDirection specifies the a value disk_direction attribute.
+type AttributeDiskDirection int
+
+const (
+	_ AttributeDiskDirection = iota
+	AttributeDiskDirectionRead
+	AttributeDiskDirectionWrite
+)
+
+// String returns the string representation of the AttributeDiskDirection.
+func (av AttributeDiskDirection) String() string {
+	switch av {
+	case AttributeDiskDirectionRead:
+		return "read"
+	case AttributeDiskDirectionWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeDiskDirection is a helper map of string to AttributeDiskDirection attribute value.
+var MapAttributeDiskDirection = map[string]AttributeDiskDirection{
+	"read":  AttributeDiskDirectionRead,
+	"write": AttributeDiskDirectionWrite,
+}
+
 // AttributeDiskState specifies the a value disk_state attribute.
 type AttributeDiskState int
 
@@ -217,32 +243,6 @@ func (av AttributeHostEffective) String() string {
 var MapAttributeHostEffective = map[string]AttributeHostEffective{
 	"true":  AttributeHostEffectiveTrue,
 	"false": AttributeHostEffectiveFalse,
-}
-
-// AttributeLatencyDirection specifies the a value latency_direction attribute.
-type AttributeLatencyDirection int
-
-const (
-	_ AttributeLatencyDirection = iota
-	AttributeLatencyDirectionRead
-	AttributeLatencyDirectionWrite
-)
-
-// String returns the string representation of the AttributeLatencyDirection.
-func (av AttributeLatencyDirection) String() string {
-	switch av {
-	case AttributeLatencyDirectionRead:
-		return "read"
-	case AttributeLatencyDirectionWrite:
-		return "write"
-	}
-	return ""
-}
-
-// MapAttributeLatencyDirection is a helper map of string to AttributeLatencyDirection attribute value.
-var MapAttributeLatencyDirection = map[string]AttributeLatencyDirection{
-	"read":  AttributeLatencyDirectionRead,
-	"write": AttributeLatencyDirectionWrite,
 }
 
 // AttributeLatencyType specifies the a value latency_type attribute.
@@ -952,7 +952,7 @@ func (m *metricVcenterHostDiskLatencyAvg) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
+func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -960,7 +960,7 @@ func (m *metricVcenterHostDiskLatencyAvg) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.LatencyDirection, pcommon.NewValueString(latencyDirectionAttributeValue))
+	dp.Attributes().Insert(A.DiskDirection, pcommon.NewValueString(diskDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1051,9 +1051,10 @@ func (m *metricVcenterHostDiskThroughput) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterHostDiskThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricVcenterHostDiskThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1061,6 +1062,7 @@ func (m *metricVcenterHostDiskThroughput) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.DiskDirection, pcommon.NewValueString(diskDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1666,7 +1668,7 @@ func (m *metricVcenterVMDiskLatencyAvg) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue string) {
+func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1674,7 +1676,7 @@ func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.LatencyDirection, pcommon.NewValueString(latencyDirectionAttributeValue))
+	dp.Attributes().Insert(A.DiskDirection, pcommon.NewValueString(diskDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2446,8 +2448,8 @@ func (mb *MetricsBuilder) RecordVcenterHostCPUUtilizationDataPoint(ts pcommon.Ti
 }
 
 // RecordVcenterHostDiskLatencyAvgDataPoint adds a data point to vcenter.host.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue AttributeLatencyDirection) {
-	mb.metricVcenterHostDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
+	mb.metricVcenterHostDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostDiskLatencyMaxDataPoint adds a data point to vcenter.host.disk.latency.max metric.
@@ -2456,8 +2458,8 @@ func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyMaxDataPoint(ts pcommon.Ti
 }
 
 // RecordVcenterHostDiskThroughputDataPoint adds a data point to vcenter.host.disk.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskThroughputDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostDiskThroughput.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordVcenterHostDiskThroughputDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
+	mb.metricVcenterHostDiskThroughput.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostMemoryUsageDataPoint adds a data point to vcenter.host.memory.usage metric.
@@ -2516,8 +2518,8 @@ func (mb *MetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Time
 }
 
 // RecordVcenterVMDiskLatencyAvgDataPoint adds a data point to vcenter.vm.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, latencyDirectionAttributeValue AttributeLatencyDirection) {
-	mb.metricVcenterVMDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, latencyDirectionAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
+	mb.metricVcenterVMDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordVcenterVMDiskLatencyMaxDataPoint adds a data point to vcenter.vm.disk.latency.max metric.
@@ -2576,12 +2578,12 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
+	// DiskDirection (The direction of disk latency.)
+	DiskDirection string
 	// DiskState (The state of storage and whether it is already allocated or free.)
 	DiskState string
 	// HostEffective (Whether the host is effective in the vCenter cluster.)
 	HostEffective string
-	// LatencyDirection (The direction of disk latency.)
-	LatencyDirection string
 	// LatencyType (The type of disk latency being reported.)
 	LatencyType string
 	// ThroughputDirection (The direction of network throughput.)
@@ -2589,9 +2591,9 @@ var Attributes = struct {
 	// VMCountPowerState (Whether the virtual machines are powered on or off.)
 	VMCountPowerState string
 }{
+	"direction",
 	"disk_state",
 	"effective",
-	"direction",
 	"type",
 	"direction",
 	"power_state",

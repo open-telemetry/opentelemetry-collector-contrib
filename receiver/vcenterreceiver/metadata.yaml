@@ -34,7 +34,7 @@ attributes:
     enum:
       - "true"
       - "false"
-  latency_direction:
+  disk_direction:
     value: direction
     description: The direction of disk latency.
     enum:
@@ -174,15 +174,15 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: []
+    attributes: [disk_direction]
   vcenter.host.disk.latency.avg:
     enabled: true
     description: The latency of operations to the host system's disk.
     unit: ms
     gauge:
       value_type: int
-    attributes: [latency_direction]
-    extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
+    attributes: [disk_direction]
+    extended_documentation: This latency is the sum of the device and kernel read and write latencies. Requires Performance Counter level 2 for metric to populate.
   vcenter.host.disk.latency.max:
     enabled: true
     description: Highest latency value across all disks used by the host.
@@ -328,7 +328,7 @@ metrics:
     unit: µs
     gauge:
       value_type: int
-    attributes: [latency_direction]
+    attributes: [disk_direction]
     extended_documentation: Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
   vcenter.vm.disk.latency.max:
     enabled: true
