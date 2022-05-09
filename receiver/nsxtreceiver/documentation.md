@@ -12,9 +12,8 @@ These are the metrics available for this scraper.
 | **nsx.interface.throughput** | The number of Bytes flowing through the network interface. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **nsx.node.cache.memory.usage** | The memory usage of the node's cache | KBy | Sum(Int) | <ul> </ul> |
 | **nsx.node.cpu.utilization** | The average amount of CPU being used by the node. | % | Gauge(Double) | <ul> <li>cpu.process.class</li> </ul> |
-| **nsx.node.disk.usage** | The amount of storage space used by the node. | By | Sum(Int) | <ul> <li>disk</li> </ul> |
-| **nsx.node.disk.utilization** | The percentage of storage space utilized. | % | Gauge(Double) | <ul> <li>disk</li> </ul> |
-| **nsx.node.load_balancer.utilization** | The utilization of load balancers by the node | % | Gauge(Double) | <ul> <li>load_balancer</li> </ul> |
+| **nsx.node.disk.usage** | The amount of storage space used by the node. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
+| **nsx.node.disk.utilization** | The percentage of storage space utilized. | % | Gauge(Double) | <ul> </ul> |
 | **nsx.node.memory.usage** | The memory usage of the node | KBy | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
@@ -39,8 +38,8 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| cpu.process.class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes | datapath, services |
-| direction (direction) | The direction of network flow | received, transmitted |
-| disk (disk) | The name of the mounted storage |  |
-| load_balancer | The name of the load balancer being utilized |  |
-| packet.type (type) | The type of packet counter | dropped, errored, success |
+| cpu.process.class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | datapath, services |
+| direction (direction) | The direction of network flow. | received, transmitted |
+| disk_state (state) | The state of storage space. | used, available |
+| load_balancer | The name of the load balancer being utilized. |  |
+| packet.type (type) | The type of packet counter. | dropped, errored, success |

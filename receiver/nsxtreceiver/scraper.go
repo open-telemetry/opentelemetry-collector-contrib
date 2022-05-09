@@ -238,12 +238,11 @@ func (s *scraper) recordNode(
 		s.mb.RecordNsxNodeCacheMemoryUsageDataPoint(colTime, int64(ss.EdgeMemUsage.CacheUsage))
 	}
 
-	for _, fs := range ss.FileSystems {
-		s.mb.RecordNsxNodeDiskUsageDataPoint(colTime, int64(fs.Used), fs.Mount)
-		// ensure the prevention of division by 0 using math.Max
-		diskUtilization := float64(fs.Used) / math.Max(float64(fs.Total), 1) * 100
-		s.mb.RecordNsxNodeDiskUtilizationDataPoint(colTime, diskUtilization, fs.Mount)
-	}
+	s.mb.RecordNsxNodeDiskUsageDataPoint(colTime, int64(ss.DiskSpaceUsed), metadata.AttributeDiskStateUsed)
+	availableStorage := ss.DiskSpaceTotal - ss.DiskSpaceUsed
+	s.mb.RecordNsxNodeDiskUsageDataPoint(colTime, int64(availableStorage), metadata.AttributeDiskStateAvailable)
+	// ensure division by zero is safeguarded
+	s.mb.RecordNsxNodeDiskUtilizationDataPoint(colTime, float64(ss.DiskSpaceUsed)/float64(math.Max(float64(ss.DiskSpaceTotal), 1)))
 
 	s.mb.EmitForResource(
 		metadata.WithNsxNodeName(info.nodeProps.Name),

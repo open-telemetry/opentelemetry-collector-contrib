@@ -21,27 +21,30 @@ resource_attributes:
 attributes:
   direction:
     value: direction
-    description: The direction of network flow
+    description: The direction of network flow.
     enum:
       - received
       - transmitted
-  disk:
-    value: disk
-    description: The name of the mounted storage
+  disk_state:
+    value: state
+    description: The state of storage space.
+    enum:
+      - used
+      - available
   packet.type:
     value: type
-    description: The type of packet counter
+    description: The type of packet counter.
     enum:
       - dropped
       - errored
       - success
   cpu.process.class:
-    description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes
+    description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.
     enum:
       - datapath
       - services
   load_balancer:
-    description: The name of the load balancer being utilized
+    description: The name of the load balancer being utilized.
 
 metrics:
   nsx.interface.throughput:
@@ -75,7 +78,6 @@ metrics:
     gauge:
       value_type: double
     enabled: true
-    attributes: [disk]
   nsx.node.disk.usage:
     description: The amount of storage space used by the node.
     unit: By
@@ -84,14 +86,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     enabled: true
-    attributes: [disk]
-  nsx.node.load_balancer.utilization:
-    description: The utilization of load balancers by the node
-    unit: "%"
-    gauge:
-      value_type: double
-    enabled: true
-    attributes: [load_balancer]
+    attributes: [disk_state]
   nsx.node.memory.usage:
     description: The memory usage of the node
     unit: KBy
