@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
 
 go 1.17
 
