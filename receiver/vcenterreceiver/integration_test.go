@@ -41,12 +41,10 @@ import (
 func TestEndtoEnd_ESX(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		cfg := &Config{
-			MetricsConfig: &MetricsConfig{
-				TLSClientSetting: configtls.TLSClientSetting{
-					Insecure: true,
-				},
-				Settings: metadata.DefaultMetricsSettings(),
+			TLSClientSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
+			Metrics: metadata.DefaultMetricsSettings(),
 		}
 		s := session.NewManager(c)
 
@@ -57,27 +55,20 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		}
 		scraper.client.vimDriver = c
 		scraper.client.finder = find.NewFinder(c)
-
-		rcvr := &vcenterReceiver{
-			config:  cfg,
-			scraper: scraper,
-		}
-
-		err := rcvr.Start(ctx, componenttest.NewNopHost())
+		err := scraper.Start(ctx, componenttest.NewNopHost())
 		require.NoError(t, err)
 
-		sc, ok := rcvr.scraper.(*vcenterMetricScraper)
-		require.True(t, ok)
-		metrics, err := sc.scrape(ctx)
+		metrics, err := scraper.scrape(ctx)
 		require.NoError(t, err)
 		require.NotEmpty(t, metrics)
 
-		goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.json")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
-		err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+		require.NoError(t, err)
+		err = scrapertest.CompareMetrics(expectedMetrics, metrics, scrapertest.IgnoreMetricValues())
 		require.NoError(t, err)
 
-		err = rcvr.Shutdown(ctx)
+		err = scraper.Shutdown(ctx)
 		require.NoError(t, err)
 	})
 }

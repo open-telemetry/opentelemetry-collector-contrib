@@ -1,0 +1,2253 @@
+{
+    "resourceMetrics": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.host.name",
+                        "value": {
+                            "stringValue": "DC0_C0_H0"
+                        }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.host.cpu.usage",
+                            "description": "The amount of CPU in Hz used by the host.",
+                            "unit": "MHz",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "67"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.cpu.utilization",
+                            "description": "The CPU utilization of the host system.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asDouble": 1.4603312990409765
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.memory.usage",
+                            "description": "The amount of memory the host system is using.",
+                            "unit": "MBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "1404"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.memory.utilization",
+                            "description": "The percentage of the host system's memory capacity that is being utilized.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asDouble": 34.285714285714285
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.packet.count",
+                            "description": "The number of packets sent and received, as measured over the most recent 20s interval.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737721172000",
+                                        "asInt": "15794"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717721172000",
+                                        "asInt": "6601"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697721172000",
+                                        "asInt": "6820"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677721172000",
+                                        "asInt": "12481"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657721172000",
+                                        "asInt": "10545"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737721172000",
+                                        "asInt": "25677"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717721172000",
+                                        "asInt": "12410"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697721172000",
+                                        "asInt": "15883"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677721172000",
+                                        "asInt": "17129"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657721172000",
+                                        "asInt": "16527"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.throughput",
+                            "description": "The amount of data that was sent or received over the network by the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737721172000",
+                                        "asInt": "768"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717721172000",
+                                        "asInt": "736"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697721172000",
+                                        "asInt": "481"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677721172000",
+                                        "asInt": "485"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657721172000",
+                                        "asInt": "878"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737721172000",
+                                        "asInt": "778"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717721172000",
+                                        "asInt": "731"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697721172000",
+                                        "asInt": "301"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677721172000",
+                                        "asInt": "648"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657721172000",
+                                        "asInt": "803"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.usage",
+                            "description": "The sum of the data transmitted and received for all the NIC instances of the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737721172000",
+                                        "asInt": "1839"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717721172000",
+                                        "asInt": "926"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697721172000",
+                                        "asInt": "525"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677721172000",
+                                        "asInt": "1454"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657721172000",
+                                        "asInt": "1798"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.host.name",
+                        "value": {
+                            "stringValue": "DC0_C0_H1"
+                        }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.host.cpu.usage",
+                            "description": "The amount of CPU in Hz used by the host.",
+                            "unit": "MHz",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "67"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.cpu.utilization",
+                            "description": "The CPU utilization of the host system.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asDouble": 1.4603312990409765
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.memory.usage",
+                            "description": "The amount of memory the host system is using.",
+                            "unit": "MBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "1404"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.memory.utilization",
+                            "description": "The percentage of the host system's memory capacity that is being utilized.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asDouble": 34.285714285714285
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.packet.count",
+                            "description": "The number of packets sent and received, as measured over the most recent 20s interval.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737756493000",
+                                        "asInt": "15081"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717756493000",
+                                        "asInt": "8773"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697756493000",
+                                        "asInt": "4903"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677756493000",
+                                        "asInt": "8867"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657756493000",
+                                        "asInt": "7428"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737756493000",
+                                        "asInt": "15959"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717756493000",
+                                        "asInt": "14347"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697756493000",
+                                        "asInt": "8119"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677756493000",
+                                        "asInt": "12388"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657756493000",
+                                        "asInt": "16847"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.throughput",
+                            "description": "The amount of data that was sent or received over the network by the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737756493000",
+                                        "asInt": "1014"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717756493000",
+                                        "asInt": "721"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697756493000",
+                                        "asInt": "341"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677756493000",
+                                        "asInt": "349"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657756493000",
+                                        "asInt": "1037"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737756493000",
+                                        "asInt": "502"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717756493000",
+                                        "asInt": "740"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697756493000",
+                                        "asInt": "532"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677756493000",
+                                        "asInt": "713"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657756493000",
+                                        "asInt": "1236"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.usage",
+                            "description": "The sum of the data transmitted and received for all the NIC instances of the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737756493000",
+                                        "asInt": "1018"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717756493000",
+                                        "asInt": "1360"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697756493000",
+                                        "asInt": "979"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677756493000",
+                                        "asInt": "1343"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657756493000",
+                                        "asInt": "2704"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.host.name",
+                        "value": {
+                            "stringValue": "DC0_C0_H2"
+                        }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.host.cpu.usage",
+                            "description": "The amount of CPU in Hz used by the host.",
+                            "unit": "MHz",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "67"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.cpu.utilization",
+                            "description": "The CPU utilization of the host system.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asDouble": 1.4603312990409765
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.memory.usage",
+                            "description": "The amount of memory the host system is using.",
+                            "unit": "MBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "1404"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.memory.utilization",
+                            "description": "The percentage of the host system's memory capacity that is being utilized.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asDouble": 34.285714285714285
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.packet.count",
+                            "description": "The number of packets sent and received, as measured over the most recent 20s interval.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737791502000",
+                                        "asInt": "14235"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717791502000",
+                                        "asInt": "10077"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697791502000",
+                                        "asInt": "4854"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677791502000",
+                                        "asInt": "10849"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657791502000",
+                                        "asInt": "11838"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737791502000",
+                                        "asInt": "20591"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717791502000",
+                                        "asInt": "19591"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697791502000",
+                                        "asInt": "10305"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677791502000",
+                                        "asInt": "16941"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657791502000",
+                                        "asInt": "29085"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.throughput",
+                            "description": "The amount of data that was sent or received over the network by the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737791502000",
+                                        "asInt": "1042"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717791502000",
+                                        "asInt": "487"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697791502000",
+                                        "asInt": "610"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677791502000",
+                                        "asInt": "485"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657791502000",
+                                        "asInt": "1099"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737791502000",
+                                        "asInt": "1236"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717791502000",
+                                        "asInt": "530"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697791502000",
+                                        "asInt": "377"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677791502000",
+                                        "asInt": "683"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657791502000",
+                                        "asInt": "1085"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.usage",
+                            "description": "The sum of the data transmitted and received for all the NIC instances of the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737791502000",
+                                        "asInt": "1950"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104717791502000",
+                                        "asInt": "1320"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104697791502000",
+                                        "asInt": "1030"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104677791502000",
+                                        "asInt": "1181"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104657791502000",
+                                        "asInt": "2363"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.datastore.name",
+                        "value": {
+                            "stringValue": "LocalDS_0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.datastore.disk.usage",
+                            "description": "The amount of space in the datastore.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "used"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "42949672960"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "used"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "10995116277760"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.datastore.disk.utilization",
+                            "description": "The utilization of the datastore.",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asDouble": 0.390625
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.vm.name",
+                        "value": {
+                            "stringValue": "DC0_H0_VM0"
+                        }
+                    },
+                    {
+                        "key": "vcenter.vm.id",
+                        "value": {
+                            "stringValue": "b4689bed-97f0-5bcd-8a4c-07477cc8f06f"
+                        }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    },
+                    {
+                        "key": "vcenter.host.name",
+                        "value": {
+                            "stringValue": "DC0_H0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.vm.disk.usage",
+                            "description": "The amount of storage space used by the virtual machine.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "used"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "available"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.ballooned",
+                            "description": "The amount of memory that is ballooned due to virtualization.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.usage",
+                            "description": "The amount of memory that is used by the virtual machine.",
+                            "unit": "MBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packet.count",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737826784000",
+                                        "asInt": "872"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737826784000",
+                                        "asInt": "1797"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737826784000",
+                                        "asInt": "198"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737826784000",
+                                        "asInt": "314"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.usage",
+                            "description": "The network utilization combined transmit and receive rates during an interval.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737826784000",
+                                        "asInt": "484"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.vm.name",
+                        "value": {
+                            "stringValue": "DC0_H0_VM1"
+                        }
+                    },
+                    {
+                        "key": "vcenter.vm.id",
+                        "value": {
+                            "stringValue": "12f8928d-f144-5c57-89db-dd2d0902c9fa"
+                        }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    },
+                    {
+                        "key": "vcenter.host.name",
+                        "value": {
+                            "stringValue": "DC0_H0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.vm.disk.usage",
+                            "description": "The amount of storage space used by the virtual machine.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "used"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "available"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.ballooned",
+                            "description": "The amount of memory that is ballooned due to virtualization.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.usage",
+                            "description": "The amount of memory that is used by the virtual machine.",
+                            "unit": "MBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packet.count",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737860674000",
+                                        "asInt": "896"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737860674000",
+                                        "asInt": "2062"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737860674000",
+                                        "asInt": "184"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737860674000",
+                                        "asInt": "297"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.usage",
+                            "description": "The network utilization combined transmit and receive rates during an interval.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737860674000",
+                                        "asInt": "441"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.vm.name",
+                        "value": {
+                            "stringValue": "DC0_C0_RP0_VM0"
+                        }
+                    },
+                    {
+                        "key": "vcenter.vm.id",
+                        "value": {
+                            "stringValue": "bfff331f-7f07-572d-951e-edd3701dc061"
+                        }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    },
+                    {
+                        "key": "vcenter.host.name",
+                        "value": {
+                            "stringValue": "DC0_C0_H1"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.vm.disk.usage",
+                            "description": "The amount of storage space used by the virtual machine.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "used"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "available"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.ballooned",
+                            "description": "The amount of memory that is ballooned due to virtualization.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.usage",
+                            "description": "The amount of memory that is used by the virtual machine.",
+                            "unit": "MBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packet.count",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737894885000",
+                                        "asInt": "543"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737894885000",
+                                        "asInt": "1423"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737894885000",
+                                        "asInt": "116"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737894885000",
+                                        "asInt": "285"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.usage",
+                            "description": "The network utilization combined transmit and receive rates during an interval.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737894885000",
+                                        "asInt": "379"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.vm.name",
+                        "value": {
+                            "stringValue": "DC0_C0_RP0_VM1"
+                        }
+                    },
+                    {
+                        "key": "vcenter.vm.id",
+                        "value": {
+                            "stringValue": "6132d223-1566-5921-bc3b-df91ece09a4d"
+                        }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    },
+                    {
+                        "key": "vcenter.host.name",
+                        "value": {
+                            "stringValue": "DC0_C0_H0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.vm.disk.usage",
+                            "description": "The amount of storage space used by the virtual machine.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "used"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "disk_state",
+                                                "value": {
+                                                    "stringValue": "available"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.ballooned",
+                            "description": "The amount of memory that is ballooned due to virtualization.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.usage",
+                            "description": "The amount of memory that is used by the virtual machine.",
+                            "unit": "MBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packet.count",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737929623000",
+                                        "asInt": "657"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737929623000",
+                                        "asInt": "1578"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737929623000",
+                                        "asInt": "193"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737929623000",
+                                        "asInt": "300"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.usage",
+                            "description": "The network utilization combined transmit and receive rates during an interval.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737929623000",
+                                        "asInt": "444"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.cluster.cpu.limit",
+                            "description": "The amount of CPU available to the cluster.",
+                            "unit": "{MHz}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "6882"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.cluster.host.count",
+                            "description": "The number of hosts in the cluster.",
+                            "unit": "{hosts}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "effective",
+                                                "value": {
+                                                    "stringValue": "false"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "effective",
+                                                "value": {
+                                                    "stringValue": "true"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "3"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.cluster.vm.count",
+                            "description": "the number of virtual machines in the cluster.",
+                            "unit": "{virtual_machines}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "power_state",
+                                                "value": {
+                                                    "stringValue": "on"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "4"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "power_state",
+                                                "value": {
+                                                    "stringValue": "off"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.resource_pool.name",
+                        "value": {
+                            "stringValue": "Resources"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.resource_pool.cpu.shares",
+                            "description": "The amount of shares of CPU in the resource pool.",
+                            "unit": "{shares}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "9000"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.resource_pool.memory.shares",
+                            "description": "The amount of shares of memory in the resource pool.",
+                            "unit": "{shares}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "9000"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "vcenter.resource_pool.name",
+                        "value": {
+                            "stringValue": "Resources"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/vmwarevcenterreceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "vcenter.resource_pool.cpu.shares",
+                            "description": "The amount of shares of CPU in the resource pool.",
+                            "unit": "{shares}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "9000"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.resource_pool.memory.shares",
+                            "description": "The amount of shares of memory in the resource pool.",
+                            "unit": "{shares}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652104737416251000",
+                                        "timeUnixNano": "1652104737677400000",
+                                        "asInt": "9000"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
