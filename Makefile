@@ -37,7 +37,11 @@ all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 .PHONY: all
-all: common gotest otelcontribcol otelcontribcol-unstable
+all: all-common gotest otelcontribcol otelcontribcol-unstable
+
+.PHONY: all-common
+all-common:
+	@$(MAKE) for-all-target TARGET="common"
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
