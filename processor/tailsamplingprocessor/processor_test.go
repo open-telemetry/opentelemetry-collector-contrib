@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -66,7 +67,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 		d, ok := tsp.idToTrace.Load(traceIds[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		require.Equal(t, int64(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
+		require.Equal(t, int64(i+1), v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
 
@@ -107,7 +108,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		d, ok := tsp.idToTrace.Load(traceIds[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		require.Equal(t, int64(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
+		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
 
@@ -195,6 +196,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
@@ -255,6 +257,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
@@ -322,6 +325,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
@@ -384,6 +388,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
@@ -446,6 +451,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
@@ -508,6 +514,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 	tsp.Start(context.Background(), componenttest.NewNopHost())
 	defer func() {
