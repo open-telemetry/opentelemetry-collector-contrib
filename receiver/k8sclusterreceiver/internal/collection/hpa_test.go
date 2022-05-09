@@ -61,10 +61,9 @@ func newHPA(id string) *autoscalingv2beta2.HorizontalPodAutoscaler {
 	minReplicas := int32(2)
 	return &autoscalingv2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-hpa-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-hpa-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-hpa-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-hpa-" + id + "-uid"),
 		},
 		Status: autoscalingv2beta2.HorizontalPodAutoscalerStatus{
 			CurrentReplicas: 5,

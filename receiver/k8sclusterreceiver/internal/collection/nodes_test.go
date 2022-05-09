@@ -101,9 +101,8 @@ func newNode(id string) *corev1.Node {
 	if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 		return &corev1.Node{
 			ObjectMeta: v1.ObjectMeta{
-				Name:        "test-node-" + id,
-				UID:         types.UID("test-node-" + id + "-uid"),
-				ClusterName: "test-cluster",
+				Name: "test-node-" + id,
+				UID:  types.UID("test-node-" + id + "-uid"),
 				Labels: map[string]string{
 					"foo":  "bar",
 					"foo1": "",
@@ -130,9 +129,8 @@ func newNode(id string) *corev1.Node {
 	}
 	return &corev1.Node{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-node-" + id,
-			UID:         types.UID("test-node-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name: "test-node-" + id,
+			UID:  types.UID("test-node-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

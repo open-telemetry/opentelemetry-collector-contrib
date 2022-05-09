@@ -60,10 +60,9 @@ func TestDaemonsetMetrics(t *testing.T) {
 func newDaemonset(id string) *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-daemonset-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-daemonset-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-daemonset-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-daemonset-" + id + "-uid"),
 		},
 		Status: appsv1.DaemonSetStatus{
 			CurrentNumberScheduled: 3,

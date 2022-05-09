@@ -86,10 +86,9 @@ func newStatefulset(id string) *appsv1.StatefulSet {
 	desired := int32(10)
 	return &appsv1.StatefulSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-statefulset-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-statefulset-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-statefulset-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-statefulset-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

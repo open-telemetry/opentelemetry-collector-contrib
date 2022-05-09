@@ -80,10 +80,9 @@ func newJob(id string) *batchv1.Job {
 	c := int32(10)
 	return &batchv1.Job{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-job-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-job-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-job-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-job-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

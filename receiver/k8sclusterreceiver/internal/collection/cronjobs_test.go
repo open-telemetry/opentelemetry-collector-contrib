@@ -77,10 +77,9 @@ func TestCronJobMetadata(t *testing.T) {
 func newCronJob(id string) *batchv1.CronJob {
 	return &batchv1.CronJob{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-cronjob-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-cronjob-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-cronjob-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-cronjob-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

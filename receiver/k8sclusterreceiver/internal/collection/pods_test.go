@@ -162,10 +162,9 @@ func TestPodAndContainerMetricsReportCPUMetricsAsDouble(t *testing.T) {
 func newPodWithContainer(id string, spec *corev1.PodSpec, status *corev1.PodStatus) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-pod-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-pod-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-pod-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-pod-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",
