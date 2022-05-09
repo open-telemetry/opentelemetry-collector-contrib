@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Build tracegen
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: tracegen
           push: false
@@ -34,7 +34,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push tracegen to Github packages
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: tracegen
           push: true
