@@ -16,7 +16,6 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,10 +25,6 @@ import (
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	f := vcenterReceiverFactory{
-		receivers:    make(map[*Config]*vcenterReceiver),
-		receiverLock: &sync.RWMutex{},
-	}
 	testCases := []struct {
 		desc   string
 		testFn func(t *testing.T)
@@ -38,7 +33,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			desc: "Default config",
 			testFn: func(t *testing.T) {
 				t.Parallel()
-				_, err := f.createMetricsReceiver(
+				_, err := createMetricsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					createDefaultConfig(),
@@ -51,7 +46,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			desc: "Nil config",
 			testFn: func(t *testing.T) {
 				t.Parallel()
-				_, err := f.createMetricsReceiver(
+				_, err := createMetricsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					nil,
@@ -64,7 +59,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			desc: "Nil consumer",
 			testFn: func(t *testing.T) {
 				t.Parallel()
-				_, err := f.createMetricsReceiver(
+				_, err := createMetricsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					createDefaultConfig(),

@@ -58,6 +58,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
 		scrapertest.CompareMetrics(expectedMetrics, metrics)
+		require.NoError(t, scraper.Shutdown(ctx))
 	})
 }
 
@@ -66,7 +67,7 @@ func TestScrape_NoClient(t *testing.T) {
 	scraper := &vcenterMetricScraper{
 		client: nil,
 		config: &Config{
-			MetricsConfig: &MetricsConfig{Endpoint: "http://vcsa.localnet"},
+			Endpoint: "http://vcsa.localnet",
 		},
 		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 		logger: zap.NewNop(),
@@ -85,18 +86,14 @@ func TestStartFailures_Metrics(t *testing.T) {
 		{
 			desc: "bad client connect",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "http://no-host",
-				},
+				Endpoint: "http://no-host",
 			},
 			err: errors.New("unable to connect"),
 		},
 		{
 			desc: "unparsable endpoint",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "<protocol>://some-host",
-				},
+				Endpoint: "<protocol>://some-host",
 			},
 			err: errors.New("parse"),
 		},

@@ -29,64 +29,47 @@ func TestConfigValidation(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "nil configs",
-			cfg: Config{
-				MetricsConfig: nil,
-			},
-		},
-		{
 			desc: "empty endpoint",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "",
-				},
+				Endpoint: "",
 			},
 			expectedErr: errors.New("no endpoint was provided"),
 		},
 		{
 			desc: "with endpoint",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "http://vcsa.some-host",
-				},
+
+				Endpoint: "http://vcsa.some-host",
 			},
 		},
 		{
 			desc: "not http or https",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "ws://vcsa.some-host",
-				},
+				Endpoint: "ws://vcsa.some-host",
 			},
 			expectedErr: errors.New("url scheme must be http or https"),
 		},
 		{
 			desc: "unparseable URL",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint:         "h" + string(rune(0x7f)),
-					TLSClientSetting: configtls.TLSClientSetting{},
-				},
+				Endpoint:         "h" + string(rune(0x7f)),
+				TLSClientSetting: configtls.TLSClientSetting{},
 			},
 			expectedErr: errors.New("unable to parse url"),
 		},
 		{
 			desc: "no username",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "https://vcsa.some-host",
-					Password: "otelp",
-				},
+				Endpoint: "https://vcsa.some-host",
+				Password: "otelp",
 			},
 			expectedErr: errors.New("username not provided"),
 		},
 		{
 			desc: "no password",
 			cfg: Config{
-				MetricsConfig: &MetricsConfig{
-					Endpoint: "https://vcsa.some-host",
-					Username: "otelu",
-				},
+				Endpoint: "https://vcsa.some-host",
+				Username: "otelu",
 			},
 			expectedErr: errors.New("password not provided"),
 		},

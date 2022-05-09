@@ -29,15 +29,10 @@ import (
 
 // Config is the configuration of the receiver
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	MetricsConfig           *MetricsConfig `mapstructure:"metrics,omitempty"`
-}
-
-// MetricsConfig is the metrics configuration of the receiver
-type MetricsConfig struct {
+	config.ReceiverSettings                 `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Settings                                metadata.MetricsSettings `mapstructure:"settings"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 	Endpoint                                string                   `mapstructure:"endpoint"`
 	Username                                string                   `mapstructure:"username"`
 	Password                                string                   `mapstructure:"password"`
@@ -54,26 +49,15 @@ func (c *Config) Validate() error {
 	return err
 }
 
-// ID returns the ID of the component.
-func (c *Config) ID() config.ComponentID {
-	// defaulting to use the MetricsConfig ID
-	return c.MetricsConfig.ID()
-}
-
 func (c *Config) validateMetricsConfig() error {
-	mc := c.MetricsConfig
-	if mc == nil {
-		return nil
-	}
-
-	if mc.Endpoint == "" {
+	if c.Endpoint == "" {
 		return errors.New("no endpoint was provided")
 	}
 
 	var err error
-	res, err := url.Parse(mc.Endpoint)
+	res, err := url.Parse(c.Endpoint)
 	if err != nil {
-		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.MetricsConfig.Endpoint, err))
+		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.Endpoint, err))
 		return err
 	}
 
@@ -81,15 +65,15 @@ func (c *Config) validateMetricsConfig() error {
 		err = multierr.Append(err, errors.New("url scheme must be http or https"))
 	}
 
-	if mc.Username == "" {
+	if c.Username == "" {
 		err = multierr.Append(err, errors.New("username not provided and is required"))
 	}
 
-	if mc.Password == "" {
+	if c.Password == "" {
 		err = multierr.Append(err, errors.New("password not provided and is required"))
 	}
 
-	if _, tlsErr := mc.LoadTLSConfig(); err != nil {
+	if _, tlsErr := c.LoadTLSConfig(); err != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
@@ -98,7 +82,7 @@ func (c *Config) validateMetricsConfig() error {
 
 // SDKUrl returns the url for the vCenter SDK
 func (c *Config) SDKUrl() (*url.URL, error) {
-	res, err := url.Parse(c.MetricsConfig.Endpoint)
+	res, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return res, err
 	}

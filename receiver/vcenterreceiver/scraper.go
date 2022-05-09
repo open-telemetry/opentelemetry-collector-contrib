@@ -47,7 +47,7 @@ func newVmwareVcenterScraper(
 		client: client,
 		config: config,
 		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.MetricsConfig.Settings),
+		mb:     metadata.NewMetricsBuilder(config.Metrics),
 	}
 }
 

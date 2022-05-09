@@ -53,16 +53,16 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.MetricsConfig.Insecure)
+	client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.Insecure)
 	if err != nil {
 		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
 	}
-	tlsCfg, err := vc.cfg.MetricsConfig.LoadTLSConfig()
+	tlsCfg, err := vc.cfg.LoadTLSConfig()
 	if err != nil {
 		return err
 	}
 	client.DefaultTransport().TLSClientConfig = tlsCfg
-	user := url.UserPassword(vc.cfg.MetricsConfig.Username, vc.cfg.MetricsConfig.Password)
+	user := url.UserPassword(vc.cfg.Username, vc.cfg.Password)
 	err = client.Login(ctx, user)
 	if err != nil {
 		return fmt.Errorf("unable to login to vcenter sdk: %w", err)

@@ -1,10 +1,12 @@
 receivers:
   vcenter:
+    endpoint: http://vcsa.host.localnet
+    username: otelu
+    password: $VCENTER_PASSWORD
+    collection_interval: 5m
     metrics:
-      endpoint: http://vcsa.host.localnet
-      username: otelu
-      password: $VCENTER_PASSWORD
-      collection_interval: 5m
+      vcenter.host.cpu.utilization:
+        enabled: false
 
 processors:
   nop:
