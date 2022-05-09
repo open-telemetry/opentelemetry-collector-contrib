@@ -16,6 +16,7 @@ package pulsarreceiver
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -60,7 +61,7 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 	}
 }
 
-// NewFactory creates Kafka receiver factory.
+// NewFactory creates Pulsar receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 
 	f := &PulsarReceiverFactory{
