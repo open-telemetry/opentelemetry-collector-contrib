@@ -1,0 +1,329 @@
+{
+    "resourceMetrics": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "node_name",
+                        "value": {
+                            "stringValue": "BB9020011AC4202"
+                        }
+                    }
+                ]
+            },
+            "instrumentationLibraryMetrics": [
+                {
+                    "instrumentationLibrary": {
+                        "name": "otelcol/aerospikereceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "aerospike.node.connection.count",
+                            "description": "Number of connections opened and closed to the node",
+                            "unit": "{connections}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "client"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_op",
+                                                "value": {
+                                                    "stringValue": "close"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "4"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "client"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_op",
+                                                "value": {
+                                                    "stringValue": "open"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "5"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "fabric"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_op",
+                                                "value": {
+                                                    "stringValue": "close"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "fabric"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_op",
+                                                "value": {
+                                                    "stringValue": "open"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "48"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "heartbeat"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_op",
+                                                "value": {
+                                                    "stringValue": "close"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "heartbeat"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_op",
+                                                "value": {
+                                                    "stringValue": "open"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "2"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "aerospike.node.connection.open",
+                            "description": "Number of open connections to the node",
+                            "unit": "{connections}",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "client"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "1"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "fabric"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "48"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "heartbeat"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "2"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "namespace",
+                        "value": {
+                            "stringValue": "test"
+                        }
+                    },
+                    {
+                        "key": "node_name",
+                        "value": {
+                            "stringValue": "BB9020011AC4202"
+                        }
+                    }
+                ]
+            },
+            "instrumentationLibraryMetrics": [
+                {
+                    "instrumentationLibrary": {
+                        "name": "otelcol/aerospikereceiver"
+                    },
+                    "metrics": [
+                        {
+                            "name": "aerospike.namespace.disk.available",
+                            "description": "Minimum percentage of contiguous disk space free to the namespace across all devices",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "98"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "aerospike.namespace.memory.free",
+                            "description": "Percentage of the namespace's memory which is still free",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "95"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "aerospike.namespace.memory.usage",
+                            "description": "Memory currently used by each component of the namespace",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "namespace_component",
+                                                "value": {
+                                                    "stringValue": "data"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "8697760"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "namespace_component",
+                                                "value": {
+                                                    "stringValue": "index"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "42238720"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "namespace_component",
+                                                "value": {
+                                                    "stringValue": "sindex"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "namespace_component",
+                                                "value": {
+                                                    "stringValue": "set_index"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "aerospike.node.memory.free",
+                            "description": "Percentage of the node's memory which is still free",
+                            "unit": "%",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1651762956432700000",
+                                        "timeUnixNano": "1651762986434811000",
+                                        "asInt": "95"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
