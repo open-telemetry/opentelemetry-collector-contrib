@@ -23,23 +23,18 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        if: steps.module-cache.outputs.hit != 'true'
+        if: steps.go-cache.outputs.hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.tool-cache.outputs.cache-hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
   check-collector-module-version:
     runs-on: ubuntu-latest
@@ -64,23 +59,18 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
-      - name: Cache Build
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Lint Build
         uses: actions/cache@v3
         with:
           path: /home/runner/.cache/go-build
-          key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: go-lint-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
         run: make -j2 golint
   checks:
@@ -98,23 +88,13 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
-      - name: Cache Build
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/.cache/go-build
-          key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: CheckDoc
         run: make checkdoc
       - name: Porto
@@ -149,23 +129,18 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
-      - name: Cache Build
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Test Build
         uses: actions/cache@v3
         with:
           path: /home/runner/.cache/go-build
-          key: go-build-unittest-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
   integration-tests:
@@ -183,18 +158,13 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
         run: make integration-tests-with-cover
 
@@ -213,18 +183,13 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
@@ -242,18 +207,13 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
 
@@ -289,12 +249,13 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
         with:
           path: |
+            /home/runner/go/bin
             /home/runner/go/pkg/mod
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Build Collector ${{ matrix.binary }}
         run: make otelcontribcol-${{ matrix.binary }}
       - name: Upload Collector Binaries
@@ -416,12 +377,14 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
-      - name: Cache Tools
-        id: tool-cache
+      - name: Cache Go
+        id: go-cache
         uses: actions/cache@v3
         with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          path: |
+            /home/runner/go/bin
+            /home/runner/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Download Binaries
         uses: actions/download-artifact@v3
         with:
@@ -475,12 +438,14 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
-      - name: Cache Tools
-        id: tool-cache
+      - name: Cache Go
+        id: go-cache
         uses: actions/cache@v3
         with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          path: |
+            /home/runner/go/bin
+            /home/runner/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
