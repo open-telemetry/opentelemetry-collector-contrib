@@ -38,8 +38,8 @@ type MockClient struct {
 }
 
 // ClusterNodes provides a mock function with given fields: ctx
-func (_m *MockClient) ClusterNodes(ctx context.Context) ([]model.ClusterNode, error) {
-	ret := _m.Called(ctx)
+func (m *MockClient) ClusterNodes(ctx context.Context) ([]model.ClusterNode, error) {
+	ret := m.Called(ctx)
 
 	var r0 []model.ClusterNode
 	if rf, ok := ret.Get(0).(func(context.Context) []model.ClusterNode); ok {
@@ -61,8 +61,8 @@ func (_m *MockClient) ClusterNodes(ctx context.Context) ([]model.ClusterNode, er
 }
 
 // InterfaceStatus provides a mock function with given fields: ctx, nodeID, interfaceID, class
-func (_m *MockClient) InterfaceStatus(ctx context.Context, nodeID string, interfaceID string, class nodeClass) (*model.NetworkInterfaceStats, error) {
-	ret := _m.Called(ctx, nodeID, interfaceID, class)
+func (m *MockClient) InterfaceStatus(ctx context.Context, nodeID string, interfaceID string, class nodeClass) (*model.NetworkInterfaceStats, error) {
+	ret := m.Called(ctx, nodeID, interfaceID, class)
 
 	var r0 *model.NetworkInterfaceStats
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, nodeClass) *model.NetworkInterfaceStats); ok {
@@ -84,8 +84,8 @@ func (_m *MockClient) InterfaceStatus(ctx context.Context, nodeID string, interf
 }
 
 // Interfaces provides a mock function with given fields: ctx, nodeID, class
-func (_m *MockClient) Interfaces(ctx context.Context, nodeID string, class nodeClass) ([]model.NetworkInterface, error) {
-	ret := _m.Called(ctx, nodeID, class)
+func (m *MockClient) Interfaces(ctx context.Context, nodeID string, class nodeClass) ([]model.NetworkInterface, error) {
+	ret := m.Called(ctx, nodeID, class)
 
 	var r0 []model.NetworkInterface
 	if rf, ok := ret.Get(0).(func(context.Context, string, nodeClass) []model.NetworkInterface); ok {
@@ -130,8 +130,8 @@ func (_m *MockClient) NodeStatus(ctx context.Context, nodeID string, class nodeC
 }
 
 // TransportNodes provides a mock function with given fields: ctx
-func (_m *MockClient) TransportNodes(ctx context.Context) ([]model.TransportNode, error) {
-	ret := _m.Called(ctx)
+func (m *MockClient) TransportNodes(ctx context.Context) ([]model.TransportNode, error) {
+	ret := m.Called(ctx)
 
 	var r0 []model.TransportNode
 	if rf, ok := ret.Get(0).(func(context.Context) []model.TransportNode); ok {

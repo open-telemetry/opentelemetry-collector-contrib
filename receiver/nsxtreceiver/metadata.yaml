@@ -14,7 +14,7 @@ resource_attributes:
       - manager
       - host
       - edge
-  nsxt.interface.id:
+  device.id:
     description: The name of the network interface.
     type: string
 
@@ -47,8 +47,8 @@ attributes:
     description: The name of the load balancer being utilized.
 
 metrics:
-  nsxt.interface.throughput:
-    description: The number of Bytes flowing through the network interface.
+  nsxt.node.network.io:
+    description: The number of bytes which have flowed through the network interface.
     unit: "By"
     sum:
       monotonic: true
@@ -56,8 +56,8 @@ metrics:
       value_type: int
     enabled: true
     attributes: [direction]
-  nsxt.interface.packet.count:
-    description: The number of packets flowing through the network interface on the node.
+  nsxt.node.network.packet.count:
+    description: The number of packets which have flowed through the network interface on the node.
     unit: "{packets}"
     sum:
       monotonic: true
@@ -72,13 +72,13 @@ metrics:
       value_type: double
     enabled: true
     attributes: [cpu.process.class]
-  nsxt.node.disk.utilization:
+  nsxt.node.filesystem.utilization:
     description: The percentage of storage space utilized.
     unit: "%"
     gauge:
       value_type: double
     enabled: true
-  nsxt.node.disk.usage:
+  nsxt.node.filesystem.usage:
     description: The amount of storage space used by the node.
     unit: By
     sum:
@@ -88,15 +88,15 @@ metrics:
     enabled: true
     attributes: [disk_state]
   nsxt.node.memory.usage:
-    description: The memory usage of the node
+    description: The memory usage of the node.
     unit: KBy
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
     enabled: true
-  nsxt.node.cache.memory.usage:
-    description: The memory usage of the node's cache
+  nsxt.node.memory.cache.usage:
+    description: The size of the node's memory cache.
     unit: KBy
     sum:
       monotonic: false

@@ -16,36 +16,36 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for nsxtreceiver metrics.
 type MetricsSettings struct {
-	NsxtInterfacePacketCount MetricSettings `mapstructure:"nsxt.interface.packet.count"`
-	NsxtInterfaceThroughput  MetricSettings `mapstructure:"nsxt.interface.throughput"`
-	NsxtNodeCacheMemoryUsage MetricSettings `mapstructure:"nsxt.node.cache.memory.usage"`
-	NsxtNodeCPUUtilization   MetricSettings `mapstructure:"nsxt.node.cpu.utilization"`
-	NsxtNodeDiskUsage        MetricSettings `mapstructure:"nsxt.node.disk.usage"`
-	NsxtNodeDiskUtilization  MetricSettings `mapstructure:"nsxt.node.disk.utilization"`
-	NsxtNodeMemoryUsage      MetricSettings `mapstructure:"nsxt.node.memory.usage"`
+	NsxtNodeCPUUtilization        MetricSettings `mapstructure:"nsxt.node.cpu.utilization"`
+	NsxtNodeFilesystemUsage       MetricSettings `mapstructure:"nsxt.node.filesystem.usage"`
+	NsxtNodeFilesystemUtilization MetricSettings `mapstructure:"nsxt.node.filesystem.utilization"`
+	NsxtNodeMemoryCacheUsage      MetricSettings `mapstructure:"nsxt.node.memory.cache.usage"`
+	NsxtNodeMemoryUsage           MetricSettings `mapstructure:"nsxt.node.memory.usage"`
+	NsxtNodeNetworkIo             MetricSettings `mapstructure:"nsxt.node.network.io"`
+	NsxtNodeNetworkPacketCount    MetricSettings `mapstructure:"nsxt.node.network.packet.count"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
-		NsxtInterfacePacketCount: MetricSettings{
-			Enabled: true,
-		},
-		NsxtInterfaceThroughput: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeCacheMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
 		NsxtNodeCPUUtilization: MetricSettings{
 			Enabled: true,
 		},
-		NsxtNodeDiskUsage: MetricSettings{
+		NsxtNodeFilesystemUsage: MetricSettings{
 			Enabled: true,
 		},
-		NsxtNodeDiskUtilization: MetricSettings{
+		NsxtNodeFilesystemUtilization: MetricSettings{
+			Enabled: true,
+		},
+		NsxtNodeMemoryCacheUsage: MetricSettings{
 			Enabled: true,
 		},
 		NsxtNodeMemoryUsage: MetricSettings{
+			Enabled: true,
+		},
+		NsxtNodeNetworkIo: MetricSettings{
+			Enabled: true,
+		},
+		NsxtNodeNetworkPacketCount: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -159,164 +159,6 @@ var MapAttributePacketType = map[string]AttributePacketType{
 	"success": AttributePacketTypeSuccess,
 }
 
-type metricNsxtInterfacePacketCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nsxt.interface.packet.count metric with initial data.
-func (m *metricNsxtInterfacePacketCount) init() {
-	m.data.SetName("nsxt.interface.packet.count")
-	m.data.SetDescription("The number of packets flowing through the network interface on the node.")
-	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricNsxtInterfacePacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string, packetTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
-	dp.Attributes().Insert(A.PacketType, pcommon.NewValueString(packetTypeAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNsxtInterfacePacketCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNsxtInterfacePacketCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNsxtInterfacePacketCount(settings MetricSettings) metricNsxtInterfacePacketCount {
-	m := metricNsxtInterfacePacketCount{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNsxtInterfaceThroughput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nsxt.interface.throughput metric with initial data.
-func (m *metricNsxtInterfaceThroughput) init() {
-	m.data.SetName("nsxt.interface.throughput")
-	m.data.SetDescription("The number of Bytes flowing through the network interface.")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricNsxtInterfaceThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNsxtInterfaceThroughput) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNsxtInterfaceThroughput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNsxtInterfaceThroughput(settings MetricSettings) metricNsxtInterfaceThroughput {
-	m := metricNsxtInterfaceThroughput{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNsxtNodeCacheMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nsxt.node.cache.memory.usage metric with initial data.
-func (m *metricNsxtNodeCacheMemoryUsage) init() {
-	m.data.SetName("nsxt.node.cache.memory.usage")
-	m.data.SetDescription("The memory usage of the node's cache")
-	m.data.SetUnit("KBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricNsxtNodeCacheMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNsxtNodeCacheMemoryUsage) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNsxtNodeCacheMemoryUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNsxtNodeCacheMemoryUsage(settings MetricSettings) metricNsxtNodeCacheMemoryUsage {
-	m := metricNsxtNodeCacheMemoryUsage{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricNsxtNodeCPUUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -368,15 +210,15 @@ func newMetricNsxtNodeCPUUtilization(settings MetricSettings) metricNsxtNodeCPUU
 	return m
 }
 
-type metricNsxtNodeDiskUsage struct {
+type metricNsxtNodeFilesystemUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills nsxt.node.disk.usage metric with initial data.
-func (m *metricNsxtNodeDiskUsage) init() {
-	m.data.SetName("nsxt.node.disk.usage")
+// init fills nsxt.node.filesystem.usage metric with initial data.
+func (m *metricNsxtNodeFilesystemUsage) init() {
+	m.data.SetName("nsxt.node.filesystem.usage")
 	m.data.SetDescription("The amount of storage space used by the node.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -385,7 +227,7 @@ func (m *metricNsxtNodeDiskUsage) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNsxtNodeDiskUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskStateAttributeValue string) {
+func (m *metricNsxtNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -397,14 +239,14 @@ func (m *metricNsxtNodeDiskUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNsxtNodeDiskUsage) updateCapacity() {
+func (m *metricNsxtNodeFilesystemUsage) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNsxtNodeDiskUsage) emit(metrics pmetric.MetricSlice) {
+func (m *metricNsxtNodeFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -412,8 +254,8 @@ func (m *metricNsxtNodeDiskUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeDiskUsage(settings MetricSettings) metricNsxtNodeDiskUsage {
-	m := metricNsxtNodeDiskUsage{settings: settings}
+func newMetricNsxtNodeFilesystemUsage(settings MetricSettings) metricNsxtNodeFilesystemUsage {
+	m := metricNsxtNodeFilesystemUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -421,21 +263,21 @@ func newMetricNsxtNodeDiskUsage(settings MetricSettings) metricNsxtNodeDiskUsage
 	return m
 }
 
-type metricNsxtNodeDiskUtilization struct {
+type metricNsxtNodeFilesystemUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills nsxt.node.disk.utilization metric with initial data.
-func (m *metricNsxtNodeDiskUtilization) init() {
-	m.data.SetName("nsxt.node.disk.utilization")
+// init fills nsxt.node.filesystem.utilization metric with initial data.
+func (m *metricNsxtNodeFilesystemUtilization) init() {
+	m.data.SetName("nsxt.node.filesystem.utilization")
 	m.data.SetDescription("The percentage of storage space utilized.")
 	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricNsxtNodeDiskUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricNsxtNodeFilesystemUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -446,14 +288,14 @@ func (m *metricNsxtNodeDiskUtilization) recordDataPoint(start pcommon.Timestamp,
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNsxtNodeDiskUtilization) updateCapacity() {
+func (m *metricNsxtNodeFilesystemUtilization) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNsxtNodeDiskUtilization) emit(metrics pmetric.MetricSlice) {
+func (m *metricNsxtNodeFilesystemUtilization) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -461,8 +303,59 @@ func (m *metricNsxtNodeDiskUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeDiskUtilization(settings MetricSettings) metricNsxtNodeDiskUtilization {
-	m := metricNsxtNodeDiskUtilization{settings: settings}
+func newMetricNsxtNodeFilesystemUtilization(settings MetricSettings) metricNsxtNodeFilesystemUtilization {
+	m := metricNsxtNodeFilesystemUtilization{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNsxtNodeMemoryCacheUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills nsxt.node.memory.cache.usage metric with initial data.
+func (m *metricNsxtNodeMemoryCacheUsage) init() {
+	m.data.SetName("nsxt.node.memory.cache.usage")
+	m.data.SetDescription("The size of the node's memory cache.")
+	m.data.SetUnit("KBy")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricNsxtNodeMemoryCacheUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNsxtNodeMemoryCacheUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNsxtNodeMemoryCacheUsage) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNsxtNodeMemoryCacheUsage(settings MetricSettings) metricNsxtNodeMemoryCacheUsage {
+	m := metricNsxtNodeMemoryCacheUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -479,7 +372,7 @@ type metricNsxtNodeMemoryUsage struct {
 // init fills nsxt.node.memory.usage metric with initial data.
 func (m *metricNsxtNodeMemoryUsage) init() {
 	m.data.SetName("nsxt.node.memory.usage")
-	m.data.SetDescription("The memory usage of the node")
+	m.data.SetDescription("The memory usage of the node.")
 	m.data.SetUnit("KBy")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -521,20 +414,127 @@ func newMetricNsxtNodeMemoryUsage(settings MetricSettings) metricNsxtNodeMemoryU
 	return m
 }
 
+type metricNsxtNodeNetworkIo struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills nsxt.node.network.io metric with initial data.
+func (m *metricNsxtNodeNetworkIo) init() {
+	m.data.SetName("nsxt.node.network.io")
+	m.data.SetDescription("The number of bytes which have flowed through the network interface.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNsxtNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNsxtNodeNetworkIo) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNsxtNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNsxtNodeNetworkIo(settings MetricSettings) metricNsxtNodeNetworkIo {
+	m := metricNsxtNodeNetworkIo{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNsxtNodeNetworkPacketCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills nsxt.node.network.packet.count metric with initial data.
+func (m *metricNsxtNodeNetworkPacketCount) init() {
+	m.data.SetName("nsxt.node.network.packet.count")
+	m.data.SetDescription("The number of packets which have flowed through the network interface on the node.")
+	m.data.SetUnit("{packets}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNsxtNodeNetworkPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string, packetTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.PacketType, pcommon.NewValueString(packetTypeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNsxtNodeNetworkPacketCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNsxtNodeNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNsxtNodeNetworkPacketCount(settings MetricSettings) metricNsxtNodeNetworkPacketCount {
+	m := metricNsxtNodeNetworkPacketCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                      pcommon.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity                int               // maximum observed number of metrics per resource.
-	resourceCapacity               int               // maximum observed number of resource attributes.
-	metricsBuffer                  pmetric.Metrics   // accumulates metrics data before emitting.
-	metricNsxtInterfacePacketCount metricNsxtInterfacePacketCount
-	metricNsxtInterfaceThroughput  metricNsxtInterfaceThroughput
-	metricNsxtNodeCacheMemoryUsage metricNsxtNodeCacheMemoryUsage
-	metricNsxtNodeCPUUtilization   metricNsxtNodeCPUUtilization
-	metricNsxtNodeDiskUsage        metricNsxtNodeDiskUsage
-	metricNsxtNodeDiskUtilization  metricNsxtNodeDiskUtilization
-	metricNsxtNodeMemoryUsage      metricNsxtNodeMemoryUsage
+	startTime                           pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                     int               // maximum observed number of metrics per resource.
+	resourceCapacity                    int               // maximum observed number of resource attributes.
+	metricsBuffer                       pmetric.Metrics   // accumulates metrics data before emitting.
+	metricNsxtNodeCPUUtilization        metricNsxtNodeCPUUtilization
+	metricNsxtNodeFilesystemUsage       metricNsxtNodeFilesystemUsage
+	metricNsxtNodeFilesystemUtilization metricNsxtNodeFilesystemUtilization
+	metricNsxtNodeMemoryCacheUsage      metricNsxtNodeMemoryCacheUsage
+	metricNsxtNodeMemoryUsage           metricNsxtNodeMemoryUsage
+	metricNsxtNodeNetworkIo             metricNsxtNodeNetworkIo
+	metricNsxtNodeNetworkPacketCount    metricNsxtNodeNetworkPacketCount
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -549,15 +549,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                  pmetric.NewMetrics(),
-		metricNsxtInterfacePacketCount: newMetricNsxtInterfacePacketCount(settings.NsxtInterfacePacketCount),
-		metricNsxtInterfaceThroughput:  newMetricNsxtInterfaceThroughput(settings.NsxtInterfaceThroughput),
-		metricNsxtNodeCacheMemoryUsage: newMetricNsxtNodeCacheMemoryUsage(settings.NsxtNodeCacheMemoryUsage),
-		metricNsxtNodeCPUUtilization:   newMetricNsxtNodeCPUUtilization(settings.NsxtNodeCPUUtilization),
-		metricNsxtNodeDiskUsage:        newMetricNsxtNodeDiskUsage(settings.NsxtNodeDiskUsage),
-		metricNsxtNodeDiskUtilization:  newMetricNsxtNodeDiskUtilization(settings.NsxtNodeDiskUtilization),
-		metricNsxtNodeMemoryUsage:      newMetricNsxtNodeMemoryUsage(settings.NsxtNodeMemoryUsage),
+		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                       pmetric.NewMetrics(),
+		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(settings.NsxtNodeCPUUtilization),
+		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(settings.NsxtNodeFilesystemUsage),
+		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(settings.NsxtNodeFilesystemUtilization),
+		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(settings.NsxtNodeMemoryCacheUsage),
+		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(settings.NsxtNodeMemoryUsage),
+		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(settings.NsxtNodeNetworkIo),
+		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(settings.NsxtNodeNetworkPacketCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -578,10 +578,10 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceOption applies changes to provided resource.
 type ResourceOption func(pcommon.Resource)
 
-// WithNsxtInterfaceID sets provided value as "nsxt.interface.id" attribute for current resource.
-func WithNsxtInterfaceID(val string) ResourceOption {
+// WithDeviceID sets provided value as "device.id" attribute for current resource.
+func WithDeviceID(val string) ResourceOption {
 	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("nsxt.interface.id", val)
+		r.Attributes().UpsertString("device.id", val)
 	}
 }
 
@@ -619,13 +619,13 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/nsxtreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricNsxtInterfacePacketCount.emit(ils.Metrics())
-	mb.metricNsxtInterfaceThroughput.emit(ils.Metrics())
-	mb.metricNsxtNodeCacheMemoryUsage.emit(ils.Metrics())
 	mb.metricNsxtNodeCPUUtilization.emit(ils.Metrics())
-	mb.metricNsxtNodeDiskUsage.emit(ils.Metrics())
-	mb.metricNsxtNodeDiskUtilization.emit(ils.Metrics())
+	mb.metricNsxtNodeFilesystemUsage.emit(ils.Metrics())
+	mb.metricNsxtNodeFilesystemUtilization.emit(ils.Metrics())
+	mb.metricNsxtNodeMemoryCacheUsage.emit(ils.Metrics())
 	mb.metricNsxtNodeMemoryUsage.emit(ils.Metrics())
+	mb.metricNsxtNodeNetworkIo.emit(ils.Metrics())
+	mb.metricNsxtNodeNetworkPacketCount.emit(ils.Metrics())
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -642,39 +642,39 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordNsxtInterfacePacketCountDataPoint adds a data point to nsxt.interface.packet.count metric.
-func (mb *MetricsBuilder) RecordNsxtInterfacePacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, packetTypeAttributeValue AttributePacketType) {
-	mb.metricNsxtInterfacePacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), packetTypeAttributeValue.String())
-}
-
-// RecordNsxtInterfaceThroughputDataPoint adds a data point to nsxt.interface.throughput metric.
-func (mb *MetricsBuilder) RecordNsxtInterfaceThroughputDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricNsxtInterfaceThroughput.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
-}
-
-// RecordNsxtNodeCacheMemoryUsageDataPoint adds a data point to nsxt.node.cache.memory.usage metric.
-func (mb *MetricsBuilder) RecordNsxtNodeCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNsxtNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordNsxtNodeCPUUtilizationDataPoint adds a data point to nsxt.node.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordNsxtNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuProcessClassAttributeValue AttributeCPUProcessClass) {
 	mb.metricNsxtNodeCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuProcessClassAttributeValue.String())
 }
 
-// RecordNsxtNodeDiskUsageDataPoint adds a data point to nsxt.node.disk.usage metric.
-func (mb *MetricsBuilder) RecordNsxtNodeDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
-	mb.metricNsxtNodeDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
+// RecordNsxtNodeFilesystemUsageDataPoint adds a data point to nsxt.node.filesystem.usage metric.
+func (mb *MetricsBuilder) RecordNsxtNodeFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
+	mb.metricNsxtNodeFilesystemUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
 }
 
-// RecordNsxtNodeDiskUtilizationDataPoint adds a data point to nsxt.node.disk.utilization metric.
-func (mb *MetricsBuilder) RecordNsxtNodeDiskUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricNsxtNodeDiskUtilization.recordDataPoint(mb.startTime, ts, val)
+// RecordNsxtNodeFilesystemUtilizationDataPoint adds a data point to nsxt.node.filesystem.utilization metric.
+func (mb *MetricsBuilder) RecordNsxtNodeFilesystemUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricNsxtNodeFilesystemUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordNsxtNodeMemoryCacheUsageDataPoint adds a data point to nsxt.node.memory.cache.usage metric.
+func (mb *MetricsBuilder) RecordNsxtNodeMemoryCacheUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricNsxtNodeMemoryCacheUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordNsxtNodeMemoryUsageDataPoint adds a data point to nsxt.node.memory.usage metric.
 func (mb *MetricsBuilder) RecordNsxtNodeMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricNsxtNodeMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordNsxtNodeNetworkIoDataPoint adds a data point to nsxt.node.network.io metric.
+func (mb *MetricsBuilder) RecordNsxtNodeNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricNsxtNodeNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+}
+
+// RecordNsxtNodeNetworkPacketCountDataPoint adds a data point to nsxt.node.network.packet.count metric.
+func (mb *MetricsBuilder) RecordNsxtNodeNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, packetTypeAttributeValue AttributePacketType) {
+	mb.metricNsxtNodeNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), packetTypeAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

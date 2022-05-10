@@ -8,13 +8,13 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **nsxt.interface.packet.count** | The number of packets flowing through the network interface on the node. | {packets} | Sum(Int) | <ul> <li>direction</li> <li>packet.type</li> </ul> |
-| **nsxt.interface.throughput** | The number of Bytes flowing through the network interface. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **nsxt.node.cache.memory.usage** | The memory usage of the node's cache | KBy | Sum(Int) | <ul> </ul> |
 | **nsxt.node.cpu.utilization** | The average amount of CPU being used by the node. | % | Gauge(Double) | <ul> <li>cpu.process.class</li> </ul> |
-| **nsxt.node.disk.usage** | The amount of storage space used by the node. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
-| **nsxt.node.disk.utilization** | The percentage of storage space utilized. | % | Gauge(Double) | <ul> </ul> |
-| **nsxt.node.memory.usage** | The memory usage of the node | KBy | Sum(Int) | <ul> </ul> |
+| **nsxt.node.filesystem.usage** | The amount of storage space used by the node. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
+| **nsxt.node.filesystem.utilization** | The percentage of storage space utilized. | % | Gauge(Double) | <ul> </ul> |
+| **nsxt.node.memory.cache.usage** | The size of the node's memory cache. | KBy | Sum(Int) | <ul> </ul> |
+| **nsxt.node.memory.usage** | The memory usage of the node. | KBy | Sum(Int) | <ul> </ul> |
+| **nsxt.node.network.io** | The number of bytes which have flowed through the network interface. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **nsxt.node.network.packet.count** | The number of packets which have flowed through the network interface on the node. | {packets} | Sum(Int) | <ul> <li>direction</li> <li>packet.type</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -29,7 +29,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| nsxt.interface.id | The name of the network interface. | String |
+| device.id | The name of the network interface. | String |
 | nsxt.node.id | The ID of the NSX Node. | String |
 | nsxt.node.name | The name of the NSX Node. | String |
 | nsxt.node.type | The type of NSX Node. | String |

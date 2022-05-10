@@ -4,7 +4,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "nsxt.interface.id",
+                        "key": "device.id",
                         "value": {
                             "stringValue": "vmnic0"
                         }
@@ -24,8 +24,45 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.interface.packet.count",
-                            "description": "The number of packets flowing through the network interface on the node.",
+                            "name": "nsxt.node.network.io",
+                            "description": "The number of bytes which have flowed through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.network.packet.count",
+                            "description": "The number of packets which have flowed through the network interface on the node.",
                             "unit": "{packets}",
                             "sum": {
                                 "dataPoints": [
@@ -44,8 +81,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -63,8 +100,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -82,8 +119,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "63594238"
                                     },
                                     {
@@ -101,8 +138,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -120,8 +157,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -139,45 +176,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "0"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "nsxt.interface.throughput",
-                            "description": "The number of Bytes flowing through the network interface.",
-                            "unit": "By",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "received"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "4161088074"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "transmitted"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -193,7 +193,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "nsxt.interface.id",
+                        "key": "device.id",
                         "value": {
                             "stringValue": "vmk10"
                         }
@@ -213,8 +213,45 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.interface.packet.count",
-                            "description": "The number of packets flowing through the network interface on the node.",
+                            "name": "nsxt.node.network.io",
+                            "description": "The number of bytes which have flowed through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.network.packet.count",
+                            "description": "The number of packets which have flowed through the network interface on the node.",
                             "unit": "{packets}",
                             "sum": {
                                 "dataPoints": [
@@ -233,8 +270,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -252,8 +289,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -271,8 +308,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "63594238"
                                     },
                                     {
@@ -290,8 +327,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -309,8 +346,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -328,45 +365,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "0"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "nsxt.interface.throughput",
-                            "description": "The number of Bytes flowing through the network interface.",
-                            "unit": "By",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "received"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "4161088074"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "transmitted"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -408,21 +408,6 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.node.cache.memory.usage",
-                            "description": "The memory usage of the node's cache",
-                            "unit": "KBy",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "8"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
-                            }
-                        },
-                        {
                             "name": "nsxt.node.cpu.utilization",
                             "description": "The average amount of CPU being used by the node.",
                             "unit": "%",
@@ -437,8 +422,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 0.01
                                     },
                                     {
@@ -450,15 +435,15 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 4.34
                                     }
                                 ]
                             }
                         },
                         {
-                            "name": "nsxt.node.disk.usage",
+                            "name": "nsxt.node.filesystem.usage",
                             "description": "The amount of storage space used by the node.",
                             "unit": "By",
                             "sum": {
@@ -472,8 +457,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -485,8 +470,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -494,28 +479,43 @@
                             }
                         },
                         {
-                            "name": "nsxt.node.disk.utilization",
+                            "name": "nsxt.node.filesystem.utilization",
                             "description": "The percentage of storage space utilized.",
                             "unit": "%",
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 0
                                     }
                                 ]
                             }
                         },
                         {
-                            "name": "nsxt.node.memory.usage",
-                            "description": "The memory usage of the node",
+                            "name": "nsxt.node.memory.cache.usage",
+                            "description": "The size of the node's memory cache.",
                             "unit": "KBy",
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "8"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.memory.usage",
+                            "description": "The memory usage of the node.",
+                            "unit": "KBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "89169108"
                                     }
                                 ],
@@ -530,7 +530,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "nsxt.interface.id",
+                        "key": "device.id",
                         "value": {
                             "stringValue": "vmnic0"
                         }
@@ -550,8 +550,45 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.interface.packet.count",
-                            "description": "The number of packets flowing through the network interface on the node.",
+                            "name": "nsxt.node.network.io",
+                            "description": "The number of bytes which have flowed through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.network.packet.count",
+                            "description": "The number of packets which have flowed through the network interface on the node.",
                             "unit": "{packets}",
                             "sum": {
                                 "dataPoints": [
@@ -570,8 +607,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -589,8 +626,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -608,8 +645,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "63594238"
                                     },
                                     {
@@ -627,8 +664,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -646,8 +683,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -665,45 +702,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "0"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "nsxt.interface.throughput",
-                            "description": "The number of Bytes flowing through the network interface.",
-                            "unit": "By",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "received"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "4161088074"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "transmitted"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -719,7 +719,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "nsxt.interface.id",
+                        "key": "device.id",
                         "value": {
                             "stringValue": "vmk10"
                         }
@@ -739,8 +739,45 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.interface.packet.count",
-                            "description": "The number of packets flowing through the network interface on the node.",
+                            "name": "nsxt.node.network.io",
+                            "description": "The number of bytes which have flowed through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "4161088074"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.network.packet.count",
+                            "description": "The number of packets which have flowed through the network interface on the node.",
                             "unit": "{packets}",
                             "sum": {
                                 "dataPoints": [
@@ -759,8 +796,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -778,8 +815,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -797,8 +834,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "63594238"
                                     },
                                     {
@@ -816,8 +853,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -835,8 +872,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -854,45 +891,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "0"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "nsxt.interface.throughput",
-                            "description": "The number of Bytes flowing through the network interface.",
-                            "unit": "By",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "received"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "4161088074"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "transmitted"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -934,21 +934,6 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.node.cache.memory.usage",
-                            "description": "The memory usage of the node's cache",
-                            "unit": "KBy",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "8"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
-                            }
-                        },
-                        {
                             "name": "nsxt.node.cpu.utilization",
                             "description": "The average amount of CPU being used by the node.",
                             "unit": "%",
@@ -963,8 +948,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 0.01
                                     },
                                     {
@@ -976,15 +961,15 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 4.34
                                     }
                                 ]
                             }
                         },
                         {
-                            "name": "nsxt.node.disk.usage",
+                            "name": "nsxt.node.filesystem.usage",
                             "description": "The amount of storage space used by the node.",
                             "unit": "By",
                             "sum": {
@@ -998,8 +983,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -1011,8 +996,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -1020,28 +1005,43 @@
                             }
                         },
                         {
-                            "name": "nsxt.node.disk.utilization",
+                            "name": "nsxt.node.filesystem.utilization",
                             "description": "The percentage of storage space utilized.",
                             "unit": "%",
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 0
                                     }
                                 ]
                             }
                         },
                         {
-                            "name": "nsxt.node.memory.usage",
-                            "description": "The memory usage of the node",
+                            "name": "nsxt.node.memory.cache.usage",
+                            "description": "The size of the node's memory cache.",
                             "unit": "KBy",
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "8"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.memory.usage",
+                            "description": "The memory usage of the node.",
+                            "unit": "KBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "143728936"
                                     }
                                 ],
@@ -1056,7 +1056,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "nsxt.interface.id",
+                        "key": "device.id",
                         "value": {
                             "stringValue": "lo"
                         }
@@ -1076,8 +1076,45 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.interface.packet.count",
-                            "description": "The number of packets flowing through the network interface on the node.",
+                            "name": "nsxt.node.network.io",
+                            "description": "The number of bytes which have flowed through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "2837237037443"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "5877910030884"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.network.packet.count",
+                            "description": "The number of packets which have flowed through the network interface on the node.",
                             "unit": "{packets}",
                             "sum": {
                                 "dataPoints": [
@@ -1096,8 +1133,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "288"
                                     },
                                     {
@@ -1115,8 +1152,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -1134,8 +1171,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "12483778397"
                                     },
                                     {
@@ -1153,8 +1190,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -1172,8 +1209,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -1191,46 +1228,9 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "12313320048"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "nsxt.interface.throughput",
-                            "description": "The number of Bytes flowing through the network interface.",
-                            "unit": "By",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "received"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "2837237037443"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "transmitted"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "5877910030884"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1245,7 +1245,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "nsxt.interface.id",
+                        "key": "device.id",
                         "value": {
                             "stringValue": "eth0"
                         }
@@ -1265,8 +1265,45 @@
                     },
                     "metrics": [
                         {
-                            "name": "nsxt.interface.packet.count",
-                            "description": "The number of packets flowing through the network interface on the node.",
+                            "name": "nsxt.node.network.io",
+                            "description": "The number of bytes which have flowed through the network interface.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "2837237037443"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
+                                        "asInt": "5877910030884"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "nsxt.node.network.packet.count",
+                            "description": "The number of packets which have flowed through the network interface on the node.",
                             "unit": "{packets}",
                             "sum": {
                                 "dataPoints": [
@@ -1285,8 +1322,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "288"
                                     },
                                     {
@@ -1304,8 +1341,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -1323,8 +1360,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "12483778397"
                                     },
                                     {
@@ -1342,8 +1379,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -1361,8 +1398,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "0"
                                     },
                                     {
@@ -1380,46 +1417,9 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "12313320048"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "nsxt.interface.throughput",
-                            "description": "The number of Bytes flowing through the network interface.",
-                            "unit": "By",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "received"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "2837237037443"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "direction",
-                                                "value": {
-                                                    "stringValue": "transmitted"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
-                                        "asInt": "5877910030884"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1474,8 +1474,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 0
                                     },
                                     {
@@ -1487,15 +1487,15 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 0
                                     }
                                 ]
                             }
                         },
                         {
-                            "name": "nsxt.node.disk.usage",
+                            "name": "nsxt.node.filesystem.usage",
                             "description": "The amount of storage space used by the node.",
                             "unit": "By",
                             "sum": {
@@ -1509,8 +1509,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "26168032"
                                     },
                                     {
@@ -1522,8 +1522,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "237014124"
                                     }
                                 ],
@@ -1531,14 +1531,14 @@
                             }
                         },
                         {
-                            "name": "nsxt.node.disk.utilization",
+                            "name": "nsxt.node.filesystem.utilization",
                             "description": "The percentage of storage space utilized.",
                             "unit": "%",
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asDouble": 0.09942935492936687
                                     }
                                 ]
@@ -1546,13 +1546,13 @@
                         },
                         {
                             "name": "nsxt.node.memory.usage",
-                            "description": "The memory usage of the node",
+                            "description": "The memory usage of the node.",
                             "unit": "KBy",
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1652125160518076000",
-                                        "timeUnixNano": "1652125160526121000",
+                                        "startTimeUnixNano": "1652216053832502000",
+                                        "timeUnixNano": "1652216053835312000",
                                         "asInt": "19636300"
                                     }
                                 ],
