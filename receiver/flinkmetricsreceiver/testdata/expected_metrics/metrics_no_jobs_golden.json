@@ -1,0 +1,1723 @@
+{
+   "resourceMetrics": [
+      {
+         "resource": {},
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of checkpoints by type.",
+                     "name": "flink.job.checkpoints.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "failed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "in_progress"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "completed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "{checkpoints}"
+                  },
+                  {
+                     "description": "The total size of the last checkpoint.",
+                     "name": "flink.job.last_checkpoint.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The time it took to complete the last checkpoint.",
+                     "name": "flink.job.last_checkpoint.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
+                     "name": "flink.job.restart.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "{restarts}"
+                  },
+                  {
+                     "description": "The total amount of managed memory.",
+                     "name": "flink.jobmanager.status.flink.memory.managed.total",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "28",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of managed memory currently used.",
+                     "name": "flink.jobmanager.status.flink.memory.managed.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "29",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The total number of classes loaded since the start of the JVM.",
+                     "name": "flink.jobmanager.status.jvm.class_loader.classes_loaded",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "21",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "{classes}"
+                  },
+                  {
+                     "description": "The recent CPU usage of the JVM.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 0.24,
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "name": "flink.jobmanager.status.jvm.cpu.load",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The CPU time used by the JVM.",
+                     "name": "flink.jobmanager.status.jvm.cpu.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ns"
+                  },
+                  {
+                     "description": "The total number of collections that have occurred.",
+                     "name": "flink.jobmanager.status.jvm.garbage_collector.collection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_MarkSweep"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_Scavenge"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{collections}"
+                  },
+                  {
+                     "description": "The total time spent performing garbage collection.",
+                     "name": "flink.jobmanager.status.jvm.garbage_collector.collection.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_MarkSweep"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_Scavenge"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The total capacity of all buffers in the direct buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.direct.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "19",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the direct buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.direct.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "18",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jobmanager.status.jvm.memory.heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "7",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of heap memory that can be used for memory management.",
+                     "name": "flink.jobmanager.status.jvm.memory.heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "25",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory currently used.",
+                     "name": "flink.jobmanager.status.jvm.memory.heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "26",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The number of buffers in the mapped buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.mapped.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the mapped buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.mapped.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.metaspace.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "8",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.metaspace.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "17",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory currently used in the Metaspace memory pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.metaspace.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "23",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jobmanager.status.jvm.memory.non_heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "15",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of non-heap memory that can be used for memory management.",
+                     "name": "flink.jobmanager.status.jvm.memory.non_heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "13",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory currently used.",
+                     "name": "flink.jobmanager.status.jvm.memory.non_heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "16",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The total number of live threads.",
+                     "name": "flink.jobmanager.status.jvm.threads.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "{threads}"
+                  },
+                  {
+                     "description": "The number of records this operator type has.",
+                     "name": "flink.operator.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "mock-subtask-index"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "mock-subtask-index"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "mock-subtask-index"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "late_records_dropped"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  },
+                  {
+                     "description": "The last watermark this operator has emitted.",
+                     "name": "flink.operator.watermark.output",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "mock-subtask-index"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The number of records this task type has.",
+                     "name": "flink.task.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "task_name",
+                                    "value": {
+                                       "stringValue": "mock-task-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "mock-subtask-index"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "task_name",
+                                    "value": {
+                                       "stringValue": "mock-task-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "mock-subtask-index"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "late_records_dropped"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "mock-job-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "task_name",
+                                    "value": {
+                                       "stringValue": "mock-task-name"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "mock-subtask-index"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  },
+                  {
+                     "description": "The total amount of managed memory.",
+                     "name": "flink.taskmanager.status.flink.memory.managed.total",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of managed memory currently used.",
+                     "name": "flink.taskmanager.status.flink.memory.managed.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "26",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The total number of classes loaded since the start of the JVM.",
+                     "name": "flink.taskmanager.status.jvm.class_loader.classes_loaded",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "24",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "{classes}"
+                  },
+                  {
+                     "description": "The recent CPU usage of the JVM.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 0.28,
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "name": "flink.taskmanager.status.jvm.cpu.load",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The CPU time used by the JVM.",
+                     "name": "flink.taskmanager.status.jvm.cpu.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ns"
+                  },
+                  {
+                     "description": "The total number of collections that have occurred.",
+                     "name": "flink.taskmanager.status.jvm.garbage_collector.collection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Young_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "19",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Old_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{collections}"
+                  },
+                  {
+                     "description": "The total time spent performing garbage collection.",
+                     "name": "flink.taskmanager.status.jvm.garbage_collector.collection.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "21",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Old_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           },
+                           {
+                              "asInt": "32",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Young_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{milliseconds}"
+                  },
+                  {
+                     "description": "The total capacity of all buffers in the direct buffer pool.",
+                     "name": "flink.taskmanager.status.jvm.memory.direct.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "22",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the direct buffer pool.",
+                     "name": "flink.taskmanager.status.jvm.memory.direct.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "20",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.taskmanager.status.jvm.memory.heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of heap memory that can be used for memory management.",
+                     "name": "flink.taskmanager.status.jvm.memory.heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "29",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory currently used.",
+                     "name": "flink.taskmanager.status.jvm.memory.heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "30",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The number of buffers in the mapped buffer pool.",
+                     "name": "flink.taskmanager.status.jvm.memory.mapped.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the mapped buffer pool.",
+                     "name": "flink.taskmanager.status.jvm.memory.mapped.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
+                     "name": "flink.taskmanager.status.jvm.memory.metaspace.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "11",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
+                     "name": "flink.taskmanager.status.jvm.memory.metaspace.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "18",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory currently used in the Metaspace memory pool.",
+                     "name": "flink.taskmanager.status.jvm.memory.metaspace.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "27",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.taskmanager.status.jvm.memory.non_heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "16",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of non-heap memory that can be used for memory management.",
+                     "name": "flink.taskmanager.status.jvm.memory.non_heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "14",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory currently used.",
+                     "name": "flink.taskmanager.status.jvm.memory.non_heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "17",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The total number of live threads.",
+                     "name": "flink.taskmanager.status.jvm.threads.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "7",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "mock-host"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "mock-taskmanager-id"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652091375918402000",
+                              "timeUnixNano": "1652091375918459000"
+                           }
+                        ]
+                     },
+                     "unit": "{threads}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkreceiver"
+               }
+            }
+         ]
+      }
+   ]
+}

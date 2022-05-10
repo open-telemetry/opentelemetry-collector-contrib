@@ -1,0 +1,3 @@
+FROM  bde2020/flink-master:1.14.2-hadoop3.2
+
+COPY /StateMachineExample.jar /integration/StateMachineExample.jar

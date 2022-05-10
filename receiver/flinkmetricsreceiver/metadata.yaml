@@ -1,0 +1,520 @@
+name: flinkreceiver
+
+attributes:
+  host:
+    description: The host, used to distinguish different jobmanager metrics.
+    type: string
+  taskmanager_id:
+    description: The taskmanager ID, used to distinguish taskmanager metrics.
+    type: string
+  job_name:
+    description: The job name, used to distinguish job metrics.
+    type: string
+  task_name:
+    description: The task name, used to distinguish tasks metrics.
+    type: string
+  operator_name:
+    description: The operator name, used to distinguish operator metrics.
+    type: string
+  subtask_index:
+    description: The subtask index, used to distinguish operator metrics.
+    type: int
+  garbage_collector_name:
+    description: The garbage collector name.
+    type: string
+  checkpoint:
+    description: The amount of checkpoints of a given type. 
+    type: string
+    enum: [ in_progress, completed, failed ]
+  record:
+    description: The amount of records of a given type.
+    type: string
+    enum: [ in, out, late_records_dropped ]
+
+metrics:
+  flink.jobmanager.status.jvm.cpu.load:
+    enabled: true
+    description: The recent CPU usage of the JVM.
+    unit: 1
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.cpu.load:
+    enabled: true
+    description: The recent CPU usage of the JVM.
+    unit: 1
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.cpu.time:
+    enabled: true
+    description: The CPU time used by the JVM.
+    unit: ns
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.cpu.time:
+    enabled: true
+    description: The CPU time used by the JVM.
+    unit: ns
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.heap.used:
+    enabled: true
+    description: The amount of heap memory currently used.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.heap.used:
+    enabled: true
+    description: The amount of heap memory currently used.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.heap.committed:
+    enabled: true
+    description: The amount of heap memory guaranteed to be available to the JVM.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.heap.committed:
+    enabled: true
+    description: The amount of heap memory guaranteed to be available to the JVM.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.heap.max:
+    enabled: true
+    description: The maximum amount of heap memory that can be used for memory management.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.heap.max:
+    enabled: true
+    description: The maximum amount of heap memory that can be used for memory management.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.non_heap.used:
+    enabled: true
+    description: The amount of non-heap memory currently used.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.non_heap.used:
+    enabled: true
+    description: The amount of non-heap memory currently used.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.non_heap.committed:
+    enabled: true
+    description: The amount of non-heap memory guaranteed to be available to the JVM.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.non_heap.committed:
+    enabled: true
+    description: The amount of non-heap memory guaranteed to be available to the JVM.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.non_heap.max:
+    enabled: true
+    description: The maximum amount of non-heap memory that can be used for memory management.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.non_heap.max:
+    enabled: true
+    description: The maximum amount of non-heap memory that can be used for memory management.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.metaspace.used:
+    enabled: true
+    description: The amount of memory currently used in the Metaspace memory pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.metaspace.used:
+    enabled: true
+    description: The amount of memory currently used in the Metaspace memory pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.metaspace.committed:
+    enabled: true
+    description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.metaspace.committed:
+    enabled: true
+    description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.metaspace.max:
+    enabled: true
+    description: The maximum amount of memory that can be used in the Metaspace memory pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.metaspace.max:
+    enabled: true
+    description: The maximum amount of memory that can be used in the Metaspace memory pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.direct.used:
+    enabled: true
+    description: The amount of memory used by the JVM for the direct buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.direct.used:
+    enabled: true
+    description: The amount of memory used by the JVM for the direct buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.direct.total_capacity:
+    enabled: true
+    description: The total capacity of all buffers in the direct buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.direct.total_capacity:
+    enabled: true
+    description: The total capacity of all buffers in the direct buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.mapped.used:
+    enabled: true
+    description: The amount of memory used by the JVM for the mapped buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.mapped.used:
+    enabled: true
+    description: The amount of memory used by the JVM for the mapped buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.memory.mapped.total_capacity:
+    enabled: true
+    description: The number of buffers in the mapped buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.memory.mapped.total_capacity:
+    enabled: true
+    description: The number of buffers in the mapped buffer pool.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.flink.memory.managed.used:
+    enabled: true
+    description: The amount of managed memory currently used.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.flink.memory.managed.used:
+    enabled: true
+    description: The amount of managed memory currently used.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.flink.memory.managed.total:
+    enabled: true
+    description: The total amount of managed memory.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.flink.memory.managed.total:
+    enabled: true
+    description: The total amount of managed memory.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.threads.count:
+    enabled: true
+    description: The total number of live threads.
+    unit: "{threads}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.threads.count:
+    enabled: true
+    description: The total number of live threads.
+    unit: "{threads}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.jobmanager.status.jvm.garbage_collector.collection.count:
+    enabled: true
+    description: The total number of collections that have occurred.
+    unit: "{collections}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, garbage_collector_name ]
+  flink.taskmanager.status.jvm.garbage_collector.collection.count:
+    enabled: true
+    description: The total number of collections that have occurred.
+    unit: "{collections}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id, garbage_collector_name ]
+  flink.jobmanager.status.jvm.garbage_collector.collection.time:
+    enabled: true
+    description: The total time spent performing garbage collection.
+    unit: milliseconds
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, garbage_collector_name ]
+  flink.taskmanager.status.jvm.garbage_collector.collection.time:
+    enabled: true
+    description: The total time spent performing garbage collection.
+    unit: "{milliseconds}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id, garbage_collector_name ]
+  flink.jobmanager.status.jvm.class_loader.classes_loaded:
+    enabled: true
+    description: The total number of classes loaded since the start of the JVM.
+    unit: "{classes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host ]
+  flink.taskmanager.status.jvm.class_loader.classes_loaded:
+    enabled: true
+    description: The total number of classes loaded since the start of the JVM.
+    unit: "{classes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id ]
+  flink.job.restart.count:
+    enabled: true
+    description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
+    unit: "{restarts}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, job_name ]
+  flink.job.last_checkpoint.time:
+    enabled: true
+    description: The time it took to complete the last checkpoint.
+    unit: milliseconds
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, job_name ]
+  flink.job.last_checkpoint.size:
+    enabled: true
+    description: The total size of the last checkpoint.
+    unit: bytes
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, job_name ]
+  flink.job.checkpoints.count:
+    enabled: true
+    description: The number of checkpoints by type.
+    unit: "{checkpoints}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, job_name, checkpoint ]
+  flink.task.record.count:
+    enabled: true
+    description: The number of records this task type has.
+    unit: "{records}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id, job_name, task_name, subtask_index, record ]
+  flink.operator.record.count:
+    enabled: true
+    description: The number of records this operator type has.
+    unit: "{records}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id, job_name, operator_name, subtask_index, record ]
+  flink.operator.watermark.output:
+    enabled: true
+    description: The last watermark this operator has emitted.
+    unit: milliseconds
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ host, taskmanager_id, job_name, operator_name, subtask_index ]

@@ -1,0 +1,505 @@
+{
+   "resourceMetrics": [
+      {
+         "resource": {},
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The total number of classes loaded since the start of the JVM.",
+                     "name": "flink.jobmanager.status.jvm.class_loader.classes_loaded",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "7623",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "{classes}"
+                  },
+                  {
+                     "description": "The recent CPU usage of the JVM.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 0.00011395344052342614,
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "name": "flink.jobmanager.status.jvm.cpu.load",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The CPU time used by the JVM.",
+                     "name": "flink.jobmanager.status.jvm.cpu.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "6470000000",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ns"
+                  },
+                  {
+                     "description": "The total number of collections that have occurred.",
+                     "name": "flink.jobmanager.status.jvm.garbage_collector.collection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_MarkSweep"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_Scavenge"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{collections}"
+                  },
+                  {
+                     "description": "The total time spent performing garbage collection.",
+                     "name": "flink.jobmanager.status.jvm.garbage_collector.collection.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "55",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_MarkSweep"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           },
+                           {
+                              "asInt": "24",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "PS_Scavenge"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The total capacity of all buffers in the direct buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.direct.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "528385",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the direct buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.direct.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "528386",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jobmanager.status.jvm.memory.heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1029177344",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of heap memory that can be used for memory management.",
+                     "name": "flink.jobmanager.status.jvm.memory.heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1029177344",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory currently used.",
+                     "name": "flink.jobmanager.status.jvm.memory.heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "131979504",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The number of buffers in the mapped buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.mapped.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the mapped buffer pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.mapped.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.metaspace.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "48627712",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.metaspace.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "268435456",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory currently used in the Metaspace memory pool.",
+                     "name": "flink.jobmanager.status.jvm.memory.metaspace.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "46233488",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jobmanager.status.jvm.memory.non_heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "64618496",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of non-heap memory that can be used for memory management.",
+                     "name": "flink.jobmanager.status.jvm.memory.non_heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "780140544",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory currently used.",
+                     "name": "flink.jobmanager.status.jvm.memory.non_heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "61724472",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The total number of live threads.",
+                     "name": "flink.jobmanager.status.jvm.threads.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "54",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652190685589345000",
+                              "timeUnixNano": "1652190685690597000"
+                           }
+                        ]
+                     },
+                     "unit": "{threads}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkreceiver"
+               }
+            }
+         ]
+      }
+   ]
+}

@@ -1,0 +1,143 @@
+[
+    {
+        "id": "0.numBytesInRemote"
+    },
+    {
+        "id": "0.busyTimeMsPerSecond"
+    },
+    {
+        "id": "0.numBytesInRemotePerSecond"
+    },
+    {
+        "id": "0.numRecordsOutPerSecond"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBuffersInLocalPerSecond"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.Buffers.inputFloatingBuffersUsage"
+    },
+    {
+        "id": "0.numBuffersInLocalPerSecond"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.Buffers.inputExclusiveBuffersUsage"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBuffersInLocal"
+    },
+    {
+        "id": "0.numBytesOut"
+    },
+    {
+        "id": "0.Source__ClickEvent_Source.numRecordsIn"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBuffersInRemotePerSecond"
+    },
+    {
+        "id": "0.numBytesIn"
+    },
+    {
+        "id": "0.Source__ClickEvent_Source.numRecordsInPerSecond"
+    },
+    {
+        "id": "0.Source__ClickEvent_Source.numRecordsOutPerSecond"
+    },
+    {
+        "id": "0.buffers.inputQueueLength"
+    },
+    {
+        "id": "0.Source__ClickEvent_Source.numRecordsOut"
+    },
+    {
+        "id": "0.numRecordsInPerSecond"
+    },
+    {
+        "id": "0.numBytesInLocal"
+    },
+    {
+        "id": "0.numBuffersOut"
+    },
+    {
+        "id": "0.numBuffersInRemotePerSecond"
+    },
+    {
+        "id": "0.numRecordsOut"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBytesInRemotePerSecond"
+    },
+    {
+        "id": "0.numBytesInLocalPerSecond"
+    },
+    {
+        "id": "0.backPressuredTimeMsPerSecond"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBuffersInRemote"
+    },
+    {
+        "id": "0.isBackPressured"
+    },
+    {
+        "id": "0.buffers.inputExclusiveBuffersUsage"
+    },
+    {
+        "id": "0.Source__ClickEvent_Source.currentOutputWatermark"
+    },
+    {
+        "id": "0.numBytesInPerSecond"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBytesInRemote"
+    },
+    {
+        "id": "0.buffers.outPoolUsage"
+    },
+    {
+        "id": "0.buffers.outputQueueLength"
+    },
+    {
+        "id": "0.buffers.inputFloatingBuffersUsage"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBytesInLocal"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.numBytesInLocalPerSecond"
+    },
+    {
+        "id": "0.buffers.inPoolUsage"
+    },
+    {
+        "id": "0.Shuffle.Netty.Output.Buffers.outPoolUsage"
+    },
+    {
+        "id": "0.numRecordsIn"
+    },
+    {
+        "id": "0.Shuffle.Netty.Output.Buffers.outputQueueLength"
+    },
+    {
+        "id": "0.numBuffersInLocal"
+    },
+    {
+        "id": "0.idleTimeMsPerSecond"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.Buffers.inPoolUsage"
+    },
+    {
+        "id": "0.numBuffersInRemote"
+    },
+    {
+        "id": "0.Shuffle.Netty.Input.Buffers.inputQueueLength"
+    },
+    {
+        "id": "0.numBuffersOutPerSecond"
+    },
+    {
+        "id": "0.numBytesOutPerSecond"
+    }
+]

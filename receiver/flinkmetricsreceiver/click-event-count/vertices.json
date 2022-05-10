@@ -1,0 +1,51 @@
+{
+    "id": "bc764cd8ddf7a0cff126f51c16239658",
+    "name": "Source: ClickEvent Source",
+    "parallelism": 2,
+    "maxParallelism": 128,
+    "now": 1651056341379,
+    "subtasks": [
+        {
+            "subtask": 0,
+            "status": "RUNNING",
+            "attempt": 21,
+            "host": "operations-playground_taskmanager_1",
+            "start-time": 1651056176326,
+            "end-time": -1,
+            "duration": 165054,
+            "metrics": {
+                "read-bytes": 0,
+                "read-bytes-complete": true,
+                "write-bytes": 4816896,
+                "write-bytes-complete": true,
+                "read-records": 0,
+                "read-records-complete": true,
+                "write-records": 159077,
+                "write-records-complete": true
+            },
+            "taskmanager-id": "172.29.0.7:35351-88dc2e",
+            "start_time": 1651056176326
+        },
+        {
+            "subtask": 1,
+            "status": "FINISHED",
+            "attempt": 21,
+            "host": "operations-playground_taskmanager_2",
+            "start-time": 1651056176327,
+            "end-time": 1651056178437,
+            "duration": 2110,
+            "metrics": {
+                "read-bytes": 0,
+                "read-bytes-complete": true,
+                "write-bytes": 26,
+                "write-bytes-complete": true,
+                "read-records": 0,
+                "read-records-complete": true,
+                "write-records": 0,
+                "write-records-complete": true
+            },
+            "taskmanager-id": "172.29.0.8:34993-95c478",
+            "start_time": 1651056176327
+        }
+    ]
+}
