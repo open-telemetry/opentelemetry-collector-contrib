@@ -178,7 +178,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 	}
 
 	// Drop non-monotonic and non-cumulative metrics
-	if doubleSum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta || !doubleSum.IsMonotonic() {
+	if doubleSum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta && !doubleSum.IsMonotonic() {
 		return
 	}
 
