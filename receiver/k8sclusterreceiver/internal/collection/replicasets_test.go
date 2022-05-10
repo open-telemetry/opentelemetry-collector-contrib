@@ -40,7 +40,6 @@ func TestReplicasetMetrics(t *testing.T) {
 			"k8s.replicaset.uid":  "test-replicaset-1-uid",
 			"k8s.replicaset.name": "test-replicaset-1",
 			"k8s.namespace.name":  "test-namespace",
-			"k8s.cluster.name":    "test-cluster",
 		},
 	)
 

@@ -40,7 +40,6 @@ func TestDaemonsetMetrics(t *testing.T) {
 			"k8s.daemonset.uid":  "test-daemonset-1-uid",
 			"k8s.daemonset.name": "test-daemonset-1",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 

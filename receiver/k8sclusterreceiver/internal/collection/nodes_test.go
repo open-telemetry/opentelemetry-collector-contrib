@@ -41,9 +41,8 @@ func TestNodeMetricsReportCPUMetricsAsInt(t *testing.T) {
 	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
 	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
-			"k8s.node.uid":     "test-node-1-uid",
-			"k8s.node.name":    "test-node-1",
-			"k8s.cluster.name": "test-cluster",
+			"k8s.node.uid":  "test-node-1-uid",
+			"k8s.node.name": "test-node-1",
 		},
 	)
 
@@ -75,9 +74,8 @@ func TestNodeMetricsReportCPUMetricsAsDouble(t *testing.T) {
 	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
 	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
-			"k8s.node.uid":     "test-node-1-uid",
-			"k8s.node.name":    "test-node-1",
-			"k8s.cluster.name": "test-cluster",
+			"k8s.node.uid":  "test-node-1-uid",
+			"k8s.node.name": "test-node-1",
 		},
 	)
 

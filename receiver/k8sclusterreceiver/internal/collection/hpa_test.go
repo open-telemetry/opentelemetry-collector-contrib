@@ -40,7 +40,6 @@ func TestHPAMetrics(t *testing.T) {
 			"k8s.hpa.uid":        "test-hpa-1-uid",
 			"k8s.hpa.name":       "test-hpa-1",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 

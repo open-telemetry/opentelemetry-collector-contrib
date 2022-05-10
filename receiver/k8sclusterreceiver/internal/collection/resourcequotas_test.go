@@ -40,7 +40,6 @@ func TestRequestQuotaMetrics(t *testing.T) {
 			"k8s.resourcequota.uid":  "test-resourcequota-1-uid",
 			"k8s.resourcequota.name": "test-resourcequota-1",
 			"k8s.namespace.name":     "test-namespace",
-			"k8s.cluster.name":       "test-cluster",
 		},
 	)
 

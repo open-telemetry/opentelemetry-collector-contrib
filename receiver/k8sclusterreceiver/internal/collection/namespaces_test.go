@@ -38,7 +38,6 @@ func TestNamespaceMetrics(t *testing.T) {
 		map[string]string{
 			"k8s.namespace.uid":  "test-namespace-1-uid",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 

@@ -60,7 +60,6 @@ func TestPodAndContainerMetricsReportCPUMetricsAsInt(t *testing.T) {
 			"k8s.pod.name":       "test-pod-1",
 			"k8s.node.name":      "test-node",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
@@ -80,7 +79,6 @@ func TestPodAndContainerMetricsReportCPUMetricsAsInt(t *testing.T) {
 			"k8s.pod.name":         "test-pod-1",
 			"k8s.node.name":        "test-node",
 			"k8s.namespace.name":   "test-namespace",
-			"k8s.cluster.name":     "test-cluster",
 		},
 	)
 
@@ -122,7 +120,6 @@ func TestPodAndContainerMetricsReportCPUMetricsAsDouble(t *testing.T) {
 			"k8s.pod.name":       "test-pod-1",
 			"k8s.node.name":      "test-node",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
@@ -142,7 +139,6 @@ func TestPodAndContainerMetricsReportCPUMetricsAsDouble(t *testing.T) {
 			"k8s.pod.name":         "test-pod-1",
 			"k8s.node.name":        "test-node",
 			"k8s.namespace.name":   "test-namespace",
-			"k8s.cluster.name":     "test-cluster",
 		},
 	)
 

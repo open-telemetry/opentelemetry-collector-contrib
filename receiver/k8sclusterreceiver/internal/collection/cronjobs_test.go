@@ -40,7 +40,6 @@ func TestCronJobMetrics(t *testing.T) {
 			"k8s.cronjob.uid":    "test-cronjob-1-uid",
 			"k8s.cronjob.name":   "test-cronjob-1",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 

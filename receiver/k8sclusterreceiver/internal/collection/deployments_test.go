@@ -40,7 +40,6 @@ func TestDeploymentMetrics(t *testing.T) {
 			"k8s.deployment.uid":  "test-deployment-1-uid",
 			"k8s.deployment.name": "test-deployment-1",
 			"k8s.namespace.name":  "test-namespace",
-			"k8s.cluster.name":    "test-cluster",
 		},
 	)
 

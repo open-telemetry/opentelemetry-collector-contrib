@@ -41,7 +41,6 @@ func TestClusterRequestQuotaMetrics(t *testing.T) {
 		map[string]string{
 			"openshift.clusterquota.uid":  "test-clusterquota-1-uid",
 			"openshift.clusterquota.name": "test-clusterquota-1",
-			"k8s.cluster.name":            "test-openshift-cluster",
 		},
 	)
 
