@@ -81,11 +81,8 @@ gofmt:
 	$(MAKE) for-all-target TARGET="fmt"
 
 .PHONY: golint
-golint: golint-prechecks
+golint:
 	$(MAKE) for-all-target TARGET="lint"
-
-.PHONY: golint-prechecks
-golint-prechecks: checklicense misspell impi
 
 .PHONY: goporto
 goporto:
@@ -327,4 +324,3 @@ multimod-prerelease: install-tools
 crosslink: install-tools
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd)
-
