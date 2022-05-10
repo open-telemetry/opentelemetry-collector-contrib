@@ -455,7 +455,6 @@ func TestExtractionRules(t *testing.T) {
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
 			"k8s.namespace.name":  "ns1",
-			"k8s.cluster.name":    "cluster1",
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
