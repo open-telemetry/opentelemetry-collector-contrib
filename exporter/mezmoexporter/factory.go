@@ -36,14 +36,12 @@ func NewFactory() component.ExporterFactory {
 
 // Create a default Memzo config
 func createDefaultConfig() config.Exporter {
-	qs := exporterhelper.NewDefaultQueueSettings()
-	qs.Enabled = false
-
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: createDefaultHTTPClientSettings(),
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:      qs,
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		IngestURL:          defaultIngestURL,
 	}
 }
 

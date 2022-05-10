@@ -42,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, cfg, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		IngestURL:        "",
+		IngestURL:        defaultIngestURL,
 		IngestKey:        "",
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
