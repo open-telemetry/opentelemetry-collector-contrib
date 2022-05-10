@@ -19,8 +19,8 @@ receivers:
 
 exporters:
   mezmo:
-    ingest_url = "https://logs.logdna.com/log/ingest"
-    ingest_key = "00000000000000000000000000000000"
+    ingest_url: "https://logs.logdna.com/log/ingest"
+    ingest_key: "00000000000000000000000000000000"
 
 service:
   pipelines:
