@@ -28,16 +28,25 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 type sqlServerScraper struct {
-	logger         *zap.Logger
-	config         *Config
-	watchers       []winperfcounters.PerfCounterWatcher
-	metricsBuilder *metadata.MetricsBuilder
+	logger           *zap.Logger
+	config           *Config
+	watcherRecorders []watcherRecorder
+	metricsBuilder   *metadata.MetricsBuilder
 }
+
+// watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
+type watcherRecorder struct {
+	watcher  winperfcounters.PerfCounterWatcher
+	recorder recordFunc
+}
+
+// curriedRecorder is a recorder function that already has value to be recorded,
+// it needs metadata.MetricsBuilder and timestamp as arguments.
+type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
 // newSqlServerScraper returns a new sqlServerScraper.
 func newSqlServerScraper(logger *zap.Logger, cfg *Config) *sqlServerScraper {
@@ -47,61 +56,70 @@ func newSqlServerScraper(logger *zap.Logger, cfg *Config) *sqlServerScraper {
 
 // start creates and sets the watchers for the scraper.
 func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error {
-	watchers := []winperfcounters.PerfCounterWatcher{}
-	for _, objCfg := range createWatcherConfigs() {
-		objWatchers, err := objCfg.BuildPaths()
-		if err != nil {
-			s.logger.Warn("some performance counters could not be initialized", zap.Error(err))
-		}
-		for _, objWatcher := range objWatchers {
-			watchers = append(watchers, objWatcher)
+	s.watcherRecorders = []watcherRecorder{}
+
+	for _, pcr := range perfCounterRecorders {
+		for perfCounterName, recorder := range pcr.recorders {
+			w, err := winperfcounters.NewWatcher(pcr.object, pcr.instance, perfCounterName)
+			if err != nil {
+				s.logger.Warn(err.Error())
+				continue
+			}
+			s.watcherRecorders = append(s.watcherRecorders, watcherRecorder{w, recorder})
 		}
 	}
-	s.watchers = watchers
 
 	return nil
 }
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
 func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	metricsByDatabase, errs := createMetricGroupPerDatabase(s.watchers)
+	recordersByDatabase, errs := recordersPerDatabase(s.watcherRecorders)
 
-	for key, metricGroup := range metricsByDatabase {
-		s.emitMetricGroup(metricGroup, key)
+	for dbName, recorders := range recordersByDatabase {
+		s.emitMetricGroup(recorders, dbName)
 	}
 
 	return s.metricsBuilder.Emit(), errs
 }
 
-func createMetricGroupPerDatabase(watchers []windowsapi.PerfCounterWatcher) (map[string][]winperfcounters.CounterValue, error) {
+// recordersPerDatabase scrapes perf counter values using provided []watcherRecorder and returns
+// a map of database name to curriedRecorder that includes the recorded value in its closure.
+func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curriedRecorder, error) {
 	var errs error
 
-	metricsByDatabase := map[string][]winperfcounters.CounterValue{}
-	for _, watcher := range watchers {
-		counterValues, err := watcher.ScrapeData()
+	dbToRecorders := make(map[string][]curriedRecorder)
+	for _, wr := range watcherRecorders {
+		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		for _, counterValue := range counterValues {
-			key := counterValue.Attributes["instance"]
 
-			if metricsByDatabase[key] == nil {
-				metricsByDatabase[key] = []winperfcounters.CounterValue{counterValue}
-			} else {
-				metricsByDatabase[key] = append(metricsByDatabase[key], counterValue)
+		for _, counterValue := range counterValues {
+			dbName := counterValue.Attributes["instance"]
+
+			// it's important to initialize new values for the closure.
+			val := counterValue.Value
+			recorder := wr.recorder
+
+			if _, ok := dbToRecorders[dbName]; !ok {
+				dbToRecorders[dbName] = []curriedRecorder{}
 			}
+			dbToRecorders[dbName] = append(dbToRecorders[dbName], func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp) {
+				recorder(mb, ts, val)
+			})
 		}
 	}
 
-	return metricsByDatabase, errs
+	return dbToRecorders, errs
 }
 
-func (s *sqlServerScraper) emitMetricGroup(metricGroup []winperfcounters.CounterValue, databaseName string) {
+func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, databaseName string) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	for _, metric := range metricGroup {
-		s.metricsBuilder.RecordAnyDataPoint(now, metric.Value, metric.MetricRep.Name, metric.MetricRep.Attributes)
+	for _, recorder := range recorders {
+		recorder(s.metricsBuilder, now)
 	}
 
 	if databaseName != "" {
@@ -116,184 +134,11 @@ func (s *sqlServerScraper) emitMetricGroup(metricGroup []winperfcounters.Counter
 // shutdown stops all of the watchers for the scraper.
 func (s sqlServerScraper) shutdown(ctx context.Context) error {
 	var errs error
-	for _, watcher := range s.watchers {
-		err := watcher.Close()
+	for _, wr := range s.watcherRecorders {
+		err := wr.watcher.Close()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 	return errs
-}
-
-// createWatcherConfigs returns established performance counter configs for each metric.
-func createWatcherConfigs() []windowsapi.ObjectConfig {
-	return []windowsapi.ObjectConfig{
-		{
-			Object: "SQLServer:General Statistics",
-			Counters: []windowsapi.CounterConfig{
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.user.connection.count",
-					},
-					Name: "User Connections",
-				},
-			},
-		},
-		{
-			Object: "SQLServer:SQL Statistics",
-			Counters: []windowsapi.CounterConfig{
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.batch.request.rate",
-					},
-
-					Name: "Batch Requests/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.batch.sql_compilation.rate",
-					},
-
-					Name: "SQL Compilations/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.batch.sql_recompilation.rate",
-					},
-					Name: "SQL Re-Compilations/sec",
-				},
-			},
-		},
-		{
-			Object:    "SQLServer:Locks",
-			Instances: []string{"_Total"},
-			Counters: []windowsapi.CounterConfig{
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.lock.wait.rate",
-					},
-					Name: "Lock Waits/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.lock.wait_time.avg",
-					},
-					Name: "Average Wait Time (ms)",
-				},
-			},
-		},
-		{
-			Object: "SQLServer:Buffer Manager",
-			Counters: []windowsapi.CounterConfig{
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.page.buffer_cache.hit_ratio",
-					},
-					Name: "Buffer cache hit ratio",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.page.checkpoint.flush.rate",
-					},
-					Name: "Checkpoint pages/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.page.lazy_write.rate",
-					},
-					Name: "Lazy Writes/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.page.life_expectancy",
-					},
-					Name: "Page life expectancy",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.page.operation.rate",
-						Attributes: map[string]string{
-							"type": "read",
-						},
-					},
-					Name: "Page reads/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.page.operation.rate",
-						Attributes: map[string]string{
-							"type": "write",
-						},
-					},
-					Name: "Page writes/sec",
-				},
-			},
-		},
-		{
-			Object:    "SQLServer:Access Methods",
-			Instances: []string{"_Total"},
-			Counters: []windowsapi.CounterConfig{
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.page.split.rate",
-					},
-					Name: "Page Splits/sec",
-				},
-			},
-		},
-		{
-			Object:    "SQLServer:Databases",
-			Instances: []string{"*"},
-			Counters: []windowsapi.CounterConfig{
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction_log.flush.data.rate",
-					},
-					Name: "Log Bytes Flushed/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction_log.flush.rate",
-					},
-					Name: "Log Flushes/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction_log.flush.wait.rate",
-					},
-					Name: "Log Flush Waits/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction_log.growth.count",
-					},
-					Name: "Log Growths",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction_log.shrink.count",
-					},
-					Name: "Log Shrinks",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction_log.usage",
-					},
-					Name: "Percent Log Used",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction.rate",
-					},
-					Name: "Transactions/sec",
-				},
-				{
-					MetricRep: windowsapi.MetricRep{
-						Name: "sqlserver.transaction.write.rate",
-					},
-					Name: "Write Transactions/sec",
-				},
-			},
-		},
-	}
 }
