@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/otel/metric/nonrecording"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap/zaptest"
@@ -98,7 +99,6 @@ func createReceiver(t *testing.T) *receiver {
 			MetricsLevel:   configtelemetry.LevelNone,
 		},
 	}
-	mockConsumer := mockLogsConsumer{}
 
 	factory := NewFactory(TestReceiverType{})
 
@@ -106,7 +106,7 @@ func createReceiver(t *testing.T) *receiver {
 		context.Background(),
 		params,
 		factory.CreateDefaultConfig(),
-		&mockConsumer,
+		consumertest.NewNop(),
 	)
 	require.NoError(t, err, "receiver should successfully build")
 
