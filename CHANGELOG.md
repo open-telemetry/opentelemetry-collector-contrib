@@ -7,6 +7,7 @@
 - `datadogexporter`: Replace HistogramMode defined as string with enum.
 - `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 - `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
+- `newrelicexporter` deleted. Use New Relic [native OTLP ingest](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-setup/) instead. (#9894)
 - `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3 (#9885)
 
 ### 🚩 Deprecations 🚩
