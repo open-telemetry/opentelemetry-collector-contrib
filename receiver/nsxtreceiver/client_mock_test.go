@@ -107,8 +107,8 @@ func (m *MockClient) Interfaces(ctx context.Context, nodeID string, class nodeCl
 }
 
 // NodeStatus provides a mock function with given fields: ctx, nodeID, class
-func (_m *MockClient) NodeStatus(ctx context.Context, nodeID string, class nodeClass) (*model.NodeStatus, error) {
-	ret := _m.Called(ctx, nodeID, class)
+func (m *MockClient) NodeStatus(ctx context.Context, nodeID string, class nodeClass) (*model.NodeStatus, error) {
+	ret := m.Called(ctx, nodeID, class)
 
 	var r0 *model.NodeStatus
 	if rf, ok := ret.Get(0).(func(context.Context, string, nodeClass) *model.NodeStatus); ok {
