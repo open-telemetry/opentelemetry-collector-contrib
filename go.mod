@@ -29,7 +29,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.50.0
@@ -359,7 +358,6 @@ require (
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1 // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
@@ -606,8 +604,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadb
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ./exporter/logzioexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter => ./exporter/lokiexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter => ./exporter/newrelicexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ./exporter/opencensusexporter
 
