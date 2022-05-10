@@ -45,7 +45,6 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// the settings of the last started instance will prevail. In order to avoid
 	// this issue we will allow the start of a single instance once per process
 	// Summary: only a single instance can be running in the same process.
-	// #nosec G103
 	if !running.CAS(false, true) {
 		return errors.New("only a single pprof extension instance can be running per process")
 	}
