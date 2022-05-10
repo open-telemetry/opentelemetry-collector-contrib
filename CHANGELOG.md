@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `newrelicexporter` deleted. Use New Relic native OTLP ingest instead.
+
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
