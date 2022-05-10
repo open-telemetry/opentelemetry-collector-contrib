@@ -230,10 +230,7 @@ func (s *scraper) recordNode(
 	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeCPUProcessClassDatapath)
 	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk, metadata.AttributeCPUProcessClassServices)
 	s.mb.RecordNsxtNodeMemoryUsageDataPoint(colTime, int64(ss.MemUsed))
-
-	if ss.EdgeMemUsage != nil {
-		s.mb.RecordNsxtNodeMemoryCacheUsageDataPoint(colTime, int64(ss.EdgeMemUsage.CacheUsage))
-	}
+	s.mb.RecordNsxtNodeMemoryCacheUsageDataPoint(colTime, int64(ss.MemCache))
 
 	s.mb.RecordNsxtNodeFilesystemUsageDataPoint(colTime, int64(ss.DiskSpaceUsed), metadata.AttributeDiskStateUsed)
 	availableStorage := ss.DiskSpaceTotal - ss.DiskSpaceUsed

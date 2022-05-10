@@ -136,7 +136,7 @@
                 0.08,
                 0.08
             ],
-            "mem_cache": 0,
+            "mem_cache": 234,
             "mem_total": 803479616,
             "mem_used": 143728936,
             "source": "cached",
