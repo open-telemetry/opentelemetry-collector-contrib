@@ -6,7 +6,7 @@ on:
     - 'release/*'
   pull_request:
 env:
-  CORE_REPO_SHA: 2c1cb20543fcc0bcfe5525d8a695e92babec06db
+  CORE_REPO_SHA: f367ec2045b2588be95dfa11913868c1d4fcbbc2
 
 jobs:
   build:
@@ -42,7 +42,7 @@ jobs:
           path: |
             .tox
             ~/.cache/pip
-          key: v4-build-tox-cache-${{ env.RUN_MATRIX_COMBINATION }}-${{ hashFiles('tox.ini', 'gen-requirements.txt', 'dev-requirements.txt') }}
+          key: v5-build-tox-cache-${{ env.RUN_MATRIX_COMBINATION }}-${{ hashFiles('tox.ini', 'gen-requirements.txt', 'dev-requirements.txt') }}
       - name: run tox
         run: tox -f ${{ matrix.python-version }}-${{ matrix.package }} -- --benchmark-json=${{ env.RUN_MATRIX_COMBINATION }}-benchmark.json
   #     - name: Find and merge ${{ matrix.package }} benchmarks
@@ -118,7 +118,7 @@ jobs:
           path: |
             .tox
             ~/.cache/pip
-          key: v4-misc-tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'gen-requirements.txt', 'docs-requirements.txt') }}
+          key: v5-misc-tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'gen-requirements.txt', 'docs-requirements.txt') }}
       - name: run tox
         run: tox -e ${{ matrix.tox-environment }}
       - name: Ensure generated code is up to date
