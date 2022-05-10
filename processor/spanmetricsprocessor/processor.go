@@ -381,7 +381,13 @@ func (p *processorImp) aggregateMetricsForServiceSpans(rspans ptrace.ResourceSpa
 }
 
 func (p *processorImp) aggregateMetricsForSpan(serviceName string, span ptrace.Span, resourceAttr pcommon.Map) {
-	latencyInMilliseconds := float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+	// Protect against end timestamps before start timestamps. Assume 0 duration.
+	latencyInMilliseconds := float64(0)
+	startTime := span.StartTimestamp()
+	endTime := span.EndTimestamp()
+	if endTime > startTime {
+		latencyInMilliseconds = float64(endTime-startTime) / float64(time.Millisecond.Nanoseconds())
+	}
 
 	// Binary search to find the latencyInMilliseconds bucket index.
 	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)

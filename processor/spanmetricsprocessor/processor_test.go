@@ -256,6 +256,13 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
+		{
+			// Consumptions with improper timestamps
+			name:                   "Test bad consumptions (Delta).",
+			aggregationTemporality: cumulative,
+			verifier:               verifyBadMetricsOkay,
+			traces:                 []ptrace.Traces{buildBadSampleTrace()},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -380,6 +387,10 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
 	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityCumulative, 1)
+}
+
+func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
+	return true // Validating no exception
 }
 
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
@@ -509,6 +520,16 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 	// Service/operation/kind should be a unique metric.
 	assert.False(t, seenMetricIDs[mID])
 	seenMetricIDs[mID] = true
+}
+
+func buildBadSampleTrace() ptrace.Traces {
+	badTrace := buildSampleTrace()
+	span := badTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	now := time.Now()
+	// Flipping timestamp for a bad duration
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
+	return badTrace
 }
 
 // buildSampleTrace builds the following trace:
