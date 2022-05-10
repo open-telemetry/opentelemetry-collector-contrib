@@ -46,6 +46,16 @@ type Watcher struct {
 	MetricRep
 }
 
+// NewWatcher creates new PerfCounterWatcher by provided parts of its path.
+func NewWatcher(object, instance, counterName string) (PerfCounterWatcher, error) {
+	path := counterPath(object, instance, counterName)
+	counter, err := pdh.NewPerfCounter(path, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
+	}
+	return Watcher{Counter: counter}, nil
+}
+
 func (w Watcher) Path() string {
 	return w.Counter.Path()
 }
