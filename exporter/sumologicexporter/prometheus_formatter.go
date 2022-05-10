@@ -154,14 +154,14 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 // numberDataPointValueLine returns prometheus line with value from pmetric.NumberDataPoint
 func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pmetric.NumberDataPoint, attributes pcommon.Map) string {
 	switch dp.ValueType() {
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return f.doubleValueLine(
 			name,
 			dp.DoubleVal(),
 			dp,
 			attributes,
 		)
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return f.intLine(
 			name,
 			f.tags2String(attributes, dp.Attributes()),

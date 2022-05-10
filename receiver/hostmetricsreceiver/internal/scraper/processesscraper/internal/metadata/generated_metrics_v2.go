@@ -5,9 +5,9 @@ package metadata
 import (
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -30,6 +30,76 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+// AttributeStatus specifies the a value status attribute.
+type AttributeStatus int
+
+const (
+	_ AttributeStatus = iota
+	AttributeStatusBlocked
+	AttributeStatusDaemon
+	AttributeStatusDetached
+	AttributeStatusIdle
+	AttributeStatusLocked
+	AttributeStatusOrphan
+	AttributeStatusPaging
+	AttributeStatusRunning
+	AttributeStatusSleeping
+	AttributeStatusStopped
+	AttributeStatusSystem
+	AttributeStatusUnknown
+	AttributeStatusZombies
+)
+
+// String returns the string representation of the AttributeStatus.
+func (av AttributeStatus) String() string {
+	switch av {
+	case AttributeStatusBlocked:
+		return "blocked"
+	case AttributeStatusDaemon:
+		return "daemon"
+	case AttributeStatusDetached:
+		return "detached"
+	case AttributeStatusIdle:
+		return "idle"
+	case AttributeStatusLocked:
+		return "locked"
+	case AttributeStatusOrphan:
+		return "orphan"
+	case AttributeStatusPaging:
+		return "paging"
+	case AttributeStatusRunning:
+		return "running"
+	case AttributeStatusSleeping:
+		return "sleeping"
+	case AttributeStatusStopped:
+		return "stopped"
+	case AttributeStatusSystem:
+		return "system"
+	case AttributeStatusUnknown:
+		return "unknown"
+	case AttributeStatusZombies:
+		return "zombies"
+	}
+	return ""
+}
+
+// MapAttributeStatus is a helper map of string to AttributeStatus attribute value.
+var MapAttributeStatus = map[string]AttributeStatus{
+	"blocked":  AttributeStatusBlocked,
+	"daemon":   AttributeStatusDaemon,
+	"detached": AttributeStatusDetached,
+	"idle":     AttributeStatusIdle,
+	"locked":   AttributeStatusLocked,
+	"orphan":   AttributeStatusOrphan,
+	"paging":   AttributeStatusPaging,
+	"running":  AttributeStatusRunning,
+	"sleeping": AttributeStatusSleeping,
+	"stopped":  AttributeStatusStopped,
+	"system":   AttributeStatusSystem,
+	"unknown":  AttributeStatusUnknown,
+	"zombies":  AttributeStatusZombies,
 }
 
 type metricSystemProcessesCount struct {
@@ -216,8 +286,8 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordSystemProcessesCountDataPoint adds a data point to system.processes.count metric.
-func (mb *MetricsBuilder) RecordSystemProcessesCountDataPoint(ts pcommon.Timestamp, val int64, statusAttributeValue string) {
-	mb.metricSystemProcessesCount.recordDataPoint(mb.startTime, ts, val, statusAttributeValue)
+func (mb *MetricsBuilder) RecordSystemProcessesCountDataPoint(ts pcommon.Timestamp, val int64, statusAttributeValue AttributeStatus) {
+	mb.metricSystemProcessesCount.recordDataPoint(mb.startTime, ts, val, statusAttributeValue.String())
 }
 
 // RecordSystemProcessesCreatedDataPoint adds a data point to system.processes.created metric.
@@ -244,34 +314,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeStatus are the possible values that the attribute "status" can have.
-var AttributeStatus = struct {
-	Blocked  string
-	Daemon   string
-	Detached string
-	Idle     string
-	Locked   string
-	Orphan   string
-	Paging   string
-	Running  string
-	Sleeping string
-	Stopped  string
-	System   string
-	Unknown  string
-	Zombies  string
-}{
-	"blocked",
-	"daemon",
-	"detached",
-	"idle",
-	"locked",
-	"orphan",
-	"paging",
-	"running",
-	"sleeping",
-	"stopped",
-	"system",
-	"unknown",
-	"zombies",
-}

@@ -139,6 +139,314 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeCacheName specifies the a value cache_name attribute.
+type AttributeCacheName int
+
+const (
+	_ AttributeCacheName = iota
+	AttributeCacheNameFielddata
+	AttributeCacheNameQuery
+)
+
+// String returns the string representation of the AttributeCacheName.
+func (av AttributeCacheName) String() string {
+	switch av {
+	case AttributeCacheNameFielddata:
+		return "fielddata"
+	case AttributeCacheNameQuery:
+		return "query"
+	}
+	return ""
+}
+
+// MapAttributeCacheName is a helper map of string to AttributeCacheName attribute value.
+var MapAttributeCacheName = map[string]AttributeCacheName{
+	"fielddata": AttributeCacheNameFielddata,
+	"query":     AttributeCacheNameQuery,
+}
+
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionReceived
+	AttributeDirectionSent
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionReceived:
+		return "received"
+	case AttributeDirectionSent:
+		return "sent"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"received": AttributeDirectionReceived,
+	"sent":     AttributeDirectionSent,
+}
+
+// AttributeDiskUsageState specifies the a value disk_usage_state attribute.
+type AttributeDiskUsageState int
+
+const (
+	_ AttributeDiskUsageState = iota
+	AttributeDiskUsageStateUsed
+	AttributeDiskUsageStateFree
+)
+
+// String returns the string representation of the AttributeDiskUsageState.
+func (av AttributeDiskUsageState) String() string {
+	switch av {
+	case AttributeDiskUsageStateUsed:
+		return "used"
+	case AttributeDiskUsageStateFree:
+		return "free"
+	}
+	return ""
+}
+
+// MapAttributeDiskUsageState is a helper map of string to AttributeDiskUsageState attribute value.
+var MapAttributeDiskUsageState = map[string]AttributeDiskUsageState{
+	"used": AttributeDiskUsageStateUsed,
+	"free": AttributeDiskUsageStateFree,
+}
+
+// AttributeDocumentState specifies the a value document_state attribute.
+type AttributeDocumentState int
+
+const (
+	_ AttributeDocumentState = iota
+	AttributeDocumentStateActive
+	AttributeDocumentStateDeleted
+)
+
+// String returns the string representation of the AttributeDocumentState.
+func (av AttributeDocumentState) String() string {
+	switch av {
+	case AttributeDocumentStateActive:
+		return "active"
+	case AttributeDocumentStateDeleted:
+		return "deleted"
+	}
+	return ""
+}
+
+// MapAttributeDocumentState is a helper map of string to AttributeDocumentState attribute value.
+var MapAttributeDocumentState = map[string]AttributeDocumentState{
+	"active":  AttributeDocumentStateActive,
+	"deleted": AttributeDocumentStateDeleted,
+}
+
+// AttributeFsDirection specifies the a value fs_direction attribute.
+type AttributeFsDirection int
+
+const (
+	_ AttributeFsDirection = iota
+	AttributeFsDirectionRead
+	AttributeFsDirectionWrite
+)
+
+// String returns the string representation of the AttributeFsDirection.
+func (av AttributeFsDirection) String() string {
+	switch av {
+	case AttributeFsDirectionRead:
+		return "read"
+	case AttributeFsDirectionWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeFsDirection is a helper map of string to AttributeFsDirection attribute value.
+var MapAttributeFsDirection = map[string]AttributeFsDirection{
+	"read":  AttributeFsDirectionRead,
+	"write": AttributeFsDirectionWrite,
+}
+
+// AttributeHealthStatus specifies the a value health_status attribute.
+type AttributeHealthStatus int
+
+const (
+	_ AttributeHealthStatus = iota
+	AttributeHealthStatusGreen
+	AttributeHealthStatusYellow
+	AttributeHealthStatusRed
+)
+
+// String returns the string representation of the AttributeHealthStatus.
+func (av AttributeHealthStatus) String() string {
+	switch av {
+	case AttributeHealthStatusGreen:
+		return "green"
+	case AttributeHealthStatusYellow:
+		return "yellow"
+	case AttributeHealthStatusRed:
+		return "red"
+	}
+	return ""
+}
+
+// MapAttributeHealthStatus is a helper map of string to AttributeHealthStatus attribute value.
+var MapAttributeHealthStatus = map[string]AttributeHealthStatus{
+	"green":  AttributeHealthStatusGreen,
+	"yellow": AttributeHealthStatusYellow,
+	"red":    AttributeHealthStatusRed,
+}
+
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationIndex
+	AttributeOperationDelete
+	AttributeOperationGet
+	AttributeOperationQuery
+	AttributeOperationFetch
+	AttributeOperationScroll
+	AttributeOperationSuggest
+	AttributeOperationMerge
+	AttributeOperationRefresh
+	AttributeOperationFlush
+	AttributeOperationWarmer
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationIndex:
+		return "index"
+	case AttributeOperationDelete:
+		return "delete"
+	case AttributeOperationGet:
+		return "get"
+	case AttributeOperationQuery:
+		return "query"
+	case AttributeOperationFetch:
+		return "fetch"
+	case AttributeOperationScroll:
+		return "scroll"
+	case AttributeOperationSuggest:
+		return "suggest"
+	case AttributeOperationMerge:
+		return "merge"
+	case AttributeOperationRefresh:
+		return "refresh"
+	case AttributeOperationFlush:
+		return "flush"
+	case AttributeOperationWarmer:
+		return "warmer"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"index":   AttributeOperationIndex,
+	"delete":  AttributeOperationDelete,
+	"get":     AttributeOperationGet,
+	"query":   AttributeOperationQuery,
+	"fetch":   AttributeOperationFetch,
+	"scroll":  AttributeOperationScroll,
+	"suggest": AttributeOperationSuggest,
+	"merge":   AttributeOperationMerge,
+	"refresh": AttributeOperationRefresh,
+	"flush":   AttributeOperationFlush,
+	"warmer":  AttributeOperationWarmer,
+}
+
+// AttributeShardState specifies the a value shard_state attribute.
+type AttributeShardState int
+
+const (
+	_ AttributeShardState = iota
+	AttributeShardStateActive
+	AttributeShardStateRelocating
+	AttributeShardStateInitializing
+	AttributeShardStateUnassigned
+)
+
+// String returns the string representation of the AttributeShardState.
+func (av AttributeShardState) String() string {
+	switch av {
+	case AttributeShardStateActive:
+		return "active"
+	case AttributeShardStateRelocating:
+		return "relocating"
+	case AttributeShardStateInitializing:
+		return "initializing"
+	case AttributeShardStateUnassigned:
+		return "unassigned"
+	}
+	return ""
+}
+
+// MapAttributeShardState is a helper map of string to AttributeShardState attribute value.
+var MapAttributeShardState = map[string]AttributeShardState{
+	"active":       AttributeShardStateActive,
+	"relocating":   AttributeShardStateRelocating,
+	"initializing": AttributeShardStateInitializing,
+	"unassigned":   AttributeShardStateUnassigned,
+}
+
+// AttributeTaskState specifies the a value task_state attribute.
+type AttributeTaskState int
+
+const (
+	_ AttributeTaskState = iota
+	AttributeTaskStateRejected
+	AttributeTaskStateCompleted
+)
+
+// String returns the string representation of the AttributeTaskState.
+func (av AttributeTaskState) String() string {
+	switch av {
+	case AttributeTaskStateRejected:
+		return "rejected"
+	case AttributeTaskStateCompleted:
+		return "completed"
+	}
+	return ""
+}
+
+// MapAttributeTaskState is a helper map of string to AttributeTaskState attribute value.
+var MapAttributeTaskState = map[string]AttributeTaskState{
+	"rejected":  AttributeTaskStateRejected,
+	"completed": AttributeTaskStateCompleted,
+}
+
+// AttributeThreadState specifies the a value thread_state attribute.
+type AttributeThreadState int
+
+const (
+	_ AttributeThreadState = iota
+	AttributeThreadStateActive
+	AttributeThreadStateIdle
+)
+
+// String returns the string representation of the AttributeThreadState.
+func (av AttributeThreadState) String() string {
+	switch av {
+	case AttributeThreadStateActive:
+		return "active"
+	case AttributeThreadStateIdle:
+		return "idle"
+	}
+	return ""
+}
+
+// MapAttributeThreadState is a helper map of string to AttributeThreadState attribute value.
+var MapAttributeThreadState = map[string]AttributeThreadState{
+	"active": AttributeThreadStateActive,
+	"idle":   AttributeThreadStateIdle,
+}
+
 type metricElasticsearchClusterDataNodes struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1733,6 +2041,20 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceOption applies changes to provided resource.
 type ResourceOption func(pcommon.Resource)
 
+// WithElasticsearchClusterName sets provided value as "elasticsearch.cluster.name" attribute for current resource.
+func WithElasticsearchClusterName(val string) ResourceOption {
+	return func(r pcommon.Resource) {
+		r.Attributes().UpsertString("elasticsearch.cluster.name", val)
+	}
+}
+
+// WithElasticsearchNodeName sets provided value as "elasticsearch.node.name" attribute for current resource.
+func WithElasticsearchNodeName(val string) ResourceOption {
+	return func(r pcommon.Resource) {
+		r.Attributes().UpsertString("elasticsearch.node.name", val)
+	}
+}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
@@ -1797,8 +2119,8 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pcommo
 }
 
 // RecordElasticsearchClusterHealthDataPoint adds a data point to elasticsearch.cluster.health metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.Timestamp, val int64, healthStatusAttributeValue string) {
-	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.Timestamp, val int64, healthStatusAttributeValue AttributeHealthStatus) {
+	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue.String())
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
@@ -1807,18 +2129,18 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pcommon.Ti
 }
 
 // RecordElasticsearchClusterShardsDataPoint adds a data point to elasticsearch.cluster.shards metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pcommon.Timestamp, val int64, shardStateAttributeValue string) {
-	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pcommon.Timestamp, val int64, shardStateAttributeValue AttributeShardState) {
+	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue.String())
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
-	mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
+	mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
 // RecordElasticsearchNodeCacheMemoryUsageDataPoint adds a data point to elasticsearch.node.cache.memory.usage metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
-	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
+	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
 // RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
@@ -1827,13 +2149,13 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts 
 }
 
 // RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue string) {
-	mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue AttributeDocumentState) {
+	mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue.String())
 }
 
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
@@ -1852,13 +2174,13 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pcommon.T
 }
 
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
@@ -1867,8 +2189,8 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pcommon.
 }
 
 // RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.finished metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
-	mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue AttributeTaskState) {
+	mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue.String())
 }
 
 // RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.queued metric.
@@ -1877,8 +2199,8 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(
 }
 
 // RecordElasticsearchNodeThreadPoolThreadsDataPoint adds a data point to elasticsearch.node.thread_pool.threads metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
-	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue AttributeThreadState) {
+	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue.String())
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
@@ -1957,10 +2279,6 @@ var Attributes = struct {
 	DiskUsageState string
 	// DocumentState (The state of the document.)
 	DocumentState string
-	// ElasticsearchClusterName (The name of the elasticsearch cluster.)
-	ElasticsearchClusterName string
-	// ElasticsearchNodeName (The name of the elasticsearch node.)
-	ElasticsearchNodeName string
 	// FsDirection (The direction of filesystem IO.)
 	FsDirection string
 	// HealthStatus (The health status of the cluster.)
@@ -1983,8 +2301,6 @@ var Attributes = struct {
 	"direction",
 	"state",
 	"state",
-	"elasticsearch.cluster.name",
-	"elasticsearch.node.name",
 	"direction",
 	"status",
 	"name",
@@ -1997,117 +2313,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeCacheName are the possible values that the attribute "cache_name" can have.
-var AttributeCacheName = struct {
-	Fielddata string
-	Query     string
-}{
-	"fielddata",
-	"query",
-}
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Received string
-	Sent     string
-}{
-	"received",
-	"sent",
-}
-
-// AttributeDiskUsageState are the possible values that the attribute "disk_usage_state" can have.
-var AttributeDiskUsageState = struct {
-	Used string
-	Free string
-}{
-	"used",
-	"free",
-}
-
-// AttributeDocumentState are the possible values that the attribute "document_state" can have.
-var AttributeDocumentState = struct {
-	Active  string
-	Deleted string
-}{
-	"active",
-	"deleted",
-}
-
-// AttributeFsDirection are the possible values that the attribute "fs_direction" can have.
-var AttributeFsDirection = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}
-
-// AttributeHealthStatus are the possible values that the attribute "health_status" can have.
-var AttributeHealthStatus = struct {
-	Green  string
-	Yellow string
-	Red    string
-}{
-	"green",
-	"yellow",
-	"red",
-}
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Index   string
-	Delete  string
-	Get     string
-	Query   string
-	Fetch   string
-	Scroll  string
-	Suggest string
-	Merge   string
-	Refresh string
-	Flush   string
-	Warmer  string
-}{
-	"index",
-	"delete",
-	"get",
-	"query",
-	"fetch",
-	"scroll",
-	"suggest",
-	"merge",
-	"refresh",
-	"flush",
-	"warmer",
-}
-
-// AttributeShardState are the possible values that the attribute "shard_state" can have.
-var AttributeShardState = struct {
-	Active       string
-	Relocating   string
-	Initializing string
-	Unassigned   string
-}{
-	"active",
-	"relocating",
-	"initializing",
-	"unassigned",
-}
-
-// AttributeTaskState are the possible values that the attribute "task_state" can have.
-var AttributeTaskState = struct {
-	Rejected  string
-	Completed string
-}{
-	"rejected",
-	"completed",
-}
-
-// AttributeThreadState are the possible values that the attribute "thread_state" can have.
-var AttributeThreadState = struct {
-	Active string
-	Idle   string
-}{
-	"active",
-	"idle",
-}

@@ -5,9 +5,9 @@ package metadata
 import (
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -38,6 +38,88 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 	}
+}
+
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionPageIn
+	AttributeDirectionPageOut
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionPageIn:
+		return "page_in"
+	case AttributeDirectionPageOut:
+		return "page_out"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"page_in":  AttributeDirectionPageIn,
+	"page_out": AttributeDirectionPageOut,
+}
+
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateCached
+	AttributeStateFree
+	AttributeStateUsed
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateCached:
+		return "cached"
+	case AttributeStateFree:
+		return "free"
+	case AttributeStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"cached": AttributeStateCached,
+	"free":   AttributeStateFree,
+	"used":   AttributeStateUsed,
+}
+
+// AttributeType specifies the a value type attribute.
+type AttributeType int
+
+const (
+	_ AttributeType = iota
+	AttributeTypeMajor
+	AttributeTypeMinor
+)
+
+// String returns the string representation of the AttributeType.
+func (av AttributeType) String() string {
+	switch av {
+	case AttributeTypeMajor:
+		return "major"
+	case AttributeTypeMinor:
+		return "minor"
+	}
+	return ""
+}
+
+// MapAttributeType is a helper map of string to AttributeType attribute value.
+var MapAttributeType = map[string]AttributeType{
+	"major": AttributeTypeMajor,
+	"minor": AttributeTypeMinor,
 }
 
 type metricSystemPagingFaults struct {
@@ -339,23 +421,23 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordSystemPagingFaultsDataPoint adds a data point to system.paging.faults metric.
-func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue string) {
-	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
+	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String())
 }
 
 // RecordSystemPagingOperationsDataPoint adds a data point to system.paging.operations metric.
-func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string, typeAttributeValue string) {
-	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue, typeAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, typeAttributeValue AttributeType) {
+	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), typeAttributeValue.String())
 }
 
 // RecordSystemPagingUsageDataPoint adds a data point to system.paging.usage metric.
-func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue.String())
 }
 
 // RecordSystemPagingUtilizationDataPoint adds a data point to system.paging.utilization metric.
-func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -386,32 +468,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	PageIn  string
-	PageOut string
-}{
-	"page_in",
-	"page_out",
-}
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Cached string
-	Free   string
-	Used   string
-}{
-	"cached",
-	"free",
-	"used",
-}
-
-// AttributeType are the possible values that the attribute "type" can have.
-var AttributeType = struct {
-	Major string
-	Minor string
-}{
-	"major",
-	"minor",
-}

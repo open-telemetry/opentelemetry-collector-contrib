@@ -29,7 +29,7 @@ type MetricsCfg struct {
 	// The type of metric to generate
 	MetricDescriptorType pmetric.MetricDataType
 	// MetricValueType is the type of the numeric value: int or double.
-	MetricValueType pmetric.MetricValueType
+	MetricValueType pmetric.NumberDataPointValueType
 	// If MetricDescriptorType is one of the Sum, this describes if the sum is monotonic or not.
 	IsMonotonicSum bool
 	// A prefix for every metric name
@@ -59,7 +59,7 @@ type MetricsCfg struct {
 func DefaultCfg() MetricsCfg {
 	return MetricsCfg{
 		MetricDescriptorType: pmetric.MetricDataTypeGauge,
-		MetricValueType:      pmetric.MetricValueTypeInt,
+		MetricValueType:      pmetric.NumberDataPointValueTypeInt,
 		MetricNamePrefix:     "",
 		NumILMPerResource:    1,
 		NumMetricsPerILM:     1,
@@ -153,9 +153,9 @@ func populateNumberPoints(cfg MetricsCfg, pts pmetric.NumberDataPointSlice) {
 		pt.SetStartTimestamp(pcommon.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		switch cfg.MetricValueType {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			pt.SetIntVal(int64(cfg.PtVal + i))
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			pt.SetDoubleVal(float64(cfg.PtVal + i))
 		default:
 			panic("Should not happen")

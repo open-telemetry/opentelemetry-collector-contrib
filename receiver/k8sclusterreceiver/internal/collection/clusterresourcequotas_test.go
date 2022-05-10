@@ -41,7 +41,6 @@ func TestClusterRequestQuotaMetrics(t *testing.T) {
 		map[string]string{
 			"openshift.clusterquota.uid":  "test-clusterquota-1-uid",
 			"openshift.clusterquota.name": "test-clusterquota-1",
-			"k8s.cluster.name":            "test-openshift-cluster",
 		},
 	)
 
@@ -105,9 +104,8 @@ func TestClusterRequestQuotaMetrics(t *testing.T) {
 func newMockClusterResourceQuota(id string) *quotav1.ClusterResourceQuota {
 	return &quotav1.ClusterResourceQuota{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-clusterquota-" + id,
-			UID:         types.UID("test-clusterquota-" + id + "-uid"),
-			ClusterName: "test-openshift-cluster",
+			Name: "test-clusterquota-" + id,
+			UID:  types.UID("test-clusterquota-" + id + "-uid"),
 		},
 		Status: quotav1.ClusterResourceQuotaStatus{
 			Total: corev1.ResourceQuotaStatus{

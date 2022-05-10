@@ -206,7 +206,8 @@ func Test_ToMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, err := ToMetrics(tt.sfxDataPoints)
+			to := &ToTranslator{}
+			md, err := to.ToMetrics(tt.sfxDataPoints)
 			if tt.wantError {
 				assert.Error(t, err)
 			} else {

@@ -29,9 +29,9 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -65,7 +65,7 @@ var dropSanitizationGate = featuregate.Gate{
 }
 
 func init() {
-	featuregate.Register(dropSanitizationGate)
+	featuregate.GetRegistry().MustRegister(dropSanitizationGate)
 }
 
 type bucketBoundsData struct {
@@ -178,8 +178,12 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 
 	// Ensure attributes are sorted by key for consistent merging of keys which
 	// collide when sanitized.
-	attributes.Sort()
-	attributes.Range(func(key string, value pcommon.Value) bool {
+	// Sorting is done on a cloned map, as the original attributes map can read at
+	// the same time in different places.
+	cloneAttributes := pcommon.NewMap()
+	attributes.CopyTo(cloneAttributes)
+	cloneAttributes.Sort()
+	cloneAttributes.Range(func(key string, value pcommon.Value) bool {
 		var finalKey = sanitize(key)
 		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
@@ -288,9 +292,9 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}
 	switch pt.ValueType() {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		sample.Value = float64(pt.IntVal())
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		sample.Value = pt.DoubleVal()
 	}
 	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
@@ -553,7 +557,7 @@ func sanitize(s string) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = keyStr + "_" + s
 	}
-	if !featuregate.IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
+	if !featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
 		s = keyStr + s
 	}
 	return s
