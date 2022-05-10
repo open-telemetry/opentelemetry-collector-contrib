@@ -150,10 +150,10 @@ func getBounds(p pmetric.HistogramDataPoint, idx int) (lowerBound float64, upper
 	lowerBound = math.Inf(-1)
 	upperBound = math.Inf(1)
 	if idx > 0 {
-		lowerBound = p.ExplicitBounds()[idx-1]
+		lowerBound = p.ExplicitBounds().At(idx - 1)
 	}
-	if idx < len(p.ExplicitBounds()) {
-		upperBound = p.ExplicitBounds()[idx]
+	if idx < p.ExplicitBounds().Len() {
+		upperBound = p.ExplicitBounds().At(idx)
 	}
 	return
 }
@@ -178,7 +178,7 @@ func (t *Translator) getSketchBuckets(
 	startTs := uint64(p.StartTimestamp())
 	ts := uint64(p.Timestamp())
 	as := &quantile.Agent{}
-	for j := range p.BucketCounts() {
+	for j := 0; j < p.BucketCounts().Len(); j++ {
 		lowerBound, upperBound := getBounds(p, j)
 
 		// Compute temporary bucketTags to have unique keys in the t.prevPts cache for each bucket
@@ -198,7 +198,7 @@ func (t *Translator) getSketchBuckets(
 			lowerBound = upperBound
 		}
 
-		count := p.BucketCounts()[j]
+		count := p.BucketCounts().At(j)
 		if delta {
 			as.InsertInterpolate(lowerBound, upperBound, uint(count))
 		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
@@ -231,14 +231,14 @@ func (t *Translator) getLegacyBuckets(
 	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
 	baseBucketDims := pointDims.WithSuffix("bucket")
-	for idx, val := range p.BucketCounts() {
+	for idx := 0; idx < p.BucketCounts().Len(); idx++ {
 		lowerBound, upperBound := getBounds(p, idx)
 		bucketDims := baseBucketDims.AddTags(
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
 			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
 		)
 
-		count := float64(val)
+		count := float64(p.BucketCounts().At(idx))
 		if delta {
 			consumer.ConsumeTimeSeries(ctx, bucketDims, Count, ts, count)
 		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, count); ok {

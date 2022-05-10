@@ -340,12 +340,14 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	bucketBounds := make([]bucketBoundsData, 0)
 
+	bucketCounts := pt.BucketCounts().Value()
+
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
-	for index, bound := range pt.ExplicitBounds() {
-		if index >= len(pt.BucketCounts()) {
+	for index, bound := range pt.ExplicitBounds().Value() {
+		if index >= len(bucketCounts) {
 			break
 		}
-		cumulativeCount += pt.BucketCounts()[index]
+		cumulativeCount += bucketCounts[index]
 		bucket := &prompb.Sample{
 			Value:     float64(cumulativeCount),
 			Timestamp: time,
@@ -366,7 +368,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	} else {
-		cumulativeCount += pt.BucketCounts()[len(pt.BucketCounts())-1]
+		cumulativeCount += bucketCounts[len(bucketCounts)-1]
 		infBucket.Value = float64(cumulativeCount)
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)

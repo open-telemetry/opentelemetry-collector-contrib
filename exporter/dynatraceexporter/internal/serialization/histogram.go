@@ -65,8 +65,8 @@ func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 
 	// Because we do not know the actual min and max, we estimate them based on the min and max non-empty bucket
 	minIdx, maxIdx := -1, -1
-	for y := 0; y < len(counts); y++ {
-		if counts[y] > 0 {
+	for y := 0; y < counts.Len(); y++ {
+		if counts.At(y) > 0 {
 			if minIdx == -1 {
 				minIdx = y
 			}
@@ -82,16 +82,16 @@ func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 
 	// Use lower bound for min unless it is the first bucket which has no lower bound, then use upper
 	if minIdx == 0 {
-		min = bounds[minIdx]
+		min = bounds.At(minIdx)
 	} else {
-		min = bounds[minIdx-1]
+		min = bounds.At(minIdx - 1)
 	}
 
 	// Use upper bound for max unless it is the last bucket which has no upper bound, then use lower
-	if maxIdx == len(counts)-1 {
-		max = bounds[maxIdx-1]
+	if maxIdx == counts.Len()-1 {
+		max = bounds.At(maxIdx - 1)
 	} else {
-		max = bounds[maxIdx]
+		max = bounds.At(maxIdx)
 	}
 
 	return min, max

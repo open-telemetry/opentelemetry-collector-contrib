@@ -453,20 +453,20 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 
 		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
 		var foundLatencyIndex int
-		for foundLatencyIndex = 0; foundLatencyIndex < len(dp.ExplicitBounds()); foundLatencyIndex++ {
-			if dp.ExplicitBounds()[foundLatencyIndex] > sampleLatency {
+		for foundLatencyIndex = 0; foundLatencyIndex < dp.ExplicitBounds().Len(); foundLatencyIndex++ {
+			if dp.ExplicitBounds().At(foundLatencyIndex) > sampleLatency {
 				break
 			}
 		}
 
 		// Then verify that all histogram buckets are empty except for the bucket with the 11ms latency.
 		var wantBucketCount uint64
-		for bi := 0; bi < len(dp.BucketCounts()); bi++ {
+		for bi := 0; bi < dp.BucketCounts().Len(); bi++ {
 			wantBucketCount = 0
 			if bi == foundLatencyIndex {
 				wantBucketCount = uint64(numCumulativeConsumptions)
 			}
-			assert.Equal(t, wantBucketCount, dp.BucketCounts()[bi])
+			assert.Equal(t, wantBucketCount, dp.BucketCounts().At(bi))
 		}
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}

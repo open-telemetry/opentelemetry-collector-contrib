@@ -17,6 +17,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"math"
 	"testing"
 
@@ -110,12 +111,13 @@ func createBenchmarkDeltaExponentialHistogramMetrics(n int, b int, additionalAtt
 		for i := 0; i < b; i++ {
 			buckets[i] = 10
 		}
+		immutableBuckets := pcommon.NewImmutableUInt64SliceFromValue(&buckets)
 
 		point.Negative().SetOffset(2)
-		point.Negative().SetBucketCounts(buckets)
+		point.Negative().SetBucketCounts(immutableBuckets)
 
 		point.Positive().SetOffset(3)
-		point.Positive().SetBucketCounts(buckets)
+		point.Positive().SetBucketCounts(immutableBuckets)
 
 		point.SetTimestamp(seconds(0))
 	}

@@ -97,8 +97,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		pcommon.NewMapFromRaw(labelMap).CopyTo(int64PtWithLabels.Attributes())
 	}
 
-	histBounds := []float64{1, 2, 4}
-	histCounts := []uint64{4, 2, 3, 7}
+	histBounds := pcommon.NewImmutableFloat64SliceFromValue(&[]float64{1, 2, 4})
+	histCounts := pcommon.NewImmutableUInt64SliceFromValue(&[]uint64{4, 2, 3, 7})
 
 	initHistDP := func(histDP pmetric.HistogramDataPoint) {
 		histDP.SetTimestamp(ts)

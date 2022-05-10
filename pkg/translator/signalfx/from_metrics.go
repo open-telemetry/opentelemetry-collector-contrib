@@ -133,7 +133,7 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var numDPs int
 	for i := 0; i < in.Len(); i++ {
-		numDPs += 2 + len(in.At(i).BucketCounts())
+		numDPs += 2 + in.At(i).BucketCounts().Len()
 	}
 	dps := newDpsBuilder(numDPs)
 
@@ -155,14 +155,14 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 
 		// Spec says counts is optional but if present it must have one more
 		// element than the bounds array.
-		if len(counts) > 0 && len(counts) != len(bounds)+1 {
+		if counts.Len() > 0 && counts.Len() != bounds.Len()+1 {
 			continue
 		}
 
-		for j, c := range counts {
+		for j := 0; j < counts.Len(); j++ {
 			bound := infinityBoundSFxDimValue
-			if j < len(bounds) {
-				bound = float64ToDimValue(bounds[j])
+			if j < bounds.Len() {
+				bound = float64ToDimValue(bounds.At(j))
 			}
 			cloneDim := make([]*sfxpb.Dimension, len(dims)+1)
 			copy(cloneDim, dims)
@@ -171,7 +171,7 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 				Value: bound,
 			}
 			dp := dps.appendPoint(name+"_bucket", mt, ts, cloneDim)
-			cInt := int64(c)
+			cInt := int64(counts.At(j))
 			dp.Value.IntValue = &cInt
 		}
 	}

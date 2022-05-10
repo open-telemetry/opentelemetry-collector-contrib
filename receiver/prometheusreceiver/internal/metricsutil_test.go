@@ -25,8 +25,8 @@ type kv struct {
 
 func distPoint(ts pcommon.Timestamp, bounds []float64, counts []uint64) *pmetric.HistogramDataPoint {
 	hdp := pmetric.NewHistogramDataPoint()
-	hdp.SetExplicitBounds(bounds)
-	hdp.SetBucketCounts(counts)
+	hdp.SetExplicitBounds(pcommon.NewImmutableFloat64SliceFromCopy(bounds))
+	hdp.SetBucketCounts(pcommon.NewImmutableUInt64SliceFromCopy(counts))
 	hdp.SetTimestamp(ts)
 	var sum float64
 	var count uint64

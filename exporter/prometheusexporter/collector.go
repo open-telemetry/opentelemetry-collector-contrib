@@ -193,8 +193,9 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
 
 	indicesMap := make(map[float64]int)
-	buckets := make([]float64, 0, len(ip.BucketCounts()))
-	for index, bucket := range ip.ExplicitBounds() {
+	buckets := make([]float64, 0, ip.BucketCounts().Len())
+	for index := 0; index < ip.ExplicitBounds().Len(); index++ {
+		bucket := ip.ExplicitBounds().At(index)
 		if _, added := indicesMap[bucket]; !added {
 			indicesMap[bucket] = index
 			buckets = append(buckets, bucket)
@@ -208,8 +209,8 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	for _, bucket := range buckets {
 		index := indicesMap[bucket]
 		var countPerBucket uint64
-		if len(ip.ExplicitBounds()) > 0 && index < len(ip.ExplicitBounds()) {
-			countPerBucket = ip.BucketCounts()[index]
+		if ip.ExplicitBounds().Len() > 0 && index < ip.ExplicitBounds().Len() {
+			countPerBucket = ip.BucketCounts().At(index)
 		}
 		cumCount += countPerBucket
 		points[bucket] = cumCount

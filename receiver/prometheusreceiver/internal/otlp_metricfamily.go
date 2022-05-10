@@ -159,8 +159,8 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 		point.SetSum(mg.sum)
 	}
 
-	point.SetExplicitBounds(bounds)
-	point.SetBucketCounts(bucketCounts)
+	point.SetExplicitBounds(pcommon.NewImmutableFloat64SliceFromValue(&bounds))
+	point.SetBucketCounts(pcommon.NewImmutableUInt64SliceFromValue(&bucketCounts))
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)

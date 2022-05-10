@@ -61,7 +61,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
 	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{9, 6, 4})
+	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSliceFromValue(&[]byte{9, 6, 4}))
 
 	tests := []struct {
 		name     string
@@ -252,10 +252,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("bytes"),
 				},
 			},
-			orig: []byte{1, 3, 2},
+			orig: pcommon.NewImmutableByteSliceFromValue(&[]byte{1, 3, 2}),
 			new:  []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+				span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSliceFromValue(&[]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -555,10 +555,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("bytes"),
 				},
 			},
-			orig: []byte{1, 3, 2},
+			orig: pcommon.NewImmutableByteSliceFromValue(&[]byte{1, 3, 2}),
 			new:  []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSliceFromValue(&[]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -706,7 +706,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Attributes().UpsertBool("bool", true)
 	span.Attributes().UpsertInt("int", 10)
 	span.Attributes().UpsertDouble("double", 1.2)
-	span.Attributes().UpsertBytes("bytes", []byte{1, 3, 2})
+	span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSliceFromValue(&[]byte{1, 3, 2}))
 
 	arrStr := pcommon.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
@@ -729,8 +729,8 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Attributes().Upsert("arr_float", arrFloat)
 
 	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{1, 2, 3})
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{2, 3, 4})
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSliceFromValue(&[]byte{1, 2, 3}))
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSliceFromValue(&[]byte{2, 3, 4}))
 	span.Attributes().Upsert("arr_bytes", arrBytes)
 
 	span.SetDroppedAttributesCount(10)
