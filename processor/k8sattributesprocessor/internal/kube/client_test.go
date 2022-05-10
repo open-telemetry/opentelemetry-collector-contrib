@@ -540,6 +540,36 @@ func TestExtractionRules(t *testing.T) {
 				"k8s.pod.annotations.annotation1": "av1",
 			},
 		},
+		{
+			name: "captured-groups",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					HasKeyRegexReference: true,
+					From:                 MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-$0",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					Name:                 "$0",
+					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					HasKeyRegexReference: true,
+					From:                 MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"annotation1": "av1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -961,7 +991,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 }
 
 func Test_extractField(t *testing.T) {
-	c := WatchClient{}
 	type args struct {
 		v string
 		r FieldExtractionRule
@@ -998,7 +1027,7 @@ func Test_extractField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := c.extractField(tt.args.v, tt.args.r); got != tt.want {
+			if got := tt.args.r.extractField(tt.args.v); got != tt.want {
 				t.Errorf("extractField() = %v, want %v", got, tt.want)
 			}
 		})

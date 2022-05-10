@@ -118,6 +118,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
@@ -174,6 +175,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter

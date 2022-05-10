@@ -80,8 +80,7 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 }
 
 func (ar *MockAwsXrayDataReceiver) Stop() error {
-	ar.receiver.Shutdown(context.Background())
-	return nil
+	return ar.receiver.Shutdown(context.Background())
 }
 
 func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {

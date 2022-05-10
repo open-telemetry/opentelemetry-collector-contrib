@@ -3,9 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.17
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.19
-	github.com/DataDog/datadog-agent/pkg/quantile v0.35.0
+	github.com/DataDog/agent-payload/v5 v5.0.20
+	github.com/DataDog/datadog-agent/pkg/quantile v0.36.0-rc.4.0.20220426134022-b55bccd5073f
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
+	github.com/DataDog/sketches-go v1.4.1
 	github.com/aws/aws-sdk-go v1.43.45
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
@@ -13,12 +14,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.50.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.50.0
-	go.opentelemetry.io/collector/pdata v0.50.0
-	go.opentelemetry.io/collector/semconv v0.50.0
+	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector/semconv v0.50.1-0.20220429151328-041f39835df7
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.37.1
+	gopkg.in/DataDog/dd-trace-go.v1 v1.38.1
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )
 
@@ -48,9 +49,9 @@ require (
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.6.3 // indirect
-	go.opentelemetry.io/otel/metric v0.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.3 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect

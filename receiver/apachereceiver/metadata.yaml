@@ -24,6 +24,7 @@ attributes:
       - logging
       - finishing
       - idle_cleanup
+      - unknown
 
 metrics:
   apache.uptime:

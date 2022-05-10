@@ -65,7 +65,6 @@ and the rest of contributors.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@dashpole](https://github.com/dashpole)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
@@ -74,6 +73,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
+* [@dashpole](https://github.com/dashpole)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 ## General Recommendations
