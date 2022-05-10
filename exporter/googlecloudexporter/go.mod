@@ -8,11 +8,11 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.53.0
-	github.com/stretchr/testify v1.7.3
+	github.com/stretchr/testify v1.7.4
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
-	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220621130052-408f1e9f6d87
 	google.golang.org/api v0.84.0
 	google.golang.org/genproto v0.0.0-20220608133413-ed9918b62aac
 	google.golang.org/grpc v1.47.0
@@ -41,7 +41,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

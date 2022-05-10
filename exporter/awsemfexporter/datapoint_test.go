@@ -401,8 +401,8 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP := testDPS.AppendEmpty()
 	testDP.SetCount(uint64(17))
 	testDP.SetSum(17.13)
-	testDP.SetMBucketCounts([]uint64{1, 2, 3})
-	testDP.SetMExplicitBounds([]float64{1, 2, 3})
+	testDP.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3}))
+	testDP.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3}))
 	pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 	dps := histogramDataPointSlice{
@@ -748,7 +748,7 @@ func TestGetDataPoints(t *testing.T) {
 				dp := convertedDPS.HistogramDataPointSlice.At(0)
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
-				assert.Equal(t, []float64{0, 10}, dp.MExplicitBounds())
+				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds().AsRaw())
 				assert.Equal(t, expectedAttributes, dp.Attributes())
 			case summaryDataPointSlice:
 				expectedDPS := tc.expectedDataPoints.(summaryDataPointSlice)
