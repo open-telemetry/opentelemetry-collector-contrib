@@ -1,3 +1,17 @@
+// Copyright 2022, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
 import (
@@ -58,6 +72,8 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 	}, nil
 }
 
+// scrape scrapes both Node and Namespace metrics from the provided Aerospike node.
+// If CollectClusterMetrics is true, it then scrapes every discovered node
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
@@ -75,7 +91,7 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 	r.emitNode(info, client, now)
 
 	if r.config.CollectClusterMetrics {
-		r.logger.Debug("Collecting peer nodes")
+		r.logger.Sugar().Debugf("Collecting %d peer nodes", len(info.Services))
 		for _, n := range info.Services {
 			r.scrapeDiscoveredNode(n, now, errs)
 		}
@@ -101,12 +117,12 @@ func (r *aerospikeReceiver) scrapeNode(client Aerospike, now pcommon.Timestamp, 
 func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	host, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		r.params.Logger.Sugar().Warnf("failed splitting endpoint %s: %s", endpoint, err)
+		r.params.Logger.Sugar().Warnf("%w: %s", errBadEndpoint, err)
 		return
 	}
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		r.logger.Warn(fmt.Sprintf("failed parsing port %s: %s", portStr, err))
+		r.logger.Sugar().Warnf("%w: %s", errBadPort, err)
 		return
 	}
 	nClient, err := newASClient(host, int(port), r.config.Timeout)
@@ -121,7 +137,7 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 
 // emitNode records node metrics and emits the resource. It collects namespace metrics for each namespace on the node
 //
-// The given client is used to collect namespace metrics, which may be connected to a discovered node
+// The given client is used to collect namespace metrics, which is connected to a single node
 func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client Aerospike, now pcommon.Timestamp) {
 	if stats := info.Statistics; stats != nil {
 		if stats.ClientConnections != nil {
