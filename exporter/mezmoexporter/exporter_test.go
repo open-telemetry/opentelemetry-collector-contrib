@@ -125,16 +125,19 @@ func TestLogsExporter(t *testing.T) {
 
 	t.Run("Test simple log data", func(t *testing.T) {
 		var logs = createSimpleLogData(3)
-		exp.pushLogData(context.Background(), logs)
+		err = exp.pushLogData(context.Background(), logs)
+		require.NoError(t, err)
 	})
 
 	t.Run("Test max message size", func(t *testing.T) {
 		var logs = createSizedPayloadLogData(maxMessageSize)
-		exp.pushLogData(context.Background(), logs)
+		err = exp.pushLogData(context.Background(), logs)
+		require.NoError(t, err)
 	})
 
 	t.Run("Test max body size", func(t *testing.T) {
 		var logs = createMaxLogData()
-		exp.pushLogData(context.Background(), logs)
+		err = exp.pushLogData(context.Background(), logs)
+		require.NoError(t, err)
 	})
 }
