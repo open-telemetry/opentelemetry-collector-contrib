@@ -70,6 +70,10 @@ class TestSqlalchemyInstrumentation(TestBase):
             self.assertEqual(len(spans), 1)
             self.assertEqual(spans[0].name, "SELECT :memory:")
             self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+            self.assertEqual(
+                spans[0].instrumentation_scope.name,
+                "opentelemetry.instrumentation.sqlalchemy",
+            )
 
         asyncio.get_event_loop().run_until_complete(run())
 
@@ -104,6 +108,10 @@ class TestSqlalchemyInstrumentation(TestBase):
         self.assertEqual(len(spans), 1)
         self.assertEqual(spans[0].name, "SELECT :memory:")
         self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+        self.assertEqual(
+            spans[0].instrumentation_scope.name,
+            "opentelemetry.instrumentation.sqlalchemy",
+        )
 
     def test_custom_tracer_provider(self):
         provider = TracerProvider(
@@ -154,6 +162,10 @@ class TestSqlalchemyInstrumentation(TestBase):
             self.assertEqual(len(spans), 1)
             self.assertEqual(spans[0].name, "SELECT :memory:")
             self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+            self.assertEqual(
+                spans[0].instrumentation_scope.name,
+                "opentelemetry.instrumentation.sqlalchemy",
+            )
 
         asyncio.get_event_loop().run_until_complete(run())
 

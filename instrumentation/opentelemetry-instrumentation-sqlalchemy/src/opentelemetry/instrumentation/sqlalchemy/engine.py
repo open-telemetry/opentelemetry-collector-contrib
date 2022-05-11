@@ -16,6 +16,9 @@ import os
 from sqlalchemy.event import listen  # pylint: disable=no-name-in-module
 
 from opentelemetry import trace
+from opentelemetry.instrumentation.sqlalchemy.package import (
+    _instrumenting_module_name,
+)
 from opentelemetry.instrumentation.sqlalchemy.version import __version__
 from opentelemetry.instrumentation.utils import (
     _generate_opentelemetry_traceparent,
@@ -40,9 +43,9 @@ def _normalize_vendor(vendor):
     return vendor
 
 
-def _get_tracer(engine, tracer_provider=None):
+def _get_tracer(tracer_provider=None):
     return trace.get_tracer(
-        _normalize_vendor(engine.name),
+        _instrumenting_module_name,
         __version__,
         tracer_provider=tracer_provider,
     )
@@ -55,7 +58,7 @@ def _wrap_create_async_engine(tracer_provider=None):
         object that will listen to SQLAlchemy events.
         """
         engine = func(*args, **kwargs)
-        EngineTracer(_get_tracer(engine, tracer_provider), engine.sync_engine)
+        EngineTracer(_get_tracer(tracer_provider), engine.sync_engine)
         return engine
 
     return _wrap_create_async_engine_internal
@@ -68,7 +71,7 @@ def _wrap_create_engine(tracer_provider=None):
         object that will listen to SQLAlchemy events.
         """
         engine = func(*args, **kwargs)
-        EngineTracer(_get_tracer(engine, tracer_provider), engine)
+        EngineTracer(_get_tracer(tracer_provider), engine)
         return engine
 
     return _wrap_create_engine_internal

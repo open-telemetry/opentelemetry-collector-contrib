@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1055](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1055))
 - Refactoring custom header collection API for consistency
   ([#1064](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1064))
+- `opentelemetry-instrumentation-sqlalchemy` will correctly report `otel.library.name`
+  ([#1086](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1086))
 
 ### Added
 - `opentelemetry-instrument` and `opentelemetry-bootstrap` now include a `--version` flag

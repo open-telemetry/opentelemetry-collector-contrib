@@ -12,5 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+_instrumenting_module_name = "opentelemetry.instrumentation.sqlalchemy"
 
 _instruments = ("sqlalchemy",)
