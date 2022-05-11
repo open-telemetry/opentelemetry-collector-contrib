@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -85,7 +84,10 @@ func TestLoadBalancerStart(t *testing.T) {
 
 	// test
 	res := p.Start(context.Background(), componenttest.NewNopHost())
-	defer p.Shutdown(context.Background())
+	defer func() {
+		err = p.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	// verify
 	assert.Nil(t, res)
