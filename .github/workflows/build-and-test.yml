@@ -27,11 +27,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        if: steps.go-cache.outputs.hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -63,13 +63,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Lint Build
         uses: actions/cache@v3
         with:
-          path: /home/runner/.cache/go-build
+          path: ~/.cache/go-build
           key: go-lint-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
         run: make -j2 golint
@@ -92,8 +92,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: CheckDoc
         run: make checkdoc
@@ -133,13 +133,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Test Build
         uses: actions/cache@v3
         with:
-          path: /home/runner/.cache/go-build
+          path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
@@ -162,8 +162,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
         run: make integration-tests-with-cover
@@ -187,8 +187,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
@@ -211,8 +211,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
@@ -253,8 +253,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Build Collector ${{ matrix.binary }}
         run: make otelcontribcol-${{ matrix.binary }}
@@ -382,8 +382,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Download Binaries
         uses: actions/download-artifact@v3
@@ -443,8 +443,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Set Release Tag
         id: github_tag
