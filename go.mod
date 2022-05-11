@@ -134,7 +134,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.50.0
 	github.com/prometheus/prometheus v0.35.1-0.20220503184552-2381d7be5731
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector v0.51.0
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6
 )
@@ -325,7 +325,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.2 // indirect
+	github.com/klauspost/compress v1.15.3 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
@@ -464,8 +464,8 @@ require (
 	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/model v0.50.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7 // indirect
-	go.opentelemetry.io/collector/semconv v0.50.1-0.20220429151328-041f39835df7 // indirect
+	go.opentelemetry.io/collector/pdata v0.51.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.51.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.32.0 // indirect

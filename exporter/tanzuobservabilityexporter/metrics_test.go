@@ -662,8 +662,8 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
-	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	histogramDataPoint.SetMExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetMBucketCounts([]uint64{5, 1, 3, 2})
 	histogramDataPoint.Attributes().UpsertString("foo", "bar")
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
@@ -710,8 +710,8 @@ func TestCumulativeHistogramDataPointConsumerError(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
-	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	histogramDataPoint.SetMExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetMBucketCounts([]uint64{5, 1, 3, 2})
 	sender := &mockGaugeSender{errorOnSend: true}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -727,8 +727,8 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 	metric := newMetric("a.metric", pmetric.MetricDataTypeHistogram)
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
-	histogramDataPoint.SetExplicitBounds([]float64{10.0})
-	histogramDataPoint.SetBucketCounts([]uint64{4, 12})
+	histogramDataPoint.SetMExplicitBounds([]float64{10.0})
+	histogramDataPoint.SetMBucketCounts([]uint64{4, 12})
 	histogramDataPoint.Attributes().UpsertInt("le", 8)
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
@@ -779,8 +779,8 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
-	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	histogramDataPoint.SetMExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetMBucketCounts([]uint64{5, 1, 3, 2})
 	setDataPointTimestamp(1631234567, histogramDataPoint)
 	histogramDataPoint.Attributes().UpsertString("bar", "baz")
 	sender := &mockDistributionSender{}
@@ -818,8 +818,8 @@ func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds([]float64{})
-	histogramDataPoint.SetBucketCounts([]uint64{17})
+	histogramDataPoint.SetMExplicitBounds([]float64{})
+	histogramDataPoint.SetMBucketCounts([]uint64{17})
 	setDataPointTimestamp(1641234567, histogramDataPoint)
 	sender := &mockDistributionSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
@@ -851,8 +851,8 @@ func TestDeltaHistogramDataPointConsumerError(t *testing.T) {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
 	mi := metricInfo{Metric: metric, Source: "test_source", SourceKey: "host.name"}
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
-	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
-	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	histogramDataPoint.SetMExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetMBucketCounts([]uint64{5, 1, 3, 2})
 	sender := &mockDistributionSender{errorOnSend: true}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newDeltaHistogramDataPointConsumer(sender)
@@ -1094,9 +1094,9 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 	dataPoint := pmetric.NewExponentialHistogramDataPoint()
 	dataPoint.SetScale(1)
 	dataPoint.Negative().SetOffset(6)
-	dataPoint.Negative().SetBucketCounts([]uint64{15, 16, 17})
+	dataPoint.Negative().SetMBucketCounts([]uint64{15, 16, 17})
 	dataPoint.Positive().SetOffset(3)
-	dataPoint.Positive().SetBucketCounts([]uint64{5, 6, 7, 8})
+	dataPoint.Positive().SetMBucketCounts([]uint64{5, 6, 7, 8})
 	dataPoint.SetZeroCount(2)
 	dataPoint.Attributes().UpsertString("foo", "bar")
 	dataPoint.Attributes().UpsertString("baz", "7")
