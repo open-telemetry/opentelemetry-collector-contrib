@@ -37,8 +37,6 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	qs := exporterhelper.NewDefaultQueueSettings()
-	qs.Enabled = false
 
 	assert.Equal(t, cfg, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
@@ -49,7 +47,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: qs,
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
