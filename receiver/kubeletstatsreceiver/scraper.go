@@ -88,12 +88,8 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
-	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mb)
-	md := pmetric.NewMetrics()
-	for i := range mds {
-		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-	}
-	return md, nil
+	kubelet.PrepareMetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mb)
+	return r.mb.Emit(), nil
 }
 
 func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {

@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
@@ -44,7 +43,6 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []pmetric.Metrics
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
@@ -64,7 +62,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addNetworkMetrics(a.mb, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
 
-	a.m = append(a.m, a.mb.Emit(metadata.WithK8sNodeName(s.NodeName)))
+	a.mb.EmitForResource(metadata.WithK8sNodeName(s.NodeName))
 }
 
 func (a *metricDataAccumulator) podStats(s stats.PodStats) {
@@ -78,9 +76,9 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addFilesystemMetrics(a.mb, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(a.mb, metadata.PodNetworkMetrics, s.Network, currentTime)
 
-	a.m = append(a.m, a.mb.Emit(metadata.WithK8sPodUID(s.PodRef.UID),
+	a.mb.EmitForResource(metadata.WithK8sPodUID(s.PodRef.UID),
 		metadata.WithK8sPodName(s.PodRef.Name),
-		metadata.WithK8sNamespaceName(s.PodRef.Namespace)))
+		metadata.WithK8sNamespaceName(s.PodRef.Namespace))
 }
 
 func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.ContainerStats) {
@@ -103,7 +101,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	addMemoryMetrics(a.mb, metadata.ContainerMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mb, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
 
-	a.m = append(a.m, a.mb.Emit(ro...))
+	a.mb.EmitForResource(ro...)
 }
 
 func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeStats) {
@@ -124,5 +122,5 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addVolumeMetrics(a.mb, metadata.K8sVolumeMetrics, s, currentTime)
 
-	a.m = append(a.m, a.mb.Emit(ro...))
+	a.mb.EmitForResource(ro...)
 }

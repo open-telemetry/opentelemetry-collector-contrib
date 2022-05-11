@@ -45,27 +45,28 @@ func TestMetricAccumulator(t *testing.T) {
 	podsMetadata, _ := metadataProvider.Pods()
 	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
 	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings())
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mb))
+	PrepareMetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mb)
+	requireMetricsOk(t, mb.Emit())
 
 	mb.Reset()
+	PrepareMetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mb)
 	// Disable all groups
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mb)))
+	require.Equal(t, 0, mb.Emit().MetricCount())
 }
 
-func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
-	for _, md := range mds {
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
-			rm := md.ResourceMetrics().At(i)
-			requireResourceOk(t, rm.Resource())
-			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-				ilm := rm.ScopeMetrics().At(j)
-				require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
-				for k := 0; k < ilm.Metrics().Len(); k++ {
-					requireMetricOk(t, ilm.Metrics().At(k))
-				}
+func requireMetricsOk(t *testing.T, md pmetric.Metrics) {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		requireResourceOk(t, rm.Resource())
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
+			require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				requireMetricOk(t, ilm.Metrics().At(k))
 			}
 		}
 	}
+
 }
 
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
@@ -141,27 +142,26 @@ func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricNa
 }
 
 func indexedFakeMetrics() map[string][]pmetric.Metric {
-	mds := fakeMetrics()
+	md := fakeMetrics()
 	metrics := make(map[string][]pmetric.Metric)
-	for _, md := range mds {
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
-			rm := md.ResourceMetrics().At(i)
-			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-				ilm := rm.ScopeMetrics().At(j)
-				for k := 0; k < ilm.Metrics().Len(); k++ {
-					m := ilm.Metrics().At(k)
-					metricName := m.Name()
-					list := metrics[metricName]
-					list = append(list, m)
-					metrics[metricName] = list
-				}
+
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				m := ilm.Metrics().At(k)
+				metricName := m.Name()
+				list := metrics[metricName]
+				list = append(list, m)
+				metrics[metricName] = list
 			}
 		}
 	}
 	return metrics
 }
 
-func fakeMetrics() []pmetric.Metrics {
+func fakeMetrics() pmetric.Metrics {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()
@@ -171,5 +171,6 @@ func fakeMetrics() []pmetric.Metrics {
 		NodeMetricGroup:      true,
 	}
 	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings())
-	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mb)
+	PrepareMetricsData(zap.NewNop(), summary, Metadata{}, mgs, mb)
+	return mb.Emit()
 }
