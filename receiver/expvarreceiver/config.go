@@ -50,9 +50,5 @@ func (c *Config) Validate() error {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("scheme must be 'http' or 'https', but was '%s'", u.Scheme)
 	}
-
-	// todo: allow wildcard for enabling/disabling metric names
-	// todo: once all memstat metric names are defined, validate metric names are valid
-
 	return nil
 }

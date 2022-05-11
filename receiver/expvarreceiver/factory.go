@@ -16,7 +16,7 @@ package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -45,8 +45,7 @@ func newMetricsReceiver(
 	rCfg config.Receiver,
 	metrics consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	//todo
-	return nil, errors.New("not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 func newDefaultConfig() config.Receiver {
