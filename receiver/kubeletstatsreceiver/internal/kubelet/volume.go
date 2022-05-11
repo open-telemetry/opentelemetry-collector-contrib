@@ -31,72 +31,80 @@ func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.Volume
 	recordIntDataPoint(mb, volumeMetrics.InodesUsed, s.InodesUsed, currentTime)
 }
 
-func getLabelsFromVolume(volume v1.Volume, labels map[string]string) {
+func getResourcesFromVolume(volume v1.Volume) []metadata.ResourceOption {
 	switch {
 	// TODO: Support more types
 	case volume.ConfigMap != nil:
-		labels[labelVolumeType] = labelValueConfigMapVolume
+		return []metadata.ResourceOption{metadata.WithK8sVolumeType(labelValueConfigMapVolume)}
 	case volume.DownwardAPI != nil:
-		labels[labelVolumeType] = labelValueDownwardAPIVolume
+		return []metadata.ResourceOption{metadata.WithK8sVolumeType(labelValueDownwardAPIVolume)}
 	case volume.EmptyDir != nil:
-		labels[labelVolumeType] = labelValueEmptyDirVolume
+		return []metadata.ResourceOption{metadata.WithK8sVolumeType(labelValueEmptyDirVolume)}
 	case volume.Secret != nil:
-		labels[labelVolumeType] = labelValueSecretVolume
+		return []metadata.ResourceOption{metadata.WithK8sVolumeType(labelValueSecretVolume)}
 	case volume.PersistentVolumeClaim != nil:
-		labels[labelVolumeType] = labelValuePersistentVolumeClaim
-		labels[labelPersistentVolumeClaimName] = volume.PersistentVolumeClaim.ClaimName
+		return []metadata.ResourceOption{metadata.WithK8sVolumeType(labelValuePersistentVolumeClaim),
+			metadata.WithK8sPersistentvolumeclaimName(volume.PersistentVolumeClaim.ClaimName)}
 	case volume.HostPath != nil:
-		labels[labelVolumeType] = labelValueHostPathVolume
+		return []metadata.ResourceOption{metadata.WithK8sVolumeType(labelValueHostPathVolume)}
 	case volume.AWSElasticBlockStore != nil:
-		awsElasticBlockStoreDims(*volume.AWSElasticBlockStore, labels)
+		return awsElasticBlockStoreDims(*volume.AWSElasticBlockStore)
 	case volume.GCEPersistentDisk != nil:
-		gcePersistentDiskDims(*volume.GCEPersistentDisk, labels)
+		return gcePersistentDiskDims(*volume.GCEPersistentDisk)
 	case volume.Glusterfs != nil:
-		glusterfsDims(*volume.Glusterfs, labels)
+		return glusterfsDims(*volume.Glusterfs)
 	}
+	return nil
 }
 
-func GetPersistentVolumeLabels(pv v1.PersistentVolumeSource, labels map[string]string) {
+func GetPersistentVolumeLabels(pv v1.PersistentVolumeSource) []metadata.ResourceOption {
 	// TODO: Support more types
 	switch {
 	case pv.Local != nil:
-		labels[labelVolumeType] = labelValueLocalVolume
+		return []metadata.ResourceOption{metadata.WithK8sVolumeType(labelValueLocalVolume)}
 	case pv.AWSElasticBlockStore != nil:
-		awsElasticBlockStoreDims(*pv.AWSElasticBlockStore, labels)
+		return awsElasticBlockStoreDims(*pv.AWSElasticBlockStore)
 	case pv.GCEPersistentDisk != nil:
-		gcePersistentDiskDims(*pv.GCEPersistentDisk, labels)
+		return gcePersistentDiskDims(*pv.GCEPersistentDisk)
 	case pv.Glusterfs != nil:
 		// pv.Glusterfs is a GlusterfsPersistentVolumeSource instead of GlusterfsVolumeSource,
 		// convert to GlusterfsVolumeSource so a single method can handle both structs. This
 		// can be broken out into separate methods if one is interested in different sets
 		// of labels from the two structs in the future.
-		glusterfsDims(v1.GlusterfsVolumeSource{
+		return glusterfsDims(v1.GlusterfsVolumeSource{
 			EndpointsName: pv.Glusterfs.EndpointsName,
 			Path:          pv.Glusterfs.Path,
 			ReadOnly:      pv.Glusterfs.ReadOnly,
-		}, labels)
+		})
+	}
+	return nil
+}
+
+func awsElasticBlockStoreDims(vs v1.AWSElasticBlockStoreVolumeSource) []metadata.ResourceOption {
+	return []metadata.ResourceOption{
+		metadata.WithK8sVolumeType(labelValueAWSEBSVolume),
+		// AWS specific labels.
+		metadata.WithAwsVolumeID(vs.VolumeID),
+		metadata.WithFsType(vs.FSType),
+		metadata.WithPartition(strconv.Itoa(int(vs.Partition))),
 	}
 }
 
-func awsElasticBlockStoreDims(vs v1.AWSElasticBlockStoreVolumeSource, labels map[string]string) {
-	labels[labelVolumeType] = labelValueAWSEBSVolume
-	// AWS specific labels.
-	labels[labelAwsVolumeID] = vs.VolumeID
-	labels[labelFsType] = vs.FSType
-	labels[labelPartition] = strconv.Itoa(int(vs.Partition))
+func gcePersistentDiskDims(vs v1.GCEPersistentDiskVolumeSource) []metadata.ResourceOption {
+	return []metadata.ResourceOption{
+		metadata.WithK8sVolumeType(labelValueGCEPDVolume),
+		// GCP specific labels.
+		metadata.WithGcePdName(vs.PDName),
+		metadata.WithFsType(vs.FSType),
+		metadata.WithPartition(strconv.Itoa(int(vs.Partition))),
+	}
 }
 
-func gcePersistentDiskDims(vs v1.GCEPersistentDiskVolumeSource, labels map[string]string) {
-	labels[labelVolumeType] = labelValueGCEPDVolume
-	// GCP specific labels.
-	labels[labelGcePdName] = vs.PDName
-	labels[labelFsType] = vs.FSType
-	labels[labelPartition] = strconv.Itoa(int(vs.Partition))
-}
-
-func glusterfsDims(vs v1.GlusterfsVolumeSource, labels map[string]string) {
-	labels[labelVolumeType] = labelValueGlusterFSVolume
-	// GlusterFS specific labels.
-	labels[labelGlusterfsEndpointsName] = vs.EndpointsName
-	labels[labelGlusterfsPath] = vs.Path
+func glusterfsDims(vs v1.GlusterfsVolumeSource) []metadata.ResourceOption {
+	return []metadata.ResourceOption{
+		metadata.WithK8sVolumeType(labelValueGlusterFSVolume),
+		// GlusterFS specific labels.
+		metadata.WithGlusterfsEndpointsName(vs.EndpointsName),
+		metadata.WithGlusterfsPath(vs.Path),
+	}
 }

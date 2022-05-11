@@ -16,6 +16,7 @@
 package kubelet
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,6 +24,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestValidateMetadataLabelsConfig(t *testing.T) {
@@ -75,13 +78,13 @@ func TestSetExtraLabels(t *testing.T) {
 		metadata  Metadata
 		args      []string
 		wantError string
-		want      map[string]string
+		want      map[string]interface{}
 	}{
 		{
 			name:     "no_labels",
 			metadata: NewMetadata([]MetadataLabel{}, nil, nil),
 			args:     []string{"uid", "container.id", "container"},
-			want:     map[string]string{},
+			want:     map[string]interface{}{},
 		},
 		{
 			name: "set_container_id_valid",
@@ -103,7 +106,7 @@ func TestSetExtraLabels(t *testing.T) {
 				},
 			}, nil),
 			args: []string{"uid-1234", "container.id", "container1"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				string(MetadataLabelContainerID): "test-container",
 			},
 		},
@@ -166,11 +169,17 @@ func TestSetExtraLabels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fields := map[string]string{}
-			err := tt.metadata.setExtraLabels(fields, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
+			ro, err := tt.metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
+
+			r := pcommon.NewResource()
+			for _, op := range ro {
+				op(r)
+			}
+
 			if tt.wantError == "" {
 				require.NoError(t, err)
-				assert.EqualValues(t, tt.want, fields)
+				temp := r.Attributes().AsRaw()
+				assert.EqualValues(t, tt.want, temp)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())
 			}
@@ -184,7 +193,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 		name string
 		vs   v1.VolumeSource
 		args []string
-		want map[string]string
+		want map[string]interface{}
 	}{
 		{
 			name: "hostPath",
@@ -192,7 +201,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				HostPath: &v1.HostPathVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type": "hostPath",
 			},
 		},
@@ -202,7 +211,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				ConfigMap: &v1.ConfigMapVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type": "configMap",
 			},
 		},
@@ -212,7 +221,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				EmptyDir: &v1.EmptyDirVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type": "emptyDir",
 			},
 		},
@@ -222,7 +231,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				Secret: &v1.SecretVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type": "secret",
 			},
 		},
@@ -232,7 +241,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				DownwardAPI: &v1.DownwardAPIVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type": "downwardAPI",
 			},
 		},
@@ -244,7 +253,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type":                "persistentVolumeClaim",
 				"k8s.persistentvolumeclaim.name": "claim-name",
 			},
@@ -259,7 +268,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type": "awsElasticBlockStore",
 				"aws.volume.id":   "volume_id",
 				"fs.type":         "fs_type",
@@ -276,7 +285,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type": "gcePersistentDisk",
 				"gce.pd.name":     "pd_name",
 				"fs.type":         "fs_type",
@@ -292,7 +301,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{
+			want: map[string]interface{}{
 				"k8s.volume.type":          "glusterfs",
 				"glusterfs.endpoints.name": "endspoints_name",
 				"glusterfs.path":           "path",
@@ -302,12 +311,11 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			name: "unsupported type",
 			vs:   v1.VolumeSource{},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]string{},
+			want: map[string]interface{}{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fields := map[string]string{}
 			volName := "volume0"
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
@@ -325,11 +333,17 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 						},
 					},
 				},
-			}, func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
-				return nil
+			}, func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+				return nil, nil
 			})
-			metadata.setExtraLabels(fields, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
-			assert.Equal(t, tt.want, fields)
+			ro, _ := metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
+
+			r := pcommon.NewResource()
+			for _, op := range ro {
+				op(r)
+			}
+
+			assert.Equal(t, tt.want, r.Attributes().AsRaw())
 		})
 	}
 }

@@ -47,7 +47,7 @@ type kubletScraper struct {
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
-	cachedVolumeLabels    map[string]map[string]string
+	cachedVolumeLabels    map[string][]metadata.ResourceOption
 	mb                    *metadata.MetricsBuilder
 }
 
@@ -64,7 +64,7 @@ func newKubletScraper(
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
-		cachedVolumeLabels:    make(map[string]map[string]string),
+		cachedVolumeLabels:    make(map[string][]metadata.ResourceOption),
 		mb:                    metadata.NewMetricsBuilder(metricsConfig),
 	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
@@ -96,39 +96,34 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
-	return func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
+func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+	return func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
 		if r.k8sAPIClient == nil {
-			return nil
+			return nil, nil
 		}
 
 		if r.cachedVolumeLabels[volCacheID] == nil {
 			ctx := context.Background()
 			pvc, err := r.k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeClaim, metav1.GetOptions{})
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			volName := pvc.Spec.VolumeName
 			if volName == "" {
-				return fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
+				return nil, fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
 			}
 
 			pv, err := r.k8sAPIClient.CoreV1().PersistentVolumes().Get(ctx, volName, metav1.GetOptions{})
 			if err != nil {
-				return err
+				return nil, err
 			}
 
-			labelsToCache := make(map[string]string)
-			kubelet.GetPersistentVolumeLabels(pv.Spec.PersistentVolumeSource, labelsToCache)
+			ro := kubelet.GetPersistentVolumeLabels(pv.Spec.PersistentVolumeSource)
 
 			// Cache collected labels.
-			r.cachedVolumeLabels[volCacheID] = labelsToCache
+			r.cachedVolumeLabels[volCacheID] = ro
 		}
-
-		for k, v := range r.cachedVolumeLabels[volCacheID] {
-			labels[k] = v
-		}
-		return nil
+		return r.cachedVolumeLabels[volCacheID], nil
 	}
 }

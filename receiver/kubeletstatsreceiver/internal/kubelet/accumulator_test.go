@@ -41,7 +41,7 @@ func TestMetadataErrorCases(t *testing.T) {
 		numMDs                          int
 		numLogs                         int
 		logMessages                     []string
-		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string, labels map[string]string) error
+		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error)
 	}{
 		{
 			name: "Fails to get container metadata",
@@ -178,9 +178,9 @@ func TestMetadataErrorCases(t *testing.T) {
 					},
 				},
 			}, nil),
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
+			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
 				// Mock failure cases.
-				return errors.New("")
+				return nil, errors.New("")
 			},
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
@@ -207,7 +207,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 
-			tt.metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
+			tt.metadata.DetailedPVCResourceGetter = tt.detailedPVCLabelsSetterOverride
 			acc := metricDataAccumulator{
 				metadata:              tt.metadata,
 				logger:                logger,
