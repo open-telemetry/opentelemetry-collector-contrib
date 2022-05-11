@@ -40,14 +40,14 @@ check_collector_versions_correct() {
    collector_module="$1"
    collector_mod_version="$2"
    incorrect_version=0
-   mod_files=$(find . -type f -name "go.mod")
+   mod_files=$(find . -type f -not -path '*/pkg/stanza/*' -name "go.mod")
 
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
       if grep -q "$collector_module" "$mod_file"; then
          mod_line=$(grep "$collector_module" "$mod_file")
          version=$(echo "$mod_line" | cut -d" " -f2)
-         
+
          # To account for a module on its own 'require' line,
          # the version field is shifted right by 1
          if [ "$version" == "$collector_module" ]; then

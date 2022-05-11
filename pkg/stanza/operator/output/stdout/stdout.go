@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stdout
+package stdout // import "github.com/open-telemetry/opentelemetry-log-collection/operator/output/stdout"
 
 import (
 	"context"

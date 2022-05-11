@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package remove
+package remove // import "github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/remove"
 
 import (
 	"context"

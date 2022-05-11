@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+package filter // import "github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/filter"
 
 import (
 	"context"

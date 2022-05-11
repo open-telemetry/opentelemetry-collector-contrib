@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package windows
+package windows // import "github.com/open-telemetry/opentelemetry-log-collection/operator/input/windows"
 
 import (
 	"context"
