@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
