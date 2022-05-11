@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 )
 
 // aerospikeReceiver is a metrics receiver using the Aerospike interface to collect
@@ -39,7 +38,6 @@ type aerospikeReceiver struct {
 	host     string // host/IP of configured Aerospike node
 	port     int    // port of configured Aerospike node
 	mb       *metadata.MetricsBuilder
-	logger   *zap.Logger
 }
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
@@ -48,12 +46,12 @@ type aerospikeReceiver struct {
 func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) (*aerospikeReceiver, error) {
 	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("endpoint: %w", err)
+		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err)
 	}
 
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("port: %w", err)
+		return nil, fmt.Errorf("%w: %s", errBadPort, err)
 	}
 
 	return &aerospikeReceiver{
@@ -63,7 +61,6 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		host:     host,
 		port:     int(port),
 		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
-		logger:   params.Logger.Named("aerospikereceiver"),
 	}, nil
 }
 
@@ -72,21 +69,22 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
-	client, err := newASClient(r.host, r.port, r.config.Timeout)
+	client, err := newASClient(r.host, r.port, r.config.Username, r.config.Password, r.config.Timeout)
 	if err != nil {
-		r.logger.Warn(fmt.Sprintf("failed to connect: %s", err.Error()))
-		return r.mb.Emit(), nil
+		r.params.Logger.Warn(fmt.Sprintf("failed to connect: %s", err.Error()))
+		return pmetric.NewMetrics(), fmt.Errorf("failed to connect: %w", err)
 	}
 	defer client.Close()
 
 	info, err := client.Info()
 	if err != nil {
+		r.params.Logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
 		return r.mb.Emit(), err
 	}
 	r.emitNode(info, client, now)
 
 	if r.config.CollectClusterMetrics {
-		r.logger.Sugar().Debugf("Collecting %d peer nodes", len(info.Services))
+		r.params.Logger.Debug("Collecting peer nodes")
 		for _, n := range info.Services {
 			r.scrapeDiscoveredNode(n, now, errs)
 		}
@@ -96,7 +94,7 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 // scrapeNode collects metrics from a single Aerospike node
-func (r *aerospikeReceiver) scrapeNode(client Aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	info, err := client.Info()
 	if err != nil {
 		errs.AddPartial(-1, err)
@@ -117,12 +115,13 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 	}
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		r.logger.Sugar().Warnf("%w: %s", errBadPort, err)
+		r.params.Logger.Sugar().Warnf("%w: %s", errBadPort, err)
 		return
 	}
-	nClient, err := newASClient(host, int(port), r.config.Timeout)
+
+	nClient, err := newASClient(host, int(port), r.config.Username, r.config.Password, r.config.Timeout)
 	if err != nil {
-		r.logger.Warn(err.Error())
+		r.params.Logger.Warn(err.Error())
 		return
 	}
 	defer nClient.Close()
@@ -133,7 +132,7 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 // emitNode records node metrics and emits the resource. It collects namespace metrics for each namespace on the node
 //
 // The given client is used to collect namespace metrics, which is connected to a single node
-func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client Aerospike, now pcommon.Timestamp) {
+func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client aerospike, now pcommon.Timestamp) {
 	if stats := info.Statistics; stats != nil {
 		if stats.ClientConnections != nil {
 			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.ClientConnections, metadata.AttributeConnectionTypeClient)

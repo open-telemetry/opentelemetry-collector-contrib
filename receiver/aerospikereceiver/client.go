@@ -22,12 +22,12 @@ import (
 )
 
 type defaultASClient struct {
-	conn    *as.Connection
-	timeout time.Duration
+	conn    *as.Connection // open connection to Aerospike
+	timeout time.Duration  // timeout for requests, needs to be set each time
 }
 
-// Aerospike is the interface that provides information about a given node
-type Aerospike interface {
+// aerospike is the interface that provides information about a given node
+type aerospike interface {
 	// NamespaceInfo gets information about a specific namespace
 	NamespaceInfo(namespace string) (*model.NamespaceInfo, error)
 	// Info gets high-level information about the node/system.
@@ -36,19 +36,32 @@ type Aerospike interface {
 	Close()
 }
 
-// newASClient creates a new defaultASClient connected to the given host and port
-func newASClient(host string, port int, timeout time.Duration) (*defaultASClient, error) {
+// newASClient creates a new defaultASClient connected to the given host and port.
+// If username and password aren't blank, they're used to authenticate
+func newASClient(host string, port int, username, password string, timeout time.Duration) (*defaultASClient, error) {
+	authEnabled := username != "" && password != ""
+
 	policy := as.NewClientPolicy()
 	policy.Timeout = timeout
+	if authEnabled {
+		policy.User = username
+		policy.Password = password
+	}
 
 	conn, err := as.NewConnection(policy, as.NewHost(host, port))
 	if err != nil {
 		return nil, err.Unwrap()
 	}
 
+	if authEnabled {
+		if err := conn.Login(policy); err != nil {
+			return nil, err.Unwrap()
+		}
+	}
+
 	return &defaultASClient{
 		conn:    conn,
-		timeout: timeout,
+		timeout: policy.Timeout,
 	}, nil
 }
 
@@ -57,7 +70,7 @@ func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo,
 	var response model.InfoResponse
 	response, err := c.conn.RequestInfo(model.NamespaceKey(namespace))
 	if err != nil {
-		return nil, err
+		return nil, err.Unwrap()
 	}
 
 	return model.ParseNamespaceInfo(response, namespace), nil
