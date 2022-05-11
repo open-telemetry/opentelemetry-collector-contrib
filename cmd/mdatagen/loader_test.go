@@ -53,7 +53,7 @@ func Test_loadMetadata(t *testing.T) {
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
 						Sum: &sum{
-							MetricValueType: MetricValueType{pmetric.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							Aggregated:      Aggregated{Aggregation: "cumulative"},
 							Mono:            Mono{Monotonic: true},
 						},
@@ -64,7 +64,7 @@ func Test_loadMetadata(t *testing.T) {
 						Description: "Percentage of CPU time broken down by different states.",
 						Unit:        "1",
 						Gauge: &gauge{
-							MetricValueType: MetricValueType{pmetric.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 						Attributes: []attributeName{"enumAttribute"},
 					},

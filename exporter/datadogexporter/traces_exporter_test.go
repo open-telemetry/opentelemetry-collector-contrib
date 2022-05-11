@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package datadogexporter
 
 import (
@@ -77,7 +78,6 @@ func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
 			},
 		},
 		Traces: config.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
@@ -186,8 +186,7 @@ func TestPushTraceData(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 		Traces: config.TracesConfig{
-			SampleRate: 1,
-			TCPAddr:    confignet.TCPAddr{Endpoint: server.URL},
+			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 
 		HostMetadata: config.HostMetadataConfig{

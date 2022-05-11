@@ -4,10 +4,74 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
-- `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
+- `datadogexporter`: Replace HistogramMode defined as string with enum.
+- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
+- `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
+- `newrelicexporter` deleted. Use New Relic [native OTLP ingest](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-setup/) instead. (#9894)
+- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3 (#9885)
 
 ### 🚩 Deprecations 🚩
+
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+
+### 🚀 New components 🚀
+
+- `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
+- `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+  to `otelcol/elasticsearchreceiver` (#9757)
+- `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
+- `internal/stanza`: Add support for `remove` operator (#9524)
+- `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
+- `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
+- `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
+- `transformprocessor`: Add support for functions to validate parameters (#9563)
+- `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
+- `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
+- `processor/attributes`: Support attributes set by server authenticator (#9420)
+- `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
+
+### 🧰 Bug fixes 🧰
+
+- `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
+- `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
+- `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
+- `opencensusreceiver`: Do not report fatal error if err is server closed (#9559).
+- `sqlserverreceiver`: Fix the receiver to have integer types on metrics where applicable (#9601)
+- `prometheusreceiver`: Fix the memory issue introduced in the 0.49.0 release (#9718)
+- `couchdbreceiver`: Fix issue where the receiver would not respect custom metric settings (#9598)
+- `nginxreceiver`: Include nginxreceiver in components (#9572)
+- `pkg/translator/prometheusremotewrite`: Fix data race when used with other exporters (#9736)
+- `examples/demo`: fix baggage not work in trace demo app. (#9418)
+- `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
+- `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
+- `filelogreceiver`: Update Kubernetes examples to fix native OTel logs collection issue where 0 length logs cause errors (#9754)
+- `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
+- `awsinsightreceiver`: Migrate from `ConfigMapsResourceLock` to `ConfigMapsLeasesResourceLock` as per https://github.com/kubernetes/client-go/commit/276ea3ed979947d7cdd4b3d708862245ddcd8883 (#9885)
+- `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Add support for []string type for converting log record entries (#9887)
+
+## v0.50.0
+
+### 🛑 Breaking changes 🛑
+
+- `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
+- `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
+- `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
+- `kubeletstatsreceiver`: instrumentation name updated from `kubeletstats` to `otelcol/kubeletstatsreceiver` (#9400)
+- `datadogexporter`: Remove `GetHostTags` method from `TagsConfig` struct (#9423)
+- `googlecloudexporter`: Graduate the `exporter.googlecloud.OTLPDirect` feature-gate to Beta.  This includes changes to the configuration structure, and many changes to default behavior. (#9471)
+
+### 🚩 Deprecations 🚩
+
+- `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
+- `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
+- `datadogexporter`: Deprecate `traces.sample_rate` setting. It was never used anywhere. (#9771)
 
 ### 🚀 New components 🚀
 
@@ -17,14 +81,27 @@
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9599)
 
 ### 💡 Enhancements 💡
+
 - `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 - `basicauthextension`: Implement `configauth.ClientAuthenticator` so that the extension can also be used as HTTP client basic authenticator.(#8847)
-
+- `azuremonitorexporter`, `lokiexporter`, `observiqexporter`: Update timestamp processing logic (#9130)
+- `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
+- `datadogexporter`: Update deprecation messages to reflect new deprecation plan (#9422)
 - `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers (#7574)
+- `attributesprocessor`: Support filter by severity (#9132)
+- `transformprocessor`: Add transformation of logs (#9368)
+- `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
+- `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
 
 ### 🧰 Bug fixes 🧰
 
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
+- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
+- `resourcedetectionprocessor`: Wire docker detector (#9372)
+- `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
+- `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
+- `riakreceiver`: Fix issue where user configured metric settings were ignored. (#9561)
+- `sqlserverreceiver`: Update `sqlserver.transaction_log.growth.count` and `sqlserver.transaction_log.shrink.count` to be monotonic sums. (#9522)
 
 ## v0.49.0
 

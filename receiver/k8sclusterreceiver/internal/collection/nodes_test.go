@@ -31,7 +31,7 @@ import (
 
 func TestNodeMetricsReportCPUMetricsAsInt(t *testing.T) {
 	// disable the feature gate
-	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: false})
+	featuregate.GetRegistry().Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: false})
 	n := newNode("1")
 
 	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage", "storage"}, zap.NewNop())
@@ -41,9 +41,8 @@ func TestNodeMetricsReportCPUMetricsAsInt(t *testing.T) {
 	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
 	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
-			"k8s.node.uid":     "test-node-1-uid",
-			"k8s.node.name":    "test-node-1",
-			"k8s.cluster.name": "test-cluster",
+			"k8s.node.uid":  "test-node-1-uid",
+			"k8s.node.name": "test-node-1",
 		},
 	)
 
@@ -65,7 +64,7 @@ func TestNodeMetricsReportCPUMetricsAsInt(t *testing.T) {
 
 func TestNodeMetricsReportCPUMetricsAsDouble(t *testing.T) {
 	// enable the feature gate
-	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: true})
+	featuregate.GetRegistry().Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: true})
 	n := newNode("1")
 
 	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage", "storage"}, zap.NewNop())
@@ -75,9 +74,8 @@ func TestNodeMetricsReportCPUMetricsAsDouble(t *testing.T) {
 	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
 	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
-			"k8s.node.uid":     "test-node-1-uid",
-			"k8s.node.name":    "test-node-1",
-			"k8s.cluster.name": "test-cluster",
+			"k8s.node.uid":  "test-node-1-uid",
+			"k8s.node.name": "test-node-1",
 		},
 	)
 
@@ -98,12 +96,11 @@ func TestNodeMetricsReportCPUMetricsAsDouble(t *testing.T) {
 }
 
 func newNode(id string) *corev1.Node {
-	if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+	if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 		return &corev1.Node{
 			ObjectMeta: v1.ObjectMeta{
-				Name:        "test-node-" + id,
-				UID:         types.UID("test-node-" + id + "-uid"),
-				ClusterName: "test-cluster",
+				Name: "test-node-" + id,
+				UID:  types.UID("test-node-" + id + "-uid"),
 				Labels: map[string]string{
 					"foo":  "bar",
 					"foo1": "",
@@ -130,9 +127,8 @@ func newNode(id string) *corev1.Node {
 	}
 	return &corev1.Node{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-node-" + id,
-			UID:         types.UID("test-node-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name: "test-node-" + id,
+			UID:  types.UID("test-node-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

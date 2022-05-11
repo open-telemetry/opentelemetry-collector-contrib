@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
@@ -32,10 +33,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -76,6 +77,8 @@ var (
 	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
 	errLogsNotConfigured     = initJSONResponse(responseErrLogsNotConfigured)
 	errMetricsNotConfigured  = initJSONResponse(responseErrMetricsNotConfigured)
+
+	translator = &signalfx.ToTranslator{}
 )
 
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
@@ -237,7 +240,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	md, err := signalfx.ToMetrics(msg.Datapoints)
+	md, err := translator.ToMetrics(msg.Datapoints)
 	if err != nil {
 		r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
 	}

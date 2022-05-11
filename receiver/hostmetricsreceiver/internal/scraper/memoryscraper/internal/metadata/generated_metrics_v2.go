@@ -5,9 +5,9 @@ package metadata
 import (
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -30,6 +30,52 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 	}
+}
+
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateBuffered
+	AttributeStateCached
+	AttributeStateInactive
+	AttributeStateFree
+	AttributeStateSlabReclaimable
+	AttributeStateSlabUnreclaimable
+	AttributeStateUsed
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateBuffered:
+		return "buffered"
+	case AttributeStateCached:
+		return "cached"
+	case AttributeStateInactive:
+		return "inactive"
+	case AttributeStateFree:
+		return "free"
+	case AttributeStateSlabReclaimable:
+		return "slab_reclaimable"
+	case AttributeStateSlabUnreclaimable:
+		return "slab_unreclaimable"
+	case AttributeStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"buffered":           AttributeStateBuffered,
+	"cached":             AttributeStateCached,
+	"inactive":           AttributeStateInactive,
+	"free":               AttributeStateFree,
+	"slab_reclaimable":   AttributeStateSlabReclaimable,
+	"slab_unreclaimable": AttributeStateSlabUnreclaimable,
+	"used":               AttributeStateUsed,
 }
 
 type metricSystemMemoryUsage struct {
@@ -216,13 +262,13 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.
-func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue string) {
-	mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
+	mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordSystemMemoryUtilizationDataPoint adds a data point to system.memory.utilization metric.
-func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue string) {
-	mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
+	mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -244,22 +290,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Buffered          string
-	Cached            string
-	Inactive          string
-	Free              string
-	SlabReclaimable   string
-	SlabUnreclaimable string
-	Used              string
-}{
-	"buffered",
-	"cached",
-	"inactive",
-	"free",
-	"slab_reclaimable",
-	"slab_unreclaimable",
-	"used",
-}

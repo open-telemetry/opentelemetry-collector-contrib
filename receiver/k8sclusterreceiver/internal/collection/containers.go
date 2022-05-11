@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -114,7 +114,7 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 			val := utils.GetInt64TimeSeries(v.Value())
 			valType := metricspb.MetricDescriptor_GAUGE_INT64
 			if k == corev1.ResourceCPU {
-				if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+				if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 					// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
 					valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 					val = utils.GetDoubleTimeSeries(float64(v.MilliValue()) / 1000.0)

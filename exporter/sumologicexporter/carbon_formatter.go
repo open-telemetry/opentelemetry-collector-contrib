@@ -68,13 +68,13 @@ func sanitizeCarbonString(text string) string {
 // with additional information from metricPair.
 func carbon2NumberRecord(record metricPair, dataPoint pmetric.NumberDataPoint) string {
 	switch dataPoint.ValueType() {
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return fmt.Sprintf("%s  %g %d",
 			carbon2TagString(record),
 			dataPoint.DoubleVal(),
 			dataPoint.Timestamp()/1e9,
 		)
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return fmt.Sprintf("%s  %d %d",
 			carbon2TagString(record),
 			dataPoint.IntVal(),

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Package elastic contains an OTLP exporter for Elastic APM.
+// nolint:errcheck
 package elastic // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 
 import (
@@ -20,8 +21,8 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // EncodeResourceMetadata encodes a metadata line from resource, writing to w.

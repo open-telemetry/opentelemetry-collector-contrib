@@ -116,9 +116,9 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 
 	var metricVal float64
 	switch metric.ValueType() {
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		metricVal = metric.DoubleVal()
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		metricVal = float64(metric.IntVal())
 	}
 

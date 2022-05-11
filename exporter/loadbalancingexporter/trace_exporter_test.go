@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -21,7 +22,6 @@ import (
 	"math/rand"
 	"net"
 	"path/filepath"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -415,17 +416,18 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	lb.res = res
 	p.loadBalancer = lb
 
-	var counter1, counter2 int64
+	counter1 := atomic.NewInt64(0)
+	counter2 := atomic.NewInt64(0)
 	defaultExporters := map[string]component.Exporter{
 		"127.0.0.1": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
-			atomic.AddInt64(&counter1, 1)
+			counter1.Inc()
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		},
 		),
 		"127.0.0.2": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
-			atomic.AddInt64(&counter2, 1)
+			counter2.Inc()
 			return nil
 		},
 		),
@@ -475,8 +477,8 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	// verify
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
-	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
-	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
+	require.Greater(t, counter1.Load(), int64(0))
+	require.Greater(t, counter2.Load(), int64(0))
 }
 
 func randomTraces() ptrace.Traces {

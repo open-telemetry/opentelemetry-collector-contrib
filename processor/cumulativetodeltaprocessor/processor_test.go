@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package cumulativetodeltaprocessor
 
 import (
@@ -29,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 type testMetric struct {
@@ -40,6 +43,8 @@ type testMetric struct {
 type cumulativeToDeltaTest struct {
 	name       string
 	metrics    []string
+	include    MatchMetrics
+	exclude    MatchMetrics
 	inMetrics  pmetric.Metrics
 	outMetrics pmetric.Metrics
 }
@@ -47,21 +52,7 @@ type cumulativeToDeltaTest struct {
 var (
 	testCases = []cumulativeToDeltaTest{
 		{
-			name:    "cumulative_to_delta_expect_same",
-			metrics: nil,
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				isCumulative: []bool{true, true},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				isCumulative: []bool{true, true},
-			}),
-		},
-		{
-			name:    "cumulative_to_delta_one_positive",
+			name:    "legacy_cumulative_to_delta_one_positive",
 			metrics: []string{"metric_1"},
 			inMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
@@ -75,7 +66,7 @@ var (
 			}),
 		},
 		{
-			name:    "cumulative_to_delta_nan_value",
+			name:    "legacy_cumulative_to_delta_nan_value",
 			metrics: []string{"metric_1"},
 			inMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
@@ -86,6 +77,95 @@ var (
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
 				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name:    "cumulative_to_delta_convert_nothing",
+			metrics: nil,
+			exclude: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_one_positive",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, 500}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, 300}, {4}},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_nan_value",
+			include: MatchMetrics{
+				Metrics: []string{"_1"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name:    "cumulative_to_delta_exclude_precedence",
+			metrics: nil,
+			include: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			exclude: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
 			}),
 		},
 	}
@@ -99,6 +179,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics:           test.metrics,
+				Include:           test.include,
+				Exclude:           test.exclude,
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(

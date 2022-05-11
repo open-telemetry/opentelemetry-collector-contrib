@@ -34,13 +34,6 @@ var (
 	errNoMetadata  = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 )
 
-// TODO: Import these from translator when we eliminate cyclic dependency.
-const (
-	histogramModeNoBuckets     = "nobuckets"
-	histogramModeCounters      = "counters"
-	histogramModeDistributions = "distributions"
-)
-
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
@@ -58,12 +51,17 @@ type APIConfig struct {
 	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
+
+	// FailOnInvalidKey states whether to exit at startup on invalid API key.
+	// The default value is false.
+	FailOnInvalidKey bool `mapstructure:"fail_on_invalid_key"`
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
 	// Quantiles states whether to report quantiles from summary metrics.
 	// By default, the minimum, maximum and average are reported.
+	// Deprecated: [v0.50.0] Use `metrics::summaries::mode` (SummaryConfig.Mode) instead.
 	Quantiles bool `mapstructure:"report_quantiles"`
 
 	// SendMonotonic states whether to report cumulative monotonic metrics as counters
@@ -87,6 +85,33 @@ type MetricsConfig struct {
 
 	// SumConfig defines the export of OTLP Sums.
 	SumConfig SumConfig `mapstructure:"sums"`
+
+	// SummaryConfig defines the export for OTLP Summaries.
+	SummaryConfig SummaryConfig `mapstructure:"summaries"`
+}
+
+type HistogramMode string
+
+const (
+	// HistogramModeNoBuckets reports no bucket histogram metrics. .sum and .count metrics will still be sent
+	// if `send_count_sum_metrics` is enabled.
+	HistogramModeNoBuckets HistogramMode = "nobuckets"
+	// HistogramModeCounters reports histograms as Datadog counts, one metric per bucket.
+	HistogramModeCounters HistogramMode = "counters"
+	// HistogramModeDistributions reports histograms as Datadog distributions (recommended).
+	HistogramModeDistributions HistogramMode = "distributions"
+)
+
+var _ encoding.TextUnmarshaler = (*HistogramMode)(nil)
+
+func (hm *HistogramMode) UnmarshalText(in []byte) error {
+	switch mode := HistogramMode(in); mode {
+	case HistogramModeCounters, HistogramModeDistributions, HistogramModeNoBuckets:
+		*hm = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid histogram mode %q", mode)
+	}
 }
 
 // HistogramConfig customizes export of OTLP Histograms.
@@ -98,7 +123,7 @@ type HistogramConfig struct {
 	//    if `send_count_sum_metrics` is enabled.
 	//
 	// The current default is 'distributions'.
-	Mode string `mapstructure:"mode"`
+	Mode HistogramMode `mapstructure:"mode"`
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
 	// The current default is false.
@@ -106,7 +131,7 @@ type HistogramConfig struct {
 }
 
 func (c *HistogramConfig) validate() error {
-	if c.Mode == histogramModeNoBuckets && !c.SendCountSum {
+	if c.Mode == HistogramModeNoBuckets && !c.SendCountSum {
 		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
 	}
 	return nil
@@ -152,6 +177,42 @@ type SumConfig struct {
 	CumulativeMonotonicMode CumulativeMonotonicSumMode `mapstructure:"cumulative_monotonic_mode"`
 }
 
+// SummaryMode is the export mode for OTLP Summary metrics.
+type SummaryMode string
+
+const (
+	// SummaryModeNoQuantiles sends no `.quantile` metrics. `.sum` and `.count` metrics will still be sent.
+	SummaryModeNoQuantiles SummaryMode = "noquantiles"
+	// SummaryModeGauges sends `.quantile` metrics as gauges tagged by the quantile.
+	SummaryModeGauges SummaryMode = "gauges"
+)
+
+var _ encoding.TextUnmarshaler = (*SummaryMode)(nil)
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (sm *SummaryMode) UnmarshalText(in []byte) error {
+	switch mode := SummaryMode(in); mode {
+	case SummaryModeNoQuantiles,
+		SummaryModeGauges:
+		*sm = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid summary mode %q", mode)
+	}
+}
+
+// SummaryConfig customizes export of OTLP Summaries.
+type SummaryConfig struct {
+	// Mode is the the mode for exporting OTLP Summaries.
+	// Valid values are 'noquantiles' or 'gauges'.
+	//  - 'noquantiles' sends no `.quantile` metrics. `.sum` and `.count` metrics will still be sent.
+	//  - 'gauges' sends `.quantile` metrics as gauges tagged by the quantile.
+	//
+	// The default is 'gauges'.
+	// See https://docs.datadoghq.com/metrics/otlp/?tab=summary#mapping for details and examples.
+	Mode SummaryMode `mapstructure:"mode"`
+}
+
 // MetricsExporterConfig provides options for a user to customize the behavior of the
 // metrics exporter
 type MetricsExporterConfig struct {
@@ -174,6 +235,7 @@ type TracesConfig struct {
 	// SampleRate is the rate at which to sample this event. Default is 1,
 	// meaning no sampling. If you want to send one event out of every 250
 	// times Send() is called, you would specify 250 here.
+	// Deprecated: [v0.50.0] Not used anywhere.
 	SampleRate uint `mapstructure:"sample_rate"`
 
 	// ignored resources
@@ -236,9 +298,8 @@ type TagsConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// GetHostTags gets the host tags extracted from the configuration
-// Deprecated: [v0.49.0] Access fields explicitly instead.
-func (t *TagsConfig) GetHostTags() []string {
+// getHostTags gets the host tags extracted from the configuration
+func (t *TagsConfig) getHostTags() []string {
 	tags := t.Tags
 
 	if len(tags) == 0 {
@@ -459,17 +520,10 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
 
-	switch c.Metrics.HistConfig.Mode {
-	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:
-		// Do nothing
-	default:
-		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
-	}
-
 	// Add warnings about autodetected environment variables.
 	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
 
-	deprecationTemplate := "%q has been deprecated and will be removed in %s. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
+	deprecationTemplate := "%q has been deprecated and will be removed in %s or later. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
 	if c.Service != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.52.0", 8781))
 	}
@@ -479,6 +533,8 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	if c.Env != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
 	}
-
+	if c.Traces.SampleRate != 0 {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "traces.sample_rate", "v0.52.0", 9771))
+	}
 	return nil
 }

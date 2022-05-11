@@ -100,9 +100,9 @@ func (t *Translator) mapNumberMetrics(
 		pointDims := dims.WithAttributeMap(p.Attributes())
 		var val float64
 		switch p.ValueType() {
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val = p.DoubleVal()
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val = float64(p.IntVal())
 		}
 
@@ -129,9 +129,9 @@ func (t *Translator) mapNumberMonotonicMetrics(
 
 		var val float64
 		switch p.ValueType() {
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val = p.DoubleVal()
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val = float64(p.IntVal())
 		}
 
@@ -469,6 +469,18 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),
 							zap.Any("aggregation temporality", md.Histogram().AggregationTemporality()),
+						)
+						continue
+					}
+				case pmetric.MetricDataTypeExponentialHistogram:
+					switch md.ExponentialHistogram().AggregationTemporality() {
+					case pmetric.MetricAggregationTemporalityDelta:
+						delta := md.ExponentialHistogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+						t.mapExponentialHistogramMetrics(ctx, consumer, baseDims, md.ExponentialHistogram().DataPoints(), delta)
+					default: // pmetric.MetricAggregationTemporalityCumulative, pmetric.AggregationTemporalityUnspecified or any other not supported type
+						t.logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.ExponentialHistogram().AggregationTemporality()),
 						)
 						continue
 					}

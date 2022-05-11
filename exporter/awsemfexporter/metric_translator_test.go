@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package awsemfexporter
 
 import (
@@ -28,9 +29,9 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -413,8 +414,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	ilm.Scope().SetName("cloudwatch-lib")
 
 	noNamespaceMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceNamespace)
-	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceName)
+	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
+	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
 
 	counterMetrics := map[string]*metricInfo{
 		"spanCounter": {

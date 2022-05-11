@@ -100,10 +100,12 @@ func (*factory) createDefaultConfig() config.Exporter {
 			SumConfig: ddconfig.SumConfig{
 				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 			},
+			SummaryConfig: ddconfig.SummaryConfig{
+				Mode: ddconfig.SummaryModeGauges,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
 			},
@@ -211,7 +213,12 @@ func (f *factory) createTracesExporter(
 			return nil
 		}
 	} else {
-		pushTracesFn = newTracesExporter(ctx, set, cfg, &f.onceMetadata).pushTraceDataScrubbed
+		exporter, err := newTracesExporter(ctx, set, cfg, &f.onceMetadata)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		pushTracesFn = exporter.pushTraceDataScrubbed
 	}
 
 	return exporterhelper.NewTracesExporter(

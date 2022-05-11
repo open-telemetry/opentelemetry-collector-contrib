@@ -667,7 +667,7 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []*pmetric.Resourc
 	wantAttributes.Update("net.host.port", pcommon.NewValueString(""))
 	wantAttributes.Insert("net.host.name", pcommon.NewValueString("relabeled-instance"))
 
-	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
 	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("jvm_memory_bytes_used",
