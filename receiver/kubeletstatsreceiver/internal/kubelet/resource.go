@@ -16,9 +16,10 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 func getContainerResourceOptions(sPod stats.PodStats, sContainer stats.ContainerStats, k8sMetadata Metadata) ([]metadata.ResourceOption, error) {

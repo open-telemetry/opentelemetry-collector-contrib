@@ -16,16 +16,16 @@
 package kubelet
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 func TestValidateMetadataLabelsConfig(t *testing.T) {

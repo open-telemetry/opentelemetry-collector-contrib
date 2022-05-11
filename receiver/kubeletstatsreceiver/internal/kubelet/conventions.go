@@ -15,14 +15,7 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 const (
-	labelPersistentVolumeClaimName = "k8s.persistentvolumeclaim.name"
-	labelVolumeType                = "k8s.volume.type"
-	labelAwsVolumeID               = "aws.volume.id"
-	labelFsType                    = "fs.type"
-	labelPartition                 = "partition"
-	labelGcePdName                 = "gce.pd.name"
-	labelGlusterfsEndpointsName    = "glusterfs.endpoints.name"
-	labelGlusterfsPath             = "glusterfs.path"
+	labelVolumeType = "k8s.volume.type"
 
 	// Volume types.
 	labelValuePersistentVolumeClaim = "persistentVolumeClaim"
