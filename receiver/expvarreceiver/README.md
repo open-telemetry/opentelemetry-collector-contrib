@@ -22,9 +22,9 @@ receivers:
 ### Customising
 
 The following can be configured:
-- `http_client` - Configure the HTTP client for scraping the expvar variables. The full set of
+- Configure the HTTP client for scraping the expvar variables. The full set of
   configuration options for the client can be found in the core repo's
-  [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration)
+  [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).
   - defaults: 
     - `endpoint = http://localhost:8080/debug/vars` 
     - `timeout = 3s`
@@ -37,9 +37,8 @@ The following can be configured:
 ```yaml
 receivers:
   expvar:
-    http_client:
-      endpoint: "http://localhost:8000/custom/path"
-      timeout: 1s
+    endpoint: "http://localhost:8000/custom/path"
+    timeout: 1s
     collection_interval: 30s
     metrics:
       - name: example_metric.enabled

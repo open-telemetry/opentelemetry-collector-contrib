@@ -25,7 +25,7 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	HTTP                                    *confighttp.HTTPClientSettings `mapstructure:"http_client"`
+	HTTP                                    *confighttp.HTTPClientSettings `mapstructure:",squash"`
 	MetricsConfig                           []MetricConfig                 `mapstructure:"metrics"`
 }
 

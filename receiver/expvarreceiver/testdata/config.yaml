@@ -3,9 +3,8 @@ receivers:
   expvar/default:
   # More custom configuration
   expvar/custom:
-    http_client:
-      endpoint: "http://localhost:8000/custom/path"
-      timeout: 5s
+    endpoint: "http://localhost:8000/custom/path"
+    timeout: 5s
     collection_interval: 30s
     metrics:
       - name: example_metric.enabled
