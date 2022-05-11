@@ -15,7 +15,7 @@
 //go:build linux
 // +build linux
 
-package journald
+package journald // import "github.com/open-telemetry/opentelemetry-log-collection/operator/input/journald"
 
 import (
 	"bufio"

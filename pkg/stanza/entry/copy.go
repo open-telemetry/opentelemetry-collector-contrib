@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entry
+package entry // import "github.com/open-telemetry/opentelemetry-log-collection/entry"
 
 import "encoding/json"
 

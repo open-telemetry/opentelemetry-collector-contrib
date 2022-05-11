@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operator
+package operator // import "github.com/open-telemetry/opentelemetry-log-collection/operator"
 
 // DefaultRegistry is a global registry of operator types to operator builders.
 var DefaultRegistry = NewRegistry()

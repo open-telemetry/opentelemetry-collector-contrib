@@ -15,7 +15,7 @@
 //go:build tools
 // +build tools
 
-package tools
+package tools // import "github.com/open-telemetry/opentelemetry-log-collection/internal/tools"
 
 // This file follows the recommendation at
 // https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
