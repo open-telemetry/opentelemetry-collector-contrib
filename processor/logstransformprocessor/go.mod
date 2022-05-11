@@ -8,7 +8,6 @@ require (
 	github.com/open-telemetry/opentelemetry-log-collection v0.29.1
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.0
-	go.opentelemetry.io/collector/model v0.50.0
 	go.opentelemetry.io/collector/pdata v0.51.0
 	go.uber.org/zap v1.21.0
 	gonum.org/v1/gonum v0.11.0
