@@ -14,7 +14,6 @@
 
 // Package elasticsearchexporter contains an opentelemetry-collector exporter
 // for Elasticsearch.
-// nolint:errcheck
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
@@ -145,8 +144,16 @@ func (e *elasticsearchExporter) pushEvent(ctx context.Context, document []byte) 
 				zap.NamedError("reason", err))
 
 			attempts++
-			body.Seek(0, io.SeekStart)
-			e.bulkIndexer.Add(ctx, item)
+			_, seekerr := body.Seek(0, io.SeekStart)
+			if seekerr != nil {
+				e.logger.Error("failed to set the next offset.",
+					zap.NamedError("reason", seekerr))
+			}
+			indexererr := e.bulkIndexer.Add(ctx, item)
+			if indexererr != nil {
+				e.logger.Error("failed to add item to indexer.",
+					zap.NamedError("reason", indexererr))
+			}
 
 		case resp.Status == 0 && err != nil:
 			// Encoding error. We didn't even attempt to send the event
