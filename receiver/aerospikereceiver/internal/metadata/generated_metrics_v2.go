@@ -55,6 +55,232 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeConnectionOp specifies the a value connection_op attribute.
+type AttributeConnectionOp int
+
+const (
+	_ AttributeConnectionOp = iota
+	AttributeConnectionOpClose
+	AttributeConnectionOpOpen
+)
+
+// String returns the string representation of the AttributeConnectionOp.
+func (av AttributeConnectionOp) String() string {
+	switch av {
+	case AttributeConnectionOpClose:
+		return "close"
+	case AttributeConnectionOpOpen:
+		return "open"
+	}
+	return ""
+}
+
+// MapAttributeConnectionOp is a helper map of string to AttributeConnectionOp attribute value.
+var MapAttributeConnectionOp = map[string]AttributeConnectionOp{
+	"close": AttributeConnectionOpClose,
+	"open":  AttributeConnectionOpOpen,
+}
+
+// AttributeConnectionType specifies the a value connection_type attribute.
+type AttributeConnectionType int
+
+const (
+	_ AttributeConnectionType = iota
+	AttributeConnectionTypeClient
+	AttributeConnectionTypeFabric
+	AttributeConnectionTypeHeartbeat
+)
+
+// String returns the string representation of the AttributeConnectionType.
+func (av AttributeConnectionType) String() string {
+	switch av {
+	case AttributeConnectionTypeClient:
+		return "client"
+	case AttributeConnectionTypeFabric:
+		return "fabric"
+	case AttributeConnectionTypeHeartbeat:
+		return "heartbeat"
+	}
+	return ""
+}
+
+// MapAttributeConnectionType is a helper map of string to AttributeConnectionType attribute value.
+var MapAttributeConnectionType = map[string]AttributeConnectionType{
+	"client":    AttributeConnectionTypeClient,
+	"fabric":    AttributeConnectionTypeFabric,
+	"heartbeat": AttributeConnectionTypeHeartbeat,
+}
+
+// AttributeNamespaceComponent specifies the a value namespace_component attribute.
+type AttributeNamespaceComponent int
+
+const (
+	_ AttributeNamespaceComponent = iota
+	AttributeNamespaceComponentData
+	AttributeNamespaceComponentIndex
+	AttributeNamespaceComponentSetIndex
+	AttributeNamespaceComponentSindex
+)
+
+// String returns the string representation of the AttributeNamespaceComponent.
+func (av AttributeNamespaceComponent) String() string {
+	switch av {
+	case AttributeNamespaceComponentData:
+		return "data"
+	case AttributeNamespaceComponentIndex:
+		return "index"
+	case AttributeNamespaceComponentSetIndex:
+		return "set_index"
+	case AttributeNamespaceComponentSindex:
+		return "sindex"
+	}
+	return ""
+}
+
+// MapAttributeNamespaceComponent is a helper map of string to AttributeNamespaceComponent attribute value.
+var MapAttributeNamespaceComponent = map[string]AttributeNamespaceComponent{
+	"data":      AttributeNamespaceComponentData,
+	"index":     AttributeNamespaceComponentIndex,
+	"set_index": AttributeNamespaceComponentSetIndex,
+	"sindex":    AttributeNamespaceComponentSindex,
+}
+
+// AttributeScanResult specifies the a value scan_result attribute.
+type AttributeScanResult int
+
+const (
+	_ AttributeScanResult = iota
+	AttributeScanResultAbort
+	AttributeScanResultComplete
+	AttributeScanResultError
+)
+
+// String returns the string representation of the AttributeScanResult.
+func (av AttributeScanResult) String() string {
+	switch av {
+	case AttributeScanResultAbort:
+		return "abort"
+	case AttributeScanResultComplete:
+		return "complete"
+	case AttributeScanResultError:
+		return "error"
+	}
+	return ""
+}
+
+// MapAttributeScanResult is a helper map of string to AttributeScanResult attribute value.
+var MapAttributeScanResult = map[string]AttributeScanResult{
+	"abort":    AttributeScanResultAbort,
+	"complete": AttributeScanResultComplete,
+	"error":    AttributeScanResultError,
+}
+
+// AttributeScanType specifies the a value scan_type attribute.
+type AttributeScanType int
+
+const (
+	_ AttributeScanType = iota
+	AttributeScanTypeAggr
+	AttributeScanTypeBasic
+	AttributeScanTypeOpsBg
+	AttributeScanTypeUdfBg
+)
+
+// String returns the string representation of the AttributeScanType.
+func (av AttributeScanType) String() string {
+	switch av {
+	case AttributeScanTypeAggr:
+		return "aggr"
+	case AttributeScanTypeBasic:
+		return "basic"
+	case AttributeScanTypeOpsBg:
+		return "ops_bg"
+	case AttributeScanTypeUdfBg:
+		return "udf_bg"
+	}
+	return ""
+}
+
+// MapAttributeScanType is a helper map of string to AttributeScanType attribute value.
+var MapAttributeScanType = map[string]AttributeScanType{
+	"aggr":   AttributeScanTypeAggr,
+	"basic":  AttributeScanTypeBasic,
+	"ops_bg": AttributeScanTypeOpsBg,
+	"udf_bg": AttributeScanTypeUdfBg,
+}
+
+// AttributeTransactionResult specifies the a value transaction_result attribute.
+type AttributeTransactionResult int
+
+const (
+	_ AttributeTransactionResult = iota
+	AttributeTransactionResultError
+	AttributeTransactionResultFilteredOut
+	AttributeTransactionResultNotFound
+	AttributeTransactionResultSuccess
+	AttributeTransactionResultTimeout
+)
+
+// String returns the string representation of the AttributeTransactionResult.
+func (av AttributeTransactionResult) String() string {
+	switch av {
+	case AttributeTransactionResultError:
+		return "error"
+	case AttributeTransactionResultFilteredOut:
+		return "filtered_out"
+	case AttributeTransactionResultNotFound:
+		return "not_found"
+	case AttributeTransactionResultSuccess:
+		return "success"
+	case AttributeTransactionResultTimeout:
+		return "timeout"
+	}
+	return ""
+}
+
+// MapAttributeTransactionResult is a helper map of string to AttributeTransactionResult attribute value.
+var MapAttributeTransactionResult = map[string]AttributeTransactionResult{
+	"error":        AttributeTransactionResultError,
+	"filtered_out": AttributeTransactionResultFilteredOut,
+	"not_found":    AttributeTransactionResultNotFound,
+	"success":      AttributeTransactionResultSuccess,
+	"timeout":      AttributeTransactionResultTimeout,
+}
+
+// AttributeTransactionType specifies the a value transaction_type attribute.
+type AttributeTransactionType int
+
+const (
+	_ AttributeTransactionType = iota
+	AttributeTransactionTypeDelete
+	AttributeTransactionTypeRead
+	AttributeTransactionTypeUdf
+	AttributeTransactionTypeWrite
+)
+
+// String returns the string representation of the AttributeTransactionType.
+func (av AttributeTransactionType) String() string {
+	switch av {
+	case AttributeTransactionTypeDelete:
+		return "delete"
+	case AttributeTransactionTypeRead:
+		return "read"
+	case AttributeTransactionTypeUdf:
+		return "udf"
+	case AttributeTransactionTypeWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeTransactionType is a helper map of string to AttributeTransactionType attribute value.
+var MapAttributeTransactionType = map[string]AttributeTransactionType{
+	"delete": AttributeTransactionTypeDelete,
+	"read":   AttributeTransactionTypeRead,
+	"udf":    AttributeTransactionTypeUdf,
+	"write":  AttributeTransactionTypeWrite,
+}
+
 type metricAeropsikeNamespaceTransactionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -579,8 +805,8 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordAeropsikeNamespaceTransactionCountDataPoint adds a data point to aeropsike.namespace.transaction.count metric.
-func (mb *MetricsBuilder) RecordAeropsikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, val int64, transactionTypeAttributeValue string, transactionResultAttributeValue string) {
-	mb.metricAeropsikeNamespaceTransactionCount.recordDataPoint(mb.startTime, ts, val, transactionTypeAttributeValue, transactionResultAttributeValue)
+func (mb *MetricsBuilder) RecordAeropsikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, val int64, transactionTypeAttributeValue AttributeTransactionType, transactionResultAttributeValue AttributeTransactionResult) {
+	mb.metricAeropsikeNamespaceTransactionCount.recordDataPoint(mb.startTime, ts, val, transactionTypeAttributeValue.String(), transactionResultAttributeValue.String())
 }
 
 // RecordAerospikeNamespaceDiskAvailableDataPoint adds a data point to aerospike.namespace.disk.available metric.
@@ -594,23 +820,23 @@ func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryFreeDataPoint(ts pcommon
 }
 
 // RecordAerospikeNamespaceMemoryUsageDataPoint adds a data point to aerospike.namespace.memory.usage metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, namespaceComponentAttributeValue string) {
-	mb.metricAerospikeNamespaceMemoryUsage.recordDataPoint(mb.startTime, ts, val, namespaceComponentAttributeValue)
+func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, namespaceComponentAttributeValue AttributeNamespaceComponent) {
+	mb.metricAerospikeNamespaceMemoryUsage.recordDataPoint(mb.startTime, ts, val, namespaceComponentAttributeValue.String())
 }
 
 // RecordAerospikeNamespaceSpanCountDataPoint adds a data point to aerospike.namespace.span.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceSpanCountDataPoint(ts pcommon.Timestamp, val int64, scanTypeAttributeValue string, scanResultAttributeValue string) {
-	mb.metricAerospikeNamespaceSpanCount.recordDataPoint(mb.startTime, ts, val, scanTypeAttributeValue, scanResultAttributeValue)
+func (mb *MetricsBuilder) RecordAerospikeNamespaceSpanCountDataPoint(ts pcommon.Timestamp, val int64, scanTypeAttributeValue AttributeScanType, scanResultAttributeValue AttributeScanResult) {
+	mb.metricAerospikeNamespaceSpanCount.recordDataPoint(mb.startTime, ts, val, scanTypeAttributeValue.String(), scanResultAttributeValue.String())
 }
 
 // RecordAerospikeNodeConnectionCountDataPoint adds a data point to aerospike.node.connection.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeConnectionCountDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue string, connectionOpAttributeValue string) {
-	mb.metricAerospikeNodeConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue, connectionOpAttributeValue)
+func (mb *MetricsBuilder) RecordAerospikeNodeConnectionCountDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType, connectionOpAttributeValue AttributeConnectionOp) {
+	mb.metricAerospikeNodeConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String(), connectionOpAttributeValue.String())
 }
 
 // RecordAerospikeNodeConnectionOpenDataPoint adds a data point to aerospike.node.connection.open metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeConnectionOpenDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue string) {
-	mb.metricAerospikeNodeConnectionOpen.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue)
+func (mb *MetricsBuilder) RecordAerospikeNodeConnectionOpenDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType) {
+	mb.metricAerospikeNodeConnectionOpen.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String())
 }
 
 // RecordAerospikeNodeMemoryFreeDataPoint adds a data point to aerospike.node.memory.free metric.
@@ -655,88 +881,3 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeConnectionOp are the possible values that the attribute "connection_op" can have.
-var AttributeConnectionOp = struct {
-	Close string
-	Open  string
-}{
-	"close",
-	"open",
-}
-
-// AttributeConnectionType are the possible values that the attribute "connection_type" can have.
-var AttributeConnectionType = struct {
-	Client    string
-	Fabric    string
-	Heartbeat string
-}{
-	"client",
-	"fabric",
-	"heartbeat",
-}
-
-// AttributeNamespaceComponent are the possible values that the attribute "namespace_component" can have.
-var AttributeNamespaceComponent = struct {
-	Data     string
-	Index    string
-	SetIndex string
-	Sindex   string
-}{
-	"data",
-	"index",
-	"set_index",
-	"sindex",
-}
-
-// AttributeScanResult are the possible values that the attribute "scan_result" can have.
-var AttributeScanResult = struct {
-	Abort    string
-	Complete string
-	Error    string
-}{
-	"abort",
-	"complete",
-	"error",
-}
-
-// AttributeScanType are the possible values that the attribute "scan_type" can have.
-var AttributeScanType = struct {
-	Aggr  string
-	Basic string
-	OpsBg string
-	UdfBg string
-}{
-	"aggr",
-	"basic",
-	"ops_bg",
-	"udf_bg",
-}
-
-// AttributeTransactionResult are the possible values that the attribute "transaction_result" can have.
-var AttributeTransactionResult = struct {
-	Error       string
-	FilteredOut string
-	NotFound    string
-	Success     string
-	Timeout     string
-}{
-	"error",
-	"filtered_out",
-	"not_found",
-	"success",
-	"timeout",
-}
-
-// AttributeTransactionType are the possible values that the attribute "transaction_type" can have.
-var AttributeTransactionType = struct {
-	Delete string
-	Read   string
-	Udf    string
-	Write  string
-}{
-	"delete",
-	"read",
-	"udf",
-	"write",
-}

@@ -50,15 +50,10 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 	if err != nil {
 		return nil, fmt.Errorf("endpoint: %w", err)
 	}
-	var port int
-	if portStr == "" {
-		port = 3000
-	} else {
-		portI, err := strconv.ParseInt(portStr, 10, 32)
-		if err != nil {
-			return nil, fmt.Errorf("port: %w", err)
-		}
-		port = int(portI)
+
+	port, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("port: %w", err)
 	}
 
 	return &aerospikeReceiver{
@@ -141,32 +136,32 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client Aerospike, now pcommon.Timestamp) {
 	if stats := info.Statistics; stats != nil {
 		if stats.ClientConnections != nil {
-			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.ClientConnections, metadata.AttributeConnectionType.Client)
+			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.ClientConnections, metadata.AttributeConnectionTypeClient)
 		}
 		if stats.FabricConnections != nil {
-			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.FabricConnections, metadata.AttributeConnectionType.Fabric)
+			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.FabricConnections, metadata.AttributeConnectionTypeFabric)
 		}
 		if stats.HeartbeatConnections != nil {
-			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.HeartbeatConnections, metadata.AttributeConnectionType.Heartbeat)
+			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.HeartbeatConnections, metadata.AttributeConnectionTypeHeartbeat)
 		}
 
 		if stats.ClientConnectionsClosed != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsClosed, metadata.AttributeConnectionType.Client, metadata.AttributeConnectionOp.Close)
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsClosed, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpClose)
 		}
 		if stats.ClientConnectionsOpened != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsOpened, metadata.AttributeConnectionType.Client, metadata.AttributeConnectionOp.Open)
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsOpened, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpOpen)
 		}
 		if stats.FabricConnectionsClosed != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsClosed, metadata.AttributeConnectionType.Fabric, metadata.AttributeConnectionOp.Close)
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsClosed, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpClose)
 		}
 		if stats.FabricConnectionsOpened != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsOpened, metadata.AttributeConnectionType.Fabric, metadata.AttributeConnectionOp.Open)
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsOpened, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpOpen)
 		}
 		if stats.HeartbeatConnectionsClosed != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsClosed, metadata.AttributeConnectionType.Heartbeat, metadata.AttributeConnectionOp.Close)
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsClosed, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpClose)
 		}
 		if stats.HeartbeatConnectionsOpened != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsOpened, metadata.AttributeConnectionType.Heartbeat, metadata.AttributeConnectionOp.Open)
+			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsOpened, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpOpen)
 		}
 	}
 
@@ -197,16 +192,16 @@ func (r *aerospikeReceiver) emitNamespace(info *model.NamespaceInfo, now pcommon
 		r.mb.RecordAerospikeNamespaceMemoryFreeDataPoint(now, *info.MemoryFreePct)
 	}
 	if info.MemoryUsedDataBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedDataBytes, metadata.AttributeNamespaceComponent.Data)
+		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedDataBytes, metadata.AttributeNamespaceComponentData)
 	}
 	if info.MemoryUsedIndexBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedIndexBytes, metadata.AttributeNamespaceComponent.Index)
+		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedIndexBytes, metadata.AttributeNamespaceComponentIndex)
 	}
 	if info.MemoryUsedSIndexBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedSIndexBytes, metadata.AttributeNamespaceComponent.Sindex)
+		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedSIndexBytes, metadata.AttributeNamespaceComponentSindex)
 	}
 	if info.MemoryUsedSetIndexBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedSetIndexBytes, metadata.AttributeNamespaceComponent.SetIndex)
+		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedSetIndexBytes, metadata.AttributeNamespaceComponentSetIndex)
 	}
 	r.mb.EmitForResource(metadata.WithNamespace(info.Name), metadata.WithNodeName(info.Node))
 }
