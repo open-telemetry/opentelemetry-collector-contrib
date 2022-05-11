@@ -76,8 +76,6 @@ func TestScrape(t *testing.T) {
 
 func TestScrapeTransportNodeErrors(t *testing.T) {
 	mockClient := NewMockClient(t)
-
-	// mockClient.On("ClusterNodes", mock.Anything).Return(nil, errUnauthorized)
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{

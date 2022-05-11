@@ -215,6 +215,8 @@ func (s *scraper) recordNodeInterface(colTime pdata.Timestamp, nodeProps dm.Node
 	s.mb.EmitForResource(
 		metadata.WithDeviceID(i.iFace.InterfaceId),
 		metadata.WithNsxtNodeName(nodeProps.Name),
+		metadata.WithNsxtNodeType(nodeProps.ResourceType),
+		metadata.WithNsxtNodeID(nodeProps.ID),
 	)
 }
 
