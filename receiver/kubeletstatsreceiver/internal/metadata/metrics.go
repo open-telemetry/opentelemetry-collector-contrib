@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
+
 import "go.opentelemetry.io/collector/pdata/pcommon"
 
 type RecordDoubleDataPointFunc func(*MetricsBuilder, pcommon.Timestamp, float64)
