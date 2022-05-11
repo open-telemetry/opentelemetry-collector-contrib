@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package metrics
 
 import (
@@ -71,7 +70,8 @@ func TestRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	runningHostnames := []string{}
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
@@ -115,7 +115,8 @@ func TestTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
 	runningTags := []string{}
