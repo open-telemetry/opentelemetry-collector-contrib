@@ -13,6 +13,7 @@
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
 
 ### 🚀 New components 🚀
 
