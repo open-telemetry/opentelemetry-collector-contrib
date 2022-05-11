@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mezmoexporter
+package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
 // truncateString Truncates the given string to a maximum length provided by max.
 func truncateString(s string, max int) string {
