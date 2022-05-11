@@ -23,21 +23,19 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
-          key: loadtest-go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Install Dependencies
-        if: steps.module-cache.outputs.hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.module-cache.outputs.hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - run: make otelcontribcol-testbed
       - name: Upload Collector Binaries
@@ -62,8 +60,6 @@ jobs:
       - name: Fluentbit Cache
         id: fluentbit-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-fluentbit
         with:
           path: /opt/td-agent-bit
           key: fluentbit-cache-1.5.3
@@ -82,16 +78,14 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
-          key: loadtest-go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Collector Binaries
         uses: actions/download-artifact@v3
