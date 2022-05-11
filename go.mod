@@ -30,7 +30,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.50.0
@@ -608,8 +607,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzi
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter => ./exporter/lokiexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter => ./exporter/mezmoexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter => ./exporter/newrelicexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ./exporter/opencensusexporter
 
