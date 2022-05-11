@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -48,8 +47,12 @@ func TestInitialDNSResolution(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	err = res.start(context.Background())
+	assert.NoError(t, err)
+	defer func() {
+		err = res.shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	// verify
 	assert.Len(t, resolved, 3)
@@ -78,8 +81,12 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	err = res.start(context.Background())
+	assert.NoError(t, err)
+	defer func() {
+		err = res.shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	// verify
 	assert.Len(t, resolved, 3)
@@ -135,12 +142,17 @@ func TestOnChange(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		counter++
 	})
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	err = res.start(context.Background())
+	assert.NoError(t, err)
+	defer func() {
+		err = res.shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 	require.Equal(t, 1, counter)
 
 	// now, we run it with the same IPs being resolved, which shouldn't trigger a onChange call
-	res.resolve(context.Background())
+	_, err = res.resolve(context.Background())
+	assert.NoError(t, err)
 	require.Equal(t, 1, counter)
 
 	// change what the resolver will resolve and trigger a resolution
@@ -148,7 +160,8 @@ func TestOnChange(t *testing.T) {
 		{IP: net.IPv4(127, 0, 0, 2)},
 		{IP: net.IPv4(127, 0, 0, 3)},
 	}
-	res.resolve(context.Background())
+	_, err = res.resolve(context.Background())
+	assert.NoError(t, err)
 	assert.Equal(t, 2, counter)
 }
 
@@ -225,8 +238,12 @@ func TestPeriodicallyResolve(t *testing.T) {
 
 	// test
 	wg.Add(3)
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	err = res.start(context.Background())
+	assert.NoError(t, err)
+	defer func() {
+		err = res.shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	// wait for three resolutions: from the start, and two periodic resolutions
 	wg.Wait()
@@ -267,8 +284,12 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 
 	// test
 	wg.Add(2)
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	err = res.start(context.Background())
+	assert.NoError(t, err)
+	defer func() {
+		err = res.shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	// wait for two resolutions: from the start, and one periodic
 	wg.Wait()
@@ -285,7 +306,8 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 
 	res.resolver = &mockDNSResolver{}
 	res.onChange(func(s []string) {})
-	res.start(context.Background())
+	err = res.start(context.Background())
+	assert.NoError(t, err)
 
 	// sanity check
 	require.Len(t, res.onChangeCallbacks, 1)
