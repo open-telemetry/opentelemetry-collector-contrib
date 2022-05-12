@@ -53,7 +53,7 @@ func newStaticResolver(endpoints []string) (*staticResolver, error) {
 }
 
 func (r *staticResolver) start(ctx context.Context) error {
-	if err := r.resolve(ctx); err != nil {  // right now, this can't fail
+	if _, err := r.resolve(ctx); err != nil {  // right now, this can't fail
 		log.Fatalln("error while running resolve")
 	}
 	return nil
