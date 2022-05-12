@@ -1,0 +1,3 @@
+type: add 
+field: body.new
+value: randomMessage

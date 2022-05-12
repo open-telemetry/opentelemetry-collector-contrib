@@ -183,15 +183,15 @@ func populateDoubleHistogram(cfg MetricsCfg, dh pmetric.Histogram) {
 }
 
 func setDoubleHistogramBounds(hdp pmetric.HistogramDataPoint, bounds ...float64) {
-	hdp.SetBucketCounts(make([]uint64, len(bounds)))
-	hdp.SetExplicitBounds(bounds)
+	hdp.SetMBucketCounts(make([]uint64, len(bounds)))
+	hdp.SetMExplicitBounds(bounds)
 }
 
 func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
-	buckets := hdp.BucketCounts()
-	bounds := hdp.ExplicitBounds()
+	buckets := hdp.MBucketCounts()
+	bounds := hdp.MExplicitBounds()
 	for i := 0; i < len(bounds); i++ {
 		bound := bounds[i]
 		if val <= bound {

@@ -4,16 +4,31 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `datadogexporter`: Replace HistogramMode defined as string with enum.
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+- `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.50.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Replace HistogramMode defined as string with enum. (#9589)
 - `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 - `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
 - `newrelicexporter` deleted. Use New Relic [native OTLP ingest](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-setup/) instead. (#9894)
-- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3 (#9885)
+- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3. (#9885)
 
 ### 🚩 Deprecations 🚩
 
-- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement. (#9258)
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
 
 ### 🚀 New components 🚀
 
@@ -41,6 +56,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `datadogexporter`: add error checks for datadog exporter (#9964)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)

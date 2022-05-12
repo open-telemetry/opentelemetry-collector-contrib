@@ -1,0 +1,37 @@
+---
+run:
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+  skip-dirs-use-default: false
+  skip-files:
+linters:
+  disable:
+    - errcheck
+  enable:
+    - gofmt
+    - gci
+    - bodyclose
+    - goconst
+    - gocritic
+    - misspell
+    - nakedret
+    - prealloc
+    - unconvert
+    - unparam
+    - whitespace
+    - ineffassign
+linters-settings:
+  gci:
+    local-prefixes: github.com/open-telemetry/opentelemetry-log-collection
+  goconst:
+    min-occurrences: 5
+  revive:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0.8
+issues:
+  exclude-rules:
+    - path: operator/builtin/input/windows/xml\.go
+      linters:
+        - unused
+        - deadcode

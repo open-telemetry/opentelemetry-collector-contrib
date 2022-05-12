@@ -593,7 +593,7 @@ func (m *metricSqlserverPageOperationRate) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.PageOperations, pcommon.NewValueString(pageOperationsAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(pageOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1362,14 +1362,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// PageOperations (The page operation types.)
-	PageOperations string
-}{
-	"type",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
