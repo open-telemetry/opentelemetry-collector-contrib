@@ -58,8 +58,6 @@ type Config struct {
 	TruststorePath string `mapstructure:"truststore_path"`
 	// The truststore password for SSL
 	TruststorePassword string `mapstructure:"truststore_password"`
-	// The truststore type for SSL
-	TruststoreType string `mapstructure:"truststore_type"`
 	// The JMX remote profile.  Should be one of:
 	// `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or
 	// `"TLS SASL/CRAM-MD5"`, though no enforcement is applied.

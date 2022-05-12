@@ -28,8 +28,7 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 		c.KeystorePath != "" ||
 		c.KeystoreType != "" ||
 		c.TruststorePassword != "" ||
-		c.TruststorePath != "" ||
-		c.TruststoreType != "" {
+		c.TruststorePath != "" {
 		return fmt.Errorf("version %s of the JMX Metrics Gatherer does not support SSL parameters (Keystore & Truststore) "+
 			"from the jmxreceiver. Update to the latest JMX Metrics Gatherer if you would like SSL support", j.version)
 	}
