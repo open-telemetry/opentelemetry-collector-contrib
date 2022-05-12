@@ -26,14 +26,18 @@ receivers:
     additional_jars:
       - testdata/fake_additional.jar
   jmx/missingendpoint:
+    jar_path: testdata/fake_jmx.jar
     groovy_script: mygroovyscriptpath
   jmx/missinggroovy:
+    jar_path: testdata/fake_jmx.jar
     endpoint: service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi
   jmx/invalidinterval:
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:23456
     groovy_script: mygroovyscriptpath
     collection_interval: -100ms
   jmx/invalidotlptimeout:
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:34567
     groovy_script: mygroovyscriptpath
     otlp:
