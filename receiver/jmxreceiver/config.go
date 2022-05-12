@@ -122,19 +122,21 @@ var logLevelTranslator = map[zapcore.Level]string{
 	zap.FatalLevel:  "error",
 }
 
+var zapLevels = []zapcore.Level{
+	zap.DebugLevel,
+	zap.InfoLevel,
+	zap.WarnLevel,
+	zap.ErrorLevel,
+	zap.DPanicLevel,
+	zap.PanicLevel,
+	zap.FatalLevel,
+}
+
 func getZapLoggerLevelEquivalent(logger *zap.Logger) string {
 	var loggerLevel *zapcore.Level
-	for _, level := range []zapcore.Level{
-		zap.DebugLevel,
-		zap.InfoLevel,
-		zap.WarnLevel,
-		zap.ErrorLevel,
-		zap.DPanicLevel,
-		zap.PanicLevel,
-		zap.FatalLevel,
-	} {
+	for i, level := range zapLevels {
 		if testLevel(logger, level) {
-			loggerLevel = &level
+			loggerLevel = &zapLevels[i]
 			break
 		}
 	}
