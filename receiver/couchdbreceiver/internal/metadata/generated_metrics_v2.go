@@ -278,7 +278,7 @@ func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -433,7 +433,7 @@ func (m *metricCouchdbHttpdRequests) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HTTPMethod, pcommon.NewValueString(httpMethodAttributeValue))
+	dp.Attributes().Insert("http.method", pcommon.NewValueString(httpMethodAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -486,7 +486,7 @@ func (m *metricCouchdbHttpdResponses) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HTTPStatusCode, pcommon.NewValueString(httpStatusCodeAttributeValue))
+	dp.Attributes().Insert("http.status_code", pcommon.NewValueString(httpStatusCodeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -539,7 +539,7 @@ func (m *metricCouchdbHttpdViews) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.View, pcommon.NewValueString(viewAttributeValue))
+	dp.Attributes().Insert("view", pcommon.NewValueString(viewAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -718,23 +718,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// HTTPMethod (An HTTP request method.)
-	HTTPMethod string
-	// HTTPStatusCode (An HTTP status code.)
-	HTTPStatusCode string
-	// Operation (The operation type.)
-	Operation string
-	// View (The view type.)
-	View string
-}{
-	"http.method",
-	"http.status_code",
-	"operation",
-	"view",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

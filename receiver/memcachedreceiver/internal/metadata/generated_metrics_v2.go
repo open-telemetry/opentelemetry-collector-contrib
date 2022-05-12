@@ -283,7 +283,7 @@ func (m *metricMemcachedCommands) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Command, pcommon.NewValueString(commandAttributeValue))
+	dp.Attributes().Insert("command", pcommon.NewValueString(commandAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -438,7 +438,7 @@ func (m *metricMemcachedCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -593,7 +593,7 @@ func (m *metricMemcachedNetwork) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -644,7 +644,7 @@ func (m *metricMemcachedOperationHitRatio) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -697,8 +697,8 @@ func (m *metricMemcachedOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Type, pcommon.NewValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -945,26 +945,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Command (The type of command.)
-	Command string
-	// Direction (Direction of data flow.)
-	Direction string
-	// Operation (The type of operation.)
-	Operation string
-	// State (The type of CPU usage.)
-	State string
-	// Type (Result of cache request.)
-	Type string
-}{
-	"command",
-	"direction",
-	"operation",
-	"state",
-	"type",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

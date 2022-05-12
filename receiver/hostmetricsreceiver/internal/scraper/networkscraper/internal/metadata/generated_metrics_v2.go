@@ -117,8 +117,8 @@ func (m *metricSystemNetworkConnections) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Protocol, pcommon.NewValueString(protocolAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("protocol", pcommon.NewValueString(protocolAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -171,8 +171,8 @@ func (m *metricSystemNetworkDropped) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -225,8 +225,8 @@ func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -279,8 +279,8 @@ func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -333,8 +333,8 @@ func (m *metricSystemNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -483,23 +483,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Device (Name of the network interface.)
-	Device string
-	// Direction (Direction of flow of bytes/operations (receive or transmit).)
-	Direction string
-	// Protocol (Network protocol, e.g. TCP or UDP.)
-	Protocol string
-	// State (State of the network connection.)
-	State string
-}{
-	"device",
-	"direction",
-	"protocol",
-	"state",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

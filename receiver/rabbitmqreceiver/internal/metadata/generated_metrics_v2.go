@@ -200,7 +200,7 @@ func (m *metricRabbitmqMessageCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MessageState, pcommon.NewValueString(messageStateAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(messageStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -530,14 +530,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// MessageState (The state of messages in a queue.)
-	MessageState string
-}{
-	"state",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
