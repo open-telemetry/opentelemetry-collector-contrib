@@ -182,7 +182,7 @@ func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Class, pcommon.NewValueString(classAttributeValue))
+	dp.Attributes().Insert("class", pcommon.NewValueString(classAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -235,7 +235,7 @@ func (m *metricNsxtNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DiskState, pcommon.NewValueString(diskStateAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(diskStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -439,7 +439,7 @@ func (m *metricNsxtNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -492,8 +492,8 @@ func (m *metricNsxtNodeNetworkPacketCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
-	dp.Attributes().Insert(A.PacketType, pcommon.NewValueString(packetTypeAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(packetTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -685,23 +685,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Class (The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.)
-	Class string
-	// Direction (The direction of network flow.)
-	Direction string
-	// DiskState (The state of storage space.)
-	DiskState string
-	// PacketType (The type of packet counter.)
-	PacketType string
-}{
-	"class",
-	"direction",
-	"state",
-	"type",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
