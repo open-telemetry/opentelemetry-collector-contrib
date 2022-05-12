@@ -1324,8 +1324,8 @@ func (m *metricK8sNodeNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Interface, pcommon.NewValueString(interfaceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1378,8 +1378,8 @@ func (m *metricK8sNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Interface, pcommon.NewValueString(interfaceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1973,8 +1973,8 @@ func (m *metricK8sPodNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Interface, pcommon.NewValueString(interfaceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2027,8 +2027,8 @@ func (m *metricK8sPodNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Interface, pcommon.NewValueString(interfaceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2822,17 +2822,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Direction (Direction of flow of bytes/operations (receive or transmit).)
-	Direction string
-	// Interface (Name of the network interface.)
-	Interface string
-}{
-	"direction",
-	"interface",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
