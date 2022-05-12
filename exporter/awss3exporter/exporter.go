@@ -28,10 +28,15 @@ import (
 )
 
 type S3Exporter struct {
+	config     *Config
 	dataWriter DataWriter
 	logger     *zap.Logger
 	marshaler  Marshaler
 }
+
+var logsMarshaler = &plog.JSONMarshaler{}
+var traceMarshaler = &ptrace.JSONMarshaler{}
+var metricMarshaler = &pmetric.JSONMarshaler{}
 
 func NewS3Exporter(config *Config,
 	params exporter.CreateSettings) (*S3Exporter, error) {
@@ -41,18 +46,10 @@ func NewS3Exporter(config *Config,
 	}
 
 	logger := params.Logger
-	expConfig := config
-	expConfig.logger = logger
-
-	marshaler, err := NewMarshaler(expConfig.MarshalerName, logger)
-	if err != nil {
-		return nil, errors.New("unknown marshaler")
-	}
 
 	s3Exporter := &S3Exporter{
-		dataWriter: &S3Writer{},
-		logger:     logger,
-		marshaler:  marshaler,
+		config: config,
+		logger: logger,
 	}
 	return s3Exporter, nil
 }

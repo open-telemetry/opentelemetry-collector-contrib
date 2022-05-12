@@ -14,10 +14,6 @@
 
 package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
-import (
-	"go.uber.org/zap"
-)
-
 // S3UploaderConfig contains aws s3 uploader related config to controls things
 // like bucket, prefix, batching, connections, retries, etc.
 type S3UploaderConfig struct {
@@ -28,15 +24,15 @@ type S3UploaderConfig struct {
 	FilePrefix  string `mapstructure:"file_prefix"`
 }
 
-// Config contains the main configuration options for the awskinesis exporter
+// Config contains the main configuration options for the s3 exporter
 type Config struct {
 	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
 	MarshalerName string           `mapstructure:"marshaler_name"`
 
-	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
+	FileFormat string `mapstructure:"file_format"`
+
+	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	// exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
-
-	logger *zap.Logger
 }

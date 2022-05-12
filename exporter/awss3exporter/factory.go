@@ -35,7 +35,9 @@ func NewFactory() exporter.Factory {
 		typeStr,
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability))
+		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -46,37 +48,47 @@ func createDefaultConfig() component.Config {
 		},
 
 		MarshalerName: "otlp_json",
-		logger:        nil,
 	}
 }
 
 func createLogsExporter(ctx context.Context,
 	params exporter.CreateSettings,
-	config component.Config) (exp exporter.Logs, err error) {
+	config component.Config) (exporter.Logs, error) {
 
 	s3Exporter, err := NewS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
-		context.TODO(),
-		params,
+	return exporterhelper.NewLogsExporter(ctx, params,
 		config,
 		s3Exporter.ConsumeLogs)
 }
 
-func createTracesExporter(ctx context.Context,
+func createMetricsExporter(ctx context.Context,
 	params exporter.CreateSettings,
-	config component.Config) (exp exporter.Traces, err error) {
+	config component.Config) (exporter.Metrics, error) {
 
 	s3Exporter, err := NewS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
-		context.TODO(),
+	return exporterhelper.NewMetricsExporter(ctx, params,
+		config,
+		s3Exporter.ConsumeMetrics)
+}
+
+func createTracesExporter(ctx context.Context,
+	params exporter.CreateSettings,
+	config component.Config) (exporter.Traces, error) {
+
+	s3Exporter, err := NewS3Exporter(config.(*Config), params)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTracesExporter(ctx,
 		params,
 		config,
 		s3Exporter.ConsumeTraces)
