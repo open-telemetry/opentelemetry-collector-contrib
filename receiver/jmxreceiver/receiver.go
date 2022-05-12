@@ -93,7 +93,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 	jmx.configFile = tmpFile.Name()
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
-		Args:           append(jmx.config.parseProperties(), jmxMainClass, "-config", jmx.configFile),
+		Args:           append(jmx.config.parseProperties(jmx.logger), jmxMainClass, "-config", jmx.configFile),
 		EnvironmentVariables: map[string]string{
 			"CLASSPATH": jmx.config.parseClasspath(),
 			// Overwrite these environment variables to reduce attack surface

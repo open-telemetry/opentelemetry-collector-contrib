@@ -27,9 +27,11 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
+	testLogger, _ := zap.NewDevelopment()
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -61,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 			CollectionInterval: 15 * time.Second,
 			Username:           "myusername",
 			Password:           "mypassword",
-			LogLevel:           "info",
+			LogLevel:           "trace",
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "myotlpendpoint",
 				Headers: map[string]string{
@@ -88,8 +90,8 @@ func TestLoadConfig(t *testing.T) {
 		}, r1)
 
 	assert.Equal(
-		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=info"},
-		r1.parseProperties(),
+		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=trace"},
+		r1.parseProperties(testLogger),
 	)
 
 	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missingendpoint")].(*Config)
@@ -99,7 +101,6 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingendpoint")),
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			TargetSystem:       "jvm",
-			LogLevel:           "info",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -112,6 +113,12 @@ func TestLoadConfig(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "jmx/missingendpoint missing required field: `endpoint`", err.Error())
 
+	// Default log level should set to level of provided zap logger
+	assert.Equal(
+		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=debug"},
+		r2.parseProperties(testLogger),
+	)
+
 	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missinggroovy")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r3))
 	assert.Equal(t,
@@ -120,7 +127,6 @@ func TestLoadConfig(t *testing.T) {
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 			CollectionInterval: 10 * time.Second,
-			LogLevel:           "info",
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -140,7 +146,6 @@ func TestLoadConfig(t *testing.T) {
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:23456",
 			TargetSystem:       "jvm",
-			LogLevel:           "info",
 			CollectionInterval: -100 * time.Millisecond,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -161,7 +166,6 @@ func TestLoadConfig(t *testing.T) {
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:34567",
 			TargetSystem:       "jvm",
-			LogLevel:           "info",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -203,7 +207,6 @@ func TestLoadConfig(t *testing.T) {
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			Endpoint:           "myendpoint:55555",
 			TargetSystem:       "jvm,nonsense",
-			LogLevel:           "info",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",

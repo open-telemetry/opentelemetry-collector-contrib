@@ -22,6 +22,8 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
@@ -94,17 +96,59 @@ func (oec otlpExporterConfig) headersToString() string {
 	return headerString
 }
 
-func (c *Config) parseProperties() []string {
+func (c *Config) parseProperties(logger *zap.Logger) []string {
 	parsed := make([]string, 0, 1)
+
 	logLevel := "info"
 	if len(c.LogLevel) > 0 {
 		logLevel = strings.ToLower(c.LogLevel)
+	} else if logger != nil {
+		logLevel = getZapLoggerLevelEquivalent(logger)
 	}
 
 	parsed = append(parsed, fmt.Sprintf("-Dorg.slf4j.simpleLogger.defaultLogLevel=%s", logLevel))
 	// Sorted for testing and reproducibility
 	sort.Strings(parsed)
 	return parsed
+}
+
+var logLevelTranslator = map[zapcore.Level]string{
+	zap.DebugLevel:  "debug",
+	zap.InfoLevel:   "info",
+	zap.WarnLevel:   "warn",
+	zap.ErrorLevel:  "error",
+	zap.DPanicLevel: "error",
+	zap.PanicLevel:  "error",
+	zap.FatalLevel:  "error",
+}
+
+func getZapLoggerLevelEquivalent(logger *zap.Logger) string {
+	var loggerLevel *zapcore.Level
+	for _, level := range []zapcore.Level{
+		zap.DebugLevel,
+		zap.InfoLevel,
+		zap.WarnLevel,
+		zap.ErrorLevel,
+		zap.DPanicLevel,
+		zap.PanicLevel,
+		zap.FatalLevel,
+	} {
+		if testLevel(logger, level) {
+			loggerLevel = &level
+			break
+		}
+	}
+
+	// Couldn't get log level from logger default logger level to info
+	if loggerLevel == nil {
+		return "info"
+	}
+
+	return logLevelTranslator[*loggerLevel]
+}
+
+func testLevel(logger *zap.Logger, level zapcore.Level) bool {
+	return logger.Check(level, "_") != nil
 }
 
 // parseClasspath creates a classpath string with the JMX Gatherer JAR at the beginning
@@ -152,8 +196,10 @@ func (c *Config) validate() error {
 		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.ID(), c.OTLPExporterConfig.Timeout.Milliseconds())
 	}
 
-	if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
-		return fmt.Errorf("%v `log_level` must be one of %s", c.ID(), listKeys(validLogLevels))
+	if len(c.LogLevel) > 0 {
+		if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
+			return fmt.Errorf("%v `log_level` must be one of %s", c.ID(), listKeys(validLogLevels))
+		}
 	}
 
 	for _, system := range strings.Split(c.TargetSystem, ",") {

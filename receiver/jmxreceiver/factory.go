@@ -47,7 +47,6 @@ func createDefaultConfig() config.Receiver {
 				Timeout: 5 * time.Second,
 			},
 		},
-		LogLevel: "info",
 	}
 }
 

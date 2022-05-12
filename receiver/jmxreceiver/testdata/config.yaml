@@ -20,6 +20,7 @@ receivers:
     truststore_password: mytruststorepassword
     remote_profile: myremoteprofile
     realm: myrealm
+    log_level: trace
     resource_attributes:
       one: two
     additional_jars:
