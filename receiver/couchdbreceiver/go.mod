@@ -10,7 +10,7 @@ require (
 require github.com/stretchr/testify v1.7.1
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.51.0
 	go.opentelemetry.io/collector/pdata v0.51.0
 	go.uber.org/zap v1.21.0
 )
