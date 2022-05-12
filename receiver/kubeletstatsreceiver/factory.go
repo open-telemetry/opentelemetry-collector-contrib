@@ -16,6 +16,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -59,6 +60,7 @@ func createDefaultConfig() config.Receiver {
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
