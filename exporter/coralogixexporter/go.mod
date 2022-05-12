@@ -9,7 +9,7 @@ require (
 
 require (
 	github.com/coralogix/opentelemetry-cx-protobuf-api/coralogixpb v0.0.0-20211201100428-d2a5d0ecf53e
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.51.0
 	go.opentelemetry.io/collector/pdata v0.51.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.46.0
@@ -35,7 +35,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.16 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect

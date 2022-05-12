@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.50.0
+    version: v0.51.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -193,5 +193,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
+
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools

@@ -5,11 +5,11 @@ go 1.17
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.51.0
 	github.com/shirou/gopsutil/v3 v3.22.4
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
@@ -72,7 +72,7 @@ require (
 
 require (
 	github.com/jaegertracing/jaeger v1.33.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.51.0
 	go.opentelemetry.io/collector/pdata v0.51.0
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 )

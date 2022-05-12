@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/go-redis/redis/v7 v7.4.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.51.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.0
 	go.opentelemetry.io/collector/pdata v0.51.0
