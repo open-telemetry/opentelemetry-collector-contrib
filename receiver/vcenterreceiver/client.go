@@ -46,9 +46,7 @@ func newVmwarevcenterClient(c *Config) *vcenterClient {
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.moClient != nil {
-		if ok, err := vc.moClient.SessionManager.SessionIsActive(ctx); ok && err != nil {
-			return nil
-		}
+		return nil
 	}
 
 	sdkURL, err := vc.cfg.SDKUrl()
