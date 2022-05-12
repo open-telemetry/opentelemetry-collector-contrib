@@ -213,9 +213,9 @@ func TestMetadataErrorCases(t *testing.T) {
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
 				mbs: &metadata.MetricsBuilders{
-					WithNodeStartTime:    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-					WithPodStartTime:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-					WithDefaultStartTime: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 				},
 			}
 
@@ -239,9 +239,9 @@ func TestNilHandling(t *testing.T) {
 			VolumeMetricGroup:    true,
 		},
 		mbs: &metadata.MetricsBuilders{
-			WithNodeStartTime:    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			WithPodStartTime:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			WithDefaultStartTime: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 		},
 	}
 	assert.NotPanics(t, func() {

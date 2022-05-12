@@ -45,15 +45,15 @@ func TestMetricAccumulator(t *testing.T) {
 	podsMetadata, _ := metadataProvider.Pods()
 	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
 	mbs := &metadata.MetricsBuilders{
-		WithNodeStartTime:    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		WithPodStartTime:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		WithDefaultStartTime: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 	}
 	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs))
 	// Disable all groups
-	mbs.WithNodeStartTime.Reset()
-	mbs.WithPodStartTime.Reset()
-	mbs.WithDefaultStartTime.Reset()
+	mbs.NodeMetricsBuilder.Reset()
+	mbs.PodMetricsBuilder.Reset()
+	mbs.OtherMetricsBuilder.Reset()
 	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs)))
 }
 
@@ -175,9 +175,9 @@ func fakeMetrics() []pmetric.Metrics {
 		NodeMetricGroup:      true,
 	}
 	mbs := &metadata.MetricsBuilders{
-		WithNodeStartTime:    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		WithPodStartTime:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		WithDefaultStartTime: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 	}
 	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs)
 }
