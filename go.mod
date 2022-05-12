@@ -170,7 +170,7 @@ require (
 	github.com/DataDog/datadog-go v4.8.2+incompatible // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.30.2-0.20220511202758-10aeded1f43e // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.30.2-0.20220512190557-875976f87023 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.6.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.30.1 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
@@ -301,9 +301,9 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.19 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.19 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.19 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.20 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.20 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.20 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.0 // indirect
@@ -325,7 +325,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.3 // indirect
+	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
@@ -463,7 +463,6 @@ require (
 	go.mongodb.org/atlas v0.16.0 // indirect
 	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.50.0 // indirect
 	go.opentelemetry.io/collector/pdata v0.51.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.51.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 // indirect
