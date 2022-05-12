@@ -16,6 +16,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"log"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
@@ -30,7 +31,9 @@ const (
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() component.ExporterFactory {
-	view.Register(MetricViews()...)
+	if err := view.Register(MetricViews()...); err != nil {
+		log.Fatalln("unable to register given views")
+	}
 
 	return component.NewExporterFactory(
 		typeStr,
