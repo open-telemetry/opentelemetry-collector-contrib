@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -63,15 +62,15 @@ func parseTime(format, input string) *time.Time {
 }
 
 type testLogMessage struct {
-	body         *pdata.Value
+	body         pcommon.Value
 	time         *time.Time
 	observedTime *time.Time
-	severity     pdata.SeverityNumber
+	severity     plog.SeverityNumber
 	severityText *string
-	spanID       *pdata.SpanID
-	traceID      *pdata.TraceID
+	spanID       pcommon.SpanID
+	traceID      pcommon.TraceID
 	flags        uint32
-	attributes   *map[string]pdata.Value
+	attributes   *map[string]pcommon.Value
 }
 
 func TestLogsTransformProcessor(t *testing.T) {
@@ -91,47 +90,47 @@ func TestLogsTransformProcessor(t *testing.T) {
 			config: cfg,
 			sourceMessages: []testLogMessage{
 				{
-					body:         &baseMessage,
-					spanID:       &spanID,
-					traceID:      &traceID,
+					body:         baseMessage,
+					spanID:       spanID,
+					traceID:      traceID,
 					flags:        uint32(0x01),
 					observedTime: parseTime("2006-01-02", "2022-01-02"),
 				},
 				{
-					body:         &baseMessage,
-					spanID:       &spanID,
-					traceID:      &traceID,
+					body:         baseMessage,
+					spanID:       spanID,
+					traceID:      traceID,
 					flags:        uint32(0x02),
 					observedTime: parseTime("2006-01-02", "2022-01-03"),
 				},
 			},
 			parsedMessages: []testLogMessage{
 				{
-					body:         &baseMessage,
+					body:         baseMessage,
 					severity:     plog.SeverityNumberINFO,
 					severityText: &infoSeverityText,
-					attributes: &map[string]pdata.Value{
+					attributes: &map[string]pcommon.Value{
 						"msg":  pcommon.NewValueString("this is a test message"),
 						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
 						"sev":  pcommon.NewValueString("INFO"),
 					},
-					spanID:       &spanID,
-					traceID:      &traceID,
+					spanID:       spanID,
+					traceID:      traceID,
 					flags:        uint32(0x01),
 					observedTime: parseTime("2006-01-02", "2022-01-02"),
 					time:         parseTime("2006-01-02 15:04:05", "2022-01-01 01:02:03"),
 				},
 				{
-					body:         &baseMessage,
+					body:         baseMessage,
 					severity:     plog.SeverityNumberINFO,
 					severityText: &infoSeverityText,
-					attributes: &map[string]pdata.Value{
+					attributes: &map[string]pcommon.Value{
 						"msg":  pcommon.NewValueString("this is a test message"),
 						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
 						"sev":  pcommon.NewValueString("INFO"),
 					},
-					spanID:       &spanID,
-					traceID:      &traceID,
+					spanID:       spanID,
+					traceID:      traceID,
 					flags:        uint32(0x02),
 					observedTime: parseTime("2006-01-02", "2022-01-03"),
 					time:         parseTime("2006-01-02 15:04:05", "2022-01-01 01:02:03"),
@@ -166,19 +165,17 @@ func TestLogsTransformProcessor(t *testing.T) {
 	}
 }
 
-func generateLogData(messages []testLogMessage) pdata.Logs {
+func generateLogData(messages []testLogMessage) plog.Logs {
 	ld := testdata.GenerateLogsOneEmptyResourceLogs()
 	scope := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
 	for _, content := range messages {
 		log := scope.LogRecords().AppendEmpty()
-		if content.body != nil {
-			content.body.CopyTo(log.Body())
-		}
+		content.body.CopyTo(log.Body())
 		if content.time != nil {
-			log.SetTimestamp(pdata.NewTimestampFromTime(*content.time))
+			log.SetTimestamp(pcommon.NewTimestampFromTime(*content.time))
 		}
 		if content.observedTime != nil {
-			log.SetObservedTimestamp(pdata.NewTimestampFromTime(*content.observedTime))
+			log.SetObservedTimestamp(pcommon.NewTimestampFromTime(*content.observedTime))
 		}
 		if content.severity != 0 {
 			log.SetSeverityNumber(content.severity)
@@ -193,13 +190,8 @@ func generateLogData(messages []testLogMessage) pdata.Logs {
 			log.Attributes().Sort()
 		}
 
-		if content.spanID != nil {
-			log.SetSpanID(*content.spanID)
-		}
-
-		if content.traceID != nil {
-			log.SetTraceID(*content.traceID)
-		}
+		log.SetSpanID(content.spanID)
+		log.SetTraceID(content.traceID)
 
 		if content.flags != uint32(0x00) {
 			log.SetFlags(content.flags)
