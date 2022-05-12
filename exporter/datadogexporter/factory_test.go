@@ -580,8 +580,7 @@ func TestOnlyMetadata(t *testing.T) {
 	err = expTraces.Start(ctx, nil)
 	assert.NoError(t, err)
 	defer func() {
-		err = expTraces.Shutdown(ctx)
-		assert.NoError(t, err)
+		assert.NoError(t, expTraces.Shutdown(ctx))
 	}()
 
 	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())

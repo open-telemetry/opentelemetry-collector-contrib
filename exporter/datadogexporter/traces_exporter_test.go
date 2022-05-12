@@ -91,8 +91,7 @@ func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
 	assert.NoError(t, err)
 
 	defer func() {
-		err = exporter.Shutdown(context.Background())
-		assert.NoError(t, err)
+		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 
 	ctx := context.Background()

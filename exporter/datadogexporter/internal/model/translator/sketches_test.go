@@ -133,8 +133,7 @@ func TestHistogramSketches(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			md := fromCDF(test.cdf)
 			consumer := &sketchConsumer{}
-			err := tr.MapMetrics(ctx, md, consumer)
-			assert.NoError(t, err)
+			assert.NoError(t, tr.MapMetrics(ctx, md, consumer))
 			sk := consumer.sk
 
 			// Check the minimum is 0.0
@@ -305,8 +304,7 @@ func TestExactSumCount(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			md := testInstance.getHist()
 			consumer := &sketchConsumer{}
-			err := tr.MapMetrics(ctx, md, consumer)
-			assert.NoError(t, err)
+			assert.NoError(t, tr.MapMetrics(ctx, md, consumer))
 			sk := consumer.sk
 
 			assert.Equal(t, testInstance.count, uint64(sk.Basic.Cnt), "counts differ")
@@ -364,8 +362,7 @@ func TestInfiniteBounds(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			md := testInstance.getHist()
 			consumer := &sketchConsumer{}
-			err := tr.MapMetrics(ctx, md, consumer)
-			assert.NoError(t, err)
+			assert.NoError(t, tr.MapMetrics(ctx, md, consumer))
 			sk := consumer.sk
 
 			p := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
