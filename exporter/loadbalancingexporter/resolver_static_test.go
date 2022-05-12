@@ -33,8 +33,10 @@ func TestInitialResolution(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	assert.NoError(t, res.start(context.Background()))
+	defer func() {
+		assert.NoError(t, res.shutdown(context.Background()))
+	}()
 
 	// verify
 	expected := []string{"endpoint-1", "endpoint-2"}
@@ -53,8 +55,10 @@ func TestResolvedOnlyOnce(t *testing.T) {
 	})
 
 	// test
-	res.start(context.Background()) // first resolution, should be the one calling the onChange above
-	defer res.shutdown(context.Background())
+	assert.NoError(t, res.start(context.Background())) // first resolution, should be the one calling the onChange above
+	defer func() {
+		assert.NoError(t, res.shutdown(context.Background()))
+	}()
 	resolved, err := res.resolve(context.Background()) // second resolution, should be noop
 
 	// verify

@@ -450,7 +450,10 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
-				go p.ConsumeLogs(ctx, randomLogs())
+				go func() {
+					err := p.ConsumeLogs(ctx, randomLogs())
+					require.NoError(t, err)
+				}()
 			}
 		}
 	}(ctx)
