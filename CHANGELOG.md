@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `jmxreceiver`: Hash the jars provided to JMX Receiver and ensure they match an approved list (#9687)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
