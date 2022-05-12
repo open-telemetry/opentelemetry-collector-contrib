@@ -15,6 +15,7 @@
 package kubeletstatsreceiver
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -59,6 +60,7 @@ func TestLoadConfig(t *testing.T) {
 			kubelet.PodMetricGroup,
 			kubelet.NodeMetricGroup,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}, defaultCfg)
 
 	tlsCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
@@ -86,6 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			kubelet.PodMetricGroup,
 			kubelet.NodeMetricGroup,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}, tlsCfg)
 
 	saCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "sa")].(*Config)
@@ -105,6 +108,7 @@ func TestLoadConfig(t *testing.T) {
 			kubelet.PodMetricGroup,
 			kubelet.NodeMetricGroup,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}, saCfg)
 
 	metadataCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metadata")].(*Config)
@@ -127,6 +131,7 @@ func TestLoadConfig(t *testing.T) {
 			kubelet.PodMetricGroup,
 			kubelet.NodeMetricGroup,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}, metadataCfg)
 
 	metricGroupsCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metric_groups")].(*Config)
@@ -145,6 +150,7 @@ func TestLoadConfig(t *testing.T) {
 			kubelet.NodeMetricGroup,
 			kubelet.VolumeMetricGroup,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}, metricGroupsCfg)
 
 	metadataWithK8sAPICfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metadata_with_k8s_api")].(*Config)
@@ -167,6 +173,7 @@ func TestLoadConfig(t *testing.T) {
 			kubelet.NodeMetricGroup,
 		},
 		K8sAPIConfig: &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+		Metrics:      metadata.DefaultMetricsSettings(),
 	}, metadataWithK8sAPICfg)
 }
 

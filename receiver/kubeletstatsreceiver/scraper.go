@@ -48,7 +48,7 @@ type kubletScraper struct {
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeLabels    map[string][]metadata.ResourceOption
-	mb                    *metadata.MetricsBuilder
+	mbs                   *metadata.MetricsBuilders
 }
 
 func newKubletScraper(
@@ -65,7 +65,11 @@ func newKubletScraper(
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string][]metadata.ResourceOption),
-		mb:                    metadata.NewMetricsBuilder(metricsConfig),
+		mbs: &metadata.MetricsBuilders{
+			WithNodeStartTime:    metadata.NewMetricsBuilder(metricsConfig),
+			WithPodStartTime:     metadata.NewMetricsBuilder(metricsConfig),
+			WithDefaultStartTime: metadata.NewMetricsBuilder(metricsConfig),
+		},
 	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
 }
@@ -88,8 +92,12 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
-	kubelet.PrepareMetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mb)
-	return r.mb.Emit(), nil
+	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mbs)
+	md := pmetric.NewMetrics()
+	for i := range mds {
+		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+	}
+	return md, nil
 }
 
 func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {

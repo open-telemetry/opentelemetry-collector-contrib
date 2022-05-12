@@ -212,12 +212,16 @@ func TestMetadataErrorCases(t *testing.T) {
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+				mbs: &metadata.MetricsBuilders{
+					WithNodeStartTime:    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					WithPodStartTime:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					WithDefaultStartTime: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+				},
 			}
 
 			tt.testScenario(acc)
 
-			assert.Equal(t, tt.numMDs, acc.mb.Emit().MetricCount())
+			assert.Equal(t, tt.numMDs, len(acc.m))
 			require.Equal(t, tt.numLogs, logs.Len())
 			for i := 0; i < tt.numLogs; i++ {
 				assert.Equal(t, tt.logMessages[i], logs.All()[i].Message)
@@ -234,7 +238,11 @@ func TestNilHandling(t *testing.T) {
 			ContainerMetricGroup: true,
 			VolumeMetricGroup:    true,
 		},
-		mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		mbs: &metadata.MetricsBuilders{
+			WithNodeStartTime:    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			WithPodStartTime:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			WithDefaultStartTime: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		},
 	}
 	assert.NotPanics(t, func() {
 		acc.nodeStats(stats.NodeStats{})
