@@ -49,6 +49,7 @@ func TestWithValidConfig(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "myendpoint:12345"
 	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
+	cfg.(*Config).JARPath = "testdata/fake_jmx.jar"
 
 	params := componenttest.NewNopReceiverCreateSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
@@ -68,6 +69,7 @@ func TestWithSetProperties(t *testing.T) {
 	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
 	cfg.(*Config).Properties["org.slf4j.simpleLogger.defaultLogLevel"] = "trace"
 	cfg.(*Config).Properties["org.java.fake.property"] = "true"
+	cfg.(*Config).JARPath = "testdata/fake_jmx.jar"
 
 	params := componenttest.NewNopReceiverCreateSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())

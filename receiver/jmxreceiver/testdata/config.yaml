@@ -1,7 +1,7 @@
 receivers:
   jmx:
   jmx/all:
-    jar_path: myjarpath
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:12345
     groovy_script: mygroovyscriptpath
     collection_interval: 15s
@@ -24,7 +24,7 @@ receivers:
       property.one: value.one
       property.two: value.two.a=value.two.b,value.two.c=value.two.d
     additional_jars:
-      - /path/to/additional.jar
+      - testdata/fake_additional.jar
   jmx/missingendpoint:
     groovy_script: mygroovyscriptpath
   jmx/missinggroovy:

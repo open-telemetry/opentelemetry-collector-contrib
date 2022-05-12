@@ -30,6 +30,16 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	jmxMetricsGathererVersions["5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"] = supportedJar{
+		jar:     "fake jar",
+		version: "1.2.3",
+	}
+
+	wildflyJarVersions["7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a"] = supportedJar{
+		jar:     "fake wildfly jar",
+		version: "2.3.4",
+	}
+
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -55,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all")),
-			JARPath:            "myjarpath",
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "myendpoint:12345",
 			GroovyScript:       "mygroovyscriptpath",
 			CollectionInterval: 15 * time.Second,
@@ -84,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 				"org.slf4j.simpleLogger.defaultLogLevel": "info",
 			},
 			AdditionalJars: []string{
-				"/path/to/additional.jar",
+				"testdata/fake_additional.jar",
 			},
 		}, r1)
 
@@ -98,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingendpoint")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			JARPath:            "testdata/fake_jmx.jar",
 			GroovyScript:       "mygroovyscriptpath",
 			CollectionInterval: 10 * time.Second,
 			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
@@ -118,7 +128,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missinggroovy")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 			CollectionInterval: 10 * time.Second,
@@ -138,7 +148,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidinterval")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "myendpoint:23456",
 			GroovyScript:       "mygroovyscriptpath",
 			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
@@ -159,7 +169,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidotlptimeout")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "myendpoint:34567",
 			GroovyScript:       "mygroovyscriptpath",
 			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
@@ -186,34 +196,34 @@ func TestClassPathParse(t *testing.T) {
 		{
 			desc: "Metric Gatherer JAR Only",
 			cfg: &Config{
-				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				JARPath: "testdata/fake_jmx.jar",
 			},
 			existingEnvVal: "",
-			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			expected:       "testdata/fake_jmx.jar",
 		},
 		{
 			desc: "Additional JARS",
 			cfg: &Config{
-				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				JARPath: "testdata/fake_jmx.jar",
 				AdditionalJars: []string{
 					"/path/to/one.jar",
 					"/path/to/two.jar",
 				},
 			},
 			existingEnvVal: "",
-			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
+			expected:       "testdata/fake_jmx.jar:/path/to/one.jar:/path/to/two.jar",
 		},
 		{
 			desc: "Existing ENV Value",
 			cfg: &Config{
-				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				JARPath: "testdata/fake_jmx.jar",
 				AdditionalJars: []string{
 					"/path/to/one.jar",
 					"/path/to/two.jar",
 				},
 			},
 			existingEnvVal: "/pre/existing/class/path/",
-			expected:       "/pre/existing/class/path/:/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
+			expected:       "/pre/existing/class/path/:testdata/fake_jmx.jar:/path/to/one.jar:/path/to/two.jar",
 		},
 	}
 
