@@ -17,6 +17,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"log"
 	"sort"
 	"sync"
 
@@ -52,7 +53,9 @@ func newStaticResolver(endpoints []string) (*staticResolver, error) {
 }
 
 func (r *staticResolver) start(ctx context.Context) error {
-	r.resolve(ctx) // right now, this can't fail
+	if err := r.resolve(ctx); err != nil {  // right now, this can't fail
+		log.Fatalln("error while running resolve")
+	}
 	return nil
 }
 
