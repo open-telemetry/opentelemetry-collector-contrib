@@ -29,7 +29,7 @@ import (
 
 func toStore(b pmetric.Buckets) store.Store {
 	offset := b.Offset()
-	bucketCounts := b.BucketCounts()
+	bucketCounts := b.MBucketCounts()
 
 	store := store.NewDenseStore()
 	for j, count := range bucketCounts {

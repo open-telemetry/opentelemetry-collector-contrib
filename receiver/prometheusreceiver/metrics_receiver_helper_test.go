@@ -523,7 +523,7 @@ func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPoin
 	return func(t *testing.T, histogramDataPoint *pmetric.HistogramDataPoint) {
 		assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
 		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
-		assert.Equal(t, buckets, histogramDataPoint.BucketCounts(), "Histogram bucket count values do not match")
+		assert.Equal(t, buckets, histogramDataPoint.MBucketCounts(), "Histogram bucket count values do not match")
 	}
 }
 

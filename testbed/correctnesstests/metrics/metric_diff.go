@@ -178,8 +178,8 @@ func diffDoubleHistogramPt(
 ) []*MetricDiff {
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
-	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
-	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
+	diffs = diff(diffs, expected.MBucketCounts(), actual.MBucketCounts(), "HistogramDataPoint BucketCounts")
+	diffs = diff(diffs, expected.MExplicitBounds(), actual.MExplicitBounds(), "HistogramDataPoint ExplicitBounds")
 	// todo LabelsMap()
 	return diffExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }

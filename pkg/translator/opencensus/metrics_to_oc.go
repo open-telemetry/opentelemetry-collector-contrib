@@ -255,8 +255,8 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		buckets := histogramBucketsToOC(dp.BucketCounts())
-		exemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
+		buckets := histogramBucketsToOC(dp.MBucketCounts())
+		exemplarsToOC(dp.MExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
@@ -269,7 +269,7 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 							Count:                 int64(dp.Count()),
 							Sum:                   dp.Sum(),
 							SumOfSquaredDeviation: 0,
-							BucketOptions:         histogramExplicitBoundsToOC(dp.ExplicitBounds()),
+							BucketOptions:         histogramExplicitBoundsToOC(dp.MExplicitBounds()),
 							Buckets:               buckets,
 						},
 					},

@@ -56,7 +56,7 @@ func baseMap() pcommon.Map {
 	obj.InsertInt("int", 123)
 	obj.InsertDouble("double", 12.34)
 	obj.InsertString("string", "hello")
-	obj.InsertBytes("bytes", []byte{0xa1, 0xf0, 0x02, 0xff})
+	obj.InsertMBytes("bytes", []byte{0xa1, 0xf0, 0x02, 0xff})
 	return obj
 }
 
