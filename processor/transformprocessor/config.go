@@ -23,25 +23,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
-type LogsConfig struct {
+type TransformConfig struct {
 	Queries []string `mapstructure:"queries"`
 
-	// The functions that have been registered in the extension for logs processing.
-	functions map[string]interface{} `mapstructure:"-"`
-}
-
-type TracesConfig struct {
-	Queries []string `mapstructure:"queries"`
-
-	// The functions that have been registered in the extension for traces processing.
+	// The functions that have been registered in the extension for processing.
 	functions map[string]interface{} `mapstructure:"-"`
 }
 
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	Logs   LogsConfig   `mapstructure:"logs"`
-	Traces TracesConfig `mapstructure:"traces"`
+	Logs    TransformConfig `mapstructure:"logs"`
+	Traces  TransformConfig `mapstructure:"traces"`
+	Metrics TransformConfig `mapstructure:"traces"`
 }
 
 var _ config.Processor = (*Config)(nil)
@@ -53,6 +47,10 @@ func (c *Config) Validate() error {
 		errors = multierr.Append(errors, err)
 	}
 	_, err = common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
+	if err != nil {
+		errors = multierr.Append(errors, err)
+	}
+	_, err = common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, traces.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

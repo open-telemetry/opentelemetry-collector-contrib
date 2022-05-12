@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -39,21 +40,27 @@ func NewFactory() component.ProcessorFactory {
 		createDefaultConfig,
 		component.WithLogsProcessor(createLogsProcessor),
 		component.WithTracesProcessor(createTracesProcessor),
+		component.WithMetricsProcessor(createMetricsProcessor),
 	)
 }
 
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Logs: LogsConfig{
+		Logs: TransformConfig{
 			Queries: []string{},
 
 			functions: logs.DefaultFunctions(),
 		},
-		Traces: TracesConfig{
+		Traces: TransformConfig{
 			Queries: []string{},
 
 			functions: traces.DefaultFunctions(),
+		},
+		Metrics: TransformConfig{
+			Queries: []string{},
+
+			functions: metrics.DefaultFunctions(),
 		},
 	}
 }
@@ -93,5 +100,24 @@ func createTracesProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessTraces,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createMetricsProcessor(
+	_ context.Context,
+	settings component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
+) (component.MetricsProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := metrics.NewProcessor(oCfg.Metrics.Queries, oCfg.Metrics.functions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		proc.ProcessMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
