@@ -1,0 +1,5 @@
+type: retain
+fields:
+  - resource.key1
+  - attributes.key3
+  - body.key

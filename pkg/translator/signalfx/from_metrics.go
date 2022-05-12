@@ -133,7 +133,7 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var numDPs int
 	for i := 0; i < in.Len(); i++ {
-		numDPs += 2 + len(in.At(i).BucketCounts())
+		numDPs += 2 + len(in.At(i).MBucketCounts())
 	}
 	dps := newDpsBuilder(numDPs)
 
@@ -150,8 +150,8 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 		sum := histDP.Sum()
 		sumDP.Value.DoubleValue = &sum
 
-		bounds := histDP.ExplicitBounds()
-		counts := histDP.BucketCounts()
+		bounds := histDP.MExplicitBounds()
+		counts := histDP.MBucketCounts()
 
 		// Spec says counts is optional but if present it must have one more
 		// element than the bounds array.

@@ -472,8 +472,8 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	name := mi.Name()
 	tags := attributesToTagsForMetrics(histogram.Attributes(), mi.SourceKey)
 	ts := histogram.Timestamp().AsTime().Unix()
-	explicitBounds := histogram.ExplicitBounds()
-	bucketCounts := histogram.BucketCounts()
+	explicitBounds := histogram.MExplicitBounds()
+	bucketCounts := histogram.MBucketCounts()
 	if len(bucketCounts) != len(explicitBounds)+1 {
 		reporting.LogMalformed(mi.Metric)
 		return
@@ -518,8 +518,8 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	name := mi.Name()
 	tags := attributesToTagsForMetrics(his.Attributes(), mi.SourceKey)
 	ts := his.Timestamp().AsTime().Unix()
-	explicitBounds := his.ExplicitBounds()
-	bucketCounts := his.BucketCounts()
+	explicitBounds := his.MExplicitBounds()
+	bucketCounts := his.MBucketCounts()
 	if len(bucketCounts) != len(explicitBounds)+1 {
 		reporting.LogMalformed(mi.Metric)
 		return
@@ -553,8 +553,8 @@ func centroidValue(explicitBounds []float64, index int) float64 {
 // histogramDataPoint represents either a regular or exponential histogram data point
 type histogramDataPoint interface {
 	Count() uint64
-	ExplicitBounds() []float64
-	BucketCounts() []uint64
+	MExplicitBounds() []float64
+	MBucketCounts() []uint64
 	Attributes() pcommon.Map
 	Timestamp() pcommon.Timestamp
 }
@@ -706,8 +706,8 @@ func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramData
 	// ExponentialHistogramDataPoints have buckets with negative explicit bounds, buckets with
 	// positive explicit bounds, and a "zero" bucket. Our job is to merge these bucket groups into
 	// a single list of buckets and explicit bounds.
-	negativeBucketCounts := dataPoint.Negative().BucketCounts()
-	positiveBucketCounts := dataPoint.Positive().BucketCounts()
+	negativeBucketCounts := dataPoint.Negative().MBucketCounts()
+	positiveBucketCounts := dataPoint.Positive().MBucketCounts()
 
 	// The total number of buckets is the number of negative buckets + the number of positive
 	// buckets + 1 for the zero bucket + 1 bucket for negative infinity up to the negative explicit
@@ -801,11 +801,11 @@ func appendPositiveBucketsAndExplicitBounds(
 	*bucketCounts = append(*bucketCounts, 0)
 }
 
-func (e *exponentialHistogramDataPoint) ExplicitBounds() []float64 {
+func (e *exponentialHistogramDataPoint) MExplicitBounds() []float64 {
 	return e.explicitBounds
 }
 
-func (e *exponentialHistogramDataPoint) BucketCounts() []uint64 {
+func (e *exponentialHistogramDataPoint) MBucketCounts() []uint64 {
 	return e.bucketCounts
 }
 

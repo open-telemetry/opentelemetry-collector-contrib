@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph/topo"
 
@@ -34,7 +34,7 @@ import (
 )
 
 type outputType struct {
-	logs pdata.Logs
+	logs plog.Logs
 	err  error
 }
 
@@ -146,7 +146,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	return nil
 }
 
-func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	// Add the logs to the chain
 	err := ltp.fromConverter.Batch(ld)
 	if err != nil {

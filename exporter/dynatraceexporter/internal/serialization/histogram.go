@@ -60,8 +60,8 @@ func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimension
 
 // estimateHistMinMax returns the estimated minimum and maximum value in the histogram by using the min and max non-empty buckets.
 func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
-	bounds := dp.ExplicitBounds()
-	counts := dp.BucketCounts()
+	bounds := dp.MExplicitBounds()
+	counts := dp.MBucketCounts()
 
 	// Because we do not know the actual min and max, we estimate them based on the min and max non-empty bucket
 	minIdx, maxIdx := -1, -1

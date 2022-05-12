@@ -622,7 +622,7 @@ func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pcommon.NewValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -726,7 +726,7 @@ func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolOperations, pcommon.NewValueString(bufferPoolOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(bufferPoolOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -830,7 +830,7 @@ func (m *metricMysqlBufferPoolPages) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolPages, pcommon.NewValueString(bufferPoolPagesAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(bufferPoolPagesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -883,7 +883,7 @@ func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pcommon.NewValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -936,7 +936,7 @@ func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Command, pcommon.NewValueString(commandAttributeValue))
+	dp.Attributes().Insert("command", pcommon.NewValueString(commandAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -989,7 +989,7 @@ func (m *metricMysqlDoubleWrites) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DoubleWrites, pcommon.NewValueString(doubleWritesAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(doubleWritesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1042,7 +1042,7 @@ func (m *metricMysqlHandlers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Handler, pcommon.NewValueString(handlerAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(handlerAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1095,7 +1095,7 @@ func (m *metricMysqlLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Locks, pcommon.NewValueString(locksAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(locksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1148,7 +1148,7 @@ func (m *metricMysqlLogOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.LogOperations, pcommon.NewValueString(logOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(logOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1201,7 +1201,7 @@ func (m *metricMysqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operations, pcommon.NewValueString(operationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1254,7 +1254,7 @@ func (m *metricMysqlPageOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.PageOperations, pcommon.NewValueString(pageOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(pageOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1307,7 +1307,7 @@ func (m *metricMysqlRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowLocks, pcommon.NewValueString(rowLocksAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(rowLocksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1360,7 +1360,7 @@ func (m *metricMysqlRowOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowOperations, pcommon.NewValueString(rowOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(rowOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1413,7 +1413,7 @@ func (m *metricMysqlSorts) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Sorts, pcommon.NewValueString(sortsAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(sortsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1466,7 +1466,7 @@ func (m *metricMysqlThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Threads, pcommon.NewValueString(threadsAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(threadsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1785,53 +1785,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// BufferPoolData (The status of buffer pool data.)
-	BufferPoolData string
-	// BufferPoolOperations (The buffer pool operations types.)
-	BufferPoolOperations string
-	// BufferPoolPages (The buffer pool pages types.)
-	BufferPoolPages string
-	// Command (The command types.)
-	Command string
-	// DoubleWrites (The doublewrite types.)
-	DoubleWrites string
-	// Handler (The handler types.)
-	Handler string
-	// Locks (The table locks type.)
-	Locks string
-	// LogOperations (The log operation types.)
-	LogOperations string
-	// Operations (The operation types.)
-	Operations string
-	// PageOperations (The page operation types.)
-	PageOperations string
-	// RowLocks (The row lock type.)
-	RowLocks string
-	// RowOperations (The row operation type.)
-	RowOperations string
-	// Sorts (The sort count type.)
-	Sorts string
-	// Threads (The thread count type.)
-	Threads string
-}{
-	"status",
-	"operation",
-	"kind",
-	"command",
-	"kind",
-	"kind",
-	"kind",
-	"operation",
-	"operation",
-	"operation",
-	"kind",
-	"operation",
-	"kind",
-	"kind",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
