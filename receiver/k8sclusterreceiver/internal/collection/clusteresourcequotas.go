@@ -116,9 +116,8 @@ func getResourceForClusterResourceQuota(rq *quotav1.ClusterResourceQuota) *resou
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyClusterResourceQuotaUID:       string(rq.UID),
-			k8sKeyClusterResourceQuotaName:      rq.Name,
-			conventions.AttributeK8SClusterName: rq.ClusterName,
+			k8sKeyClusterResourceQuotaUID:  string(rq.UID),
+			k8sKeyClusterResourceQuotaName: rq.Name,
 		},
 	}
 }

@@ -409,7 +409,6 @@ func TestExtractionRules(t *testing.T) {
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace:         "ns1",
 			CreationTimestamp: meta_v1.Now(),
-			ClusterName:       "cluster1",
 			Labels: map[string]string{
 				"label1": "lv1",
 				"label2": "k1=v1 k5=v5 extra!",
@@ -456,7 +455,6 @@ func TestExtractionRules(t *testing.T) {
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
 			"k8s.namespace.name":  "ns1",
-			"k8s.cluster.name":    "cluster1",
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
