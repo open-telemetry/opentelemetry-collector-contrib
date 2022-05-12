@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.17
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.51.0
@@ -132,6 +133,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.51.0
+	github.com/prometheus/prometheus v0.35.1-0.20220503184552-2381d7be5731
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.0
 	go.uber.org/multierr v1.8.0
