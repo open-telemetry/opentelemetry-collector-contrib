@@ -22,6 +22,20 @@ type supportedJar struct {
 	addedValidation func(c *Config, j supportedJar) error
 }
 
+// Support for SSL properties passed via property file will be available starting in v1.14.0
+func oldFormatProperties(c *Config, j supportedJar) error {
+	if c.KeystorePassword != "" ||
+		c.KeystorePath != "" ||
+		c.KeystoreType != "" ||
+		c.TruststorePassword != "" ||
+		c.TruststorePath != "" ||
+		c.TruststoreType != "" {
+		return fmt.Errorf("version %s of the JMX Metrics Gatherer does not support SSL parameters (Keystore & Truststore) "+
+			"from the jmxreceiver. Update to the latest JMX Metrics Gatherer if you would like SSL support", j.version)
+	}
+	return nil
+}
+
 var jmxMetricsGathererVersions = map[string]supportedJar{
 	"0646639df98404bd9b1263b46e2fd4612bc378f9951a561f0a0be9725718db36": {
 		version:         "1.13.0",
@@ -170,17 +184,4 @@ var wildflyJarVersions = map[string]supportedJar{
 		version: "26.1.0",
 		jar:     "wildfly jboss client",
 	},
-}
-
-func oldFormatProperties(c *Config, j supportedJar) error {
-	if c.KeystorePassword != "" ||
-		c.KeystorePath != "" ||
-		c.KeystoreType != "" ||
-		c.TruststorePassword != "" ||
-		c.TruststorePath != "" ||
-		c.TruststoreType != "" {
-		return fmt.Errorf("version %s of the JMX Metrics Gatherer does not support SSL parameters (Keystore & Truststore) "+
-			"from the jmxreceiver. Update to the latest JMX Metrics Gatherer if you would like SSL support", j.version)
-	}
-	return nil
 }
