@@ -9,7 +9,7 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.51.0
 	go.opentelemetry.io/collector/pdata v0.51.0
 )
 
