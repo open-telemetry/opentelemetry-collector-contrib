@@ -312,7 +312,9 @@ func newTestExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsea
 	exporter, err := newExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
-	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.TODO()))
+	})
 	return exporter
 }
 
