@@ -211,12 +211,9 @@ func (p *StatsDParser) Aggregate(line string) error {
 			timeNow := timeNowFunc()
 			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNow, p.lastIntervalTime)
 			p.lastIntervalTime = timeNow
-
-			fmt.Println("First call")
 		} else {
 			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
 			point.SetIntVal(point.IntVal() + parsedMetric.counterValue())
-			fmt.Println("Repeated call in the same aggreation")
 		}
 
 	case TimingType, HistogramType:
