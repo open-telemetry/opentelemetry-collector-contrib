@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.51.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.0
 	go.opentelemetry.io/collector/pdata v0.51.0

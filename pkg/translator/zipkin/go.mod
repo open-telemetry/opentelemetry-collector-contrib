@@ -6,8 +6,8 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/google/go-cmp v0.5.8
 	github.com/jaegertracing/jaeger v1.33.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.51.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector/pdata v0.51.0

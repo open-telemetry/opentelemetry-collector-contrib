@@ -5,12 +5,12 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.44.11
 	github.com/google/cadvisor v0.44.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.50.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.51.0
 	github.com/shirou/gopsutil/v3 v3.22.4
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.0
@@ -79,7 +79,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.50.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.51.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect
