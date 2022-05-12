@@ -8,6 +8,8 @@
 
 ### 🚀 New components 🚀
 
+- `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
