@@ -1,0 +1,6 @@
+type: severity_parser
+mapping:
+  critical: 5xx
+  error: 4xx
+  info: 3xx
+  debug: 2xx

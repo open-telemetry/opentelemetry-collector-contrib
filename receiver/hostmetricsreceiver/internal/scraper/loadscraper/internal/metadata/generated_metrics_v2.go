@@ -288,10 +288,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-}{}
-
-// A is an alias for Attributes.
-var A = Attributes

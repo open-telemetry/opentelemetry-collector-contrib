@@ -108,7 +108,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
 	{{- end }}
 	{{- range $metric.Attributes }}
-	dp.Attributes().Insert(A.{{ .Render }}, pcommon.NewValueString({{ .RenderUnexported }}AttributeValue))
+	dp.Attributes().Insert("{{ attributeKey .}}", pcommon.NewValueString({{ .RenderUnexported }}AttributeValue))
 	{{- end }}
 }
 
@@ -285,22 +285,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-{{- range $name, $info := .Attributes }}
-	// {{ $name.Render }} ({{ $info.Description }})
-	{{ $name.Render }} string
-{{- end }}
-}{
-{{- range $name, $info := .Attributes }}
-	{{- if $info.Value }}
-	"{{ $info.Value }}",
-	{{- else }}
-	"{{ $name }}",
-	{{- end }}
-{{- end }}
-}
-
-// A is an alias for Attributes.
-var A = Attributes

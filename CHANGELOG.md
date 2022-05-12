@@ -8,6 +8,8 @@
 
 ### 🚀 New components 🚀
 
+- `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
@@ -53,6 +55,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `datadogexporter`: add error checks for datadog exporter (#9964)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
