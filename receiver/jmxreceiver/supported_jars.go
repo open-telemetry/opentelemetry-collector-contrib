@@ -151,12 +151,20 @@ var wildflyJarVersions = map[string]supportedJar{
 		version: "22.0.1",
 		jar:     "wildfly jboss client",
 	},
+	"6d41c7f3ba33cbcfb1a5a639eccc1d04c494f855f15324e175736c4ac184336d": {
+		version: "23.0.0",
+		jar:     "wildfly jboss client",
+	},
 	"8f974f36a927b8a51f2ef807c58e10960bc502c1caa5b93722e3dc913c74c466": {
 		version: "23.0.1",
 		jar:     "wildfly jboss client",
 	},
 	"fb9b638b04f0e54adc8343daed0fb07d38deadcc7ee8ba48a1c3ac44d9f87cff": {
 		version: "23.0.2",
+		jar:     "wildfly jboss client",
+	},
+	"fb633ed945d21de548b266f09b9467295571e429a301eae456713424cbc23464": {
+		version: "24.0.0",
 		jar:     "wildfly jboss client",
 	},
 	"cd5b72bbdbb99123a78d9837339f10a849f6c48d8503840cf9ab673cae4039b6": {
