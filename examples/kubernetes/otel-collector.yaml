@@ -139,7 +139,7 @@ spec:
     spec:
       containers:
       - name: otel-collector
-        image: otel/opentelemetry-collector-contrib:0.37.1
+        image: otel/opentelemetry-collector-contrib:0.51.0
         resources:
           limits:
             cpu: 100m
