@@ -44,8 +44,8 @@ receivers:
     username: admin
     password: password
     timeout: 60s
-    settings:
-      nsx.node.cpu.utilization:
+    metrics:
+      nsxt.node.cpu.utilization:
         enabled: false
 
 exporters:

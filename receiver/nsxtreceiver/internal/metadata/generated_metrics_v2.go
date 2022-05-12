@@ -51,30 +51,30 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// AttributeCPUProcessClass specifies the a value cpu.process.class attribute.
-type AttributeCPUProcessClass int
+// AttributeClass specifies the a value class attribute.
+type AttributeClass int
 
 const (
-	_ AttributeCPUProcessClass = iota
-	AttributeCPUProcessClassDatapath
-	AttributeCPUProcessClassServices
+	_ AttributeClass = iota
+	AttributeClassDatapath
+	AttributeClassServices
 )
 
-// String returns the string representation of the AttributeCPUProcessClass.
-func (av AttributeCPUProcessClass) String() string {
+// String returns the string representation of the AttributeClass.
+func (av AttributeClass) String() string {
 	switch av {
-	case AttributeCPUProcessClassDatapath:
+	case AttributeClassDatapath:
 		return "datapath"
-	case AttributeCPUProcessClassServices:
+	case AttributeClassServices:
 		return "services"
 	}
 	return ""
 }
 
-// MapAttributeCPUProcessClass is a helper map of string to AttributeCPUProcessClass attribute value.
-var MapAttributeCPUProcessClass = map[string]AttributeCPUProcessClass{
-	"datapath": AttributeCPUProcessClassDatapath,
-	"services": AttributeCPUProcessClassServices,
+// MapAttributeClass is a helper map of string to AttributeClass attribute value.
+var MapAttributeClass = map[string]AttributeClass{
+	"datapath": AttributeClassDatapath,
+	"services": AttributeClassServices,
 }
 
 // AttributeDirection specifies the a value direction attribute.
@@ -174,7 +174,7 @@ func (m *metricNsxtNodeCPUUtilization) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuProcessClassAttributeValue string) {
+func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, classAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -182,7 +182,7 @@ func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUProcessClass, pcommon.NewValueString(cpuProcessClassAttributeValue))
+	dp.Attributes().Insert(A.Class, pcommon.NewValueString(classAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -643,8 +643,8 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 }
 
 // RecordNsxtNodeCPUUtilizationDataPoint adds a data point to nsxt.node.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordNsxtNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuProcessClassAttributeValue AttributeCPUProcessClass) {
-	mb.metricNsxtNodeCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuProcessClassAttributeValue.String())
+func (mb *MetricsBuilder) RecordNsxtNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, classAttributeValue AttributeClass) {
+	mb.metricNsxtNodeCPUUtilization.recordDataPoint(mb.startTime, ts, val, classAttributeValue.String())
 }
 
 // RecordNsxtNodeFilesystemUsageDataPoint adds a data point to nsxt.node.filesystem.usage metric.
@@ -688,21 +688,18 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// CPUProcessClass (The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.)
-	CPUProcessClass string
+	// Class (The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.)
+	Class string
 	// Direction (The direction of network flow.)
 	Direction string
 	// DiskState (The state of storage space.)
 	DiskState string
-	// LoadBalancer (The name of the load balancer being utilized.)
-	LoadBalancer string
 	// PacketType (The type of packet counter.)
 	PacketType string
 }{
-	"cpu.process.class",
+	"class",
 	"direction",
 	"state",
-	"load_balancer",
 	"type",
 }
 

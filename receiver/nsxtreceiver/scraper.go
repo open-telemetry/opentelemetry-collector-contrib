@@ -95,8 +95,7 @@ func (s *scraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
 
 	tNodes, err := s.client.TransportNodes(ctx)
 	if err != nil {
-		errs.AddPartial(1, err)
-		return r, errs.Combine()
+		return r, err
 	}
 
 	cNodes, err := s.client.ClusterNodes(ctx)
@@ -229,8 +228,8 @@ func (s *scraper) recordNode(
 	}
 
 	ss := info.stats.SystemStatus
-	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeCPUProcessClassDatapath)
-	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk, metadata.AttributeCPUProcessClassServices)
+	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeClassDatapath)
+	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk, metadata.AttributeClassServices)
 	s.mb.RecordNsxtNodeMemoryUsageDataPoint(colTime, int64(ss.MemUsed))
 	s.mb.RecordNsxtNodeMemoryCacheUsageDataPoint(colTime, int64(ss.MemCache))
 

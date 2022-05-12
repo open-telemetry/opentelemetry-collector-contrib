@@ -38,13 +38,11 @@ attributes:
       - dropped
       - errored
       - success
-  cpu.process.class:
+  class:
     description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.
     enum:
       - datapath
       - services
-  load_balancer:
-    description: The name of the load balancer being utilized.
 
 metrics:
   nsxt.node.network.io:
@@ -71,7 +69,7 @@ metrics:
     gauge:
       value_type: double
     enabled: true
-    attributes: [cpu.process.class]
+    attributes: [class]
   nsxt.node.filesystem.utilization:
     description: The percentage of storage space utilized.
     unit: "%"

@@ -8,7 +8,7 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **nsxt.node.cpu.utilization** | The average amount of CPU being used by the node. | % | Gauge(Double) | <ul> <li>cpu.process.class</li> </ul> |
+| **nsxt.node.cpu.utilization** | The average amount of CPU being used by the node. | % | Gauge(Double) | <ul> <li>class</li> </ul> |
 | **nsxt.node.filesystem.usage** | The amount of storage space used by the node. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
 | **nsxt.node.filesystem.utilization** | The percentage of storage space utilized. | % | Gauge(Double) | <ul> </ul> |
 | **nsxt.node.memory.cache.usage** | The size of the node's memory cache. | KBy | Sum(Int) | <ul> </ul> |
@@ -38,8 +38,7 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| cpu.process.class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | datapath, services |
+| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | datapath, services |
 | direction (direction) | The direction of network flow. | received, transmitted |
 | disk_state (state) | The state of storage space. | used, available |
-| load_balancer | The name of the load balancer being utilized. |  |
 | packet.type (type) | The type of packet counter. | dropped, errored, success |
