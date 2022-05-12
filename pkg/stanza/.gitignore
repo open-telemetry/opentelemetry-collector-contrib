@@ -1,0 +1,13 @@
+dev/*
+.DS_Store
+tmp/*
+local/*
+**/coverage.txt
+**/coverage.html
+artifacts/*
+.vscode/*
+gen/
+.idea/*
+coverage.out
+coverage.out.bak
+coverage.txt.bak

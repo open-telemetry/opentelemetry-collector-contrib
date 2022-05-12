@@ -1,0 +1,5 @@
+type: file_input
+include:
+  - one.log
+  - two.log
+  - three.log

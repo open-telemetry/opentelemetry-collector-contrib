@@ -1,0 +1,2 @@
+type: json_parser
+parse_to: body.log
