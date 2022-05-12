@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/tools"
+    schedule:
+      interval: "weekly"
