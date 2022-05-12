@@ -650,7 +650,7 @@ func accessExplicitBounds() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).ExplicitBounds()
+				return ctx.GetItem().(pmetric.HistogramDataPoint).MExplicitBounds()
 			}
 			return nil
 		},
@@ -658,7 +658,7 @@ func accessExplicitBounds() pathGetSetter {
 			if newExplicitBounds, ok := val.([]float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetExplicitBounds(newExplicitBounds)
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetMExplicitBounds(newExplicitBounds)
 				}
 			}
 		},
@@ -670,7 +670,7 @@ func accessBucketCounts() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).BucketCounts()
+				return ctx.GetItem().(pmetric.HistogramDataPoint).MBucketCounts()
 			}
 			return nil
 		},
@@ -678,7 +678,7 @@ func accessBucketCounts() pathGetSetter {
 			if newBucketCount, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetBucketCounts(newBucketCount)
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetMBucketCounts(newBucketCount)
 				}
 			}
 		},
@@ -770,7 +770,7 @@ func accessPositiveBucketCounts() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().BucketCounts()
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().MBucketCounts()
 			}
 			return nil
 		},
@@ -778,7 +778,7 @@ func accessPositiveBucketCounts() pathGetSetter {
 			if newPositiveBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetBucketCounts(newPositiveBucketCounts)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetMBucketCounts(newPositiveBucketCounts)
 				}
 			}
 		},
@@ -830,7 +830,7 @@ func accessNegativeBucketCounts() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().BucketCounts()
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().MBucketCounts()
 			}
 			return nil
 		},
@@ -838,7 +838,7 @@ func accessNegativeBucketCounts() pathGetSetter {
 			if newNegativeBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetBucketCounts(newNegativeBucketCounts)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetMBucketCounts(newNegativeBucketCounts)
 				}
 			}
 		},
@@ -888,7 +888,7 @@ func getValue(val pcommon.Value) interface{} {
 	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
 	case pcommon.ValueTypeBytes:
-		return val.BytesVal()
+		return val.MBytesVal()
 	}
 	return nil
 }
@@ -904,7 +904,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case float64:
 		attrs.UpsertDouble(mapKey, v)
 	case []byte:
-		attrs.UpsertBytes(mapKey, v)
+		attrs.UpsertMBytes(mapKey, v)
 	case []string:
 		arr := pcommon.NewValueSlice()
 		for _, str := range v {
@@ -932,7 +932,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case [][]byte:
 		arr := pcommon.NewValueSlice()
 		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBytesVal(b)
+			arr.SliceVal().AppendEmpty().SetMBytesVal(b)
 		}
 		attrs.Upsert(mapKey, arr)
 	default:

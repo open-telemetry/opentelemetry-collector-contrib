@@ -706,8 +706,8 @@ func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramData
 	// ExponentialHistogramDataPoints have buckets with negative explicit bounds, buckets with
 	// positive explicit bounds, and a "zero" bucket. Our job is to merge these bucket groups into
 	// a single list of buckets and explicit bounds.
-	negativeBucketCounts := dataPoint.Negative().BucketCounts()
-	positiveBucketCounts := dataPoint.Positive().BucketCounts()
+	negativeBucketCounts := dataPoint.Negative().MBucketCounts()
+	positiveBucketCounts := dataPoint.Positive().MBucketCounts()
 
 	// The total number of buckets is the number of negative buckets + the number of positive
 	// buckets + 1 for the zero bucket + 1 bucket for negative infinity up to the negative explicit

@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parque
 go 1.17
 
 require (
-	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
-	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector v0.51.0
+	go.opentelemetry.io/collector/pdata v0.51.0
 )
 
 require (
@@ -12,10 +12,13 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect

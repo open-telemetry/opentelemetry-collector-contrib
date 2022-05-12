@@ -6,9 +6,9 @@ require (
 	github.com/stretchr/testify v1.7.1
 	go.elastic.co/apm v1.15.0
 	go.elastic.co/fastjson v1.1.0
-	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
-	go.opentelemetry.io/collector/pdata v0.50.1-0.20220429151328-041f39835df7
-	go.opentelemetry.io/collector/semconv v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector v0.51.0
+	go.opentelemetry.io/collector/pdata v0.51.0
+	go.opentelemetry.io/collector/semconv v0.51.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -28,11 +28,14 @@ require (
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/jcchavezs/porto v0.1.0 // indirect
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

@@ -60,7 +60,7 @@ func serializeBody(body pcommon.Value) ([]byte, error) {
 		str, err = json.Marshal(attributeValueSliceAsRaw(body.SliceVal()))
 
 	case pcommon.ValueTypeBytes:
-		str, err = json.Marshal(body.BytesVal())
+		str, err = json.Marshal(body.MBytesVal())
 
 	default:
 		err = fmt.Errorf("unsuported body type to serialize")
@@ -110,7 +110,7 @@ func attributeValueSliceAsRaw(es pcommon.Slice) []interface{} {
 		case pcommon.ValueTypeBool:
 			rawSlice = append(rawSlice, v.BoolVal())
 		case pcommon.ValueTypeBytes:
-			rawSlice = append(rawSlice, v.BytesVal())
+			rawSlice = append(rawSlice, v.MBytesVal())
 		case pcommon.ValueTypeEmpty:
 			rawSlice = append(rawSlice, nil)
 		default:
