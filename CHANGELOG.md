@@ -55,6 +55,7 @@
 - `awsinsightreceiver`: Migrate from `ConfigMapsResourceLock` to `ConfigMapsLeasesResourceLock` as per https://github.com/kubernetes/client-go/commit/276ea3ed979947d7cdd4b3d708862245ddcd8883 (#9885)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Add support for []string type for converting log record entries (#9887)
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
+- `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 
 ## v0.50.0
 
