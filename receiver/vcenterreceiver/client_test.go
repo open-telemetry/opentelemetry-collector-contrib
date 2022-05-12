@@ -31,7 +31,7 @@ func TestGetClusters(t *testing.T) {
 			vimDriver: c,
 			finder:    finder,
 		}
-		clusters, err := client.Clusters(ctx)
+		clusters, err := client.Clusters(ctx, "")
 		require.NoError(t, err)
 		require.NotEmpty(t, clusters, 0)
 	})

@@ -74,17 +74,27 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error
 		return pdata.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
 
-	err := v.collectClusters(ctx)
+	err := v.collectDatacenters(ctx)
 	return v.mb.Emit(), err
 }
 
-func (v *vcenterMetricScraper) collectClusters(ctx context.Context) error {
+func (v *vcenterMetricScraper) collectDatacenters(ctx context.Context) error {
+	datacenters, err := v.client.Datacenters(ctx)
+	if err != nil {
+		return err
+	}
+	for _, dc := range datacenters {
+		v.collectClusters(ctx, dc)
+	}
+	return nil
+}
+
+func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *object.Datacenter) error {
 	errs := &scrapererror.ScrapeErrors{}
 
-	clusters, err := v.client.Clusters(ctx)
+	clusters, err := v.client.Clusters(ctx, datacenter)
 	if err != nil {
-		errs.Add(err)
-		return errs.Combine()
+		return err
 	}
 	now := pdata.NewTimestampFromTime(time.Now())
 

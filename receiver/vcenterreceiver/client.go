@@ -46,7 +46,9 @@ func newVmwarevcenterClient(c *Config) *vcenterClient {
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.moClient != nil {
-		return nil
+		if ok, err := vc.moClient.SessionManager.SessionIsActive(ctx); ok && err != nil {
+			return nil
+		}
 	}
 
 	sdkURL, err := vc.cfg.SDKUrl()
@@ -83,7 +85,22 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 }
 
 // Clusters returns the clusterComputeResources of the vSphere SDK
-func (vc *vcenterClient) Clusters(ctx context.Context) ([]*object.ClusterComputeResource, error) {
+func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
+	// defaultDatacenter, err := vc.finder.DatacenterOrDefault(ctx, "")
+	// if err != nil {
+	// 	return []*object.Datacenter{}, fmt.Errorf("unable to detect default datacenter: %w", err)
+	// }
+	// vc.finder = vc.finder.SetDatacenter(defaultDatacenter)
+	datacenters, err := vc.finder.DatacenterList(ctx, "*")
+	if err != nil {
+		return []*object.Datacenter{}, fmt.Errorf("unable to get datacenter lists: %w", err)
+	}
+	return datacenters, nil
+}
+
+// Clusters returns the clusterComputeResources of the vSphere SDK
+func (vc *vcenterClient) Clusters(ctx context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error) {
+	vc.finder = vc.finder.SetDatacenter(datacenter)
 	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
 	if err != nil {
 		return []*object.ClusterComputeResource{}, err
