@@ -100,8 +100,7 @@ func (s *scraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
 
 	cNodes, err := s.client.ClusterNodes(ctx)
 	if err != nil {
-		errs.AddPartial(1, err)
-		return r, errs.Combine()
+		return r, err
 	}
 
 	wg := &sync.WaitGroup{}
