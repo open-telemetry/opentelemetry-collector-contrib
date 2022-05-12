@@ -153,8 +153,9 @@ func (lb *loadBalancerImp) removeExtraExporters(ctx context.Context, endpoints [
 	for existing := range lb.exporters {
 		if !endpointFound(existing, endpoints) {
 			if err := lb.exporters[existing].Shutdown(ctx); err != nil {
-				delete(lb.exporters, existing)
+				lb.logger.Warn("error when removing extra exporter", zap.error(err))
 			}
+			delete(lb.exporters, existing)
 		}
 	}
 }
