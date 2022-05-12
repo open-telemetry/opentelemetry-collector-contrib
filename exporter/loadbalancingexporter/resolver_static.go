@@ -17,7 +17,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
-
 	"sort"
 	"sync"
 
