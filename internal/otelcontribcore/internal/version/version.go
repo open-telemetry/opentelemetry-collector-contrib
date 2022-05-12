@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
+package version // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version"
 
 // Version variable will be replaced at link time after `make` has been run.
 var Version = "latest"

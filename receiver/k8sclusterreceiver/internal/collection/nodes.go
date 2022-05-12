@@ -124,9 +124,8 @@ func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8SNodeUID:     string(node.UID),
-			conventions.AttributeK8SNodeName:    node.Name,
-			conventions.AttributeK8SClusterName: node.ClusterName,
+			conventions.AttributeK8SNodeUID:  string(node.UID),
+			conventions.AttributeK8SNodeName: node.Name,
 		},
 	}
 }

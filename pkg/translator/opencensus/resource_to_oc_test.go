@@ -208,7 +208,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 			actual := pcommon.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
 			// Remove opencensus resource type from actual. This will be added during translation.
-			actual.Attributes().Delete(occonventions.AttributeResourceType)
+			actual.Attributes().Remove(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
 			expected.Attributes().Range(func(k string, v pcommon.Value) bool {
 				a, ok := actual.Attributes().Get(k)

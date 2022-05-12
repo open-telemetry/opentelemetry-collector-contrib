@@ -39,7 +39,7 @@ func fillContainerResource(dest pcommon.Resource, sPod stats.PodStats, sContaine
 		conventions.AttributeK8SNamespaceName: sPod.PodRef.Namespace,
 		conventions.AttributeK8SContainerName: sContainer.Name,
 	}
-	if err := metadata.setExtraLabels(labels, sPod.PodRef.UID, MetadataLabelContainerID, sContainer.Name); err != nil {
+	if err := metadata.setExtraLabels(labels, sPod.PodRef, MetadataLabelContainerID, sContainer.Name); err != nil {
 		return fmt.Errorf("failed to set extra labels from metadata: %w", err)
 	}
 	for k, v := range labels {
@@ -56,15 +56,8 @@ func fillVolumeResource(dest pcommon.Resource, sPod stats.PodStats, vs stats.Vol
 		labelVolumeName:                       vs.Name,
 	}
 
-	if err := metadata.setExtraLabels(labels, sPod.PodRef.UID, MetadataLabelVolumeType, vs.Name); err != nil {
+	if err := metadata.setExtraLabels(labels, sPod.PodRef, MetadataLabelVolumeType, vs.Name); err != nil {
 		return fmt.Errorf("failed to set extra labels from metadata: %w", err)
-	}
-
-	if labels[labelVolumeType] == labelValuePersistentVolumeClaim {
-		volCacheID := fmt.Sprintf("%s/%s", sPod.PodRef.UID, vs.Name)
-		if err := metadata.DetailedPVCLabelsSetter(volCacheID, labels[labelPersistentVolumeClaimName], sPod.PodRef.Namespace, labels); err != nil {
-			return fmt.Errorf("failed to set labels from volume claim: %w", err)
-		}
 	}
 
 	for k, v := range labels {

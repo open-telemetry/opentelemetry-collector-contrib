@@ -31,9 +31,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            \Users\runneradmin\go\pkg\mod
-            %LocalAppData%\go-build
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         # use default Go build tags from Makefile.common
         run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
@@ -45,7 +45,7 @@ jobs:
           go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...        
         working-directory: ./receiver/activedirectorydsreceiver
       - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'ref/head/main' }}
+        if: ${{ failure() && github.ref == 'refs/heads/main' }}
         run: |
-          cd internal/tools && go install go.opentelemetry.io/collector/cmd/issuegenerator
+          cd internal/tools && go install go.opentelemetry.io/build-tools/issuegenerator
           issuegenerator $TEST_RESULTS

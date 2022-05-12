@@ -23,10 +23,10 @@ type kv struct {
 	Key, Value string
 }
 
-func distPointPdata(ts pcommon.Timestamp, bounds []float64, counts []uint64) *pmetric.HistogramDataPoint {
+func distPoint(ts pcommon.Timestamp, bounds []float64, counts []uint64) *pmetric.HistogramDataPoint {
 	hdp := pmetric.NewHistogramDataPoint()
-	hdp.SetExplicitBounds(bounds)
-	hdp.SetBucketCounts(counts)
+	hdp.SetMExplicitBounds(bounds)
+	hdp.SetMBucketCounts(counts)
 	hdp.SetTimestamp(ts)
 	var sum float64
 	var count uint64
@@ -42,7 +42,7 @@ func distPointPdata(ts pcommon.Timestamp, bounds []float64, counts []uint64) *pm
 	return &hdp
 }
 
-func cumulativeDistMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.HistogramDataPoint) *pmetric.Metric {
+func cumulativeDistMetric(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.HistogramDataPoint) *pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeHistogram)
@@ -63,7 +63,7 @@ func cumulativeDistMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp
 	return &metric
 }
 
-func doublePointPdata(ts pcommon.Timestamp, value float64) *pmetric.NumberDataPoint {
+func doublePoint(ts pcommon.Timestamp, value float64) *pmetric.NumberDataPoint {
 	ndp := pmetric.NewNumberDataPoint()
 	ndp.SetTimestamp(ts)
 	ndp.SetDoubleVal(value)
@@ -71,7 +71,7 @@ func doublePointPdata(ts pcommon.Timestamp, value float64) *pmetric.NumberDataPo
 	return &ndp
 }
 
-func gaugeMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
+func gaugeMetric(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeGauge)
@@ -89,7 +89,7 @@ func gaugeMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points 
 	return &metric
 }
 
-func summaryPointPdata(ts pcommon.Timestamp, count uint64, sum float64, quantiles, values []float64) *pmetric.SummaryDataPoint {
+func summaryPoint(ts pcommon.Timestamp, count uint64, sum float64, quantiles, values []float64) *pmetric.SummaryDataPoint {
 	sdp := pmetric.NewSummaryDataPoint()
 	sdp.SetTimestamp(ts)
 	sdp.SetCount(count)
@@ -103,7 +103,7 @@ func summaryPointPdata(ts pcommon.Timestamp, count uint64, sum float64, quantile
 	return &sdp
 }
 
-func summaryMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.SummaryDataPoint) *pmetric.Metric {
+func summaryMetric(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.SummaryDataPoint) *pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeSummary)
@@ -121,7 +121,7 @@ func summaryMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, point
 	return &metric
 }
 
-func sumMetricPdata(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
+func sumMetric(name string, kvp []*kv, startTs pcommon.Timestamp, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeSum)

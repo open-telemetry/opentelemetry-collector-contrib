@@ -6,7 +6,7 @@ Supported pipeline types: metrics
 
 ## Description
 
-The cumulative to delta processor (`cumulativetodeltaprocessor`) converts cumulative sum metrics to cumulative delta. Non-monotonic sums are excluded.  
+The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum metrics to monotonic, delta sum metrics. Non-monotonic sums are excluded.
 
 ## Configuration
 

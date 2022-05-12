@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 func TestValidateMetadataLabelsConfig(t *testing.T) {
@@ -166,7 +167,7 @@ func TestSetExtraLabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fields := map[string]string{}
-			err := tt.metadata.setExtraLabels(fields, tt.args[0], MetadataLabel(tt.args[1]), tt.args[2])
+			err := tt.metadata.setExtraLabels(fields, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
 			if tt.wantError == "" {
 				require.NoError(t, err)
 				assert.EqualValues(t, tt.want, fields)
@@ -324,8 +325,10 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 						},
 					},
 				},
-			}, nil)
-			metadata.setExtraLabels(fields, tt.args[0], MetadataLabel(tt.args[1]), volName)
+			}, func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
+				return nil
+			})
+			metadata.setExtraLabels(fields, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
 			assert.Equal(t, tt.want, fields)
 		})
 	}
