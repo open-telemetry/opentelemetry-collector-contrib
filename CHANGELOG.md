@@ -4,15 +4,28 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `datadogexporter`: Replace HistogramMode defined as string with enum.
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.50.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Replace HistogramMode defined as string with enum. (#9589)
 - `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 - `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
 - `newrelicexporter` deleted. Use New Relic [native OTLP ingest](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-setup/) instead. (#9894)
-- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3 (#9885)
+- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3. (#9885)
 
 ### 🚩 Deprecations 🚩
 
-- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement. (#9258)
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
 
 ### 🚀 New components 🚀
 

@@ -117,7 +117,7 @@ misspell-correction:
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
+	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal $(ALL_PKGS)
 
 .PHONY: moddownload
 moddownload:
