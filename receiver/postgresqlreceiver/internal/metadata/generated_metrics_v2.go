@@ -186,7 +186,7 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -239,9 +239,9 @@ func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Source, pcommon.NewValueString(sourceAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert("source", pcommon.NewValueString(sourceAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -294,7 +294,7 @@ func (m *metricPostgresqlCommits) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -347,7 +347,7 @@ func (m *metricPostgresqlDbSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -400,9 +400,9 @@ func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -455,7 +455,7 @@ func (m *metricPostgresqlRollbacks) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -508,9 +508,9 @@ func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -674,26 +674,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Database (The name of the database.)
-	Database string
-	// Operation (The database operation.)
-	Operation string
-	// Source (The block read source type.)
-	Source string
-	// State (The tuple (row) state.)
-	State string
-	// Table (The schema name followed by the table name.)
-	Table string
-}{
-	"database",
-	"operation",
-	"source",
-	"state",
-	"table",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

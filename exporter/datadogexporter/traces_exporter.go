@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -147,9 +146,13 @@ func (exp *traceExporter) pushTraceData(
 	for _, ddTracePayload := range aggregatedTraces {
 		// currently we don't want to do retries since api endpoints may not dedupe in certain situations
 		// adding a helper function here to make custom retry logic easier in the future
-		exp.pushWithRetry(ctx, ddTracePayload, 1, pushTime, func() error {
+		err := exp.pushWithRetry(ctx, ddTracePayload, 1, pushTime, func() error {
 			return nil
 		})
+
+		if err != nil {
+			exp.params.Logger.Info("failed to push with retry", zap.Error(err))
+		}
 	}
 
 	_ = exp.client.PostMetrics(ms)

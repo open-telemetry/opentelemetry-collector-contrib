@@ -127,7 +127,7 @@ func (m *metricSystemProcessesCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Status, pcommon.NewValueString(statusAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(statusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -303,14 +303,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Status (Breakdown status of the processes.)
-	Status string
-}{
-	"status",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

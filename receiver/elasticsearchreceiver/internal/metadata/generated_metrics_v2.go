@@ -523,7 +523,7 @@ func (m *metricElasticsearchClusterHealth) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HealthStatus, pcommon.NewValueString(healthStatusAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(healthStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -627,7 +627,7 @@ func (m *metricElasticsearchClusterShards) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ShardState, pcommon.NewValueString(shardStateAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(shardStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -680,7 +680,7 @@ func (m *metricElasticsearchNodeCacheEvictions) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CacheName, pcommon.NewValueString(cacheNameAttributeValue))
+	dp.Attributes().Insert("cache_name", pcommon.NewValueString(cacheNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -733,7 +733,7 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CacheName, pcommon.NewValueString(cacheNameAttributeValue))
+	dp.Attributes().Insert("cache_name", pcommon.NewValueString(cacheNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -837,7 +837,7 @@ func (m *metricElasticsearchNodeClusterIo) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -890,7 +890,7 @@ func (m *metricElasticsearchNodeDocuments) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DocumentState, pcommon.NewValueString(documentStateAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(documentStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1096,7 +1096,7 @@ func (m *metricElasticsearchNodeOperationsCompleted) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1149,7 +1149,7 @@ func (m *metricElasticsearchNodeOperationsTime) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1253,8 +1253,8 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pcommon.NewValueString(threadPoolNameAttributeValue))
-	dp.Attributes().Insert(A.TaskState, pcommon.NewValueString(taskStateAttributeValue))
+	dp.Attributes().Insert("thread_pool_name", pcommon.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(taskStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1307,7 +1307,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pcommon.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert("thread_pool_name", pcommon.NewValueString(threadPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1360,8 +1360,8 @@ func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pcommon.NewValueString(threadPoolNameAttributeValue))
-	dp.Attributes().Insert(A.ThreadState, pcommon.NewValueString(threadStateAttributeValue))
+	dp.Attributes().Insert("thread_pool_name", pcommon.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(threadStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1463,7 +1463,7 @@ func (m *metricJvmGcCollectionsCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CollectorName, pcommon.NewValueString(collectorNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(collectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1516,7 +1516,7 @@ func (m *metricJvmGcCollectionsElapsed) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CollectorName, pcommon.NewValueString(collectorNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(collectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1812,7 +1812,7 @@ func (m *metricJvmMemoryPoolMax) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pcommon.NewValueString(memoryPoolNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(memoryPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1863,7 +1863,7 @@ func (m *metricJvmMemoryPoolUsed) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pcommon.NewValueString(memoryPoolNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(memoryPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2266,50 +2266,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// CacheName (The name of cache.)
-	CacheName string
-	// CollectorName (The name of the garbage collector.)
-	CollectorName string
-	// Direction (The direction of network data.)
-	Direction string
-	// DiskUsageState (The state of a section of space on disk.)
-	DiskUsageState string
-	// DocumentState (The state of the document.)
-	DocumentState string
-	// FsDirection (The direction of filesystem IO.)
-	FsDirection string
-	// HealthStatus (The health status of the cluster.)
-	HealthStatus string
-	// MemoryPoolName (The name of the JVM memory pool.)
-	MemoryPoolName string
-	// Operation (The type of operation.)
-	Operation string
-	// ShardState (The state of the shard.)
-	ShardState string
-	// TaskState (The state of the task.)
-	TaskState string
-	// ThreadPoolName (The name of the thread pool.)
-	ThreadPoolName string
-	// ThreadState (The state of the thread.)
-	ThreadState string
-}{
-	"cache_name",
-	"name",
-	"direction",
-	"state",
-	"state",
-	"direction",
-	"status",
-	"name",
-	"operation",
-	"state",
-	"state",
-	"thread_pool_name",
-	"state",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

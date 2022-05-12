@@ -12,7 +12,7 @@ COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+ALL_MODULES := $(shell find . -type f -not -path '*/pkg/stanza/*' -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
@@ -38,7 +38,11 @@ all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 .PHONY: all
-all: common gotest otelcontribcol otelcontribcol-unstable
+all: all-common gotest otelcontribcol otelcontribcol-unstable
+
+.PHONY: all-common
+all-common:
+	@$(MAKE) for-all-target TARGET="common"
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
