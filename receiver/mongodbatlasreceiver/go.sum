@@ -190,8 +190,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-go.mongodb.org/atlas v0.15.0 h1:YyOBdBIuI//krRITf4r7PSirJ3YDNNUfNmapxwSyDow=
-go.mongodb.org/atlas v0.15.0/go.mod h1:lQhRHIxc6jQHEK3/q9WLu/SdBkPj2fQYhjLGUF6Z3U8=
+go.mongodb.org/atlas v0.16.0 h1:IqnDuK3XAZUgJ5lPHc4v4z4B8F6mvsS37O4ck7tOYVc=
+go.mongodb.org/atlas v0.16.0/go.mod h1:lQhRHIxc6jQHEK3/q9WLu/SdBkPj2fQYhjLGUF6Z3U8=
 go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
 go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
 go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7 h1:EdzWPAR5/XWh6FjjCaqPBmbB62HIpeataITjfXQKS6U=

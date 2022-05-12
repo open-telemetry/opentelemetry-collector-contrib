@@ -94,7 +94,6 @@ func getResourceForResourceQuota(rq *corev1.ResourceQuota) *resourcepb.Resource 
 			k8sKeyResourceQuotaUID:                string(rq.UID),
 			k8sKeyResourceQuotaName:               rq.Name,
 			conventions.AttributeK8SNamespaceName: rq.Namespace,
-			conventions.AttributeK8SClusterName:   rq.ClusterName,
 		},
 	}
 }
