@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/window
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.51.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.0
 	go.uber.org/multierr v1.8.0
@@ -19,7 +19,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.50.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.51.0
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
