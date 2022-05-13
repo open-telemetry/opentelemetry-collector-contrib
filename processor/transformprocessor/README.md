@@ -1,8 +1,10 @@
 # Transform Processor
 
-**Stability level: [`In Development`](https://github.com/open-telemetry/opentelemetry-collector-contrib#stability-levels)**  
-**Distribution: `none`**  
-**Supported pipeline types: `logs`, `traces`**
+| Status                   |                  |
+| ------------------------ | ---------------- |
+| Stability                | [In development] |
+| Supported pipeline types | traces, logs     |
+| Distribution             | none             |
 
 The transform processor modifies telemetry based on configuration using the Telemetry Query Language.
 It takes a list of queries which are performed in the order specified in the config.
@@ -87,3 +89,5 @@ All spans
 5) Limit all resource attributes such that each resource no more than 100 attributes.
 6) Truncate all span attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
+
+[In development]: https://github.com/open-telemetry/opentelemetry-collector-contrib#in-development
