@@ -12,7 +12,7 @@
 
 ### 💡 Enhancements 💡
 
-- `kubeletstatsreceiver` Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+- `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 
 ### 🧰 Bug fixes 🧰
 
