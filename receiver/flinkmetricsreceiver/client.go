@@ -146,7 +146,7 @@ func (c *flinkClient) getMetrics(ctx context.Context, path string) (*models.Metr
 	}
 	metricsPath := path + "?get=" + strings.Join(query, ",")
 
-	// get the metric values using the query
+	// Get the metric values using the query
 	body, err = c.get(ctx, metricsPath)
 	if err != nil {
 		c.logger.Debug("Failed to retrieve metric values", zap.Error(err))
@@ -177,15 +177,10 @@ func (c *flinkClient) GetJobmanagerMetrics(ctx context.Context) (*models.Jobmana
 	}, nil
 }
 
-type taskmanagerResult struct {
-	taskmanagerInstance models.TaskmanagerMetrics
-	err                 error
-}
-
 // GetTaskmanagersMetrics gets the Taskmanager metrics for each taskmanager.
 func (c *flinkClient) GetTaskmanagersMetrics(ctx context.Context) ([]*models.TaskmanagerMetrics, error) {
 	// Get the taskmanager id list
-	var taskManagerIDs *models.TaskmanagerIDsResponse
+	var taskmanagerIDs *models.TaskmanagerIDsResponse
 	body, err := c.get(ctx, taskmanagersEndpoint)
 	if err != nil {
 		c.logger.Debug("Failed to retrieve taskmanager IDs", zap.Error(err))
@@ -193,31 +188,34 @@ func (c *flinkClient) GetTaskmanagersMetrics(ctx context.Context) ([]*models.Tas
 	}
 
 	// Populates taskmanager id names
-	err = json.Unmarshal(body, &taskManagerIDs)
+	err = json.Unmarshal(body, &taskmanagerIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 
-	// TaskManagerInstances stores all metric data for each taskmanager id
-	var taskManagerInstances []*models.TaskmanagerMetrics
+	// Get taskmanager metrics for each taskmanager id
+	return c.getTaskmanagersMetrics(ctx, taskmanagerIDs)
+}
 
-	// Get taskmanager metrics for each task manager id
-	for _, taskmanager := range taskManagerIDs.Taskmanagers {
-		metrics, err := c.getMetrics(ctx, fmt.Sprintf(taskmanagersMetricEndpoint, taskmanager.ID))
+// getTaskmanagersMetrics gets taskmanager metrics for each task manager id.
+func (c *flinkClient) getTaskmanagersMetrics(ctx context.Context, taskmanagerIDs *models.TaskmanagerIDsResponse) ([]*models.TaskmanagerMetrics, error) {
+	var taskmanagerInstances []*models.TaskmanagerMetrics
+	for _, taskmanager := range taskmanagerIDs.Taskmanagers {
+		query := fmt.Sprintf(taskmanagersMetricEndpoint, taskmanager.ID)
+		metrics, err := c.getMetrics(ctx, query)
 		if err != nil {
 			return nil, err
 		}
-		// Taskmanger ID is in the form of host:id
+		// The taskmanager has the host instance in the taskmanager ID
 		host := strings.Split(taskmanager.ID, ":")
-		taskManagerInstance := models.TaskmanagerMetrics{
+		taskmanagerInstance := &models.TaskmanagerMetrics{
 			TaskmanagerID: taskmanager.ID,
 			Host:          host[0],
 			Metrics:       *metrics,
 		}
-		taskManagerInstances = append(taskManagerInstances, &taskManagerInstance)
+		taskmanagerInstances = append(taskmanagerInstances, taskmanagerInstance)
 	}
-
-	return taskManagerInstances, nil
+	return taskmanagerInstances, nil
 }
 
 // GetJobsMetrics gets the job metrics for each job.
@@ -236,12 +234,16 @@ func (c *flinkClient) GetJobsMetrics(ctx context.Context) ([]*models.JobMetrics,
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 
-	// JobInstances stores all metric data for each job id
-	var jobInstances []*models.JobMetrics
+	// Get job metrics for each job id
+	return c.getJobsMetrics(ctx, jobIDs)
+}
 
-	// Get the job metrics for each job id
+// getJobsMetrics gets jobs metrics for each job id.
+func (c *flinkClient) getJobsMetrics(ctx context.Context, jobIDs *models.JobOverviewResponse) ([]*models.JobMetrics, error) {
+	var jobInstances []*models.JobMetrics
 	for _, job := range jobIDs.Jobs {
-		metrics, err := c.getMetrics(ctx, fmt.Sprintf(jobsMetricEndpoint, job.Jid))
+		query := fmt.Sprintf(jobsMetricEndpoint, job.Jid)
+		metrics, err := c.getMetrics(ctx, query)
 		if err != nil {
 			return nil, err
 		}
@@ -252,13 +254,11 @@ func (c *flinkClient) GetJobsMetrics(ctx context.Context) ([]*models.JobMetrics,
 		}
 		jobInstances = append(jobInstances, &jobInstance)
 	}
-
 	return jobInstances, nil
 }
 
 // GetSubtasksMetrics gets subtask metrics for each job id, vertex id and subtask index.
 func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.SubtaskMetrics, error) {
-	var subtaskMetricsStorage []*models.SubtaskMetrics
 	// Get the job id's
 	var jobsResponse *models.JobsResponse
 	body, err := c.get(ctx, jobsEndpoint)
@@ -272,12 +272,17 @@ func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.Subtask
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
+	return c.getSubtasksMetrics(ctx, jobsResponse)
+}
 
+// getSubtasksMetrics gets subtask metrics for each job id, vertex id and subtask index.
+func (c *flinkClient) getSubtasksMetrics(ctx context.Context, jobsResponse *models.JobsResponse) ([]*models.SubtaskMetrics, error) {
+	var subtaskInstances []*models.SubtaskMetrics
 	// Get vertices for each job
 	for _, job := range jobsResponse.Jobs {
 		var jobsWithIDResponse *models.JobsWithIDResponse
 		query := fmt.Sprintf(jobsWithIDEndpoint, job.ID)
-		body, err = c.get(ctx, query)
+		body, err := c.get(ctx, query)
 		if err != nil {
 			c.logger.Debug("Failed to retrieve job with ID", zap.Error(err))
 			return nil, err
@@ -288,7 +293,7 @@ func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.Subtask
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 		}
-		// gets subtask info for each vertex id
+		// Gets subtask info for each vertex id
 		for _, vertex := range jobsWithIDResponse.Vertices {
 			var vertexResponse *models.VerticesResponse
 			query := fmt.Sprintf(verticesEndpoint, job.ID, vertex.ID)
@@ -304,7 +309,7 @@ func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.Subtask
 				return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 			}
 
-			// gets subtask metrics for each vertex id
+			// Gets subtask metrics for each vertex id
 			for _, subtask := range vertexResponse.Subtasks {
 				query := fmt.Sprintf(subtaskMetricEndpoint, job.ID, vertex.ID, subtask.Subtask)
 				subtaskMetrics, err := c.getMetrics(ctx, query)
@@ -313,8 +318,8 @@ func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.Subtask
 					return nil, err
 				}
 
-				// stores subtask info with additional attribute values to uniquely identify metrics
-				subtaskMetricsStorage = append(subtaskMetricsStorage,
+				// Stores subtask info with additional attribute values to uniquely identify metrics
+				subtaskInstances = append(subtaskInstances,
 					&models.SubtaskMetrics{
 						Host:          subtask.Host,
 						TaskmanagerID: subtask.TaskmanagerID,
@@ -326,5 +331,5 @@ func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.Subtask
 			}
 		}
 	}
-	return subtaskMetricsStorage, nil
+	return subtaskInstances, nil
 }

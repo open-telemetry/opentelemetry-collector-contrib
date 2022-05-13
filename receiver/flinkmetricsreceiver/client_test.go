@@ -219,7 +219,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 			},
 		},
 		{
-			desc: "Bad payload returned",
+			desc: "Bad taskmanagers payload returned",
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, err := w.Write([]byte(`{`))
@@ -235,7 +235,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 			},
 		},
 		{
-			desc: "Bad payload returned",
+			desc: "Bad taskmanagers metrics payload returned",
 			testFunc: func(t *testing.T) {
 				taskmanagerIDs := loadAPIResponseData(t, apiResponses, taskmanagerIds)
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
