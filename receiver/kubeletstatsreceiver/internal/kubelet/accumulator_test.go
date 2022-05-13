@@ -212,11 +212,7 @@ func TestMetadataErrorCases(t *testing.T) {
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
-				mbs: &metadata.MetricsBuilders{
-					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-				},
+				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 			}
 
 			tt.testScenario(acc)
@@ -238,12 +234,7 @@ func TestNilHandling(t *testing.T) {
 			ContainerMetricGroup: true,
 			VolumeMetricGroup:    true,
 		},
-		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		},
+		mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 	}
 	assert.NotPanics(t, func() {
 		acc.nodeStats(stats.NodeStats{})

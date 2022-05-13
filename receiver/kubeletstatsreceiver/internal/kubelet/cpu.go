@@ -21,15 +21,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addCPUMetrics(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, currentTime pcommon.Timestamp) {
+func recordCPUMetrics(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
-	addCPUUsageMetric(mb, cpuMetrics.Utilization, s, currentTime)
-	addCPUTimeMetric(mb, cpuMetrics.Time, s, currentTime)
+	recordCPUUsageMetric(mb, cpuMetrics.Utilization, s, currentTime)
+	recordCPUTimeMetric(mb, cpuMetrics.Time, s, currentTime)
 }
 
-func addCPUUsageMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
+func recordCPUUsageMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s.UsageNanoCores == nil {
 		return
 	}
@@ -37,7 +37,7 @@ func addCPUUsageMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.Rec
 	recordDataPoint(mb, currentTime, value)
 }
 
-func addCPUTimeMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
+func recordCPUTimeMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s.UsageCoreNanoSeconds == nil {
 		return
 	}

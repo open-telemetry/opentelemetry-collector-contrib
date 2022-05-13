@@ -49,7 +49,7 @@ type metricDataAccumulator struct {
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
 	time                  time.Time
-	mbs                   *metadata.MetricsBuilders
+	mb                    *metadata.MetricsBuilder
 }
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
@@ -58,16 +58,16 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	}
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeCPUMetrics, s.CPU, currentTime)
-	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime)
-	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
-	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
+	recordCPUMetrics(a.mb, metadata.NodeCPUMetrics, s.CPU, currentTime)
+	recordMemoryMetrics(a.mb, metadata.NodeMemoryMetrics, s.Memory, currentTime)
+	recordFilesystemMetrics(a.mb, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
+	recordNetworkMetrics(a.mb, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
 
-	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
+	a.mb.EmitForResource(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithK8sNodeName(s.NodeName),
-	))
+	)
 }
 
 func (a *metricDataAccumulator) podStats(s stats.PodStats) {
@@ -76,17 +76,17 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	}
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(a.mbs.PodMetricsBuilder, metadata.PodCPUMetrics, s.CPU, currentTime)
-	addMemoryMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryMetrics, s.Memory, currentTime)
-	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
-	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
+	recordCPUMetrics(a.mb, metadata.PodCPUMetrics, s.CPU, currentTime)
+	recordMemoryMetrics(a.mb, metadata.PodMemoryMetrics, s.Memory, currentTime)
+	recordFilesystemMetrics(a.mb, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
+	recordNetworkMetrics(a.mb, metadata.PodNetworkMetrics, s.Network, currentTime)
 
-	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
+	a.mb.EmitForResource(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithK8sPodUID(s.PodRef.UID),
 		metadata.WithK8sPodName(s.PodRef.Name),
 		metadata.WithK8sNamespaceName(s.PodRef.Namespace),
-	))
+	)
 }
 
 func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.ContainerStats) {
@@ -105,11 +105,11 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	}
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerCPUMetrics, s.CPU, currentTime)
-	addMemoryMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryMetrics, s.Memory, currentTime)
-	addFilesystemMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
+	recordCPUMetrics(a.mb, metadata.ContainerCPUMetrics, s.CPU, currentTime)
+	recordMemoryMetrics(a.mb, metadata.ContainerMemoryMetrics, s.Memory, currentTime)
+	recordFilesystemMetrics(a.mb, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
 
-	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(ro...))
+	a.mb.EmitForResource(ro...)
 }
 
 func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeStats) {
@@ -128,7 +128,7 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 	}
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sVolumeMetrics, s, currentTime)
+	addVolumeMetrics(a.mb, metadata.K8sVolumeMetrics, s, currentTime)
 
-	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(ro...))
+	a.mb.EmitForResource(ro...)
 }

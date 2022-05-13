@@ -17,24 +17,23 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func MetricsData(
+func ScrapeMetrics(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata,
 	metricGroupsToCollect map[MetricGroup]bool,
-	mbs *metadata.MetricsBuilders) []pmetric.Metrics {
+	mb *metadata.MetricsBuilder) {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
 		time:                  time.Now(),
-		mbs:                   mbs,
+		mb:                    mb,
 	}
 	acc.nodeStats(summary.Node)
 	for _, podStats := range summary.Pods {
@@ -49,5 +48,4 @@ func MetricsData(
 			acc.volumeStats(podStats, volumeStats)
 		}
 	}
-	return acc.m
 }
