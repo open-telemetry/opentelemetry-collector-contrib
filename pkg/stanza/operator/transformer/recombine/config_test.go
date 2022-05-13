@@ -17,7 +17,7 @@ package recombine
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
 func TestConfig(t *testing.T) {

@@ -3,7 +3,7 @@
 package testutil
 
 import (
-	operator "github.com/open-telemetry/opentelemetry-log-collection/operator"
+	operator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	mock "github.com/stretchr/testify/mock"
 	zap "go.uber.org/zap"
 )
