@@ -16,7 +16,6 @@ package pulsarreceiver
 
 import (
 	"errors"
-	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/config"
@@ -24,15 +23,25 @@ import (
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	ServiceUrl              string `mapstructure:"service_url"`
-	Topic                   string `mapstructure:"topic"`
-	Subscription            string `mapstructure:"subscription"`
-	Encoding                string `mapstructure:"encoding"`
-	ConsumerName            string `mapstructure:"consumer_name"`
-	TLSTrustCertsFilePath   string `mapstructure:"tls_trust_certs_file_path"`
-	Insecure                bool   `mapstructure:"insecure"`
-	AuthName                string `mapstructure:"auth_name"`
-	AuthParam               string `mapstructure:"auth_param"`
+	// Configure the service URL for the Pulsar service.
+	ServiceUrl string `mapstructure:"service_url"`
+	// The topic of pulsar to consume logs,metrics,traces. (default = "otlp_traces" for traces,
+	//"otlp_metrics" for metrics, "otlp_logs" for logs)
+	Topic string `mapstructure:"topic"`
+	// The Subscription that receiver will be consuming messages from (default "otlp_subscription")
+	Subscription string `mapstructure:"subscription"`
+	// Encoding of the messages (default "otlp_proto")
+	Encoding string `mapstructure:"encoding"`
+	// Name specifies the consumer name.
+	ConsumerName string `mapstructure:"consumer_name"`
+	// Set the path to the trusted TLS certificate file
+	TLSTrustCertsFilePath string `mapstructure:"tls_trust_certs_file_path"`
+	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
+	Insecure bool `mapstructure:"insecure"`
+	//AuthName to create an authentication
+	AuthName string `mapstructure:"auth_name"`
+	//AuthParam to create an authentication
+	AuthParam string `mapstructure:"auth_param"`
 }
 
 var _ config.Receiver = (*Config)(nil)
@@ -42,18 +51,13 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func (cfg *Config) ClientOptions() (pulsar.ClientOptions, error) {
-	duration := 20 * time.Second
-
+func (cfg *Config) clientOptions() (pulsar.ClientOptions, error) {
 	url := cfg.ServiceUrl
 	if len(url) <= 0 {
 		url = defaultServiceUrl
 	}
 	options := pulsar.ClientOptions{
-		URL:                     url,
-		MaxConnectionsPerBroker: 2,
-		ConnectionTimeout:       duration,
-		OperationTimeout:        duration,
+		URL: url,
 	}
 
 	options.TLSAllowInsecureConnection = cfg.Insecure
@@ -72,7 +76,7 @@ func (cfg *Config) ClientOptions() (pulsar.ClientOptions, error) {
 	return options, nil
 }
 
-func (cfg *Config) ConsumerOptions() (pulsar.ConsumerOptions, error) {
+func (cfg *Config) consumerOptions() (pulsar.ConsumerOptions, error) {
 	options := pulsar.ConsumerOptions{
 		Type:             pulsar.Failover,
 		Topic:            cfg.Topic,

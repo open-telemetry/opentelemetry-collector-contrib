@@ -25,7 +25,9 @@ import (
 const (
 	typeStr             = "pulsar"
 	defaultEncoding     = "otlp_proto"
-	defaultTopic        = "otlp_spans"
+	defaultTraceTopic   = "otlp_spans"
+	defaultMeticsTopic  = "otlp_metrics"
+	defaultLogsTopic    = "otlp_logs"
 	defaultConsumerName = ""
 	defaultSubscription = "otlp_subscription"
 	defaultServiceUrl   = "pulsar://localhost:6650"
@@ -94,6 +96,9 @@ func (f *PulsarReceiverFactory) createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)
+	if len(c.Topic) <= 0 {
+		c.Topic = defaultTraceTopic
+	}
 	r, err := newTracesReceiver(*c, set, f.tracesUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
@@ -108,6 +113,9 @@ func (f *PulsarReceiverFactory) createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
+	if len(c.Topic) <= 0 {
+		c.Topic = defaultMeticsTopic
+	}
 	r, err := newMetricsReceiver(*c, set, f.metricsUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
@@ -122,6 +130,9 @@ func (f *PulsarReceiverFactory) createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	c := cfg.(*Config)
+	if len(c.Topic) <= 0 {
+		c.Topic = defaultLogsTopic
+	}
 	r, err := newLogsReceiver(*c, set, f.logsUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
@@ -132,7 +143,7 @@ func (f *PulsarReceiverFactory) createLogsReceiver(
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Topic:            defaultTopic,
+		Topic:            "",
 		Encoding:         defaultEncoding,
 		ConsumerName:     defaultConsumerName,
 		Subscription:     defaultSubscription,

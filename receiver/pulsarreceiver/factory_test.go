@@ -28,7 +28,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Topic:            defaultTopic,
+		Topic:            "",
 		Encoding:         defaultEncoding,
 		ConsumerName:     defaultConsumerName,
 		Subscription:     defaultSubscription,

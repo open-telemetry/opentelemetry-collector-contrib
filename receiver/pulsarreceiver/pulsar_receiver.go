@@ -17,6 +17,7 @@ package pulsarreceiver
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
@@ -46,7 +47,7 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		return nil, errUnrecognizedEncoding
 	}
 
-	options, err := config.ClientOptions()
+	options, err := config.clientOptions()
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		return nil, err
 	}
 
-	consumerOptions, err := config.ConsumerOptions()
+	consumerOptions, err := config.consumerOptions()
 	if err != nil {
 		return nil, err
 	}
@@ -92,26 +93,31 @@ func consumerTracesLoop(ctx context.Context, c *PulsarTracesConsumer) error {
 	traceConsumer := c.tracesConsumer
 	close(c.ready)
 
-	subscribe, err := c.client.Subscribe(c.consumerOptions)
+	_consumer, err := c.client.Subscribe(c.consumerOptions)
 	if nil != err {
 		return err
 	}
 
-	c.consumer = subscribe
+	c.consumer = _consumer
 
 	for true {
-		message, err := subscribe.Receive(ctx)
+		message, err := _consumer.Receive(ctx)
 		if err != nil {
-			return err
+			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
+				return err
+			} else {
+				time.Sleep(time.Second)
+				continue
+			}
 		}
 
 		traces, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
-			return err
+			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
 		}
 
 		if err := traceConsumer.ConsumeTraces(context.Background(), traces); err != nil {
-			return err
+			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 		c.consumer.Ack(message)
 	}
@@ -145,7 +151,7 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		return nil, errUnrecognizedEncoding
 	}
 
-	options, err := config.ClientOptions()
+	options, err := config.clientOptions()
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +160,7 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		return nil, err
 	}
 
-	consumerOptions, err := config.ConsumerOptions()
+	consumerOptions, err := config.consumerOptions()
 	if err != nil {
 		return nil, err
 	}
@@ -190,24 +196,31 @@ func consumeMetricsLoop(ctx context.Context, c *PulsarMetricsConsumer) error {
 	unmarshaler := c.unmarshaler
 	close(c.ready)
 
-	subscribe, err := c.client.Subscribe(c.consumerOptions)
+	_consumer, err := c.client.Subscribe(c.consumerOptions)
 	if nil != err {
 		return err
 	}
 
-	c.consumer = subscribe
+	c.consumer = _consumer
 
 	for true {
-		message, err := subscribe.Receive(ctx)
+		message, err := _consumer.Receive(ctx)
 		if err != nil {
-			return err
+			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
+				return err
+			} else {
+				time.Sleep(time.Second)
+				continue
+			}
 		}
+
 		metrics, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
-			return err
+			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
 		}
+
 		if err := c.metricsConsumer.ConsumeMetrics(context.Background(), metrics); err != nil {
-			return err
+			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
 		c.consumer.Ack(message)
@@ -242,7 +255,7 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		return nil, errUnrecognizedEncoding
 	}
 
-	options, err := config.ClientOptions()
+	options, err := config.clientOptions()
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +264,7 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		return nil, err
 	}
 
-	consumerOptions, err := config.ConsumerOptions()
+	consumerOptions, err := config.consumerOptions()
 	if err != nil {
 		return nil, err
 	}
@@ -288,27 +301,32 @@ func consumeLogsLoop(ctx context.Context, c *PulsarLogsConsumer) error {
 	unmarshaler := c.unmarshaler
 	close(c.ready)
 
-	subscribe, err := c.client.Subscribe(c.consumerOptions)
+	_consumer, err := c.client.Subscribe(c.consumerOptions)
 
 	if nil != err {
 		return err
 	}
 
-	c.consumer = subscribe
+	c.consumer = _consumer
 
 	for true {
-		message, err := subscribe.Receive(ctx)
+		message, err := _consumer.Receive(ctx)
 		if err != nil {
-			return err
+			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
+				return err
+			} else {
+				time.Sleep(time.Second)
+				continue
+			}
 		}
 
 		logs, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
-			return err
+			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
 		}
 
 		if err := c.logsConsumer.ConsumeLogs(context.Background(), logs); err != nil {
-			return err
+			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
 		c.consumer.Ack(message)
