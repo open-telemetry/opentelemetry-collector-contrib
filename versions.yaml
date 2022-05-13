@@ -106,6 +106,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
@@ -200,4 +201,3 @@ module-sets:
 
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
-  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
