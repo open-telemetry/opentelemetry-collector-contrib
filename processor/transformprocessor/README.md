@@ -1,5 +1,7 @@
 # Transform Processor
 
+> :construction: This processor's stability level is [`In Development`](https://github.com/open-telemetry/opentelemetry-collector-contrib#stability-levels).  It is not part of the collector contrib distribution.  Configuration fields are subject to change.
+
 Supported pipeline types: logs, traces
 
 The transform processor modifies telemetry based on configuration using the Telemetry Query Language.
