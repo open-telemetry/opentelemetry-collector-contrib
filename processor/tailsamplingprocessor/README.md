@@ -1,9 +1,9 @@
 # Tail Sampling Processor
 
-| Status                   |                   |
-| ------------------------ | ----------------- |
-| Stability                | [beta]            |
-| Supported pipeline types | traces            |
+| Status                   |           |
+| ------------------------ | --------- |
+| Stability                | [beta]    |
+| Supported pipeline types | traces    |
 | Distribution             | [contrib] |
 
 The tail sampling processor samples traces based on a set of defined policies.
