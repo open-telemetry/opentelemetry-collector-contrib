@@ -49,32 +49,44 @@ func TestFlinkIntegration(t *testing.T) {
 		require.NoError(t, err)
 	}
 	defer newNetwork.Remove(ctx)
+
 	masterContainer := getContainer(t, testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    path.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.flink-master",
 		},
-		Networks:     []string{networkName},
+		Hostname: "flink-master",
+		// Networks:     []string{networkName},
 		ExposedPorts: []string{"8080:8080", "8081:8081"},
 		WaitingFor:   waitStrategy{},
 	})
 
-	// workerContainer := getContainer(t, testcontainers.ContainerRequest{
-	// 	FromDockerfile: testcontainers.FromDockerfile{
-	// 		Context:    path.Join("testdata", "integration"),
-	// 		Dockerfile: "Dockerfile.flink-worker",
-	// 	},
-	// 	// Networks: []string{networkName},
-	// 	// WaitingFor:   wait.ForListeningPort("8081:8081"),
-	// 	ExposedPorts: []string{"8081:8081"},
-	// 	WaitingFor:   waitStrategy{},
-	// })
+	workerContainer := getContainer(t, testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    path.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.flink-worker",
+		},
+		Hostname: "worker",
+		// Networks: []string{networkName},
+		// WaitingFor:   wait.ForListeningPort("8081:8081"),
+		// ExposedPorts: []string{"8082:8081"},
+		// WaitingFor: waitStrategy{},
+	})
 	defer func() {
 		require.NoError(t, masterContainer.Terminate(context.Background()))
 	}()
-	// defer func() {
-	// 	require.NoError(t, workerContainer.Terminate(context.Background()))
-	// }()
+	defer func() {
+		require.NoError(t, workerContainer.Terminate(context.Background()))
+	}()
+
+	// time.Sleep(60 * time.Second)
+
+	ready := waitStrategy{}
+	ctxTimeout, _ := context.WithTimeout(context.Background(), 60*time.Second)
+
+	err = ready.waitForWorker(ctxTimeout, "localhost")
+	require.NoError(t, err)
+
 	hostname, err := masterContainer.Host(context.Background())
 	require.NoError(t, err)
 
@@ -137,6 +149,11 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 		return err
 	}
 
+	// return ws.waitUntilReady(ctx, hostname)
+	return ws.waitForMaster(ctx, hostname)
+}
+
+func (ws waitStrategy) waitForMaster(ctx context.Context, hostname string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -144,7 +161,8 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 		case <-time.After(5 * time.Second):
 			return fmt.Errorf("server startup problem")
 		case <-time.After(100 * time.Millisecond):
-			resp, err := http.Get(fmt.Sprintf("http://%s:8081/jobmanager/metrics", hostname))
+			query := fmt.Sprintf("http://%s:8081/jobmanager/metrics", hostname)
+			resp, err := http.Get(query)
 			if err != nil {
 				continue
 			}
@@ -162,8 +180,22 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 			if strings.Contains(string(body), "Status") {
 				return nil
 			}
+		}
+	}
+}
+
+func (ws waitStrategy) waitForWorker(ctx context.Context, hostname string) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(5 * time.Second):
+			return fmt.Errorf("server startup problem")
 		case <-time.After(100 * time.Millisecond):
-			resp, err := http.Get(fmt.Sprintf("http://%s:8081/taskmanagers", hostname))
+			http.Get("http://localhost:8081/taskmanagers")
+			resp, err := http.Get("http://localhost:8081/taskmanagers")
+			// query := fmt.Sprintf("http://%s:8081/taskmanagers", hostname)
+			// resp, err := http.Get(query)
 			if err != nil {
 				continue
 			}
@@ -178,7 +210,8 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 			}
 
 			// The server needs a moment to generate some stats
-			if strings.Contains(string(body), "id") {
+			sbody := string(body)
+			if strings.Contains(sbody, "akka") {
 				return nil
 			}
 		}
