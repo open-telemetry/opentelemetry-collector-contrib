@@ -284,9 +284,20 @@ func spanToDatadogSpan(s ptrace.Span,
 		tags[tracetranslator.TagW3CTraceState] = string(s.TraceState())
 	}
 
-	// get events as just a general tag
-	if s.Events().Len() > 0 {
-		tags[eventsTag] = eventsToString(s.Events())
+	if eventsLen := s.Events().Len(); eventsLen > 0 {
+		// get events as just a general tag
+		switch cfg.Traces.SpanEventsAsTags {
+		case "multi":
+			evts := s.Events()
+			for i := 0; i < eventsLen; i++ {
+				spanEvent := evts.At(i)
+				tags[eventsTagName(i, eventNameTag)] = spanEvent.Name()
+				tags[eventsTagName(i, eventTimeTag)] = spanEvent.Timestamp().String()
+				tags[eventsTagName(i, eventAttrTag)] = attributesToString(spanEvent.Attributes().AsRaw())
+			}
+		default:
+			tags[eventsTag] = eventsToString(s.Events())
+		}
 	}
 
 	// get start/end time to calc duration
@@ -681,6 +692,15 @@ func eventsToString(evts ptrace.SpanEventSlice) string {
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
 	return string(eventArrayBytes)
+}
+
+func attributesToString(attrs map[string]interface{}) string {
+	attributesBytes, _ := json.Marshal(attrs)
+	return string(attributesBytes)
+}
+
+func eventsTagName(idx int, postfix string) string {
+	return fmt.Sprintf("%s.%d.%s", eventsTag, idx, postfix)
 }
 
 // remapDatadogSpanName allows users to map their datadog span operation names to

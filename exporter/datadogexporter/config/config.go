@@ -256,6 +256,13 @@ type TracesConfig struct {
 	// If set to false the resource name will be filled with the instrumentation library name + span kind.
 	// The default value is `false`.
 	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
+
+	// SpanEventsAsTags defines the way to translate OpenTelemetry span events to datadog span tags.
+	// Possible values are:
+	// 	single: converts all the events to a single json object
+	//  multi: converts each span event to a separate tag.
+	//	The default value is `single`
+	SpanEventsAsTags string `mapstructure:"span_events_as_tags"`
 }
 
 // TagsConfig defines the tag-related configuration
