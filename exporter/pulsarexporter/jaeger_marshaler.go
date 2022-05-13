@@ -27,7 +27,7 @@ import (
 )
 
 type jaegerMarshaler struct {
-	marshaler jaegerSpanMarshaler
+	marshaler jaegerBatchMarshaler
 }
 
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
@@ -37,25 +37,22 @@ func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*pulsar.
 	if err != nil {
 		return nil, err
 	}
-	var messages []*pulsar.ProducerMessage
 
 	var errs error
-	for _, batch := range batches {
-		for _, span := range batch.Spans {
-			span.Process = batch.Process
-			bts, err := j.marshaler.marshal(span)
-			// continue to process spans that can be serialized
-			if err != nil {
-				errs = multierr.Append(errs, err)
-				continue
-			}
+	var messages []*pulsar.ProducerMessage
 
-			messages = append(messages, &pulsar.ProducerMessage{
-				Payload: bts,
-				Key:     span.TraceID.String(),
-			})
+	for _, batch := range batches {
+		bts, err := j.marshaler.marshal(batch)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
 		}
+
+		messages = append(messages, &pulsar.ProducerMessage{
+			Payload: bts,
+		})
 	}
+
 	return messages, errs
 }
 
@@ -63,42 +60,42 @@ func (j jaegerMarshaler) Encoding() string {
 	return j.marshaler.encoding()
 }
 
-type jaegerSpanMarshaler interface {
-	marshal(span *jaegerproto.Span) ([]byte, error)
+type jaegerBatchMarshaler interface {
+	marshal(batch *jaegerproto.Batch) ([]byte, error)
 	encoding() string
 }
 
-type jaegerProtoSpanMarshaler struct {
+type jaegerProtoBatchMarshaler struct {
 }
 
-var _ jaegerSpanMarshaler = (*jaegerProtoSpanMarshaler)(nil)
+var _ jaegerBatchMarshaler = (*jaegerProtoBatchMarshaler)(nil)
 
-func (p jaegerProtoSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error) {
-	return span.Marshal()
+func (p jaegerProtoBatchMarshaler) marshal(batch *jaegerproto.Batch) ([]byte, error) {
+	return batch.Marshal()
 }
 
-func (p jaegerProtoSpanMarshaler) encoding() string {
+func (p jaegerProtoBatchMarshaler) encoding() string {
 	return "jaeger_proto"
 }
 
-type jaegerJSONSpanMarshaler struct {
+type jaegerJSONBatchMarshaler struct {
 	pbMarshaler *jsonpb.Marshaler
 }
 
-var _ jaegerSpanMarshaler = (*jaegerJSONSpanMarshaler)(nil)
+var _ jaegerBatchMarshaler = (*jaegerJSONBatchMarshaler)(nil)
 
-func newJaegerJSONMarshaler() *jaegerJSONSpanMarshaler {
-	return &jaegerJSONSpanMarshaler{
+func newJaegerJSONMarshaler() *jaegerJSONBatchMarshaler {
+	return &jaegerJSONBatchMarshaler{
 		pbMarshaler: &jsonpb.Marshaler{},
 	}
 }
 
-func (p jaegerJSONSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error) {
+func (p jaegerJSONBatchMarshaler) marshal(batch *jaegerproto.Batch) ([]byte, error) {
 	out := new(bytes.Buffer)
-	err := p.pbMarshaler.Marshal(out, span)
+	err := p.pbMarshaler.Marshal(out, batch)
 	return out.Bytes(), err
 }
 
-func (p jaegerJSONSpanMarshaler) encoding() string {
+func (p jaegerJSONBatchMarshaler) encoding() string {
 	return "jaeger_json"
 }

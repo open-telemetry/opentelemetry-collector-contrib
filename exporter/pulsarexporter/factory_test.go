@@ -36,9 +36,8 @@ func Test_createDefaultConfig(t *testing.T) {
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		ServiceUrl:       defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:       "",
-		Encoding:    defaultEncoding,
-		EnableBatch: true,
+		Topic:    "",
+		Encoding: defaultEncoding,
 	})
 }
 
@@ -46,7 +45,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServiceUrl = "pulsar://unknown:6650"
 
-	f := PulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
+	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	// no available broker
 	require.Error(t, err)
@@ -57,7 +56,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServiceUrl = "pulsar://unknown:6650"
 
-	mf := PulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
+	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
 	mr, err := mf.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
@@ -67,7 +66,7 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServiceUrl = "pulsar://unknown:6650"
 
-	mf := PulsarExporterFactory{logsMarshalers: logsMarshalers()}
+	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
 	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)

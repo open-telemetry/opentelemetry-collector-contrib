@@ -1,7 +1,7 @@
 # Pulsar Exporter
 
 Pulsar exporter exports logs, metrics, and traces to Pulsar. This exporter uses a synchronous producer
-that blocks and able to batch messages(configurable).
+that blocks and able to batch messages.
 
 Supported pipeline types: logs, metrics, traces
 
@@ -21,7 +21,6 @@ The following settings can be optionally configured:
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
 - `insecure`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
-- `enable_batch`: whether batch send messages to pulsar or not.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 - `retry_on_failure`
     - `enabled` (default = true)
@@ -47,5 +46,4 @@ exporters:
     auth_param: '{"tlsCertFile":"cert.pem","tlsKeyFile":"key.pem"}'
     insecure: false
     tls_trust_certs_file_path: ca.pem
-    enable_batch: true
 ```

@@ -15,8 +15,6 @@
 package pulsarexporter
 
 import (
-	"time"
-
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,16 +27,20 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
+	// ServiceUrl of pulsar broker (default "pulsar://localhost:6650")
 	ServiceUrl string `mapstructure:"service_url"`
-	Topic      string `mapstructure:"topic"`
-
-	EnableBatch bool `mapstructure:"enable_batch"`
+	// The name of the pulsar topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
+	Topic string `mapstructure:"topic"`
 	// Encoding of messages (default "otlp_proto")
-	Encoding              string `mapstructure:"encoding"`
+	Encoding string `mapstructure:"encoding"`
+	// Set the path to the trusted TLS certificate file
 	TLSTrustCertsFilePath string `mapstructure:"tls_trust_certs_file_path"`
-	Insecure              bool   `mapstructure:"insecure"`
-	AuthName              string `mapstructure:"auth_name"`
-	AuthParam             string `mapstructure:"auth_param"`
+	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
+	Insecure bool `mapstructure:"insecure"`
+	// AuthName to Create an authentication
+	AuthName string `mapstructure:"auth_name"`
+	// AuthParam to Create an authentication
+	AuthParam string `mapstructure:"auth_param"`
 }
 
 var _ config.Exporter = (*Config)(nil)
@@ -49,12 +51,9 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func (cfg *Config) ClientOptions() (pulsar.ClientOptions, error) {
-	duration, _ := time.ParseDuration("20s")
+func (cfg *Config) clientOptions() (pulsar.ClientOptions, error) {
 	options := pulsar.ClientOptions{
-		URL:               cfg.ServiceUrl,
-		ConnectionTimeout: duration,
-		OperationTimeout:  duration,
+		URL: cfg.ServiceUrl,
 	}
 
 	options.TLSAllowInsecureConnection = cfg.Insecure

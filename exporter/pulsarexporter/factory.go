@@ -29,15 +29,15 @@ const (
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
 	defaultEncoding     = "otlp_proto"
-	defaultBroker       = "localhost:6650"
+	defaultBroker       = "pulsar://localhost:6650"
 )
 
-// FactoryOption applies changes to PulsarExporterFactory.
-type FactoryOption func(factory *PulsarExporterFactory)
+// FactoryOption applies changes to pulsarExporterFactory.
+type FactoryOption func(factory *pulsarExporterFactory)
 
 // WithTracesMarshalers adds tracesMarshalers.
 func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
-	return func(factory *PulsarExporterFactory) {
+	return func(factory *pulsarExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
 			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
 		}
@@ -46,7 +46,7 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 
 // NewFactory creates Pulsar exporter factory.
 func NewFactory(options ...FactoryOption) component.ExporterFactory {
-	f := &PulsarExporterFactory{
+	f := &pulsarExporterFactory{
 		tracesMarshalers:  tracesMarshalers(),
 		metricsMarshalers: metricsMarshalers(),
 		logsMarshalers:    logsMarshalers(),
@@ -71,19 +71,18 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		ServiceUrl:       defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:       "",
-		Encoding:    defaultEncoding,
-		EnableBatch: true,
+		Topic:    "",
+		Encoding: defaultEncoding,
 	}
 }
 
-type PulsarExporterFactory struct {
+type pulsarExporterFactory struct {
 	tracesMarshalers  map[string]TracesMarshaler
 	metricsMarshalers map[string]MetricsMarshaler
 	logsMarshalers    map[string]LogsMarshaler
 }
 
-func (f *PulsarExporterFactory) createTracesExporter(
+func (f *pulsarExporterFactory) createTracesExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
@@ -112,7 +111,7 @@ func (f *PulsarExporterFactory) createTracesExporter(
 		exporterhelper.WithShutdown(exp.Close))
 }
 
-func (f *PulsarExporterFactory) createMetricsExporter(
+func (f *pulsarExporterFactory) createMetricsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
@@ -141,7 +140,7 @@ func (f *PulsarExporterFactory) createMetricsExporter(
 		exporterhelper.WithShutdown(exp.Close))
 }
 
-func (f *PulsarExporterFactory) createLogsExporter(
+func (f *pulsarExporterFactory) createLogsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,

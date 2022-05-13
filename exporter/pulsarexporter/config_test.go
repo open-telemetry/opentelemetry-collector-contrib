@@ -59,7 +59,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		ServiceUrl:            "pulsar://localhost:6650",
 		Topic:                 "spans",
-		EnableBatch:           true,
 		Encoding:              "otlp-spans",
 		TLSTrustCertsFilePath: "ca.pem",
 		AuthName:              "tls",
@@ -82,7 +81,7 @@ func TestClientOptions(t *testing.T) {
 	c.AuthName = ""
 	c.AuthParam = ""
 
-	options, err := c.ClientOptions()
+	options, err := c.clientOptions()
 	assert.NoError(t, err)
 
 	assert.Equal(t, &pulsar.ClientOptions{

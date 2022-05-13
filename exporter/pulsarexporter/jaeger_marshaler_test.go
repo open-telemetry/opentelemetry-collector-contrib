@@ -16,11 +16,10 @@ package pulsarexporter
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -28,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func TestJaegerMarshaler(t *testing.T) {
+func buildTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
@@ -36,46 +35,41 @@ func TestJaegerMarshaler(t *testing.T) {
 	span.SetEndTimestamp(pcommon.Timestamp(20))
 	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	batches, err := jaeger.ProtoFromTraces(td)
+
+	return td
+}
+
+func TestJaegerJsonBatchMarshaler(t *testing.T) {
+	ptraces := buildTraces()
+	batches, err := jaeger.ProtoFromTraces(ptraces)
 	require.NoError(t, err)
 
-	batches[0].Spans[0].Process = batches[0].Process
-	jaegerProtoBytes, err := batches[0].Spans[0].Marshal()
+	jsonMarshaler := &jsonpb.Marshaler{}
+	buffer := new(bytes.Buffer)
+	require.NoError(t, jsonMarshaler.Marshal(buffer, batches[0]))
+	jsonBytes := buffer.Bytes()
+
+	jaegerJsonMarshaler := jaegerMarshaler{
+		newJaegerJSONMarshaler(),
+	}
+	jaegerJsonMessages, err := jaegerJsonMarshaler.Marshal(ptraces, "")
+	require.NoError(t, err)
+	assert.Equal(t, jaegerJsonMessages[0].Payload, jsonBytes)
+}
+
+func TestJaegerProtoBatchMarshaler(t *testing.T) {
+	ptraces := buildTraces()
+	batches, err := jaeger.ProtoFromTraces(ptraces)
+	require.NoError(t, err)
+
+	jaegerProtoBytes, err := batches[0].Marshal()
 	require.NoError(t, err)
 	require.NotNil(t, jaegerProtoBytes)
 
-	jsonMarshaler := &jsonpb.Marshaler{}
-	jsonByteBuffer := new(bytes.Buffer)
-	require.NoError(t, jsonMarshaler.Marshal(jsonByteBuffer, batches[0].Spans[0]))
-
-	tests := []struct {
-		unmarshaler TracesMarshaler
-		encoding    string
-		messages    []*pulsar.ProducerMessage
-	}{
-		{
-			unmarshaler: jaegerMarshaler{
-				marshaler: jaegerProtoSpanMarshaler{},
-			},
-			encoding: "jaeger_proto",
-			messages: []*pulsar.ProducerMessage{{Payload: jaegerProtoBytes}},
-		},
-		{
-			unmarshaler: jaegerMarshaler{
-				marshaler: jaegerJSONSpanMarshaler{
-					pbMarshaler: &jsonpb.Marshaler{},
-				},
-			},
-			encoding: "jaeger_json",
-			messages: []*pulsar.ProducerMessage{{Payload: jsonByteBuffer.Bytes()}},
-		},
+	jaegerProtoMarshaler := jaegerMarshaler{
+		jaegerProtoBatchMarshaler{},
 	}
-	for _, test := range tests {
-		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.unmarshaler.Marshal(td, "topic")
-			require.NoError(t, err)
-			assert.Equal(t, test.messages, messages)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
-		})
-	}
+	jaegerProtoMessage, err := jaegerProtoMarshaler.Marshal(ptraces, "")
+	require.NoError(t, err)
+	assert.Equal(t, jaegerProtoBytes, jaegerProtoMessage[0].Payload)
 }

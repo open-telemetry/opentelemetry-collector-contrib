@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -43,14 +44,18 @@ func (e *PulsarTracesProducer) tracesPusher(ctx context.Context, td ptrace.Trace
 		return consumererror.NewPermanent(err)
 	}
 
+	var errs error
 	for _, message := range messages {
-		_, err = e.producer.Send(ctx, message)
-		if err != nil {
-			return err
-		}
+
+		e.producer.SendAsync(ctx, message, func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		})
+
 	}
 
-	return nil
+	return errs
 }
 
 func (e *PulsarTracesProducer) Close(context.Context) error {
@@ -73,14 +78,18 @@ func (e *PulsarMetricsProducer) metricsDataPusher(ctx context.Context, md pmetri
 		return consumererror.NewPermanent(err)
 	}
 
+	var errs error
 	for _, message := range messages {
-		_, err = e.producer.Send(ctx, message)
-		if err != nil {
-			return err
-		}
+
+		e.producer.SendAsync(ctx, message, func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		})
+
 	}
 
-	return nil
+	return errs
 }
 
 func (e *PulsarMetricsProducer) Close(context.Context) error {
@@ -103,13 +112,18 @@ func (e *PulsarLogsProducer) logsDataPusher(ctx context.Context, ld plog.Logs) e
 		return consumererror.NewPermanent(err)
 	}
 
+	var errs error
 	for _, message := range messages {
-		_, err := e.producer.Send(ctx, message)
-		if err != nil {
-			return err
-		}
+
+		e.producer.SendAsync(ctx, message, func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		})
+
 	}
-	return nil
+
+	return errs
 }
 
 func (e *PulsarLogsProducer) Close(context.Context) error {
@@ -120,7 +134,7 @@ func (e *PulsarLogsProducer) Close(context.Context) error {
 
 func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 
-	options, err := config.ClientOptions()
+	options, err := config.clientOptions()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,9 +145,8 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	}
 
 	producer, err := client.CreateProducer(pulsar.ProducerOptions{
-		Schema:          pulsar.NewBytesSchema(nil),
-		DisableBatching: !config.EnableBatch,
-		Topic:           config.Topic,
+		Schema: pulsar.NewBytesSchema(nil),
+		Topic:  config.Topic,
 	})
 
 	if err != nil {
