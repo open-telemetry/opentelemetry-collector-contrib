@@ -42,6 +42,14 @@ receivers:
     groovy_script: mygroovyscriptpath
     otlp:
       timeout: -100ms
+  jmx/nonexistantjar:
+    jar_path: testdata/file_does_not_exist.jar
+    endpoint: myendpoint:23456
+    groovy_script: mygroovyscriptpath
+  jmx/invalidjar:
+    jar_path: testdata/fake_jmx_wrong.jar
+    endpoint: myendpoint:23456
+    groovy_script: mygroovyscriptpath
 
 processors:
   nop:

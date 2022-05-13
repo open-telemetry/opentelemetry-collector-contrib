@@ -30,15 +30,8 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	jmxMetricsGathererVersions["5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"] = supportedJar{
-		jar:     "fake jar",
-		version: "1.2.3",
-	}
-
-	wildflyJarVersions["7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a"] = supportedJar{
-		jar:     "fake wildfly jar",
-		version: "2.3.4",
-	}
+	mockJarVersions()
+	defer unmockJarVersions()
 
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
@@ -50,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 6)
+	assert.Equal(t, len(cfg.Receivers), 8)
 
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r0))
@@ -184,6 +177,78 @@ func TestLoadConfig(t *testing.T) {
 	err = r5.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx/invalidotlptimeout `otlp.timeout` must be positive: -100ms", err.Error())
+
+	r6 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "nonexistantjar")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r6))
+	assert.Equal(t,
+		&Config{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "nonexistantjar")),
+			JARPath:            "testdata/file_does_not_exist.jar",
+			Endpoint:           "myendpoint:23456",
+			GroovyScript:       "mygroovyscriptpath",
+			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
+		}, r6)
+	err = r6.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/nonexistantjar error validating `jar_path`: error hashing file: open testdata/file_does_not_exist.jar: no such file or directory", err.Error())
+
+	r7 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidjar")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r7))
+	assert.Equal(t,
+		&Config{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidjar")),
+			JARPath:            "testdata/fake_jmx_wrong.jar",
+			Endpoint:           "myendpoint:23456",
+			GroovyScript:       "mygroovyscriptpath",
+			Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
+		}, r7)
+	err = r7.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidjar error validating `jar_path`: jar hash does not match known versions", err.Error())
+}
+
+func TestCustomMetricsGathererConfig(t *testing.T) {
+	wildflyJarVersions["7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a"] = supportedJar{
+		jar:     "fake wildfly jar",
+		version: "2.3.4",
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, len(cfg.Receivers), 8)
+
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r1))
+	err = r1.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/all error validating `jar_path`: jar hash does not match known versions", err.Error())
+
+	MetricsGathererHash = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
+	initSupportedJars()
+
+	require.NoError(t, r1.validate())
 }
 
 func TestClassPathParse(t *testing.T) {
@@ -237,4 +302,21 @@ func TestClassPathParse(t *testing.T) {
 			require.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func mockJarVersions() {
+	jmxMetricsGathererVersions["5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"] = supportedJar{
+		jar:     "fake jar",
+		version: "1.2.3",
+	}
+
+	wildflyJarVersions["7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a"] = supportedJar{
+		jar:     "fake wildfly jar",
+		version: "2.3.4",
+	}
+}
+
+func unmockJarVersions() {
+	delete(jmxMetricsGathererVersions, "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5")
+	delete(wildflyJarVersions, "7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a")
 }

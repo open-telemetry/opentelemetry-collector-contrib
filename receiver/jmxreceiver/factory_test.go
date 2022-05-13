@@ -43,6 +43,9 @@ func TestWithInvalidConfig(t *testing.T) {
 }
 
 func TestWithValidConfig(t *testing.T) {
+	mockJarVersions()
+	defer unmockJarVersions()
+
 	f := NewFactory()
 	assert.Equal(t, config.Type("jmx"), f.Type())
 
@@ -61,6 +64,9 @@ func TestWithValidConfig(t *testing.T) {
 }
 
 func TestWithSetProperties(t *testing.T) {
+	mockJarVersions()
+	defer unmockJarVersions()
+
 	f := NewFactory()
 	assert.Equal(t, config.Type("jmx"), f.Type())
 

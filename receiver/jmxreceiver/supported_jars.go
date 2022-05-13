@@ -22,6 +22,9 @@ type supportedJar struct {
 	addedValidation func(c *Config, j supportedJar) error
 }
 
+// Provided as a build time variable if a development or customer specific JMX Metrics Gatherer needs to be supported
+var MetricsGathererHash string = "n/a"
+
 // Support for SSL properties passed via property file will be available starting in v1.14.0
 func oldFormatProperties(c *Config, j supportedJar) error {
 	if c.KeystorePassword != "" ||
@@ -56,6 +59,22 @@ var jmxMetricsGathererVersions = map[string]supportedJar{
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
+}
+
+// Separated into two functions for tests
+func init() {
+	initSupportedJars()
+}
+
+func initSupportedJars() {
+	if MetricsGathererHash != "n/a" {
+		jmxMetricsGathererVersions = map[string]supportedJar{
+			MetricsGathererHash: {
+				version: "custom",
+				jar:     "JMX metrics gatherer",
+			},
+		}
+	}
 }
 
 var wildflyJarVersions = map[string]supportedJar{
