@@ -69,7 +69,7 @@ extension/observer/ecstaskobserver/                  @open-telemetry/collector-c
 extension/observer/hostobserver/                     @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
 extension/oidcauthextension/                         @open-telemetry/collector-contrib-approvers @jpkrohling
-extension/sigv4authextention/                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
+extension/sigv4authextension/                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
 extension/pprofextension/                            @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/storage/dbstorage/                         @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 extension/storage/filestorage/                       @open-telemetry/collector-contrib-approvers @djaglowski
