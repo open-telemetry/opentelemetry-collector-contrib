@@ -141,7 +141,6 @@ type ExtractionRules struct {
 	PodName            bool
 	PodUID             bool
 	Node               bool
-	Cluster            bool
 	StartTime          bool
 	ContainerID        bool
 	ContainerImageName bool

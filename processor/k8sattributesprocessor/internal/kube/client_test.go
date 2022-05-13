@@ -449,7 +449,6 @@ func TestExtractionRules(t *testing.T) {
 			PodName:    true,
 			PodUID:     true,
 			Node:       true,
-			Cluster:    true,
 			StartTime:  true,
 		},
 		attributes: map[string]string{

@@ -4,19 +4,36 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `datadogexporter`: Replace HistogramMode defined as string with enum.
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+- `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.51.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Replace HistogramMode defined as string with enum. (#9589)
 - `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
 - `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
-- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3 (#9885)
+- `newrelicexporter` deleted. Use New Relic [native OTLP ingest](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-setup/) instead. (#9894)
+- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3. (#9885)
 
 ### 🚩 Deprecations 🚩
 
-- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement. (#9258)
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
 
 ### 🚀 New components 🚀
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
@@ -38,6 +55,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `datadogexporter`: add error checks for datadog exporter (#9964)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
@@ -54,6 +72,7 @@
 - `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
 - `awsinsightreceiver`: Migrate from `ConfigMapsResourceLock` to `ConfigMapsLeasesResourceLock` as per https://github.com/kubernetes/client-go/commit/276ea3ed979947d7cdd4b3d708862245ddcd8883 (#9885)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Add support for []string type for converting log record entries (#9887)
+- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9087)
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 

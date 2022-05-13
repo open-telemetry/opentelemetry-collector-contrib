@@ -31,9 +31,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            \Users\runneradmin\go\pkg\mod
-            %LocalAppData%\go-build
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         # use default Go build tags from Makefile.common
         run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...

@@ -1018,7 +1018,7 @@ func (m *metricMongodbatlasDbCounts) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.ObjectType, pcommon.NewValueString(objectTypeAttributeValue))
+	dp.Attributes().Insert("object_type", pcommon.NewValueString(objectTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1069,7 +1069,7 @@ func (m *metricMongodbatlasDbSize) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.ObjectType, pcommon.NewValueString(objectTypeAttributeValue))
+	dp.Attributes().Insert("object_type", pcommon.NewValueString(objectTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1120,7 +1120,7 @@ func (m *metricMongodbatlasDiskPartitionIopsAverage) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskDirection, pcommon.NewValueString(diskDirectionAttributeValue))
+	dp.Attributes().Insert("disk_direction", pcommon.NewValueString(diskDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1171,7 +1171,7 @@ func (m *metricMongodbatlasDiskPartitionIopsMax) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskDirection, pcommon.NewValueString(diskDirectionAttributeValue))
+	dp.Attributes().Insert("disk_direction", pcommon.NewValueString(diskDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1222,7 +1222,7 @@ func (m *metricMongodbatlasDiskPartitionLatencyAverage) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskDirection, pcommon.NewValueString(diskDirectionAttributeValue))
+	dp.Attributes().Insert("disk_direction", pcommon.NewValueString(diskDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1273,7 +1273,7 @@ func (m *metricMongodbatlasDiskPartitionLatencyMax) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskDirection, pcommon.NewValueString(diskDirectionAttributeValue))
+	dp.Attributes().Insert("disk_direction", pcommon.NewValueString(diskDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1324,7 +1324,7 @@ func (m *metricMongodbatlasDiskPartitionSpaceAverage) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskStatus, pcommon.NewValueString(diskStatusAttributeValue))
+	dp.Attributes().Insert("disk_status", pcommon.NewValueString(diskStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1375,7 +1375,7 @@ func (m *metricMongodbatlasDiskPartitionSpaceMax) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskStatus, pcommon.NewValueString(diskStatusAttributeValue))
+	dp.Attributes().Insert("disk_status", pcommon.NewValueString(diskStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1426,7 +1426,7 @@ func (m *metricMongodbatlasDiskPartitionUsageAverage) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskStatus, pcommon.NewValueString(diskStatusAttributeValue))
+	dp.Attributes().Insert("disk_status", pcommon.NewValueString(diskStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1477,7 +1477,7 @@ func (m *metricMongodbatlasDiskPartitionUsageMax) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskStatus, pcommon.NewValueString(diskStatusAttributeValue))
+	dp.Attributes().Insert("disk_status", pcommon.NewValueString(diskStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1528,7 +1528,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationAverage) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskStatus, pcommon.NewValueString(diskStatusAttributeValue))
+	dp.Attributes().Insert("disk_status", pcommon.NewValueString(diskStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1579,7 +1579,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationMax) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DiskStatus, pcommon.NewValueString(diskStatusAttributeValue))
+	dp.Attributes().Insert("disk_status", pcommon.NewValueString(diskStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1630,7 +1630,7 @@ func (m *metricMongodbatlasProcessAsserts) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.AssertType, pcommon.NewValueString(assertTypeAttributeValue))
+	dp.Attributes().Insert("assert_type", pcommon.NewValueString(assertTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1730,7 +1730,7 @@ func (m *metricMongodbatlasProcessCacheIo) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CacheDirection, pcommon.NewValueString(cacheDirectionAttributeValue))
+	dp.Attributes().Insert("cache_direction", pcommon.NewValueString(cacheDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1783,7 +1783,7 @@ func (m *metricMongodbatlasProcessCacheSize) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CacheStatus, pcommon.NewValueString(cacheStatusAttributeValue))
+	dp.Attributes().Insert("cache_status", pcommon.NewValueString(cacheStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1885,7 +1885,7 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) recordDataP
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1936,7 +1936,7 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) recordDataPoint
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1987,7 +1987,7 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) recordDataPoint(start
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2038,7 +2038,7 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageMax) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2089,7 +2089,7 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2140,7 +2140,7 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2191,7 +2191,7 @@ func (m *metricMongodbatlasProcessCPUUsageAverage) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2242,7 +2242,7 @@ func (m *metricMongodbatlasProcessCPUUsageMax) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2293,7 +2293,7 @@ func (m *metricMongodbatlasProcessCursors) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CursorState, pcommon.NewValueString(cursorStateAttributeValue))
+	dp.Attributes().Insert("cursor_state", pcommon.NewValueString(cursorStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2344,7 +2344,7 @@ func (m *metricMongodbatlasProcessDbDocumentRate) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.DocumentStatus, pcommon.NewValueString(documentStatusAttributeValue))
+	dp.Attributes().Insert("document_status", pcommon.NewValueString(documentStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2395,8 +2395,8 @@ func (m *metricMongodbatlasProcessDbOperationsRate) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
-	dp.Attributes().Insert(A.ClusterRole, pcommon.NewValueString(clusterRoleAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("cluster_role", pcommon.NewValueString(clusterRoleAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2449,7 +2449,7 @@ func (m *metricMongodbatlasProcessDbOperationsTime) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.ExecutionType, pcommon.NewValueString(executionTypeAttributeValue))
+	dp.Attributes().Insert("execution_type", pcommon.NewValueString(executionTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2500,7 +2500,7 @@ func (m *metricMongodbatlasProcessDbQueryExecutorScanned) recordDataPoint(start 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.ScannedType, pcommon.NewValueString(scannedTypeAttributeValue))
+	dp.Attributes().Insert("scanned_type", pcommon.NewValueString(scannedTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2551,7 +2551,7 @@ func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) recordData
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.ScannedType, pcommon.NewValueString(scannedTypeAttributeValue))
+	dp.Attributes().Insert("scanned_type", pcommon.NewValueString(scannedTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2602,7 +2602,7 @@ func (m *metricMongodbatlasProcessDbStorage) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.StorageStatus, pcommon.NewValueString(storageStatusAttributeValue))
+	dp.Attributes().Insert("storage_status", pcommon.NewValueString(storageStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2653,7 +2653,7 @@ func (m *metricMongodbatlasProcessFtsCPUUsage) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2704,7 +2704,7 @@ func (m *metricMongodbatlasProcessGlobalLock) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.GlobalLockState, pcommon.NewValueString(globalLockStateAttributeValue))
+	dp.Attributes().Insert("global_lock_state", pcommon.NewValueString(globalLockStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2804,7 +2804,7 @@ func (m *metricMongodbatlasProcessIndexCounters) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.BtreeCounterType, pcommon.NewValueString(btreeCounterTypeAttributeValue))
+	dp.Attributes().Insert("btree_counter_type", pcommon.NewValueString(btreeCounterTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3002,7 +3002,7 @@ func (m *metricMongodbatlasProcessMemoryUsage) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.MemoryState, pcommon.NewValueString(memoryStateAttributeValue))
+	dp.Attributes().Insert("memory_state", pcommon.NewValueString(memoryStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3053,7 +3053,7 @@ func (m *metricMongodbatlasProcessNetworkIo) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3204,7 +3204,7 @@ func (m *metricMongodbatlasProcessOplogTime) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.OplogType, pcommon.NewValueString(oplogTypeAttributeValue))
+	dp.Attributes().Insert("oplog_type", pcommon.NewValueString(oplogTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3255,7 +3255,7 @@ func (m *metricMongodbatlasProcessPageFaults) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.MemoryIssueType, pcommon.NewValueString(memoryIssueTypeAttributeValue))
+	dp.Attributes().Insert("memory_issue_type", pcommon.NewValueString(memoryIssueTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3355,7 +3355,7 @@ func (m *metricMongodbatlasProcessTickets) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.TicketType, pcommon.NewValueString(ticketTypeAttributeValue))
+	dp.Attributes().Insert("ticket_type", pcommon.NewValueString(ticketTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3406,7 +3406,7 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3457,7 +3457,7 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3508,7 +3508,7 @@ func (m *metricMongodbatlasSystemCPUUsageAverage) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3559,7 +3559,7 @@ func (m *metricMongodbatlasSystemCPUUsageMax) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3610,7 +3610,7 @@ func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3661,7 +3661,7 @@ func (m *metricMongodbatlasSystemFtsCPUUsage) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.CPUState, pcommon.NewValueString(cpuStateAttributeValue))
+	dp.Attributes().Insert("cpu_state", pcommon.NewValueString(cpuStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3763,7 +3763,7 @@ func (m *metricMongodbatlasSystemFtsMemoryUsage) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.MemoryState, pcommon.NewValueString(memoryStateAttributeValue))
+	dp.Attributes().Insert("memory_state", pcommon.NewValueString(memoryStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3814,7 +3814,7 @@ func (m *metricMongodbatlasSystemMemoryUsageAverage) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.MemoryStatus, pcommon.NewValueString(memoryStatusAttributeValue))
+	dp.Attributes().Insert("memory_status", pcommon.NewValueString(memoryStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3865,7 +3865,7 @@ func (m *metricMongodbatlasSystemMemoryUsageMax) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.MemoryStatus, pcommon.NewValueString(memoryStatusAttributeValue))
+	dp.Attributes().Insert("memory_status", pcommon.NewValueString(memoryStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3916,7 +3916,7 @@ func (m *metricMongodbatlasSystemNetworkIoAverage) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3967,7 +3967,7 @@ func (m *metricMongodbatlasSystemNetworkIoMax) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4018,7 +4018,7 @@ func (m *metricMongodbatlasSystemPagingIoAverage) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4069,7 +4069,7 @@ func (m *metricMongodbatlasSystemPagingIoMax) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4120,7 +4120,7 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.MemoryState, pcommon.NewValueString(memoryStateAttributeValue))
+	dp.Attributes().Insert("memory_state", pcommon.NewValueString(memoryStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4171,7 +4171,7 @@ func (m *metricMongodbatlasSystemPagingUsageMax) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.MemoryState, pcommon.NewValueString(memoryStateAttributeValue))
+	dp.Attributes().Insert("memory_state", pcommon.NewValueString(memoryStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4365,82 +4365,100 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithMongodbAtlasDbName sets provided value as "mongodb_atlas.db.name" attribute for current resource.
-func WithMongodbAtlasDbName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.db.name", val)
+func WithMongodbAtlasDbName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.db.name", val)
 	}
 }
 
 // WithMongodbAtlasDiskPartition sets provided value as "mongodb_atlas.disk.partition" attribute for current resource.
-func WithMongodbAtlasDiskPartition(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.disk.partition", val)
+func WithMongodbAtlasDiskPartition(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.disk.partition", val)
 	}
 }
 
 // WithMongodbAtlasHostName sets provided value as "mongodb_atlas.host.name" attribute for current resource.
-func WithMongodbAtlasHostName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.host.name", val)
+func WithMongodbAtlasHostName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.host.name", val)
 	}
 }
 
 // WithMongodbAtlasOrgName sets provided value as "mongodb_atlas.org_name" attribute for current resource.
-func WithMongodbAtlasOrgName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.org_name", val)
+func WithMongodbAtlasOrgName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.org_name", val)
 	}
 }
 
 // WithMongodbAtlasProcessID sets provided value as "mongodb_atlas.process.id" attribute for current resource.
-func WithMongodbAtlasProcessID(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.process.id", val)
+func WithMongodbAtlasProcessID(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.process.id", val)
 	}
 }
 
 // WithMongodbAtlasProcessPort sets provided value as "mongodb_atlas.process.port" attribute for current resource.
-func WithMongodbAtlasProcessPort(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.process.port", val)
+func WithMongodbAtlasProcessPort(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.process.port", val)
 	}
 }
 
 // WithMongodbAtlasProcessTypeName sets provided value as "mongodb_atlas.process.type_name" attribute for current resource.
-func WithMongodbAtlasProcessTypeName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.process.type_name", val)
+func WithMongodbAtlasProcessTypeName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.process.type_name", val)
 	}
 }
 
 // WithMongodbAtlasProjectID sets provided value as "mongodb_atlas.project.id" attribute for current resource.
-func WithMongodbAtlasProjectID(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.project.id", val)
+func WithMongodbAtlasProjectID(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.project.id", val)
 	}
 }
 
 // WithMongodbAtlasProjectName sets provided value as "mongodb_atlas.project.name" attribute for current resource.
-func WithMongodbAtlasProjectName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("mongodb_atlas.project.name", val)
+func WithMongodbAtlasProjectName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("mongodb_atlas.project.name", val)
+	}
+}
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			dps := pmetric.NewNumberDataPointSlice()
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
 	}
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/mongoatlasreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -4507,6 +4525,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricMongodbatlasSystemPagingIoMax.emit(ils.Metrics())
 	mb.metricMongodbatlasSystemPagingUsageAverage.emit(ils.Metrics())
 	mb.metricMongodbatlasSystemPagingUsageMax.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -4516,8 +4537,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -4846,77 +4867,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// AssertType (MongoDB assertion type)
-	AssertType string
-	// BtreeCounterType (Database index effectiveness)
-	BtreeCounterType string
-	// CacheDirection (Whether read into or written from)
-	CacheDirection string
-	// CacheStatus (Cache status)
-	CacheStatus string
-	// ClusterRole (Whether process is acting as replica or primary)
-	ClusterRole string
-	// CPUState (CPU state)
-	CPUState string
-	// CursorState (Whether cursor is open or timed out)
-	CursorState string
-	// Direction (Network traffic direction)
-	Direction string
-	// DiskDirection (Measurement type for disk operation)
-	DiskDirection string
-	// DiskStatus (Disk measurement type)
-	DiskStatus string
-	// DocumentStatus (Status of documents in the database)
-	DocumentStatus string
-	// ExecutionType (Type of command)
-	ExecutionType string
-	// GlobalLockState (Which queue is locked)
-	GlobalLockState string
-	// MemoryIssueType (Type of memory issue encountered)
-	MemoryIssueType string
-	// MemoryState (Memory usage type)
-	MemoryState string
-	// MemoryStatus (Memory measurement type)
-	MemoryStatus string
-	// ObjectType (MongoDB object type)
-	ObjectType string
-	// Operation (Type of database operation)
-	Operation string
-	// OplogType (Oplog type)
-	OplogType string
-	// ScannedType (Objects or indexes scanned during query)
-	ScannedType string
-	// StorageStatus (Views on database size)
-	StorageStatus string
-	// TicketType (Type of ticket available)
-	TicketType string
-}{
-	"assert_type",
-	"btree_counter_type",
-	"cache_direction",
-	"cache_status",
-	"cluster_role",
-	"cpu_state",
-	"cursor_state",
-	"direction",
-	"disk_direction",
-	"disk_status",
-	"document_status",
-	"execution_type",
-	"global_lock_state",
-	"memory_issue_type",
-	"memory_state",
-	"memory_status",
-	"object_type",
-	"operation",
-	"oplog_type",
-	"scanned_type",
-	"storage_status",
-	"ticket_type",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

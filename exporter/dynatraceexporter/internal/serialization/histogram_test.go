@@ -26,15 +26,15 @@ import (
 
 func Test_serializeHistogram(t *testing.T) {
 	hist := pmetric.NewHistogramDataPoint()
-	hist.SetExplicitBounds([]float64{0, 2, 4, 8})
-	hist.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
+	hist.SetMExplicitBounds([]float64{0, 2, 4, 8})
+	hist.SetMBucketCounts([]uint64{0, 1, 0, 1, 0})
 	hist.SetCount(2)
 	hist.SetSum(9.5)
 	hist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 	histWithNonEmptyFirstLast := pmetric.NewHistogramDataPoint()
-	histWithNonEmptyFirstLast.SetExplicitBounds([]float64{0, 2, 4, 8})
-	histWithNonEmptyFirstLast.SetBucketCounts([]uint64{0, 1, 0, 1, 1})
+	histWithNonEmptyFirstLast.SetMExplicitBounds([]float64{0, 2, 4, 8})
+	histWithNonEmptyFirstLast.SetMBucketCounts([]uint64{0, 1, 0, 1, 1})
 	histWithNonEmptyFirstLast.SetCount(3)
 	histWithNonEmptyFirstLast.SetSum(9.5)
 	histWithNonEmptyFirstLast.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))

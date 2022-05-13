@@ -207,7 +207,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		logger.Print(fmt.Sprintf("2020-08-25 %s", msg))
+		logger.Printf("2020-08-25 %s", msg)
 		time.Sleep(time.Millisecond)
 	}
 
@@ -276,11 +276,11 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
 					"severity": map[string]interface{}{
-						"parse_from": "body.sev",
+						"parse_from": "attributes.sev",
 					},
 					"timestamp": map[string]interface{}{
 						"layout":     "%Y-%m-%d",
-						"parse_from": "body.time",
+						"parse_from": "attributes.time",
 					},
 				},
 			},
