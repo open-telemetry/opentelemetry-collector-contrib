@@ -17,5 +17,6 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import "context"
 
 type DataWriter interface {
-	WriteBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error
+	WriteJson(buf []byte, config *Config) error
+	WriteParquet(metrics []*ParquetMetric, ctx context.Context, config *Config) error
 }

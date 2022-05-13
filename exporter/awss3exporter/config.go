@@ -29,7 +29,9 @@ type Config struct {
 	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
 	MarshalerName string           `mapstructure:"marshaler_name"`
 
-	FileFormat string `mapstructure:"file_format"`
+	FileFormat        string             `mapstructure:"file_format"`
+	BatchCount        int64              `mapstructure:"batch_count"`
+	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.

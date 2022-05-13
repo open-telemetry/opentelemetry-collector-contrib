@@ -1,0 +1,23 @@
+{
+	"Tag": "name=spark_schema",
+	"Fields": [{
+			"Tag": "name=time_window, inname=TimeWindow, repetitiontype=REQUIRED",
+			"Fields": [{
+					"Tag": "name=start, inname=Start, type=INT64, repetitiontype=OPTIONAL"
+				},
+				{
+					"Tag": "name=end, inname=End, type=INT64, repetitiontype=OPTIONAL"
+				}
+			]
+		},
+		{
+			"Tag": "name=foo_j, inname=Fooi, type=BYTE_ARRAY, repetitiontype=OPTIONAL"
+		},
+		{
+			"Tag": "name=foo_j, inname=PeerAsn, type=INT64, repetitiontype=OPTIONAL"
+		},
+		{
+			"Tag": "name=foo_k, inname=RttP50, type=DOUBLE, repetitiontype=OPTIONAL"
+		}
+	]
+}
