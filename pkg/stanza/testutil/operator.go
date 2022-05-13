@@ -5,10 +5,10 @@ package testutil
 import (
 	context "context"
 
-	entry "github.com/open-telemetry/opentelemetry-log-collection/entry"
+	entry "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	mock "github.com/stretchr/testify/mock"
 
-	operator "github.com/open-telemetry/opentelemetry-log-collection/operator"
+	operator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 
 	zap "go.uber.org/zap"
 )
