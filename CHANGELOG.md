@@ -16,7 +16,7 @@
 
 ### 🧰 Bug fixes 🧰
 
-## v0.50.0
+## v0.51.0
 
 ### 🛑 Breaking changes 🛑
 
