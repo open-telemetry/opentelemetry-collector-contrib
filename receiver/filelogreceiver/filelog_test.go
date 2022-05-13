@@ -207,7 +207,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		logger.Print(fmt.Sprintf("2020-08-25 %s", msg))
+		logger.Printf("2020-08-25 %s", msg)
 		time.Sleep(time.Millisecond)
 	}
 
