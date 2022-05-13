@@ -8,11 +8,13 @@
 
 ### 🚀 New components 🚀
 
+- `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
 
-## v0.50.0
+## v0.51.0
 
 ### 🛑 Breaking changes 🛑
 
@@ -31,6 +33,7 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
@@ -52,6 +55,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `datadogexporter`: add error checks for datadog exporter (#9964)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
@@ -68,6 +72,7 @@
 - `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
 - `awsinsightreceiver`: Migrate from `ConfigMapsResourceLock` to `ConfigMapsLeasesResourceLock` as per https://github.com/kubernetes/client-go/commit/276ea3ed979947d7cdd4b3d708862245ddcd8883 (#9885)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Add support for []string type for converting log record entries (#9887)
+- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9087)
 
 ## v0.50.0
 
@@ -92,6 +97,7 @@
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9599)
+- `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 
 ### 💡 Enhancements 💡
 
