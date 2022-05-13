@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.51.0
