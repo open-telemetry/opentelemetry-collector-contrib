@@ -141,6 +141,7 @@ receiver/mongodbreceiver/                            @open-telemetry/collector-c
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
 receiver/mysqlreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nginxreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/nsxtreceiver/                               @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/postgresqlreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
