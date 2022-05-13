@@ -37,21 +37,37 @@ import (
 
 func TestFlinkIntegration(t *testing.T) {
 	t.Parallel()
+	networkName := "new-network"
+	ctx := context.Background()
+	newNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
+		NetworkRequest: testcontainers.NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+		},
+	})
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer newNetwork.Remove(ctx)
 	masterContainer := getContainer(t, testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    path.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.flink-master",
 		},
+		Networks:     []string{networkName},
 		ExposedPorts: []string{"8080:8080", "8081:8081"},
 		WaitingFor:   waitStrategy{},
 	})
+
 	// workerContainer := getContainer(t, testcontainers.ContainerRequest{
 	// 	FromDockerfile: testcontainers.FromDockerfile{
 	// 		Context:    path.Join("testdata", "integration"),
 	// 		Dockerfile: "Dockerfile.flink-worker",
 	// 	},
-	// 	// ExposedPorts: []string{"8080:8080"},
-	// 	// WaitingFor:   waitStrategy{},
+	// 	// Networks: []string{networkName},
+	// 	// WaitingFor:   wait.ForListeningPort("8081:8081"),
+	// 	ExposedPorts: []string{"8081:8081"},
+	// 	WaitingFor:   waitStrategy{},
 	// })
 	defer func() {
 		require.NoError(t, masterContainer.Terminate(context.Background()))
@@ -99,6 +115,11 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 			Started:          true,
 		})
 	require.NoError(t, err)
+	// code, err := container.Exec(context.Background(), []string{"-u", "root", "./usr/local/flink/bin/flink", "run", "./integration/StateMachineExample.jar"})
+	// code, err := container.Exec(context.Background(), []string{"./usr/local/flink/bin/flink", "run", "./integration/StateMachineExample.jar"})
+	// code, err := container.Exec(context.Background(), []string{"/setup.sh"})
+	// require.NoError(t, err)
+	// require.Equal(t, 0, code)
 	return container
 }
 
@@ -139,25 +160,25 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 
 			// The server needs a moment to generate some stats
 			if strings.Contains(string(body), "Status") {
+				return nil
+			}
+		case <-time.After(100 * time.Millisecond):
+			resp, err := http.Get(fmt.Sprintf("http://%s:8081/taskmanagers", hostname))
+			if err != nil {
+				continue
+			}
 
-				// req, err := http.NewRequest("POST", "localhost:8081/jars/upload", nil)
-				// if err != nil {
-				// 	// handle err
-				// }
-				// req.Header.Set("Expect", "jarfile=@/StateMachineExample.jar")
-				// // req.Header.Set("Expect", "")
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				continue
+			}
 
-				// resp, err := http.DefaultClient.Do(req)
-				// if err != nil {
-				// 	// handle err
-				// }
-				// defer resp.Body.Close()
+			if resp.Body.Close() != nil {
+				continue
+			}
 
-				// _, err = ioutil.ReadAll(resp.Body)
-				// if err != nil {
-				// 	continue
-				// }
-
+			// The server needs a moment to generate some stats
+			if strings.Contains(string(body), "id") {
 				return nil
 			}
 		}

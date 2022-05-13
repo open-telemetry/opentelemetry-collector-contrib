@@ -2,4 +2,6 @@ FROM bde2020/flink-worker:1.14.2-hadoop3.2
 
 ENV FLINK_MASTER_PORT_6123_TCP_ADDR=flink-master
 
-COPY /StateMachineExample.jar /integration/StateMachineExample.jar
+COPY /StateMachineExample.jar /integration/StateMachineExample.jar  
+COPY scripts/setup.sh /setup.sh
+RUN chmod +x setup.sh
