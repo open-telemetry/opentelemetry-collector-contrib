@@ -47,7 +47,7 @@ type kubletScraper struct {
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
-	cachedVolumeLabels    map[string][]metadata.ResourceOption
+	cachedVolumeLabels    map[string][]metadata.ResourceMetricsOption
 	mbs                   *metadata.MetricsBuilders
 }
 
@@ -64,11 +64,12 @@ func newKubletScraper(
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
-		cachedVolumeLabels:    make(map[string][]metadata.ResourceOption),
+		cachedVolumeLabels:    make(map[string][]metadata.ResourceMetricsOption),
 		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:  metadata.NewMetricsBuilder(metricsConfig),
-			PodMetricsBuilder:   metadata.NewMetricsBuilder(metricsConfig),
-			OtherMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig),
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig),
 		},
 	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
@@ -100,8 +101,8 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
-	return func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
+	return func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 		if r.k8sAPIClient == nil {
 			return nil, nil
 		}

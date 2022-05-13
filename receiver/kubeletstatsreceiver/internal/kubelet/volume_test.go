@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,7 +41,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 		volumeName                      string
 		volumeSource                    v1.VolumeSource
 		pod                             pod
-		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error)
+		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)
 		want                            map[string]interface{}
 	}{
 		{
@@ -52,7 +53,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 				ro := GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
 						VolumeID:  "volume_id",
@@ -83,7 +84,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 				ro := GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
 						PDName:    "pd_name",
@@ -114,7 +115,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 				ro := GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					Glusterfs: &v1.GlusterfsPersistentVolumeSource{
 						EndpointsName: "endpoints_name",
@@ -143,7 +144,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 				ro := GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					Local: &v1.LocalVolumeSource{
 						Path: "path",
@@ -194,12 +195,12 @@ func TestDetailedPVCLabels(t *testing.T) {
 			ro, err := getVolumeResourceOptions(podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
 
-			volumeResource := pcommon.NewResource()
+			volumeResourceMetrics := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(volumeResource)
+				op(volumeResourceMetrics)
 			}
 
-			require.Equal(t, pcommon.NewMapFromRaw(tt.want).Sort(), volumeResource.Attributes().Sort())
+			require.Equal(t, pcommon.NewMapFromRaw(tt.want).Sort(), volumeResourceMetrics.Resource().Attributes().Sort())
 		})
 	}
 }

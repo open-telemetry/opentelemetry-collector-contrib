@@ -59,12 +59,12 @@ func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
 type Metadata struct {
 	Labels                    map[MetadataLabel]bool
 	PodsMetadata              *v1.PodList
-	DetailedPVCResourceGetter func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error)
+	DetailedPVCResourceGetter func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)
 }
 
 func NewMetadata(
 	labels []MetadataLabel, podsMetadata *v1.PodList,
-	detailedPVCResourceGetter func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error)) Metadata {
+	detailedPVCResourceGetter func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)) Metadata {
 	return Metadata{
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
@@ -82,7 +82,7 @@ func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
 
 // getExtraResources gets extra resources based on provided metadata label.
 func (m *Metadata) getExtraResources(podRef stats.PodReference, extraMetadataLabel MetadataLabel,
-	extraMetadataFrom string) ([]metadata.ResourceOption, error) {
+	extraMetadataFrom string) ([]metadata.ResourceMetricsOption, error) {
 	// Ensure MetadataLabel exists before proceeding.
 	if !m.Labels[extraMetadataLabel] || len(m.Labels) == 0 {
 		return nil, nil
@@ -99,7 +99,7 @@ func (m *Metadata) getExtraResources(podRef stats.PodReference, extraMetadataLab
 		if err != nil {
 			return nil, err
 		}
-		return []metadata.ResourceOption{metadata.WithContainerID(containerID)}, nil
+		return []metadata.ResourceMetricsOption{metadata.WithContainerID(containerID)}, nil
 	case MetadataLabelVolumeType:
 		volume, err := m.getPodVolume(podRef.UID, extraMetadataFrom)
 		if err != nil {

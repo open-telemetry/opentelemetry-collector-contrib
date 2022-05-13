@@ -17,13 +17,15 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func getContainerResourceOptions(sPod stats.PodStats, sContainer stats.ContainerStats, k8sMetadata Metadata) ([]metadata.ResourceOption, error) {
-	ro := []metadata.ResourceOption{
+func getContainerResourceOptions(sPod stats.PodStats, sContainer stats.ContainerStats, k8sMetadata Metadata) ([]metadata.ResourceMetricsOption, error) {
+	ro := []metadata.ResourceMetricsOption{
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(sContainer.StartTime.Time)),
 		metadata.WithK8sPodUID(sPod.PodRef.UID),
 		metadata.WithK8sPodName(sPod.PodRef.Name),
 		metadata.WithK8sNamespaceName(sPod.PodRef.Namespace),
@@ -40,8 +42,8 @@ func getContainerResourceOptions(sPod stats.PodStats, sContainer stats.Container
 	return ro, nil
 }
 
-func getVolumeResourceOptions(sPod stats.PodStats, vs stats.VolumeStats, k8sMetadata Metadata) ([]metadata.ResourceOption, error) {
-	ro := []metadata.ResourceOption{
+func getVolumeResourceOptions(sPod stats.PodStats, vs stats.VolumeStats, k8sMetadata Metadata) ([]metadata.ResourceMetricsOption, error) {
+	ro := []metadata.ResourceMetricsOption{
 		metadata.WithK8sPodUID(sPod.PodRef.UID),
 		metadata.WithK8sPodName(sPod.PodRef.Name),
 		metadata.WithK8sNamespaceName(sPod.PodRef.Namespace),

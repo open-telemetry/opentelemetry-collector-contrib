@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -171,14 +171,14 @@ func TestSetExtraLabels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ro, err := tt.metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
 
-			r := pcommon.NewResource()
+			r := pmetric.NewResourceMetrics()
 			for _, op := range ro {
 				op(r)
 			}
 
 			if tt.wantError == "" {
 				require.NoError(t, err)
-				temp := r.Attributes().AsRaw()
+				temp := r.Resource().Attributes().AsRaw()
 				assert.EqualValues(t, tt.want, temp)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())
@@ -333,17 +333,17 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 						},
 					},
 				},
-			}, func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceOption, error) {
+			}, func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 				return nil, nil
 			})
 			ro, _ := metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
 
-			r := pcommon.NewResource()
+			rm := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(r)
+				op(rm)
 			}
 
-			assert.Equal(t, tt.want, r.Attributes().AsRaw())
+			assert.Equal(t, tt.want, rm.Resource().Attributes().AsRaw())
 		})
 	}
 }

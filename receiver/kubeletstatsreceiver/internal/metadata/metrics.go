@@ -23,9 +23,10 @@ type RecordIntDataPointFunc func(*MetricsBuilder, pcommon.Timestamp, int64)
 type RecordIntDataPointWithDirectionFunc func(*MetricsBuilder, pcommon.Timestamp, int64, string, AttributeDirection)
 
 type MetricsBuilders struct {
-	NodeMetricsBuilder  *MetricsBuilder
-	PodMetricsBuilder   *MetricsBuilder
-	OtherMetricsBuilder *MetricsBuilder
+	NodeMetricsBuilder      *MetricsBuilder
+	PodMetricsBuilder       *MetricsBuilder
+	ContainerMetricsBuilder *MetricsBuilder
+	OtherMetricsBuilder     *MetricsBuilder
 }
 
 type CPUMetrics struct {
