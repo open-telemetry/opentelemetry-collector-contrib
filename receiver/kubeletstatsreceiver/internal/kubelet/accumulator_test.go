@@ -26,6 +26,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 // TestMetadataErrorCases walks through the error cases of collecting
@@ -39,7 +41,7 @@ func TestMetadataErrorCases(t *testing.T) {
 		numMDs                          int
 		numLogs                         int
 		logMessages                     []string
-		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string, labels map[string]string) error
+		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)
 	}{
 		{
 			name: "Fails to get container metadata",
@@ -176,9 +178,9 @@ func TestMetadataErrorCases(t *testing.T) {
 					},
 				},
 			}, nil),
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
+			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 				// Mock failure cases.
-				return errors.New("")
+				return nil, errors.New("")
 			},
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
@@ -205,11 +207,16 @@ func TestMetadataErrorCases(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 
-			tt.metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
+			tt.metadata.DetailedPVCResourceGetter = tt.detailedPVCLabelsSetterOverride
 			acc := metricDataAccumulator{
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
+				mbs: &metadata.MetricsBuilders{
+					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+				},
 			}
 
 			tt.testScenario(acc)
@@ -230,6 +237,12 @@ func TestNilHandling(t *testing.T) {
 			NodeMetricGroup:      true,
 			ContainerMetricGroup: true,
 			VolumeMetricGroup:    true,
+		},
+		mbs: &metadata.MetricsBuilders{
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 		},
 	}
 	assert.NotPanics(t, func() {

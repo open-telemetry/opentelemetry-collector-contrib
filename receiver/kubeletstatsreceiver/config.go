@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 var _ config.Receiver = (*Config)(nil)
@@ -48,6 +49,9 @@ type Config struct {
 
 	// Configuration of the Kubernetes API client.
 	K8sAPIConfig *k8sconfig.APIConfig `mapstructure:"k8s_api_config"`
+
+	// Metrics allows customizing scraped metrics representation.
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
 func (cfg *Config) Validate() error {
