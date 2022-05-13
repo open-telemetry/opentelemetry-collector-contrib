@@ -4,7 +4,7 @@
 | ------------------------ | ----------------- |
 | Stability                | [beta]            |
 | Supported pipeline types | traces            |
-| Distribution             | [core], [contrib] |
+| Distribution             | [contrib] |
 
 The tail sampling processor samples traces based on a set of defined policies.
 Today, this processor only works with a single instance of the collector.
@@ -168,6 +168,5 @@ You are already incurring the cost of running the tail sampling processor, addin
 Additionally, using the policy within the tail sampling processor will ensure traces that are sampled by other policies will not be dropped.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
-[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [probabilistic_sampling_processor]: ../probabilisticsamplerprocessor
