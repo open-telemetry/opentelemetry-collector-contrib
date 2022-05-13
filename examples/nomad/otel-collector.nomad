@@ -43,13 +43,6 @@ job "otel-collector" {
     }
 
     
-    vault {
-      policies      = [
-  "otel"
-]
-    }
-    
-
     task "otel-collector" {
       driver = "docker"
 
@@ -77,9 +70,6 @@ job "otel-collector" {
       }
 
       env {
-        DATADOG_SERVICE_NAME = "my-dd-service"
-        DATADOG_TAG_NAME = "env:local_dev_env"
-        HONEYCOMB_DATASET = "my-hny-dataset"
         HOST_DEV = "/hostfs/dev"
         HOST_ETC = "/hostfs/etc"
         HOST_PROC = "/hostfs/proc"
@@ -109,29 +99,11 @@ exporters:
   logging:
     logLevel: debug
 
-  otlp/hc:
-    endpoint: "api.honeycomb.io:443"
-    headers: 
-      "x-honeycomb-team": "{{ with secret "kv/data/otel/o11y/honeycomb" }}{{ .Data.data.api_key }}{{ end }}"
-      "x-honeycomb-dataset": "$HONEYCOMB_DATASET"
-  otlp/ls:
-    endpoint: ingest.lightstep.com:443
-    headers: 
-      "lightstep-access-token": "{{ with secret "kv/data/otel/o11y/lightstep" }}{{ .Data.data.api_key }}{{ end }}"
-
-  datadog:
-    service: $DATADOG_SERVICE_NAME
-    tags:
-      - $DATADOG_TAG_NAME
-    api:
-      key: "{{ with secret "kv/data/otel/o11y/datadog" }}{{ .Data.data.api_key }}{{ end }}"
-      site: datadoghq.com
-
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [logging, otlp/ls, otlp/hc, datadog]
+      exporters: [logging]
 
 EOH
 
