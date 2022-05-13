@@ -113,19 +113,22 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
 			resource.Attributes().InsertString(k8sIPLabelName, podIdentifierValue[i].Value)
+			break
 		}
 	}
 	if kp.passthroughMode {
 		return
 	}
 
-	if pod, ok := kp.kc.GetPod(podIdentifierValue); ok {
-		kp.logger.Debug("getting the pod", zap.Any("pod", pod))
+	if len(podIdentifierValue) > 0 {
+		if pod, ok := kp.kc.GetPod(podIdentifierValue); ok {
+			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
 
-		for key, val := range pod.Attributes {
-			resource.Attributes().InsertString(key, val)
+			for key, val := range pod.Attributes {
+				resource.Attributes().InsertString(key, val)
+			}
+			kp.addContainerAttributes(resource.Attributes(), pod)
 		}
-		kp.addContainerAttributes(resource.Attributes(), pod)
 	}
 
 	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)

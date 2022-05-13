@@ -392,10 +392,6 @@ func (c *WatchClient) getPodFromAPI(pod *api_v1.Pod) *Pod {
 
 // getIdentifiersFromAssoc returns list of PodIdentifiers for given pod
 func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
-	if pod.Attributes == nil {
-		pod.Attributes = map[string]string{}
-	}
-
 	ids := []PodIdentifier{}
 	for _, assoc := range c.Associations {
 		ret := PodIdentifier{}
@@ -406,9 +402,9 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 			case source.From == ConnectionSource:
 				if pod.Address == "" {
 					skip = true
-				} else {
-					ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
+					break
 				}
+				ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
 			case source.From == ResourceSource:
 				attr := ""
 				switch source.Name {
@@ -428,9 +424,9 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 
 				if attr == "" {
 					skip = true
-				} else {
-					ret[i] = PodIdentifierAttributeFromSource(source, attr)
+					break
 				}
+				ret[i] = PodIdentifierAttributeFromSource(source, attr)
 			}
 		}
 
@@ -478,9 +474,7 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	newPod := c.getPodFromAPI(pod)
 	for _, id := range c.getIdentifiersFromAssoc(newPod) {
-		c.m.RLock()
 		p, ok := c.GetPod(id)
-		c.m.RUnlock()
 
 		if ok && p.Name == pod.Name {
 			c.appendDeleteQueue(id, pod.Name)
