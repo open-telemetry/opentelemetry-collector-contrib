@@ -256,7 +256,7 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
-	{{- if $metric.Data.HasMetricInputType }}, val {{ $metric.Data.MetricInputType.String }}
+	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
 	{{- else }}
 	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{- end }}
 	{{- end -}}
@@ -267,33 +267,22 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Data.HasMetricInputType }}
 	{{- if $metric.Data.HasMetricValueType }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		return fmt.Errorf("failed to parse float for {{ $name.Render }}, value was %s: %w", val, err)
-	} else {
-		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
-		{{- if $metric.Data.HasMetricValueType }}, f {{ end }}
-		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
+	val, err := strconv.ParseFloat(inputVal, 64)
+	{{- else if eq $metric.Data.MetricValueType.BasicType "int64" }}
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	{{- end }}
+	if err != nil {
+		return fmt.Errorf("failed to parse {{ $metric.Data.MetricValueType.BasicType }} for {{ $name.Render }}, value was %s: %w", inputVal, err)
 	}
 	{{- end }}
-	{{- if eq $metric.Data.MetricValueType.BasicType "int64" }}
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for {{ $name.Render }}, value was %s: %w", val, err)
-	} else {
-		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
-		{{- if $metric.Data.HasMetricValueType }}, i {{ end }}
-		{{- range $metric.Attributes -}}
-		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
-		{{- end }})
-	}
 	{{- end }}
-	return nil
-	{{- end }}
-	{{- else }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
 		{{- range $metric.Attributes -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
 		{{- end }})
+	{{- if $metric.Data.HasMetricInputType }}
+	return nil
 	{{- end }}
 }
 {{ end }}

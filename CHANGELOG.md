@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.51.0
@@ -72,6 +74,7 @@
 - `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
 - `awsinsightreceiver`: Migrate from `ConfigMapsResourceLock` to `ConfigMapsLeasesResourceLock` as per https://github.com/kubernetes/client-go/commit/276ea3ed979947d7cdd4b3d708862245ddcd8883 (#9885)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Add support for []string type for converting log record entries (#9887)
+- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9087)
 
 ## v0.50.0
 
@@ -95,6 +98,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
+- `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 
 ### 💡 Enhancements 💡
 
