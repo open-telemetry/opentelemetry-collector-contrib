@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -149,7 +149,7 @@ func TestScraperRecordNoStat(t *testing.T) {
 		componenttest.NewNopTelemetrySettings(),
 	)
 	scraper.host = componenttest.NewNopHost()
-	scraper.recordNode(pdata.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})
+	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})
 }
 
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {
