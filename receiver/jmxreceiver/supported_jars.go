@@ -23,7 +23,7 @@ type supportedJar struct {
 }
 
 // Provided as a build time variable if a development or customer specific JMX Metrics Gatherer needs to be supported
-var MetricsGathererHash string = "n/a"
+var MetricsGathererHash = "n/a"
 
 // Support for SSL properties passed via property file will be available starting in v1.14.0
 func oldFormatProperties(c *Config, j supportedJar) error {
