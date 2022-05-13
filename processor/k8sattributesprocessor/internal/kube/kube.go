@@ -51,6 +51,11 @@ type PodIdentifierAttribute struct {
 // PodIdentifier is a custom type to represent Pod identification
 type PodIdentifier [PodIdentifierMaxLength]PodIdentifierAttribute
 
+// IsNotEmpty checks if PodIdentifier is empty or not
+func (p *PodIdentifier) IsNotEmpty() bool {
+	return p[0].Source.From != ""
+}
+
 // PodIdentifierAttributeFromSource builds PodIdentifierAttribute using AssociationSource and value
 func PodIdentifierAttributeFromSource(source AssociationSource, value string) PodIdentifierAttribute {
 	return PodIdentifierAttribute{
