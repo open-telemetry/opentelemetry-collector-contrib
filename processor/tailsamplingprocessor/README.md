@@ -1,6 +1,8 @@
-# Tail Sampling Processor
-
-Supported pipeline types: traces
+| Tail Sampling Processor  |               |
+| ------------------------ | ------------- |
+| Stability                | beta          |
+| Supported pipeline types | traces        |
+| Distribution             | core, contrib |
 
 The tail sampling processor samples traces based on a set of defined policies.
 Today, this processor only works with a single instance of the collector.
