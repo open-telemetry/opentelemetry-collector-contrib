@@ -94,7 +94,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "keep_keys not matching slice type",
+			name: "not matching slice type",
 			inv: Invocation{
 				Function: "keep_keys",
 				Arguments: []Value{
@@ -114,7 +114,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "truncate_all not int",
+			name: "not int",
 			inv: Invocation{
 				Function: "truncate_all",
 				Arguments: []Value{
@@ -129,66 +129,6 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 					},
 					{
 						String: strp("not an int"),
-					},
-				},
-			},
-		},
-		{
-			name: "truncate_all negative limit",
-			inv: Invocation{
-				Function: "truncate_all",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Int: intp(-1),
-					},
-				},
-			},
-		},
-		{
-			name: "limit not int",
-			inv: Invocation{
-				Function: "limit",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						String: strp("not an int"),
-					},
-				},
-			},
-		},
-		{
-			name: "limit negative limit",
-			inv: Invocation{
-				Function: "limit",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Int: intp(-1),
 					},
 				},
 			},

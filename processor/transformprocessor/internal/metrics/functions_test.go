@@ -14,139 +14,142 @@
 
 package metrics
 
-//func Test_newFunctionCall(t *testing.T) {
-//	input := plog.NewLogRecord()
-//	attrs := pcommon.NewMap()
-//	attrs.InsertString("test", "1")
-//	attrs.InsertInt("test2", 3)
-//	attrs.InsertBool("test3", true)
-//	attrs.CopyTo(input.Attributes())
-//
-//	tests := []struct {
-//		name string
-//		inv  common.Invocation
-//		want func(plog.LogRecord)
-//	}{
-//		{
-//			name: "set name",
-//			inv: common.Invocation{
-//				Function: "set",
-//				Arguments: []common.Value{
-//					{
-//						Path: &common.Path{
-//							Fields: []common.Field{
-//								{
-//									Name: "severity_text",
-//								},
-//							},
-//						},
-//					},
-//					{
-//						String: strp("fail"),
-//					},
-//				},
-//			},
-//			want: func(log plog.LogRecord) {
-//				input.CopyTo(log)
-//				log.SetSeverityText("fail")
-//			},
-//		},
-//		{
-//			name: "keep_keys one",
-//			inv: common.Invocation{
-//				Function: "keep_keys",
-//				Arguments: []common.Value{
-//					{
-//						Path: &common.Path{
-//							Fields: []common.Field{
-//								{
-//									Name: "attributes",
-//								},
-//							},
-//						},
-//					},
-//					{
-//						String: strp("test"),
-//					},
-//				},
-//			},
-//			want: func(log plog.LogRecord) {
-//				input.CopyTo(log)
-//				log.Attributes().Clear()
-//				attrs := pcommon.NewMap()
-//				attrs.InsertString("test", "1")
-//				attrs.CopyTo(log.Attributes())
-//			},
-//		},
-//		{
-//			name: "keep_keys two",
-//			inv: common.Invocation{
-//				Function: "keep_keys",
-//				Arguments: []common.Value{
-//					{
-//						Path: &common.Path{
-//							Fields: []common.Field{
-//								{
-//									Name: "attributes",
-//								},
-//							},
-//						},
-//					},
-//					{
-//						String: strp("test"),
-//					},
-//					{
-//						String: strp("test2"),
-//					},
-//				},
-//			},
-//			want: func(log plog.LogRecord) {
-//				input.CopyTo(log)
-//				log.Attributes().Clear()
-//				attrs := pcommon.NewMap()
-//				attrs.InsertString("test", "1")
-//				attrs.InsertInt("test2", 3)
-//				attrs.CopyTo(log.Attributes())
-//			},
-//		},
-//		{
-//			name: "keep_keys none",
-//			inv: common.Invocation{
-//				Function: "keep_keys",
-//				Arguments: []common.Value{
-//					{
-//						Path: &common.Path{
-//							Fields: []common.Field{
-//								{
-//									Name: "attributes",
-//								},
-//							},
-//						},
-//					},
-//				},
-//			},
-//			want: func(log plog.LogRecord) {
-//				input.CopyTo(log)
-//				log.Attributes().Clear()
-//			},
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			log := plog.NewLogRecord()
-//			input.CopyTo(log)
-//
-//			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
-//			assert.NoError(t, err)
-//			evaluate(metricTransformContext{
-//				dataPoint: log,
-//				il:        pcommon.NewInstrumentationScope(),
-//				resource:  pcommon.NewResource(),
-//			})
-//
-//			expected := plog.NewLogRecord()
-//			tt.want(expected)
-//			assert.Equal(t, expected, log)
-//		})
-//	}
-//}
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"testing"
+)
+
+func Test_newFunctionCall_NumberDataPoint(t *testing.T) {
+	tests := []struct {
+		name string
+		inv  common.Invocation
+		want func(pmetric.NumberDataPoint)
+	}{
+		{
+			name: "set name",
+			inv: common.Invocation{
+				Function: "set",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "severity_text",
+								},
+							},
+						},
+					},
+					{
+						String: strp("fail"),
+					},
+				},
+			},
+			want: func(log plog.LogRecord) {
+				input.CopyTo(log)
+				log.SetSeverityText("fail")
+			},
+		},
+		{
+			name: "keep_keys one",
+			inv: common.Invocation{
+				Function: "keep_keys",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: strp("test"),
+					},
+				},
+			},
+			want: func(log plog.LogRecord) {
+				input.CopyTo(log)
+				log.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "1")
+				attrs.CopyTo(log.Attributes())
+			},
+		},
+		{
+			name: "keep_keys two",
+			inv: common.Invocation{
+				Function: "keep_keys",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: strp("test"),
+					},
+					{
+						String: strp("test2"),
+					},
+				},
+			},
+			want: func(log plog.LogRecord) {
+				input.CopyTo(log)
+				log.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "1")
+				attrs.InsertInt("test2", 3)
+				attrs.CopyTo(log.Attributes())
+			},
+		},
+		{
+			name: "keep_keys none",
+			inv: common.Invocation{
+				Function: "keep_keys",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: func(log plog.LogRecord) {
+				input.CopyTo(log)
+				log.Attributes().Clear()
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			log := plog.NewLogRecord()
+			input.CopyTo(log)
+
+			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
+			assert.NoError(t, err)
+			evaluate(metricTransformContext{
+				dataPoint: log,
+				il:        pcommon.NewInstrumentationScope(),
+				resource:  pcommon.NewResource(),
+			})
+
+			expected := plog.NewLogRecord()
+			tt.want(expected)
+			assert.Equal(t, expected, log)
+		})
+	}
+}
