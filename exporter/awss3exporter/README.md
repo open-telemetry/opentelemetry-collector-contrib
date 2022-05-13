@@ -14,6 +14,7 @@ The following exporter configuration parameters are supported.
 | `s3_bucket`            | S3 bucket                                                                          |         |
 | `s3_prefix`            | prefix for the S3 key.                                                             |         |
 | `s3_partition`         | time granularity of S3 key: hour or minute                                         |"minute" |
+| `batch_count`          | max backoff seconds before next retry                                              |  1000   |
 
 ## AWS Credential Configuration
 

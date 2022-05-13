@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr       = "awss3"
+	typeStr = "awss3"
 )
 
 // NewFactory creates a factory for S3 exporter.
@@ -42,10 +42,11 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		S3Uploader: S3UploaderConfig{
-			Region:              "us-east-1",
-			S3Partition:         "minute",
+			Region:      "us-east-1",
+			S3Partition: "minute",
 		},
 
+		BatchCount:        1000,
 		MetricDescriptors: make([]MetricDescriptor, 0),
 		logger:            nil,
 	}
