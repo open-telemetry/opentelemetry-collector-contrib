@@ -1,6 +1,6 @@
 # Cumulative to Delta Processor
 
-**Status: under development; Not recommended for production usage.**
+**Stability Level: [Beta](https://github.com/open-telemetry/opentelemetry-collector-contrib#stability-levels)**
 
 Supported pipeline types: metrics
 
