@@ -168,7 +168,7 @@ $(GOMODULES):
 	@echo "Running target '$(TARGET)' in module '$@'"
 	$(MAKE) -C $@ $(TARGET)
 
-# Define a target that requires each module's delegation target
+# Triggers each module's delegation target
 .PHONY: for-all-target
 for-all-target: $(GOMODULES)
 
