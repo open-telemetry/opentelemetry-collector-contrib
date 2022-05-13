@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
@@ -66,13 +66,13 @@ const (
 	managerClass
 )
 
-func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	r, err := s.retrieve(ctx)
 	if err != nil {
 		return pmetric.NewMetrics(), err
 	}
 
-	colTime := pdata.NewTimestampFromTime(time.Now())
+	colTime := pcommon.NewTimestampFromTime(time.Now())
 	s.process(r, colTime)
 	return s.mb.Emit(), nil
 }
@@ -186,7 +186,7 @@ func (s *scraper) retrieveNodeStats(
 
 func (s *scraper) process(
 	nodes []*nodeInfo,
-	colTime pdata.Timestamp,
+	colTime pcommon.Timestamp,
 ) {
 	for _, n := range nodes {
 		for _, i := range n.interfaces {
@@ -196,7 +196,7 @@ func (s *scraper) process(
 	}
 }
 
-func (s *scraper) recordNodeInterface(colTime pdata.Timestamp, nodeProps dm.NodeProperties, i interfaceInformation) {
+func (s *scraper) recordNodeInterface(colTime pcommon.Timestamp, nodeProps dm.NodeProperties, i interfaceInformation) {
 	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxDropped, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeDropped)
 	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxErrors, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeErrored)
 	successRxPackets := i.stats.RxPackets - i.stats.RxDropped - i.stats.RxErrors
@@ -219,7 +219,7 @@ func (s *scraper) recordNodeInterface(colTime pdata.Timestamp, nodeProps dm.Node
 }
 
 func (s *scraper) recordNode(
-	colTime pdata.Timestamp,
+	colTime pcommon.Timestamp,
 	info *nodeInfo,
 ) {
 	if info.stats == nil {
