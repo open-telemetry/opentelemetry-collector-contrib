@@ -14,7 +14,7 @@
 
 ### 🧰 Bug fixes 🧰
 
-## v0.50.0
+## v0.51.0
 
 ### 🛑 Breaking changes 🛑
 
@@ -33,6 +33,7 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
+- `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
