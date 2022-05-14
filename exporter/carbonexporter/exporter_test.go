@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package carbonexporter
 
 import (
@@ -166,7 +165,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				// call to ConsumeMetricsData below will produce error or not.
 				// See comment about recvfrom at connPool.Write for detailed
 				// information.
-				exp.ConsumeMetrics(context.Background(), tt.md)
+				_ = exp.ConsumeMetrics(context.Background(), tt.md)
 				assert.NoError(t, exp.Shutdown(context.Background()))
 				return
 			}
@@ -276,7 +275,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 
 	close(startCh) // Release all workers
 	writersWG.Wait()
-	sender.Shutdown(context.Background())
+	assert.NoError(t, sender.Shutdown(context.Background()))
 
 	recvWG.Wait()
 }
