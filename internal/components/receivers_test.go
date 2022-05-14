@@ -75,6 +75,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
+			receiver: "bigip",
+		},
+		{
 			receiver: "carbon",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["carbon"].CreateDefaultConfig().(*carbonreceiver.Config)

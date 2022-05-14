@@ -481,9 +481,9 @@ func WithRiakNodeName(val string) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			dps := pmetric.NewNumberDataPointSlice()
 			switch metrics.At(i).DataType() {
 			case pmetric.MetricDataTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()

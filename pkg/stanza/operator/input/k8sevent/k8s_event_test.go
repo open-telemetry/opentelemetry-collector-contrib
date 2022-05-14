@@ -28,9 +28,9 @@ import (
 	fakev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	fakeTest "k8s.io/client-go/testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 var fakeTime = time.Date(2000, 1, 1, 1, 1, 1, 1, time.UTC)
