@@ -15,11 +15,11 @@
 package pulsarexporter
 
 import (
-	"github.com/apache/pulsar-client-go/pulsar"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"

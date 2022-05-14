@@ -109,6 +109,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.49.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarexporter v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.49.0

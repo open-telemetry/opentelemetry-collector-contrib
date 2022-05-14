@@ -16,10 +16,10 @@ package pulsarexporter
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
