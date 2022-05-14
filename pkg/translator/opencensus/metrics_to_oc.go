@@ -141,7 +141,7 @@ func collectLabelKeysNumberDataPoints(dps pmetric.NumberDataPointSlice, keySet m
 	allInt := true
 	for i := 0; i < dps.Len(); i++ {
 		addLabelKeys(keySet, dps.At(i).Attributes())
-		if dps.At(i).ValueType() != pmetric.MetricValueTypeInt {
+		if dps.At(i).ValueType() != pmetric.NumberDataPointValueTypeInt {
 			allInt = false
 		}
 	}
@@ -229,11 +229,11 @@ func numberDataPointsToOC(dps pmetric.NumberDataPointSlice, labelKeys *labelKeys
 			Timestamp: timestampAsTimestampPb(dp.Timestamp()),
 		}
 		switch dp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			point.Value = &ocmetrics.Point_Int64Value{
 				Int64Value: dp.IntVal(),
 			}
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			point.Value = &ocmetrics.Point_DoubleValue{
 				DoubleValue: dp.DoubleVal(),
 			}
@@ -255,8 +255,8 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		buckets := histogramBucketsToOC(dp.BucketCounts())
-		exemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
+		buckets := histogramBucketsToOC(dp.MBucketCounts())
+		exemplarsToOC(dp.MExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
@@ -269,7 +269,7 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 							Count:                 int64(dp.Count()),
 							Sum:                   dp.Sum(),
 							SumOfSquaredDeviation: 0,
-							BucketOptions:         histogramExplicitBoundsToOC(dp.ExplicitBounds()),
+							BucketOptions:         histogramExplicitBoundsToOC(dp.MExplicitBounds()),
 							Buckets:               buckets,
 						},
 					},
@@ -366,9 +366,9 @@ func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bu
 		exemplar := exemplars.At(i)
 		var val float64
 		switch exemplar.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.ExemplarValueTypeInt:
 			val = float64(exemplar.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.ExemplarValueTypeDouble:
 			val = exemplar.DoubleVal()
 		}
 		pos := 0

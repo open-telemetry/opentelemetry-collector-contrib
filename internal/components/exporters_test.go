@@ -55,7 +55,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -395,14 +394,6 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["loki"].CreateDefaultConfig().(*lokiexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "newrelic",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["newrelic"].CreateDefaultConfig().(*newrelicexporter.Config)
-				cfg.CommonConfig.HostOverride = "http://" + endpoint
 				return cfg
 			},
 		},

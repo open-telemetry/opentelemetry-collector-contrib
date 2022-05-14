@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -45,31 +44,30 @@ func (s *consumerScraper) Name() string {
 	return consumersScraperName
 }
 
-func (s *consumerScraper) start(context.Context, component.Host) error {
-	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client while starting consumer scraper: %w", err)
-	}
-	clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
-	if err != nil {
-		if client != nil {
-			_ = client.Close()
-		}
-		return fmt.Errorf("failed to create cluster admin while starting consumer scraper: %w", err)
-	}
-	s.client = client
-	s.clusterAdmin = clusterAdmin
-	return nil
-}
-
 func (s *consumerScraper) shutdown(_ context.Context) error {
-	if !s.client.Closed() {
+	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
 	}
 	return nil
 }
 
 func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if s.client == nil {
+		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
+		}
+		clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			if client != nil {
+				_ = client.Close()
+			}
+			return pmetric.Metrics{}, fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
+		}
+		s.client = client
+		s.clusterAdmin = clusterAdmin
+	}
+
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
 	if listErr != nil {
 		return pmetric.Metrics{}, listErr
@@ -164,7 +162,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 					}
 					addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLag.Name(), now, labels, consumerLag)
 				}
-				labels.Delete(metadata.A.Partition)
+				labels.Remove(metadata.A.Partition)
 				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffsetSum.Name(), now, labels, offsetSum)
 				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLagSum.Name(), now, labels, lagSum)
 			}
@@ -194,6 +192,5 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
-		scraperhelper.WithStart(s.start),
 	)
 }

@@ -5,9 +5,9 @@ package metadata
 import (
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -44,6 +44,54 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionReceive
+	AttributeDirectionTransmit
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionReceive:
+		return "receive"
+	case AttributeDirectionTransmit:
+		return "transmit"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"receive":  AttributeDirectionReceive,
+	"transmit": AttributeDirectionTransmit,
+}
+
+// AttributeProtocol specifies the a value protocol attribute.
+type AttributeProtocol int
+
+const (
+	_ AttributeProtocol = iota
+	AttributeProtocolTcp
+)
+
+// String returns the string representation of the AttributeProtocol.
+func (av AttributeProtocol) String() string {
+	switch av {
+	case AttributeProtocolTcp:
+		return "tcp"
+	}
+	return ""
+}
+
+// MapAttributeProtocol is a helper map of string to AttributeProtocol attribute value.
+var MapAttributeProtocol = map[string]AttributeProtocol{
+	"tcp": AttributeProtocolTcp,
+}
+
 type metricSystemNetworkConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -69,8 +117,8 @@ func (m *metricSystemNetworkConnections) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Protocol, pcommon.NewValueString(protocolAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("protocol", pcommon.NewValueString(protocolAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -123,8 +171,8 @@ func (m *metricSystemNetworkDropped) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -177,8 +225,8 @@ func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -231,8 +279,8 @@ func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -285,8 +333,8 @@ func (m *metricSystemNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -364,20 +412,38 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/network")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -386,6 +452,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricSystemNetworkErrors.emit(ils.Metrics())
 	mb.metricSystemNetworkIo.emit(ils.Metrics())
 	mb.metricSystemNetworkPackets.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -395,36 +464,36 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordSystemNetworkConnectionsDataPoint adds a data point to system.network.connections metric.
-func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pcommon.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, val, protocolAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pcommon.Timestamp, val int64, protocolAttributeValue AttributeProtocol, stateAttributeValue string) {
+	mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, val, protocolAttributeValue.String(), stateAttributeValue)
 }
 
 // RecordSystemNetworkDroppedDataPoint adds a data point to system.network.dropped metric.
-func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkErrorsDataPoint adds a data point to system.network.errors metric.
-func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkIoDataPoint adds a data point to system.network.io metric.
-func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkPacketsDataPoint adds a data point to system.network.packets metric.
-func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -434,40 +503,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Device (Name of the network interface.)
-	Device string
-	// Direction (Direction of flow of bytes/operations (receive or transmit).)
-	Direction string
-	// Protocol (Network protocol, e.g. TCP or UDP.)
-	Protocol string
-	// State (State of the network connection.)
-	State string
-}{
-	"device",
-	"direction",
-	"protocol",
-	"state",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Receive  string
-	Transmit string
-}{
-	"receive",
-	"transmit",
-}
-
-// AttributeProtocol are the possible values that the attribute "protocol" can have.
-var AttributeProtocol = struct {
-	Tcp string
-}{
-	"tcp",
 }

@@ -98,9 +98,9 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			fields := cloneMap(commonFields)
 			populateAttributes(fields, dataPt.Attributes())
 			switch dataPt.ValueType() {
-			case pmetric.MetricValueTypeInt:
+			case pmetric.NumberDataPointValueTypeInt:
 				fields[metricFieldName] = dataPt.IntVal()
-			case pmetric.MetricValueTypeDouble:
+			case pmetric.NumberDataPointValueTypeDouble:
 				fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
 			}
 			fields[splunkMetricTypeKey] = pmetric.MetricDataTypeGauge.String()
@@ -112,8 +112,8 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		var splunkMetrics []*splunk.Event
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
-			bounds := dataPt.ExplicitBounds()
-			counts := dataPt.BucketCounts()
+			bounds := dataPt.MExplicitBounds()
+			counts := dataPt.MBucketCounts()
 			// first, add one event for sum, and one for count
 			{
 				fields := cloneMap(commonFields)
@@ -166,9 +166,9 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			fields := cloneMap(commonFields)
 			populateAttributes(fields, dataPt.Attributes())
 			switch dataPt.ValueType() {
-			case pmetric.MetricValueTypeInt:
+			case pmetric.NumberDataPointValueTypeInt:
 				fields[metricFieldName] = dataPt.IntVal()
-			case pmetric.MetricValueTypeDouble:
+			case pmetric.NumberDataPointValueTypeDouble:
 				fields[metricFieldName] = sanitizeFloat(dataPt.DoubleVal())
 			}
 			fields[splunkMetricTypeKey] = pmetric.MetricDataTypeSum.String()

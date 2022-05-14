@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package stanza
 
 import (
@@ -28,12 +29,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
 
 func TestStart(t *testing.T) {
-	mockConsumer := mockLogsConsumer{}
+	mockConsumer := &consumertest.LogsSink{}
 
 	factory := NewFactory(TestReceiverType{})
 
@@ -41,7 +43,7 @@ func TestStart(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		factory.CreateDefaultConfig(),
-		&mockConsumer,
+		mockConsumer,
 	)
 	require.NoError(t, err, "receiver should successfully build")
 
@@ -54,7 +56,7 @@ func TestStart(t *testing.T) {
 	// Eventually because of asynchronuous nature of the receiver.
 	require.Eventually(t,
 		func() bool {
-			return mockConsumer.Received() == 1
+			return mockConsumer.LogRecordCount() == 1
 		},
 		10*time.Second, 5*time.Millisecond, "one log entry expected",
 	)
@@ -62,14 +64,14 @@ func TestStart(t *testing.T) {
 }
 
 func TestHandleStartError(t *testing.T) {
-	mockConsumer := mockLogsConsumer{}
+	mockConsumer := &consumertest.LogsSink{}
 
 	factory := NewFactory(TestReceiverType{})
 
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = newUnstartableParams()
 
-	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, &mockConsumer)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -77,10 +79,10 @@ func TestHandleStartError(t *testing.T) {
 }
 
 func TestHandleConsumeError(t *testing.T) {
-	mockConsumer := mockLogsRejecter{}
+	mockConsumer := &mockLogsRejecter{}
 	factory := NewFactory(TestReceiverType{})
 
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), &mockConsumer)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
@@ -92,11 +94,11 @@ func TestHandleConsumeError(t *testing.T) {
 	// Eventually because of asynchronuous nature of the receiver.
 	require.Eventually(t,
 		func() bool {
-			return mockConsumer.Rejected() == 1
+			return mockConsumer.LogRecordCount() == 1
 		},
 		10*time.Second, 5*time.Millisecond, "one log entry expected",
 	)
-	logsReceiver.Shutdown(context.Background())
+	require.NoError(t, logsReceiver.Shutdown(context.Background()))
 }
 
 func BenchmarkReadLine(b *testing.B) {

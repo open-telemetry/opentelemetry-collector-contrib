@@ -5,9 +5,9 @@ package metadata
 import (
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -40,6 +40,88 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionPageIn
+	AttributeDirectionPageOut
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionPageIn:
+		return "page_in"
+	case AttributeDirectionPageOut:
+		return "page_out"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"page_in":  AttributeDirectionPageIn,
+	"page_out": AttributeDirectionPageOut,
+}
+
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateCached
+	AttributeStateFree
+	AttributeStateUsed
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateCached:
+		return "cached"
+	case AttributeStateFree:
+		return "free"
+	case AttributeStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"cached": AttributeStateCached,
+	"free":   AttributeStateFree,
+	"used":   AttributeStateUsed,
+}
+
+// AttributeType specifies the a value type attribute.
+type AttributeType int
+
+const (
+	_ AttributeType = iota
+	AttributeTypeMajor
+	AttributeTypeMinor
+)
+
+// String returns the string representation of the AttributeType.
+func (av AttributeType) String() string {
+	switch av {
+	case AttributeTypeMajor:
+		return "major"
+	case AttributeTypeMinor:
+		return "minor"
+	}
+	return ""
+}
+
+// MapAttributeType is a helper map of string to AttributeType attribute value.
+var MapAttributeType = map[string]AttributeType{
+	"major": AttributeTypeMajor,
+	"minor": AttributeTypeMinor,
+}
+
 type metricSystemPagingFaults struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -65,7 +147,7 @@ func (m *metricSystemPagingFaults) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Type, pcommon.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -118,8 +200,8 @@ func (m *metricSystemPagingOperations) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
-	dp.Attributes().Insert(A.Type, pcommon.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -172,8 +254,8 @@ func (m *metricSystemPagingUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -224,8 +306,8 @@ func (m *metricSystemPagingUtilization) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -301,20 +383,38 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/paging")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -322,6 +422,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricSystemPagingOperations.emit(ils.Metrics())
 	mb.metricSystemPagingUsage.emit(ils.Metrics())
 	mb.metricSystemPagingUtilization.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -331,31 +434,31 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordSystemPagingFaultsDataPoint adds a data point to system.paging.faults metric.
-func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue string) {
-	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
+	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String())
 }
 
 // RecordSystemPagingOperationsDataPoint adds a data point to system.paging.operations metric.
-func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string, typeAttributeValue string) {
-	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue, typeAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, typeAttributeValue AttributeType) {
+	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), typeAttributeValue.String())
 }
 
 // RecordSystemPagingUsageDataPoint adds a data point to system.paging.usage metric.
-func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue.String())
 }
 
 // RecordSystemPagingUtilizationDataPoint adds a data point to system.paging.utilization metric.
-func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -365,53 +468,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Device (Name of the page file.)
-	Device string
-	// Direction (Page In or Page Out.)
-	Direction string
-	// State (Breakdown of paging usage by type.)
-	State string
-	// Type (Type of fault.)
-	Type string
-}{
-	"device",
-	"direction",
-	"state",
-	"type",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	PageIn  string
-	PageOut string
-}{
-	"page_in",
-	"page_out",
-}
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Cached string
-	Free   string
-	Used   string
-}{
-	"cached",
-	"free",
-	"used",
-}
-
-// AttributeType are the possible values that the attribute "type" can have.
-var AttributeType = struct {
-	Major string
-	Minor string
-}{
-	"major",
-	"minor",
 }

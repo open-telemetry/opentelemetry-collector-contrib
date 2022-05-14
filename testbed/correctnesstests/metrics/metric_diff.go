@@ -145,9 +145,9 @@ func diffNumberPts(
 			return diffs
 		}
 		switch expected.At(i).ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "NumberDataPoint Value")
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			diffs = diff(diffs, expected.At(i).DoubleVal(), actual.At(i).DoubleVal(), "NumberDataPoint Value")
 		}
 		diffExemplars(diffs, expected.At(i).Exemplars(), actual.At(i).Exemplars())
@@ -178,8 +178,8 @@ func diffDoubleHistogramPt(
 ) []*MetricDiff {
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
-	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
-	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
+	diffs = diff(diffs, expected.MBucketCounts(), actual.MBucketCounts(), "HistogramDataPoint BucketCounts")
+	diffs = diff(diffs, expected.MExplicitBounds(), actual.MExplicitBounds(), "HistogramDataPoint ExplicitBounds")
 	// todo LabelsMap()
 	return diffExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }
@@ -197,9 +197,9 @@ func diffExemplars(
 	for i := 0; i < expected.Len(); i++ {
 		diffs = diff(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "Exemplar Value Type")
 		switch expected.At(i).ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.ExemplarValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "Exemplar Value")
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.ExemplarValueTypeDouble:
 			diffs = diff(diffs, expected.At(i).DoubleVal(), actual.At(i).DoubleVal(), "Exemplar Value")
 		}
 	}

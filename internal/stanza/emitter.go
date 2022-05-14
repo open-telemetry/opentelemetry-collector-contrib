@@ -113,6 +113,11 @@ func (e *LogEmitter) Stop() error {
 	return nil
 }
 
+// OutChannel returns the channel on which entries will be sent to.
+func (e *LogEmitter) OutChannel() <-chan []*entry.Entry {
+	return e.logChan
+}
+
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	if oldBatch := e.appendEntry(ent); len(oldBatch) > 0 {

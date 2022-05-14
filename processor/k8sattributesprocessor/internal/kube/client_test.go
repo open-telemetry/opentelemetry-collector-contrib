@@ -409,7 +409,6 @@ func TestExtractionRules(t *testing.T) {
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace:         "ns1",
 			CreationTimestamp: meta_v1.Now(),
-			ClusterName:       "cluster1",
 			Labels: map[string]string{
 				"label1": "lv1",
 				"label2": "k1=v1 k5=v5 extra!",
@@ -450,13 +449,11 @@ func TestExtractionRules(t *testing.T) {
 			PodName:    true,
 			PodUID:     true,
 			Node:       true,
-			Cluster:    true,
 			StartTime:  true,
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
 			"k8s.namespace.name":  "ns1",
-			"k8s.cluster.name":    "cluster1",
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -538,6 +535,36 @@ func TestExtractionRules(t *testing.T) {
 			},
 			attributes: map[string]string{
 				"k8s.pod.annotations.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					HasKeyRegexReference: true,
+					From:                 MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-$0",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					Name:                 "$0",
+					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					HasKeyRegexReference: true,
+					From:                 MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"annotation1": "av1",
 			},
 		},
 	}
@@ -961,7 +988,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 }
 
 func Test_extractField(t *testing.T) {
-	c := WatchClient{}
 	type args struct {
 		v string
 		r FieldExtractionRule
@@ -998,7 +1024,7 @@ func Test_extractField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := c.extractField(tt.args.v, tt.args.r); got != tt.want {
+			if got := tt.args.r.extractField(tt.args.v); got != tt.want {
 				t.Errorf("extractField() = %v, want %v", got, tt.want)
 			}
 		})

@@ -21,9 +21,7 @@ exporters:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       site: datadoghq.eu
-
-    traces:
-      sample_rate: 1
+      fail_on_invalid_key: true
 
   datadog/api2:
     hostname: customhostname
@@ -37,10 +35,10 @@ exporters:
 
     metrics:
       endpoint: https://api.datadoghq.test
+      # Deprecated; kept here to avoid regressions
       report_quantiles: false
 
     traces:
-      sample_rate: 1
       endpoint: https://trace.agent.datadoghq.test
 
   datadog/default:
@@ -62,7 +60,7 @@ exporters:
   datadog/invalid:
     metrics:
       endpoint: "invalid:"
-    
+
     traces:
       endpoint: "invalid:"
 

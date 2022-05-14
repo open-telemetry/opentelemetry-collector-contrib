@@ -79,19 +79,19 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				}
 			case "cmd_get":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, "get")
+					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, metadata.AttributeCommandGet)
 				}
 			case "cmd_set":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, "set")
+					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, metadata.AttributeCommandSet)
 				}
 			case "cmd_flush":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, "flush")
+					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, metadata.AttributeCommandFlush)
 				}
 			case "cmd_touch":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, "touch")
+					r.mb.RecordMemcachedCommandsDataPoint(now, parsedV, metadata.AttributeCommandTouch)
 				}
 			case "curr_items":
 				if parsedV, ok := r.parseInt(k, v); ok {
@@ -109,71 +109,73 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				}
 			case "bytes_read":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, "received")
+					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionReceived)
 				}
 			case "bytes_written":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, "sent")
+					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionSent)
 				}
 			case "get_hits":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, "hit", "get")
+					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, metadata.AttributeTypeHit,
+						metadata.AttributeOperationGet)
 				}
 			case "get_misses":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, "miss", "get")
+					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, metadata.AttributeTypeMiss,
+						metadata.AttributeOperationGet)
 				}
 			case "incr_hits":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, "hit", "increment")
+					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, metadata.AttributeTypeHit,
+						metadata.AttributeOperationIncrement)
 				}
 			case "incr_misses":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, "miss", "increment")
+					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, metadata.AttributeTypeMiss,
+						metadata.AttributeOperationIncrement)
 				}
 			case "decr_hits":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, "hit", "decrement")
+					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, metadata.AttributeTypeHit,
+						metadata.AttributeOperationDecrement)
 				}
 			case "decr_misses":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, "miss", "decrement")
+					r.mb.RecordMemcachedOperationsDataPoint(now, parsedV, metadata.AttributeTypeMiss,
+						metadata.AttributeOperationDecrement)
 				}
 			case "rusage_system":
 				if parsedV, ok := r.parseFloat(k, v); ok {
-					r.mb.RecordMemcachedCPUUsageDataPoint(now, parsedV, "system")
+					r.mb.RecordMemcachedCPUUsageDataPoint(now, parsedV, metadata.AttributeStateSystem)
 				}
 
 			case "rusage_user":
 				if parsedV, ok := r.parseFloat(k, v); ok {
-					r.mb.RecordMemcachedCPUUsageDataPoint(now, parsedV, "user")
+					r.mb.RecordMemcachedCPUUsageDataPoint(now, parsedV, metadata.AttributeStateUser)
 				}
 			}
 		}
 
 		// Calculated Metrics
-		attributes := pcommon.NewMap()
-		attributes.Insert(metadata.A.Operation, pcommon.NewValueString("increment"))
 		parsedHit, okHit := r.parseInt("incr_hits", stats.Stats["incr_hits"])
 		parsedMiss, okMiss := r.parseInt("incr_misses", stats.Stats["incr_misses"])
 		if okHit && okMiss {
-			r.mb.RecordMemcachedOperationHitRatioDataPoint(now, calculateHitRatio(parsedHit, parsedMiss), "increment")
+			r.mb.RecordMemcachedOperationHitRatioDataPoint(now, calculateHitRatio(parsedHit, parsedMiss),
+				metadata.AttributeOperationIncrement)
 		}
 
-		attributes = pcommon.NewMap()
-		attributes.Insert(metadata.A.Operation, pcommon.NewValueString("decrement"))
 		parsedHit, okHit = r.parseInt("decr_hits", stats.Stats["decr_hits"])
 		parsedMiss, okMiss = r.parseInt("decr_misses", stats.Stats["decr_misses"])
 		if okHit && okMiss {
-			r.mb.RecordMemcachedOperationHitRatioDataPoint(now, calculateHitRatio(parsedHit, parsedMiss), "decrement")
+			r.mb.RecordMemcachedOperationHitRatioDataPoint(now, calculateHitRatio(parsedHit, parsedMiss),
+				metadata.AttributeOperationDecrement)
 		}
 
-		attributes = pcommon.NewMap()
-		attributes.Insert(metadata.A.Operation, pcommon.NewValueString("get"))
 		parsedHit, okHit = r.parseInt("get_hits", stats.Stats["get_hits"])
 		parsedMiss, okMiss = r.parseInt("get_misses", stats.Stats["get_misses"])
 		if okHit && okMiss {
-			r.mb.RecordMemcachedOperationHitRatioDataPoint(now, calculateHitRatio(parsedHit, parsedMiss), "get")
+			r.mb.RecordMemcachedOperationHitRatioDataPoint(now, calculateHitRatio(parsedHit, parsedMiss), metadata.AttributeOperationGet)
 		}
 	}
 

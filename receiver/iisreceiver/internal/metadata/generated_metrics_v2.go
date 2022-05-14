@@ -71,6 +71,78 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionSent
+	AttributeDirectionReceived
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionSent:
+		return "sent"
+	case AttributeDirectionReceived:
+		return "received"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"sent":     AttributeDirectionSent,
+	"received": AttributeDirectionReceived,
+}
+
+// AttributeRequest specifies the a value request attribute.
+type AttributeRequest int
+
+const (
+	_ AttributeRequest = iota
+	AttributeRequestDelete
+	AttributeRequestGet
+	AttributeRequestHead
+	AttributeRequestOptions
+	AttributeRequestPost
+	AttributeRequestPut
+	AttributeRequestTrace
+)
+
+// String returns the string representation of the AttributeRequest.
+func (av AttributeRequest) String() string {
+	switch av {
+	case AttributeRequestDelete:
+		return "delete"
+	case AttributeRequestGet:
+		return "get"
+	case AttributeRequestHead:
+		return "head"
+	case AttributeRequestOptions:
+		return "options"
+	case AttributeRequestPost:
+		return "post"
+	case AttributeRequestPut:
+		return "put"
+	case AttributeRequestTrace:
+		return "trace"
+	}
+	return ""
+}
+
+// MapAttributeRequest is a helper map of string to AttributeRequest attribute value.
+var MapAttributeRequest = map[string]AttributeRequest{
+	"delete":  AttributeRequestDelete,
+	"get":     AttributeRequestGet,
+	"head":    AttributeRequestHead,
+	"options": AttributeRequestOptions,
+	"post":    AttributeRequestPost,
+	"put":     AttributeRequestPut,
+	"trace":   AttributeRequestTrace,
+}
+
 type metricIisConnectionActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -300,7 +372,7 @@ func (m *metricIisNetworkFileCount) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -353,7 +425,7 @@ func (m *metricIisNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -406,7 +478,7 @@ func (m *metricIisRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Request, pcommon.NewValueString(requestAttributeValue))
+	dp.Attributes().Insert("request", pcommon.NewValueString(requestAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -749,19 +821,37 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/iisreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -777,6 +867,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricIisRequestRejected.emit(ils.Metrics())
 	mb.metricIisThreadActive.emit(ils.Metrics())
 	mb.metricIisUptime.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -786,8 +879,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -814,18 +907,18 @@ func (mb *MetricsBuilder) RecordIisNetworkBlockedDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordIisNetworkFileCountDataPoint adds a data point to iis.network.file.count metric.
-func (mb *MetricsBuilder) RecordIisNetworkFileCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricIisNetworkFileCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordIisNetworkFileCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricIisNetworkFileCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordIisNetworkIoDataPoint adds a data point to iis.network.io metric.
-func (mb *MetricsBuilder) RecordIisNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricIisNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordIisNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricIisNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordIisRequestCountDataPoint adds a data point to iis.request.count metric.
-func (mb *MetricsBuilder) RecordIisRequestCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	mb.metricIisRequestCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue)
+func (mb *MetricsBuilder) RecordIisRequestCountDataPoint(ts pcommon.Timestamp, val int64, requestAttributeValue AttributeRequest) {
+	mb.metricIisRequestCount.recordDataPoint(mb.startTime, ts, val, requestAttributeValue.String())
 }
 
 // RecordIisRequestQueueAgeMaxDataPoint adds a data point to iis.request.queue.age.max metric.
@@ -860,46 +953,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Direction (The direction data is moving.)
-	Direction string
-	// Request (The type of request sent by a client.)
-	Request string
-}{
-	"direction",
-	"request",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Sent     string
-	Received string
-}{
-	"sent",
-	"received",
-}
-
-// AttributeRequest are the possible values that the attribute "request" can have.
-var AttributeRequest = struct {
-	Delete  string
-	Get     string
-	Head    string
-	Options string
-	Post    string
-	Put     string
-	Trace   string
-}{
-	"delete",
-	"get",
-	"head",
-	"options",
-	"post",
-	"put",
-	"trace",
 }

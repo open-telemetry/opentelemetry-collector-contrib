@@ -72,7 +72,8 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 		options = append(options, translator.WithCountSumMetrics())
 	}
 
-	if cfg.Metrics.Quantiles {
+	switch cfg.Metrics.SummaryConfig.Mode {
+	case config.SummaryModeGauges:
 		options = append(options, translator.WithQuantiles())
 	}
 
@@ -104,7 +105,9 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
-	utils.ValidateAPIKey(params.Logger, client)
+	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+		return nil, err
+	}
 
 	tr, err := translatorFromConfig(params.Logger, cfg)
 	if err != nil {

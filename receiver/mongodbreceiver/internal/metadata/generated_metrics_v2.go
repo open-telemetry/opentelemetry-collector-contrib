@@ -71,6 +71,130 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeConnectionType specifies the a value connection_type attribute.
+type AttributeConnectionType int
+
+const (
+	_ AttributeConnectionType = iota
+	AttributeConnectionTypeActive
+	AttributeConnectionTypeAvailable
+	AttributeConnectionTypeCurrent
+)
+
+// String returns the string representation of the AttributeConnectionType.
+func (av AttributeConnectionType) String() string {
+	switch av {
+	case AttributeConnectionTypeActive:
+		return "active"
+	case AttributeConnectionTypeAvailable:
+		return "available"
+	case AttributeConnectionTypeCurrent:
+		return "current"
+	}
+	return ""
+}
+
+// MapAttributeConnectionType is a helper map of string to AttributeConnectionType attribute value.
+var MapAttributeConnectionType = map[string]AttributeConnectionType{
+	"active":    AttributeConnectionTypeActive,
+	"available": AttributeConnectionTypeAvailable,
+	"current":   AttributeConnectionTypeCurrent,
+}
+
+// AttributeMemoryType specifies the a value memory_type attribute.
+type AttributeMemoryType int
+
+const (
+	_ AttributeMemoryType = iota
+	AttributeMemoryTypeResident
+	AttributeMemoryTypeVirtual
+)
+
+// String returns the string representation of the AttributeMemoryType.
+func (av AttributeMemoryType) String() string {
+	switch av {
+	case AttributeMemoryTypeResident:
+		return "resident"
+	case AttributeMemoryTypeVirtual:
+		return "virtual"
+	}
+	return ""
+}
+
+// MapAttributeMemoryType is a helper map of string to AttributeMemoryType attribute value.
+var MapAttributeMemoryType = map[string]AttributeMemoryType{
+	"resident": AttributeMemoryTypeResident,
+	"virtual":  AttributeMemoryTypeVirtual,
+}
+
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationInsert
+	AttributeOperationQuery
+	AttributeOperationUpdate
+	AttributeOperationDelete
+	AttributeOperationGetmore
+	AttributeOperationCommand
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationInsert:
+		return "insert"
+	case AttributeOperationQuery:
+		return "query"
+	case AttributeOperationUpdate:
+		return "update"
+	case AttributeOperationDelete:
+		return "delete"
+	case AttributeOperationGetmore:
+		return "getmore"
+	case AttributeOperationCommand:
+		return "command"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"insert":  AttributeOperationInsert,
+	"query":   AttributeOperationQuery,
+	"update":  AttributeOperationUpdate,
+	"delete":  AttributeOperationDelete,
+	"getmore": AttributeOperationGetmore,
+	"command": AttributeOperationCommand,
+}
+
+// AttributeType specifies the a value type attribute.
+type AttributeType int
+
+const (
+	_ AttributeType = iota
+	AttributeTypeHit
+	AttributeTypeMiss
+)
+
+// String returns the string representation of the AttributeType.
+func (av AttributeType) String() string {
+	switch av {
+	case AttributeTypeHit:
+		return "hit"
+	case AttributeTypeMiss:
+		return "miss"
+	}
+	return ""
+}
+
+// MapAttributeType is a helper map of string to AttributeType attribute value.
+var MapAttributeType = map[string]AttributeType{
+	"hit":  AttributeTypeHit,
+	"miss": AttributeTypeMiss,
+}
+
 type metricMongodbCacheOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -96,7 +220,7 @@ func (m *metricMongodbCacheOperations) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Type, pcommon.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -149,7 +273,7 @@ func (m *metricMongodbCollectionCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -202,8 +326,8 @@ func (m *metricMongodbConnectionCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.ConnectionType, pcommon.NewValueString(connectionTypeAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(connectionTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -256,7 +380,7 @@ func (m *metricMongodbDataSize) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -309,7 +433,7 @@ func (m *metricMongodbExtentCount) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -413,7 +537,7 @@ func (m *metricMongodbIndexCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -466,7 +590,7 @@ func (m *metricMongodbIndexSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -519,8 +643,8 @@ func (m *metricMongodbMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.MemoryType, pcommon.NewValueString(memoryTypeAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(memoryTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -573,7 +697,7 @@ func (m *metricMongodbObjectCount) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -626,7 +750,7 @@ func (m *metricMongodbOperationCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -679,7 +803,7 @@ func (m *metricMongodbStorageSize) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -771,19 +895,44 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithDatabase sets provided value as "database" attribute for current resource.
+func WithDatabase(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("database", val)
+	}
+}
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/mongodbreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -799,6 +948,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricMongodbObjectCount.emit(ils.Metrics())
 	mb.metricMongodbOperationCount.emit(ils.Metrics())
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -808,16 +960,16 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordMongodbCacheOperationsDataPoint adds a data point to mongodb.cache.operations metric.
-func (mb *MetricsBuilder) RecordMongodbCacheOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue string) {
-	mb.metricMongodbCacheOperations.recordDataPoint(mb.startTime, ts, val, typeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbCacheOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
+	mb.metricMongodbCacheOperations.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String())
 }
 
 // RecordMongodbCollectionCountDataPoint adds a data point to mongodb.collection.count metric.
@@ -826,8 +978,8 @@ func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Times
 }
 
 // RecordMongodbConnectionCountDataPoint adds a data point to mongodb.connection.count metric.
-func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, connectionTypeAttributeValue string) {
-	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, connectionTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, connectionTypeAttributeValue AttributeConnectionType) {
+	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, connectionTypeAttributeValue.String())
 }
 
 // RecordMongodbDataSizeDataPoint adds a data point to mongodb.data.size metric.
@@ -856,8 +1008,8 @@ func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordMongodbMemoryUsageDataPoint adds a data point to mongodb.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, memoryTypeAttributeValue string) {
-	mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, memoryTypeAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, memoryTypeAttributeValue AttributeMemoryType) {
+	mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, memoryTypeAttributeValue.String())
 }
 
 // RecordMongodbObjectCountDataPoint adds a data point to mongodb.object.count metric.
@@ -866,8 +1018,8 @@ func (mb *MetricsBuilder) RecordMongodbObjectCountDataPoint(ts pcommon.Timestamp
 }
 
 // RecordMongodbOperationCountDataPoint adds a data point to mongodb.operation.count metric.
-func (mb *MetricsBuilder) RecordMongodbOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricMongodbOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricMongodbOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordMongodbStorageSizeDataPoint adds a data point to mongodb.storage.size metric.
@@ -882,73 +1034,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// ConnectionType (The status of the connection.)
-	ConnectionType string
-	// Database (The name of a database.)
-	Database string
-	// MemoryType (The type of memory used.)
-	MemoryType string
-	// Operation (The MongoDB operation being counted.)
-	Operation string
-	// Type (The result of a cache request.)
-	Type string
-}{
-	"type",
-	"database",
-	"type",
-	"operation",
-	"type",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeConnectionType are the possible values that the attribute "connection_type" can have.
-var AttributeConnectionType = struct {
-	Active    string
-	Available string
-	Current   string
-}{
-	"active",
-	"available",
-	"current",
-}
-
-// AttributeMemoryType are the possible values that the attribute "memory_type" can have.
-var AttributeMemoryType = struct {
-	Resident string
-	Virtual  string
-}{
-	"resident",
-	"virtual",
-}
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Insert  string
-	Query   string
-	Update  string
-	Delete  string
-	Getmore string
-	Command string
-}{
-	"insert",
-	"query",
-	"update",
-	"delete",
-	"getmore",
-	"command",
-}
-
-// AttributeType are the possible values that the attribute "type" can have.
-var AttributeType = struct {
-	Hit  string
-	Miss string
-}{
-	"hit",
-	"miss",
 }

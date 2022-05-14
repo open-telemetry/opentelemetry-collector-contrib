@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 type fakeRestClient struct {
@@ -41,11 +43,19 @@ func TestMetricAccumulator(t *testing.T) {
 	summary, _ := statsProvider.StatsSummary()
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
-	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups))
-
+	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+	}
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs))
 	// Disable all groups
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{})))
+	mbs.NodeMetricsBuilder.Reset()
+	mbs.PodMetricsBuilder.Reset()
+	mbs.OtherMetricsBuilder.Reset()
+	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs)))
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -55,6 +65,7 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 			requireResourceOk(t, rm.Resource())
 			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 				ilm := rm.ScopeMetrics().At(j)
+				require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
 				for k := 0; k < ilm.Metrics().Len(); k++ {
 					requireMetricOk(t, ilm.Metrics().At(k))
 				}
@@ -66,7 +77,6 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
 	require.NotZero(t, m.Name())
 	require.NotEqual(t, pmetric.MetricDataTypeNone, m.DataType())
-
 	switch m.DataType() {
 	case pmetric.MetricDataTypeGauge:
 		gauge := m.Gauge()
@@ -93,7 +103,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 
 func requirePointOk(t *testing.T, point pmetric.NumberDataPoint) {
 	require.NotZero(t, point.Timestamp())
-	require.NotEqual(t, pmetric.MetricValueTypeNone, point.ValueType())
+	require.NotEqual(t, pmetric.NumberDataPointValueTypeNone, point.ValueType())
 }
 
 func requireResourceOk(t *testing.T, resource pcommon.Resource) {
@@ -165,5 +175,11 @@ func fakeMetrics() []pmetric.Metrics {
 		PodMetricGroup:       true,
 		NodeMetricGroup:      true,
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, "foo", mgs)
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+	}
+	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs)
 }

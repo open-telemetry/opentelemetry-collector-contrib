@@ -181,9 +181,9 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 				assert.Equal(t, 1, dps.Len())
 				dp := dps.At(0)
 				switch dp.ValueType() {
-				case pmetric.MetricValueTypeDouble:
+				case pmetric.NumberDataPointValueTypeDouble:
 					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleVal())
-				case pmetric.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					assert.Equal(t, convertToInt64(fields[metricName]), dp.IntVal())
 				}
 				assert.Equal(t, pcommon.Timestamp(timeUnixNano), dp.Timestamp())

@@ -16,39 +16,13 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func fillDoubleGauge(dest pmetric.Metric, prefix string, metricInt metadata.MetricIntf, value float64, currentTime pcommon.Timestamp) {
-	metricInt.Init(dest)
-	dest.SetName(prefix + dest.Name())
-	dp := dest.Gauge().DataPoints().AppendEmpty()
-	dp.SetDoubleVal(value)
-	dp.SetTimestamp(currentTime)
-}
-
-func addIntGauge(dest pmetric.MetricSlice, prefix string, metricInt metadata.MetricIntf, value *uint64, currentTime pcommon.Timestamp) {
+func recordIntDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointFunc, value *uint64, currentTime pcommon.Timestamp) {
 	if value == nil {
 		return
 	}
-	fillIntGauge(dest.AppendEmpty(), prefix, metricInt, int64(*value), currentTime)
-}
-
-func fillIntGauge(dest pmetric.Metric, prefix string, metricInt metadata.MetricIntf, value int64, currentTime pcommon.Timestamp) {
-	metricInt.Init(dest)
-	dest.SetName(prefix + dest.Name())
-	dp := dest.Gauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(value)
-	dp.SetTimestamp(currentTime)
-}
-
-func fillDoubleSum(dest pmetric.Metric, prefix string, metricInt metadata.MetricIntf, value float64, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
-	metricInt.Init(dest)
-	dest.SetName(prefix + dest.Name())
-	dp := dest.Sum().DataPoints().AppendEmpty()
-	dp.SetDoubleVal(value)
-	dp.SetStartTimestamp(startTime)
-	dp.SetTimestamp(currentTime)
+	recordDataPoint(mb, currentTime, int64(*value))
 }

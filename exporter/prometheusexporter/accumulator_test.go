@@ -73,9 +73,9 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
+				dp.SetMBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{3.5, 10.0})
+				dp.SetMExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
@@ -209,9 +209,9 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
+				dp.SetMBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{3.5, 10.0})
+				dp.SetMExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(v)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
@@ -281,9 +281,9 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
+				dp.SetMBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{3.5, 10.0})
+				dp.SetMExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(v)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
@@ -399,9 +399,9 @@ func getMetricProperties(metric pmetric.Metric) (
 		ts = metric.Gauge().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Gauge().DataPoints().At(0)
 		switch dp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			value = float64(dp.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			value = dp.DoubleVal()
 		}
 		temporality = pmetric.MetricAggregationTemporalityUnspecified
@@ -411,9 +411,9 @@ func getMetricProperties(metric pmetric.Metric) (
 		ts = metric.Sum().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Sum().DataPoints().At(0)
 		switch dp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			value = float64(dp.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			value = dp.DoubleVal()
 		}
 		temporality = metric.Sum().AggregationTemporality()

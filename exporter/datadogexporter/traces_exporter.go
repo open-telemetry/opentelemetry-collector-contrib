@@ -65,10 +65,12 @@ var (
 	}
 )
 
-func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once) *traceExporter {
+func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	utils.ValidateAPIKey(params.Logger, client)
+	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+		return nil, err
+	}
 
 	// removes potentially sensitive info and PII, approach taken from serverless approach
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
@@ -89,7 +91,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 		onceMetadata:   onceMetadata,
 	}
 
-	return exporter
+	return exporter, nil
 }
 
 // TODO: when component.Host exposes a way to retrieve processors, check for batch processors
@@ -144,9 +146,13 @@ func (exp *traceExporter) pushTraceData(
 	for _, ddTracePayload := range aggregatedTraces {
 		// currently we don't want to do retries since api endpoints may not dedupe in certain situations
 		// adding a helper function here to make custom retry logic easier in the future
-		exp.pushWithRetry(ctx, ddTracePayload, 1, pushTime, func() error {
+		err := exp.pushWithRetry(ctx, ddTracePayload, 1, pushTime, func() error {
 			return nil
 		})
+
+		if err != nil {
+			exp.params.Logger.Info("failed to push with retry", zap.Error(err))
+		}
 	}
 
 	_ = exp.client.PostMetrics(ms)

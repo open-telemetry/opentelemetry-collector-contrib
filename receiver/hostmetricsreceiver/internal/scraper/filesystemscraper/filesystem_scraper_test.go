@@ -153,7 +153,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
 			},
-			newErrRegex: "^error creating device include filters:",
+			newErrRegex: "^error creating include_devices filter:",
 		},
 		{
 			name: "Invalid Exclude Device Filter",
@@ -161,7 +161,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
 			},
-			newErrRegex: "^error creating device exclude filters:",
+			newErrRegex: "^error creating exclude_devices filter:",
 		},
 		{
 			name: "Invalid Include Filesystems Filter",
@@ -169,7 +169,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
-			newErrRegex: "^error creating type include filters:",
+			newErrRegex: "^error creating include_fs_types filter:",
 		},
 		{
 			name: "Invalid Exclude Filesystems Filter",
@@ -177,7 +177,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
-			newErrRegex: "^error creating type exclude filters:",
+			newErrRegex: "^error creating exclude_fs_types filter:",
 		},
 		{
 			name: "Invalid Include Moountpoints Filter",
@@ -185,7 +185,7 @@ func TestScrape(t *testing.T) {
 				Metrics:            metadata.DefaultMetricsSettings(),
 				IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
-			newErrRegex: "^error creating mountpoint include filters:",
+			newErrRegex: "^error creating include_mount_points filter:",
 		},
 		{
 			name: "Invalid Exclude Moountpoints Filter",
@@ -193,7 +193,7 @@ func TestScrape(t *testing.T) {
 				Metrics:            metadata.DefaultMetricsSettings(),
 				ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
-			newErrRegex: "^error creating mountpoint exclude filters:",
+			newErrRegex: "^error creating exclude_mount_points filter:",
 		},
 		{
 			name:           "Partitions Error",
@@ -321,12 +321,15 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pcommon.NewValueString(metadata.AttributeState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pcommon.NewValueString(metadata.AttributeState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
+		pcommon.NewValueString(metadata.AttributeStateUsed.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
+		pcommon.NewValueString(metadata.AttributeStateFree.String()))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pcommon.NewValueString(metadata.AttributeState.Reserved))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state",
+		pcommon.NewValueString(metadata.AttributeStateReserved.String()))
 }
 
 func isUnix() bool {

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 # Updates MODULE inside go.mod if it is already present to version VERSION.
 
@@ -8,12 +8,12 @@ if grep -q "$MODULE " go.mod; then
   go get "$MODULE"@"$VERSION"
 fi
 
-# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/model"
+# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/semconv"
 # and "go.opentelemetry.io/collector/pdata" as well.
 if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
-  MODEL=$MODULE"/model"
-  if grep -q "$MODEL " go.mod; then
-    go get "$MODEL"@"$VERSION"
+  SEMCONV=$MODULE"/semconv"
+  if grep -q "$SEMCONV " go.mod; then
+    go get -d "$SEMCONV"@"$VERSION"
   fi
   PDATA=$MODULE"/pdata"
   if grep -q "$PDATA " go.mod; then

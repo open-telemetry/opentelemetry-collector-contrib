@@ -30,19 +30,24 @@ var (
 	sfxMetricTypeGauge             = sfxpb.MetricType_GAUGE
 	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
 	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
-)
-
-var (
-	// Some standard dimension keys.
-	// upper bound dimension key for histogram buckets.
-	upperBoundDimensionKey = "upper_bound"
 
 	// infinity bound dimension value is used on all histograms.
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
+const (
+	// Some standard dimension keys. upper bound dimension key for histogram buckets.
+	bucketDimensionKey = "upper_bound"
+
+	// Some standard dimension keys. quantile dimension key for summary quantiles.
+	quantileDimensionKey = "quantile"
+)
+
+// FromTranslator converts from pdata to SignalFx proto data model.
+type FromTranslator struct{}
+
 // FromMetrics converts pmetric.Metrics to SignalFx proto data points.
-func FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
+func (ft *FromTranslator) FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -53,7 +58,7 @@ func FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				sfxDataPoints = append(sfxDataPoints, FromMetric(ilm.Metrics().At(k), extraDimensions)...)
+				sfxDataPoints = append(sfxDataPoints, ft.FromMetric(ilm.Metrics().At(k), extraDimensions)...)
 			}
 		}
 	}
@@ -63,21 +68,18 @@ func FromMetrics(md pmetric.Metrics) ([]*sfxpb.DataPoint, error) {
 
 // FromMetric converts pmetric.Metric to SignalFx proto data points.
 // TODO: Remove this and change signalfxexporter to us FromMetrics.
-func FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var dps []*sfxpb.DataPoint
 
-	basePoint := &sfxpb.DataPoint{
-		Metric:     m.Name(),
-		MetricType: fromMetricTypeToMetricType(m),
-	}
+	mt := fromMetricTypeToMetricType(m)
 
 	switch m.DataType() {
 	case pmetric.MetricDataTypeGauge:
-		dps = convertNumberDataPoints(m.Gauge().DataPoints(), basePoint, extraDimensions)
+		dps = convertNumberDataPoints(m.Gauge().DataPoints(), m.Name(), mt, extraDimensions)
 	case pmetric.MetricDataTypeSum:
-		dps = convertNumberDataPoints(m.Sum().DataPoints(), basePoint, extraDimensions)
+		dps = convertNumberDataPoints(m.Sum().DataPoints(), m.Name(), mt, extraDimensions)
 	case pmetric.MetricDataTypeHistogram:
-		dps = convertHistogram(m.Histogram().DataPoints(), basePoint, extraDimensions)
+		dps = convertHistogram(m.Histogram().DataPoints(), m.Name(), mt, extraDimensions)
 	case pmetric.MetricDataTypeSummary:
 		dps = convertSummaryDataPoints(m.Summary().DataPoints(), m.Name(), extraDimensions)
 	}
@@ -109,54 +111,47 @@ func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 	return nil
 }
 
-func convertNumberDataPoints(in pmetric.NumberDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
-	out := make([]*sfxpb.DataPoint, 0, in.Len())
+func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	dps := newDpsBuilder(in.Len())
 
 	for i := 0; i < in.Len(); i++ {
 		inDp := in.At(i)
 
-		dp := *basePoint
-		dp.Timestamp = fromTimestamp(inDp.Timestamp())
-		dp.Dimensions = attributesToDimensions(inDp.Attributes(), extraDims)
-
+		dp := dps.appendPoint(name, mt, fromTimestamp(inDp.Timestamp()), attributesToDimensions(inDp.Attributes(), extraDims))
 		switch inDp.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val := inDp.IntVal()
 			dp.Value.IntValue = &val
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val := inDp.DoubleVal()
 			dp.Value.DoubleValue = &val
 		}
-
-		out = append(out, &dp)
 	}
-	return out
+	return dps.out
 }
 
-func convertHistogram(histDPs pmetric.HistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
-	var out []*sfxpb.DataPoint
+func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	var numDPs int
+	for i := 0; i < in.Len(); i++ {
+		numDPs += 2 + len(in.At(i).MBucketCounts())
+	}
+	dps := newDpsBuilder(numDPs)
 
-	for i := 0; i < histDPs.Len(); i++ {
-		histDP := histDPs.At(i)
+	for i := 0; i < in.Len(); i++ {
+		histDP := in.At(i)
 		ts := fromTimestamp(histDP.Timestamp())
+		dims := attributesToDimensions(histDP.Attributes(), extraDims)
 
-		countDP := *basePoint
-		countDP.Metric = basePoint.Metric + "_count"
-		countDP.Timestamp = ts
-		countDP.Dimensions = attributesToDimensions(histDP.Attributes(), extraDims)
+		countDP := dps.appendPoint(name+"_count", mt, ts, dims)
 		count := int64(histDP.Count())
 		countDP.Value.IntValue = &count
 
-		sumDP := *basePoint
-		sumDP.Timestamp = ts
-		sumDP.Dimensions = attributesToDimensions(histDP.Attributes(), extraDims)
+		sumDP := dps.appendPoint(name, mt, ts, dims)
 		sum := histDP.Sum()
 		sumDP.Value.DoubleValue = &sum
 
-		out = append(out, &countDP, &sumDP)
-
-		bounds := histDP.ExplicitBounds()
-		counts := histDP.BucketCounts()
+		bounds := histDP.MExplicitBounds()
+		counts := histDP.MBucketCounts()
 
 		// Spec says counts is optional but if present it must have one more
 		// element than the bounds array.
@@ -169,31 +164,27 @@ func convertHistogram(histDPs pmetric.HistogramDataPointSlice, basePoint *sfxpb.
 			if j < len(bounds) {
 				bound = float64ToDimValue(bounds[j])
 			}
-
-			dp := *basePoint
-			dp.Metric = basePoint.Metric + "_bucket"
-			dp.Timestamp = ts
-			dp.Dimensions = attributesToDimensions(histDP.Attributes(), extraDims)
-			dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{
-				Key:   upperBoundDimensionKey,
+			cloneDim := make([]*sfxpb.Dimension, len(dims)+1)
+			copy(cloneDim, dims)
+			cloneDim[len(dims)] = &sfxpb.Dimension{
+				Key:   bucketDimensionKey,
 				Value: bound,
-			})
+			}
+			dp := dps.appendPoint(name+"_bucket", mt, ts, cloneDim)
 			cInt := int64(c)
 			dp.Value.IntValue = &cInt
-
-			out = append(out, &dp)
 		}
 	}
 
-	return out
+	return dps.out
 }
 
-func convertSummaryDataPoints(
-	in pmetric.SummaryDataPointSlice,
-	name string,
-	extraDims []*sfxpb.Dimension,
-) []*sfxpb.DataPoint {
-	out := make([]*sfxpb.DataPoint, 0, in.Len())
+func convertSummaryDataPoints(in pmetric.SummaryDataPointSlice, name string, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	var numDPs int
+	for i := 0; i < in.Len(); i++ {
+		numDPs += 2 + in.At(i).QuantileValues().Len()
+	}
+	dps := newDpsBuilder(numDPs)
 
 	for i := 0; i < in.Len(); i++ {
 		inDp := in.At(i)
@@ -201,45 +192,29 @@ func convertSummaryDataPoints(
 		dims := attributesToDimensions(inDp.Attributes(), extraDims)
 		ts := fromTimestamp(inDp.Timestamp())
 
-		countPt := sfxpb.DataPoint{
-			Metric:     name + "_count",
-			Timestamp:  ts,
-			Dimensions: dims,
-			MetricType: &sfxMetricTypeCumulativeCounter,
-		}
+		countDP := dps.appendPoint(name+"_count", &sfxMetricTypeCumulativeCounter, ts, dims)
 		c := int64(inDp.Count())
-		countPt.Value.IntValue = &c
-		out = append(out, &countPt)
+		countDP.Value.IntValue = &c
 
-		sumPt := sfxpb.DataPoint{
-			Metric:     name,
-			Timestamp:  ts,
-			Dimensions: dims,
-			MetricType: &sfxMetricTypeCumulativeCounter,
-		}
+		sumDP := dps.appendPoint(name, &sfxMetricTypeCumulativeCounter, ts, dims)
 		sum := inDp.Sum()
-		sumPt.Value.DoubleValue = &sum
-		out = append(out, &sumPt)
+		sumDP.Value.DoubleValue = &sum
 
 		qvs := inDp.QuantileValues()
 		for j := 0; j < qvs.Len(); j++ {
-			qPt := sfxpb.DataPoint{
-				Metric:     name + "_quantile",
-				Timestamp:  ts,
-				MetricType: &sfxMetricTypeGauge,
-			}
 			qv := qvs.At(j)
-			qdim := sfxpb.Dimension{
-				Key:   "quantile",
+			cloneDim := make([]*sfxpb.Dimension, len(dims)+1)
+			copy(cloneDim, dims)
+			cloneDim[len(dims)] = &sfxpb.Dimension{
+				Key:   quantileDimensionKey,
 				Value: strconv.FormatFloat(qv.Quantile(), 'f', -1, 64),
 			}
-			qPt.Dimensions = append(dims, &qdim)
+			qPt := dps.appendPoint(name+"_quantile", &sfxMetricTypeGauge, ts, cloneDim)
 			v := qv.Value()
 			qPt.Value.DoubleValue = &v
-			out = append(out, &qPt)
 		}
 	}
-	return out
+	return dps.out
 }
 
 func attributesToDimensions(attributes pcommon.Map, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
@@ -260,14 +235,37 @@ func attributesToDimensions(attributes pcommon.Map, extraDims []*sfxpb.Dimension
 	return dimensions
 }
 
-// Is equivalent to strconv.FormatFloat(f, 'g', -1, 64), but hardcodes a few common cases for increased efficiency.
+type dpsBuilder struct {
+	baseOut []sfxpb.DataPoint
+	out     []*sfxpb.DataPoint
+	pos     int
+}
+
+func newDpsBuilder(cap int) dpsBuilder {
+	return dpsBuilder{
+		baseOut: make([]sfxpb.DataPoint, cap),
+		out:     make([]*sfxpb.DataPoint, 0, cap),
+	}
+}
+
+func (dp *dpsBuilder) appendPoint(name string, mt *sfxpb.MetricType, ts int64, dims []*sfxpb.Dimension) *sfxpb.DataPoint {
+	base := dp.baseOut[dp.pos]
+	dp.pos++
+	dp.out = append(dp.out, &base)
+	base.Metric = name
+	base.Timestamp = ts
+	base.MetricType = mt
+	base.Dimensions = dims
+	return &base
+}
+
+// Is equivalent to strconv.FormatFloat(f, 'g', -1, 64), but hard-codes a few common cases for increased efficiency.
 func float64ToDimValue(f float64) string {
 	// Parameters below are the same used by Prometheus
 	// see https://github.com/prometheus/common/blob/b5fe7d854c42dc7842e48d1ca58f60feae09d77b/expfmt/text_create.go#L450
 	// SignalFx agent uses a different pattern
 	// https://github.com/signalfx/signalfx-agent/blob/5779a3de0c9861fa07316fd11b3c4ff38c0d78f0/internal/monitors/prometheusexporter/conversion.go#L77
-	// The important issue here is consistency with the exporter, opting for the
-	// more common one used by Prometheus.
+	// The important issue here is consistency with the exporter, opting for the more common one used by Prometheus.
 	switch {
 	case f == 0:
 		return "0"

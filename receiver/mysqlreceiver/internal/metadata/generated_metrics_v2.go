@@ -93,6 +93,510 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeBufferPoolData specifies the a value buffer_pool_data attribute.
+type AttributeBufferPoolData int
+
+const (
+	_ AttributeBufferPoolData = iota
+	AttributeBufferPoolDataDirty
+	AttributeBufferPoolDataClean
+)
+
+// String returns the string representation of the AttributeBufferPoolData.
+func (av AttributeBufferPoolData) String() string {
+	switch av {
+	case AttributeBufferPoolDataDirty:
+		return "dirty"
+	case AttributeBufferPoolDataClean:
+		return "clean"
+	}
+	return ""
+}
+
+// MapAttributeBufferPoolData is a helper map of string to AttributeBufferPoolData attribute value.
+var MapAttributeBufferPoolData = map[string]AttributeBufferPoolData{
+	"dirty": AttributeBufferPoolDataDirty,
+	"clean": AttributeBufferPoolDataClean,
+}
+
+// AttributeBufferPoolOperations specifies the a value buffer_pool_operations attribute.
+type AttributeBufferPoolOperations int
+
+const (
+	_ AttributeBufferPoolOperations = iota
+	AttributeBufferPoolOperationsReadAheadRnd
+	AttributeBufferPoolOperationsReadAhead
+	AttributeBufferPoolOperationsReadAheadEvicted
+	AttributeBufferPoolOperationsReadRequests
+	AttributeBufferPoolOperationsReads
+	AttributeBufferPoolOperationsWaitFree
+	AttributeBufferPoolOperationsWriteRequests
+)
+
+// String returns the string representation of the AttributeBufferPoolOperations.
+func (av AttributeBufferPoolOperations) String() string {
+	switch av {
+	case AttributeBufferPoolOperationsReadAheadRnd:
+		return "read_ahead_rnd"
+	case AttributeBufferPoolOperationsReadAhead:
+		return "read_ahead"
+	case AttributeBufferPoolOperationsReadAheadEvicted:
+		return "read_ahead_evicted"
+	case AttributeBufferPoolOperationsReadRequests:
+		return "read_requests"
+	case AttributeBufferPoolOperationsReads:
+		return "reads"
+	case AttributeBufferPoolOperationsWaitFree:
+		return "wait_free"
+	case AttributeBufferPoolOperationsWriteRequests:
+		return "write_requests"
+	}
+	return ""
+}
+
+// MapAttributeBufferPoolOperations is a helper map of string to AttributeBufferPoolOperations attribute value.
+var MapAttributeBufferPoolOperations = map[string]AttributeBufferPoolOperations{
+	"read_ahead_rnd":     AttributeBufferPoolOperationsReadAheadRnd,
+	"read_ahead":         AttributeBufferPoolOperationsReadAhead,
+	"read_ahead_evicted": AttributeBufferPoolOperationsReadAheadEvicted,
+	"read_requests":      AttributeBufferPoolOperationsReadRequests,
+	"reads":              AttributeBufferPoolOperationsReads,
+	"wait_free":          AttributeBufferPoolOperationsWaitFree,
+	"write_requests":     AttributeBufferPoolOperationsWriteRequests,
+}
+
+// AttributeBufferPoolPages specifies the a value buffer_pool_pages attribute.
+type AttributeBufferPoolPages int
+
+const (
+	_ AttributeBufferPoolPages = iota
+	AttributeBufferPoolPagesData
+	AttributeBufferPoolPagesFree
+	AttributeBufferPoolPagesMisc
+)
+
+// String returns the string representation of the AttributeBufferPoolPages.
+func (av AttributeBufferPoolPages) String() string {
+	switch av {
+	case AttributeBufferPoolPagesData:
+		return "data"
+	case AttributeBufferPoolPagesFree:
+		return "free"
+	case AttributeBufferPoolPagesMisc:
+		return "misc"
+	}
+	return ""
+}
+
+// MapAttributeBufferPoolPages is a helper map of string to AttributeBufferPoolPages attribute value.
+var MapAttributeBufferPoolPages = map[string]AttributeBufferPoolPages{
+	"data": AttributeBufferPoolPagesData,
+	"free": AttributeBufferPoolPagesFree,
+	"misc": AttributeBufferPoolPagesMisc,
+}
+
+// AttributeCommand specifies the a value command attribute.
+type AttributeCommand int
+
+const (
+	_ AttributeCommand = iota
+	AttributeCommandExecute
+	AttributeCommandClose
+	AttributeCommandFetch
+	AttributeCommandPrepare
+	AttributeCommandReset
+	AttributeCommandSendLongData
+)
+
+// String returns the string representation of the AttributeCommand.
+func (av AttributeCommand) String() string {
+	switch av {
+	case AttributeCommandExecute:
+		return "execute"
+	case AttributeCommandClose:
+		return "close"
+	case AttributeCommandFetch:
+		return "fetch"
+	case AttributeCommandPrepare:
+		return "prepare"
+	case AttributeCommandReset:
+		return "reset"
+	case AttributeCommandSendLongData:
+		return "send_long_data"
+	}
+	return ""
+}
+
+// MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
+var MapAttributeCommand = map[string]AttributeCommand{
+	"execute":        AttributeCommandExecute,
+	"close":          AttributeCommandClose,
+	"fetch":          AttributeCommandFetch,
+	"prepare":        AttributeCommandPrepare,
+	"reset":          AttributeCommandReset,
+	"send_long_data": AttributeCommandSendLongData,
+}
+
+// AttributeDoubleWrites specifies the a value double_writes attribute.
+type AttributeDoubleWrites int
+
+const (
+	_ AttributeDoubleWrites = iota
+	AttributeDoubleWritesPagesWritten
+	AttributeDoubleWritesWrites
+)
+
+// String returns the string representation of the AttributeDoubleWrites.
+func (av AttributeDoubleWrites) String() string {
+	switch av {
+	case AttributeDoubleWritesPagesWritten:
+		return "pages_written"
+	case AttributeDoubleWritesWrites:
+		return "writes"
+	}
+	return ""
+}
+
+// MapAttributeDoubleWrites is a helper map of string to AttributeDoubleWrites attribute value.
+var MapAttributeDoubleWrites = map[string]AttributeDoubleWrites{
+	"pages_written": AttributeDoubleWritesPagesWritten,
+	"writes":        AttributeDoubleWritesWrites,
+}
+
+// AttributeHandler specifies the a value handler attribute.
+type AttributeHandler int
+
+const (
+	_ AttributeHandler = iota
+	AttributeHandlerCommit
+	AttributeHandlerDelete
+	AttributeHandlerDiscover
+	AttributeHandlerExternalLock
+	AttributeHandlerMrrInit
+	AttributeHandlerPrepare
+	AttributeHandlerReadFirst
+	AttributeHandlerReadKey
+	AttributeHandlerReadLast
+	AttributeHandlerReadNext
+	AttributeHandlerReadPrev
+	AttributeHandlerReadRnd
+	AttributeHandlerReadRndNext
+	AttributeHandlerRollback
+	AttributeHandlerSavepoint
+	AttributeHandlerSavepointRollback
+	AttributeHandlerUpdate
+	AttributeHandlerWrite
+)
+
+// String returns the string representation of the AttributeHandler.
+func (av AttributeHandler) String() string {
+	switch av {
+	case AttributeHandlerCommit:
+		return "commit"
+	case AttributeHandlerDelete:
+		return "delete"
+	case AttributeHandlerDiscover:
+		return "discover"
+	case AttributeHandlerExternalLock:
+		return "external_lock"
+	case AttributeHandlerMrrInit:
+		return "mrr_init"
+	case AttributeHandlerPrepare:
+		return "prepare"
+	case AttributeHandlerReadFirst:
+		return "read_first"
+	case AttributeHandlerReadKey:
+		return "read_key"
+	case AttributeHandlerReadLast:
+		return "read_last"
+	case AttributeHandlerReadNext:
+		return "read_next"
+	case AttributeHandlerReadPrev:
+		return "read_prev"
+	case AttributeHandlerReadRnd:
+		return "read_rnd"
+	case AttributeHandlerReadRndNext:
+		return "read_rnd_next"
+	case AttributeHandlerRollback:
+		return "rollback"
+	case AttributeHandlerSavepoint:
+		return "savepoint"
+	case AttributeHandlerSavepointRollback:
+		return "savepoint_rollback"
+	case AttributeHandlerUpdate:
+		return "update"
+	case AttributeHandlerWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeHandler is a helper map of string to AttributeHandler attribute value.
+var MapAttributeHandler = map[string]AttributeHandler{
+	"commit":             AttributeHandlerCommit,
+	"delete":             AttributeHandlerDelete,
+	"discover":           AttributeHandlerDiscover,
+	"external_lock":      AttributeHandlerExternalLock,
+	"mrr_init":           AttributeHandlerMrrInit,
+	"prepare":            AttributeHandlerPrepare,
+	"read_first":         AttributeHandlerReadFirst,
+	"read_key":           AttributeHandlerReadKey,
+	"read_last":          AttributeHandlerReadLast,
+	"read_next":          AttributeHandlerReadNext,
+	"read_prev":          AttributeHandlerReadPrev,
+	"read_rnd":           AttributeHandlerReadRnd,
+	"read_rnd_next":      AttributeHandlerReadRndNext,
+	"rollback":           AttributeHandlerRollback,
+	"savepoint":          AttributeHandlerSavepoint,
+	"savepoint_rollback": AttributeHandlerSavepointRollback,
+	"update":             AttributeHandlerUpdate,
+	"write":              AttributeHandlerWrite,
+}
+
+// AttributeLocks specifies the a value locks attribute.
+type AttributeLocks int
+
+const (
+	_ AttributeLocks = iota
+	AttributeLocksImmediate
+	AttributeLocksWaited
+)
+
+// String returns the string representation of the AttributeLocks.
+func (av AttributeLocks) String() string {
+	switch av {
+	case AttributeLocksImmediate:
+		return "immediate"
+	case AttributeLocksWaited:
+		return "waited"
+	}
+	return ""
+}
+
+// MapAttributeLocks is a helper map of string to AttributeLocks attribute value.
+var MapAttributeLocks = map[string]AttributeLocks{
+	"immediate": AttributeLocksImmediate,
+	"waited":    AttributeLocksWaited,
+}
+
+// AttributeLogOperations specifies the a value log_operations attribute.
+type AttributeLogOperations int
+
+const (
+	_ AttributeLogOperations = iota
+	AttributeLogOperationsWaits
+	AttributeLogOperationsWriteRequests
+	AttributeLogOperationsWrites
+)
+
+// String returns the string representation of the AttributeLogOperations.
+func (av AttributeLogOperations) String() string {
+	switch av {
+	case AttributeLogOperationsWaits:
+		return "waits"
+	case AttributeLogOperationsWriteRequests:
+		return "write_requests"
+	case AttributeLogOperationsWrites:
+		return "writes"
+	}
+	return ""
+}
+
+// MapAttributeLogOperations is a helper map of string to AttributeLogOperations attribute value.
+var MapAttributeLogOperations = map[string]AttributeLogOperations{
+	"waits":          AttributeLogOperationsWaits,
+	"write_requests": AttributeLogOperationsWriteRequests,
+	"writes":         AttributeLogOperationsWrites,
+}
+
+// AttributeOperations specifies the a value operations attribute.
+type AttributeOperations int
+
+const (
+	_ AttributeOperations = iota
+	AttributeOperationsFsyncs
+	AttributeOperationsReads
+	AttributeOperationsWrites
+)
+
+// String returns the string representation of the AttributeOperations.
+func (av AttributeOperations) String() string {
+	switch av {
+	case AttributeOperationsFsyncs:
+		return "fsyncs"
+	case AttributeOperationsReads:
+		return "reads"
+	case AttributeOperationsWrites:
+		return "writes"
+	}
+	return ""
+}
+
+// MapAttributeOperations is a helper map of string to AttributeOperations attribute value.
+var MapAttributeOperations = map[string]AttributeOperations{
+	"fsyncs": AttributeOperationsFsyncs,
+	"reads":  AttributeOperationsReads,
+	"writes": AttributeOperationsWrites,
+}
+
+// AttributePageOperations specifies the a value page_operations attribute.
+type AttributePageOperations int
+
+const (
+	_ AttributePageOperations = iota
+	AttributePageOperationsCreated
+	AttributePageOperationsRead
+	AttributePageOperationsWritten
+)
+
+// String returns the string representation of the AttributePageOperations.
+func (av AttributePageOperations) String() string {
+	switch av {
+	case AttributePageOperationsCreated:
+		return "created"
+	case AttributePageOperationsRead:
+		return "read"
+	case AttributePageOperationsWritten:
+		return "written"
+	}
+	return ""
+}
+
+// MapAttributePageOperations is a helper map of string to AttributePageOperations attribute value.
+var MapAttributePageOperations = map[string]AttributePageOperations{
+	"created": AttributePageOperationsCreated,
+	"read":    AttributePageOperationsRead,
+	"written": AttributePageOperationsWritten,
+}
+
+// AttributeRowLocks specifies the a value row_locks attribute.
+type AttributeRowLocks int
+
+const (
+	_ AttributeRowLocks = iota
+	AttributeRowLocksWaits
+	AttributeRowLocksTime
+)
+
+// String returns the string representation of the AttributeRowLocks.
+func (av AttributeRowLocks) String() string {
+	switch av {
+	case AttributeRowLocksWaits:
+		return "waits"
+	case AttributeRowLocksTime:
+		return "time"
+	}
+	return ""
+}
+
+// MapAttributeRowLocks is a helper map of string to AttributeRowLocks attribute value.
+var MapAttributeRowLocks = map[string]AttributeRowLocks{
+	"waits": AttributeRowLocksWaits,
+	"time":  AttributeRowLocksTime,
+}
+
+// AttributeRowOperations specifies the a value row_operations attribute.
+type AttributeRowOperations int
+
+const (
+	_ AttributeRowOperations = iota
+	AttributeRowOperationsDeleted
+	AttributeRowOperationsInserted
+	AttributeRowOperationsRead
+	AttributeRowOperationsUpdated
+)
+
+// String returns the string representation of the AttributeRowOperations.
+func (av AttributeRowOperations) String() string {
+	switch av {
+	case AttributeRowOperationsDeleted:
+		return "deleted"
+	case AttributeRowOperationsInserted:
+		return "inserted"
+	case AttributeRowOperationsRead:
+		return "read"
+	case AttributeRowOperationsUpdated:
+		return "updated"
+	}
+	return ""
+}
+
+// MapAttributeRowOperations is a helper map of string to AttributeRowOperations attribute value.
+var MapAttributeRowOperations = map[string]AttributeRowOperations{
+	"deleted":  AttributeRowOperationsDeleted,
+	"inserted": AttributeRowOperationsInserted,
+	"read":     AttributeRowOperationsRead,
+	"updated":  AttributeRowOperationsUpdated,
+}
+
+// AttributeSorts specifies the a value sorts attribute.
+type AttributeSorts int
+
+const (
+	_ AttributeSorts = iota
+	AttributeSortsMergePasses
+	AttributeSortsRange
+	AttributeSortsRows
+	AttributeSortsScan
+)
+
+// String returns the string representation of the AttributeSorts.
+func (av AttributeSorts) String() string {
+	switch av {
+	case AttributeSortsMergePasses:
+		return "merge_passes"
+	case AttributeSortsRange:
+		return "range"
+	case AttributeSortsRows:
+		return "rows"
+	case AttributeSortsScan:
+		return "scan"
+	}
+	return ""
+}
+
+// MapAttributeSorts is a helper map of string to AttributeSorts attribute value.
+var MapAttributeSorts = map[string]AttributeSorts{
+	"merge_passes": AttributeSortsMergePasses,
+	"range":        AttributeSortsRange,
+	"rows":         AttributeSortsRows,
+	"scan":         AttributeSortsScan,
+}
+
+// AttributeThreads specifies the a value threads attribute.
+type AttributeThreads int
+
+const (
+	_ AttributeThreads = iota
+	AttributeThreadsCached
+	AttributeThreadsConnected
+	AttributeThreadsCreated
+	AttributeThreadsRunning
+)
+
+// String returns the string representation of the AttributeThreads.
+func (av AttributeThreads) String() string {
+	switch av {
+	case AttributeThreadsCached:
+		return "cached"
+	case AttributeThreadsConnected:
+		return "connected"
+	case AttributeThreadsCreated:
+		return "created"
+	case AttributeThreadsRunning:
+		return "running"
+	}
+	return ""
+}
+
+// MapAttributeThreads is a helper map of string to AttributeThreads attribute value.
+var MapAttributeThreads = map[string]AttributeThreads{
+	"cached":    AttributeThreadsCached,
+	"connected": AttributeThreadsConnected,
+	"created":   AttributeThreadsCreated,
+	"running":   AttributeThreadsRunning,
+}
+
 type metricMysqlBufferPoolDataPages struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -118,7 +622,7 @@ func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pcommon.NewValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -222,7 +726,7 @@ func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolOperations, pcommon.NewValueString(bufferPoolOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(bufferPoolOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -326,7 +830,7 @@ func (m *metricMysqlBufferPoolPages) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolPages, pcommon.NewValueString(bufferPoolPagesAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(bufferPoolPagesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -379,7 +883,7 @@ func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pcommon.NewValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -432,7 +936,7 @@ func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Command, pcommon.NewValueString(commandAttributeValue))
+	dp.Attributes().Insert("command", pcommon.NewValueString(commandAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -485,7 +989,7 @@ func (m *metricMysqlDoubleWrites) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DoubleWrites, pcommon.NewValueString(doubleWritesAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(doubleWritesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -538,7 +1042,7 @@ func (m *metricMysqlHandlers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Handler, pcommon.NewValueString(handlerAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(handlerAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -591,7 +1095,7 @@ func (m *metricMysqlLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Locks, pcommon.NewValueString(locksAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(locksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -644,7 +1148,7 @@ func (m *metricMysqlLogOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.LogOperations, pcommon.NewValueString(logOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(logOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -697,7 +1201,7 @@ func (m *metricMysqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operations, pcommon.NewValueString(operationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -750,7 +1254,7 @@ func (m *metricMysqlPageOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.PageOperations, pcommon.NewValueString(pageOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(pageOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -803,7 +1307,7 @@ func (m *metricMysqlRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowLocks, pcommon.NewValueString(rowLocksAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(rowLocksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -856,7 +1360,7 @@ func (m *metricMysqlRowOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowOperations, pcommon.NewValueString(rowOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(rowOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -909,7 +1413,7 @@ func (m *metricMysqlSorts) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Sorts, pcommon.NewValueString(sortsAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(sortsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -962,7 +1466,7 @@ func (m *metricMysqlThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Threads, pcommon.NewValueString(threadsAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(threadsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1064,19 +1568,37 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/mysqlreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -1097,6 +1619,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricMysqlRowOperations.emit(ils.Metrics())
 	mb.metricMysqlSorts.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -1106,170 +1631,170 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordMysqlBufferPoolDataPagesDataPoint adds a data point to mysql.buffer_pool.data_pages metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue string) {
-	mb.metricMysqlBufferPoolDataPages.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue AttributeBufferPoolData) {
+	mb.metricMysqlBufferPoolDataPages.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue.String())
 }
 
 // RecordMysqlBufferPoolLimitDataPoint adds a data point to mysql.buffer_pool.limit metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pcommon.Timestamp, val string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolLimit, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, i)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolLimit, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlBufferPoolOperationsDataPoint adds a data point to mysql.buffer_pool.operations metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pcommon.Timestamp, val string, bufferPoolOperationsAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, i, bufferPoolOperationsAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolOperationsAttributeValue AttributeBufferPoolOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, val, bufferPoolOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlBufferPoolPageFlushesDataPoint adds a data point to mysql.buffer_pool.page_flushes metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pcommon.Timestamp, val string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolPageFlushes, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, i)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolPageFlushes, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlBufferPoolPagesDataPoint adds a data point to mysql.buffer_pool.pages metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pcommon.Timestamp, val string, bufferPoolPagesAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolPages, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, i, bufferPoolPagesAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolPagesAttributeValue AttributeBufferPoolPages) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolPages, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, val, bufferPoolPagesAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlBufferPoolUsageDataPoint adds a data point to mysql.buffer_pool.usage metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue string) {
-	mb.metricMysqlBufferPoolUsage.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue AttributeBufferPoolData) {
+	mb.metricMysqlBufferPoolUsage.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue.String())
 }
 
 // RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.
-func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, val string, commandAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlCommands, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, i, commandAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inputVal string, commandAttributeValue AttributeCommand) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlCommands, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlDoubleWritesDataPoint adds a data point to mysql.double_writes metric.
-func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp, val string, doubleWritesAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlDoubleWrites, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, i, doubleWritesAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp, inputVal string, doubleWritesAttributeValue AttributeDoubleWrites) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlDoubleWrites, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, val, doubleWritesAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlHandlersDataPoint adds a data point to mysql.handlers metric.
-func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, val string, handlerAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlHandlers, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, i, handlerAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, inputVal string, handlerAttributeValue AttributeHandler) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlHandlers, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, val, handlerAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlLocksDataPoint adds a data point to mysql.locks metric.
-func (mb *MetricsBuilder) RecordMysqlLocksDataPoint(ts pcommon.Timestamp, val string, locksAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlLocks, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlLocks.recordDataPoint(mb.startTime, ts, i, locksAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlLocksDataPoint(ts pcommon.Timestamp, inputVal string, locksAttributeValue AttributeLocks) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlLocks, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlLocks.recordDataPoint(mb.startTime, ts, val, locksAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlLogOperationsDataPoint adds a data point to mysql.log_operations metric.
-func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp, val string, logOperationsAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlLogOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, i, logOperationsAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp, inputVal string, logOperationsAttributeValue AttributeLogOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlLogOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, val, logOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlOperationsDataPoint adds a data point to mysql.operations metric.
-func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, val string, operationsAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, i, operationsAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlPageOperationsDataPoint adds a data point to mysql.page_operations metric.
-func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestamp, val string, pageOperationsAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlPageOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, i, pageOperationsAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestamp, inputVal string, pageOperationsAttributeValue AttributePageOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlPageOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlRowLocksDataPoint adds a data point to mysql.row_locks metric.
-func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pcommon.Timestamp, val string, rowLocksAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlRowLocks, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlRowLocks.recordDataPoint(mb.startTime, ts, i, rowLocksAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pcommon.Timestamp, inputVal string, rowLocksAttributeValue AttributeRowLocks) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlRowLocks, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlRowLocks.recordDataPoint(mb.startTime, ts, val, rowLocksAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlRowOperationsDataPoint adds a data point to mysql.row_operations metric.
-func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp, val string, rowOperationsAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlRowOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, i, rowOperationsAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp, inputVal string, rowOperationsAttributeValue AttributeRowOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlRowOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, val, rowOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlSortsDataPoint adds a data point to mysql.sorts metric.
-func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pcommon.Timestamp, val string, sortsAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlSorts, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlSorts.recordDataPoint(mb.startTime, ts, i, sortsAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pcommon.Timestamp, inputVal string, sortsAttributeValue AttributeSorts) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlSorts, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlSorts.recordDataPoint(mb.startTime, ts, val, sortsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlThreadsDataPoint adds a data point to mysql.threads metric.
-func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, val string, threadsAttributeValue string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlThreads, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, i, threadsAttributeValue)
+func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inputVal string, threadsAttributeValue AttributeThreads) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlThreads, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue.String())
 	return nil
 }
 
@@ -1280,250 +1805,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// BufferPoolData (The status of buffer pool data.)
-	BufferPoolData string
-	// BufferPoolOperations (The buffer pool operations types.)
-	BufferPoolOperations string
-	// BufferPoolPages (The buffer pool pages types.)
-	BufferPoolPages string
-	// Command (The command types.)
-	Command string
-	// DoubleWrites (The doublewrite types.)
-	DoubleWrites string
-	// Handler (The handler types.)
-	Handler string
-	// Locks (The table locks type.)
-	Locks string
-	// LogOperations (The log operation types.)
-	LogOperations string
-	// Operations (The operation types.)
-	Operations string
-	// PageOperations (The page operation types.)
-	PageOperations string
-	// RowLocks (The row lock type.)
-	RowLocks string
-	// RowOperations (The row operation type.)
-	RowOperations string
-	// Sorts (The sort count type.)
-	Sorts string
-	// Threads (The thread count type.)
-	Threads string
-}{
-	"status",
-	"operation",
-	"kind",
-	"command",
-	"kind",
-	"kind",
-	"kind",
-	"operation",
-	"operation",
-	"operation",
-	"kind",
-	"operation",
-	"kind",
-	"kind",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeBufferPoolData are the possible values that the attribute "buffer_pool_data" can have.
-var AttributeBufferPoolData = struct {
-	Dirty string
-	Clean string
-}{
-	"dirty",
-	"clean",
-}
-
-// AttributeBufferPoolOperations are the possible values that the attribute "buffer_pool_operations" can have.
-var AttributeBufferPoolOperations = struct {
-	ReadAheadRnd     string
-	ReadAhead        string
-	ReadAheadEvicted string
-	ReadRequests     string
-	Reads            string
-	WaitFree         string
-	WriteRequests    string
-}{
-	"read_ahead_rnd",
-	"read_ahead",
-	"read_ahead_evicted",
-	"read_requests",
-	"reads",
-	"wait_free",
-	"write_requests",
-}
-
-// AttributeBufferPoolPages are the possible values that the attribute "buffer_pool_pages" can have.
-var AttributeBufferPoolPages = struct {
-	Data string
-	Free string
-	Misc string
-}{
-	"data",
-	"free",
-	"misc",
-}
-
-// AttributeCommand are the possible values that the attribute "command" can have.
-var AttributeCommand = struct {
-	Execute      string
-	Close        string
-	Fetch        string
-	Prepare      string
-	Reset        string
-	SendLongData string
-}{
-	"execute",
-	"close",
-	"fetch",
-	"prepare",
-	"reset",
-	"send_long_data",
-}
-
-// AttributeDoubleWrites are the possible values that the attribute "double_writes" can have.
-var AttributeDoubleWrites = struct {
-	PagesWritten string
-	Writes       string
-}{
-	"pages_written",
-	"writes",
-}
-
-// AttributeHandler are the possible values that the attribute "handler" can have.
-var AttributeHandler = struct {
-	Commit            string
-	Delete            string
-	Discover          string
-	ExternalLock      string
-	MrrInit           string
-	Prepare           string
-	ReadFirst         string
-	ReadKey           string
-	ReadLast          string
-	ReadNext          string
-	ReadPrev          string
-	ReadRnd           string
-	ReadRndNext       string
-	Rollback          string
-	Savepoint         string
-	SavepointRollback string
-	Update            string
-	Write             string
-}{
-	"commit",
-	"delete",
-	"discover",
-	"external_lock",
-	"mrr_init",
-	"prepare",
-	"read_first",
-	"read_key",
-	"read_last",
-	"read_next",
-	"read_prev",
-	"read_rnd",
-	"read_rnd_next",
-	"rollback",
-	"savepoint",
-	"savepoint_rollback",
-	"update",
-	"write",
-}
-
-// AttributeLocks are the possible values that the attribute "locks" can have.
-var AttributeLocks = struct {
-	Immediate string
-	Waited    string
-}{
-	"immediate",
-	"waited",
-}
-
-// AttributeLogOperations are the possible values that the attribute "log_operations" can have.
-var AttributeLogOperations = struct {
-	Waits         string
-	WriteRequests string
-	Writes        string
-}{
-	"waits",
-	"write_requests",
-	"writes",
-}
-
-// AttributeOperations are the possible values that the attribute "operations" can have.
-var AttributeOperations = struct {
-	Fsyncs string
-	Reads  string
-	Writes string
-}{
-	"fsyncs",
-	"reads",
-	"writes",
-}
-
-// AttributePageOperations are the possible values that the attribute "page_operations" can have.
-var AttributePageOperations = struct {
-	Created string
-	Read    string
-	Written string
-}{
-	"created",
-	"read",
-	"written",
-}
-
-// AttributeRowLocks are the possible values that the attribute "row_locks" can have.
-var AttributeRowLocks = struct {
-	Waits string
-	Time  string
-}{
-	"waits",
-	"time",
-}
-
-// AttributeRowOperations are the possible values that the attribute "row_operations" can have.
-var AttributeRowOperations = struct {
-	Deleted  string
-	Inserted string
-	Read     string
-	Updated  string
-}{
-	"deleted",
-	"inserted",
-	"read",
-	"updated",
-}
-
-// AttributeSorts are the possible values that the attribute "sorts" can have.
-var AttributeSorts = struct {
-	MergePasses string
-	Range       string
-	Rows        string
-	Scan        string
-}{
-	"merge_passes",
-	"range",
-	"rows",
-	"scan",
-}
-
-// AttributeThreads are the possible values that the attribute "threads" can have.
-var AttributeThreads = struct {
-	Cached    string
-	Connected string
-	Created   string
-	Running   string
-}{
-	"cached",
-	"connected",
-	"created",
-	"running",
 }

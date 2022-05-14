@@ -53,7 +53,7 @@ func Test_loadMetadata(t *testing.T) {
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
 						Sum: &sum{
-							MetricValueType: MetricValueType{pmetric.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							Aggregated:      Aggregated{Aggregation: "cumulative"},
 							Mono:            Mono{Monotonic: true},
 						},
@@ -64,7 +64,7 @@ func Test_loadMetadata(t *testing.T) {
 						Description: "Percentage of CPU time broken down by different states.",
 						Unit:        "1",
 						Gauge: &gauge{
-							MetricValueType: MetricValueType{pmetric.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 						Attributes: []attributeName{"enumAttribute"},
 					},
@@ -83,7 +83,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "no_metric_type.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
-				"one of the following has to be specified: sum, gauge, histogram",
+				"one of the following has to be specified: sum, gauge",
 		},
 		{
 			name:    "no enabled",
@@ -96,7 +96,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "two_metric_types.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
-				"only one of the following has to be specified: sum, gauge, histogram",
+				"only one of the following has to be specified: sum, gauge",
 		},
 		{
 			name: "no number types",

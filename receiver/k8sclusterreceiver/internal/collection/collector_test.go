@@ -252,10 +252,9 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			metadataStore: &metadataStore{},
 			resource: &corev1.ReplicationController{
 				ObjectMeta: v1.ObjectMeta{
-					Name:        "test-replicationcontroller-1",
-					Namespace:   "test-namespace",
-					UID:         types.UID("test-replicationcontroller-1-uid"),
-					ClusterName: "test-cluster",
+					Name:      "test-replicationcontroller-1",
+					Namespace: "test-namespace",
+					UID:       types.UID("test-replicationcontroller-1-uid"),
 				},
 			},
 			want: map[metadata.ResourceID]*KubernetesMetadata{

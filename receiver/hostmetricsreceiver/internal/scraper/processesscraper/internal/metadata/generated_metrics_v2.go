@@ -5,9 +5,9 @@ package metadata
 import (
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -30,6 +30,76 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+// AttributeStatus specifies the a value status attribute.
+type AttributeStatus int
+
+const (
+	_ AttributeStatus = iota
+	AttributeStatusBlocked
+	AttributeStatusDaemon
+	AttributeStatusDetached
+	AttributeStatusIdle
+	AttributeStatusLocked
+	AttributeStatusOrphan
+	AttributeStatusPaging
+	AttributeStatusRunning
+	AttributeStatusSleeping
+	AttributeStatusStopped
+	AttributeStatusSystem
+	AttributeStatusUnknown
+	AttributeStatusZombies
+)
+
+// String returns the string representation of the AttributeStatus.
+func (av AttributeStatus) String() string {
+	switch av {
+	case AttributeStatusBlocked:
+		return "blocked"
+	case AttributeStatusDaemon:
+		return "daemon"
+	case AttributeStatusDetached:
+		return "detached"
+	case AttributeStatusIdle:
+		return "idle"
+	case AttributeStatusLocked:
+		return "locked"
+	case AttributeStatusOrphan:
+		return "orphan"
+	case AttributeStatusPaging:
+		return "paging"
+	case AttributeStatusRunning:
+		return "running"
+	case AttributeStatusSleeping:
+		return "sleeping"
+	case AttributeStatusStopped:
+		return "stopped"
+	case AttributeStatusSystem:
+		return "system"
+	case AttributeStatusUnknown:
+		return "unknown"
+	case AttributeStatusZombies:
+		return "zombies"
+	}
+	return ""
+}
+
+// MapAttributeStatus is a helper map of string to AttributeStatus attribute value.
+var MapAttributeStatus = map[string]AttributeStatus{
+	"blocked":  AttributeStatusBlocked,
+	"daemon":   AttributeStatusDaemon,
+	"detached": AttributeStatusDetached,
+	"idle":     AttributeStatusIdle,
+	"locked":   AttributeStatusLocked,
+	"orphan":   AttributeStatusOrphan,
+	"paging":   AttributeStatusPaging,
+	"running":  AttributeStatusRunning,
+	"sleeping": AttributeStatusSleeping,
+	"stopped":  AttributeStatusStopped,
+	"system":   AttributeStatusSystem,
+	"unknown":  AttributeStatusUnknown,
+	"zombies":  AttributeStatusZombies,
 }
 
 type metricSystemProcessesCount struct {
@@ -57,7 +127,7 @@ func (m *metricSystemProcessesCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Status, pcommon.NewValueString(statusAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(statusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -180,25 +250,46 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/processes")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemProcessesCount.emit(ils.Metrics())
 	mb.metricSystemProcessesCreated.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -208,16 +299,16 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordSystemProcessesCountDataPoint adds a data point to system.processes.count metric.
-func (mb *MetricsBuilder) RecordSystemProcessesCountDataPoint(ts pcommon.Timestamp, val int64, statusAttributeValue string) {
-	mb.metricSystemProcessesCount.recordDataPoint(mb.startTime, ts, val, statusAttributeValue)
+func (mb *MetricsBuilder) RecordSystemProcessesCountDataPoint(ts pcommon.Timestamp, val int64, statusAttributeValue AttributeStatus) {
+	mb.metricSystemProcessesCount.recordDataPoint(mb.startTime, ts, val, statusAttributeValue.String())
 }
 
 // RecordSystemProcessesCreatedDataPoint adds a data point to system.processes.created metric.
@@ -232,46 +323,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Status (Breakdown status of the processes.)
-	Status string
-}{
-	"status",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeStatus are the possible values that the attribute "status" can have.
-var AttributeStatus = struct {
-	Blocked  string
-	Daemon   string
-	Detached string
-	Idle     string
-	Locked   string
-	Orphan   string
-	Paging   string
-	Running  string
-	Sleeping string
-	Stopped  string
-	System   string
-	Unknown  string
-	Zombies  string
-}{
-	"blocked",
-	"daemon",
-	"detached",
-	"idle",
-	"locked",
-	"orphan",
-	"paging",
-	"running",
-	"sleeping",
-	"stopped",
-	"system",
-	"unknown",
-	"zombies",
 }

@@ -31,7 +31,7 @@ type MetricIdentity struct {
 	MetricUnit             string
 	StartTimestamp         pcommon.Timestamp
 	Attributes             pcommon.Map
-	MetricValueType        pmetric.MetricValueType
+	MetricValueType        pmetric.NumberDataPointValueType
 }
 
 const A = int32('A')
@@ -78,7 +78,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 }
 
 func (mi *MetricIdentity) IsFloatVal() bool {
-	return mi.MetricValueType == pmetric.MetricValueTypeDouble
+	return mi.MetricValueType == pmetric.NumberDataPointValueTypeDouble
 }
 
 func (mi *MetricIdentity) IsSupportedMetricType() bool {

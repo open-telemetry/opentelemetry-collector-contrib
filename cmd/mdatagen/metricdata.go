@@ -23,7 +23,6 @@ import (
 var (
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
-	_ MetricData = &histogram{}
 )
 
 // MetricData is generic interface for all metric datatypes.
@@ -31,7 +30,6 @@ type MetricData interface {
 	Type() string
 	HasMonotonic() bool
 	HasAggregated() bool
-	HasMetricValueType() bool
 	HasMetricInputType() bool
 }
 
@@ -74,16 +72,16 @@ func (mit MetricInputType) String() string {
 // MetricValueType defines the metric number type.
 type MetricValueType struct {
 	// ValueType is type of the metric number, options are "double", "int".
-	ValueType pmetric.MetricValueType `validate:"required"`
+	ValueType pmetric.NumberDataPointValueType `validate:"required"`
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (mvt *MetricValueType) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
 	case "int":
-		mvt.ValueType = pmetric.MetricValueTypeInt
+		mvt.ValueType = pmetric.NumberDataPointValueTypeInt
 	case "double":
-		mvt.ValueType = pmetric.MetricValueTypeDouble
+		mvt.ValueType = pmetric.NumberDataPointValueTypeDouble
 	default:
 		return fmt.Errorf("invalid value_type: %q", vtStr)
 	}
@@ -98,9 +96,9 @@ func (mvt MetricValueType) String() string {
 // BasicType returns name of a golang basic type for the datapoint type.
 func (mvt MetricValueType) BasicType() string {
 	switch mvt.ValueType {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return "int64"
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return "float64"
 	default:
 		return ""
@@ -122,10 +120,6 @@ func (d gauge) HasMonotonic() bool {
 
 func (d gauge) HasAggregated() bool {
 	return false
-}
-
-func (d gauge) HasMetricValueType() bool {
-	return true
 }
 
 func (d gauge) HasMetricInputType() bool {
@@ -151,34 +145,6 @@ func (d sum) HasAggregated() bool {
 	return true
 }
 
-func (d sum) HasMetricValueType() bool {
-	return true
-}
-
 func (d sum) HasMetricInputType() bool {
 	return d.InputType != ""
-}
-
-type histogram struct {
-	Aggregated `mapstructure:",squash"`
-}
-
-func (d histogram) Type() string {
-	return "Histogram"
-}
-
-func (d histogram) HasMonotonic() bool {
-	return false
-}
-
-func (d histogram) HasAggregated() bool {
-	return true
-}
-
-func (d histogram) HasMetricValueType() bool {
-	return false
-}
-
-func (d histogram) HasMetricInputType() bool {
-	return false
 }

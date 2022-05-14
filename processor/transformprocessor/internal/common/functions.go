@@ -22,8 +22,10 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"keep_keys": keepKeys,
-	"set":       set,
+	"keep_keys":    keepKeys,
+	"set":          set,
+	"truncate_all": truncateAll,
+	"limit":        limit,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -32,17 +34,17 @@ func DefaultFunctions() map[string]interface{} {
 	return registry
 }
 
-func set(target Setter, value Getter) ExprFunc {
+func set(target Setter, value Getter) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		val := value.Get(ctx)
 		if val != nil {
 			target.Set(ctx, val)
 		}
 		return nil
-	}
+	}, nil
 }
 
-func keepKeys(target GetSetter, keys []string) ExprFunc {
+func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
@@ -67,7 +69,75 @@ func keepKeys(target GetSetter, keys []string) ExprFunc {
 			target.Set(ctx, filtered)
 		}
 		return nil
+	}, nil
+}
+
+func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}
+	return func(ctx TransformContext) interface{} {
+		if limit < 0 {
+			return nil
+		}
+
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			attrs.Range(func(key string, val pcommon.Value) bool {
+				stringVal := val.StringVal()
+				if int64(len(stringVal)) > limit {
+					updated.InsertString(key, stringVal[:limit])
+				} else {
+					updated.Insert(key, val)
+				}
+				return true
+			})
+			target.Set(ctx, updated)
+			// TODO: Write log when truncation is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		}
+		return nil
+	}, nil
+}
+
+func limit(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
+	}
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			if int64(attrs.Len()) <= limit {
+				return nil
+			}
+
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			count := int64(0)
+			attrs.Range(func(key string, val pcommon.Value) bool {
+				if count < limit {
+					updated.Insert(key, val)
+					count++
+					return true
+				}
+				return false
+			})
+			target.Set(ctx, updated)
+			// TODO: Write log when limiting is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		}
+		return nil
+	}, nil
 }
 
 // TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
@@ -117,11 +187,24 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				}
 				args = append(args, reflect.ValueOf(arg))
 				continue
+			case "int64":
+				if argDef.Int == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.Int))
 			}
 		}
 		val := reflect.ValueOf(f)
 		ret := val.Call(args)
-		return ret[0].Interface().(ExprFunc), nil
+
+		var err error
+		if ret[1].IsNil() {
+			err = nil
+		} else {
+			err = ret[1].Interface().(error)
+		}
+
+		return ret[0].Interface().(ExprFunc), err
 	}
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }

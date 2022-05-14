@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package elasticsearchexporter
 
 import (
@@ -21,12 +22,12 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -180,16 +181,16 @@ func TestExporter_PushEvent(t *testing.T) {
 			}),
 		}
 
-		handlers := map[string]func(*int64) bulkHandler{
-			"fail http request": func(attempts *int64) bulkHandler {
+		handlers := map[string]func(attempts *atomic.Int64) bulkHandler{
+			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
-					atomic.AddInt64(attempts, 1)
+					attempts.Inc()
 					return nil, &httpTestError{message: "oops"}
 				}
 			},
-			"fail item": func(attempts *int64) bulkHandler {
+			"fail item": func(attempts *atomic.Int64) bulkHandler {
 				return func(docs []itemRequest) ([]itemResponse, error) {
-					atomic.AddInt64(attempts, 1)
+					attempts.Inc()
 					return itemsReportStatus(docs, http.StatusTooManyRequests)
 				}
 			},
@@ -201,15 +202,15 @@ func TestExporter_PushEvent(t *testing.T) {
 				for name, configurer := range configurations {
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
-						var attempts int64
-						server := newESTestServer(t, handler(&attempts))
+						attempts := atomic.NewInt64(0)
+						server := newESTestServer(t, handler(attempts))
 
 						testConfig := configurer(server.URL)
 						exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
 						mustSend(t, exporter, `{"message": "test1"}`)
 
 						time.Sleep(200 * time.Millisecond)
-						assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+						assert.Equal(t, int64(1), attempts.Load())
 					})
 				}
 			})
@@ -217,9 +218,9 @@ func TestExporter_PushEvent(t *testing.T) {
 	})
 
 	t.Run("do not retry invalid request", func(t *testing.T) {
-		var attempts int64
+		attempts := atomic.NewInt64(0)
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			atomic.AddInt64(&attempts, 1)
+			attempts.Inc()
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
 
@@ -227,7 +228,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSend(t, exporter, `{"message": "test1"}`)
 
 		time.Sleep(200 * time.Millisecond)
-		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+		assert.Equal(t, int64(1), attempts.Load())
 	})
 
 	t.Run("retry single item", func(t *testing.T) {
@@ -251,9 +252,9 @@ func TestExporter_PushEvent(t *testing.T) {
 	})
 
 	t.Run("do not retry bad item", func(t *testing.T) {
-		var attempts int64
+		attempts := atomic.NewInt64(0)
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			atomic.AddInt64(&attempts, 1)
+			attempts.Inc()
 			return itemsReportStatus(docs, http.StatusBadRequest)
 		})
 
@@ -261,7 +262,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSend(t, exporter, `{"message": "test1"}`)
 
 		time.Sleep(200 * time.Millisecond)
-		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+		assert.Equal(t, int64(1), attempts.Load())
 	})
 
 	t.Run("only retry failed items", func(t *testing.T) {

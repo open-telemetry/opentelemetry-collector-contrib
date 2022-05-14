@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -29,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -60,7 +60,7 @@ type tailSamplingSpanProcessor struct {
 	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan pcommon.TraceID
-	numTracesOnMap  uint64
+	numTracesOnMap  *atomic.Uint64
 }
 
 const (
@@ -108,6 +108,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		decisionBatcher: inBatcher,
 		policies:        policies,
 		tickerFrequency: time.Second,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
@@ -195,7 +196,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		statOverallDecisionLatencyUs.M(int64(time.Since(startTime)/time.Microsecond)),
 		statDroppedTooEarlyCount.M(metrics.idNotFoundOnMapCount),
 		statPolicyEvaluationErrorCount.M(metrics.evaluateErrorCount),
-		statTracesOnMemoryGauge.M(int64(atomic.LoadUint64(&tsp.numTracesOnMap))))
+		statTracesOnMemoryGauge.M(int64(tsp.numTracesOnMap.Load())))
 
 	tsp.logger.Debug("Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
@@ -327,17 +328,17 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		initialTraceData := &sampling.TraceData{
 			Decisions:   initialDecisions,
 			ArrivalTime: time.Now(),
-			SpanCount:   lenSpans,
+			SpanCount:   atomic.NewInt64(lenSpans),
 		}
 		d, loaded := tsp.idToTrace.LoadOrStore(id, initialTraceData)
 
 		actualData := d.(*sampling.TraceData)
 		if loaded {
-			atomic.AddInt64(&actualData.SpanCount, lenSpans)
+			actualData.SpanCount.Add(lenSpans)
 		} else {
 			newTraceIDs++
 			tsp.decisionBatcher.AddToCurrentBatch(id)
-			atomic.AddUint64(&tsp.numTracesOnMap, 1)
+			tsp.numTracesOnMap.Add(1)
 			postDeletion := false
 			currTime := time.Now()
 			for !postDeletion {
@@ -419,7 +420,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		trace = d.(*sampling.TraceData)
 		tsp.idToTrace.Delete(traceID)
 		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
-		atomic.AddUint64(&tsp.numTracesOnMap, ^uint64(0))
+		tsp.numTracesOnMap.Add(^uint64(0))
 	}
 	if trace == nil {
 		tsp.logger.Error("Attempt to delete traceID not on table")

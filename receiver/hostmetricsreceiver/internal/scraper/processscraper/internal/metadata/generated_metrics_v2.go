@@ -5,9 +5,9 @@ package metadata
 import (
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -40,6 +40,62 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeDirection specifies the a value direction attribute.
+type AttributeDirection int
+
+const (
+	_ AttributeDirection = iota
+	AttributeDirectionRead
+	AttributeDirectionWrite
+)
+
+// String returns the string representation of the AttributeDirection.
+func (av AttributeDirection) String() string {
+	switch av {
+	case AttributeDirectionRead:
+		return "read"
+	case AttributeDirectionWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
+var MapAttributeDirection = map[string]AttributeDirection{
+	"read":  AttributeDirectionRead,
+	"write": AttributeDirectionWrite,
+}
+
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateSystem
+	AttributeStateUser
+	AttributeStateWait
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateSystem:
+		return "system"
+	case AttributeStateUser:
+		return "user"
+	case AttributeStateWait:
+		return "wait"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"system": AttributeStateSystem,
+	"user":   AttributeStateUser,
+	"wait":   AttributeStateWait,
+}
+
 type metricProcessCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -65,7 +121,7 @@ func (m *metricProcessCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -118,7 +174,7 @@ func (m *metricProcessDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -296,62 +352,80 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithProcessCommand sets provided value as "process.command" attribute for current resource.
-func WithProcessCommand(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("process.command", val)
+func WithProcessCommand(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("process.command", val)
 	}
 }
 
 // WithProcessCommandLine sets provided value as "process.command_line" attribute for current resource.
-func WithProcessCommandLine(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("process.command_line", val)
+func WithProcessCommandLine(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("process.command_line", val)
 	}
 }
 
 // WithProcessExecutableName sets provided value as "process.executable.name" attribute for current resource.
-func WithProcessExecutableName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("process.executable.name", val)
+func WithProcessExecutableName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("process.executable.name", val)
 	}
 }
 
 // WithProcessExecutablePath sets provided value as "process.executable.path" attribute for current resource.
-func WithProcessExecutablePath(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("process.executable.path", val)
+func WithProcessExecutablePath(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("process.executable.path", val)
 	}
 }
 
 // WithProcessOwner sets provided value as "process.owner" attribute for current resource.
-func WithProcessOwner(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("process.owner", val)
+func WithProcessOwner(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("process.owner", val)
 	}
 }
 
 // WithProcessPid sets provided value as "process.pid" attribute for current resource.
-func WithProcessPid(val int64) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertInt("process.pid", val)
+func WithProcessPid(val int64) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertInt("process.pid", val)
+	}
+}
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
 	}
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/process")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -359,6 +433,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricProcessDiskIo.emit(ils.Metrics())
 	mb.metricProcessMemoryPhysicalUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtualUsage.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -368,21 +445,21 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
 }
 
 // RecordProcessCPUTimeDataPoint adds a data point to process.cpu.time metric.
-func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue string) {
-	mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
+	mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordProcessDiskIoDataPoint adds a data point to process.disk.io metric.
-func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordProcessMemoryPhysicalUsageDataPoint adds a data point to process.memory.physical_usage metric.
@@ -402,38 +479,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Direction (Direction of flow of bytes (read or write).)
-	Direction string
-	// State (Breakdown of CPU usage by type.)
-	State string
-}{
-	"direction",
-	"state",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeDirection are the possible values that the attribute "direction" can have.
-var AttributeDirection = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	System string
-	User   string
-	Wait   string
-}{
-	"system",
-	"user",
-	"wait",
 }

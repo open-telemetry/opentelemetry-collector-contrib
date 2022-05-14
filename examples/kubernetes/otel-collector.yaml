@@ -29,7 +29,7 @@ data:
           # Parse CRI-O format
           - type: regex_parser
             id: parser-crio
-            regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
             output: extract_metadata_from_filepath
             timestamp:
               parse_from: attributes.time
@@ -38,7 +38,7 @@ data:
           # Parse CRI-Containerd format
           - type: regex_parser
             id: parser-containerd
-            regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+            regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
             output: extract_metadata_from_filepath
             timestamp:
               parse_from: attributes.time
@@ -139,7 +139,7 @@ spec:
     spec:
       containers:
       - name: otel-collector
-        image: otel/opentelemetry-collector-contrib:0.37.1
+        image: otel/opentelemetry-collector-contrib:0.51.0
         resources:
           limits:
             cpu: 100m

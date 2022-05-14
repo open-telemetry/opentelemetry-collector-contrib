@@ -4,7 +4,7 @@ RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
 
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
+BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
@@ -12,7 +12,7 @@ COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+ALL_MODULES := $(shell find . -type f -not -path '*/pkg/stanza/*' -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
@@ -37,10 +37,14 @@ all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 .PHONY: all
-all: common gotest otelcontribcol otelcontribcol-unstable
+all: all-common gotest otelcontribcol otelcontribcol-unstable
+
+.PHONY: all-common
+all-common:
+	@$(MAKE) for-all-target TARGET="common"
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol otelcontribcol-unstable
+e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
 	$(MAKE) -C testbed run-tests
 
 .PHONY: unit-tests-with-cover
@@ -216,6 +220,12 @@ otelcontribcol:
 otelcontribcol-unstable:
 	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
+
+# Build the Collector executable, with only components used in testbed.
+.PHONY: otelcontribcol-testbed
+otelcontribcol-testbed:
+	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_testbed_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),testbed ./cmd/otelcontribcol
 
 .PHONY: otelcontribcol-all-sys
 otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-darwin_arm64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
