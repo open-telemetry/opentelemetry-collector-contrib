@@ -33,6 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.51.0
