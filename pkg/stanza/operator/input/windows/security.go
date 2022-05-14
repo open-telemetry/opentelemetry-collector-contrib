@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package windows // import "github.com/open-telemetry/opentelemetry-log-collection/operator/input/windows"
+package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
 	"strings"

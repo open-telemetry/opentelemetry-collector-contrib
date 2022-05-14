@@ -19,9 +19,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/input/generate"
-	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/noop"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/generate"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestNodeDOTID(t *testing.T) {
