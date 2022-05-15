@@ -161,10 +161,8 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			if !tt.acceptClient {
-				// Due to differences between platforms is not certain if the
-				// call to ConsumeMetricsData below will produce error or not.
-				// See comment about recvfrom at connPool.Write for detailed
-				// information.
+				// Due to differences between platforms is not certain if the call to ConsumeMetrics below will produce error or not.
+				// See comment about recvfrom at connPool.Write for detailed information.
 				_ = exp.ConsumeMetrics(context.Background(), tt.md)
 				assert.NoError(t, exp.Shutdown(context.Background()))
 				return
