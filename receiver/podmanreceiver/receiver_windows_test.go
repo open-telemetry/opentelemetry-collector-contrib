@@ -19,12 +19,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.uber.org/zap"
 )
 
 func TestNewReceiver(t *testing.T) {
-	mr, err := newReceiver(context.Background(), zap.NewNop(), &Config{}, consumertest.NewNop(), nil)
+	mr, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{}, consumertest.NewNop(), nil)
 	assert.Nil(t, mr)
 	assert.Error(t, err)
 	assert.Equal(t, "podman receiver is not supported on windows", err.Error())
