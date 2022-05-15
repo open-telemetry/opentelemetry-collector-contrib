@@ -14,7 +14,7 @@
 # NOTE: Lines should be entered in the following format:
 # <component_path_relative_from_project_root>/<min_1_space><owner_1><space><owner_2><space>..<owner_n>
 # extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
-# Path separator and minimum of 1 space between component path and owners is 
+# Path separator and minimum of 1 space between component path and owners is
 # important for validation steps
 #
 
