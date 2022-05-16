@@ -205,6 +205,46 @@ func (r *aerospikeReceiver) emitNamespace(info *model.NamespaceInfo, now pcommon
 	if info.MemoryUsedSetIndexBytes != nil {
 		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedSetIndexBytes, metadata.AttributeNamespaceComponentSetIndex)
 	}
+
+	if info.ScanAggrAbort != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanAggrAbort, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultAbort)
+	}
+	if info.ScanAggrComplete != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanAggrComplete, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultComplete)
+	}
+	if info.ScanAggrError != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanAggrError, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultError)
+	}
+
+	if info.ScanBasicAbort != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanBasicAbort, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultAbort)
+	}
+	if info.ScanBasicComplete != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanBasicComplete, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultComplete)
+	}
+	if info.ScanBasicError != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanBasicError, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultError)
+	}
+
+	if info.ScanOpsBgAbort != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanOpsBgAbort, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultAbort)
+	}
+	if info.ScanOpsBgComplete != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanOpsBgComplete, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultComplete)
+	}
+	if info.ScanOpsBgError != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanOpsBgError, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultError)
+	}
+
+	if info.ScanUdfBgAbort != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanUdfBgAbort, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultAbort)
+	}
+	if info.ScanUdfBgComplete != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanUdfBgComplete, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultComplete)
+	}
+	if info.ScanUdfBgError != nil {
+		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanUdfBgError, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultError)
+	}
 	r.mb.EmitForResource(metadata.WithNamespace(info.Name), metadata.WithNodeName(info.Node))
 }
 
