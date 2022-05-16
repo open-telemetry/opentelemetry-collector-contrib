@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- `transformprocessor`: Add transformation of metrics (#10100)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.50.0
