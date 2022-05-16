@@ -17,9 +17,9 @@ package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"strconv"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
@@ -76,9 +76,9 @@ func numberMetricsToData(name string, data pmetric.NumberDataPointSlice, default
 		meterData.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
 		sv.SingleValue.Name = name
 		switch dataPoint.ValueType() {
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			sv.SingleValue.Value = float64(dataPoint.IntVal())
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			sv.SingleValue.Value = dataPoint.DoubleVal()
 		}
 		meterData.Metric = sv
@@ -106,14 +106,14 @@ func doubleHistogramMetricsToData(name string, data pmetric.HistogramDataPointSl
 		hg := &metricpb.MeterData_Histogram{Histogram: &metricpb.MeterHistogram{}}
 		hg.Histogram.Labels = labels
 		hg.Histogram.Name = name
-		bounds := dataPoint.ExplicitBounds()
-		bucketCount := len(dataPoint.BucketCounts())
+		bounds := dataPoint.MExplicitBounds()
+		bucketCount := len(dataPoint.MBucketCounts())
 
 		if bucketCount > 0 {
-			hg.Histogram.Values = append(hg.Histogram.Values, &metricpb.MeterBucketValue{Count: int64(dataPoint.BucketCounts()[0]), IsNegativeInfinity: true})
+			hg.Histogram.Values = append(hg.Histogram.Values, &metricpb.MeterBucketValue{Count: int64(dataPoint.MBucketCounts()[0]), IsNegativeInfinity: true})
 		}
 		for i := 1; i < bucketCount && i-1 < len(bounds); i++ {
-			hg.Histogram.Values = append(hg.Histogram.Values, &metricpb.MeterBucketValue{Bucket: bounds[i-1], Count: int64(dataPoint.BucketCounts()[i])})
+			hg.Histogram.Values = append(hg.Histogram.Values, &metricpb.MeterBucketValue{Bucket: bounds[i-1], Count: int64(dataPoint.MBucketCounts()[i])})
 		}
 
 		meterData.Metric = hg

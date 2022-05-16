@@ -121,7 +121,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pmetric.Met
 
 	creator := newMetricCreator(z.mb)
 	now := pcommon.NewTimestampFromTime(time.Now())
-	resourceOpts := make([]metadata.ResourceOption, 0, 2)
+	resourceOpts := make([]metadata.ResourceMetricsOption, 0, 2)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)

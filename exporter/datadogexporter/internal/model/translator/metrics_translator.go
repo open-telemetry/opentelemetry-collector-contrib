@@ -100,9 +100,9 @@ func (t *Translator) mapNumberMetrics(
 		pointDims := dims.WithAttributeMap(p.Attributes())
 		var val float64
 		switch p.ValueType() {
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val = p.DoubleVal()
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val = float64(p.IntVal())
 		}
 
@@ -129,9 +129,9 @@ func (t *Translator) mapNumberMonotonicMetrics(
 
 		var val float64
 		switch p.ValueType() {
-		case pmetric.MetricValueTypeDouble:
+		case pmetric.NumberDataPointValueTypeDouble:
 			val = p.DoubleVal()
-		case pmetric.MetricValueTypeInt:
+		case pmetric.NumberDataPointValueTypeInt:
 			val = float64(p.IntVal())
 		}
 
@@ -150,10 +150,10 @@ func getBounds(p pmetric.HistogramDataPoint, idx int) (lowerBound float64, upper
 	lowerBound = math.Inf(-1)
 	upperBound = math.Inf(1)
 	if idx > 0 {
-		lowerBound = p.ExplicitBounds()[idx-1]
+		lowerBound = p.MExplicitBounds()[idx-1]
 	}
-	if idx < len(p.ExplicitBounds()) {
-		upperBound = p.ExplicitBounds()[idx]
+	if idx < len(p.MExplicitBounds()) {
+		upperBound = p.MExplicitBounds()[idx]
 	}
 	return
 }
@@ -178,12 +178,12 @@ func (t *Translator) getSketchBuckets(
 	startTs := uint64(p.StartTimestamp())
 	ts := uint64(p.Timestamp())
 	as := &quantile.Agent{}
-	for j := range p.BucketCounts() {
+	for j := range p.MBucketCounts() {
 		lowerBound, upperBound := getBounds(p, j)
 
 		// Compute temporary bucketTags to have unique keys in the t.prevPts cache for each bucket
 		// The bucketTags are computed from the bounds before the InsertInterpolate fix is done,
-		// otherwise in the case where p.ExplicitBounds() has a size of 1 (eg. [0]), the two buckets
+		// otherwise in the case where p.MExplicitBounds() has a size of 1 (eg. [0]), the two buckets
 		// would have the same bucketTags (lower_bound:0 and upper_bound:0), resulting in a buggy behavior.
 		bucketDims := pointDims.AddTags(
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
@@ -198,7 +198,7 @@ func (t *Translator) getSketchBuckets(
 			lowerBound = upperBound
 		}
 
-		count := p.BucketCounts()[j]
+		count := p.MBucketCounts()[j]
 		if delta {
 			as.InsertInterpolate(lowerBound, upperBound, uint(count))
 		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
@@ -231,7 +231,7 @@ func (t *Translator) getLegacyBuckets(
 	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
 	baseBucketDims := pointDims.WithSuffix("bucket")
-	for idx, val := range p.BucketCounts() {
+	for idx, val := range p.MBucketCounts() {
 		lowerBound, upperBound := getBounds(p, idx)
 		bucketDims := baseBucketDims.AddTags(
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
@@ -469,6 +469,18 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),
 							zap.Any("aggregation temporality", md.Histogram().AggregationTemporality()),
+						)
+						continue
+					}
+				case pmetric.MetricDataTypeExponentialHistogram:
+					switch md.ExponentialHistogram().AggregationTemporality() {
+					case pmetric.MetricAggregationTemporalityDelta:
+						delta := md.ExponentialHistogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+						t.mapExponentialHistogramMetrics(ctx, consumer, baseDims, md.ExponentialHistogram().DataPoints(), delta)
+					default: // pmetric.MetricAggregationTemporalityCumulative, pmetric.AggregationTemporalityUnspecified or any other not supported type
+						t.logger.Debug("Unknown or unsupported aggregation temporality",
+							zap.String("metric name", md.Name()),
+							zap.Any("aggregation temporality", md.ExponentialHistogram().AggregationTemporality()),
 						)
 						continue
 					}

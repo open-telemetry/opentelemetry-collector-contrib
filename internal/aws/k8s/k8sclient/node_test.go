@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package k8sclient
 
 import (
@@ -51,7 +52,6 @@ var nodeArray = []interface{}{
 				"node.alpha.kubernetes.io/ttl":                           "0",
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 			},
-			ClusterName: "",
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -142,7 +142,6 @@ var nodeArray = []interface{}{
 				"node.alpha.kubernetes.io/ttl":                           "0",
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 			},
-			ClusterName: "",
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -233,7 +232,6 @@ var nodeArray = []interface{}{
 				"node.alpha.kubernetes.io/ttl":                           "0",
 				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
 			},
-			ClusterName: "",
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{

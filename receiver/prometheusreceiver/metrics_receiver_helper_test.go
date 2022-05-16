@@ -23,11 +23,11 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"testing"
 
 	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -51,18 +52,17 @@ type mockPrometheusResponse struct {
 type mockPrometheus struct {
 	mu          sync.Mutex // mu protects the fields below.
 	endpoints   map[string][]mockPrometheusResponse
-	accessIndex map[string]*int32
+	accessIndex map[string]*atomic.Int32
 	wg          *sync.WaitGroup
 	srv         *httptest.Server
 }
 
 func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockPrometheus {
-	accessIndex := make(map[string]*int32)
+	accessIndex := make(map[string]*atomic.Int32)
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
 	for k := range endpoints {
-		v := int32(0)
-		accessIndex[k] = &v
+		accessIndex[k] = atomic.NewInt32(0)
 	}
 	mp := &mockPrometheus{
 		wg:          wg,
@@ -83,8 +83,8 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(404)
 		return
 	}
-	index := int(*iptr)
-	atomic.AddInt32(iptr, 1)
+	index := int(iptr.Load())
+	iptr.Add(1)
 	pages := mp.endpoints[req.URL.Path]
 	if index >= len(pages) {
 		if index == len(pages) {
@@ -152,8 +152,9 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		return mp, nil, err
 	}
 	// update attributes value (will use for validation)
+	l := []labels.Label{{Name: "__scheme__", Value: "http"}}
 	for _, t := range tds {
-		t.attributes = internal.CreateNodeAndResourcePdata(t.name, u.Host, "http").Attributes()
+		t.attributes = internal.CreateNodeAndResource(t.name, u.Host, l).Attributes()
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
 	return mp, pCfg, err
@@ -522,7 +523,7 @@ func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPoin
 	return func(t *testing.T, histogramDataPoint *pmetric.HistogramDataPoint) {
 		assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
 		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
-		assert.Equal(t, buckets, histogramDataPoint.BucketCounts(), "Histogram bucket count values do not match")
+		assert.Equal(t, buckets, histogramDataPoint.MBucketCounts(), "Histogram bucket count values do not match")
 	}
 }
 

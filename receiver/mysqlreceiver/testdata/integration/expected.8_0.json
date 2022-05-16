@@ -362,7 +362,7 @@
                                  {
                                     "key": "kind",
                                     "value": {
-                                       "stringValue": "written"
+                                       "stringValue": "pages_written"
                                     }
                                  }
                               ],
@@ -412,7 +412,7 @@
                                  {
                                     "key": "kind",
                                     "value": {
-                                       "stringValue": "lock"
+                                       "stringValue": "external_lock"
                                     }
                                  }
                               ],
@@ -694,7 +694,7 @@
                                  {
                                     "key": "operation",
                                     "value": {
-                                       "stringValue": "requests"
+                                       "stringValue": "write_requests"
                                     }
                                  }
                               ],

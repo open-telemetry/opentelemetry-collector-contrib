@@ -20,9 +20,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -121,9 +121,9 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
 	var value float64
 	switch ip.ValueType() {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		value = float64(ip.IntVal())
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		value = ip.DoubleVal()
 	}
 	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, attributes...)
@@ -148,9 +148,9 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
 	var value float64
 	switch ip.ValueType() {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		value = float64(ip.IntVal())
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		value = ip.DoubleVal()
 	}
 	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
@@ -193,8 +193,8 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
 
 	indicesMap := make(map[float64]int)
-	buckets := make([]float64, 0, len(ip.BucketCounts()))
-	for index, bucket := range ip.ExplicitBounds() {
+	buckets := make([]float64, 0, len(ip.MBucketCounts()))
+	for index, bucket := range ip.MExplicitBounds() {
 		if _, added := indicesMap[bucket]; !added {
 			indicesMap[bucket] = index
 			buckets = append(buckets, bucket)
@@ -208,8 +208,8 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	for _, bucket := range buckets {
 		index := indicesMap[bucket]
 		var countPerBucket uint64
-		if len(ip.ExplicitBounds()) > 0 && index < len(ip.ExplicitBounds()) {
-			countPerBucket = ip.BucketCounts()[index]
+		if len(ip.MExplicitBounds()) > 0 && index < len(ip.MExplicitBounds()) {
+			countPerBucket = ip.MBucketCounts()[index]
 		}
 		cumCount += countPerBucket
 		points[bucket] = cumCount

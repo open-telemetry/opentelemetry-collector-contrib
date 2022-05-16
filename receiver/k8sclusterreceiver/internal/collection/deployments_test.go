@@ -40,7 +40,6 @@ func TestDeploymentMetrics(t *testing.T) {
 			"k8s.deployment.uid":  "test-deployment-1-uid",
 			"k8s.deployment.name": "test-deployment-1",
 			"k8s.namespace.name":  "test-namespace",
-			"k8s.cluster.name":    "test-cluster",
 		},
 	)
 
@@ -55,10 +54,9 @@ func newDeployment(id string) *appsv1.Deployment {
 	desired := int32(10)
 	return &appsv1.Deployment{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-deployment-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-deployment-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-deployment-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-deployment-" + id + "-uid"),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &desired,

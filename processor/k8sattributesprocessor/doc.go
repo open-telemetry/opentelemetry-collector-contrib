@@ -49,10 +49,8 @@
 //   - k8s.pod.uid
 //   - k8s.pod.start_time
 //   - k8s.deployment.name
-//   - k8s.cluster.name
 //   - k8s.node.name
-// Not all the attributes are guaranteed to be added. For example `k8s.cluster.name` usually is not provided by k8s API,
-// so likely it won't be set as an attribute.
+// Not all the attributes are guaranteed to be added.
 //
 // The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
@@ -90,7 +88,36 @@
 //
 // RBAC
 //
-// TODO: mention the required RBAC rules.
+// The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters.
+// Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
+//
+//      apiVersion: v1
+//      kind: ServiceAccount
+//      metadata:
+//        name: collector
+//        namespace: <OTEL_COL_NAMESPACE>
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRole
+//      metadata:
+//        name: otel-collector
+//      rules:
+//      - apiGroups: [""]
+//        resources: ["pods", "namespaces"]
+//        verbs: ["get", "watch", "list"]
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRoleBinding
+//      metadata:
+//        name: otel-collector
+//      subjects:
+//      - kind: ServiceAccount
+//        name: collector
+//        namespace: <OTEL_COL_NAMESPACE>
+//      roleRef:
+//        kind: ClusterRole
+//        name: otel-collector
+//        apiGroup: rbac.authorization.k8s.io
 //
 // Config
 //
@@ -106,7 +133,6 @@
 //            - k8s.pod.name
 //            - k8s.pod.uid
 //            - k8s.deployment.name
-//            - k8s.cluster.name
 //            - k8s.namespace.name
 //            - k8s.node.name
 //            - k8s.pod.start_time

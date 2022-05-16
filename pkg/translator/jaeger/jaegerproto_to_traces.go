@@ -22,9 +22,9 @@ import (
 	"strings"
 
 	"github.com/jaegertracing/jaeger/model"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -107,7 +107,7 @@ func translateHostnameAttr(attrs pcommon.Map) {
 	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
 	if hostnameFound && !convHostNameFound {
 		attrs.Insert(conventions.AttributeHostName, hostname)
-		attrs.Delete("hostname")
+		attrs.Remove("hostname")
 	}
 }
 
@@ -117,7 +117,7 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
 		attrs.InsertString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
-		attrs.Delete("jaeger.version")
+		attrs.Remove("jaeger.version")
 	}
 }
 
@@ -163,7 +163,7 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 	setInternalSpanStatus(attrs, dest.Status())
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
 		dest.SetKind(jSpanKindToInternal(spanKindAttr.StringVal()))
-		attrs.Delete(tracetranslator.TagSpanKind)
+		attrs.Remove(tracetranslator.TagSpanKind)
 	}
 
 	dest.SetTraceState(getTraceStateFromAttrs(attrs))
@@ -204,7 +204,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
 		if errorVal.BoolVal() {
 			statusCode = ptrace.StatusCodeError
-			attrs.Delete(tracetranslator.TagError)
+			attrs.Remove(tracetranslator.TagError)
 			statusExists = true
 
 			if desc, ok := extractStatusDescFromAttr(attrs); ok {
@@ -235,7 +235,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 		// Regardless of error tag value, remove the otel.status_code tag. The
 		// otel.status_message tag will have already been removed if
 		// statusExists is true.
-		attrs.Delete(conventions.OtelStatusCode)
+		attrs.Remove(conventions.OtelStatusCode)
 	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); !statusExists && ok {
 		// Fallback to introspecting if this span represents a failed HTTP
 		// request or response, but again, only do so if the `error` tag was
@@ -265,7 +265,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.SpanStatus) {
 func extractStatusDescFromAttr(attrs pcommon.Map) (string, bool) {
 	if msgAttr, ok := attrs.Get(conventions.OtelStatusDescription); ok {
 		msg := msgAttr.StringVal()
-		attrs.Delete(conventions.OtelStatusDescription)
+		attrs.Remove(conventions.OtelStatusDescription)
 		return msg, true
 	}
 	return "", false
@@ -342,7 +342,7 @@ func jLogsToSpanEvents(logs []model.Log, dest ptrace.SpanEventSlice) {
 		jTagsToInternalAttributes(log.Fields, attrs)
 		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
 			event.SetName(name.StringVal())
-			attrs.Delete(tracetranslator.TagMessage)
+			attrs.Remove(tracetranslator.TagMessage)
 		}
 	}
 }
@@ -370,7 +370,7 @@ func getTraceStateFromAttrs(attrs pcommon.Map) ptrace.TraceState {
 	// TODO Bring this inline with solution for jaegertracing/jaeger-client-java #702 once available
 	if attr, ok := attrs.Get(tracetranslator.TagW3CTraceState); ok {
 		traceState = ptrace.TraceState(attr.StringVal())
-		attrs.Delete(tracetranslator.TagW3CTraceState)
+		attrs.Remove(tracetranslator.TagW3CTraceState)
 	}
 	return traceState
 }

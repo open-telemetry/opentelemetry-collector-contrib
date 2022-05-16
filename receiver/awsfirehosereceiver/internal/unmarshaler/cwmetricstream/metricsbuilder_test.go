@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (

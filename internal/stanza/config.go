@@ -55,7 +55,7 @@ type InputConfig map[string]interface{}
 
 // decodeOperatorConfigs is an unmarshaling workaround for stanza operators
 // This is needed only until stanza operators are migrated to mapstructure
-func (cfg BaseConfig) decodeOperatorConfigs() ([]operator.Config, error) {
+func (cfg BaseConfig) DecodeOperatorConfigs() ([]operator.Config, error) {
 	if len(cfg.Operators) == 0 {
 		return []operator.Config{}, nil
 	}

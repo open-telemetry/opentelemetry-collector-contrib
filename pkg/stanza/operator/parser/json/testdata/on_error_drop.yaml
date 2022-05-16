@@ -1,0 +1,2 @@
+type: json_parser
+on_error: drop

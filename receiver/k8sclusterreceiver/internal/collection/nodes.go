@@ -21,7 +21,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -76,7 +76,7 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 		}
 		val := utils.GetInt64TimeSeries(quantity.Value())
 
-		if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+		if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
 			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
 			if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
 				val = utils.GetDoubleTimeSeries(float64(quantity.MilliValue()) / 1000.0)
@@ -124,9 +124,8 @@ func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			conventions.AttributeK8SNodeUID:     string(node.UID),
-			conventions.AttributeK8SNodeName:    node.Name,
-			conventions.AttributeK8SClusterName: node.ClusterName,
+			conventions.AttributeK8SNodeUID:  string(node.UID),
+			conventions.AttributeK8SNodeName: node.Name,
 		},
 	}
 }

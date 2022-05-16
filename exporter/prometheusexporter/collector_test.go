@@ -21,9 +21,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -380,9 +380,9 @@ func TestAccumulateHistograms(t *testing.T) {
 				metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts([]uint64{5, 2})
+				dp.SetMBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{3.5, 10.0})
+				dp.SetMExplicitBounds([]float64{3.5, 10.0})
 				dp.SetSum(42.42)
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")

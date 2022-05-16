@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -28,6 +27,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -41,8 +41,8 @@ type prweWAL struct {
 
 	stopOnce  sync.Once
 	stopChan  chan struct{}
-	rWALIndex uint64
-	wWALIndex uint64
+	rWALIndex *atomic.Uint64
+	wWALIndex *atomic.Uint64
 }
 
 const (
@@ -81,6 +81,8 @@ func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.Wri
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
+		rWALIndex:  atomic.NewUint64(0),
+		wWALIndex:  atomic.NewUint64(0),
 	}, nil
 }
 
@@ -124,13 +126,13 @@ func (prwe *prweWAL) retrieveWALIndices() (err error) {
 	if err != nil {
 		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the first WAL index: %w", err)
 	}
-	atomic.StoreUint64(&prwe.rWALIndex, rIndex)
+	prwe.rWALIndex.Store(rIndex)
 
 	wIndex, err := prwe.wal.LastIndex()
 	if err != nil {
 		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the last WAL index: %w", err)
 	}
-	atomic.StoreUint64(&prwe.wWALIndex, wIndex)
+	prwe.wWALIndex.Store(wIndex)
 	return nil
 }
 
@@ -230,7 +232,7 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		}
 
 		var req *prompb.WriteRequest
-		req, err = prwe.readPrompbFromWAL(ctx, atomic.LoadUint64(&prwe.rWALIndex))
+		req, err = prwe.readPrompbFromWAL(ctx, prwe.rWALIndex.Load())
 		if err != nil {
 			return err
 		}
@@ -283,7 +285,7 @@ func (prwe *prweWAL) syncAndTruncateFront() error {
 	}
 	// Truncate the WAL from the front for the entries that we already
 	// read from the WAL and had already exported.
-	if err := prwe.wal.TruncateFront(atomic.LoadUint64(&prwe.rWALIndex)); err != nil && err != wal.ErrOutOfRange {
+	if err := prwe.wal.TruncateFront(prwe.rWALIndex.Load()); err != nil && err != wal.ErrOutOfRange {
 		return err
 	}
 	return nil
@@ -321,7 +323,7 @@ func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 		if err != nil {
 			return err
 		}
-		wIndex := atomic.AddUint64(&prwe.wWALIndex, 1)
+		wIndex := prwe.wWALIndex.Add(1)
 		batch.Write(wIndex, protoBlob)
 	}
 
@@ -359,7 +361,7 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 			}
 
 			// Now increment the WAL's read index.
-			atomic.AddUint64(&prwe.rWALIndex, 1)
+			prwe.rWALIndex.Add(1)
 
 			return req, nil
 		}

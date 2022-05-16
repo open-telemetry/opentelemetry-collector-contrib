@@ -42,7 +42,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 		MetricUnit             string
 		StartTimestamp         pcommon.Timestamp
 		Attributes             pcommon.Map
-		MetricValueType        pmetric.MetricValueType
+		MetricValueType        pmetric.NumberDataPointValueType
 	}
 	tests := []struct {
 		name   string
@@ -67,7 +67,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				InstrumentationLibrary: il,
 				Attributes:             attributes,
 				MetricDataType:         pmetric.MetricDataTypeSum,
-				MetricValueType:        pmetric.MetricValueTypeInt,
+				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
 				MetricIsMonotonic:      true,
 			},
 			want: []string{"C" + SEPSTR + "B", "Y"},
@@ -100,7 +100,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 
 func TestMetricIdentity_IsFloatVal(t *testing.T) {
 	type fields struct {
-		MetricValueType pmetric.MetricValueType
+		MetricValueType pmetric.NumberDataPointValueType
 	}
 	tests := []struct {
 		name   string
@@ -110,14 +110,14 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 		{
 			name: "float",
 			fields: fields{
-				MetricValueType: pmetric.MetricValueTypeDouble,
+				MetricValueType: pmetric.NumberDataPointValueTypeDouble,
 			},
 			want: true,
 		},
 		{
 			name: "int",
 			fields: fields{
-				MetricValueType: pmetric.MetricValueTypeInt,
+				MetricValueType: pmetric.NumberDataPointValueTypeInt,
 			},
 			want: false,
 		},

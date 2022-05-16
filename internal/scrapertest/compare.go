@@ -245,11 +245,11 @@ func CompareNumberDataPoints(expected, actual pmetric.NumberDataPoint) error {
 	return nil
 }
 
-func numberTypeToString(t pmetric.MetricValueType) string {
+func numberTypeToString(t pmetric.NumberDataPointValueType) string {
 	switch t {
-	case pmetric.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return "int"
-	case pmetric.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return "double"
 	default:
 		return "none"

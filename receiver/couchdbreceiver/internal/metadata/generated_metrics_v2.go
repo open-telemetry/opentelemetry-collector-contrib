@@ -55,6 +55,104 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeHTTPMethod specifies the a value http.method attribute.
+type AttributeHTTPMethod int
+
+const (
+	_ AttributeHTTPMethod = iota
+	AttributeHTTPMethodCOPY
+	AttributeHTTPMethodDELETE
+	AttributeHTTPMethodGET
+	AttributeHTTPMethodHEAD
+	AttributeHTTPMethodOPTIONS
+	AttributeHTTPMethodPOST
+	AttributeHTTPMethodPUT
+)
+
+// String returns the string representation of the AttributeHTTPMethod.
+func (av AttributeHTTPMethod) String() string {
+	switch av {
+	case AttributeHTTPMethodCOPY:
+		return "COPY"
+	case AttributeHTTPMethodDELETE:
+		return "DELETE"
+	case AttributeHTTPMethodGET:
+		return "GET"
+	case AttributeHTTPMethodHEAD:
+		return "HEAD"
+	case AttributeHTTPMethodOPTIONS:
+		return "OPTIONS"
+	case AttributeHTTPMethodPOST:
+		return "POST"
+	case AttributeHTTPMethodPUT:
+		return "PUT"
+	}
+	return ""
+}
+
+// MapAttributeHTTPMethod is a helper map of string to AttributeHTTPMethod attribute value.
+var MapAttributeHTTPMethod = map[string]AttributeHTTPMethod{
+	"COPY":    AttributeHTTPMethodCOPY,
+	"DELETE":  AttributeHTTPMethodDELETE,
+	"GET":     AttributeHTTPMethodGET,
+	"HEAD":    AttributeHTTPMethodHEAD,
+	"OPTIONS": AttributeHTTPMethodOPTIONS,
+	"POST":    AttributeHTTPMethodPOST,
+	"PUT":     AttributeHTTPMethodPUT,
+}
+
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationWrites
+	AttributeOperationReads
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationWrites:
+		return "writes"
+	case AttributeOperationReads:
+		return "reads"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"writes": AttributeOperationWrites,
+	"reads":  AttributeOperationReads,
+}
+
+// AttributeView specifies the a value view attribute.
+type AttributeView int
+
+const (
+	_ AttributeView = iota
+	AttributeViewTemporaryViewReads
+	AttributeViewViewReads
+)
+
+// String returns the string representation of the AttributeView.
+func (av AttributeView) String() string {
+	switch av {
+	case AttributeViewTemporaryViewReads:
+		return "temporary_view_reads"
+	case AttributeViewViewReads:
+		return "view_reads"
+	}
+	return ""
+}
+
+// MapAttributeView is a helper map of string to AttributeView attribute value.
+var MapAttributeView = map[string]AttributeView{
+	"temporary_view_reads": AttributeViewTemporaryViewReads,
+	"view_reads":           AttributeViewViewReads,
+}
+
 type metricCouchdbAverageRequestTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -180,7 +278,7 @@ func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -335,7 +433,7 @@ func (m *metricCouchdbHttpdRequests) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HTTPMethod, pcommon.NewValueString(httpMethodAttributeValue))
+	dp.Attributes().Insert("http.method", pcommon.NewValueString(httpMethodAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -388,7 +486,7 @@ func (m *metricCouchdbHttpdResponses) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HTTPStatusCode, pcommon.NewValueString(httpStatusCodeAttributeValue))
+	dp.Attributes().Insert("http.status_code", pcommon.NewValueString(httpStatusCodeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -441,7 +539,7 @@ func (m *metricCouchdbHttpdViews) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.View, pcommon.NewValueString(viewAttributeValue))
+	dp.Attributes().Insert("view", pcommon.NewValueString(viewAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -525,26 +623,44 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithCouchdbNodeName sets provided value as "couchdb.node.name" attribute for current resource.
-func WithCouchdbNodeName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("couchdb.node.name", val)
+func WithCouchdbNodeName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("couchdb.node.name", val)
+	}
+}
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
 	}
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/couchdbreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -556,6 +672,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricCouchdbHttpdRequests.emit(ils.Metrics())
 	mb.metricCouchdbHttpdResponses.emit(ils.Metrics())
 	mb.metricCouchdbHttpdViews.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -565,8 +684,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -583,8 +702,8 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pcommon.Timestam
 }
 
 // RecordCouchdbDatabaseOperationsDataPoint adds a data point to couchdb.database.operations metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordCouchdbFileDescriptorOpenDataPoint adds a data point to couchdb.file_descriptor.open metric.
@@ -598,8 +717,8 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pcommon.Tim
 }
 
 // RecordCouchdbHttpdRequestsDataPoint adds a data point to couchdb.httpd.requests metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pcommon.Timestamp, val int64, httpMethodAttributeValue string) {
-	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pcommon.Timestamp, val int64, httpMethodAttributeValue AttributeHTTPMethod) {
+	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue.String())
 }
 
 // RecordCouchdbHttpdResponsesDataPoint adds a data point to couchdb.httpd.responses metric.
@@ -608,8 +727,8 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pcommon.Timest
 }
 
 // RecordCouchdbHttpdViewsDataPoint adds a data point to couchdb.httpd.views metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pcommon.Timestamp, val int64, viewAttributeValue string) {
-	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pcommon.Timestamp, val int64, viewAttributeValue AttributeView) {
+	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -619,61 +738,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// HTTPMethod (An HTTP request method.)
-	HTTPMethod string
-	// HTTPStatusCode (An HTTP status code.)
-	HTTPStatusCode string
-	// Operation (The operation type.)
-	Operation string
-	// View (The view type.)
-	View string
-}{
-	"http.method",
-	"http.status_code",
-	"operation",
-	"view",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeHTTPMethod are the possible values that the attribute "http.method" can have.
-var AttributeHTTPMethod = struct {
-	COPY    string
-	DELETE  string
-	GET     string
-	HEAD    string
-	OPTIONS string
-	POST    string
-	PUT     string
-}{
-	"COPY",
-	"DELETE",
-	"GET",
-	"HEAD",
-	"OPTIONS",
-	"POST",
-	"PUT",
-}
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Writes string
-	Reads  string
-}{
-	"writes",
-	"reads",
-}
-
-// AttributeView are the possible values that the attribute "view" can have.
-var AttributeView = struct {
-	TemporaryViewReads string
-	ViewReads          string
-}{
-	"temporary_view_reads",
-	"view_reads",
 }

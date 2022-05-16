@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package stanza // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 
 import (
@@ -333,12 +334,10 @@ func Convert(ent *entry.Entry) plog.Logs {
 
 // convertInto converts entry.Entry into provided plog.LogRecord.
 func convertInto(ent *entry.Entry, dest plog.LogRecord) {
-	t := ent.ObservedTimestamp
 	if !ent.Timestamp.IsZero() {
-		t = ent.Timestamp
+		dest.SetTimestamp(pcommon.NewTimestampFromTime(ent.Timestamp))
 	}
-	dest.SetTimestamp(pcommon.NewTimestampFromTime(t))
-
+	dest.SetObservedTimestamp(pcommon.NewTimestampFromTime(ent.ObservedTimestamp))
 	dest.SetSeverityNumber(sevMap[ent.Severity])
 	dest.SetSeverityText(sevTextMap[ent.Severity])
 
@@ -371,8 +370,10 @@ func insertToAttributeVal(value interface{}, dest pcommon.Value) {
 		dest.SetBoolVal(t)
 	case string:
 		dest.SetStringVal(t)
+	case []string:
+		toStringArray(t).CopyTo(dest)
 	case []byte:
-		dest.SetStringVal(string(t))
+		dest.SetMBytesVal(t)
 	case int64:
 		dest.SetIntVal(t)
 	case int32:
@@ -421,8 +422,11 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pcommon.Map) {
 			dest.InsertBool(k, t)
 		case string:
 			dest.InsertString(k, t)
+		case []string:
+			arr := toStringArray(t)
+			dest.Insert(k, arr)
 		case []byte:
-			dest.InsertString(k, string(t))
+			dest.InsertMBytes(k, t)
 		case int64:
 			dest.InsertInt(k, t)
 		case int32:
@@ -464,6 +468,16 @@ func toAttributeArray(obsArr []interface{}) pcommon.Value {
 	arr := arrVal.SliceVal()
 	arr.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {
+		insertToAttributeVal(v, arr.AppendEmpty())
+	}
+	return arrVal
+}
+
+func toStringArray(strArr []string) pcommon.Value {
+	arrVal := pcommon.NewValueSlice()
+	arr := arrVal.SliceVal()
+	arr.EnsureCapacity(len(strArr))
+	for _, v := range strArr {
 		insertToAttributeVal(v, arr.AppendEmpty())
 	}
 	return arrVal

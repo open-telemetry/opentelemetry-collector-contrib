@@ -79,7 +79,7 @@ func (u *udpServer) ListenAndServe(
 				u.packetConn.LocalAddr(),
 				err)
 			if netErr, ok := err.(net.Error); ok {
-				if netErr.Temporary() {
+				if netErr.Temporary() { // nolint SA1019
 					continue
 				}
 			}

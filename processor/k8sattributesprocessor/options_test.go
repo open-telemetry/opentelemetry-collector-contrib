@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package k8sattributesprocessor
 
 import (
@@ -21,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -318,7 +319,6 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.PodUID)
 	assert.True(t, p.rules.StartTime)
 	assert.True(t, p.rules.Deployment)
-	assert.True(t, p.rules.Cluster)
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
@@ -329,7 +329,6 @@ func TestWithExtractMetadata(t *testing.T) {
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
 	assert.True(t, p.rules.Namespace)
-	assert.False(t, p.rules.Cluster)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.False(t, p.rules.StartTime)
@@ -673,19 +672,20 @@ func Test_extractFieldRules(t *testing.T) {
 			true,
 		},
 		{
-			"match-keyregex",
+			"keyregex-capture-group",
 			args{"labels", []FieldExtractConfig{
 				{
-					TagName:  "name",
-					KeyRegex: "key*",
+					TagName:  "$0-$1-$2",
+					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "name",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromPod,
+					Name:                 "$0-$1-$2",
+					KeyRegex:             regexp.MustCompile("(key)(.*)"),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
 				},
 			},
 			false,

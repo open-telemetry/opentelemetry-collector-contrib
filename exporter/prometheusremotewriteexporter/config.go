@@ -74,7 +74,7 @@ var dropSanitizationGate = featuregate.Gate{
 }
 
 func init() {
-	featuregate.Register(dropSanitizationGate)
+	featuregate.GetRegistry().MustRegister(dropSanitizationGate)
 }
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
