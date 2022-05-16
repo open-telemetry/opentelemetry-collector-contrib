@@ -1,6 +1,6 @@
 # Transform Processor
 
-Supported pipeline types: logs, traces
+Supported pipeline types: traces, metrics, logs
 
 The transform processor modifies telemetry based on configuration using the Telemetry Query Language.
 It takes a list of queries which are performed in the order specified in the config.
@@ -42,11 +42,6 @@ exporters:
 
 processors:
   transform:
-    logs:
-      queries:
-        - set(severity_text, "FAIL") where body == "request failed"
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
-        - set(body, attributes["http.route"])
     traces:
       queries:
         - set(status.code, 1) where attributes["http.path"] == "/health"
@@ -56,6 +51,18 @@ processors:
         - limit(resource.attributes, 100)
         - truncate_all(attributes, 4096)
         - truncate_all(resource.attributes, 4096)
+    metrics:
+      queries:
+        - set(metric.description, "Sum") where metric.type == "Sum"
+        - keep_keys(resource.attributes, "host.name")
+        - limit(attributes, 100)
+        - truncate_all(attributes, 4096)
+        - truncate_all(resource.attributes, 4096)
+    logs:
+      queries:
+        - set(severity_text, "FAIL") where body == "request failed"
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - set(body, attributes["http.route"])
 service:
   pipelines:
     logs:
@@ -70,11 +77,6 @@ service:
 
 This processor will perform the operations in order for 
 
-All logs
-
-1) Set severity text to FAIL if the body contains a string text "request failed"
-2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
-3) Set `body` to the `http.route` attribute if it is set
 
 All spans
 
@@ -85,3 +87,17 @@ All spans
 5) Limit all resource attributes such that each resource no more than 100 attributes.
 6) Truncate all span attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
+
+All metrics and their data points
+
+1) Set metric description to "Sum" if the metric type is "Sum"
+2) Keep only the `host.name` resource attributes
+4) Limit all data point attributes such that each data point has no more than 100 attributes.
+6) Truncate all data point attributes such that no string value has more than 4096 characters.
+7) Truncate all resource attributes such that no string value has more than 4096 characters.
+
+All logs
+
+1) Set severity text to FAIL if the body contains a string text "request failed"
+2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+3) Set `body` to the `http.route` attribute if it is set
