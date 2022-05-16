@@ -312,7 +312,6 @@ func accessMetricType() pathGetSetter {
 				case "Summary":
 					ctx.(metricTransformContext).GetMetric().SetDataType(pmetric.MetricDataTypeSummary)
 				}
-
 			}
 		},
 	}
