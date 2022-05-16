@@ -122,6 +122,7 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 	nClient, err := newASClient(host, int(port), r.config.Username, r.config.Password, r.config.Timeout)
 	if err != nil {
 		r.params.Logger.Warn(err.Error())
+		errs.Add(err)
 		return
 	}
 	defer nClient.Close()

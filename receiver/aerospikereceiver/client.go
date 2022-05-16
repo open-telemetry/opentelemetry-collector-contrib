@@ -50,12 +50,12 @@ func newASClient(host string, port int, username, password string, timeout time.
 
 	conn, err := as.NewConnection(policy, as.NewHost(host, port))
 	if err != nil {
-		return nil, err.Unwrap()
+		return nil, err
 	}
 
 	if authEnabled {
 		if err := conn.Login(policy); err != nil {
-			return nil, err.Unwrap()
+			return nil, err
 		}
 	}
 
@@ -70,7 +70,7 @@ func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo,
 	var response model.InfoResponse
 	response, err := c.conn.RequestInfo(model.NamespaceKey(namespace))
 	if err != nil {
-		return nil, err.Unwrap()
+		return nil, err
 	}
 
 	return model.ParseNamespaceInfo(response, namespace), nil
@@ -81,7 +81,7 @@ func (c *defaultASClient) Info() (*model.NodeInfo, error) {
 	var response model.InfoResponse
 	response, err := c.conn.RequestInfo("namespaces", "node", "statistics", "services")
 	if err != nil {
-		return nil, err.Unwrap()
+		return nil, err
 	}
 
 	return model.ParseInfo(response), nil
