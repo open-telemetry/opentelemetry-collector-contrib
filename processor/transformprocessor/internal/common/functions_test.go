@@ -212,7 +212,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 	}
 }
 
-func functionThatHasAnError() (ExprFunc, error) {
+func functionThatHasAnError(arguments []Value, pathParser PathExpressionParser, functions map[string]TransformFunction) (ExprFunc, error) {
 	err := errors.New("testing")
 	return func(ctx TransformContext) interface{} {
 		return "anything"

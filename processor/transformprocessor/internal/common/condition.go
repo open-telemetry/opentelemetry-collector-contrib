@@ -24,7 +24,7 @@ var alwaysTrue = func(ctx TransformContext) bool {
 	return true
 }
 
-func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+func newConditionEvaluator(cond *Condition, functions map[string]TransformFunction, pathParser PathExpressionParser) (condFunc, error) {
 	if cond == nil {
 		return alwaysTrue, nil
 	}

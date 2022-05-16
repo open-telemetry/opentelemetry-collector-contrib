@@ -73,7 +73,7 @@ type Query struct {
 	Condition condFunc
 }
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+func ParseQueries(statements []string, functions map[string]TransformFunction, pathParser PathExpressionParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
 

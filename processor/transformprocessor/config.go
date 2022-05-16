@@ -27,14 +27,14 @@ type LogsConfig struct {
 	Queries []string `mapstructure:"queries"`
 
 	// The functions that have been registered in the extension for logs processing.
-	functions map[string]interface{} `mapstructure:"-"`
+	functions map[string]common.TransformFunction `mapstructure:"-"`
 }
 
 type TracesConfig struct {
 	Queries []string `mapstructure:"queries"`
 
 	// The functions that have been registered in the extension for traces processing.
-	functions map[string]interface{} `mapstructure:"-"`
+	functions map[string]common.TransformFunction `mapstructure:"-"`
 }
 
 type Config struct {

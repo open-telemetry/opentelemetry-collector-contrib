@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func DefaultFunctions() map[string]interface{} {
+func DefaultFunctions() map[string]common.TransformFunction {
 	// No logs-only functions yet.
 	return common.DefaultFunctions()
 }

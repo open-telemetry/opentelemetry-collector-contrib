@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func hello() (ExprFunc, error) {
+func hello(arguments []Value, pathParser PathExpressionParser, functions map[string]TransformFunction) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "world"
 	}, nil
@@ -81,7 +81,7 @@ func Test_newGetter(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{"hello": hello}
+	functions := map[string]TransformFunction{"hello": hello}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

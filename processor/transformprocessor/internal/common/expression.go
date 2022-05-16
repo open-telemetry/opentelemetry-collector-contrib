@@ -57,7 +57,7 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 	return g.expr(ctx)
 }
 
-func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser) (Getter, error) {
+func NewGetter(val Value, functions map[string]TransformFunction, pathParser PathExpressionParser) (Getter, error) {
 	if s := val.String; s != nil {
 		return &literal{value: *s}, nil
 	}

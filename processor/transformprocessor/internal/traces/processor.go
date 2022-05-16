@@ -29,7 +29,7 @@ type Processor struct {
 	logger  *zap.Logger
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
+func NewProcessor(statements []string, functions map[string]common.TransformFunction, settings component.ProcessorCreateSettings) (*Processor, error) {
 	queries, err := common.ParseQueries(statements, functions, ParsePath)
 	if err != nil {
 		return nil, err
