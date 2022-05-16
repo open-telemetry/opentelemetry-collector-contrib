@@ -48,12 +48,13 @@ jobs:
     strategy:
       matrix:
         group:
-          - receivers
-          - processors
-          - exporters
-          - extensions
-          - internals
-          - others
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - internal
+          - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
@@ -131,12 +132,13 @@ jobs:
       matrix:
         go-version: [1.18, 1.17]
         group:
-          - receivers
-          - processors
-          - exporters
-          - extensions
-          - internals
-          - others
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - internal
+          - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
