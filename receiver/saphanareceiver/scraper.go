@@ -91,7 +91,7 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for saphana scraper: %w", err))
 			continue
 		}
-		resourceOptions := []metadata.ResourceOption{metadata.WithDbSystem("saphana")}
+		resourceOptions := []metadata.ResourceMetricsOption{metadata.WithDbSystem("saphana")}
 		for attribute, value := range resourceAttributes {
 			if attribute == "host" {
 				resourceOptions = append(resourceOptions, metadata.WithSaphanaHost(value))

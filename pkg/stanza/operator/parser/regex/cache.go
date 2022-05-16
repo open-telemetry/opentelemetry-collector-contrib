@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package regex // import "github.com/open-telemetry/opentelemetry-log-collection/operator/parser/regex"
+package regex // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 
 import (
 	"math"
