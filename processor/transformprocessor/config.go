@@ -15,6 +15,7 @@
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 
@@ -23,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
-type TransformConfig struct {
+type SignalConfig struct {
 	Queries []string `mapstructure:"queries"`
 
 	// The functions that have been registered in the extension for processing.
@@ -33,24 +34,24 @@ type TransformConfig struct {
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	Logs    TransformConfig `mapstructure:"logs"`
-	Traces  TransformConfig `mapstructure:"traces"`
-	Metrics TransformConfig `mapstructure:"traces"`
+	Logs    SignalConfig `mapstructure:"logs"`
+	Traces  SignalConfig `mapstructure:"traces"`
+	Metrics SignalConfig `mapstructure:"metrics"`
 }
 
 var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	_, err := common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
+	_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
+	_, err = common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, traces.ParsePath)
+	_, err = common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

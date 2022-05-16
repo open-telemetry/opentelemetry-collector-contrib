@@ -1517,8 +1517,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "type",
 				},
 			},
-			orig: pmetric.MetricDataTypeSum,
-			new:  pmetric.MetricDataTypeGauge,
+			orig: "Sum",
+			new:  "Gauge",
 			modified: func(metric pmetric.Metric) {
 				metric.SetDataType(pmetric.MetricDataTypeGauge)
 			},

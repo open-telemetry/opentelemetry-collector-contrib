@@ -47,17 +47,17 @@ func NewFactory() component.ProcessorFactory {
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Logs: TransformConfig{
+		Logs: SignalConfig{
 			Queries: []string{},
 
 			functions: logs.DefaultFunctions(),
 		},
-		Traces: TransformConfig{
+		Traces: SignalConfig{
 			Queries: []string{},
 
 			functions: traces.DefaultFunctions(),
 		},
-		Metrics: TransformConfig{
+		Metrics: SignalConfig{
 			Queries: []string{},
 
 			functions: metrics.DefaultFunctions(),
