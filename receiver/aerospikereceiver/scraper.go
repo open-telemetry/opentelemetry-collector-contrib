@@ -96,7 +96,7 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	info, err := client.Info()
 	if err != nil {
-		errs.AddPartial(-1, err)
+		errs.AddPartial(0, err)
 		return
 	}
 
@@ -109,12 +109,14 @@ func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, 
 func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	host, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		r.params.Logger.Sugar().Warnf("%w: %s", errBadEndpoint, err)
+		r.params.Logger.Warn(fmt.Sprintf("%s: %s", errBadEndpoint, err))
+		errs.Add(err)
 		return
 	}
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		r.params.Logger.Sugar().Warnf("%w: %s", errBadPort, err)
+		r.params.Logger.Warn(fmt.Sprintf("%s: %s", errBadPort, err))
+		errs.Add(err)
 		return
 	}
 
@@ -170,7 +172,7 @@ func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client aerospike, now
 		for _, n := range info.Namespaces {
 			nInfo, err := client.NamespaceInfo(n)
 			if err != nil {
-				r.params.Logger.Sugar().Warnf("failed getting namespace %s: %s", n, err.Error())
+				r.params.Logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
 				continue
 			}
 			nInfo.Node = info.Name
