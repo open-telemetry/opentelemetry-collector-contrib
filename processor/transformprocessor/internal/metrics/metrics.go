@@ -17,10 +17,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type metricTransformContext struct {
@@ -376,18 +375,22 @@ func accessAttributes() pathGetSetter {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.NumberDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.NumberDataPoint).Attributes())
 				}
 			case pmetric.HistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.HistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes())
 				}
 			case pmetric.ExponentialHistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes())
 				}
 			case pmetric.SummaryDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.SummaryDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes())
 				}
 			}

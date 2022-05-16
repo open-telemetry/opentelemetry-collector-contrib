@@ -1622,3 +1622,7 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pc
 func strp(s string) *string {
 	return &s
 }
+
+func intp(i int64) *int64 {
+	return &i
+}
