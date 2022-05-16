@@ -28,16 +28,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 )
 
 // aerospikeReceiver is a metrics receiver using the Aerospike interface to collect
 type aerospikeReceiver struct {
-	params   component.ReceiverCreateSettings
 	config   *Config
 	consumer consumer.Metrics
 	host     string // host/IP of configured Aerospike node
 	port     int    // port of configured Aerospike node
 	mb       *metadata.MetricsBuilder
+	logger   *zap.Logger
 }
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
@@ -55,7 +56,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 	}
 
 	return &aerospikeReceiver{
-		params:   params,
+		logger:   params.Logger,
 		config:   cfg,
 		consumer: consumer,
 		host:     host,
@@ -77,13 +78,13 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	info, err := client.Info()
 	if err != nil {
-		r.params.Logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
+		r.logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
 		return r.mb.Emit(), err
 	}
 	r.emitNode(info, client, now)
 
 	if r.config.CollectClusterMetrics {
-		r.params.Logger.Debug("Collecting peer nodes")
+		r.logger.Debug("Collecting peer nodes")
 		for _, n := range info.Services {
 			r.scrapeDiscoveredNode(n, now, errs)
 		}
@@ -109,20 +110,20 @@ func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, 
 func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	host, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		r.params.Logger.Warn(fmt.Sprintf("%s: %s", errBadEndpoint, err))
+		r.logger.Warn(fmt.Sprintf("%s: %s", errBadEndpoint, err))
 		errs.Add(err)
 		return
 	}
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		r.params.Logger.Warn(fmt.Sprintf("%s: %s", errBadPort, err))
+		r.logger.Warn(fmt.Sprintf("%s: %s", errBadPort, err))
 		errs.Add(err)
 		return
 	}
 
 	nClient, err := newASClient(host, int(port), r.config.Username, r.config.Password, r.config.Timeout)
 	if err != nil {
-		r.params.Logger.Warn(err.Error())
+		r.logger.Warn(err.Error())
 		errs.Add(err)
 		return
 	}
@@ -172,7 +173,7 @@ func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client aerospike, now
 		for _, n := range info.Namespaces {
 			nInfo, err := client.NamespaceInfo(n)
 			if err != nil {
-				r.params.Logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
+				r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
 				continue
 			}
 			nInfo.Node = info.Name
