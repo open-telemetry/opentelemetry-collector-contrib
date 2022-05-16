@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package dynatraceexporter
 
 import (
@@ -52,7 +51,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 			Invalid: 0,
 		}
 		body, _ := json.Marshal(response)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer ts.Close()
 
@@ -250,7 +249,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 			Ok:      0,
 			Invalid: 10,
 		})
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer ts.Close()
 
@@ -275,7 +274,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 func Test_exporter_send_Unauthorized(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 	}))
 	defer ts.Close()
 
@@ -300,7 +299,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 func Test_exporter_send_TooLarge(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 	}))
 	defer ts.Close()
 
@@ -325,7 +324,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 func Test_exporter_send_NotFound(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 	}))
 	defer ts.Close()
 
@@ -359,7 +358,7 @@ func Test_exporter_send_chunking(t *testing.T) {
 			Ok:      0,
 			Invalid: 1,
 		})
-		w.Write(body)
+		_, _ = w.Write(body)
 		sentChunks++
 	}))
 	defer ts.Close()
