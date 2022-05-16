@@ -294,7 +294,7 @@ func accessMetricUnit() pathGetSetter {
 func accessMetricType() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetMetric().DataType()
+			return ctx.(metricTransformContext).GetMetric().DataType().String()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if dataType, ok := val.(pmetric.MetricDataType); ok {

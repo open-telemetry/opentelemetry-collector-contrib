@@ -74,6 +74,12 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetUnit("new unit")
 			},
 		},
+		{
+			query: `set(metric.description, "Sum") where metric.type == "Sum"`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("Sum")
+			},
+		},
 	}
 
 	for _, tt := range tests {
