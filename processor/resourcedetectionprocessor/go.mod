@@ -7,7 +7,7 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/aws/aws-sdk-go v1.44.11
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/docker/docker v20.10.15+incompatible
+	github.com/docker/docker v20.10.16+incompatible
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.51.0
