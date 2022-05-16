@@ -16,37 +16,26 @@ FOR_GROUP_TARGET=for-$(GROUP)-target
 
 TEMP_EX_STANZA=-not -path "./pkg/stanza/*"
 FIND_MOD_ARGS=-type f -name "go.mod" $(TEMP_EX_STANZA)
-TO_MOD_DIR=-exec dirname {} \; | sort | egrep  '^./'
+TO_MOD_DIR=dirname {} \; | sort | egrep  '^./'
 EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
+
+FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . f -name "*e2e_test.go" -not -path "./testbed/*"; }
 
 # NONROOT_MODS includes ./* dirs (excludes . dir)
 NONROOT_MODS := $(shell find . $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
 
-RECEIVER_MODS := $(shell find ./receiver/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
-PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
-EXPORTER_MODS := $(shell find ./exporter/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
-EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
-OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(FIND_MOD_ARGS) $(TO_MOD_DIR) ) $(PWD)
+RECEIVER_MODS := $(shell find ./receiver/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS := $(shell find ./exporter/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(OTHER_MODS)
-
-# Modules to run integration tests on.
-# XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
-INTEGRATION_TEST_MODULES := \
-	internal/containertest \
-	receiver/apachereceiver \
-	receiver/dockerstatsreceiver \
-	receiver/jmxreceiver/ \
-	receiver/kafkametricsreceiver \
-	receiver/memcachedreceiver \
-	receiver/mysqlreceiver \
-	receiver/nginxreceiver \
-	receiver/postgresqlreceiver \
-	receiver/redisreceiver \
-	receiver/riakreceiver \
-	receiver/zookeeperreceiver \
-	extension/observer/dockerobserver
+INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) )
 
 .DEFAULT_GOAL := all
+
+int-mods:
+	@echo $(INTEGRATION_MODS) | tr ' ' '\n' | sort
 
 all-modules:
 	@echo $(NONROOT_MODS) | tr ' ' '\n' | sort
@@ -68,10 +57,9 @@ unit-tests-with-cover:
 	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="do-unit-tests-with-cover"
 
+TARGET="do-integration-tests-with-cover"
 .PHONY: integration-tests-with-cover
-integration-tests-with-cover:
-	@echo $(INTEGRATION_TEST_MODULES)
-	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="do-integration-tests-with-cover" NONROOT_MODS="$(INTEGRATION_TEST_MODULES)"
+integration-tests-with-cover: $(INTEGRATION_MODS)
 
 # Long-running e2e tests
 .PHONY: stability-tests
