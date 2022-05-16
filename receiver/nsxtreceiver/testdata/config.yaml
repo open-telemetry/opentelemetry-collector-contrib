@@ -1,0 +1,19 @@
+### Metrics
+receivers:
+  nsxt:
+    collection_interval: 1m
+    endpoint: https://nsx-manager-endpoint
+    username: admin
+    password: password123
+    tls:
+      insecure: true
+
+exporters:
+  file:
+    path: "./content.json"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nsx]
+      exporters: [file]
