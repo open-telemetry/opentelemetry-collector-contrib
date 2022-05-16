@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -89,18 +88,4 @@ func (c *Config) Validate() error {
 	}
 
 	return allErrs
-}
-
-func createDefaultConfig() config.Receiver {
-	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: time.Minute,
-		},
-		Endpoint:              defaultEndpoint,
-		Timeout:               defaultTimeout,
-		CollectClusterMetrics: defaultCollectClusterMetrics,
-		TLS:                   configtls.TLSClientSetting{},
-		Metrics:               metadata.DefaultMetricsSettings(),
-	}
 }

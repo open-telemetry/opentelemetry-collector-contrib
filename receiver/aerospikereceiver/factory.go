@@ -16,9 +16,12 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -61,4 +64,18 @@ func createMetricsReceiver(
 		&cfg.ScraperControllerSettings, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
+}
+
+func createDefaultConfig() config.Receiver {
+	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			CollectionInterval: time.Minute,
+		},
+		Endpoint:              defaultEndpoint,
+		Timeout:               defaultTimeout,
+		CollectClusterMetrics: defaultCollectClusterMetrics,
+		TLS:                   configtls.TLSClientSetting{},
+		Metrics:               metadata.DefaultMetricsSettings(),
+	}
 }
