@@ -10,6 +10,7 @@ resource_attributes:
 
 attributes:
   namespace_component:
+    value: component
     description: Individual component of a namespace
     enum:
       - data
@@ -17,6 +18,7 @@ attributes:
       - set_index
       - sindex
   scan_type:
+    value: type
     description: Type of scan operation performed on a namespace
     enum:
       - aggr
@@ -24,12 +26,14 @@ attributes:
       - ops_bg
       - udf_bg
   scan_result:
+    value: result
     description: Result of a scan operation performed on a namespace
     enum:
       - abort
       - complete
       - error
   transaction_type:
+    value: type
     description: Type of transaction performed on a namespace
     enum:
       - delete
@@ -37,6 +41,7 @@ attributes:
       - udf
       - write
   transaction_result:
+    value: result
     description: Result of a transaction performed on a namespace
     enum:
       - error
@@ -45,12 +50,14 @@ attributes:
       - success
       - timeout
   connection_type:
+    value: type
     description: Type of connection to an Aerospike node
     enum:
       - client
       - fabric
       - heartbeat
   connection_op:
+    value: op
     description: Operation performed with a connection (open or close)
     enum:
       - close
@@ -80,8 +87,10 @@ metrics:
     extended_documentation: Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat_connections
     unit: '{connections}'
     attributes: [connection_type]
-    gauge:
+    sum:
       value_type: int
+      monotonic: false
+      aggregation: cumulative
   aerospike.namespace.memory.usage:
     enabled: true
     description: Memory currently used by each component of the namespace
@@ -105,9 +114,10 @@ metrics:
     unit: '%'
     gauge:
       value_type: int
-  aerospike.namespace.span.count:
+  aerospike.namespace.scan.count:
     enabled: true
     description: Number of scan operations performed on the namespace
+    unit: '{scans}'
     extended_documentation: Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_error, scan_basic_abort, scan_basic_complete, scan_basic_error, scan_ops_bg_abort, scan_ops_bg_complete, scan_ops_bg_error, scan_udf_bg_abort, scan_udf_bg_complete, scan_udf_bg_error
     attributes: [scan_type, scan_result]
     sum:
@@ -117,6 +127,7 @@ metrics:
   aeropsike.namespace.transaction.count:
     enabled: true
     description: Number of transactions performed on the namespace
+    unit: '{transactions}'
     extended_documentation: Aggregate of Aerospike Metrics client_delete_error, client_delete_filtered_out, client_delete_not_found, client_delete_success, client_delete_timeout, client_read_error, client_read_filtered_out, client_read_not_found, client_read_success, client_read_timeout, client_udf_error, client_udf_filtered_out, client_udf_not_found, client_udf_success, client_udf_timeout, client_write_error, client_write_filtered_out, client_write_not_found, client_write_success, client_write_timeout
     attributes: [transaction_type, transaction_result]
     sum:

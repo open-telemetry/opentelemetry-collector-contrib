@@ -71,7 +71,6 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 	client, err := newASClient(r.host, r.port, r.config.Username, r.config.Password, r.config.Timeout)
 	if err != nil {
-		r.params.Logger.Warn(fmt.Sprintf("failed to connect: %s", err.Error()))
 		return pmetric.NewMetrics(), fmt.Errorf("failed to connect: %w", err)
 	}
 	defer client.Close()
