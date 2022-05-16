@@ -18,8 +18,9 @@ TEMP_EX_STANZA=-not -path "./pkg/stanza/*"
 FIND_MOD_ARGS=-type f -name "go.mod" $(TEMP_EX_STANZA)
 TO_MOD_DIR=dirname {} \; | sort | egrep  '^./'
 EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
+EX_INTERNAL=-not -path "./internal/*"
 
-FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . f -name "*e2e_test.go" -not -path "./testbed/*"; }
+FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
 
 # NONROOT_MODS includes ./* dirs (excludes . dir)
 NONROOT_MODS := $(shell find . $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
@@ -28,7 +29,8 @@ RECEIVER_MODS := $(shell find ./receiver/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) 
 PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXPORTER_MODS := $(shell find ./exporter/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
+INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(OTHER_MODS)
 INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) )
 
@@ -183,6 +185,9 @@ for-exporters-target: $(EXPORTER_MODS)
 
 .PHONY: for-extensions-target
 for-extensions-target: $(EXTENSION_MODS)
+
+.PHONY: for-internals-target
+for-internals-target: $(INTERNAL_MODS)
 
 .PHONY: for-others-target
 for-others-target: $(OTHER_MODS)
