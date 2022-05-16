@@ -2,7 +2,7 @@
 
 Supported pipeline types: traces, metrics, logs
 
-The transform processor modifies telemetry based on configuration using the Telemetry Query Language.
+The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language).
 It takes a list of queries which are performed in the order specified in the config.
 
 Queries are composed of the following parts
