@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/pdata v0.51.0
 	go.opentelemetry.io/collector/semconv v0.51.0
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122
 )
 
 require (
