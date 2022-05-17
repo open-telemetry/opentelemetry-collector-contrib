@@ -46,23 +46,22 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 		rmetrics := td.ResourceMetrics().At(i)
 		ctx.resource = rmetrics.Resource()
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
-			il := rmetrics.ScopeMetrics().At(j).Scope()
-			ctx.il = il
-			metrics := rmetrics.ScopeMetrics().At(j).Metrics()
+			smetrics := rmetrics.ScopeMetrics().At(j)
+			ctx.il = smetrics.Scope()
+			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
-				metric := metrics.At(k)
-				ctx.metric = metric
+				ctx.metric = metrics.At(k)
 				switch ctx.metric.DataType() {
 				case pmetric.MetricDataTypeSum:
-					p.handleNumberDataPoints(ctx, metric.Sum().DataPoints())
+					p.handleNumberDataPoints(ctx, ctx.metric.Sum().DataPoints())
 				case pmetric.MetricDataTypeGauge:
-					p.handleNumberDataPoints(ctx, metric.Gauge().DataPoints())
+					p.handleNumberDataPoints(ctx, ctx.metric.Gauge().DataPoints())
 				case pmetric.MetricDataTypeHistogram:
-					p.handleHistogramDataPoints(ctx, metric.Histogram().DataPoints())
+					p.handleHistogramDataPoints(ctx, ctx.metric.Histogram().DataPoints())
 				case pmetric.MetricDataTypeExponentialHistogram:
-					p.handleExponetialHistogramDataPoints(ctx, metric.ExponentialHistogram().DataPoints())
+					p.handleExponetialHistogramDataPoints(ctx, ctx.metric.ExponentialHistogram().DataPoints())
 				case pmetric.MetricDataTypeSummary:
-					p.handleSummaryDataPoints(ctx, metric.Summary().DataPoints())
+					p.handleSummaryDataPoints(ctx, ctx.metric.Summary().DataPoints())
 				}
 			}
 		}
@@ -71,29 +70,29 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 }
 
 func (p *Processor) handleNumberDataPoints(ctx metricTransformContext, dps pmetric.NumberDataPointSlice) {
-	for l := 0; l < dps.Len(); l++ {
-		ctx.dataPoint = dps.At(l)
+	for i := 0; i < dps.Len(); i++ {
+		ctx.dataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
 func (p *Processor) handleHistogramDataPoints(ctx metricTransformContext, dps pmetric.HistogramDataPointSlice) {
-	for l := 0; l < dps.Len(); l++ {
-		ctx.dataPoint = dps.At(l)
+	for i := 0; i < dps.Len(); i++ {
+		ctx.dataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
 func (p *Processor) handleExponetialHistogramDataPoints(ctx metricTransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
-	for l := 0; l < dps.Len(); l++ {
-		ctx.dataPoint = dps.At(l)
+	for i := 0; i < dps.Len(); i++ {
+		ctx.dataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
 func (p *Processor) handleSummaryDataPoints(ctx metricTransformContext, dps pmetric.SummaryDataPointSlice) {
-	for l := 0; l < dps.Len(); l++ {
-		ctx.dataPoint = dps.At(l)
+	for i := 0; i < dps.Len(); i++ {
+		ctx.dataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
