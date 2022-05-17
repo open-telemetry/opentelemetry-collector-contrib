@@ -4,7 +4,7 @@
 | ------------------------ | --------- |
 | Stability                | [beta]    |
 | Supported pipeline types | traces    |
-| Distribution             | [contrib] |
+| Distributions            | [contrib] |
 
 The tail sampling processor samples traces based on a set of defined policies.
 Today, this processor only works with a single instance of the collector.
