@@ -4,7 +4,7 @@
 | ------------------------ | --------- |
 | Stability                | [beta]    |
 | Supported pipeline types | metrics   |
-| Distribution             | [contrib] |
+| Distributions            | [contrib] |
 
 ## Description
 
