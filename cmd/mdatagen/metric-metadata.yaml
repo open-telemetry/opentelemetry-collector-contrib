@@ -38,12 +38,12 @@ metrics:
     # Required: metric unit as defined by https://ucum.org/ucum.html.
     unit:
     # Required: metric type with its settings.
-    <sum|gauge|histogram>:
+    <sum|gauge>:
       # Required for sum and gauge metrics: type of number data point values.
       value_type: # int | double
       # Required for sum metric: whether the metric is monotonic (no negative delta values).
       monotonic: # true | false
-      # Required for sum and histogram metrics: whether reported values incorporate previous measurements
+      # Required for sum metric: whether reported values incorporate previous measurements
       # (cumulative) or not (delta).
       aggregation: # delta | cumulative
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.

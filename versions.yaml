@@ -137,6 +137,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
@@ -166,6 +167,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
@@ -198,5 +200,4 @@ module-sets:
 
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
-  - github.com/open-telemetry/opentelemetry-log-collection
-  - github.com/open-telemetry/opentelemetry-log-collection/internal/tools
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza

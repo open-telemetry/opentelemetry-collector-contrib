@@ -31,7 +31,9 @@ func TestGetClusters(t *testing.T) {
 			vimDriver: c,
 			finder:    finder,
 		}
-		clusters, err := client.Clusters(ctx, "")
+		dc, err := finder.DefaultDatacenter(ctx)
+		require.NoError(t, err)
+		clusters, err := client.Clusters(ctx, dc)
 		require.NoError(t, err)
 		require.NotEmpty(t, clusters, 0)
 	})

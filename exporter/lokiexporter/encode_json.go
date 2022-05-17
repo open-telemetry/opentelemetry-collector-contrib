@@ -57,7 +57,7 @@ func serializeBody(body pcommon.Value) ([]byte, error) {
 		str, err = json.Marshal(body.MapVal().AsRaw())
 
 	case pcommon.ValueTypeSlice:
-		str, err = json.Marshal(attributeValueSliceAsRaw(body.SliceVal()))
+		str, err = json.Marshal(body.SliceVal().AsRaw())
 
 	case pcommon.ValueTypeBytes:
 		str, err = json.Marshal(body.MBytesVal())
@@ -93,29 +93,4 @@ func encodeJSON(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 		return "", err
 	}
 	return string(jsonRecord), nil
-}
-
-// Copied from pdata (es AttributeValueSlice) asRaw() since its not exported
-func attributeValueSliceAsRaw(es pcommon.Slice) []interface{} {
-	rawSlice := make([]interface{}, 0, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		v := es.At(i)
-		switch v.Type() {
-		case pcommon.ValueTypeString:
-			rawSlice = append(rawSlice, v.StringVal())
-		case pcommon.ValueTypeInt:
-			rawSlice = append(rawSlice, v.IntVal())
-		case pcommon.ValueTypeDouble:
-			rawSlice = append(rawSlice, v.DoubleVal())
-		case pcommon.ValueTypeBool:
-			rawSlice = append(rawSlice, v.BoolVal())
-		case pcommon.ValueTypeBytes:
-			rawSlice = append(rawSlice, v.MBytesVal())
-		case pcommon.ValueTypeEmpty:
-			rawSlice = append(rawSlice, nil)
-		default:
-			rawSlice = append(rawSlice, "<Invalid array value>")
-		}
-	}
-	return rawSlice
 }
