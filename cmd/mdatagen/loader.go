@@ -117,8 +117,6 @@ type metric struct {
 	Sum *sum `yaml:"sum"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `yaml:"gauge"`
-	// Histogram stores metadata for histogram metric type
-	Histogram *histogram `yaml:"histogram"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName
@@ -130,9 +128,6 @@ func (m metric) Data() MetricData {
 	}
 	if m.Gauge != nil {
 		return m.Gauge
-	}
-	if m.Histogram != nil {
-		return m.Histogram
 	}
 	return nil
 }
@@ -246,16 +241,13 @@ func validateMetadata(out metadata) error {
 		if v.Gauge != nil {
 			dataTypesSet++
 		}
-		if v.Histogram != nil {
-			dataTypesSet++
-		}
 		if dataTypesSet == 0 {
 			return fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge, histogram", k)
+				"one of the following has to be specified: sum, gauge", k)
 		}
 		if dataTypesSet > 1 {
 			return fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge, histogram", k)
+				"only one of the following has to be specified: sum, gauge", k)
 		}
 	}
 

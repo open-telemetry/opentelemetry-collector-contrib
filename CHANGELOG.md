@@ -8,13 +8,22 @@
 
 ### 🚀 New components 🚀
 
+- `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+- `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
+- `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 
 ### 💡 Enhancements 💡
 
+- `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+
 ### 🧰 Bug fixes 🧰
 
-## v0.50.0
+- `datadogexporter`: add error checks for datadog exporter (#9964)
+- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
+- `elasticsearchexporter`: add error checks for elasticsearch exporters (#9966)
+
+## v0.51.0
 
 ### 🛑 Breaking changes 🛑
 
@@ -54,8 +63,6 @@
 
 ### 🧰 Bug fixes 🧰
 
-- `datadogexporter`: add error checks for datadog exporter (#9964)
-- `elasticsearchexporter`: add error checks for elasticsearch exporters (#9966)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
