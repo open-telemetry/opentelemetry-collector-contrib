@@ -548,6 +548,56 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
+func TestSamplingPolicyOnlyReject(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(consumertest.TracesSink)
+	mtt := &manualTTicker{}
+	mde := &mockDropFalseEvaluator{}
+	tsp := &cascadingFilterSpanProcessor{
+		ctx:               context.Background(),
+		nextConsumer:      msp,
+		maxNumTraces:      maxSize,
+		logger:            zap.NewNop(),
+		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
+		traceRejectRules:  []*TraceRejectEvaluator{{Name: "mock-drop-eval", Evaluator: mde, ctx: context.TODO()}},
+		deleteChan:        make(chan traceKey, maxSize),
+		policyTicker:      mtt,
+		maxSpansPerSecond: 10000,
+		filteringEnabled:  true,
+	}
+
+	_, batches := generateIdsAndBatches(1)
+	if err := tsp.ConsumeTraces(context.Background(), batches[0]); err != nil {
+		t.Errorf("Failed consuming traces: %v", err)
+	}
+
+	// Count "decision wait" times
+	for i := 0; i < decisionWaitSeconds; i++ {
+		tsp.samplingPolicyOnTick()
+	}
+
+	tsp.samplingPolicyOnTick()
+
+	require.Equal(t, 1, msp.SpanCount(), "all spans were accounted for")
+	for _, trace := range msp.AllTraces() {
+		for i := 0; i < trace.ResourceSpans().Len(); i++ {
+			sss := trace.ResourceSpans().At(i).InstrumentationLibrarySpans()
+			for j := 0; j < sss.Len(); j++ {
+				spans := sss.At(j).Spans()
+				for k := 0; k < spans.Len(); k++ {
+					attrs := spans.At(k).Attributes()
+					println(attrs.Len())
+					_, found := attrs.Get("sampling.rule")
+					require.False(t, found, "sampling.rule value should not be set when only reject rules are applied")
+				}
+			}
+		}
+	}
+}
+
 //nolint:unused
 func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
 	spanIDs := make([]pdata.SpanID, 0)
@@ -625,9 +675,14 @@ type mockPolicyEvaluator struct {
 }
 
 type mockDropEvaluator struct{}
+type mockDropFalseEvaluator struct{}
 
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 var _ sampling.DropTraceEvaluator = (*mockDropEvaluator)(nil)
+
+func (d *mockDropFalseEvaluator) ShouldDrop(_ pdata.TraceID, _ *sampling.TraceData) bool {
+	return false
+}
 
 func (m *mockPolicyEvaluator) Evaluate(_ pdata.TraceID, _ *sampling.TraceData) sampling.Decision {
 	m.EvaluationCount++

@@ -398,7 +398,8 @@ func (cfsp *cascadingFilterSpanProcessor) samplingPolicyOnTick() {
 
 			if trace.SelectedByProbabilisticFilter {
 				updateProbabilisticRateTag(allSpans, selectedByProbabilisticFilterSpans, totalSpans)
-			} else {
+			} else if len(cfsp.traceAcceptRules) > 0 {
+				// Set filtering tag only if there were actually any accept rules set otherwise
 				updateFilteringTag(allSpans)
 			}
 
