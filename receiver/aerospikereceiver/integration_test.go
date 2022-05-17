@@ -56,5 +56,14 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
+	// TODO: Add IgnoreResourceAttributeValue to scrapertest to ignore certain resource attributes
+	// node_name is dynamic based on MAC address, overwrite it with our expected name
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		if _, ok := actualMetrics.ResourceMetrics().At(i).Resource().Attributes().Get("node_name"); ok {
+			actualMetrics.ResourceMetrics().At(i).Resource().Attributes().Remove("node_name")
+			actualMetrics.ResourceMetrics().At(i).Resource().Attributes().InsertString("node_name", "BB9020011AC4202")
+		}
+	}
+
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
 }

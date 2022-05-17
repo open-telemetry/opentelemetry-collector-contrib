@@ -16,6 +16,7 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -128,5 +129,45 @@ func TestScrapeNode(t *testing.T) {
 			client.AssertExpectations(t)
 			scrapertest.CompareMetrics(expectedMetrics, receiver.mb.Emit())
 		})
+	}
+}
+
+func TestScrape(t *testing.T) {
+	testCases := []struct {
+		name            string
+		config          *Config
+		expectedMetrics pmetric.Metrics
+		expectedErr     error
+	}{
+		{
+			name: "bad host",
+			config: &Config{
+				Endpoint: "local.invalid:3000",
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+			expectedErr:     errors.New("failed to connect"),
+		},
+	}
+
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+
+	for _, tc := range testCases {
+		cs, err := consumer.NewMetrics(func(ctx context.Context, ld pmetric.Metrics) error { return nil })
+		require.NoError(t, err)
+
+		receiver, err := newAerospikeReceiver(component.ReceiverCreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
+				Logger: logger,
+			},
+		}, tc.config, cs)
+		require.NoError(t, err)
+
+		metrics, err := receiver.scrape(context.Background())
+		require.Equal(t, tc.expectedMetrics, metrics)
+
+		if tc.expectedErr != nil {
+			require.ErrorContains(t, err, tc.expectedErr.Error())
+		}
 	}
 }
