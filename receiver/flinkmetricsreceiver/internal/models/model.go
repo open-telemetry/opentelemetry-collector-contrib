@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkreceiver/internal/models"
+package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 
 // These are processed metrics that are used to unique identify metrics from each scope source.
 // See https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#system-scope
