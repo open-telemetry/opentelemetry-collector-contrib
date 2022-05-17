@@ -2,7 +2,7 @@ processors:
   transform:
     metrics:
       queries:
-        - set(body, "bear") where attributes["http.path"] == "/animal"
+        - set(metric.name, "bear") where attributes["http.path"] == "/animal"
         - not_a_function(attributes, "http.method", "http.path")
 
 receivers:
