@@ -200,12 +200,6 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - build-examples:
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
       - cross-compile:
           requires:
             - setup
