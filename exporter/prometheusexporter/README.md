@@ -1,6 +1,7 @@
 # Prometheus Exporter
 
-Exports data to a [Prometheus](https://prometheus.io/) back-end.
+Exports data to a [Prometheus](https://prometheus.io/) back-end. We expose the `job` and `instance` labels hence it recommended to
+scrape the metrics exposed with `honor_labels: true`.
 
 Supported pipeline types: metrics
 
