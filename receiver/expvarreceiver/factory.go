@@ -16,7 +16,6 @@ package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -40,12 +39,30 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func newMetricsReceiver(
-	ctx context.Context,
-	settings component.ReceiverCreateSettings,
+	_ context.Context,
+	set component.ReceiverCreateSettings,
 	rCfg config.Receiver,
-	metrics consumer.Metrics,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return nil, fmt.Errorf("not implemented")
+	cfg := rCfg.(*Config)
+
+	expVar := newExpVarScraper(cfg, set)
+	scraper, err := scraperhelper.NewScraper(
+		typeStr,
+		expVar.scrape,
+		scraperhelper.WithStart(expVar.start),
+		scraperhelper.WithShutdown(expVar.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings,
+		set,
+		consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }
 
 func newDefaultConfig() config.Receiver {
