@@ -33,7 +33,8 @@ import (
 func TestEncodeSpan(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
+	err := elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
+	assert.NoError(t, err)
 
 	traceID := model.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	rootTransactionID := model.SpanID{1, 1, 1, 1, 1, 1, 1, 1}
@@ -151,8 +152,8 @@ func TestEncodeSpanStatus(t *testing.T) {
 
 		var w fastjson.Writer
 		var recorder transporttest.RecorderTransport
-		elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
-
+		err := elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
+		assert.NoError(t, err)
 		span := ptrace.NewSpan()
 		span.SetTraceID(pcommon.NewTraceID([16]byte{1}))
 		span.SetSpanID(pcommon.NewSpanID([8]byte{1}))
@@ -162,7 +163,7 @@ func TestEncodeSpanStatus(t *testing.T) {
 			span.Status().SetCode(statusCode)
 		}
 
-		err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
+		err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
 		require.NoError(t, err)
 		sendStream(t, &w, &recorder)
 		payloads := recorder.Payloads()
@@ -183,8 +184,9 @@ func TestEncodeSpanTruncation(t *testing.T) {
 
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
-	err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
+	err := elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
+	assert.NoError(t, err)
+	err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
 	require.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -498,8 +500,9 @@ func TestInstrumentationLibrary(t *testing.T) {
 	library.SetVersion("1.2.3")
 
 	resource := pcommon.NewResource()
-	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, library, resource, &w)
+	err := elastic.EncodeResourceMetadata(resource, &w)
+	assert.NoError(t, err)
+	err = elastic.EncodeSpan(span, library, resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -523,8 +526,9 @@ func transactionWithAttributes(t *testing.T, attrs map[string]interface{}) model
 	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 
 	resource := pcommon.NewResource()
-	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
+	err := elastic.EncodeResourceMetadata(resource, &w)
+	assert.NoError(t, err)
+	err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -542,8 +546,9 @@ func spanWithAttributes(t *testing.T, attrs map[string]interface{}) model.Span {
 	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 
 	resource := pcommon.NewResource()
-	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
+	err := elastic.EncodeResourceMetadata(resource, &w)
+	assert.NoError(t, err)
+	err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 

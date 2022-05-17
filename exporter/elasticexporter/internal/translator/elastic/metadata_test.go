@@ -147,7 +147,8 @@ func metadataWithResource(t *testing.T, resource pcommon.Resource) metadata {
 	var out metadata
 	var recorder transporttest.RecorderTransport
 	var w fastjson.Writer
-	elastic.EncodeResourceMetadata(resource, &w)
+	err := elastic.EncodeResourceMetadata(resource, &w)
+	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 	out.system, out.process, out.service, out.labels = recorder.Metadata()
 	return out
