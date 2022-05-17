@@ -38,6 +38,6 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
