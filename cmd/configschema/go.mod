@@ -761,6 +761,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elast
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ../../receiver/flinkmetricsreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => ../../receiver/fluentforwardreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver => ../../receiver/googlecloudpubsubreceiver
