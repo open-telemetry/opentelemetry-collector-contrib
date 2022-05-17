@@ -106,5 +106,3 @@ All logs
 1) Set severity text to FAIL if the body contains a string text "request failed"
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `body` to the `http.route` attribute if it is set
-
-[In development]: https://github.com/open-telemetry/opentelemetry-collector-contrib#in-development

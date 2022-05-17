@@ -75,5 +75,5 @@ processors:
         # convert all cumulative sum metrics to delta
 ```
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
