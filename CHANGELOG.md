@@ -10,6 +10,7 @@
 
 - `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+- `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 
 ### 💡 Enhancements 💡
@@ -100,8 +101,6 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
-- `mezmoexporter`: Add implementation of Mezmo Log exporter (#9599)
-- `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 
 ### 💡 Enhancements 💡
 
