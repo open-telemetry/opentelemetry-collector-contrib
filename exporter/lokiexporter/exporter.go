@@ -37,7 +37,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
+	"github.com/grafana/loki/pkg/logproto"
 )
 
 const (
