@@ -1,182 +1,19 @@
 {
    "resourceMetrics": [
       {
-         "resource": {},
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "mock-host"
+                  }
+               }
+            ]
+         },
          "scopeMetrics": [
             {
                "metrics": [
-                  {
-                     "description": "The number of checkpoints by type.",
-                     "name": "flinkmetrics.job.checkpoints.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "checkpoint",
-                                    "value": {
-                                       "stringValue": "failed"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           },
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "checkpoint",
-                                    "value": {
-                                       "stringValue": "in_progress"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "checkpoint",
-                                    "value": {
-                                       "stringValue": "completed"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           }
-                        ]
-                     },
-                     "unit": "{checkpoints}"
-                  },
-                  {
-                     "description": "The total size of the last checkpoint.",
-                     "name": "flinkmetrics.job.last_checkpoint.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           }
-                        ]
-                     },
-                     "unit": "bytes"
-                  },
-                  {
-                     "description": "The time it took to complete the last checkpoint.",
-                     "name": "flinkmetrics.job.last_checkpoint.time",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           }
-                        ]
-                     },
-                     "unit": "milliseconds"
-                  },
-                  {
-                     "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
-                     "name": "flinkmetrics.job.restart.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           }
-                        ]
-                     },
-                     "unit": "{restarts}"
-                  },
                   {
                      "description": "The total amount of managed memory.",
                      "name": "flinkmetrics.jobmanager.status.flink.memory.managed.total",
@@ -185,16 +22,8 @@
                         "dataPoints": [
                            {
                               "asInt": "28",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -208,16 +37,8 @@
                         "dataPoints": [
                            {
                               "asInt": "29",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -231,16 +52,8 @@
                         "dataPoints": [
                            {
                               "asInt": "21",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -252,16 +65,8 @@
                         "dataPoints": [
                            {
                               "asDouble": 0.24,
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -276,16 +81,8 @@
                         "dataPoints": [
                            {
                               "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ],
                         "isMonotonic": true
@@ -302,30 +99,18 @@
                               "asInt": "10",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
                                     "key": "garbage_collector_name",
                                     "value": {
                                        "stringValue": "PS_MarkSweep"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            },
                            {
                               "asInt": "12",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -333,8 +118,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ],
                         "isMonotonic": true
@@ -351,30 +136,18 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
                                     "key": "garbage_collector_name",
                                     "value": {
                                        "stringValue": "PS_MarkSweep"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            },
                            {
                               "asInt": "9",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -382,8 +155,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ],
                         "isMonotonic": true
@@ -398,16 +171,8 @@
                         "dataPoints": [
                            {
                               "asInt": "19",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -421,16 +186,8 @@
                         "dataPoints": [
                            {
                               "asInt": "18",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -444,16 +201,8 @@
                         "dataPoints": [
                            {
                               "asInt": "7",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -467,16 +216,8 @@
                         "dataPoints": [
                            {
                               "asInt": "25",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -490,16 +231,8 @@
                         "dataPoints": [
                            {
                               "asInt": "26",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -513,16 +246,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -536,16 +261,8 @@
                         "dataPoints": [
                            {
                               "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -559,16 +276,8 @@
                         "dataPoints": [
                            {
                               "asInt": "8",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -582,16 +291,8 @@
                         "dataPoints": [
                            {
                               "asInt": "17",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -605,16 +306,8 @@
                         "dataPoints": [
                            {
                               "asInt": "23",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -628,16 +321,8 @@
                         "dataPoints": [
                            {
                               "asInt": "15",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -651,16 +336,8 @@
                         "dataPoints": [
                            {
                               "asInt": "13",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -674,16 +351,8 @@
                         "dataPoints": [
                            {
                               "asInt": "16",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -697,348 +366,40 @@
                         "dataPoints": [
                            {
                               "asInt": "6",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
                      "unit": "{threads}"
-                  },
-                  {
-                     "description": "The number of records this operator type has.",
-                     "name": "flinkmetrics.operator.record.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Source__Custom_Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "mock-subtask-index"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "out"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           },
-                           {
-                              "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Source__Custom_Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "mock-subtask-index"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "in"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           },
-                           {
-                              "asInt": "6",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Source__Custom_Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "mock-subtask-index"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "late_records_dropped"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "{records}"
-                  },
-                  {
-                     "description": "The last watermark this operator has emitted.",
-                     "name": "flinkmetrics.operator.watermark.output",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Source__Custom_Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "mock-subtask-index"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           }
-                        ]
-                     },
-                     "unit": "milliseconds"
-                  },
-                  {
-                     "description": "The number of records this task type has.",
-                     "name": "flinkmetrics.task.record.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "task_name",
-                                    "value": {
-                                       "stringValue": "mock-task-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "mock-subtask-index"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "out"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           },
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "task_name",
-                                    "value": {
-                                       "stringValue": "mock-task-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "mock-subtask-index"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "late_records_dropped"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           },
-                           {
-                              "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "mock-job-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "task_name",
-                                    "value": {
-                                       "stringValue": "mock-task-name"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "mock-subtask-index"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "in"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "{records}"
-                  },
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "mock-host"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "mock-taskmanager-id"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
                   {
                      "description": "The total amount of managed memory.",
                      "name": "flinkmetrics.taskmanager.status.flink.memory.managed.total",
@@ -1047,22 +408,8 @@
                         "dataPoints": [
                            {
                               "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1076,22 +423,8 @@
                         "dataPoints": [
                            {
                               "asInt": "26",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1105,22 +438,8 @@
                         "dataPoints": [
                            {
                               "asInt": "24",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1132,22 +451,8 @@
                         "dataPoints": [
                            {
                               "asDouble": 0.28,
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1162,22 +467,8 @@
                         "dataPoints": [
                            {
                               "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ],
                         "isMonotonic": true
@@ -1194,42 +485,18 @@
                               "asInt": "6",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
                                     "key": "garbage_collector_name",
                                     "value": {
                                        "stringValue": "G1_Young_Generation"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            },
                            {
                               "asInt": "19",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -1237,8 +504,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ],
                         "isMonotonic": true
@@ -1255,42 +522,18 @@
                               "asInt": "21",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
-                                 {
                                     "key": "garbage_collector_name",
                                     "value": {
                                        "stringValue": "G1_Old_Generation"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            },
                            {
                               "asInt": "32",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -1298,8 +541,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ],
                         "isMonotonic": true
@@ -1314,22 +557,8 @@
                         "dataPoints": [
                            {
                               "asInt": "22",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1343,22 +572,8 @@
                         "dataPoints": [
                            {
                               "asInt": "20",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1372,22 +587,8 @@
                         "dataPoints": [
                            {
                               "asInt": "9",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1401,22 +602,8 @@
                         "dataPoints": [
                            {
                               "asInt": "29",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1430,22 +617,8 @@
                         "dataPoints": [
                            {
                               "asInt": "30",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1459,22 +632,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1488,22 +647,8 @@
                         "dataPoints": [
                            {
                               "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1517,22 +662,8 @@
                         "dataPoints": [
                            {
                               "asInt": "11",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1546,22 +677,8 @@
                         "dataPoints": [
                            {
                               "asInt": "18",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1575,22 +692,8 @@
                         "dataPoints": [
                            {
                               "asInt": "27",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1604,22 +707,8 @@
                         "dataPoints": [
                            {
                               "asInt": "16",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1633,22 +722,8 @@
                         "dataPoints": [
                            {
                               "asInt": "14",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1662,22 +737,8 @@
                         "dataPoints": [
                            {
                               "asInt": "17",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
@@ -1691,26 +752,364 @@
                         "dataPoints": [
                            {
                               "asInt": "7",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "mock-host"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "mock-taskmanager-id"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797601670940000",
-                              "timeUnixNano": "1652797601670995000"
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
                            }
                         ]
                      },
                      "unit": "{threads}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "mock-host"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "mock-job-name"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of checkpoints by type.",
+                     "name": "flinkmetrics.job.checkpoints.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "failed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "in_progress"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "completed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           }
+                        ]
+                     },
+                     "unit": "{checkpoints}"
+                  },
+                  {
+                     "description": "The total size of the last checkpoint.",
+                     "name": "flinkmetrics.job.last_checkpoint.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The time it took to complete the last checkpoint.",
+                     "name": "flinkmetrics.job.last_checkpoint.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
+                     "name": "flinkmetrics.job.restart.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           }
+                        ]
+                     },
+                     "unit": "{restarts}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "mock-host"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "mock-taskmanager-id"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "mock-job-name"
+                  }
+               },
+               {
+                  "key": "task_name",
+                  "value": {
+                     "stringValue": "mock-task-name"
+                  }
+               },
+               {
+                  "key": "subtask_index",
+                  "value": {
+                     "stringValue": "mock-subtask-index"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of records this task type has.",
+                     "name": "flinkmetrics.task.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "late_records_dropped"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "mock-host"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "mock-taskmanager-id"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "mock-job-name"
+                  }
+               },
+               {
+                  "key": "task_name",
+                  "value": {
+                     "stringValue": "mock-task-name"
+                  }
+               },
+               {
+                  "key": "subtask_index",
+                  "value": {
+                     "stringValue": "mock-subtask-index"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of records this operator type has.",
+                     "name": "flinkmetrics.operator.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           },
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "late_records_dropped"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  },
+                  {
+                     "description": "The last watermark this operator has emitted.",
+                     "name": "flinkmetrics.operator.watermark.output",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809128479581000",
+                              "timeUnixNano": "1652809128479737000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
                   }
                ],
                "scope": {

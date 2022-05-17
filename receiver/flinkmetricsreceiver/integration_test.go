@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -36,11 +37,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
-var (
-	metricsWithTaskmanagerID = []string{"flinkmetrics.operator.record.count", "flinkmetrics.task.record.count", "flinkmetrics.operator.watermark.output", "flinkmetrics.taskmanager.status.jvm.cpu.load", "flinkmetrics.taskmanager.status.jvm.cpu.time", "flinkmetrics.taskmanager.status.jvm.memory.heap.used", "flinkmetrics.taskmanager.status.jvm.memory.heap.committed", "flinkmetrics.taskmanager.status.jvm.memory.heap.max", "flinkmetrics.taskmanager.status.jvm.memory.non_heap.used", "flinkmetrics.taskmanager.status.jvm.memory.non_heap.committed", "flinkmetrics.taskmanager.status.jvm.memory.non_heap.max", "flinkmetrics.taskmanager.status.jvm.memory.metaspace.used", "flinkmetrics.taskmanager.status.jvm.memory.metaspace.committed", "flinkmetrics.taskmanager.status.jvm.memory.metaspace.max", "flinkmetrics.taskmanager.status.jvm.memory.direct.used", "flinkmetrics.taskmanager.status.jvm.memory.direct.total_capacity", "flinkmetrics.taskmanager.status.jvm.memory.mapped.used", "flinkmetrics.taskmanager.status.jvm.memory.mapped.total_capacity", "flinkmetrics.taskmanager.status.flink.memory.managed.used", "flinkmetrics.taskmanager.status.flink.memory.managed.total", "flinkmetrics.taskmanager.status.jvm.threads.count", "flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.count", "flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.time", "flinkmetrics.taskmanager.status.jvm.class_loader.classes_loaded"}
-	metricsWithHost          = []string{"flinkmetrics.jobmanager.status.jvm.cpu.load", "flinkmetrics.taskmanager.status.jvm.cpu.load", "flinkmetrics.jobmanager.status.jvm.cpu.time", "flinkmetrics.taskmanager.status.jvm.cpu.time", "flinkmetrics.jobmanager.status.jvm.memory.heap.used", "flinkmetrics.taskmanager.status.jvm.memory.heap.used", "flinkmetrics.jobmanager.status.jvm.memory.heap.committed", "flinkmetrics.taskmanager.status.jvm.memory.heap.committed", "flinkmetrics.jobmanager.status.jvm.memory.heap.max", "flinkmetrics.taskmanager.status.jvm.memory.heap.max", "flinkmetrics.jobmanager.status.jvm.memory.non_heap.used", "flinkmetrics.taskmanager.status.jvm.memory.non_heap.used", "flinkmetrics.jobmanager.status.jvm.memory.non_heap.committed", "flinkmetrics.taskmanager.status.jvm.memory.non_heap.committed", "flinkmetrics.jobmanager.status.jvm.memory.non_heap.max", "flinkmetrics.taskmanager.status.jvm.memory.non_heap.max", "flinkmetrics.jobmanager.status.jvm.memory.metaspace.used", "flinkmetrics.taskmanager.status.jvm.memory.metaspace.used", "flinkmetrics.jobmanager.status.jvm.memory.metaspace.committed", "flinkmetrics.taskmanager.status.jvm.memory.metaspace.committed", "flinkmetrics.jobmanager.status.jvm.memory.metaspace.max", "flinkmetrics.taskmanager.status.jvm.memory.metaspace.max", "flinkmetrics.jobmanager.status.jvm.memory.direct.used", "flinkmetrics.taskmanager.status.jvm.memory.direct.used", "flinkmetrics.jobmanager.status.jvm.memory.direct.total_capacity", "flinkmetrics.taskmanager.status.jvm.memory.direct.total_capacity", "flinkmetrics.jobmanager.status.jvm.memory.mapped.used", "flinkmetrics.taskmanager.status.jvm.memory.mapped.used", "flinkmetrics.jobmanager.status.jvm.memory.mapped.total_capacity", "flinkmetrics.taskmanager.status.jvm.memory.mapped.total_capacity", "flinkmetrics.jobmanager.status.flink.memory.managed.used", "flinkmetrics.taskmanager.status.flink.memory.managed.used", "flinkmetrics.jobmanager.status.flink.memory.managed.total", "flinkmetrics.taskmanager.status.flink.memory.managed.total", "flinkmetrics.jobmanager.status.jvm.threads.count", "flinkmetrics.taskmanager.status.jvm.threads.count", "flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.count", "flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.count", "flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.time", "flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.time", "flinkmetrics.jobmanager.status.jvm.class_loader.classes_loaded", "flinkmetrics.taskmanager.status.jvm.class_loader.classes_loaded", "flinkmetrics.job.restart.count", "flinkmetrics.job.last_checkpoint.time", "flinkmetrics.job.last_checkpoint.size", "flinkmetrics.job.checkpoints.count", "flinkmetrics.task.record.count", "flinkmetrics.operator.record.count", "flinkmetrics.operator.watermark.output"}
-)
-
 func TestFlinkIntegration(t *testing.T) {
 	t.Parallel()
 	networkName := "new-network"
@@ -54,7 +50,9 @@ func TestFlinkIntegration(t *testing.T) {
 	if err != nil {
 		require.NoError(t, err)
 	}
-	defer newNetwork.Remove(ctx)
+	defer func() {
+		require.NoError(t, newNetwork.Remove(ctx))
+	}()
 
 	masterContainer := getContainer(t, testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
@@ -105,6 +103,18 @@ func TestFlinkIntegration(t *testing.T) {
 	err = ws.waitFor(context.Background(), "")
 	require.NoError(t, err)
 
+	// Override function to return deterministic field
+	defer func() { osHostname = os.Hostname }()
+	osHostname = func() (string, error) { return "job-localhost", nil }
+
+	// Override function to return deterministic field
+	defer func() { taskmanagerHost = strings.Split }()
+	taskmanagerHost = func(id string, sep string) []string { return []string{"taskmanager-localhost"} }
+
+	// Override function to return deterministic field
+	defer func() { taskmanagerID = reflect }()
+	taskmanagerID = func(id string) string { return "taskmanagerID" }
+
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
@@ -121,23 +131,10 @@ func TestFlinkIntegration(t *testing.T) {
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 
 	actualMetrics := consumer.AllMetrics()[0]
-
 	expectedFile := filepath.Join("testdata", "integration", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-
-	// tmp
-	err = golden.WriteMetrics(expectedFile, actualMetrics)
-	require.NoError(t, err)
-	// tmp
-
-	ignoreTaskmanagerIDAttributeValues := scrapertest.IgnoreMetricAttributeValue("taskmanager_id", metricsWithTaskmanagerID...)
-	ignoreHostAttributeValues := scrapertest.IgnoreMetricAttributeValue("host", metricsWithHost...)
-	// ignoreTaskmanagerIDAttributeValues := scrapertest.IgnoreMetricAttributeValue(metadata.A.TaskmanagerID, metricsWithTaskmanagerID...)
-	// ignoreHostAttributeValues := scrapertest.IgnoreMetricAttributeValue(metadata.A.Host, metricsWithHost...)
-
-	// require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), ignoreTaskmanagerIDAttributeValues))
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), ignoreTaskmanagerIDAttributeValues, ignoreHostAttributeValues))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
@@ -171,7 +168,8 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 	return ws.waitFor(ctx, hostname)
 }
 
-func (ws waitStrategy) waitFor(ctx context.Context, hostname string) error {
+// waitFor waits until an endpoint is ready with an id response.
+func (ws waitStrategy) waitFor(ctx context.Context, _ string) error {
 	for {
 		select {
 		case <-ctx.Done():

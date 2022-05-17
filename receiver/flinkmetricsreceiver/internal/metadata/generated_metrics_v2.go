@@ -298,7 +298,7 @@ func (m *metricFlinkmetricsJobCheckpointsCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobCheckpointsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, jobNameAttributeValue string, checkpointAttributeValue string) {
+func (m *metricFlinkmetricsJobCheckpointsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, checkpointAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -306,8 +306,6 @@ func (m *metricFlinkmetricsJobCheckpointsCount) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("job_name", pcommon.NewValueString(jobNameAttributeValue))
 	dp.Attributes().Insert("checkpoint", pcommon.NewValueString(checkpointAttributeValue))
 }
 
@@ -350,10 +348,9 @@ func (m *metricFlinkmetricsJobLastCheckpointSize) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobLastCheckpointSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, jobNameAttributeValue string) {
+func (m *metricFlinkmetricsJobLastCheckpointSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -361,8 +358,6 @@ func (m *metricFlinkmetricsJobLastCheckpointSize) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("job_name", pcommon.NewValueString(jobNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -404,10 +399,9 @@ func (m *metricFlinkmetricsJobLastCheckpointTime) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobLastCheckpointTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, jobNameAttributeValue string) {
+func (m *metricFlinkmetricsJobLastCheckpointTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -415,8 +409,6 @@ func (m *metricFlinkmetricsJobLastCheckpointTime) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("job_name", pcommon.NewValueString(jobNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -458,10 +450,9 @@ func (m *metricFlinkmetricsJobRestartCount) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobRestartCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, jobNameAttributeValue string) {
+func (m *metricFlinkmetricsJobRestartCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -469,8 +460,6 @@ func (m *metricFlinkmetricsJobRestartCount) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("job_name", pcommon.NewValueString(jobNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -512,10 +501,9 @@ func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -523,7 +511,6 @@ func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal) recordDataPo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -565,10 +552,9 @@ func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -576,7 +562,6 @@ func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed) recordDataPoi
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -618,10 +603,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoaded) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoaded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoaded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -629,7 +613,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoaded) recordDa
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -669,10 +652,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmCPULoad) init() {
 	m.data.SetDescription("The recent CPU usage of the JVM.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -680,7 +662,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmCPULoad) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -722,10 +703,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmCPUTime) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -733,7 +713,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmCPUTime) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -778,7 +757,7 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCount) i
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, garbageCollectorNameAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, garbageCollectorNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -786,7 +765,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCount) r
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 	dp.Attributes().Insert("garbage_collector_name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
 }
 
@@ -832,7 +810,7 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime) in
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, garbageCollectorNameAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, garbageCollectorNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -840,7 +818,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime) re
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 	dp.Attributes().Insert("garbage_collector_name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
 }
 
@@ -883,10 +860,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity) init() 
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -894,7 +870,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity) recordD
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -936,10 +911,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -947,7 +921,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed) recordDataPoint(
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -989,10 +962,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1000,7 +972,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted) recordDataPoi
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1042,10 +1013,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1053,7 +1023,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1095,10 +1064,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1106,7 +1074,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed) recordDataPoint(st
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1148,10 +1115,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity) init() 
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1159,7 +1125,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity) recordD
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1201,10 +1166,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1212,7 +1176,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed) recordDataPoint(
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1254,10 +1217,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1265,7 +1227,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted) recordDa
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1307,10 +1268,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1318,7 +1278,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax) recordDataPoin
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1360,10 +1319,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1371,7 +1329,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed) recordDataPoi
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1413,10 +1370,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1424,7 +1380,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted) recordData
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1466,10 +1421,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1477,7 +1431,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax) recordDataPoint(
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1519,10 +1472,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1530,7 +1482,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed) recordDataPoint
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1572,10 +1523,9 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmThreadsCount) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsJobmanagerStatusJvmThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricFlinkmetricsJobmanagerStatusJvmThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1583,7 +1533,6 @@ func (m *metricFlinkmetricsJobmanagerStatusJvmThreadsCount) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1628,7 +1577,7 @@ func (m *metricFlinkmetricsOperatorRecordCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsOperatorRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string, jobNameAttributeValue string, operatorNameAttributeValue string, subtaskIndexAttributeValue string, recordAttributeValue string) {
+func (m *metricFlinkmetricsOperatorRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operatorNameAttributeValue string, recordAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1636,11 +1585,7 @@ func (m *metricFlinkmetricsOperatorRecordCount) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
-	dp.Attributes().Insert("job_name", pcommon.NewValueString(jobNameAttributeValue))
 	dp.Attributes().Insert("operator_name", pcommon.NewValueString(operatorNameAttributeValue))
-	dp.Attributes().Insert("subtask_index", pcommon.NewValueString(subtaskIndexAttributeValue))
 	dp.Attributes().Insert("record", pcommon.NewValueString(recordAttributeValue))
 }
 
@@ -1686,7 +1631,7 @@ func (m *metricFlinkmetricsOperatorWatermarkOutput) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsOperatorWatermarkOutput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string, jobNameAttributeValue string, operatorNameAttributeValue string, subtaskIndexAttributeValue string) {
+func (m *metricFlinkmetricsOperatorWatermarkOutput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operatorNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1694,11 +1639,7 @@ func (m *metricFlinkmetricsOperatorWatermarkOutput) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
-	dp.Attributes().Insert("job_name", pcommon.NewValueString(jobNameAttributeValue))
 	dp.Attributes().Insert("operator_name", pcommon.NewValueString(operatorNameAttributeValue))
-	dp.Attributes().Insert("subtask_index", pcommon.NewValueString(subtaskIndexAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1743,7 +1684,7 @@ func (m *metricFlinkmetricsTaskRecordCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string, jobNameAttributeValue string, taskNameAttributeValue string, subtaskIndexAttributeValue string, recordAttributeValue string) {
+func (m *metricFlinkmetricsTaskRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, recordAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1751,11 +1692,6 @@ func (m *metricFlinkmetricsTaskRecordCount) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
-	dp.Attributes().Insert("job_name", pcommon.NewValueString(jobNameAttributeValue))
-	dp.Attributes().Insert("task_name", pcommon.NewValueString(taskNameAttributeValue))
-	dp.Attributes().Insert("subtask_index", pcommon.NewValueString(subtaskIndexAttributeValue))
 	dp.Attributes().Insert("record", pcommon.NewValueString(recordAttributeValue))
 }
 
@@ -1798,10 +1734,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1809,8 +1744,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal) recordDataP
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1852,10 +1785,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1863,8 +1795,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed) recordDataPo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1906,10 +1836,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoaded) init() 
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoaded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoaded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1917,8 +1846,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoaded) recordD
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1958,10 +1885,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmCPULoad) init() {
 	m.data.SetDescription("The recent CPU usage of the JVM.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1969,8 +1895,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmCPULoad) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2012,10 +1936,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmCPUTime) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2023,8 +1946,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmCPUTime) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2069,7 +1990,7 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCount) 
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string, garbageCollectorNameAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, garbageCollectorNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2077,8 +1998,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCount) 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 	dp.Attributes().Insert("garbage_collector_name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
 }
 
@@ -2124,7 +2043,7 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime) i
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string, garbageCollectorNameAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, garbageCollectorNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2132,8 +2051,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime) r
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 	dp.Attributes().Insert("garbage_collector_name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
 }
 
@@ -2176,10 +2093,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity) init()
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2187,8 +2103,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity) record
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2230,10 +2144,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2241,8 +2154,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed) recordDataPoint
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2284,10 +2195,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2295,8 +2205,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted) recordDataPo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2338,10 +2246,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2349,8 +2256,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax) recordDataPoint(st
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2392,10 +2297,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2403,8 +2307,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed) recordDataPoint(s
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2446,10 +2348,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity) init()
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2457,8 +2358,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity) record
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2500,10 +2399,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2511,8 +2409,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed) recordDataPoint
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2554,10 +2450,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted) init() 
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2565,8 +2460,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted) recordD
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2608,10 +2501,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2619,8 +2511,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax) recordDataPoi
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2662,10 +2552,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2673,8 +2562,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed) recordDataPo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2716,10 +2603,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2727,8 +2613,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted) recordDat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2770,10 +2654,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2781,8 +2664,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax) recordDataPoint
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2824,10 +2705,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2835,8 +2715,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed) recordDataPoin
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2878,10 +2756,9 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmThreadsCount) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFlinkmetricsTaskmanagerStatusJvmThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string, taskmanagerIDAttributeValue string) {
+func (m *metricFlinkmetricsTaskmanagerStatusJvmThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2889,8 +2766,6 @@ func (m *metricFlinkmetricsTaskmanagerStatusJvmThreadsCount) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("host", pcommon.NewValueString(hostAttributeValue))
-	dp.Attributes().Insert("taskmanager_id", pcommon.NewValueString(taskmanagerIDAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3059,6 +2934,41 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
+// WithHost sets provided value as "host" attribute for current resource.
+func WithHost(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("host", val)
+	}
+}
+
+// WithJobName sets provided value as "job_name" attribute for current resource.
+func WithJobName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("job_name", val)
+	}
+}
+
+// WithSubtaskIndex sets provided value as "subtask_index" attribute for current resource.
+func WithSubtaskIndex(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("subtask_index", val)
+	}
+}
+
+// WithTaskName sets provided value as "task_name" attribute for current resource.
+func WithTaskName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("task_name", val)
+	}
+}
+
+// WithTaskmanagerID sets provided value as "taskmanager_id" attribute for current resource.
+func WithTaskmanagerID(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("taskmanager_id", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
@@ -3159,492 +3069,492 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordFlinkmetricsJobCheckpointsCountDataPoint adds a data point to flinkmetrics.job.checkpoints.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobCheckpointsCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, jobNameAttributeValue string, checkpointAttributeValue AttributeCheckpoint) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobCheckpointsCountDataPoint(ts pcommon.Timestamp, inputVal string, checkpointAttributeValue AttributeCheckpoint) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobCheckpointsCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobCheckpointsCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, jobNameAttributeValue, checkpointAttributeValue.String())
+	mb.metricFlinkmetricsJobCheckpointsCount.recordDataPoint(mb.startTime, ts, val, checkpointAttributeValue.String())
 	return nil
 }
 
 // RecordFlinkmetricsJobLastCheckpointSizeDataPoint adds a data point to flinkmetrics.job.last_checkpoint.size metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobLastCheckpointSizeDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, jobNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobLastCheckpointSizeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobLastCheckpointSize, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobLastCheckpointSize.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, jobNameAttributeValue)
+	mb.metricFlinkmetricsJobLastCheckpointSize.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobLastCheckpointTimeDataPoint adds a data point to flinkmetrics.job.last_checkpoint.time metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobLastCheckpointTimeDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, jobNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobLastCheckpointTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobLastCheckpointTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobLastCheckpointTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, jobNameAttributeValue)
+	mb.metricFlinkmetricsJobLastCheckpointTime.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobRestartCountDataPoint adds a data point to flinkmetrics.job.restart.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobRestartCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, jobNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobRestartCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobRestartCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobRestartCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, jobNameAttributeValue)
+	mb.metricFlinkmetricsJobRestartCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotalDataPoint adds a data point to flinkmetrics.jobmanager.status.flink.memory.managed.total metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotalDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsedDataPoint adds a data point to flinkmetrics.jobmanager.status.flink.memory.managed.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoadedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.class_loader.classes_loaded metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoadedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoadedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoaded, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoaded.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmClassLoaderClassesLoaded.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmCPULoadDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.cpu.load metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmCPULoadDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmCPULoadDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for FlinkmetricsJobmanagerStatusJvmCPULoad, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmCPULoad.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmCPULoad.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmCPUTimeDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.cpu.time metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmCPUTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmCPUTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmCPUTime.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCountDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, garbageCollectorNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCountDataPoint(ts pcommon.Timestamp, inputVal string, garbageCollectorNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, garbageCollectorNameAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionCount.recordDataPoint(mb.startTime, ts, val, garbageCollectorNameAttributeValue)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTimeDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.time metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTimeDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, garbageCollectorNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTimeDataPoint(ts pcommon.Timestamp, inputVal string, garbageCollectorNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, garbageCollectorNameAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime.recordDataPoint(mb.startTime, ts, val, garbageCollectorNameAttributeValue)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacityDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.direct.total_capacity metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryDirectUsedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.direct.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryDirectUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryDirectUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryDirectUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapCommittedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.heap.committed metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapMaxDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.heap.max metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryHeapMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapUsedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.heap.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryHeapUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacityDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.mapped.total_capacity metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryMappedUsedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.mapped.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMappedUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMappedUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryMappedUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommittedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.metaspace.committed metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommittedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMaxDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.metaspace.max metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMaxDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.metaspace.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommittedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.non_heap.committed metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMaxDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.non_heap.max metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsedDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.memory.non_heap.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsJobmanagerStatusJvmThreadsCountDataPoint adds a data point to flinkmetrics.jobmanager.status.jvm.threads.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmThreadsCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsJobmanagerStatusJvmThreadsCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsJobmanagerStatusJvmThreadsCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsJobmanagerStatusJvmThreadsCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+	mb.metricFlinkmetricsJobmanagerStatusJvmThreadsCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsOperatorRecordCountDataPoint adds a data point to flinkmetrics.operator.record.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsOperatorRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string, jobNameAttributeValue string, operatorNameAttributeValue string, subtaskIndexAttributeValue string, recordAttributeValue AttributeRecord) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsOperatorRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, operatorNameAttributeValue string, recordAttributeValue AttributeRecord) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsOperatorRecordCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsOperatorRecordCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue, jobNameAttributeValue, operatorNameAttributeValue, subtaskIndexAttributeValue, recordAttributeValue.String())
+	mb.metricFlinkmetricsOperatorRecordCount.recordDataPoint(mb.startTime, ts, val, operatorNameAttributeValue, recordAttributeValue.String())
 	return nil
 }
 
 // RecordFlinkmetricsOperatorWatermarkOutputDataPoint adds a data point to flinkmetrics.operator.watermark.output metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsOperatorWatermarkOutputDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string, jobNameAttributeValue string, operatorNameAttributeValue string, subtaskIndexAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsOperatorWatermarkOutputDataPoint(ts pcommon.Timestamp, inputVal string, operatorNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsOperatorWatermarkOutput, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsOperatorWatermarkOutput.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue, jobNameAttributeValue, operatorNameAttributeValue, subtaskIndexAttributeValue)
+	mb.metricFlinkmetricsOperatorWatermarkOutput.recordDataPoint(mb.startTime, ts, val, operatorNameAttributeValue)
 	return nil
 }
 
 // RecordFlinkmetricsTaskRecordCountDataPoint adds a data point to flinkmetrics.task.record.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string, jobNameAttributeValue string, taskNameAttributeValue string, subtaskIndexAttributeValue string, recordAttributeValue AttributeRecord) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, recordAttributeValue AttributeRecord) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskRecordCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskRecordCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue, jobNameAttributeValue, taskNameAttributeValue, subtaskIndexAttributeValue, recordAttributeValue.String())
+	mb.metricFlinkmetricsTaskRecordCount.recordDataPoint(mb.startTime, ts, val, recordAttributeValue.String())
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotalDataPoint adds a data point to flinkmetrics.taskmanager.status.flink.memory.managed.total metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotalDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsedDataPoint adds a data point to flinkmetrics.taskmanager.status.flink.memory.managed.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoadedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.class_loader.classes_loaded metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoadedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoadedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoaded, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoaded.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmClassLoaderClassesLoaded.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmCPULoadDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.cpu.load metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmCPULoadDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmCPULoadDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for FlinkmetricsTaskmanagerStatusJvmCPULoad, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmCPULoad.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmCPULoad.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmCPUTimeDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.cpu.time metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmCPUTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmCPUTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmCPUTime.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCountDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string, garbageCollectorNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCountDataPoint(ts pcommon.Timestamp, inputVal string, garbageCollectorNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue, garbageCollectorNameAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionCount.recordDataPoint(mb.startTime, ts, val, garbageCollectorNameAttributeValue)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTimeDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.time metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTimeDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string, garbageCollectorNameAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTimeDataPoint(ts pcommon.Timestamp, inputVal string, garbageCollectorNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue, garbageCollectorNameAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime.recordDataPoint(mb.startTime, ts, val, garbageCollectorNameAttributeValue)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacityDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.direct.total_capacity metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.direct.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommittedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.heap.committed metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapMaxDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.heap.max metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryHeapMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.heap.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacityDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.mapped.total_capacity metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacityDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.mapped.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommittedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.metaspace.committed metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommittedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMaxDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.metaspace.max metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMaxDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.metaspace.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommittedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.non_heap.committed metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMaxDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.non_heap.max metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsedDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.memory.non_heap.used metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordFlinkmetricsTaskmanagerStatusJvmThreadsCountDataPoint adds a data point to flinkmetrics.taskmanager.status.jvm.threads.count metric.
-func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmThreadsCountDataPoint(ts pcommon.Timestamp, inputVal string, hostAttributeValue string, taskmanagerIDAttributeValue string) error {
+func (mb *MetricsBuilder) RecordFlinkmetricsTaskmanagerStatusJvmThreadsCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for FlinkmetricsTaskmanagerStatusJvmThreadsCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkmetricsTaskmanagerStatusJvmThreadsCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, taskmanagerIDAttributeValue)
+	mb.metricFlinkmetricsTaskmanagerStatusJvmThreadsCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

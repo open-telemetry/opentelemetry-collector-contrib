@@ -240,27 +240,27 @@ func TestScaperScrape(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
-		// {
-		// 	desc: "Successful Collection",
-		// 	setupMockClient: func(t *testing.T) client {
-		// 		mockClient := mocks.MockClient{}
+		{
+			desc: "Successful Collection",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
 
-		// 		// mock client calls
-		// 		mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
-		// 		mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(taskmanagerMetricsInstances, nil)
-		// 		mockClient.On("GetJobsMetrics", mock.Anything).Return(jobsMetricsInstances, nil)
-		// 		mockClient.On("GetSubtasksMetrics", mock.Anything).Return(subtaskMetricsInstances, nil)
+				// mock client calls
+				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
+				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(taskmanagerMetricsInstances, nil)
+				mockClient.On("GetJobsMetrics", mock.Anything).Return(jobsMetricsInstances, nil)
+				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(subtaskMetricsInstances, nil)
 
-		// 		return &mockClient
-		// 	},
-		// 	expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-		// 		goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
-		// 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
-		// 		require.NoError(t, err)
-		// 		return expectedMetrics
-		// 	},
-		// 	expectedErr: nil,
-		// },
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			expectedErr: nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -268,13 +268,6 @@ func TestScaperScrape(t *testing.T) {
 			scraper := newflinkScraper(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
-
-			// temp
-			// goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_no_jobs_golden.json")
-			// goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
-			// goldenErr := golden.WriteMetrics(goldenPath, actualMetrics)
-			// require.NoError(t, goldenErr)
-			// temp
 
 			if tc.expectedErr == nil {
 				require.NoError(t, err)

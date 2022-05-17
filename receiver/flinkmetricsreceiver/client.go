@@ -71,7 +71,7 @@ func newClient(cfg *Config, host component.Host, settings component.TelemetrySet
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
 
-	hostName, err := os.Hostname()
+	hostName, err := getHostname()
 	if err != nil {
 		return nil, err
 	}
@@ -207,10 +207,11 @@ func (c *flinkClient) getTaskmanagersMetrics(ctx context.Context, taskmanagerIDs
 			return nil, err
 		}
 
-		host := strings.Split(taskmanager.ID, ":")
+		// host := strings.Split(taskmanager.ID, ":")
 		taskmanagerInstance := &models.TaskmanagerMetrics{
-			TaskmanagerID: taskmanager.ID,
-			Host:          host[0],
+			// TaskmanagerID: taskmanager.ID,
+			TaskmanagerID: getTaskmanagerID(taskmanager.ID),
+			Host:          getTaskmanagerHost(taskmanager.ID),
 			Metrics:       *metrics,
 		}
 		taskmanagerInstances = append(taskmanagerInstances, taskmanagerInstance)
@@ -321,8 +322,10 @@ func (c *flinkClient) getSubtasksMetrics(ctx context.Context, jobsResponse *mode
 				// Stores subtask info with additional attribute values to uniquely identify metrics
 				subtaskInstances = append(subtaskInstances,
 					&models.SubtaskMetrics{
-						Host:          subtask.Host,
-						TaskmanagerID: subtask.TaskmanagerID,
+						// Host:          subtask.Host,
+						Host: getTaskmanagerHost(subtask.TaskmanagerID),
+						// TaskmanagerID: subtask.TaskmanagerID,
+						TaskmanagerID: getTaskmanagerID(subtask.TaskmanagerID),
 						JobName:       jobsWithIDResponse.Name,
 						TaskName:      vertex.Name,
 						SubtaskIndex:  fmt.Sprintf("%v", subtask.Subtask),
@@ -332,4 +335,34 @@ func (c *flinkClient) getSubtasksMetrics(ctx context.Context, jobsResponse *mode
 		}
 	}
 	return subtaskInstances, nil
+}
+
+// Override for testing
+var osHostname = os.Hostname
+
+func getHostname() (string, error) {
+	host, err := osHostname()
+	if err != nil {
+		return "", err
+	}
+	return host, nil
+}
+
+// Override for testing
+var taskmanagerHost = strings.Split
+
+func getTaskmanagerHost(id string) string {
+	host := taskmanagerHost(id, ":")
+	return host[0]
+}
+
+func reflect(s string) string {
+	return s
+}
+
+// Override for testing
+var taskmanagerID = reflect
+
+func getTaskmanagerID(id string) string {
+	return taskmanagerID(id)
 }

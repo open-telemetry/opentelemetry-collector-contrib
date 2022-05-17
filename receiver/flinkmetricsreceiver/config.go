@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
 )
@@ -42,12 +41,9 @@ type Config struct {
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (cfg *Config) Validate() error {
-	var err error
-	_, parseErr := url.Parse(cfg.Endpoint)
-	if parseErr != nil {
-		wrappedErr := fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
-		err = multierr.Append(err, wrappedErr)
+	if _, err := url.Parse(cfg.Endpoint); err != nil {
+		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), err)
 	}
 
-	return err
+	return nil
 }

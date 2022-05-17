@@ -1,182 +1,19 @@
 {
    "resourceMetrics": [
       {
-         "resource": {},
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "job-localhost"
+                  }
+               }
+            ]
+         },
          "scopeMetrics": [
             {
                "metrics": [
-                  {
-                     "description": "The number of checkpoints by type.",
-                     "name": "flinkmetrics.job.checkpoints.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "checkpoint",
-                                    "value": {
-                                       "stringValue": "failed"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "checkpoint",
-                                    "value": {
-                                       "stringValue": "in_progress"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "checkpoint",
-                                    "value": {
-                                       "stringValue": "completed"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           }
-                        ]
-                     },
-                     "unit": "{checkpoints}"
-                  },
-                  {
-                     "description": "The total size of the last checkpoint.",
-                     "name": "flinkmetrics.job.last_checkpoint.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "8212",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           }
-                        ]
-                     },
-                     "unit": "bytes"
-                  },
-                  {
-                     "description": "The time it took to complete the last checkpoint.",
-                     "name": "flinkmetrics.job.last_checkpoint.time",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "12",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           }
-                        ]
-                     },
-                     "unit": "milliseconds"
-                  },
-                  {
-                     "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
-                     "name": "flinkmetrics.job.restart.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           }
-                        ]
-                     },
-                     "unit": "{restarts}"
-                  },
                   {
                      "description": "The total number of classes loaded since the start of the JVM.",
                      "name": "flinkmetrics.jobmanager.status.jvm.class_loader.classes_loaded",
@@ -184,17 +21,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "9413",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "9411",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -205,17 +34,9 @@
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asDouble": 0.02783375314861461,
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asDouble": 0.024609920081187366,
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -229,17 +50,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "10910000000",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "10560000000",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ],
                         "isMonotonic": true
@@ -256,30 +69,18 @@
                               "asInt": "2",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
-                                 {
                                     "key": "garbage_collector_name",
                                     "value": {
                                        "stringValue": "PS_MarkSweep"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            },
                            {
                               "asInt": "2",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -287,8 +88,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ],
                         "isMonotonic": true
@@ -302,14 +103,8 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "63",
+                              "asInt": "59",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -317,18 +112,12 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            },
                            {
-                              "asInt": "26",
+                              "asInt": "17",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -336,8 +125,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ],
                         "isMonotonic": true
@@ -351,17 +140,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "541829",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "543877",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -374,17 +155,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "541830",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "543878",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -398,16 +171,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1029177344",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -421,16 +186,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1029177344",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -443,17 +200,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "221904224",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "213903624",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -467,16 +216,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -490,16 +231,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -513,16 +246,8 @@
                         "dataPoints": [
                            {
                               "asInt": "58720256",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -536,16 +261,8 @@
                         "dataPoints": [
                            {
                               "asInt": "268435456",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -558,17 +275,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "54832792",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "54854640",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -581,17 +290,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "78577664",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "78512128",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -605,16 +306,8 @@
                         "dataPoints": [
                            {
                               "asInt": "780140544",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -627,17 +320,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "74001864",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "73966200",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -650,595 +335,41 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "74",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "Jonathans-MacBook-Pro.local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "77",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
                      "unit": "{threads}"
-                  },
-                  {
-                     "description": "The number of records this operator type has.",
-                     "name": "flinkmetrics.operator.record.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "5812",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Source__Custom_Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "out"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Source__Custom_Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "in"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "5785",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Flat_Map"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "in"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Sink__Print_to_Std__Out"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "out"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Sink__Print_to_Std__Out"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "in"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Flat_Map"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "out"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "{records}"
-                  },
-                  {
-                     "description": "The last watermark this operator has emitted.",
-                     "name": "flinkmetrics.operator.watermark.output",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "-9223372036854775808",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Source__Custom_Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "-9223372036854775808",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Flat_Map"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "-9223372036854775808",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "operator_name",
-                                    "value": {
-                                       "stringValue": "Sink__Print_to_Std__Out"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           }
-                        ]
-                     },
-                     "unit": "milliseconds"
-                  },
-                  {
-                     "description": "The number of records this task type has.",
-                     "name": "flinkmetrics.task.record.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "5812",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "task_name",
-                                    "value": {
-                                       "stringValue": "Source: Custom Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "out"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "task_name",
-                                    "value": {
-                                       "stringValue": "Source: Custom Source"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "in"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "task_name",
-                                    "value": {
-                                       "stringValue": "Flat Map -\u003e Sink: Print to Std. Out"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "out"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           },
-                           {
-                              "asInt": "5785",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "adb29bc2db99"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
-                                    "key": "job_name",
-                                    "value": {
-                                       "stringValue": "State machine job"
-                                    }
-                                 },
-                                 {
-                                    "key": "task_name",
-                                    "value": {
-                                       "stringValue": "Flat Map -\u003e Sink: Print to Std. Out"
-                                    }
-                                 },
-                                 {
-                                    "key": "subtask_index",
-                                    "value": {
-                                       "stringValue": "0"
-                                    }
-                                 },
-                                 {
-                                    "key": "record",
-                                    "value": {
-                                       "stringValue": "in"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "{records}"
-                  },
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "taskmanager-localhost"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "taskmanagerID"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
                   {
                      "description": "The total amount of managed memory.",
                      "name": "flinkmetrics.taskmanager.status.flink.memory.managed.total",
@@ -1247,22 +378,8 @@
                         "dataPoints": [
                            {
                               "asInt": "536870920",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1276,22 +393,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1304,23 +407,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "8963",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "8961",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1331,23 +420,9 @@
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asDouble": 0.03261281759575275,
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asDouble": 0.03294746215494212,
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1361,23 +436,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "9950000000",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "10080000000",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ],
                         "isMonotonic": true
@@ -1394,42 +455,18 @@
                               "asInt": "4",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
                                     "key": "garbage_collector_name",
                                     "value": {
                                        "stringValue": "G1_Young_Generation"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            },
                            {
                               "asInt": "0",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -1437,8 +474,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ],
                         "isMonotonic": true
@@ -1455,42 +492,18 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
-                                 {
                                     "key": "garbage_collector_name",
                                     "value": {
                                        "stringValue": "G1_Old_Generation"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            },
                            {
-                              "asInt": "43",
+                              "asInt": "41",
                               "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 },
                                  {
                                     "key": "garbage_collector_name",
                                     "value": {
@@ -1498,8 +511,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ],
                         "isMonotonic": true
@@ -1514,22 +527,8 @@
                         "dataPoints": [
                            {
                               "asInt": "135547906",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1543,22 +542,8 @@
                         "dataPoints": [
                            {
                               "asInt": "135547907",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1572,22 +557,8 @@
                         "dataPoints": [
                            {
                               "asInt": "536870912",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1601,22 +572,8 @@
                         "dataPoints": [
                            {
                               "asInt": "536870912",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1629,23 +586,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "141557744",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "145752064",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1659,22 +602,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1688,22 +617,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1717,22 +632,8 @@
                         "dataPoints": [
                            {
                               "asInt": "57622528",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1746,22 +647,8 @@
                         "dataPoints": [
                            {
                               "asInt": "268435456",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1774,23 +661,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "54235088",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "54259904",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1803,23 +676,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "76972032",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "77037568",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1833,22 +692,8 @@
                         "dataPoints": [
                            {
                               "asInt": "780140544",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1861,23 +706,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "73021376",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "asInt": "73108776",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
@@ -1891,26 +722,582 @@
                         "dataPoints": [
                            {
                               "asInt": "58",
-                              "attributes": [
-                                 {
-                                    "key": "host",
-                                    "value": {
-                                       "stringValue": "192.168.160.3"
-                                    }
-                                 },
-                                 {
-                                    "key": "taskmanager_id",
-                                    "value": {
-                                       "stringValue": "192.168.160.3:45759-0a9afa"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1652797664208284000",
-                              "timeUnixNano": "1652797664308683000"
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
                            }
                         ]
                      },
                      "unit": "{threads}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "job-localhost"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "State machine job"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of checkpoints by type.",
+                     "name": "flinkmetrics.job.checkpoints.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "failed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "in_progress"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "completed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ]
+                     },
+                     "unit": "{checkpoints}"
+                  },
+                  {
+                     "description": "The total size of the last checkpoint.",
+                     "name": "flinkmetrics.job.last_checkpoint.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "8392",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The time it took to complete the last checkpoint.",
+                     "name": "flinkmetrics.job.last_checkpoint.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "14",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
+                     "name": "flinkmetrics.job.restart.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ]
+                     },
+                     "unit": "{restarts}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "taskmanager-localhost"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "taskmanagerID"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "State machine job"
+                  }
+               },
+               {
+                  "key": "task_name",
+                  "value": {
+                     "stringValue": "Source: Custom Source"
+                  }
+               },
+               {
+                  "key": "subtask_index",
+                  "value": {
+                     "stringValue": "0"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of records this task type has.",
+                     "name": "flinkmetrics.task.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5710",
+                              "attributes": [
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "taskmanager-localhost"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "taskmanagerID"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "State machine job"
+                  }
+               },
+               {
+                  "key": "task_name",
+                  "value": {
+                     "stringValue": "Flat Map -\u003e Sink: Print to Std. Out"
+                  }
+               },
+               {
+                  "key": "subtask_index",
+                  "value": {
+                     "stringValue": "0"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of records this task type has.",
+                     "name": "flinkmetrics.task.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "5673",
+                              "attributes": [
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "taskmanager-localhost"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "taskmanagerID"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "State machine job"
+                  }
+               },
+               {
+                  "key": "task_name",
+                  "value": {
+                     "stringValue": "Source: Custom Source"
+                  }
+               },
+               {
+                  "key": "subtask_index",
+                  "value": {
+                     "stringValue": "0"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of records this operator type has.",
+                     "name": "flinkmetrics.operator.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5710",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  },
+                  {
+                     "description": "The last watermark this operator has emitted.",
+                     "name": "flinkmetrics.operator.watermark.output",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "-9223372036854775808",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/flinkmetricsreceiver"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "host",
+                  "value": {
+                     "stringValue": "taskmanager-localhost"
+                  }
+               },
+               {
+                  "key": "taskmanager_id",
+                  "value": {
+                     "stringValue": "taskmanagerID"
+                  }
+               },
+               {
+                  "key": "job_name",
+                  "value": {
+                     "stringValue": "State machine job"
+                  }
+               },
+               {
+                  "key": "task_name",
+                  "value": {
+                     "stringValue": "Flat Map -\u003e Sink: Print to Std. Out"
+                  }
+               },
+               {
+                  "key": "subtask_index",
+                  "value": {
+                     "stringValue": "0"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of records this operator type has.",
+                     "name": "flinkmetrics.operator.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5673",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Flat_Map"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Sink__Print_to_Std__Out"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Sink__Print_to_Std__Out"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Flat_Map"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  },
+                  {
+                     "description": "The last watermark this operator has emitted.",
+                     "name": "flinkmetrics.operator.watermark.output",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "-9223372036854775808",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Flat_Map"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           },
+                           {
+                              "asInt": "-9223372036854775808",
+                              "attributes": [
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Sink__Print_to_Std__Out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652809382946271000",
+                              "timeUnixNano": "1652809383046429000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
                   }
                ],
                "scope": {

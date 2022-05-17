@@ -1,7 +1,6 @@
 name: flinkmetricsreceiver
 
-
-attributes:
+resource_attributes:
   host:
     description: The host, used to distinguish different jobmanager metrics.
     type: string
@@ -14,12 +13,14 @@ attributes:
   task_name:
     description: The task name, used to distinguish tasks metrics.
     type: string
+  subtask_index:
+    description: The subtask index, used to distinguish operator metrics.
+    type: string
+
+attributes:
   operator_name:
     description: The operator name, used to distinguish operator metrics.
     type: string
-  subtask_index:
-    description: The subtask index, used to distinguish operator metrics.
-    type: int
   garbage_collector_name:
     description: The garbage collector name.
     type: string
@@ -40,7 +41,7 @@ metrics:
     gauge:
       value_type: double
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.cpu.load:
     enabled: true
     description: The recent CPU usage of the JVM.
@@ -48,7 +49,7 @@ metrics:
     gauge:
       value_type: double
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.cpu.time:
     enabled: true
     description: The CPU time used by the JVM.
@@ -58,7 +59,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.cpu.time:
     enabled: true
     description: The CPU time used by the JVM.
@@ -68,7 +69,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.heap.used:
     enabled: true
     description: The amount of heap memory currently used.
@@ -78,7 +79,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.heap.used:
     enabled: true
     description: The amount of heap memory currently used.
@@ -88,7 +89,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.heap.committed:
     enabled: true
     description: The amount of heap memory guaranteed to be available to the JVM.
@@ -98,7 +99,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.heap.committed:
     enabled: true
     description: The amount of heap memory guaranteed to be available to the JVM.
@@ -108,7 +109,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.heap.max:
     enabled: true
     description: The maximum amount of heap memory that can be used for memory management.
@@ -118,7 +119,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.heap.max:
     enabled: true
     description: The maximum amount of heap memory that can be used for memory management.
@@ -128,7 +129,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.non_heap.used:
     enabled: true
     description: The amount of non-heap memory currently used.
@@ -138,7 +139,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.non_heap.used:
     enabled: true
     description: The amount of non-heap memory currently used.
@@ -148,7 +149,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.non_heap.committed:
     enabled: true
     description: The amount of non-heap memory guaranteed to be available to the JVM.
@@ -158,7 +159,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.non_heap.committed:
     enabled: true
     description: The amount of non-heap memory guaranteed to be available to the JVM.
@@ -168,7 +169,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.non_heap.max:
     enabled: true
     description: The maximum amount of non-heap memory that can be used for memory management.
@@ -178,7 +179,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.non_heap.max:
     enabled: true
     description: The maximum amount of non-heap memory that can be used for memory management.
@@ -188,7 +189,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.metaspace.used:
     enabled: true
     description: The amount of memory currently used in the Metaspace memory pool.
@@ -198,7 +199,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.metaspace.used:
     enabled: true
     description: The amount of memory currently used in the Metaspace memory pool.
@@ -208,7 +209,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.metaspace.committed:
     enabled: true
     description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
@@ -218,7 +219,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.metaspace.committed:
     enabled: true
     description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
@@ -228,7 +229,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.metaspace.max:
     enabled: true
     description: The maximum amount of memory that can be used in the Metaspace memory pool.
@@ -238,7 +239,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.metaspace.max:
     enabled: true
     description: The maximum amount of memory that can be used in the Metaspace memory pool.
@@ -248,7 +249,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.direct.used:
     enabled: true
     description: The amount of memory used by the JVM for the direct buffer pool.
@@ -258,7 +259,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.direct.used:
     enabled: true
     description: The amount of memory used by the JVM for the direct buffer pool.
@@ -268,7 +269,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.direct.total_capacity:
     enabled: true
     description: The total capacity of all buffers in the direct buffer pool.
@@ -278,7 +279,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.direct.total_capacity:
     enabled: true
     description: The total capacity of all buffers in the direct buffer pool.
@@ -288,7 +289,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.mapped.used:
     enabled: true
     description: The amount of memory used by the JVM for the mapped buffer pool.
@@ -298,7 +299,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.mapped.used:
     enabled: true
     description: The amount of memory used by the JVM for the mapped buffer pool.
@@ -308,7 +309,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.memory.mapped.total_capacity:
     enabled: true
     description: The number of buffers in the mapped buffer pool.
@@ -318,7 +319,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.memory.mapped.total_capacity:
     enabled: true
     description: The number of buffers in the mapped buffer pool.
@@ -328,7 +329,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.flink.memory.managed.used:
     enabled: true
     description: The amount of managed memory currently used.
@@ -338,7 +339,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.flink.memory.managed.used:
     enabled: true
     description: The amount of managed memory currently used.
@@ -348,7 +349,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.flink.memory.managed.total:
     enabled: true
     description: The total amount of managed memory.
@@ -358,7 +359,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.flink.memory.managed.total:
     enabled: true
     description: The total amount of managed memory.
@@ -368,7 +369,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.threads.count:
     enabled: true
     description: The total number of live threads.
@@ -378,7 +379,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.threads.count:
     enabled: true
     description: The total number of live threads.
@@ -388,7 +389,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.count:
     enabled: true
     description: The total number of collections that have occurred.
@@ -398,7 +399,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, garbage_collector_name ]
+    attributes: [ garbage_collector_name ]
   flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.count:
     enabled: true
     description: The total number of collections that have occurred.
@@ -408,7 +409,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id, garbage_collector_name ]
+    attributes: [ garbage_collector_name ]
   flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.time:
     enabled: true
     description: The total time spent performing garbage collection.
@@ -418,7 +419,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, garbage_collector_name ]
+    attributes: [ garbage_collector_name ]
   flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.time:
     enabled: true
     description: The total time spent performing garbage collection.
@@ -428,7 +429,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id, garbage_collector_name ]
+    attributes: [ garbage_collector_name ]
   flinkmetrics.jobmanager.status.jvm.class_loader.classes_loaded:
     enabled: true
     description: The total number of classes loaded since the start of the JVM.
@@ -438,7 +439,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host ]
+    attributes: []
   flinkmetrics.taskmanager.status.jvm.class_loader.classes_loaded:
     enabled: true
     description: The total number of classes loaded since the start of the JVM.
@@ -448,7 +449,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id ]
+    attributes: []
   flinkmetrics.job.restart.count:
     enabled: true
     description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
@@ -458,7 +459,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, job_name ]
+    attributes: []
   flinkmetrics.job.last_checkpoint.time:
     enabled: true
     description: The time it took to complete the last checkpoint.
@@ -468,7 +469,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, job_name ]
+    attributes: []
   flinkmetrics.job.last_checkpoint.size:
     enabled: true
     description: The total size of the last checkpoint.
@@ -478,7 +479,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, job_name ]
+    attributes: []
   flinkmetrics.job.checkpoints.count:
     enabled: true
     description: The number of checkpoints by type.
@@ -488,7 +489,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, job_name, checkpoint ]
+    attributes: [ checkpoint ]
   flinkmetrics.task.record.count:
     enabled: true
     description: The number of records this task type has.
@@ -498,7 +499,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id, job_name, task_name, subtask_index, record ]
+    attributes: [ record ]
   flinkmetrics.operator.record.count:
     enabled: true
     description: The number of records this operator type has.
@@ -508,7 +509,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id, job_name, operator_name, subtask_index, record ]
+    attributes: [ operator_name, record ]
   flinkmetrics.operator.watermark.output:
     enabled: true
     description: The last watermark this operator has emitted.
@@ -518,4 +519,4 @@ metrics:
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ host, taskmanager_id, job_name, operator_name, subtask_index ]
+    attributes: [ operator_name ]
