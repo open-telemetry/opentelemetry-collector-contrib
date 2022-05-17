@@ -1,6 +1,10 @@
 # Transform Processor
 
-Supported pipeline types: traces, metrics, logs
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [In development]      |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | none                  |
 
 The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language).
 It takes a list of queries which are performed in the order specified in the config.
@@ -102,3 +106,5 @@ All logs
 1) Set severity text to FAIL if the body contains a string text "request failed"
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `body` to the `http.route` attribute if it is set
+
+[In development]: https://github.com/open-telemetry/opentelemetry-collector-contrib#in-development
