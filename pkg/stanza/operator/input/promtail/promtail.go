@@ -15,9 +15,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 )
 
 func init() {
@@ -71,8 +71,9 @@ func (c PromtailInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator
 		app: &app{
 			client:  api.NewEntryHandler(entries, func() { close(entries) }),
 			entries: entries,
-			logger:  helper.NewZapToGokitLogAdapter(logger.Desugar()),
-			reg:     prometheus.DefaultRegisterer,
+			// logger:  helper.NewZapToGokitLogAdapter(logger.Desugar()),
+			logger: log.NewNopLogger(),
+			reg:    prometheus.DefaultRegisterer,
 		},
 	}, nil
 }
