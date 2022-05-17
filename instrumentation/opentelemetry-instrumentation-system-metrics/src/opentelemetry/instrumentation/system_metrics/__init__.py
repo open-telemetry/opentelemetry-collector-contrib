@@ -42,10 +42,10 @@ Usage
 
 .. code:: python
 
-    from opentelemetry._metrics import set_meter_provider
+    from opentelemetry.metrics import set_meter_provider
     from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
-    from opentelemetry.sdk._metrics import MeterProvider
-    from opentelemetry.sdk._metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
 
     exporter = ConsoleMetricExporter()
 
@@ -76,13 +76,12 @@ from typing import Collection, Dict, Iterable, List, Optional
 
 import psutil
 
-from opentelemetry._metrics import CallbackOptions, Observation, get_meter
-
 # FIXME Remove this pyling disabling line when Github issue is cleared
 # pylint: disable=no-name-in-module
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.system_metrics.package import _instruments
 from opentelemetry.instrumentation.system_metrics.version import __version__
+from opentelemetry.metrics import CallbackOptions, Observation, get_meter
 from opentelemetry.sdk.util import get_dict_as_key
 
 _DEFAULT_CONFIG = {

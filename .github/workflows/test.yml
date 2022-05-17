@@ -6,7 +6,7 @@ on:
     - 'release/*'
   pull_request:
 env:
-  CORE_REPO_SHA: f367ec2045b2588be95dfa11913868c1d4fcbbc2
+  CORE_REPO_SHA: 741389585b5d6d1af808a8939c5348113158f969
 
 jobs:
   build:
@@ -37,7 +37,7 @@ jobs:
         run: pip install -U tox-factor
       - name: Cache tox environment
         # Preserves .tox directory between runs for faster installs
-        uses: actions/cache@v2
+        uses: actions/cache@v1
         with:
           path: |
             .tox
@@ -113,7 +113,7 @@ jobs:
         run: sudo apt-get install -y libsnappy-dev
       - name: Cache tox environment
         # Preserves .tox directory between runs for faster installs
-        uses: actions/cache@v2
+        uses: actions/cache@v1
         with:
           path: |
             .tox

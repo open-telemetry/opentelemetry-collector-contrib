@@ -21,8 +21,8 @@ from unittest import mock
 from opentelemetry.instrumentation.system_metrics import (
     SystemMetricsInstrumentor,
 )
-from opentelemetry.sdk._metrics import MeterProvider
-from opentelemetry.sdk._metrics.export import InMemoryMetricReader
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 from opentelemetry.test.test_base import TestBase
 
 
@@ -70,8 +70,11 @@ class TestSystemMetrics(TestBase):
         meter_provider = MeterProvider(metric_readers=[reader])
         system_metrics = SystemMetricsInstrumentor()
         system_metrics.instrument(meter_provider=meter_provider)
-        metrics = reader.get_metrics()
-        metric_names = list({x.name for x in metrics})
+        metric_names = []
+        for resource_metrics in reader.get_metrics_data().resource_metrics:
+            for scope_metrics in resource_metrics.scope_metrics:
+                for metric in scope_metrics.metrics:
+                    metric_names.append(metric.name)
         self.assertEqual(len(metric_names), 17)
 
         observer_names = [
@@ -100,17 +103,22 @@ class TestSystemMetrics(TestBase):
 
     def _assert_metrics(self, observer_name, reader, expected):
         assertions = 0
-        for metric in reader.get_metrics():  # pylint: disable=protected-access
-            for expect in expected:
-                if (
-                    metric.attributes == expect.attributes
-                    and metric.name == observer_name
-                ):
-                    self.assertEqual(
-                        metric.point.value,
-                        expect.value,
-                    )
-                    assertions += 1
+        # pylint: disable=too-many-nested-blocks
+        for resource_metrics in reader.get_metrics_data().resource_metrics:
+            for scope_metrics in resource_metrics.scope_metrics:
+                for metric in scope_metrics.metrics:
+                    for data_point in metric.data.data_points:
+                        for expect in expected:
+                            if (
+                                dict(data_point.attributes)
+                                == expect.attributes
+                                and metric.name == observer_name
+                            ):
+                                self.assertEqual(
+                                    data_point.value,
+                                    expect.value,
+                                )
+                                assertions += 1
         self.assertEqual(len(expected), assertions)
 
     def _test_metrics(self, observer_name, expected):
