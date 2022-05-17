@@ -4,7 +4,7 @@
 | ------------------------ | ---------------- |
 | Stability                | [In development] |
 | Supported pipeline types | traces, logs     |
-| Distribution             | none             |
+| Distributions            | none             |
 
 The transform processor modifies telemetry based on configuration using the Telemetry Query Language.
 It takes a list of queries which are performed in the order specified in the config.
