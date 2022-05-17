@@ -66,3 +66,23 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, expectedCfg, cfg.Receivers[config.NewComponentIDWithName(typeStr, "custom")])
 }
+
+func TestFailedLoadConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_schemeless_endpoint_config.yaml"), factories)
+	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: scheme must be 'http' or 'https', but was 'localhost'")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_hostless_endpoint_config.yaml"), factories)
+	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: host not found in HTTP endpoint")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_collection_interval_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* error decoding 'collection_interval': time: invalid duration \"fourminutes\"")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_metric_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics[0]' has invalid keys: invalid_field")
+}

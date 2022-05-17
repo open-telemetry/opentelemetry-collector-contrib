@@ -26,7 +26,7 @@ The following can be configured:
   configuration options for the client can be found in the core repo's
   [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).
   - defaults: 
-    - `endpoint = http://localhost:8080/debug/vars` 
+    - `endpoint = http://localhost:8000/debug/vars` 
     - `timeout = 3s`
 - `collection_interval` - Configure how often the metrics are scraped.
   - default: 1m

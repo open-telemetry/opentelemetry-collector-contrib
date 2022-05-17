@@ -44,11 +44,11 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return fmt.Errorf("endpoint is not a valid URL: %v", err)
 	}
-	if u.Host == "" {
-		return fmt.Errorf("host not found in HTTP endpoint")
-	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("scheme must be 'http' or 'https', but was '%s'", u.Scheme)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("host not found in HTTP endpoint")
 	}
 	return nil
 }
