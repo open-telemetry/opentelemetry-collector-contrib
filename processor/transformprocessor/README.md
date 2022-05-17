@@ -90,4 +90,4 @@ All spans
 6) Truncate all span attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
 
-[In development]: https://github.com/open-telemetry/opentelemetry-collector-contrib#in-development
+[In development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
