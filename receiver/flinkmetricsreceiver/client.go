@@ -206,7 +206,7 @@ func (c *flinkClient) getTaskmanagersMetrics(ctx context.Context, taskmanagerIDs
 		if err != nil {
 			return nil, err
 		}
-		// The taskmanager has the host instance in the taskmanager ID
+
 		host := strings.Split(taskmanager.ID, ":")
 		taskmanagerInstance := &models.TaskmanagerMetrics{
 			TaskmanagerID: taskmanager.ID,

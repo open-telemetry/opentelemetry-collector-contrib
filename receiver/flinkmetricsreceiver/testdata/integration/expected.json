@@ -6,13 +6,185 @@
             {
                "metrics": [
                   {
-                     "description": "The total number of classes loaded since the start of the JVM.",
-                     "name": "flink.jobmanager.status.jvm.class_loader.classes_loaded",
+                     "description": "The number of checkpoints by type.",
+                     "name": "flinkmetrics.job.checkpoints.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "7733",
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "failed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "in_progress"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "checkpoint",
+                                    "value": {
+                                       "stringValue": "completed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "{checkpoints}"
+                  },
+                  {
+                     "description": "The total size of the last checkpoint.",
+                     "name": "flinkmetrics.job.last_checkpoint.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "8212",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The time it took to complete the last checkpoint.",
+                     "name": "flinkmetrics.job.last_checkpoint.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.",
+                     "name": "flinkmetrics.job.restart.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "Jonathans-MacBook-Pro.local"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "{restarts}"
+                  },
+                  {
+                     "description": "The total number of classes loaded since the start of the JVM.",
+                     "name": "flinkmetrics.jobmanager.status.jvm.class_loader.classes_loaded",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "9413",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -21,8 +193,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -33,7 +205,7 @@
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asDouble": 0.005267196151214151,
+                              "asDouble": 0.02783375314861461,
                               "attributes": [
                                  {
                                     "key": "host",
@@ -42,22 +214,22 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
-                     "name": "flink.jobmanager.status.jvm.cpu.load",
+                     "name": "flinkmetrics.jobmanager.status.jvm.cpu.load",
                      "unit": "1"
                   },
                   {
                      "description": "The CPU time used by the JVM.",
-                     "name": "flink.jobmanager.status.jvm.cpu.time",
+                     "name": "flinkmetrics.jobmanager.status.jvm.cpu.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "15140000000",
+                              "asInt": "10910000000",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -66,8 +238,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ],
                         "isMonotonic": true
@@ -76,7 +248,7 @@
                   },
                   {
                      "description": "The total number of collections that have occurred.",
-                     "name": "flink.jobmanager.status.jvm.garbage_collector.collection.count",
+                     "name": "flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -96,8 +268,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            },
                            {
                               "asInt": "2",
@@ -115,8 +287,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ],
                         "isMonotonic": true
@@ -125,12 +297,12 @@
                   },
                   {
                      "description": "The total time spent performing garbage collection.",
-                     "name": "flink.jobmanager.status.jvm.garbage_collector.collection.time",
+                     "name": "flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "67",
+                              "asInt": "63",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -145,11 +317,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            },
                            {
-                              "asInt": "21",
+                              "asInt": "26",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -164,8 +336,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ],
                         "isMonotonic": true
@@ -174,12 +346,12 @@
                   },
                   {
                      "description": "The total capacity of all buffers in the direct buffer pool.",
-                     "name": "flink.jobmanager.status.jvm.memory.direct.total_capacity",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.direct.total_capacity",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "528385",
+                              "asInt": "541829",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -188,8 +360,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -197,12 +369,12 @@
                   },
                   {
                      "description": "The amount of memory used by the JVM for the direct buffer pool.",
-                     "name": "flink.jobmanager.status.jvm.memory.direct.used",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.direct.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "528386",
+                              "asInt": "541830",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -211,8 +383,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -220,7 +392,7 @@
                   },
                   {
                      "description": "The amount of heap memory guaranteed to be available to the JVM.",
-                     "name": "flink.jobmanager.status.jvm.memory.heap.committed",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.heap.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -234,8 +406,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -243,7 +415,7 @@
                   },
                   {
                      "description": "The maximum amount of heap memory that can be used for memory management.",
-                     "name": "flink.jobmanager.status.jvm.memory.heap.max",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.heap.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -257,8 +429,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -266,12 +438,12 @@
                   },
                   {
                      "description": "The amount of heap memory currently used.",
-                     "name": "flink.jobmanager.status.jvm.memory.heap.used",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.heap.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "148708296",
+                              "asInt": "221904224",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -280,8 +452,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -289,7 +461,7 @@
                   },
                   {
                      "description": "The number of buffers in the mapped buffer pool.",
-                     "name": "flink.jobmanager.status.jvm.memory.mapped.total_capacity",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.mapped.total_capacity",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -303,8 +475,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -312,7 +484,7 @@
                   },
                   {
                      "description": "The amount of memory used by the JVM for the mapped buffer pool.",
-                     "name": "flink.jobmanager.status.jvm.memory.mapped.used",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.mapped.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -326,8 +498,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -335,12 +507,12 @@
                   },
                   {
                      "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
-                     "name": "flink.jobmanager.status.jvm.memory.metaspace.committed",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.metaspace.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "49283072",
+                              "asInt": "58720256",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -349,8 +521,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -358,7 +530,7 @@
                   },
                   {
                      "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
-                     "name": "flink.jobmanager.status.jvm.memory.metaspace.max",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.metaspace.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -372,8 +544,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -381,12 +553,12 @@
                   },
                   {
                      "description": "The amount of memory currently used in the Metaspace memory pool.",
-                     "name": "flink.jobmanager.status.jvm.memory.metaspace.used",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.metaspace.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "46716544",
+                              "asInt": "54832792",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -395,8 +567,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -404,12 +576,12 @@
                   },
                   {
                      "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
-                     "name": "flink.jobmanager.status.jvm.memory.non_heap.committed",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.non_heap.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "64815104",
+                              "asInt": "78577664",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -418,8 +590,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -427,7 +599,7 @@
                   },
                   {
                      "description": "The maximum amount of non-heap memory that can be used for memory management.",
-                     "name": "flink.jobmanager.status.jvm.memory.non_heap.max",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.non_heap.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -441,8 +613,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -450,12 +622,12 @@
                   },
                   {
                      "description": "The amount of non-heap memory currently used.",
-                     "name": "flink.jobmanager.status.jvm.memory.non_heap.used",
+                     "name": "flinkmetrics.jobmanager.status.jvm.memory.non_heap.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "61352952",
+                              "asInt": "74001864",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -464,8 +636,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -473,12 +645,12 @@
                   },
                   {
                      "description": "The total number of live threads.",
-                     "name": "flink.jobmanager.status.jvm.threads.count",
+                     "name": "flinkmetrics.jobmanager.status.jvm.threads.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "46",
+                              "asInt": "74",
                               "attributes": [
                                  {
                                     "key": "host",
@@ -487,8 +659,1254 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1652467300809071000",
-                              "timeUnixNano": "1652467300909616000"
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "{threads}"
+                  },
+                  {
+                     "description": "The number of records this operator type has.",
+                     "name": "flinkmetrics.operator.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5812",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "5785",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Flat_Map"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Sink__Print_to_Std__Out"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Sink__Print_to_Std__Out"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Flat_Map"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  },
+                  {
+                     "description": "The last watermark this operator has emitted.",
+                     "name": "flinkmetrics.operator.watermark.output",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "-9223372036854775808",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Source__Custom_Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "-9223372036854775808",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Flat_Map"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "-9223372036854775808",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "operator_name",
+                                    "value": {
+                                       "stringValue": "Sink__Print_to_Std__Out"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "milliseconds"
+                  },
+                  {
+                     "description": "The number of records this task type has.",
+                     "name": "flinkmetrics.task.record.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5812",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "task_name",
+                                    "value": {
+                                       "stringValue": "Source: Custom Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "task_name",
+                                    "value": {
+                                       "stringValue": "Source: Custom Source"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "task_name",
+                                    "value": {
+                                       "stringValue": "Flat Map -\u003e Sink: Print to Std. Out"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "out"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "5785",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "adb29bc2db99"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "job_name",
+                                    "value": {
+                                       "stringValue": "State machine job"
+                                    }
+                                 },
+                                 {
+                                    "key": "task_name",
+                                    "value": {
+                                       "stringValue": "Flat Map -\u003e Sink: Print to Std. Out"
+                                    }
+                                 },
+                                 {
+                                    "key": "subtask_index",
+                                    "value": {
+                                       "stringValue": "0"
+                                    }
+                                 },
+                                 {
+                                    "key": "record",
+                                    "value": {
+                                       "stringValue": "in"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{records}"
+                  },
+                  {
+                     "description": "The total amount of managed memory.",
+                     "name": "flinkmetrics.taskmanager.status.flink.memory.managed.total",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "536870920",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of managed memory currently used.",
+                     "name": "flinkmetrics.taskmanager.status.flink.memory.managed.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The total number of classes loaded since the start of the JVM.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.class_loader.classes_loaded",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "8963",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "{classes}"
+                  },
+                  {
+                     "description": "The recent CPU usage of the JVM.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 0.03261281759575275,
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "name": "flinkmetrics.taskmanager.status.jvm.cpu.load",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The CPU time used by the JVM.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.cpu.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "9950000000",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ns"
+                  },
+                  {
+                     "description": "The total number of collections that have occurred.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Young_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Old_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{collections}"
+                  },
+                  {
+                     "description": "The total time spent performing garbage collection.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Old_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           },
+                           {
+                              "asInt": "43",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 },
+                                 {
+                                    "key": "garbage_collector_name",
+                                    "value": {
+                                       "stringValue": "G1_Young_Generation"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{milliseconds}"
+                  },
+                  {
+                     "description": "The total capacity of all buffers in the direct buffer pool.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.direct.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "135547906",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the direct buffer pool.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.direct.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "135547907",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory guaranteed to be available to the JVM.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "536870912",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of heap memory that can be used for memory management.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "536870912",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of heap memory currently used.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "141557744",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The number of buffers in the mapped buffer pool.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.mapped.total_capacity",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory used by the JVM for the mapped buffer pool.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.mapped.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.metaspace.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "57622528",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.metaspace.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "268435456",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of memory currently used in the Metaspace memory pool.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.metaspace.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "54235088",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.non_heap.committed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "76972032",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The maximum amount of non-heap memory that can be used for memory management.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.non_heap.max",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "780140544",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The amount of non-heap memory currently used.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.memory.non_heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "73021376",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
+                           }
+                        ]
+                     },
+                     "unit": "bytes"
+                  },
+                  {
+                     "description": "The total number of live threads.",
+                     "name": "flinkmetrics.taskmanager.status.jvm.threads.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "58",
+                              "attributes": [
+                                 {
+                                    "key": "host",
+                                    "value": {
+                                       "stringValue": "192.168.160.3"
+                                    }
+                                 },
+                                 {
+                                    "key": "taskmanager_id",
+                                    "value": {
+                                       "stringValue": "192.168.160.3:45759-0a9afa"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1652797664208284000",
+                              "timeUnixNano": "1652797664308683000"
                            }
                         ]
                      },
@@ -496,7 +1914,7 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkreceiver"
+                  "name": "otelcol/flinkmetricsreceiver"
                }
             }
          ]

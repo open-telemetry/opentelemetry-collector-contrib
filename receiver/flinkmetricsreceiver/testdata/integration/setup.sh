@@ -1,5 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-./usr/local/flink/bin/flink run /integration/StateMachineExample.jar
+set -e
+
+./usr/local/flink/bin/flink run --detached /integration/StateMachineExample.jar
 
 exit 0
