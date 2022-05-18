@@ -18,41 +18,41 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
-type LogsConfig struct {
+type SignalConfig struct {
 	Queries []string `mapstructure:"queries"`
 
-	// The functions that have been registered in the extension for logs processing.
-	functions map[string]interface{} `mapstructure:"-"`
-}
-
-type TracesConfig struct {
-	Queries []string `mapstructure:"queries"`
-
-	// The functions that have been registered in the extension for traces processing.
+	// The functions that have been registered in the extension for processing.
 	functions map[string]interface{} `mapstructure:"-"`
 }
 
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	Logs   LogsConfig   `mapstructure:"logs"`
-	Traces TracesConfig `mapstructure:"traces"`
+	Logs    SignalConfig `mapstructure:"logs"`
+	Traces  SignalConfig `mapstructure:"traces"`
+	Metrics SignalConfig `mapstructure:"metrics"`
 }
 
 var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	_, err := common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
+	_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
+	_, err = common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath)
+	if err != nil {
+		errors = multierr.Append(errors, err)
+	}
+	_, err = common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
