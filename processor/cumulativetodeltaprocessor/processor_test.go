@@ -51,95 +51,95 @@ type cumulativeToDeltaTest struct {
 
 var (
 	testCases = []cumulativeToDeltaTest{
-		//{
-		//	name:    "legacy_cumulative_to_delta_one_positive",
-		//	metrics: []string{"metric_1"},
-		//	inMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 200, 500}, {4}},
-		//		isCumulative: []bool{true, true},
-		//	}),
-		//	outMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 100, 300}, {4}},
-		//		isCumulative: []bool{false, true},
-		//	}),
-		//},
-		//{
-		//	name:    "legacy_cumulative_to_delta_nan_value",
-		//	metrics: []string{"metric_1"},
-		//	inMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
-		//		isCumulative: []bool{true, true},
-		//	}),
-		//	outMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
-		//		isCumulative: []bool{false, true},
-		//	}),
-		//},
-		//{
-		//	name:    "cumulative_to_delta_convert_nothing",
-		//	metrics: nil,
-		//	exclude: MatchMetrics{
-		//		Metrics: []string{".*"},
-		//		Config: filterset.Config{
-		//			MatchType:    "regexp",
-		//			RegexpConfig: nil,
-		//		},
-		//	},
-		//	inMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100}, {4}},
-		//		isCumulative: []bool{true, true},
-		//	}),
-		//	outMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100}, {4}},
-		//		isCumulative: []bool{true, true},
-		//	}),
-		//},
-		//{
-		//	name: "cumulative_to_delta_one_positive",
-		//	include: MatchMetrics{
-		//		Metrics: []string{"metric_1"},
-		//		Config: filterset.Config{
-		//			MatchType:    "strict",
-		//			RegexpConfig: nil,
-		//		},
-		//	},
-		//	inMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 200, 500}, {4}},
-		//		isCumulative: []bool{true, true},
-		//	}),
-		//	outMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 100, 300}, {4}},
-		//		isCumulative: []bool{false, true},
-		//	}),
-		//},
-		//{
-		//	name: "cumulative_to_delta_nan_value",
-		//	include: MatchMetrics{
-		//		Metrics: []string{"_1"},
-		//		Config: filterset.Config{
-		//			MatchType:    "regexp",
-		//			RegexpConfig: nil,
-		//		},
-		//	},
-		//	inMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
-		//		isCumulative: []bool{true, true},
-		//	}),
-		//	outMetrics: generateTestMetrics(testMetric{
-		//		metricNames:  []string{"metric_1", "metric_2"},
-		//		metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
-		//		isCumulative: []bool{false, true},
-		//	}),
-		//},
+		{
+			name:    "legacy_cumulative_to_delta_one_positive",
+			metrics: []string{"metric_1"},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, 500}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, 300}, {4}},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name:    "legacy_cumulative_to_delta_nan_value",
+			metrics: []string{"metric_1"},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name:    "cumulative_to_delta_convert_nothing",
+			metrics: nil,
+			exclude: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_one_positive",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, 500}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, 300}, {4}},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_nan_value",
+			include: MatchMetrics{
+				Metrics: []string{"_1"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
+				isCumulative: []bool{false, true},
+			}),
+		},
 		{
 			name:    "cumulative_to_delta_exclude_precedence",
 			metrics: nil,
