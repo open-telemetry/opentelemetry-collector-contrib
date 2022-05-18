@@ -125,7 +125,7 @@ func positionsFor(endpoint string, numPoints int) []position {
 
 // positionsForEndpoints calculates all the positions for all the given endpoints
 func positionsForEndpoints(endpoints []string, weight int) []ringItem {
-	var items []ringItem
+	items := make([]ringItem, 0, 0)
 	positions := map[position]bool{} // tracking the used positions
 	for _, endpoint := range endpoints {
 		// for this initial implementation, we don't allow endpoints to have custom weights

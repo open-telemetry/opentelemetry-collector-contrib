@@ -33,6 +33,16 @@ func TestNewHashRing(t *testing.T) {
 	assert.Len(t, ring.items, 2*defaultWeight)
 }
 
+func TestEndpointForNoEndpoints(t *testing.T) {
+	// prepare
+	var endpoints []string
+	ring := newHashRing(endpoints)
+	// test
+	endpoint := ring.endpointFor(pcommon.NewTraceID([16]byte{1, 2, 0, 0}))
+	// verify
+	assert.Equal(t, endpoint, "")
+}
+
 func TestEndpointFor(t *testing.T) {
 	// prepare
 	endpoints := []string{"endpoint-1", "endpoint-2"}
