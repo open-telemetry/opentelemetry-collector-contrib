@@ -41,7 +41,7 @@ func TestReverseLookupHost_Linux(t *testing.T) {
 	p := fakeLinuxSystemMetadataProvider()
 	fqdn, err := p.ReverseLookupHost()
 	require.NoError(t, err)
-	assert.Equal(t, "my-linux-vm.internal.cloudapp.net", fqdn)
+	assert.Equal(t, "my-linux-vm.internal.foo.net", fqdn)
 }
 
 func TestReverseLookupHost_Windows(t *testing.T) {
