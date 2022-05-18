@@ -1586,7 +1586,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/saphanareceiver"
+                  "name": "otelcol/saphanareceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -3085,7 +3086,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/saphanareceiver"
+                  "name": "otelcol/saphanareceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -3415,7 +3417,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/saphanareceiver"
+                  "name": "otelcol/saphanareceiver",
+                  "version": "latest"
                }
             }
          ]
