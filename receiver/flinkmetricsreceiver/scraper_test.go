@@ -186,8 +186,8 @@ func TestScaperScrape(t *testing.T) {
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_taskmanagers.json")
-				expectedMetrics, err := golden.ReadMetrics(goldenPath)
-				require.NoError(t, err)
+				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
+				require.NoError(t, goldenErr)
 				return expectedMetrics
 			},
 			expectedErr: errors.New("some api error"),
@@ -204,8 +204,8 @@ func TestScaperScrape(t *testing.T) {
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobs.json")
-				expectedMetrics, err := golden.ReadMetrics(goldenPath)
-				require.NoError(t, err)
+				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
+				require.NoError(t, goldenErr)
 				return expectedMetrics
 			},
 			expectedErr: errors.New("some api error"),
@@ -222,8 +222,8 @@ func TestScaperScrape(t *testing.T) {
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_subtasks.json")
-				expectedMetrics, err := golden.ReadMetrics(goldenPath)
-				require.NoError(t, err)
+				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
+				require.NoError(t, goldenErr)
 				return expectedMetrics
 			},
 			expectedErr: errors.New("some api error"),
