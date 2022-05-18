@@ -298,22 +298,8 @@ func accessMetricType() pathGetSetter {
 			return ctx.(metricTransformContext).GetMetric().DataType().String()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if dataType, ok := val.(string); ok {
-				switch dataType {
-				case "None":
-					ctx.(metricTransformContext).GetMetric().SetDataType(pmetric.MetricDataTypeNone)
-				case "Gauge":
-					ctx.(metricTransformContext).GetMetric().SetDataType(pmetric.MetricDataTypeGauge)
-				case "Sum":
-					ctx.(metricTransformContext).GetMetric().SetDataType(pmetric.MetricDataTypeSum)
-				case "Histogram":
-					ctx.(metricTransformContext).GetMetric().SetDataType(pmetric.MetricDataTypeHistogram)
-				case "ExponentialHistogram":
-					ctx.(metricTransformContext).GetMetric().SetDataType(pmetric.MetricDataTypeExponentialHistogram)
-				case "Summary":
-					ctx.(metricTransformContext).GetMetric().SetDataType(pmetric.MetricDataTypeSummary)
-				}
-			}
+			// TODO Implement methods so correctly convert data types.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10130
 		},
 	}
 }
