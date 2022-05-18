@@ -256,7 +256,7 @@ docker-otelcontribcol:
 .PHONY: generate
 generate:
 	cd cmd/mdatagen && $(GOCMD) install .
-	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	$(MAKE) for-all CMD="$(GOCMD) generate -tags generate ./..."
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
