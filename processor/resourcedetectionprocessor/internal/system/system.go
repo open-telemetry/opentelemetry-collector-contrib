@@ -43,7 +43,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider        systemMetadata
+	provider        metadataProvider
 	logger          *zap.Logger
 	hostnameSources []string
 }
@@ -55,7 +55,7 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 		cfg.HostnameSources = []string{"dns", "os"}
 	}
 
-	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
+	return &Detector{provider: newSystemMetadataProvider(), logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
