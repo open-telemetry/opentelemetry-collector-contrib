@@ -47,12 +47,12 @@ type bigipScraper struct {
 }
 
 // newScraper creates an initialized bigipScraper
-func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySettings) *bigipScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCreateSettings) *bigipScraper {
 	return &bigipScraper{
 		logger:   logger,
 		cfg:      cfg,
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
