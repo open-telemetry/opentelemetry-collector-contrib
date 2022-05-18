@@ -295,12 +295,11 @@ func accessMetricUnit() pathGetSetter {
 func accessMetricType() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetMetric().DataType()
+			return ctx.(metricTransformContext).GetMetric().DataType().String()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if dataType, ok := val.(pmetric.MetricDataType); ok {
-				ctx.(metricTransformContext).GetMetric().SetDataType(dataType)
-			}
+			// TODO Implement methods so correctly convert data types.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10130
 		},
 	}
 }
@@ -376,18 +375,22 @@ func accessAttributes() pathGetSetter {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.NumberDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.NumberDataPoint).Attributes())
 				}
 			case pmetric.HistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.HistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes())
 				}
 			case pmetric.ExponentialHistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes())
 				}
 			case pmetric.SummaryDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
+					ctx.GetItem().(pmetric.SummaryDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes())
 				}
 			}
