@@ -30,11 +30,6 @@ func (e expVarScraper) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e expVarScraper) shutdown(ctx context.Context) error {
-	e.httpClient.CloseIdleConnections()
-	return nil
-}
-
 func (e expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	//TODO implement me
 	panic("implement me")

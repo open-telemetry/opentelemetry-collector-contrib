@@ -51,7 +51,6 @@ func newMetricsReceiver(
 		typeStr,
 		expVar.scrape,
 		scraperhelper.WithStart(expVar.start),
-		scraperhelper.WithShutdown(expVar.shutdown),
 	)
 	if err != nil {
 		return nil, err
