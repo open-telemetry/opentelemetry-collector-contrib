@@ -97,10 +97,10 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 		return pmetric.NewMetrics(), err
 	}
 
-	s.ProcessJobmanagerMetrics(now, jobmanagerMetrics)
-	s.ProcessTaskmanagerMetrics(now, taskmanagersMetrics)
-	s.ProcessJobsMetrics(now, jobsMetrics)
-	s.ProcessSubtaskMetrics(now, subtasksMetrics)
+	s.processJobmanagerMetrics(now, jobmanagerMetrics)
+	s.processTaskmanagerMetrics(now, taskmanagersMetrics)
+	s.processJobsMetrics(now, jobsMetrics)
+	s.processSubtaskMetrics(now, subtasksMetrics)
 
 	return s.mb.Emit(), nil
 }

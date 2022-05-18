@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 )
 
-func (s *flinkmetricsScraper) ProcessJobmanagerMetrics(now pcommon.Timestamp, jobmanagerMetrics *models.JobmanagerMetrics) {
+func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jobmanagerMetrics *models.JobmanagerMetrics) {
 	for _, metric := range jobmanagerMetrics.Metrics {
 
 		switch metric.ID {
@@ -78,7 +78,7 @@ func (s *flinkmetricsScraper) ProcessJobmanagerMetrics(now pcommon.Timestamp, jo
 	s.mb.EmitForResource(metadata.WithHost(jobmanagerMetrics.Host))
 }
 
-func (s *flinkmetricsScraper) ProcessTaskmanagerMetrics(now pcommon.Timestamp, taskmanagerMetricInstances []*models.TaskmanagerMetrics) {
+func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, taskmanagerMetricInstances []*models.TaskmanagerMetrics) {
 	for _, taskmanagerMetrics := range taskmanagerMetricInstances {
 		for _, metric := range taskmanagerMetrics.Metrics {
 
@@ -137,7 +137,7 @@ func (s *flinkmetricsScraper) ProcessTaskmanagerMetrics(now pcommon.Timestamp, t
 	}
 }
 
-func (s *flinkmetricsScraper) ProcessJobsMetrics(now pcommon.Timestamp, jobsMetricsInstances []*models.JobMetrics) {
+func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetricsInstances []*models.JobMetrics) {
 	for _, jobsMetrics := range jobsMetricsInstances {
 		for _, metric := range jobsMetrics.Metrics {
 			switch metric.ID {
@@ -161,7 +161,7 @@ func (s *flinkmetricsScraper) ProcessJobsMetrics(now pcommon.Timestamp, jobsMetr
 	}
 }
 
-func (s *flinkmetricsScraper) ProcessSubtaskMetrics(now pcommon.Timestamp, subtaskMetricsInstances []*models.SubtaskMetrics) {
+func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subtaskMetricsInstances []*models.SubtaskMetrics) {
 	for _, subtaskMetrics := range subtaskMetricsInstances {
 		for i, metric := range subtaskMetrics.Metrics {
 			switch {
