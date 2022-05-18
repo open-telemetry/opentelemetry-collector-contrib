@@ -144,14 +144,14 @@ var (
 			name:    "cumulative_to_delta_exclude_precedence",
 			metrics: nil,
 			include: MatchMetrics{
-				Metrics: []string{".*t.*"},
+				Metrics: []string{".*"},
 				Config: filterset.Config{
 					MatchType:    "regexp",
 					RegexpConfig: nil,
 				},
 			},
 			exclude: MatchMetrics{
-				Metrics: []string{".*t.*"},
+				Metrics: []string{".*"},
 				Config: filterset.Config{
 					MatchType:    "regexp",
 					RegexpConfig: nil,
