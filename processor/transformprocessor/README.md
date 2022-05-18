@@ -26,6 +26,10 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 
 - `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is a non-negative integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `limit(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
 
+- `repalce_match(target, pattern, replacement)` - `target` is a path expression to a telemetry field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `repalcement` is a string. If `target` matches `pattern` it will get replaced with `replacement`. e.g., `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
+
+- `repalce_all_matches(target, pattern, replacement)` - `target` is a path expression to a map type field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `repalcement` is a string. Each string value in `tartget` that matches `pattern` will get replaced with `replacement`. e.g., `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
+
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
 - `!=` - matches telemetry where the values are not equal to each other
@@ -45,13 +49,15 @@ processors:
     logs:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
         - set(body, attributes["http.route"])
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
     traces:
       queries:
         - set(status.code, 1) where attributes["http.path"] == "/health"
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
         - set(name, attributes["http.route"])
+        - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
         - limit(attributes, 100)
         - limit(resource.attributes, 100)
         - truncate_all(attributes, 4096)
@@ -73,14 +79,16 @@ This processor will perform the operations in order for
 All logs
 
 1) Set severity text to FAIL if the body contains a string text "request failed"
-2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+2) Replace any attribute value that matches `/user/*/list/*` with `/user/{userId}/list/{listId}`
 3) Set `body` to the `http.route` attribute if it is set
+4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
 All spans
 
 1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `name` to the `http.route` attribute if it is set
+2) Replace the value of an attribute named `http.target` with `/user/{userId}/list/{listId}` if the value matched `/user/*/list/*`
 4) Limit all span attributes such that each span has no more than 100 attributes.
 5) Limit all resource attributes such that each resource no more than 100 attributes.
 6) Truncate all span attributes such that no string value has more than 4096 characters.
