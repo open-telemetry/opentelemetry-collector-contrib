@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -44,13 +43,12 @@ var (
 // Config is the receiver configuration
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Endpoint                                string                     `mapstructure:"endpoint"`
-	Username                                string                     `mapstructure:"username"`
-	Password                                string                     `mapstructure:"password"`
-	CollectClusterMetrics                   bool                       `mapstructure:"collect_cluster_metrics"`
-	Timeout                                 time.Duration              `mapstructure:"timeout"`
-	TLS                                     configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
-	Metrics                                 metadata.MetricsSettings   `mapstructure:"metrics"`
+	Endpoint                                string                   `mapstructure:"endpoint"`
+	Username                                string                   `mapstructure:"username"`
+	Password                                string                   `mapstructure:"password"`
+	CollectClusterMetrics                   bool                     `mapstructure:"collect_cluster_metrics"`
+	Timeout                                 time.Duration            `mapstructure:"timeout"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
 // Validate validates the values of the given Config, and returns an error if validation fails
