@@ -75,7 +75,7 @@ func fakeLinuxNameInfoProvider() nameInfoProvider {
 			return []string{"172.24.0.4"}, nil
 		},
 		lookupAddr: func(s string) ([]string, error) {
-			return []string{"my-linux-vm.internal.cloudapp.net."}, nil
+			return []string{"my-linux-vm.internal.foo.net."}, nil
 		},
 	}
 }
