@@ -129,7 +129,7 @@ func (c *flinkClient) getMetrics(ctx context.Context, path string) (*models.Metr
 	var metrics *models.MetricsResponse
 	body, err := c.get(ctx, path)
 	if err != nil {
-		c.logger.Debug("Failed to retrieve metric names", zap.Error(err))
+		c.logger.Debug("failed to retrieve metric names", zap.Error(err))
 		return nil, err
 	}
 
@@ -149,7 +149,7 @@ func (c *flinkClient) getMetrics(ctx context.Context, path string) (*models.Metr
 	// Get the metric values using the query
 	body, err = c.get(ctx, metricsPath)
 	if err != nil {
-		c.logger.Debug("Failed to retrieve metric values", zap.Error(err))
+		c.logger.Debug("failed to retrieve metric values", zap.Error(err))
 		return nil, err
 	}
 
@@ -183,7 +183,7 @@ func (c *flinkClient) GetTaskmanagersMetrics(ctx context.Context) ([]*models.Tas
 	var taskmanagerIDs *models.TaskmanagerIDsResponse
 	body, err := c.get(ctx, taskmanagersEndpoint)
 	if err != nil {
-		c.logger.Debug("Failed to retrieve taskmanager IDs", zap.Error(err))
+		c.logger.Debug("failed to retrieve taskmanager IDs", zap.Error(err))
 		return nil, err
 	}
 
@@ -207,9 +207,7 @@ func (c *flinkClient) getTaskmanagersMetrics(ctx context.Context, taskmanagerIDs
 			return nil, err
 		}
 
-		// host := strings.Split(taskmanager.ID, ":")
 		taskmanagerInstance := &models.TaskmanagerMetrics{
-			// TaskmanagerID: taskmanager.ID,
 			TaskmanagerID: getTaskmanagerID(taskmanager.ID),
 			Host:          getTaskmanagerHost(taskmanager.ID),
 			Metrics:       *metrics,
@@ -225,7 +223,7 @@ func (c *flinkClient) GetJobsMetrics(ctx context.Context) ([]*models.JobMetrics,
 	var jobIDs *models.JobOverviewResponse
 	body, err := c.get(ctx, jobsOverviewEndpoint)
 	if err != nil {
-		c.logger.Debug("Failed to retrieve job IDs", zap.Error(err))
+		c.logger.Debug("failed to retrieve job IDs", zap.Error(err))
 		return nil, err
 	}
 
@@ -264,7 +262,7 @@ func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.Subtask
 	var jobsResponse *models.JobsResponse
 	body, err := c.get(ctx, jobsEndpoint)
 	if err != nil {
-		c.logger.Debug("Failed to retrieve job IDs", zap.Error(err))
+		c.logger.Debug("failed to retrieve job IDs", zap.Error(err))
 		return nil, err
 	}
 
@@ -285,7 +283,7 @@ func (c *flinkClient) getSubtasksMetrics(ctx context.Context, jobsResponse *mode
 		query := fmt.Sprintf(jobsWithIDEndpoint, job.ID)
 		body, err := c.get(ctx, query)
 		if err != nil {
-			c.logger.Debug("Failed to retrieve job with ID", zap.Error(err))
+			c.logger.Debug("failed to retrieve job with ID", zap.Error(err))
 			return nil, err
 		}
 
@@ -300,7 +298,7 @@ func (c *flinkClient) getSubtasksMetrics(ctx context.Context, jobsResponse *mode
 			query := fmt.Sprintf(verticesEndpoint, job.ID, vertex.ID)
 			body, err = c.get(ctx, query)
 			if err != nil {
-				c.logger.Debug("Failed to retrieve vertex with ID", zap.Error(err))
+				c.logger.Debug("failed to retrieve vertex with ID", zap.Error(err))
 				return nil, err
 			}
 
@@ -315,16 +313,14 @@ func (c *flinkClient) getSubtasksMetrics(ctx context.Context, jobsResponse *mode
 				query := fmt.Sprintf(subtaskMetricEndpoint, job.ID, vertex.ID, subtask.Subtask)
 				subtaskMetrics, err := c.getMetrics(ctx, query)
 				if err != nil {
-					c.logger.Debug("Failed to retrieve subtasks metrics", zap.Error(err))
+					c.logger.Debug("failed to retrieve subtasks metrics", zap.Error(err))
 					return nil, err
 				}
 
 				// Stores subtask info with additional attribute values to uniquely identify metrics
 				subtaskInstances = append(subtaskInstances,
 					&models.SubtaskMetrics{
-						// Host:          subtask.Host,
-						Host: getTaskmanagerHost(subtask.TaskmanagerID),
-						// TaskmanagerID: subtask.TaskmanagerID,
+						Host:          getTaskmanagerHost(subtask.TaskmanagerID),
 						TaskmanagerID: getTaskmanagerID(subtask.TaskmanagerID),
 						JobName:       jobsWithIDResponse.Name,
 						TaskName:      vertex.Name,

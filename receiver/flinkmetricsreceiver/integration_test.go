@@ -173,13 +173,15 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 
 // waitFor waits until an endpoint is ready with an id response.
 func (ws waitStrategy) waitFor(ctx context.Context, _ string) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(5 * time.Second):
 			return fmt.Errorf("server startup problem")
-		case <-time.After(100 * time.Millisecond):
+		case <-ticker.C:
 			resp, err := http.Get(ws.endpoint)
 			if err != nil {
 				continue

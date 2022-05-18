@@ -344,7 +344,7 @@ type metricFlinkmetricsJobLastCheckpointSize struct {
 func (m *metricFlinkmetricsJobLastCheckpointSize) init() {
 	m.data.SetName("flinkmetrics.job.last_checkpoint.size")
 	m.data.SetDescription("The total size of the last checkpoint.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -395,7 +395,7 @@ type metricFlinkmetricsJobLastCheckpointTime struct {
 func (m *metricFlinkmetricsJobLastCheckpointTime) init() {
 	m.data.SetName("flinkmetrics.job.last_checkpoint.time")
 	m.data.SetDescription("The time it took to complete the last checkpoint.")
-	m.data.SetUnit("milliseconds")
+	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -497,7 +497,7 @@ type metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal struct {
 func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedTotal) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.flink.memory.managed.total")
 	m.data.SetDescription("The total amount of managed memory.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -548,7 +548,7 @@ type metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed struct {
 func (m *metricFlinkmetricsJobmanagerStatusFlinkMemoryManagedUsed) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.flink.memory.managed.used")
 	m.data.SetDescription("The amount of managed memory currently used.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -803,7 +803,7 @@ type metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime struct 
 func (m *metricFlinkmetricsJobmanagerStatusJvmGarbageCollectorCollectionTime) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.garbage_collector.collection.time")
 	m.data.SetDescription("The total time spent performing garbage collection.")
-	m.data.SetUnit("milliseconds")
+	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -856,7 +856,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectTotalCapacity) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.direct.total_capacity")
 	m.data.SetDescription("The total capacity of all buffers in the direct buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -907,7 +907,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryDirectUsed) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.direct.used")
 	m.data.SetDescription("The amount of memory used by the JVM for the direct buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -958,7 +958,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapCommitted) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.heap.committed")
 	m.data.SetDescription("The amount of heap memory guaranteed to be available to the JVM.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1009,7 +1009,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapMax) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.heap.max")
 	m.data.SetDescription("The maximum amount of heap memory that can be used for memory management.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1060,7 +1060,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryHeapUsed) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.heap.used")
 	m.data.SetDescription("The amount of heap memory currently used.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1111,7 +1111,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedTotalCapacity) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.mapped.total_capacity")
 	m.data.SetDescription("The number of buffers in the mapped buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1162,7 +1162,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMappedUsed) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.mapped.used")
 	m.data.SetDescription("The amount of memory used by the JVM for the mapped buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1213,7 +1213,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceCommitted) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.metaspace.committed")
 	m.data.SetDescription("The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1264,7 +1264,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceMax) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.metaspace.max")
 	m.data.SetDescription("The maximum amount of memory that can be used in the Metaspace memory pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1315,7 +1315,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryMetaspaceUsed) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.metaspace.used")
 	m.data.SetDescription("The amount of memory currently used in the Metaspace memory pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1366,7 +1366,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapCommitted) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.non_heap.committed")
 	m.data.SetDescription("The amount of non-heap memory guaranteed to be available to the JVM.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1417,7 +1417,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapMax) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.non_heap.max")
 	m.data.SetDescription("The maximum amount of non-heap memory that can be used for memory management.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1468,7 +1468,7 @@ type metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed struct {
 func (m *metricFlinkmetricsJobmanagerStatusJvmMemoryNonHeapUsed) init() {
 	m.data.SetName("flinkmetrics.jobmanager.status.jvm.memory.non_heap.used")
 	m.data.SetDescription("The amount of non-heap memory currently used.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1624,7 +1624,7 @@ type metricFlinkmetricsOperatorWatermarkOutput struct {
 func (m *metricFlinkmetricsOperatorWatermarkOutput) init() {
 	m.data.SetName("flinkmetrics.operator.watermark.output")
 	m.data.SetDescription("The last watermark this operator has emitted.")
-	m.data.SetUnit("milliseconds")
+	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1730,7 +1730,7 @@ type metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal struct {
 func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedTotal) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.flink.memory.managed.total")
 	m.data.SetDescription("The total amount of managed memory.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1781,7 +1781,7 @@ type metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed struct {
 func (m *metricFlinkmetricsTaskmanagerStatusFlinkMemoryManagedUsed) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.flink.memory.managed.used")
 	m.data.SetDescription("The amount of managed memory currently used.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2036,7 +2036,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime struct
 func (m *metricFlinkmetricsTaskmanagerStatusJvmGarbageCollectorCollectionTime) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.garbage_collector.collection.time")
 	m.data.SetDescription("The total time spent performing garbage collection.")
-	m.data.SetUnit("{milliseconds}")
+	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2089,7 +2089,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectTotalCapacity) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.direct.total_capacity")
 	m.data.SetDescription("The total capacity of all buffers in the direct buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2140,7 +2140,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryDirectUsed) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.direct.used")
 	m.data.SetDescription("The amount of memory used by the JVM for the direct buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2191,7 +2191,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapCommitted) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.heap.committed")
 	m.data.SetDescription("The amount of heap memory guaranteed to be available to the JVM.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2242,7 +2242,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapMax) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.heap.max")
 	m.data.SetDescription("The maximum amount of heap memory that can be used for memory management.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2293,7 +2293,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryHeapUsed) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.heap.used")
 	m.data.SetDescription("The amount of heap memory currently used.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2344,7 +2344,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedTotalCapacity) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.mapped.total_capacity")
 	m.data.SetDescription("The number of buffers in the mapped buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2395,7 +2395,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMappedUsed) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.mapped.used")
 	m.data.SetDescription("The amount of memory used by the JVM for the mapped buffer pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2446,7 +2446,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceCommitted) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.metaspace.committed")
 	m.data.SetDescription("The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2497,7 +2497,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceMax) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.metaspace.max")
 	m.data.SetDescription("The maximum amount of memory that can be used in the Metaspace memory pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2548,7 +2548,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryMetaspaceUsed) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.metaspace.used")
 	m.data.SetDescription("The amount of memory currently used in the Metaspace memory pool.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2599,7 +2599,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapCommitted) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.non_heap.committed")
 	m.data.SetDescription("The amount of non-heap memory guaranteed to be available to the JVM.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2650,7 +2650,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapMax) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.non_heap.max")
 	m.data.SetDescription("The maximum amount of non-heap memory that can be used for memory management.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2701,7 +2701,7 @@ type metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed struct {
 func (m *metricFlinkmetricsTaskmanagerStatusJvmMemoryNonHeapUsed) init() {
 	m.data.SetName("flinkmetrics.taskmanager.status.jvm.memory.non_heap.used")
 	m.data.SetDescription("The amount of non-heap memory currently used.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
