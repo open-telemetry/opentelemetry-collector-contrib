@@ -23,12 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/tcp"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/udp"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/parser/syslog"
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestSyslogInput(t *testing.T) {
@@ -164,7 +164,7 @@ protocol: rfc5424
 tcp:
   listen_address: localhost:1234
   tls:
-    ca_file: /tmp/test.ca 
+    ca_file: /tmp/test.ca
 `
 	var cfg SyslogInputConfig
 	err := yaml.Unmarshal([]byte(base), &cfg)

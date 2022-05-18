@@ -4,17 +4,26 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `jmxreceiver`: Hash the jars provided to JMX Receiver and ensure they match an approved list (#9687)
+- `jmxreceiver`: Hash the jars provided to JMX Receiver and only allow if they match an approved list (#9687)
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
 
+- `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+- `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
+- `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 
 ### 💡 Enhancements 💡
 
+- `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+
 ### 🧰 Bug fixes 🧰
+
+- `datadogexporter`: add error checks for datadog exporter (#9964)
+- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 
 ## v0.51.0
 
@@ -35,7 +44,6 @@
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
-- `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
 
 ### 💡 Enhancements 💡
@@ -48,6 +56,7 @@
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
@@ -57,7 +66,6 @@
 
 ### 🧰 Bug fixes 🧰
 
-- `datadogexporter`: add error checks for datadog exporter (#9964)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
@@ -74,7 +82,6 @@
 - `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
 - `awsinsightreceiver`: Migrate from `ConfigMapsResourceLock` to `ConfigMapsLeasesResourceLock` as per https://github.com/kubernetes/client-go/commit/276ea3ed979947d7cdd4b3d708862245ddcd8883 (#9885)
 - `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Add support for []string type for converting log record entries (#9887)
-- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9087)
 
 ## v0.50.0
 

@@ -64,7 +64,7 @@ func (je *jaegerGRPCDataSender) Start() error {
 	}
 
 	je.Traces = exp
-	return exp.Start(context.Background(), je)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (je *jaegerGRPCDataSender) GenConfigYAMLStr() string {

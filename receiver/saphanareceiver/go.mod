@@ -49,7 +49,7 @@ require (
 require (
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/multierr v1.8.0
-	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70 // indirect
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest

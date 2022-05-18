@@ -17,8 +17,11 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -43,6 +46,7 @@ type jmxMetricReceiver struct {
 	params       component.ReceiverCreateSettings
 	otlpReceiver component.MetricsReceiver
 	nextConsumer consumer.Metrics
+	configFile   string
 }
 
 func newJMXMetricReceiver(
@@ -58,9 +62,10 @@ func newJMXMetricReceiver(
 	}
 }
 
-func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
+func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) error {
 	jmx.logger.Debug("starting JMX Receiver")
 
+	var err error
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
 	if err != nil {
 		return err
@@ -71,12 +76,29 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (e
 		return err
 	}
 
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "jmx-config-*.properties")
+	if err != nil {
+		return fmt.Errorf("failed to get tmp file for jmxreceiver config: %w", err)
+	}
+
+	if _, err = tmpFile.Write([]byte(javaConfig)); err != nil {
+		return fmt.Errorf("failed to write config file for jmxreceiver config: %w", err)
+	}
+
+	// Close the file
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to write config file for jmxreceiver config: %w", err)
+	}
+
+	jmx.configFile = tmpFile.Name()
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
-		Args:           append(jmx.config.parseProperties(), jmxMainClass, "-config", "-"),
-		StdInContents:  javaConfig,
+		Args:           append(jmx.config.parseProperties(jmx.logger), jmxMainClass, "-config", jmx.configFile),
 		EnvironmentVariables: map[string]string{
 			"CLASSPATH": jmx.config.parseClasspath(),
+			// Overwrite these environment variables to reduce attack surface
+			"JAVA_TOOL_OPTIONS": "",
+			"LD_PRELOAD":        "",
 		},
 	}
 
@@ -100,10 +122,14 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	jmx.logger.Debug("Shutting down JMX Receiver")
 	subprocessErr := jmx.subprocess.Shutdown(ctx)
 	otlpErr := jmx.otlpReceiver.Shutdown(ctx)
+	removeErr := os.Remove(jmx.configFile)
 	if subprocessErr != nil {
 		return subprocessErr
 	}
-	return otlpErr
+	if otlpErr != nil {
+		return otlpErr
+	}
+	return removeErr
 }
 
 func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, error) {
@@ -137,6 +163,7 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, er
 }
 
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
+	config := map[string]string{}
 	failedToParse := `failed to parse Endpoint "%s": %w`
 	parsed, err := url.Parse(jmx.config.Endpoint)
 	if err != nil {
@@ -155,37 +182,69 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		jmx.config.Endpoint = fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:%d/jmxrmi", host, port)
 	}
 
-	javaConfig := fmt.Sprintf(`otel.jmx.service.url = %v
-otel.jmx.interval.milliseconds = %v
-`, jmx.config.Endpoint, jmx.config.CollectionInterval.Milliseconds())
-
-	if jmx.config.TargetSystem != "" {
-		javaConfig += fmt.Sprintf("otel.jmx.target.system = %v\n", jmx.config.TargetSystem)
-	} else if jmx.config.GroovyScript != "" {
-		javaConfig += fmt.Sprintf("otel.jmx.groovy.script = %v\n", jmx.config.GroovyScript)
-	}
+	config["otel.jmx.service.url"] = jmx.config.Endpoint
+	config["otel.jmx.interval.milliseconds"] = strconv.FormatInt(jmx.config.CollectionInterval.Milliseconds(), 10)
+	config["otel.jmx.target.system"] = jmx.config.TargetSystem
 
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	if !strings.HasPrefix(endpoint, "http") {
 		endpoint = fmt.Sprintf("http://%s", endpoint)
 	}
 
-	javaConfig += fmt.Sprintf(`otel.metrics.exporter = otlp
-otel.exporter.otlp.endpoint = %v
-otel.exporter.otlp.timeout = %v
-`, endpoint, jmx.config.OTLPExporterConfig.Timeout.Milliseconds())
+	config["otel.metrics.exporter"] = "otlp"
+	config["otel.exporter.otlp.endpoint"] = endpoint
+	config["otel.exporter.otlp.timeout"] = strconv.FormatInt(jmx.config.OTLPExporterConfig.Timeout.Milliseconds(), 10)
 
 	if len(jmx.config.OTLPExporterConfig.Headers) > 0 {
-		javaConfig += fmt.Sprintf("otel.exporter.otlp.headers = %s\n", jmx.config.OTLPExporterConfig.headersToString())
+		config["otel.exporter.otlp.headers"] = jmx.config.OTLPExporterConfig.headersToString()
 	}
 
 	if jmx.config.Username != "" {
-		javaConfig += fmt.Sprintf("otel.jmx.username = %v\n", jmx.config.Username)
+		config["otel.jmx.username"] = jmx.config.Username
 	}
 
 	if jmx.config.Password != "" {
-		javaConfig += fmt.Sprintf("otel.jmx.password = %v\n", jmx.config.Password)
+		config["otel.jmx.password"] = jmx.config.Password
 	}
 
-	return javaConfig, nil
+	if jmx.config.RemoteProfile != "" {
+		config["otel.jmx.remote.profile"] = jmx.config.RemoteProfile
+	}
+
+	if jmx.config.Realm != "" {
+		config["otel.jmx.realm"] = jmx.config.Realm
+	}
+
+	if len(jmx.config.ResourceAttributes) > 0 {
+		attributes := make([]string, 0, len(jmx.config.ResourceAttributes))
+		for k, v := range jmx.config.ResourceAttributes {
+			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
+		}
+		sort.Strings(attributes)
+		config["otel.resource.attributes"] = strings.Join(attributes, ",")
+	}
+
+	content := []string{}
+	for k, v := range config {
+		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
+
+		// Keys are receiver-defined so this escape should be unnecessary but in case that assumption
+		// breaks in the future this will ensure keys are properly escaped
+		safeKey := strings.ReplaceAll(k, "=", "\\=")
+		safeKey = strings.ReplaceAll(safeKey, ":", "\\:")
+		// Any whitespace must be removed from keys
+		safeKey = strings.ReplaceAll(safeKey, " ", "")
+		safeKey = strings.ReplaceAll(safeKey, "\t", "")
+		safeKey = strings.ReplaceAll(safeKey, "\n", "")
+
+		// Unneeded escape tokens will be removed by the properties file loader, so it should be pre-escaped to ensure
+		// the values provided reach the metrics gatherer as provided. Also in case a user attempts to provide multiline
+		// values for one of the available fields, we need to escape the newlines
+		safeValue := strings.ReplaceAll(v, "\\", "\\\\")
+		safeValue = strings.ReplaceAll(safeValue, "\n", "\\n")
+		content = append(content, fmt.Sprintf("%s = %s", safeKey, safeValue))
+	}
+	sort.Strings(content)
+
+	return strings.Join(content, "\n"), nil
 }

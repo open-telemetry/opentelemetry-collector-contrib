@@ -16,32 +16,31 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addCPUMetrics(dest pmetric.MetricSlice, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addCPUMetrics(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
-	addCPUUsageMetric(dest, cpuMetrics.Utilization, s, currentTime)
-	addCPUTimeMetric(dest, cpuMetrics.Time, s, startTime, currentTime)
+	addCPUUsageMetric(mb, cpuMetrics.Utilization, s, currentTime)
+	addCPUTimeMetric(mb, cpuMetrics.Time, s, currentTime)
 }
 
-func addCPUUsageMetric(dest pmetric.MetricSlice, metricInt metadata.MetricIntf, s *stats.CPUStats, currentTime pcommon.Timestamp) {
+func addCPUUsageMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s.UsageNanoCores == nil {
 		return
 	}
 	value := float64(*s.UsageNanoCores) / 1_000_000_000
-	fillDoubleGauge(dest.AppendEmpty(), metricInt, value, currentTime)
+	recordDataPoint(mb, currentTime, value)
 }
 
-func addCPUTimeMetric(dest pmetric.MetricSlice, metricInt metadata.MetricIntf, s *stats.CPUStats, startTime pcommon.Timestamp, currentTime pcommon.Timestamp) {
+func addCPUTimeMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
 	if s.UsageCoreNanoSeconds == nil {
 		return
 	}
 	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000
-	fillDoubleSum(dest.AppendEmpty(), metricInt, value, startTime, currentTime)
+	recordDataPoint(mb, currentTime, value)
 }
