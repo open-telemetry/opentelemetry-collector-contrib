@@ -146,7 +146,7 @@ func limit(target GetSetter, limit int64) (ExprFunc, error) {
 func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
 	_, err := filepath.Match(pattern, "")
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to repalce_match is not a valid pattern, %v", err)
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
 	}
 	return func(ctx TransformContext) interface{} {
 		val := target.Get(ctx)
@@ -166,7 +166,7 @@ func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFun
 func replaceAllMatches(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
 	_, err := filepath.Match(pattern, "")
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to repalce_all_matches is not a valid pattern, %v", err)
+		return nil, fmt.Errorf("the pattern supplied to replace_all_matches is not a valid pattern, %v", err)
 	}
 	return func(ctx TransformContext) interface{} {
 		val := target.Get(ctx)
