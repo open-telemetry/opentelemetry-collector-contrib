@@ -388,17 +388,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithBuildInfo sets BuildInfo on the metrics builder.
-func WithBuildInfo(info component.BuildInfo) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.buildInfo = info
-	}
-}
-
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      buildInfo,
 		metricSystemNetworkConnections: newMetricSystemNetworkConnections(settings.SystemNetworkConnections),
 		metricSystemNetworkDropped:     newMetricSystemNetworkDropped(settings.SystemNetworkDropped),
 		metricSystemNetworkErrors:      newMetricSystemNetworkErrors(settings.SystemNetworkErrors),
