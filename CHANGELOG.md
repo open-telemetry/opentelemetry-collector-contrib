@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
@@ -53,6 +55,7 @@
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
