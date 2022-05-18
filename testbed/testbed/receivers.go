@@ -17,11 +17,9 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -52,27 +50,9 @@ type DataReceiverBase struct {
 
 // TODO: Move these constants.
 const (
-	DefaultHost       = "127.0.0.1"
-	DefaultOTLPPort   = 4317
-	DefaultOCPort     = 56565
-	DefaultJaegerPort = 14250
+	DefaultHost     = "127.0.0.1"
+	DefaultOTLPPort = 4317
 )
-
-func (mb *DataReceiverBase) ReportFatalError(err error) {
-	log.Printf("Fatal error reported: %v", err)
-}
-
-func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ config.Type) component.Factory {
-	return nil
-}
-
-func (mb *DataReceiverBase) GetExtensions() map[config.ComponentID]component.Extension {
-	return nil
-}
-
-func (mb *DataReceiverBase) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
-	return nil
-}
 
 // BaseOTLPDataReceiver implements the OTLP format receiver.
 type BaseOTLPDataReceiver struct {
@@ -107,13 +87,13 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		return err
 	}
 
-	if err = bor.traceReceiver.Start(context.Background(), bor); err != nil {
+	if err = bor.traceReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
-	if err = bor.metricsReceiver.Start(context.Background(), bor); err != nil {
+	if err = bor.metricsReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
-	return bor.logReceiver.Start(context.Background(), bor)
+	return bor.logReceiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (bor *BaseOTLPDataReceiver) WithCompression(compression string) *BaseOTLPDataReceiver {
