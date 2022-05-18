@@ -14,7 +14,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/couchdbreceiver"
+                        "name": "otelcol/couchdbreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
