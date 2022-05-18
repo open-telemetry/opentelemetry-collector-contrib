@@ -39,7 +39,7 @@ func TestNewMongodbScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(zap.NewNop(), cfg)
+	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
 }
 
@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 	scraper := mongodbScraper{
 		client:       fc,
 		config:       cfg,
-		mb:           metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		mb:           metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 		logger:       zap.NewNop(),
 		mongoVersion: mongo40,
 	}
@@ -110,7 +110,7 @@ func TestScrapeNoClient(t *testing.T) {
 func TestGlobalLockTimeOldFormat(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics = metadata.DefaultMetricsSettings()
-	scraper := newMongodbScraper(zap.NewNop(), cfg)
+	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	mong26, err := version.NewVersion("2.6")
 	require.NoError(t, err)
 	scraper.mongoVersion = mong26
