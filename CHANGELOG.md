@@ -23,6 +23,8 @@
 
 - `datadogexporter`: add error checks for datadog exporter (#9964)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
+- `tanzuobservabilityexporter`: Improve how negative values in exponential
+histograms are handled. (#10135)
 
 ## v0.51.0
 

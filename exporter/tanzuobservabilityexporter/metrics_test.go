@@ -1102,10 +1102,10 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 	dataPoint.Attributes().UpsertString("baz", "7")
 	setDataPointTimestamp(1640198765, dataPoint)
 	h := newExponentialHistogramDataPoint(dataPoint)
-	assert.Equal(t, []uint64{0, 17, 16, 15, 2, 5, 6, 7, 8, 0}, h.MBucketCounts())
+	assert.Equal(t, []uint64{17, 16, 15, 2, 5, 6, 7, 8, 0}, h.MBucketCounts())
 	assert.InDeltaSlice(
 		t,
-		[]float64{-22.6274, -16.0, -11.3137, -8.0, 2.8284, 4.0, 5.6569, 8.0, 11.3137},
+		[]float64{-16.0, -11.3137, -8.0, 2.8284, 4.0, 5.6569, 8.0, 11.3137},
 		h.MExplicitBounds(),
 		0.0001)
 	assert.Equal(t, map[string]string{"foo": "bar", "baz": "7"}, attributesToTags(h.Attributes()))
@@ -1119,8 +1119,8 @@ func TestExponentialHistogramDataPoint_ZeroOnly(t *testing.T) {
 	dataPoint.Positive().SetOffset(1)
 	dataPoint.SetZeroCount(5)
 	h := newExponentialHistogramDataPoint(dataPoint)
-	assert.Equal(t, []uint64{0, 5, 0}, h.MBucketCounts())
-	assert.InDeltaSlice(t, []float64{-4.0, 2.0}, h.MExplicitBounds(), 0.0001)
+	assert.Equal(t, []uint64{5, 0}, h.MBucketCounts())
+	assert.InDeltaSlice(t, []float64{2.0}, h.MExplicitBounds(), 0.0001)
 }
 
 func TestAttributesToTagsForMetrics(t *testing.T) {
