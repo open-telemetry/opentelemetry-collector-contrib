@@ -21,13 +21,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
-	typeStr = "aerospike"
+	typeStr                      = "aerospike"
+	defaultEndpoint              = "localhost:3000"
+	defaultTimeout               = 20 * time.Second
+	defaultCollectClusterMetrics = false
 )
 
 // NewFactory creates a new ReceiverFactory with default configuration
@@ -52,10 +54,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scraper, err := scraperhelper.NewScraper(typeStr, receiver.scrape,
-		scraperhelper.WithStart(receiver.start),
-		scraperhelper.WithShutdown(receiver.shutdown),
-	)
+	scraper, err := scraperhelper.NewScraper(typeStr, receiver.scrape)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +74,6 @@ func createDefaultConfig() config.Receiver {
 		Endpoint:              defaultEndpoint,
 		Timeout:               defaultTimeout,
 		CollectClusterMetrics: defaultCollectClusterMetrics,
-		TLS:                   configtls.TLSClientSetting{},
 		Metrics:               metadata.DefaultMetricsSettings(),
 	}
 }

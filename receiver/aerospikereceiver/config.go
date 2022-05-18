@@ -27,12 +27,6 @@ import (
 )
 
 var (
-	defaultEndpoint              = "localhost:3000"
-	defaultTimeout               = 20 * time.Second
-	defaultCollectClusterMetrics = false
-)
-
-var (
 	errBadEndpoint   = errors.New("endpoint must be specified as host:port")
 	errBadPort       = errors.New("invalid port in endpoint")
 	errEmptyEndpoint = errors.New("endpoint must be specified")

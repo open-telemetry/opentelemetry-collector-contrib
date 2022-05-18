@@ -247,13 +247,3 @@ func (r *aerospikeReceiver) emitNamespace(info *model.NamespaceInfo, now pcommon
 	}
 	r.mb.EmitForResource(metadata.WithNamespace(info.Name), metadata.WithNodeName(info.Node))
 }
-
-// start opens a new connection to the configured endpoint
-func (r *aerospikeReceiver) start(context.Context, component.Host) error {
-	return nil
-}
-
-// shutdown closes the connection to Aerospike, if the underlying client is set
-func (r *aerospikeReceiver) shutdown(context.Context) error {
-	return nil
-}
