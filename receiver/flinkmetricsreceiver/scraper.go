@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
@@ -61,6 +62,7 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	var errors scrapererror.ScrapeErrors
 
 	jobmanagerMetrics, err := s.client.GetJobmanagerMetrics(ctx)
 	if err != nil {
@@ -77,7 +79,7 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 			zap.String("endpoint", s.cfg.Endpoint),
 			zap.Error(err),
 		)
-		return pmetric.NewMetrics(), err
+		errors.AddPartial(0, err)
 	}
 
 	jobsMetrics, err := s.client.GetJobsMetrics(ctx)
@@ -86,7 +88,7 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 			zap.String("endpoint", s.cfg.Endpoint),
 			zap.Error(err),
 		)
-		return pmetric.NewMetrics(), err
+		errors.AddPartial(0, err)
 	}
 	subtasksMetrics, err := s.client.GetSubtasksMetrics(ctx)
 	if err != nil {
@@ -94,7 +96,7 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 			zap.String("endpoint", s.cfg.Endpoint),
 			zap.Error(err),
 		)
-		return pmetric.NewMetrics(), err
+		errors.AddPartial(0, err)
 	}
 
 	s.processJobmanagerMetrics(now, jobmanagerMetrics)
@@ -102,5 +104,5 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 	s.processJobsMetrics(now, jobsMetrics)
 	s.processSubtaskMetrics(now, subtasksMetrics)
 
-	return s.mb.Emit(), nil
+	return s.mb.Emit(), errors.Combine()
 }

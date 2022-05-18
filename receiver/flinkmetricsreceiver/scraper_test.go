@@ -180,11 +180,15 @@ func TestScaperScrape(t *testing.T) {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(nil, errors.New("some api error"))
+				mockClient.On("GetJobsMetrics", mock.Anything).Return(nil, nil)
+				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-
-				return pmetric.NewMetrics()
+				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_taskmanagers.json")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
 			},
 			expectedErr: errors.New("some api error"),
 		},
@@ -195,11 +199,14 @@ func TestScaperScrape(t *testing.T) {
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(taskmanagerMetricsInstances, nil)
 				mockClient.On("GetJobsMetrics", mock.Anything).Return(nil, errors.New("some api error"))
+				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-
-				return pmetric.NewMetrics()
+				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobs.json")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
 			},
 			expectedErr: errors.New("some api error"),
 		},
@@ -214,8 +221,10 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-
-				return pmetric.NewMetrics()
+				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_subtasks.json")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
 			},
 			expectedErr: errors.New("some api error"),
 		},
