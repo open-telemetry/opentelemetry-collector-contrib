@@ -17,6 +17,7 @@
 
 ### 💡 Enhancements 💡
 
+- `transformprocessor`: Add transformation of metrics (#10100)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 
