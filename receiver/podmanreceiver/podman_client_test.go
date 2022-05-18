@@ -89,10 +89,11 @@ func TestStats(t *testing.T) {
 
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/stats") {
-			w.Write([]byte(statsExample))
+			_, err := w.Write([]byte(statsExample))
+			assert.NoError(t, err)
 		} else {
-
-			w.Write([]byte{})
+			_, err := w.Write([]byte{})
+			assert.NoError(t, err)
 		}
 	}))
 	srv.Listener = listener
@@ -146,10 +147,11 @@ func TestStatsError(t *testing.T) {
 
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/stats") {
-			w.Write([]byte(statsError))
+			_, err := w.Write([]byte(statsError))
+			assert.NoError(t, err)
 		} else {
-
-			w.Write([]byte{})
+			_, err := w.Write([]byte{})
+			assert.NoError(t, err)
 		}
 	}))
 	srv.Listener = listener
