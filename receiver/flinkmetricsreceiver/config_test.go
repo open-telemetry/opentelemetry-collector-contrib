@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.uber.org/multierr"
 )
 
 func TestValidate(t *testing.T) {
@@ -37,9 +36,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
-				fmt.Errorf("%s: %w", errInvalidEndpoint, errors.New(`parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
-			),
+			expectedErr: fmt.Errorf("\"endpoint\" must be in the form of <scheme>://<hostname>:<port>: %w", errors.New(`parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
 		},
 		{
 			desc: "valid config",

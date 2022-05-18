@@ -194,11 +194,11 @@ func (c *flinkClient) GetTaskmanagersMetrics(ctx context.Context) ([]*models.Tas
 	}
 
 	// Get taskmanager metrics for each taskmanager id
-	return c.getTaskmanagersMetrics(ctx, taskmanagerIDs)
+	return c.getTaskmanagersMetricsByIDs(ctx, taskmanagerIDs)
 }
 
-// getTaskmanagersMetrics gets taskmanager metrics for each task manager id.
-func (c *flinkClient) getTaskmanagersMetrics(ctx context.Context, taskmanagerIDs *models.TaskmanagerIDsResponse) ([]*models.TaskmanagerMetrics, error) {
+// getTaskmanagersMetricsByIDs gets taskmanager metrics for each task manager id.
+func (c *flinkClient) getTaskmanagersMetricsByIDs(ctx context.Context, taskmanagerIDs *models.TaskmanagerIDsResponse) ([]*models.TaskmanagerMetrics, error) {
 	var taskmanagerInstances []*models.TaskmanagerMetrics
 	for _, taskmanager := range taskmanagerIDs.Taskmanagers {
 		query := fmt.Sprintf(taskmanagersMetricEndpoint, taskmanager.ID)
@@ -234,11 +234,11 @@ func (c *flinkClient) GetJobsMetrics(ctx context.Context) ([]*models.JobMetrics,
 	}
 
 	// Get job metrics for each job id
-	return c.getJobsMetrics(ctx, jobIDs)
+	return c.getJobsMetricsByIDs(ctx, jobIDs)
 }
 
-// getJobsMetrics gets jobs metrics for each job id.
-func (c *flinkClient) getJobsMetrics(ctx context.Context, jobIDs *models.JobOverviewResponse) ([]*models.JobMetrics, error) {
+// getJobsMetricsByIDs gets jobs metrics for each job id.
+func (c *flinkClient) getJobsMetricsByIDs(ctx context.Context, jobIDs *models.JobOverviewResponse) ([]*models.JobMetrics, error) {
 	var jobInstances []*models.JobMetrics
 	for _, job := range jobIDs.Jobs {
 		query := fmt.Sprintf(jobsMetricEndpoint, job.Jid)
@@ -271,11 +271,11 @@ func (c *flinkClient) GetSubtasksMetrics(ctx context.Context) ([]*models.Subtask
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
-	return c.getSubtasksMetrics(ctx, jobsResponse)
+	return c.getSubtasksMetricsByIDs(ctx, jobsResponse)
 }
 
-// getSubtasksMetrics gets subtask metrics for each job id, vertex id and subtask index.
-func (c *flinkClient) getSubtasksMetrics(ctx context.Context, jobsResponse *models.JobsResponse) ([]*models.SubtaskMetrics, error) {
+// getSubtasksMetricsByIDs gets subtask metrics for each job id, vertex id and subtask index.
+func (c *flinkClient) getSubtasksMetricsByIDs(ctx context.Context, jobsResponse *models.JobsResponse) ([]*models.SubtaskMetrics, error) {
 	var subtaskInstances []*models.SubtaskMetrics
 	// Get vertices for each job
 	for _, job := range jobsResponse.Jobs {

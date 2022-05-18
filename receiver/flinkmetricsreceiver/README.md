@@ -2,9 +2,12 @@
 
 This receiver uses Flink's [REST API](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#rest-api-integration) to collect Jobmanager, Taskmanager, Job, Task and Operator metrics.
 
-Supported pipeline types: `metrics`
+| Status                   |           |
+| ------------------------ | --------- |
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 ## Prerequisites
 
 This receiver supports Apache Flink versions `1.13.6` and `1.14.4`.
@@ -37,3 +40,6 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector-contrib#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

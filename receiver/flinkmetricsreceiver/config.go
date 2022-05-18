@@ -15,7 +15,6 @@
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 
@@ -23,11 +22,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
-)
-
-// Predefined error responses for configuration validation failures
-var (
-	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>:<port>`)
 )
 
 const defaultEndpoint = "http://localhost:8081"
@@ -42,7 +36,7 @@ type Config struct {
 // Validate validates the configuration by checking for missing or invalid fields
 func (cfg *Config) Validate() error {
 	if _, err := url.Parse(cfg.Endpoint); err != nil {
-		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), err)
+		return fmt.Errorf("\"endpoint\" must be in the form of <scheme>://<hostname>:<port>: %w", err)
 	}
 
 	return nil
