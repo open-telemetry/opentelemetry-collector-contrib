@@ -55,6 +55,7 @@ require (
 	github.com/Shopify/sarama v1.33.0 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
+	github.com/alecthomas/participle/v2 v2.0.0-alpha8 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.35 // indirect
 	github.com/antonmedv/expr v1.9.0 // indirect
@@ -328,6 +329,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.51.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.51.0 // indirect
@@ -721,6 +723,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/span
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor => ../../processor/spanprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ../../processor/tailsamplingprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver => ../../receiver/activedirectorydsreceiver
 
