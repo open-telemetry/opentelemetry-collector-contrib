@@ -94,7 +94,7 @@ func TestScraperStart(t *testing.T) {
 	}
 }
 
-func TestScaperScrape(t *testing.T) {
+func TestScraperScrape(t *testing.T) {
 	// use helper function from client tests
 	jobmanagerMetricValuesData := loadAPIResponseData(t, mockResponses, mockJobmanagerMetrics)
 	taskmanagerMetricValuesData := loadAPIResponseData(t, mockResponses, mockTaskmanagerMetrics)
@@ -165,14 +165,19 @@ func TestScaperScrape(t *testing.T) {
 			desc: "API Call Failure on Jobmanagers",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(nil, errors.New("some api error"))
+				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&models.JobmanagerMetrics{}, errors.New("some api error"))
+				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(nil, nil)
+				mockClient.On("GetJobsMetrics", mock.Anything).Return(nil, nil)
+				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-
-				return pmetric.NewMetrics()
+				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobmanager.json")
+				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
+				require.NoError(t, goldenErr)
+				return expectedMetrics
 			},
-			expectedErr: errors.New("some api error"),
+			expectedErr: errors.New(jobmanagerFailedFetch + " some api error"),
 		},
 		{
 			desc: "API Call Failure on Taskmanagers",
@@ -190,7 +195,7 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, goldenErr)
 				return expectedMetrics
 			},
-			expectedErr: errors.New("some api error"),
+			expectedErr: errors.New(taskmanagerFailedFetch + " some api error"),
 		},
 		{
 			desc: "API Call Failure on Jobs",
@@ -208,7 +213,7 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, goldenErr)
 				return expectedMetrics
 			},
-			expectedErr: errors.New("some api error"),
+			expectedErr: errors.New(jobsFailedFetch + " some api error"),
 		},
 		{
 			desc: "API Call Failure on Subtasks",
@@ -226,7 +231,7 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, goldenErr)
 				return expectedMetrics
 			},
-			expectedErr: errors.New("some api error"),
+			expectedErr: errors.New(subtasksFailedFetch + " some api error"),
 		},
 		{
 			desc: "Successful Collection no jobs running",

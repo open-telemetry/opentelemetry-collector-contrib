@@ -29,7 +29,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
 )
 
-var errClientNotInit = errors.New("client not initialized")
+var (
+	errClientNotInit       = errors.New("client not initialized")
+	jobmanagerFailedFetch  = "Failed to fetch jobmanager metrics"
+	taskmanagerFailedFetch = "Failed to fetch taskmanager metrics"
+	jobsFailedFetch        = "Failed to fetch jobs metrics"
+	subtasksFailedFetch    = "Failed to fetch subtasks metrics"
+)
 
 type flinkmetricsScraper struct {
 	client   client
@@ -49,7 +55,7 @@ func newflinkScraper(config *Config, settings component.TelemetrySettings) *flin
 func (s *flinkmetricsScraper) start(_ context.Context, host component.Host) error {
 	httpClient, err := newClient(s.cfg, host, s.settings, s.settings.Logger)
 	if err != nil {
-		return fmt.Errorf("failed to start: %w", err)
+		return fmt.Errorf("create client: %w", err)
 	}
 	s.client = httpClient
 	return nil
@@ -62,41 +68,29 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	var errors scrapererror.ScrapeErrors
+	var scraperErrors scrapererror.ScrapeErrors
 
 	jobmanagerMetrics, err := s.client.GetJobmanagerMetrics(ctx)
 	if err != nil {
-		s.settings.Logger.Error("Failed to fetch jobmanager metrics",
-			zap.String("endpoint", s.cfg.Endpoint),
-			zap.Error(err),
-		)
-		return pmetric.NewMetrics(), err
+		s.settings.Logger.Error(jobmanagerFailedFetch, zap.Error(err))
+		scraperErrors.AddPartial(0, fmt.Errorf("%s %w", jobmanagerFailedFetch, err))
 	}
 
 	taskmanagersMetrics, err := s.client.GetTaskmanagersMetrics(ctx)
 	if err != nil {
-		s.settings.Logger.Error("Failed to fetch taskmanager metrics",
-			zap.String("endpoint", s.cfg.Endpoint),
-			zap.Error(err),
-		)
-		errors.AddPartial(0, err)
+		s.settings.Logger.Error(taskmanagerFailedFetch, zap.Error(err))
+		scraperErrors.AddPartial(0, fmt.Errorf("%s %w", taskmanagerFailedFetch, err))
 	}
 
 	jobsMetrics, err := s.client.GetJobsMetrics(ctx)
 	if err != nil {
-		s.settings.Logger.Error("Failed to fetch jobs metrics",
-			zap.String("endpoint", s.cfg.Endpoint),
-			zap.Error(err),
-		)
-		errors.AddPartial(0, err)
+		s.settings.Logger.Error(jobsFailedFetch, zap.Error(err))
+		scraperErrors.AddPartial(0, fmt.Errorf("%s %w", jobsFailedFetch, err))
 	}
 	subtasksMetrics, err := s.client.GetSubtasksMetrics(ctx)
 	if err != nil {
-		s.settings.Logger.Error("Failed to fetch subtasks metrics",
-			zap.String("endpoint", s.cfg.Endpoint),
-			zap.Error(err),
-		)
-		errors.AddPartial(0, err)
+		s.settings.Logger.Error(subtasksFailedFetch, zap.Error(err))
+		scraperErrors.AddPartial(0, fmt.Errorf("%s %w", subtasksFailedFetch, err))
 	}
 
 	s.processJobmanagerMetrics(now, jobmanagerMetrics)
@@ -104,5 +98,5 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 	s.processJobsMetrics(now, jobsMetrics)
 	s.processSubtaskMetrics(now, subtasksMetrics)
 
-	return s.mb.Emit(), errors.Combine()
+	return s.mb.Emit(), scraperErrors.Combine()
 }
