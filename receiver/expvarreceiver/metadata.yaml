@@ -221,6 +221,14 @@ metrics:
       monotonic: true
       aggregation: cumulative
 
+  process.runtime.memstats.last_pause:
+    enabled: true
+    description: The most recent stop-the-world pause time.
+    extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
+    unit: ns
+    gauge:
+      value_type: int
+
   process.runtime.memstats.num_gc:
     enabled: true
     description: Number of completed GC cycles.
