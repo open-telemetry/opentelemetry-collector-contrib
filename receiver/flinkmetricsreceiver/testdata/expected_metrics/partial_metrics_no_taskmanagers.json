@@ -375,7 +375,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]

@@ -345,7 +345,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -731,7 +732,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -852,7 +854,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -934,7 +937,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -1016,7 +1020,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -1133,7 +1138,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -1301,7 +1307,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/flinkmetricsreceiver"
+                  "name": "otelcol/flinkmetricsreceiver",
+                  "version": "latest"
                }
             }
          ]

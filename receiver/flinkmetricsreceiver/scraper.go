@@ -44,11 +44,11 @@ type flinkmetricsScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newflinkScraper(config *Config, settings component.TelemetrySettings) *flinkmetricsScraper {
+func newflinkScraper(config *Config, settings component.ReceiverCreateSettings) *flinkmetricsScraper {
 	return &flinkmetricsScraper{
-		settings: settings,
+		settings: settings.TelemetrySettings,
 		cfg:      config,
-		mb:       metadata.NewMetricsBuilder(config.Metrics),
+		mb:       metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 

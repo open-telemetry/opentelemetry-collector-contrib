@@ -65,7 +65,7 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotflinkmetrics
 	}
-	ns := newflinkScraper(cfg, params.TelemetrySettings)
+	ns := newflinkScraper(cfg, params)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err

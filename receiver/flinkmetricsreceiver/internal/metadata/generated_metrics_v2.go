@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -2796,10 +2797,11 @@ func newMetricFlinkTaskmanagerMemoryManagedUsed(settings MetricSettings) metricF
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                                pcommon.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity                                          int               // maximum observed number of metrics per resource.
-	resourceCapacity                                         int               // maximum observed number of resource attributes.
-	metricsBuffer                                            pmetric.Metrics   // accumulates metrics data before emitting.
+	startTime                                                pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                                          int                 // maximum observed number of metrics per resource.
+	resourceCapacity                                         int                 // maximum observed number of resource attributes.
+	metricsBuffer                                            pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                                                component.BuildInfo // contains version information
 	metricFlinkJobCheckpointsCount                           metricFlinkJobCheckpointsCount
 	metricFlinkJobLastCheckpointSize                         metricFlinkJobLastCheckpointSize
 	metricFlinkJobLastCheckpointTime                         metricFlinkJobLastCheckpointTime
@@ -2861,14 +2863,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                                            pmetric.NewMetrics(),
-		metricFlinkJobCheckpointsCount:                           newMetricFlinkJobCheckpointsCount(settings.FlinkJobCheckpointsCount),
-		metricFlinkJobLastCheckpointSize:                         newMetricFlinkJobLastCheckpointSize(settings.FlinkJobLastCheckpointSize),
-		metricFlinkJobLastCheckpointTime:                         newMetricFlinkJobLastCheckpointTime(settings.FlinkJobLastCheckpointTime),
-		metricFlinkJobRestartCount:                               newMetricFlinkJobRestartCount(settings.FlinkJobRestartCount),
+		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                    pmetric.NewMetrics(),
+		buildInfo:                        buildInfo,
+		metricFlinkJobCheckpointsCount:   newMetricFlinkJobCheckpointsCount(settings.FlinkJobCheckpointsCount),
+		metricFlinkJobLastCheckpointSize: newMetricFlinkJobLastCheckpointSize(settings.FlinkJobLastCheckpointSize),
+		metricFlinkJobLastCheckpointTime: newMetricFlinkJobLastCheckpointTime(settings.FlinkJobLastCheckpointTime),
+		metricFlinkJobRestartCount:       newMetricFlinkJobRestartCount(settings.FlinkJobRestartCount),
 		metricFlinkJobmanagerJvmClassLoaderClassesLoaded:         newMetricFlinkJobmanagerJvmClassLoaderClassesLoaded(settings.FlinkJobmanagerJvmClassLoaderClassesLoaded),
 		metricFlinkJobmanagerJvmCPULoad:                          newMetricFlinkJobmanagerJvmCPULoad(settings.FlinkJobmanagerJvmCPULoad),
 		metricFlinkJobmanagerJvmCPUTime:                          newMetricFlinkJobmanagerJvmCPUTime(settings.FlinkJobmanagerJvmCPUTime),
@@ -2999,6 +3002,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/flinkmetricsreceiver")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFlinkJobCheckpointsCount.emit(ils.Metrics())
 	mb.metricFlinkJobLastCheckpointSize.emit(ils.Metrics())
