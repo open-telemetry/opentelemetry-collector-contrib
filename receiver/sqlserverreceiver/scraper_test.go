@@ -33,7 +33,7 @@ func TestSqlServerScraper(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	logger, obsLogs := observer.New(zap.WarnLevel)
 	settings := componenttest.NewNopReceiverCreateSettings()
-	settings.Logger = logger
+	settings.Logger = zap.New(logger)
 	s := newSqlServerScraper(settings, cfg)
 
 	s.start(context.Background(), nil)
