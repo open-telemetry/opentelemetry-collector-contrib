@@ -1,16 +1,11 @@
 # Elasticsearch Receiver
 
 
-| Status                   |          |
-| ------------------------ |----------|
-| Stability                | beta     |
-| Supported pipeline types | metrics  |
-| Distributions            | contrib  |
-
-<README contents>
-
-[beta]:https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html) and [cluster health](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html) endpoints in order to scrape metrics from a running elasticsearch cluster.
 
@@ -56,3 +51,6 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
