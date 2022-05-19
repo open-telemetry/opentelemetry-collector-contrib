@@ -18,11 +18,14 @@ import (
 	"context"
 	"time"
 
+	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/featuregate"
+	"google.golang.org/api/impersonate"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -81,6 +84,15 @@ func createLogsExporter(
 	} else {
 		eCfg = cfg.(*Config)
 	}
+
+	if eCfg.ImpersonateSettings.TargetPrincipal != "" {
+		getOptions, err := clientOptionsFactory(ctx, eCfg)
+		if err != nil {
+			return nil, err
+		}
+		eCfg.LogConfig.ClientConfig.GetClientOptions = getOptions
+	}
+
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger)
 	if err != nil {
 		return nil, err
@@ -108,6 +120,15 @@ func createTracesExporter(
 	} else {
 		eCfg = cfg.(*Config)
 	}
+
+	if eCfg.ImpersonateSettings.TargetPrincipal != "" {
+		getOptions, err := clientOptionsFactory(ctx, eCfg)
+		if err != nil {
+			return nil, err
+		}
+		eCfg.TraceConfig.ClientConfig.GetClientOptions = getOptions
+	}
+
 	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
 		return nil, err
@@ -134,6 +155,15 @@ func createMetricsExporter(
 		return newLegacyGoogleCloudMetricsExporter(eCfg, params)
 	}
 	eCfg := cfg.(*Config)
+
+	if eCfg.ImpersonateSettings.TargetPrincipal != "" {
+		getOptions, err := clientOptionsFactory(ctx, eCfg)
+		if err != nil {
+			return nil, err
+		}
+		eCfg.MetricConfig.ClientConfig.GetClientOptions = getOptions
+	}
+
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
 		return nil, err
@@ -148,4 +178,21 @@ func createMetricsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(eCfg.QueueSettings),
 		exporterhelper.WithRetry(eCfg.RetrySettings))
+}
+
+// clientOptionsFactory creates a `func() []option.ClientOption` to configure collector
+// client authentication.
+func clientOptionsFactory(ctx context.Context, cfg *Config) (func() []option.ClientOption, error) {
+	tokenSource, err := impersonate.CredentialsTokenSource(ctx, impersonate.CredentialsConfig{
+		TargetPrincipal: cfg.ImpersonateSettings.TargetPrincipal,
+		Delegates:       cfg.ImpersonateSettings.Delegates,
+		Subject:         cfg.ImpersonateSettings.Subject,
+		Scopes:          monitoring.DefaultAuthScopes(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return func() []option.ClientOption {
+		return []option.ClientOption{option.WithTokenSource(tokenSource)}
+	}, nil
 }

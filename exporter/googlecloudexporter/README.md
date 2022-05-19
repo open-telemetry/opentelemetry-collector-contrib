@@ -137,6 +137,10 @@ The following configuration options are supported:
     User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
+- `impersonate` (optional): Configuration for [service account impersonation](https://cloud.google.com/iam/docs/impersonating-service-accounts)
+  - `target_principal`: Email address of the service account to impersonate.
+  - `delegates` (default = []): Service account email addresses in a delegation chain.
+  - `subject` (default = ""): `sub` field of a JWT. This field should only be set if you wish to impersonate as a user.
 
 Note: These `retry_on_failure` and `sending_queue` are provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
 
