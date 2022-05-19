@@ -96,6 +96,7 @@ func newLoadBalancer(params component.ExporterCreateSettings, cfg config.Exporte
 		res:              res,
 		componentFactory: factory,
 		exporters:        map[string]component.Exporter{},
+		ring:             newHashRing([]string{}),
 	}, nil
 }
 
