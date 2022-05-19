@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -146,20 +145,18 @@ func TestScraperScrape(t *testing.T) {
 	})
 
 	testCases := []struct {
-		desc              string
-		setupMockClient   func(t *testing.T) client
-		expectedMetricGen func(t *testing.T) pmetric.Metrics
-		expectedErr       error
+		desc               string
+		setupMockClient    func(t *testing.T) client
+		expectedMetricFile string
+		expectedErr        error
 	}{
 		{
 			desc: "Nil client",
 			setupMockClient: func(t *testing.T) client {
 				return nil
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				return pmetric.NewMetrics()
-			},
-			expectedErr: errClientNotInit,
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "no_metrics.json"),
+			expectedErr:        errClientNotInit,
 		},
 		{
 			desc: "API Call Failure on Jobmanagers",
@@ -171,13 +168,8 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobmanager.json")
-				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
-				require.NoError(t, goldenErr)
-				return expectedMetrics
-			},
-			expectedErr: errors.New(jobmanagerFailedFetch + " some api error"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "no_metrics.json"),
+			expectedErr:        errors.New(jobmanagerFailedFetch + " some api error"),
 		},
 		{
 			desc: "API Call Failure on Taskmanagers",
@@ -189,13 +181,8 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_taskmanagers.json")
-				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
-				require.NoError(t, goldenErr)
-				return expectedMetrics
-			},
-			expectedErr: errors.New(taskmanagerFailedFetch + " some api error"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_taskmanagers.json"),
+			expectedErr:        errors.New(taskmanagerFailedFetch + " some api error"),
 		},
 		{
 			desc: "API Call Failure on Jobs",
@@ -207,13 +194,8 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobs.json")
-				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
-				require.NoError(t, goldenErr)
-				return expectedMetrics
-			},
-			expectedErr: errors.New(jobsFailedFetch + " some api error"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobs.json"),
+			expectedErr:        errors.New(jobsFailedFetch + " some api error"),
 		},
 		{
 			desc: "API Call Failure on Subtasks",
@@ -225,13 +207,8 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "partial_metrics_no_subtasks.json")
-				expectedMetrics, goldenErr := golden.ReadMetrics(goldenPath)
-				require.NoError(t, goldenErr)
-				return expectedMetrics
-			},
-			expectedErr: errors.New(subtasksFailedFetch + " some api error"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_subtasks.json"),
+			expectedErr:        errors.New(subtasksFailedFetch + " some api error"),
 		},
 		{
 			desc: "Successful Collection no jobs running",
@@ -246,13 +223,8 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(subtaskEmptyInstances, nil)
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_no_jobs_golden.json")
-				expectedMetrics, err := golden.ReadMetrics(goldenPath)
-				require.NoError(t, err)
-				return expectedMetrics
-			},
-			expectedErr: nil,
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "metrics_no_jobs_golden.json"),
+			expectedErr:        nil,
 		},
 		{
 			desc: "Successful Collection",
@@ -267,13 +239,8 @@ func TestScraperScrape(t *testing.T) {
 
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
-				expectedMetrics, err := golden.ReadMetrics(goldenPath)
-				require.NoError(t, err)
-				return expectedMetrics
-			},
-			expectedErr: nil,
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "metrics_golden.json"),
+			expectedErr:        nil,
 		},
 	}
 
@@ -289,7 +256,8 @@ func TestScraperScrape(t *testing.T) {
 				require.EqualError(t, err, tc.expectedErr.Error())
 			}
 
-			expectedMetrics := tc.expectedMetricGen(t)
+			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricFile)
+			require.NoError(t, err)
 
 			scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 		})
