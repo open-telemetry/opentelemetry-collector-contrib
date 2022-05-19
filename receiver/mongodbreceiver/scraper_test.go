@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
@@ -40,6 +41,18 @@ func TestNewMongodbScraper(t *testing.T) {
 
 	scraper := newMongodbScraper(zap.NewNop(), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
+}
+
+func TestScraperLifecycle(t *testing.T) {
+	now := time.Now()
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+
+	scraper := newMongodbScraper(zap.NewNop(), cfg)
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.shutdown(context.Background()))
+
+	require.Less(t, time.Since(now), 100*time.Millisecond, "component start and stop should be very fast")
 }
 
 func TestScrape(t *testing.T) {
