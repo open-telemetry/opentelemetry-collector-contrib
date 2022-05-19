@@ -143,89 +143,14 @@ func limit(target GetSetter, limit int64) (ExprFunc, error) {
 // NewFunctionCall Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
-		fType := reflect.TypeOf(f)
-		args := make([]reflect.Value, 0)
-		for i := 0; i < fType.NumIn(); i++ {
-			argType := fType.In(i)
-
-			if argType.Kind() == reflect.Slice {
-				switch argType.Elem().Kind() {
-				case reflect.String:
-					arg := make([]string, 0)
-					for j := i; j < len(inv.Arguments); j++ {
-						if inv.Arguments[j].String == nil {
-							return nil, fmt.Errorf("invalid argument for slice parameter at position %v, must be a string", j)
-						}
-						arg = append(arg, *inv.Arguments[j].String)
-					}
-					args = append(args, reflect.ValueOf(arg))
-				case reflect.Float64:
-					arg := make([]float64, 0)
-					for j := i; j < len(inv.Arguments); j++ {
-						if inv.Arguments[j].Float == nil {
-							return nil, fmt.Errorf("invalid argument for slice parameter at position %v, must be a float", j)
-						}
-						arg = append(arg, *inv.Arguments[j].Float)
-					}
-					args = append(args, reflect.ValueOf(arg))
-				case reflect.Int64:
-					arg := make([]int64, 0)
-					for j := i; j < len(inv.Arguments); j++ {
-						if inv.Arguments[j].Int == nil {
-							return nil, fmt.Errorf("invalid argument for slice parameter at position %v, must be an int", j)
-						}
-						arg = append(arg, *inv.Arguments[j].Int)
-					}
-					args = append(args, reflect.ValueOf(arg))
-				default:
-					return nil, fmt.Errorf("unsupported slice type for function %v", inv.Function)
-				}
-				continue
-			}
-
-			if i >= len(inv.Arguments) {
-				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
-			}
-			argDef := inv.Arguments[i]
-			switch argType.Name() {
-			case "Setter":
-				fallthrough
-			case "GetSetter":
-				arg, err := pathParser(argDef.Path)
-				if err != nil {
-					return nil, fmt.Errorf("invalid argument at position %v %w", i, err)
-				}
-				args = append(args, reflect.ValueOf(arg))
-				continue
-			case "Getter":
-				arg, err := NewGetter(argDef, functions, pathParser)
-				if err != nil {
-					return nil, fmt.Errorf("invalid argument at position %v %w", i, err)
-				}
-				args = append(args, reflect.ValueOf(arg))
-				continue
-			case "string":
-				if argDef.String == nil {
-					return nil, fmt.Errorf("invalid argument at position %v, must be an string", i)
-				}
-				args = append(args, reflect.ValueOf(*argDef.String))
-			case "float64":
-				if argDef.Float == nil {
-					return nil, fmt.Errorf("invalid argument at position %v, must be an float", i)
-				}
-				args = append(args, reflect.ValueOf(*argDef.Float))
-			case "int64":
-				if argDef.Int == nil {
-					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
-				}
-				args = append(args, reflect.ValueOf(*argDef.Int))
-			}
+		args, err := buildArgs(inv, functions, pathParser, f)
+		if err != nil {
+			return nil, err
 		}
 
 		val := reflect.ValueOf(f)
-		ret := val.Call(args)
+		ret := val.Call(*args)
 
-		var err error
 		if ret[1].IsNil() {
 			err = nil
 		} else {
@@ -235,4 +160,102 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 		return ret[0].Interface().(ExprFunc), err
 	}
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
+}
+
+func buildArgs(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, f interface{}) (*[]reflect.Value, error) {
+	fType := reflect.TypeOf(f)
+	args := make([]reflect.Value, 0)
+	for i := 0; i < fType.NumIn(); i++ {
+		argType := fType.In(i)
+
+		if argType.Kind() == reflect.Slice {
+			err := buildSliceArg(inv, argType.Elem().Kind(), i, &args)
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		if i >= len(inv.Arguments) {
+			return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
+		}
+
+		argDef := inv.Arguments[i]
+		err := buildArg(argDef, argType, i, functions, pathParser, &args)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &args, nil
+}
+
+func buildSliceArg(inv Invocation, argType reflect.Kind, startingIndex int, args *[]reflect.Value) error {
+	switch argType {
+	case reflect.String:
+		arg := make([]string, 0)
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			if inv.Arguments[j].String == nil {
+				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a string", j)
+			}
+			arg = append(arg, *inv.Arguments[j].String)
+		}
+		*args = append(*args, reflect.ValueOf(arg))
+	case reflect.Float64:
+		arg := make([]float64, 0)
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			if inv.Arguments[j].Float == nil {
+				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a float", j)
+			}
+			arg = append(arg, *inv.Arguments[j].Float)
+		}
+		*args = append(*args, reflect.ValueOf(arg))
+	case reflect.Int64:
+		arg := make([]int64, 0)
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			if inv.Arguments[j].Int == nil {
+				return fmt.Errorf("invalid argument for slice parameter at position %v, must be an int", j)
+			}
+			arg = append(arg, *inv.Arguments[j].Int)
+		}
+		*args = append(*args, reflect.ValueOf(arg))
+	default:
+		return fmt.Errorf("unsupported slice type for function %v", inv.Function)
+	}
+	return nil
+}
+
+func buildArg(argDef Value, argType reflect.Type, index int, functions map[string]interface{},
+	pathParser PathExpressionParser, args *[]reflect.Value) error {
+	switch argType.Name() {
+	case "Setter":
+		fallthrough
+	case "GetSetter":
+		arg, err := pathParser(argDef.Path)
+		if err != nil {
+			return fmt.Errorf("invalid argument at position %v %w", index, err)
+		}
+		*args = append(*args, reflect.ValueOf(arg))
+	case "Getter":
+		arg, err := NewGetter(argDef, functions, pathParser)
+		if err != nil {
+			return fmt.Errorf("invalid argument at position %v %w", index, err)
+		}
+		*args = append(*args, reflect.ValueOf(arg))
+	case "string":
+		if argDef.String == nil {
+			return fmt.Errorf("invalid argument at position %v, must be an string", index)
+		}
+		*args = append(*args, reflect.ValueOf(*argDef.String))
+	case "float64":
+		if argDef.Float == nil {
+			return fmt.Errorf("invalid argument at position %v, must be an float", index)
+		}
+		*args = append(*args, reflect.ValueOf(*argDef.Float))
+	case "int64":
+		if argDef.Int == nil {
+			return fmt.Errorf("invalid argument at position %v, must be an int", index)
+		}
+		*args = append(*args, reflect.ValueOf(*argDef.Int))
+	}
+	return nil
 }
