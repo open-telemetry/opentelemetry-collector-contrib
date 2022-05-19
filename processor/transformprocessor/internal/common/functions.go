@@ -16,8 +16,9 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
-	"path/filepath"
 	"reflect"
+
+	"github.com/gobwas/glob"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -144,7 +145,7 @@ func limit(target GetSetter, limit int64) (ExprFunc, error) {
 }
 
 func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
-	_, err := filepath.Match(pattern, "")
+	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
 	}
@@ -154,8 +155,7 @@ func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFun
 			return nil
 		}
 		if valStr, ok := val.(string); ok {
-			isMatch, _ := filepath.Match(pattern, valStr)
-			if isMatch {
+			if glob.Match(valStr) {
 				target.Set(ctx, replacement)
 			}
 		}
@@ -164,9 +164,9 @@ func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFun
 }
 
 func replaceAllMatches(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
-	_, err := filepath.Match(pattern, "")
+	glob, err := glob.Compile(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to replace_all_matches is not a valid pattern, %v", err)
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
 	}
 	return func(ctx TransformContext) interface{} {
 		val := target.Get(ctx)
@@ -177,8 +177,7 @@ func replaceAllMatches(target GetSetter, pattern string, replacement string) (Ex
 			updated := pcommon.NewMap()
 			updated.EnsureCapacity(attrs.Len())
 			attrs.Range(func(key string, value pcommon.Value) bool {
-				isMatch, _ := filepath.Match(pattern, value.StringVal())
-				if isMatch {
+				if glob.Match(value.StringVal()) {
 					updated.InsertString(key, replacement)
 				} else {
 					updated.Insert(key, value)
