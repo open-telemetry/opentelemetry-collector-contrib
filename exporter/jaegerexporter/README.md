@@ -3,9 +3,9 @@
 
 | Status                   |               |
 | ------------------------ |---------------|
-| Stability                | beta          |
-| Supported pipeline types | traces        |
-| Distributions            | core, contrib |
+| Stability                | beta              |
+| Supported pipeline types | traces            |
+| Distributions            | [core], [contrib] |
 
 <README contents>
 
