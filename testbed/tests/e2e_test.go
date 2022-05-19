@@ -116,7 +116,7 @@ func TestBallastMemory(t *testing.T) {
 			}, time.Second*2, fmt.Sprintf("VMS must be greater than %d", test.ballastSize))
 
 			for i := 0; i < 1000; i++ {
-				time.Sleep(time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 				rss, vms, _ = tc.AgentMemoryInfo()
 				t.Errorf("rss: %d, vms: %d", rss, vms)
 
