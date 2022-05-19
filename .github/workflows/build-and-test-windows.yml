@@ -10,13 +10,25 @@ env:
 
 jobs:
   windows-unittest:
+    strategy:
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - internal
+          - other
     runs-on: windows-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: install iis
+      - if: matrix.group == 'receiver-0'
+        name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - name: Install Active Directory DS
+      - if: matrix.group == 'receiver-0'
+        name: Install Active Directory DS
         run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -35,4 +47,4 @@ jobs:
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
-        run: make gotest
+        run: make gotest GROUP=${{ matrix.group }}
