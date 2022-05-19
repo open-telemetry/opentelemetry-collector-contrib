@@ -6,11 +6,6 @@
 | Supported pipeline types | traces        |
 | Distributions            | core, contrib |
 
-<README contents>
-
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-
 Receives trace data in [Jaeger](https://www.jaegertracing.io/) format.
 
 ## Getting Started
@@ -106,3 +101,7 @@ receivers:
 
 Note: the `grpc` protocol must be enabled for this to work as Jaeger serves its
 remote sampling strategies over gRPC.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
