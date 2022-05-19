@@ -24,9 +24,11 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - if: ${{ matrix.group }} == 'receiver-0'
+      - if: matrix.group == 'receiver-0'
+        name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - if: ${{ matrix.group }} == 'receiver-0'
+      - if: matrix.group == 'receiver-0'
+        name: Install Active Directory DS
         run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
       - name: Setup Go
         uses: actions/setup-go@v3
