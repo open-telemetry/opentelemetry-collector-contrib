@@ -116,12 +116,14 @@ func TestScrape(t *testing.T) {
 
 			assert.Equal(expectedMetricCount, md.MetricCount())
 
-			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			if test.validate != nil {
-				test.validate(t, metrics)
-			}
+			if expectedMetricCount > 0 {
+				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				if test.validate != nil {
+					test.validate(t, metrics)
+				}
 
-			internal.AssertSameTimeStampForAllMetrics(t, metrics)
+				internal.AssertSameTimeStampForAllMetrics(t, metrics)
+			}
 		})
 	}
 }

@@ -541,6 +541,7 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 
 			handleMock := &processHandleMock{}
 			handleMock.On("Name").Return("test", processNameError)
+			handleMock.On("Exe").Return("test", processNameError)
 
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
