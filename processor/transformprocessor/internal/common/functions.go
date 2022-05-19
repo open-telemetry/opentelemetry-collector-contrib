@@ -143,54 +143,51 @@ func limit(target GetSetter, limit int64) (ExprFunc, error) {
 // NewFunctionCall Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
-		args, err := buildArgs(inv, functions, pathParser, f)
+		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser)
 		if err != nil {
 			return nil, err
 		}
 
-		val := reflect.ValueOf(f)
-		ret := val.Call(*args)
+		returnVals := reflect.ValueOf(f).Call(args)
 
-		if ret[1].IsNil() {
+		if returnVals[1].IsNil() {
 			err = nil
 		} else {
-			err = ret[1].Interface().(error)
+			err = returnVals[1].Interface().(error)
 		}
 
-		return ret[0].Interface().(ExprFunc), err
+		return returnVals[0].Interface().(ExprFunc), err
 	}
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
 
-func buildArgs(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, f interface{}) (*[]reflect.Value, error) {
-	fType := reflect.TypeOf(f)
+func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser PathExpressionParser) ([]reflect.Value, error) {
 	args := make([]reflect.Value, 0)
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
 		if argType.Kind() == reflect.Slice {
-			err := buildSliceArg(inv, argType.Elem().Kind(), i, &args)
+			err := buildSliceArg(inv, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
-			continue
-		}
+		} else {
+			if i >= len(inv.Arguments) {
+				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
+			}
 
-		if i >= len(inv.Arguments) {
-			return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
-		}
-
-		argDef := inv.Arguments[i]
-		err := buildArg(argDef, argType, i, functions, pathParser, &args)
-		if err != nil {
-			return nil, err
+			argDef := inv.Arguments[i]
+			err := buildArg(argDef, argType, i, &args, functions, pathParser)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-	return &args, nil
+	return args, nil
 }
 
-func buildSliceArg(inv Invocation, argType reflect.Kind, startingIndex int, args *[]reflect.Value) error {
-	switch argType {
+func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
+	switch argType.Elem().Kind() {
 	case reflect.String:
 		arg := make([]string, 0)
 		for j := startingIndex; j < len(inv.Arguments); j++ {
@@ -224,8 +221,8 @@ func buildSliceArg(inv Invocation, argType reflect.Kind, startingIndex int, args
 	return nil
 }
 
-func buildArg(argDef Value, argType reflect.Type, index int, functions map[string]interface{},
-	pathParser PathExpressionParser, args *[]reflect.Value) error {
+func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value,
+	functions map[string]interface{}, pathParser PathExpressionParser) error {
 	switch argType.Name() {
 	case "Setter":
 		fallthrough
