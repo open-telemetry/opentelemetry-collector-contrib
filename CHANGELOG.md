@@ -18,12 +18,14 @@
 ### 💡 Enhancements 💡
 
 - `transformprocessor`: Add transformation of metrics (#10100)
+- `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 
 ### 🧰 Bug fixes 🧰
 
 - `datadogexporter`: add error checks for datadog exporter (#9964)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
+- `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 
 ## v0.51.0
 
