@@ -26,6 +26,7 @@
 - `datadogexporter`: add error checks for datadog exporter (#9964)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
+- `transformprocessor`: Fix issue where incorrect error was returned if a bad path was passed to a function (#10141)
 
 ## v0.51.0
 
