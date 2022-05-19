@@ -1,11 +1,11 @@
 # Jaeger gRPC Exporter
 
 
-| Status                   |         |
-| ------------------------ |---------|
-| Stability                | beta    |
-| Supported pipeline types | traces  |
-| Distributions            | contrib |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | beta          |
+| Supported pipeline types | traces        |
+| Distributions            | core, contrib |
 
 <README contents>
 
