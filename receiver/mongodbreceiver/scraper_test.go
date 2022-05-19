@@ -48,7 +48,7 @@ func TestScraperLifecycle(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(zap.NewNop(), cfg)
+	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
 
