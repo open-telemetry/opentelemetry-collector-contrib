@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -207,6 +208,9 @@ func TestConsumeMetricsData(t *testing.T) {
 // Other tests didn't for the concurrency aspect of connPool, this test
 // is designed to force that.
 func Test_connPool_Concurrency(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10147")
+	}
 	addr := testutil.GetAvailableLocalAddress(t)
 	laddr, err := net.ResolveTCPAddr("tcp", addr)
 	require.NoError(t, err)

@@ -165,7 +165,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues)
+			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 			require.NoError(t, err)
 		})
 	}
