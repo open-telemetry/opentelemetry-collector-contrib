@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
@@ -51,10 +50,8 @@ func TestLoadConfig(t *testing.T) {
 	expectedCfg = factory.CreateDefaultConfig().(*Config)
 	expectedCfg.SetIDName("custom")
 	expectedCfg.CollectionInterval = time.Second * 30
-	expectedCfg.HTTP = &confighttp.HTTPClientSettings{
-		Endpoint: "http://localhost:8000/custom/path",
-		Timeout:  time.Second * 5,
-	}
+	expectedCfg.Endpoint = "http://localhost:8000/custom/path"
+	expectedCfg.Timeout = time.Second * 5
 	expectedCfg.MetricsConfig = metadata.DefaultMetricsSettings()
 	expectedCfg.MetricsConfig.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
 	expectedCfg.MetricsConfig.ProcessRuntimeMemstatsMallocs.Enabled = false

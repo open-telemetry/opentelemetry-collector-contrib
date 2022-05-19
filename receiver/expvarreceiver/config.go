@@ -27,17 +27,14 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	HTTP                                    *confighttp.HTTPClientSettings `mapstructure:",squash"`
-	MetricsConfig                           metadata.MetricsSettings       `mapstructure:"metrics"`
+	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	MetricsConfig                           metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
 var _ config.Receiver = (*Config)(nil)
 
 func (c *Config) Validate() error {
-	if c.HTTP == nil {
-		return fmt.Errorf("must specify http client endpoint configuration when using expvar receiver")
-	}
-	u, err := url.Parse(c.HTTP.Endpoint)
+	u, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return fmt.Errorf("endpoint is not a valid URL: %v", err)
 	}

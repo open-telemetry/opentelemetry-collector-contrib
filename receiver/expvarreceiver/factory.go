@@ -69,7 +69,7 @@ func newMetricsReceiver(
 func newDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-		HTTP: &confighttp.HTTPClientSettings{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultTimeout,
 		},
