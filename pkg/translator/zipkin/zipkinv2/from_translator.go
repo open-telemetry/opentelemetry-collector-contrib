@@ -80,7 +80,7 @@ func resourceSpansToZipkinSpans(rs ptrace.ResourceSpans, estSpanCount int) ([]*z
 	zSpans := make([]*zipkinmodel.SpanModel, 0, estSpanCount)
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		extractInstrumentationLibraryTags(ils.Scope(), zTags)
+		extractScopeTags(ils.Scope(), zTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			zSpan, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
@@ -94,7 +94,7 @@ func resourceSpansToZipkinSpans(rs ptrace.ResourceSpans, estSpanCount int) ([]*z
 	return zSpans, nil
 }
 
-func extractInstrumentationLibraryTags(il pcommon.InstrumentationScope, zTags map[string]string) {
+func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
 		zTags[conventions.OtelLibraryName] = ilName
 	}
