@@ -260,7 +260,7 @@ func TestLoadConfig(t *testing.T) {
 		}, r9)
 	err = r9.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
 }
 
 func TestCustomMetricsGathererConfig(t *testing.T) {

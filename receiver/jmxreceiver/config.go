@@ -58,6 +58,8 @@ type Config struct {
 	TruststorePath string `mapstructure:"truststore_path"`
 	// The truststore password for SSL
 	TruststorePassword string `mapstructure:"truststore_password"`
+	// The truststore type for SSL
+	TruststoreType string `mapstructure:"truststore_type"`
 	// The JMX remote profile.  Should be one of:
 	// `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or
 	// `"TLS SASL/CRAM-MD5"`, though no enforcement is applied.
@@ -208,7 +210,7 @@ func (c *Config) validateJar(hashMap map[string]supportedJar, jar string) error 
 
 var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
 var validTargetSystems = map[string]struct{}{"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
-	"jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
+	"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
 
 func (c *Config) validate() error {
 	var missingFields []string
