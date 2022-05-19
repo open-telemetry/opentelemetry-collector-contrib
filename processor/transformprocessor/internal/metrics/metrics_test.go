@@ -1517,10 +1517,9 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "type",
 				},
 			},
-			orig: pmetric.MetricDataTypeSum,
-			new:  pmetric.MetricDataTypeGauge,
+			orig: "Sum",
+			new:  "Sum",
 			modified: func(metric pmetric.Metric) {
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
 			},
 		},
 		{
@@ -1621,4 +1620,8 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pc
 
 func strp(s string) *string {
 	return &s
+}
+
+func intp(i int64) *int64 {
+	return &i
 }

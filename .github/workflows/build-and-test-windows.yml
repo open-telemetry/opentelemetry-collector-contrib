@@ -35,17 +35,4 @@ jobs:
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
-        # use default Go build tags from Makefile.common
-        run: go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...
-      - name: Run IIS Unit Tests
-        run: cd receiver/iisreceiver && go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...        
-      - name: Run Active Directory DS Unit Tests
-        run: |
-          ./testdata/scrape-available-counters.ps1
-          go test --tags containers_image_openpgp,exclude_graphdriver_btrfs,exclude_graphdriver_devicemapper ./...        
-        working-directory: ./receiver/activedirectorydsreceiver
-      - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        run: |
-          cd internal/tools && go install go.opentelemetry.io/build-tools/issuegenerator
-          issuegenerator $TEST_RESULTS
+        run: make gotest

@@ -33,15 +33,17 @@ const (
 )
 
 var hostnameSourcesMap = map[string]func(*Detector) (string, error){
-	"dns": getFQDN,
-	"os":  getHostname,
+	"os":     getHostname,
+	"dns":    getFQDN,
+	"cname":  lookupCNAME,
+	"lookup": reverseLookupHost,
 }
 
 var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider        systemMetadata
+	provider        metadataProvider
 	logger          *zap.Logger
 	hostnameSources []string
 }
@@ -52,7 +54,8 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 	if len(cfg.HostnameSources) == 0 {
 		cfg.HostnameSources = []string{"dns", "os"}
 	}
-	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
+
+	return &Detector{provider: newSystemMetadataProvider(), logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
@@ -78,7 +81,7 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		d.logger.Debug(err.Error())
 	}
 
-	return res, "", errors.New("all hostname sources are failed to get hostname")
+	return res, "", errors.New("all hostname sources failed to get hostname")
 }
 
 // getHostname returns OS hostname
@@ -94,7 +97,23 @@ func getHostname(d *Detector) (string, error) {
 func getFQDN(d *Detector) (string, error) {
 	hostname, err := d.provider.FQDN()
 	if err != nil {
-		return "", fmt.Errorf("failed getting FQDN: %w", err)
+		return "", fmt.Errorf("getFQDN failed getting FQDN: %w", err)
+	}
+	return hostname, nil
+}
+
+func lookupCNAME(d *Detector) (string, error) {
+	cname, err := d.provider.LookupCNAME()
+	if err != nil {
+		return "", fmt.Errorf("lookupCNAME failed to get CNAME: %w", err)
+	}
+	return cname, nil
+}
+
+func reverseLookupHost(d *Detector) (string, error) {
+	hostname, err := d.provider.ReverseLookupHost()
+	if err != nil {
+		return "", fmt.Errorf("reverseLookupHost failed to lookup host: %w", err)
 	}
 	return hostname, nil
 }

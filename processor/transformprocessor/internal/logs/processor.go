@@ -46,9 +46,9 @@ func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, err
 		rlogs := td.ResourceLogs().At(i)
 		ctx.resource = rlogs.Resource()
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			il := rlogs.ScopeLogs().At(j).Scope()
-			ctx.il = il
-			logs := rlogs.ScopeLogs().At(j).LogRecords()
+			slogs := rlogs.ScopeLogs().At(j)
+			ctx.il = slogs.Scope()
+			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				ctx.log = log

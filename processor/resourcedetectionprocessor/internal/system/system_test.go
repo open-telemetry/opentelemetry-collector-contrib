@@ -48,6 +48,16 @@ func (m *mockMetadata) OSType() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *mockMetadata) LookupCNAME() (string, error) {
+	args := m.MethodCalled("LookupCNAME")
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockMetadata) ReverseLookupHost() (string, error) {
+	args := m.MethodCalled("ReverseLookupHost")
+	return args.String(0), args.Error(1)
+}
+
 func TestNewDetector(t *testing.T) {
 	tests := []struct {
 		name string

@@ -64,7 +64,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	ms := newMongodbScraper(params.Logger, cfg)
+	ms := newMongodbScraper(params, cfg)
 
 	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape,
 		scraperhelper.WithStart(ms.start),

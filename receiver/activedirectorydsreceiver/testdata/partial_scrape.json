@@ -518,7 +518,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/activedirectorydsreceiver"
+                  "name": "otelcol/activedirectorydsreceiver",
+                  "version": "latest"
                }
             }
          ]
