@@ -100,7 +100,7 @@ func TestScrape_Errors(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsSettings()
 			metricsConfig.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), &Config{Metrics: metricsConfig})
+			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
