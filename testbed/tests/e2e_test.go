@@ -117,8 +117,8 @@ func TestBallastMemory(t *testing.T) {
 
 			for i := 0; i < 1000; i++ {
 				time.Sleep(10 * time.Millisecond)
-				rss, vms, _ = tc.AgentMemoryInfo()
-				t.Errorf("rss: %d, vms: %d", rss, vms)
+				rssLocal, vmsLocal, _ := tc.AgentMemoryInfo()
+				t.Errorf("rss: %d, vms: %d", rssLocal, vmsLocal)
 
 				// https://github.com/open-telemetry/opentelemetry-collector/issues/3233
 				// given that the maxRSS isn't an absolute maximum and that the actual maximum might be a bit off,
