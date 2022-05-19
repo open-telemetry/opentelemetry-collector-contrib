@@ -159,13 +159,23 @@ gendependabot:
 		echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}; \
 	done
 
+# Append root module to all modules
 GOMODULES = $(ALL_MODULES) $(PWD)
+
+# Define a delegation target for each module
 .PHONY: $(GOMODULES)
-MODULEDIRS = $(GOMODULES:%=for-all-target-%)
-for-all-target: $(MODULEDIRS)
-$(MODULEDIRS):
-	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
+$(GOMODULES):
+	@echo "Running target '$(TARGET)' in module '$@'"
+	$(MAKE) -C $@ $(TARGET)
+
+# Triggers each module's delegation target
 .PHONY: for-all-target
+for-all-target: $(GOMODULES)
+
+# Debugging target, which helps to quickly determine whether for-all-target is working or not.
+.PHONY: all-pwd
+all-pwd:
+	$(MAKE) for-all-target TARGET="pwd"
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
