@@ -61,7 +61,10 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 }
 
 func ParsePath(val *common.Path) (common.GetSetter, error) {
-	return newPathGetSetter(val.Fields)
+	if val != nil && len(val.Fields) > 0 {
+		return newPathGetSetter(val.Fields)
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }
 
 func newPathGetSetter(path []common.Field) (common.GetSetter, error) {

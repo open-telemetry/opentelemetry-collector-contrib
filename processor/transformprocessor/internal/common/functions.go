@@ -140,8 +140,7 @@ func limit(target GetSetter, limit int64) (ExprFunc, error) {
 	}, nil
 }
 
-// TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
-// Visible for testing
+// NewFunctionCall Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
 		fType := reflect.TypeOf(f)
@@ -155,9 +154,27 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 					arg := make([]string, 0)
 					for j := i; j < len(inv.Arguments); j++ {
 						if inv.Arguments[j].String == nil {
-							return nil, fmt.Errorf("invalid argument for slice parameter at position %v, must be string", j)
+							return nil, fmt.Errorf("invalid argument for slice parameter at position %v, must be a string", j)
 						}
 						arg = append(arg, *inv.Arguments[j].String)
+					}
+					args = append(args, reflect.ValueOf(arg))
+				case reflect.Float64:
+					arg := make([]float64, 0)
+					for j := i; j < len(inv.Arguments); j++ {
+						if inv.Arguments[j].Float == nil {
+							return nil, fmt.Errorf("invalid argument for slice parameter at position %v, must be a float", j)
+						}
+						arg = append(arg, *inv.Arguments[j].Float)
+					}
+					args = append(args, reflect.ValueOf(arg))
+				case reflect.Int64:
+					arg := make([]int64, 0)
+					for j := i; j < len(inv.Arguments); j++ {
+						if inv.Arguments[j].Int == nil {
+							return nil, fmt.Errorf("invalid argument for slice parameter at position %v, must be an int", j)
+						}
+						arg = append(arg, *inv.Arguments[j].Int)
 					}
 					args = append(args, reflect.ValueOf(arg))
 				default:
@@ -187,6 +204,16 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				}
 				args = append(args, reflect.ValueOf(arg))
 				continue
+			case "string":
+				if argDef.String == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be an string", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.String))
+			case "float64":
+				if argDef.Float == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be an float", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.Float))
 			case "int64":
 				if argDef.Int == nil {
 					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
@@ -194,6 +221,7 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				args = append(args, reflect.ValueOf(*argDef.Int))
 			}
 		}
+
 		val := reflect.ValueOf(f)
 		ret := val.Call(args)
 
