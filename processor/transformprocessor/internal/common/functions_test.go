@@ -22,8 +22,13 @@ import (
 )
 
 // Test for valid functions are in internal/traces/functions_test.go as there are many different data model cases.
-
 func Test_newFunctionCall_invalid(t *testing.T) {
+	functions := DefaultFunctions()
+	functions["testing_error"] = functionThatHasAnError
+	functions["testing_getsetter"] = functionWithGetSetter
+	functions["testing_getter"] = functionWithGetter
+	functions["testing_multiple_args"] = functionWithMultipleArgs
+
 	tests := []struct {
 		name string
 		inv  Invocation
@@ -38,13 +43,10 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 		{
 			name: "not accessor",
 			inv: Invocation{
-				Function: "set",
+				Function: "testing_getsetter",
 				Arguments: []Value{
 					{
 						String: strp("not path"),
-					},
-					{
-						String: strp("cat"),
 					},
 				},
 			},
@@ -52,17 +54,8 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 		{
 			name: "not reader (invalid function)",
 			inv: Invocation{
-				Function: "set",
+				Function: "testing_getter",
 				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
 					{
 						Invocation: &Invocation{
 							Function: "unknownfunc",
@@ -74,7 +67,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 		{
 			name: "not enough args",
 			inv: Invocation{
-				Function: "set",
+				Function: "testing_multiple_args",
 				Arguments: []Value{
 					{
 						Path: &Path{
@@ -86,9 +79,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						Invocation: &Invocation{
-							Function: "unknownfunc",
-						},
+						String: strp("test"),
 					},
 				},
 			},
@@ -202,14 +193,263 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			functions := DefaultFunctions()
-			functions["testing_error"] = functionThatHasAnError
-
 			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
 			assert.Error(t, err)
 		})
 	}
+}
+
+func Test_newFunctionCall(t *testing.T) {
+	functions := make(map[string]interface{})
+	functions["testing_string_slice"] = functionWithStringSlice
+	functions["testing_float_slice"] = functionWithFloatSlice
+	functions["testing_int_slice"] = functionWithIntSlice
+	functions["testing_setter"] = functionWithSetter
+	functions["testing_getsetter"] = functionWithGetSetter
+	functions["testing_getter"] = functionWithGetter
+	functions["testing_string"] = functionWithString
+	functions["testing_float"] = functionWithFloat
+	functions["testing_int"] = functionWithInt
+	functions["testing_multiple_args"] = functionWithMultipleArgs
+
+	tests := []struct {
+		name string
+		inv  Invocation
+	}{
+		{
+			name: "string slice arg",
+			inv: Invocation{
+				Function: "testing_string_slice",
+				Arguments: []Value{
+					{
+						String: strp("test"),
+					},
+					{
+						String: strp("test"),
+					},
+					{
+						String: strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "float slice arg",
+			inv: Invocation{
+				Function: "testing_float_slice",
+				Arguments: []Value{
+					{
+						Float: floatp(1.1),
+					},
+					{
+						Float: floatp(1.2),
+					},
+					{
+						Float: floatp(1.3),
+					},
+				},
+			},
+		},
+		{
+			name: "int slice arg",
+			inv: Invocation{
+				Function: "testing_int_slice",
+				Arguments: []Value{
+					{
+						Int: intp(1),
+					},
+					{
+						Int: intp(1),
+					},
+					{
+						Int: intp(1),
+					},
+				},
+			},
+		},
+		{
+			name: "setter arg",
+			inv: Invocation{
+				Function: "testing_setter",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "getsetter arg",
+			inv: Invocation{
+				Function: "testing_getsetter",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "getter arg",
+			inv: Invocation{
+				Function: "testing_getter",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "string arg",
+			inv: Invocation{
+				Function: "testing_string",
+				Arguments: []Value{
+					{
+						String: strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "float arg",
+			inv: Invocation{
+				Function: "testing_float",
+				Arguments: []Value{
+					{
+						Float: floatp(1.1),
+					},
+				},
+			},
+		},
+		{
+			name: "int arg",
+			inv: Invocation{
+				Function: "testing_int",
+				Arguments: []Value{
+					{
+						Int: intp(1),
+					},
+				},
+			},
+		},
+		{
+			name: "multiple args",
+			inv: Invocation{
+				Function: "testing_multiple_args",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						String: strp("test"),
+					},
+					{
+						Float: floatp(1.1),
+					},
+					{
+						Int: intp(1),
+					},
+					{
+						String: strp("test"),
+					},
+					{
+						String: strp("test"),
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func functionWithStringSlice(_ []string) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithFloatSlice(_ []float64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithIntSlice(_ []int64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithSetter(_ Setter) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithGetSetter(_ GetSetter) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithGetter(_ Getter) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithString(_ string) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithFloat(_ float64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithInt(_ int64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithMultipleArgs(_ GetSetter, _ string, _ float64, _ int64, _ []string) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
 }
 
 func functionThatHasAnError() (ExprFunc, error) {
