@@ -62,7 +62,7 @@ func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSet
 		return nil, errConfigNotBigip
 	}
 
-	bigipScraper := newScraper(params.Logger, cfg, params.TelemetrySettings)
+	bigipScraper := newScraper(params.Logger, cfg, params)
 	scraper, err := scraperhelper.NewScraper(typeStr, bigipScraper.scrape, scraperhelper.WithStart(bigipScraper.start))
 	if err != nil {
 		return nil, err

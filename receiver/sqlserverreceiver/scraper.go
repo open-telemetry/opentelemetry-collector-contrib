@@ -49,9 +49,9 @@ type watcherRecorder struct {
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
 // newSqlServerScraper returns a new sqlServerScraper.
-func newSqlServerScraper(logger *zap.Logger, cfg *Config) *sqlServerScraper {
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.Metrics)
-	return &sqlServerScraper{logger: logger, config: cfg, metricsBuilder: metricsBuilder}
+func newSqlServerScraper(params component.ReceiverCreateSettings, cfg *Config) *sqlServerScraper {
+	metricsBuilder := metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo)
+	return &sqlServerScraper{logger: params.Logger, config: cfg, metricsBuilder: metricsBuilder}
 }
 
 // start creates and sets the watchers for the scraper.

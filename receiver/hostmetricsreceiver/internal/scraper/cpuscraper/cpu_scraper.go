@@ -33,9 +33,10 @@ const metricsLen = 2
 
 // scraper for CPU Metrics
 type scraper struct {
-	config *Config
-	mb     *metadata.MetricsBuilder
-	ucal   *ucal.CPUUtilizationCalculator
+	settings component.ReceiverCreateSettings
+	config   *Config
+	mb       *metadata.MetricsBuilder
+	ucal     *ucal.CPUUtilizationCalculator
 
 	// for mocking
 	bootTime func() (uint64, error)
@@ -44,8 +45,8 @@ type scraper struct {
 }
 
 // newCPUScraper creates a set of CPU related metrics
-func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
+func newCPUScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
+	return &scraper{settings: settings, config: cfg, bootTime: host.BootTime, times: cpu.Times, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -53,7 +54,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	if err != nil {
 		return err
 	}
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 

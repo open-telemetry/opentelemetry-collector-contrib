@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -51,15 +52,15 @@ func (d *defaultClientFactory) getClient(c *Config, database string) (client, er
 }
 
 func newPostgreSQLScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
 	return &postgreSQLScraper{
-		logger:        logger,
+		logger:        settings.Logger,
 		config:        config,
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(config.Metrics),
+		mb:            metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 
