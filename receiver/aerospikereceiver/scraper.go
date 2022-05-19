@@ -33,12 +33,13 @@ import (
 
 // aerospikeReceiver is a metrics receiver using the Aerospike interface to collect
 type aerospikeReceiver struct {
-	config   *Config
-	consumer consumer.Metrics
-	host     string // host/IP of configured Aerospike node
-	port     int    // port of configured Aerospike node
-	mb       *metadata.MetricsBuilder
-	logger   *zap.Logger
+	config        *Config
+	consumer      consumer.Metrics
+	host          string // host/IP of configured Aerospike node
+	port          int    // port of configured Aerospike node
+	clientFactory func(host string, port int, username, password string, timeout time.Duration) (aerospike, error)
+	mb            *metadata.MetricsBuilder
+	logger        *zap.Logger
 }
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
@@ -59,9 +60,12 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		logger:   params.Logger,
 		config:   cfg,
 		consumer: consumer,
-		host:     host,
-		port:     int(port),
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		clientFactory: func(host string, port int, username, password string, timeout time.Duration) (aerospike, error) {
+			return newASClient(host, port, username, password, timeout)
+		},
+		host: host,
+		port: int(port),
+		mb:   metadata.NewMetricsBuilder(cfg.Metrics),
 	}, nil
 }
 
@@ -70,7 +74,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
-	client, err := newASClient(r.host, r.port, r.config.Username, r.config.Password, r.config.Timeout)
+	client, err := r.clientFactory(r.host, r.port, r.config.Username, r.config.Password, r.config.Timeout)
 	if err != nil {
 		return pmetric.NewMetrics(), fmt.Errorf("failed to connect: %w", err)
 	}
@@ -121,7 +125,7 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 		return
 	}
 
-	nClient, err := newASClient(host, int(port), r.config.Username, r.config.Password, r.config.Timeout)
+	nClient, err := r.clientFactory(host, int(port), r.config.Username, r.config.Password, r.config.Timeout)
 	if err != nil {
 		r.logger.Warn(err.Error())
 		errs.Add(err)
@@ -186,9 +190,6 @@ func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client aerospike, now
 func (r *aerospikeReceiver) emitNamespace(info *model.NamespaceInfo, now pcommon.Timestamp) {
 	if info.DeviceAvailablePct != nil {
 		r.mb.RecordAerospikeNamespaceDiskAvailableDataPoint(now, *info.DeviceAvailablePct)
-	}
-	if info.MemoryFreePct != nil {
-		r.mb.RecordAerospikeNodeMemoryFreeDataPoint(now, *info.MemoryFreePct)
 	}
 	if info.MemoryFreePct != nil {
 		r.mb.RecordAerospikeNamespaceMemoryFreeDataPoint(now, *info.MemoryFreePct)

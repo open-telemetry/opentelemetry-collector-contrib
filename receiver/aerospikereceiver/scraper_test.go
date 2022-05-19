@@ -17,11 +17,13 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v5"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 	"github.com/stretchr/testify/assert"
@@ -132,42 +134,91 @@ func TestScrapeNode(t *testing.T) {
 	}
 }
 
-func TestScrape(t *testing.T) {
-	testCases := []struct {
-		name            string
-		config          *Config
-		expectedMetrics pmetric.Metrics
-		expectedErr     error
-	}{
-		{
-			name: "bad host",
-			config: &Config{
-				Endpoint: "local.invalid:3000",
-			},
-			expectedMetrics: pmetric.NewMetrics(),
-			expectedErr:     errors.New("failed to connect"),
-		},
-	}
+func TestScrape_CollectClusterMetrics(t *testing.T) {
+	t.Parallel()
 
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
+	now := pdata.NewTimestampFromTime(time.Now().UTC())
 
-	for _, tc := range testCases {
-		cs, err := consumer.NewMetrics(func(ctx context.Context, ld pmetric.Metrics) error { return nil })
-		require.NoError(t, err)
+	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings())
 
-		receiver, err := newAerospikeReceiver(component.ReceiverCreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				Logger: logger,
-			},
-		}, tc.config, cs)
-		require.NoError(t, err)
+	expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, 22, metadata.AttributeConnectionTypeClient)
+	expectedMB.EmitForResource(metadata.WithNodeName("Primary Node"))
 
-		metrics, err := receiver.scrape(context.Background())
-		require.Equal(t, tc.expectedMetrics, metrics)
+	expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, 45)
+	expectedMB.EmitForResource(metadata.WithNamespace("test"), metadata.WithNodeName("Primary Node"))
 
-		if tc.expectedErr != nil {
-			require.ErrorContains(t, err, tc.expectedErr.Error())
+	expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, 1, metadata.AttributeConnectionTypeClient)
+	expectedMB.EmitForResource(metadata.WithNodeName("Secondary Node"))
+
+	expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, 128, metadata.AttributeNamespaceComponentData)
+	expectedMB.EmitForResource(metadata.WithNamespace("test"), metadata.WithNodeName("Secondary Node"))
+
+	initialClient := mocks.NewAerospike(t)
+	initialClient.On("Info").Return(&model.NodeInfo{
+		Name:       "Primary Node",
+		Services:   []string{"localhost:3001", "localhost:3002", "invalid"},
+		Namespaces: []string{"test", "bar"},
+		Statistics: &model.NodeStats{
+			ClientConnections: intPtr(22),
+		},
+	}, nil)
+	initialClient.On("NamespaceInfo", "test").Return(&model.NamespaceInfo{
+		Name:          "test",
+		MemoryFreePct: intPtr(45),
+	}, nil)
+	initialClient.On("NamespaceInfo", "bar").Return(nil, errors.New("no such namespace"))
+	initialClient.On("Close").Return()
+
+	peerClient := mocks.NewAerospike(t)
+	peerClient.On("Info").Return(&model.NodeInfo{
+		Name:       "Secondary Node",
+		Namespaces: []string{"test"},
+		Statistics: &model.NodeStats{
+			ClientConnections: intPtr(1),
+		},
+	}, nil)
+	peerClient.On("NamespaceInfo", "test").Return(&model.NamespaceInfo{
+		Name:                "test",
+		MemoryUsedDataBytes: intPtr(128),
+	}, nil)
+	peerClient.On("Close").Return()
+
+	clientFactory := func(host string, port int, username, password string, timeout time.Duration) (aerospike, error) {
+		switch fmt.Sprintf("%s:%d", host, port) {
+		case "localhost:3000":
+			return initialClient, nil
+		case "localhost:3001":
+			return peerClient, nil
+		case "localhost:3002":
+			return nil, errors.New("connection timeout")
 		}
+
+		return nil, errors.New("unexpected endpoint")
 	}
+	receiver := &aerospikeReceiver{
+		host:          "localhost",
+		port:          3000,
+		clientFactory: clientFactory,
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		logger:        logger,
+		config: &Config{
+			CollectClusterMetrics: true,
+		},
+	}
+
+	actualMetrics, err := receiver.scrape(context.Background())
+	require.EqualError(t, err, "connection timeout; address invalid: missing port in address")
+
+	expectedMetrics := expectedMB.Emit()
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+
+	initialClient.AssertExpectations(t)
+	peerClient.AssertExpectations(t)
+}
+
+// intPtr returns a pointer to the given int
+func intPtr(v int64) *int64 {
+	return &v
 }
