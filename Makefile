@@ -11,37 +11,53 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
-# ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -not -path '*/pkg/stanza/*' -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+GROUP ?= all
+FOR_GROUP_TARGET=for-$(GROUP)-target
 
-# Modules to run integration tests on.
-# XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
-INTEGRATION_TEST_MODULES := \
-	internal/containertest \
-	receiver/apachereceiver \
-	receiver/dockerstatsreceiver \
-	receiver/jmxreceiver/ \
-	receiver/kafkametricsreceiver \
-	receiver/memcachedreceiver \
-	receiver/mysqlreceiver \
-	receiver/nginxreceiver \
-	receiver/postgresqlreceiver \
-	receiver/redisreceiver \
-	receiver/riakreceiver \
-	receiver/zookeeperreceiver \
-	extension/observer/dockerobserver
+TEMP_EX_STANZA=-not -path "./pkg/stanza/*"
+FIND_MOD_ARGS=-type f -name "go.mod" $(TEMP_EX_STANZA)
+TO_MOD_DIR=dirname {} \; | sort | egrep  '^./'
+EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
+EX_INTERNAL=-not -path "./internal/*"
+
+# NONROOT_MODS includes ./* dirs (excludes . dir)
+NONROOT_MODS := $(shell find . $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+
+RECEIVER_MODS_0 := $(shell find ./receiver/[a-k]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+RECEIVER_MODS_1 := $(shell find ./receiver/[l-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1)
+PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS := $(shell find ./exporter/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
+ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(INTERNAL_MODS) $(OTHER_MODS)
+
+# find -exec dirname cannot be used to process multiple matching patterns
+FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
+INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | uniq | xargs $(TO_MOD_DIR) )
 
 .DEFAULT_GOAL := all
 
 all-modules:
-	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
+	@echo $(NONROOT_MODS) | tr ' ' '\n' | sort
+
+all-groups:
+	@echo "receiver-0: $(RECEIVER_MODS_0)"
+	@echo "\nreceiver-1: $(RECEIVER_MODS_1)"
+	@echo "\nreceiver: $(RECEIVER_MODS)"
+	@echo "\nprocessor: $(PROCESSOR_MODS)"
+	@echo "\nexporter: $(EXPORTER_MODS)"
+	@echo "\nextension: $(EXTENSION_MODS)"
+	@echo "\ninternal: $(INTERNAL_MODS)"
+	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
 all: all-common gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: all-common
 all-common:
-	@$(MAKE) for-all-target TARGET="common"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="common"
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
@@ -51,12 +67,11 @@ e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
 unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
-	@$(MAKE) for-all-target TARGET="do-unit-tests-with-cover"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="do-unit-tests-with-cover"
 
+TARGET="do-integration-tests-with-cover"
 .PHONY: integration-tests-with-cover
-integration-tests-with-cover:
-	@echo $(INTEGRATION_TEST_MODULES)
-	@$(MAKE) for-all-target TARGET="do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
+integration-tests-with-cover: $(INTEGRATION_MODS)
 
 # Long-running e2e tests
 .PHONY: stability-tests
@@ -66,23 +81,23 @@ stability-tests: otelcontribcol
 
 .PHONY: gotidy
 gotidy:
-	$(MAKE) for-all-target TARGET="tidy"
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
 
 .PHONY: gomoddownload
 gomoddownload:
-	$(MAKE) for-all-target TARGET="moddownload"
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="moddownload"
 
 .PHONY: gotest
 gotest:
-	$(MAKE) for-all-target TARGET="test"
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
 .PHONY: gofmt
 gofmt:
-	$(MAKE) for-all-target TARGET="fmt"
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="fmt"
 
 .PHONY: golint
 golint:
-	$(MAKE) for-all-target TARGET="lint"
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
 .PHONY: goporto
 goporto:
@@ -92,7 +107,7 @@ goporto:
 for-all:
 	@echo "running $${CMD} in root"
 	@$${CMD}
-	@set -e; for dir in $(ALL_MODULES); do \
+	@set -e; for dir in $(NONROOT_MODS); do \
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
 	 	$${CMD} ); \
@@ -103,7 +118,7 @@ add-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Adding tag ${TAG}"
 	@git tag -a ${TAG} -s -m "Version ${TAG}"
-	@set -e; for dir in $(ALL_MODULES); do \
+	@set -e; for dir in $(NONROOT_MODS); do \
 	  (echo Adding tag "$${dir:2}/$${TAG}" && \
 	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
 	done
@@ -113,7 +128,7 @@ push-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Pushing tag ${TAG}"
 	@git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git ${TAG}
-	@set -e; for dir in $(ALL_MODULES); do \
+	@set -e; for dir in $(NONROOT_MODS); do \
 	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
 	 	git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git "$${dir:2}/$${TAG}"); \
 	done
@@ -123,7 +138,7 @@ delete-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Deleting tag ${TAG}"
 	@git tag -d ${TAG}
-	@set -e; for dir in $(ALL_MODULES); do \
+	@set -e; for dir in $(NONROOT_MODS); do \
 	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
 	 	git tag -d "$${dir:2}/$${TAG}" ); \
 	done
@@ -151,7 +166,7 @@ gendependabot:
 	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
-	@set -e; for dir in $(ALL_MODULES); do \
+	@set -e; for dir in $(NONROOT_MODS); do \
 		echo "Add entry for \"$${dir:1}\""; \
 		echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}; \
 		echo "    directory: \"$${dir:1}\"" >> ${DEPENDABOT_PATH}; \
@@ -159,23 +174,44 @@ gendependabot:
 		echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}; \
 	done
 
-# Append root module to all modules
-GOMODULES = $(ALL_MODULES) $(PWD)
-
 # Define a delegation target for each module
-.PHONY: $(GOMODULES)
-$(GOMODULES):
-	@echo "Running target '$(TARGET)' in module '$@'"
+.PHONY: $(ALL_MODS)
+$(ALL_MODS):
+	@echo "Running target '$(TARGET)' in module '$@' as part of group '$(GROUP)'"
 	$(MAKE) -C $@ $(TARGET)
 
-# Triggers each module's delegation target
+# Trigger each module's delegation target
 .PHONY: for-all-target
-for-all-target: $(GOMODULES)
+for-all-target: $(ALL_MODS)
+
+.PHONY: for-receiver-target
+for-receiver-target: $(RECEIVER_MODS)
+
+.PHONY: for-receiver-0-target
+for-receiver-0-target: $(RECEIVER_MODS_0)
+
+.PHONY: for-receiver-1-target
+for-receiver-1-target: $(RECEIVER_MODS_1)
+
+.PHONY: for-processor-target
+for-processor-target: $(PROCESSOR_MODS)
+
+.PHONY: for-exporter-target
+for-exporter-target: $(EXPORTER_MODS)
+
+.PHONY: for-extension-target
+for-extension-target: $(EXTENSION_MODS)
+
+.PHONY: for-internal-target
+for-internal-target: $(INTERNAL_MODS)
+
+.PHONY: for-other-target
+for-other-target: $(OTHER_MODS)
 
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
-	$(MAKE) for-all-target TARGET="pwd"
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="pwd"
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
@@ -262,7 +298,7 @@ otelcontribcol-windows_amd64:
 
 .PHONY: update-dep
 update-dep:
-	$(MAKE) for-all-target TARGET="updatedep"
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="updatedep"
 	$(MAKE) otelcontribcol
 
 .PHONY: update-otel
