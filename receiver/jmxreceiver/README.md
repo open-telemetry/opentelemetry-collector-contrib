@@ -57,7 +57,7 @@ _Required._
 ### target_system
 
 The built-in target system (or systems) metric gatherer script to run.
-Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
+Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`,  `"jetty"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
 
 Corresponds to the `otel.jmx.target.system` property.
 
@@ -127,6 +127,12 @@ The truststore file password if required by SSL.
 
 Corresponds to the `javax.net.ssl.trustStorePassword` property.
 
+### truststore_type
+
+The truststore type if required by SSL.
+
+Corresponds to the `javax.net.ssl.trustStoreType` property.
+
 ### remote_profile
 
 Supported JMX remote profiles are TLS in combination with SASL profiles: SASL/PLAIN, SASL/DIGEST-MD5 and SASL/CRAM-MD5.
@@ -143,7 +149,7 @@ Corresponds to the `otel.jmx.realm` property.
 
 ### additional_jars
 
-Additional JARs to be included in the java command classpath.
+Additional JARs to be included in the java command classpath. This is currently only used for support for `wildfly`, where the Additional Jar should be a version of the jboss-client jar found on your wildfly installation.
 
 ### resource_attributes
 
@@ -153,6 +159,6 @@ Corresponds to the `otel.resource.attributes` property.
 
 ### log_level
 
-SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
+SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`. If not provided, will attempt to match to the current log level of the collector.
 
 Corresponds to the `org.slf4j.simpleLogger.defaultLogLevel` property.
