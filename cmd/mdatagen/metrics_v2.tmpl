@@ -144,7 +144,7 @@ type MetricsBuilder struct {
 	metricsCapacity          int             // maximum observed number of metrics per resource.
 	resourceCapacity         int             // maximum observed number of resource attributes.
 	metricsBuffer            pmetric.Metrics   // accumulates metrics data before emitting.
-	buildInfo				 component.BuildInfo // contains version information
+	buildInfo                component.BuildInfo // contains version information
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
 	{{- end }}
