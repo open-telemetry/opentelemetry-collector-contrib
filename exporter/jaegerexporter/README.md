@@ -1,11 +1,11 @@
 # Jaeger gRPC Exporter
 
 
-| Status                   |               |
-| ------------------------ |---------------|
-| Stability                | beta          |
-| Supported pipeline types | traces        |
-| Distributions            | core, contrib |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | traces            |
+| Distributions            | [core], [contrib] |
 
 Exports data via gRPC to [Jaeger](https://www.jaegertracing.io/) destinations.
 By default, this exporter requires TLS and offers queued retry capabilities.

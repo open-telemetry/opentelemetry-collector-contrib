@@ -1,10 +1,10 @@
 # Jaeger Receiver
 
-| Status                   |               |
-| ------------------------ |---------------|
-| Stability                | beta          |
-| Supported pipeline types | traces        |
-| Distributions            | core, contrib |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | traces            |
+| Distributions            | [core], [contrib] |
 
 Receives trace data in [Jaeger](https://www.jaegertracing.io/) format.
 
