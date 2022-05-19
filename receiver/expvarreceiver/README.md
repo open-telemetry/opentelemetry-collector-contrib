@@ -41,8 +41,8 @@ receivers:
     timeout: 1s
     collection_interval: 30s
     metrics:
-      - name: example_metric.enabled
+      process.runtime.memstats.total_alloc:
         enabled: true
-      - name: example_metric.disabled
+      process.runtime.memstats.mallocs:
         enabled: false
 ```

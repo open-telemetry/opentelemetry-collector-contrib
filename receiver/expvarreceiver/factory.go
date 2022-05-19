@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
 const (
@@ -71,6 +73,6 @@ func newDefaultConfig() config.Receiver {
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultTimeout,
 		},
-		MetricsConfig: []MetricConfig{},
+		MetricsConfig: metadata.DefaultMetricsSettings(),
 	}
 }

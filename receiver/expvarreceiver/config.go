@@ -21,24 +21,21 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	HTTP                                    *confighttp.HTTPClientSettings `mapstructure:",squash"`
-	MetricsConfig                           []MetricConfig                 `mapstructure:"metrics"`
-}
-
-type MetricConfig struct {
-	Name    string `mapstructure:"name"`
-	Enabled bool   `mapstructure:"enabled"`
+	MetricsConfig                           metadata.MetricsSettings       `mapstructure:"metrics"`
 }
 
 var _ config.Receiver = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	if c.HTTP == nil {
-		return fmt.Errorf("must specify http_client configuration when using expvar receiver")
+		return fmt.Errorf("must specify http client endpoint configuration when using expvar receiver")
 	}
 	u, err := url.Parse(c.HTTP.Endpoint)
 	if err != nil {

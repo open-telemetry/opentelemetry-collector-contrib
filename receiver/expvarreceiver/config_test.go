@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -53,16 +55,9 @@ func TestLoadConfig(t *testing.T) {
 		Endpoint: "http://localhost:8000/custom/path",
 		Timeout:  time.Second * 5,
 	}
-	expectedCfg.MetricsConfig = []MetricConfig{
-		{
-			Name:    "example_metric.enabled",
-			Enabled: true,
-		},
-		{
-			Name:    "example_metric.disabled",
-			Enabled: false,
-		},
-	}
+	expectedCfg.MetricsConfig = metadata.DefaultMetricsSettings()
+	expectedCfg.MetricsConfig.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
+	expectedCfg.MetricsConfig.ProcessRuntimeMemstatsMallocs.Enabled = false
 
 	assert.Equal(t, expectedCfg, cfg.Receivers[config.NewComponentIDWithName(typeStr, "custom")])
 }
@@ -84,5 +79,8 @@ func TestFailedLoadConfig(t *testing.T) {
 	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* error decoding 'collection_interval': time: invalid duration \"fourminutes\"")
 
 	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_metric_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics[0]' has invalid keys: invalid_field")
+	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics.process.runtime.memstats.total_alloc' has invalid keys: invalid_field")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_metric_name.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics' has invalid keys: bad_metric.name")
 }
