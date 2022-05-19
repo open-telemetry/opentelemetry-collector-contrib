@@ -53,15 +53,6 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("create mongo client: %w", err)
 	}
 	s.client = c
-
-	version, err := s.client.GetVersion(ctx)
-	if err != nil {
-		s.logger.Error("failed to get version at start", zap.Error(err))
-		// component should not fail to start if it cannot get the version
-		return nil
-	}
-	s.logger.Debug(fmt.Sprintf("detected mongo server to be running version: %s", version.String()))
-	s.mongoVersion = version
 	return nil
 }
 
