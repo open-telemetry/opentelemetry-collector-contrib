@@ -8,7 +8,7 @@
 
 <README contents>
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 
 Receives trace data in [Jaeger](https://www.jaegertracing.io/) format.
