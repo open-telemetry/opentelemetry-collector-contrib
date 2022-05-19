@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"net"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -47,6 +48,8 @@ type logMsg struct {
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	tests := []struct {
 		name                         string
+		skip                         bool
+		skipComment                  string
 		expectedMetricsFilename      string
 		expectedResourceAttributes   map[string]string
 		metricsSettings              func() metadata.MetricsSettings
@@ -61,6 +64,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	}{
 		{
 			name:                         "Test correctness with v3.4.14",
+			skip:                         runtime.GOOS == "windows",
+			skipComment:                  "skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10171",
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
 			expectedMetricsFilename:      "correctness-v3.4.14",
 			expectedResourceAttributes: map[string]string{
@@ -209,6 +214,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.skip {
+				t.Log(tt.skipComment)
+				return
+			}
+
 			localAddr := testutil.GetAvailableLocalAddress(t)
 			if !tt.mockZKConnectionErr {
 				ms := mockedServer{ready: make(chan bool, 1)}
