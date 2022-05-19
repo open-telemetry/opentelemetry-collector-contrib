@@ -10,6 +10,16 @@ env:
 
 jobs:
   windows-unittest:
+    strategy:
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - internal
+          - other
     runs-on: windows-latest
     steps:
       - name: Checkout Repo
@@ -35,4 +45,4 @@ jobs:
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
-        run: make gotest
+        run: make gotest GROUP=${{ matrix.group }}
