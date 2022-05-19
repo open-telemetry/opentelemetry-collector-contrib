@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -32,7 +32,7 @@ func TestCreateMetricsScraper(t *testing.T) {
 	factory := &Factory{}
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
+	scraper, err := factory.CreateMetricsScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
@@ -42,7 +42,7 @@ func TestCreateMetricsScraper_Error(t *testing.T) {
 	factory := &Factory{}
 	cfg := &Config{IncludeDevices: DeviceMatchConfig{Devices: []string{""}}}
 
-	_, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
+	_, err := factory.CreateMetricsScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg)
 
 	assert.Error(t, err)
 }

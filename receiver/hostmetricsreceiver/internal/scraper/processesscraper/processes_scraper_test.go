@@ -74,7 +74,7 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
-			scraper := newProcessesScraper(context.Background(), &Config{
+			scraper := newProcessesScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
