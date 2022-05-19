@@ -18,6 +18,7 @@
 ### 💡 Enhancements 💡
 
 - `transformprocessor`: Add transformation of metrics (#10100)
+- `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 
 ### 🧰 Bug fixes 🧰
