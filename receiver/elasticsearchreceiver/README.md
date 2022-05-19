@@ -1,8 +1,19 @@
 # Elasticsearch Receiver
 
+
+| Status                   |          |
+| ------------------------ |----------|
+| Stability                | beta     |
+| Supported pipeline types | metrics  |
+| Distributions            | contrib  |
+
+<README contents>
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
 This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html) and [cluster health](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html) endpoints in order to scrape metrics from a running elasticsearch cluster.
 
-Supported pipeline types: `metrics`
 
 > :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 
