@@ -39,11 +39,11 @@ type mongodbScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
-func newMongodbScraper(logger *zap.Logger, config *Config) *mongodbScraper {
+func newMongodbScraper(settings component.ReceiverCreateSettings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
-		logger: logger,
+		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics),
+		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -31,7 +32,9 @@ func TestSqlServerScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	logger, obsLogs := observer.New(zap.WarnLevel)
-	s := newSqlServerScraper(zap.New(logger), cfg)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = logger
+	s := newSqlServerScraper(settings, cfg)
 
 	s.start(context.Background(), nil)
 	assert.Equal(t, 0, len(s.watcherRecorders))
