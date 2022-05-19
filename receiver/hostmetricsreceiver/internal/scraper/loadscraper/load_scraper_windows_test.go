@@ -30,6 +30,7 @@ import (
 )
 
 func TestStartSampling(t *testing.T) {
+	t.Skip(t, "Test is causing race conditions, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10143.")
 	// override sampling frequency to 2ms
 	samplingFrequency = 2 * time.Millisecond
 
@@ -89,6 +90,7 @@ func assertSamplingStopped(t *testing.T) {
 }
 
 func TestSampleLoad(t *testing.T) {
+	t.Skip(t, "Test is causing race conditions, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10143.")
 	counterReturnValues := []int64{10, 20, 30, 40, 50}
 	mockPerfCounterScraper := perfcounters.NewMockPerfCounterScraper(map[string]map[string][]int64{
 		system: {processorQueueLength: counterReturnValues},
