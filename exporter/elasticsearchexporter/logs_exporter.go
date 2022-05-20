@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"io"
 )
 
 type elasticsearchLogsExporter struct {

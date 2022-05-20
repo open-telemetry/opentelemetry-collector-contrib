@@ -19,17 +19,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	"net/http"
-	"os"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestTracesExporter_New(t *testing.T) {

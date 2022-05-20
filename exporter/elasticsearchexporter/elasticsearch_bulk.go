@@ -21,13 +21,15 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/cenkalti/backoff/v4"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 	"go.uber.org/zap"
-	"net/http"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 type esClientCurrent = elasticsearch7.Client
