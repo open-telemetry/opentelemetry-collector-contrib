@@ -211,6 +211,21 @@ func (c *Config) validateJar(hashMap map[string]supportedJar, jar string) error 
 var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
 var validTargetSystems = map[string]struct{}{"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
 	"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
+var AdditionalTargetSystems = "n/a"
+
+// Separated into two functions for tests
+func init() {
+	initAdditionalTargetSystems()
+}
+
+func initAdditionalTargetSystems() {
+	if AdditionalTargetSystems != "n/a" {
+		additionalTargets := strings.Split(AdditionalTargetSystems, ",")
+		for _, t := range additionalTargets {
+			validTargetSystems[t] = struct{}{}
+		}
+	}
+}
 
 func (c *Config) validate() error {
 	var missingFields []string

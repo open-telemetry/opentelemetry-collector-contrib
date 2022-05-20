@@ -66,6 +66,14 @@ _Required._
 The built-in target system (or systems) metric gatherer script to run.
 Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`,  `"jetty"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
 
+If additional target systems must be supported (because of a custom JMX metrics gatherer jar configured using the 
+`MetricsGathererHash` build time config), they can be added with another build time flag.
+
+```bash
+go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>
+       -X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.AdditionalTargetSystems=newtarget,othernewtarget" ...
+```
+
 Corresponds to the `otel.jmx.target.system` property.
 
 ### collection_interval (default: `10s`)

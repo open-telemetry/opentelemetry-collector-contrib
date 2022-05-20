@@ -58,7 +58,7 @@ receivers:
   jmx/invalidtargetsystem:
     jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:55555
-    target_system: jvm,nonsense
+    target_system: jvm,fakejvmtechnology
 
 processors:
   nop:

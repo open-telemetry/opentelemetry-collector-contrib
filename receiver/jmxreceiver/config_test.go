@@ -249,7 +249,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidtargetsystem")),
 			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "myendpoint:55555",
-			TargetSystem:       "jvm,nonsense",
+			TargetSystem:       "jvm,fakejvmtechnology",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -281,14 +281,23 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 10)
 
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidtargetsystem")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r1))
 	err = r1.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/all error validating `jar_path`: jar hash does not match known versions", err.Error())
+	assert.Equal(t, "jmx/invalidtargetsystem error validating `jar_path`: jar hash does not match known versions", err.Error())
 
 	MetricsGathererHash = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
 	initSupportedJars()
+
+	err = r1.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+
+	AdditionalTargetSystems = "fakejvmtechnology,anothertechnology"
+	initAdditionalTargetSystems()
+
+	r1.TargetSystem = "jvm,fakejvmtechnology,anothertechnology"
 
 	require.NoError(t, r1.validate())
 }
