@@ -42,7 +42,7 @@ func newVmwareVcenterScraper(
 	logger *zap.Logger,
 	config *Config,
 ) *vcenterMetricScraper {
-	client := newVmwarevcenterClient(config)
+	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
 		client: client,
 		config: config,
@@ -66,7 +66,7 @@ func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	if v.client == nil {
-		v.client = newVmwarevcenterClient(v.config)
+		v.client = newVcenterClient(v.config)
 	}
 
 	// ensure connection before scraping

@@ -16,51 +16,45 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"embed"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/vmware/govmomi"
-	"github.com/vmware/govmomi/find"
-	"github.com/vmware/govmomi/session"
-	"github.com/vmware/govmomi/simulator"
-	"github.com/vmware/govmomi/vim25"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
+	mock "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 )
 
+//go:embed internal/mockserver/responses/*
+var resources embed.FS
+
 func TestScrape(t *testing.T) {
-	simulator.Test(func(ctx context.Context, c *vim25.Client) {
-		finder := find.NewFinder(c)
-		client := &vcenterClient{
-			cfg: NewFactory().CreateDefaultConfig().(*Config),
-			moClient: &govmomi.Client{
-				SessionManager: session.NewManager(c),
-				Client:         c,
-			},
-			vimDriver: c,
-			finder:    finder,
-		}
-		scraper := &vcenterMetricScraper{
-			client: client,
-			mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			logger: zap.NewNop(),
-		}
-		metrics, err := scraper.scrape(ctx)
-		require.NoError(t, err)
-		require.NotEqual(t, metrics.MetricCount(), 0)
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, resources)
 
-		goldenPath := filepath.Join("testdata", "metrics", "expected.json")
-		expectedMetrics, err := golden.ReadMetrics(goldenPath)
-		require.NoError(t, err)
+	cfg := &Config{
+		Metrics:  metadata.DefaultMetricsSettings(),
+		Endpoint: mockServer.URL,
+		Username: mock.MockUsername,
+		Password: mock.MockPassword,
+	}
+	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg)
 
-		err = scrapertest.CompareMetrics(expectedMetrics, metrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreMetricAttributeValue("vcenter.host.name"))
-		require.NoError(t, err)
-		require.NoError(t, scraper.Shutdown(ctx))
-	})
+	metrics, err := scraper.scrape(ctx)
+	require.NoError(t, err)
+	require.NotEqual(t, metrics.MetricCount(), 0)
+
+	goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+	require.NoError(t, err)
+	require.NoError(t, scraper.Shutdown(ctx))
 }
 
 func TestScrape_NoClient(t *testing.T) {
@@ -76,6 +70,7 @@ func TestScrape_NoClient(t *testing.T) {
 	metrics, err := scraper.scrape(ctx)
 	require.ErrorContains(t, err, "unable to connect to vSphere SDK")
 	require.Equal(t, metrics.MetricCount(), 0)
+	require.NoError(t, scraper.Shutdown(ctx))
 }
 
 func TestStartFailures_Metrics(t *testing.T) {

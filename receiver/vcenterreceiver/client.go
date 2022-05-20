@@ -37,7 +37,7 @@ type vcenterClient struct {
 	cfg       *Config
 }
 
-func newVmwarevcenterClient(c *Config) *vcenterClient {
+func newVcenterClient(c *Config) *vcenterClient {
 	return &vcenterClient{
 		cfg: c,
 	}
@@ -84,11 +84,6 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 
 // Clusters returns the clusterComputeResources of the vSphere SDK
 func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
-	// defaultDatacenter, err := vc.finder.DatacenterOrDefault(ctx, "")
-	// if err != nil {
-	// 	return []*object.Datacenter{}, fmt.Errorf("unable to detect default datacenter: %w", err)
-	// }
-	// vc.finder = vc.finder.SetDatacenter(defaultDatacenter)
 	datacenters, err := vc.finder.DatacenterList(ctx, "*")
 	if err != nil {
 		return []*object.Datacenter{}, fmt.Errorf("unable to get datacenter lists: %w", err)
@@ -116,11 +111,11 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 }
 
 func (vc *vcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
-	rps, err := vc.finder.VirtualMachineList(ctx, "*")
+	vms, err := vc.finder.VirtualMachineList(ctx, "*")
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
 	}
-	return rps, err
+	return vms, err
 }
 
 type perfSampleResult struct {

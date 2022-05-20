@@ -11427,7 +11427,7 @@
                                 <stopAction>PowerOff</stopAction>
                             </defaults>
                             <powerInfo>
-                                <key type="VirtualMachine">vm-1031</key>
+                                <key type="VirtualMachine">vm-1040</key>
                                 <startOrder>-1</startOrder>
                                 <startDelay>-1</startDelay>
                                 <waitForHeartbeat>systemDefault</waitForHeartbeat>
