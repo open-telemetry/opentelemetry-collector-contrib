@@ -1,4 +1,4 @@
-package mockserver
+package mockserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 
 import (
 	"embed"
