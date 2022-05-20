@@ -69,6 +69,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `tanzuobservabilityexporter`: add  error checks for tanzuobservability exporter (#10188)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
