@@ -110,7 +110,10 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}
+	return e.pushSpan(ctx, document)
+}
 
+func (e *elasticsearchTracesExporter) pushSpan(ctx context.Context, document []byte) error {
 	attempts := 1
 	body := bytes.NewReader(document)
 	item := esBulkIndexerItem{Action: createAction, Index: e.index, Body: body}
@@ -119,7 +122,7 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 	item.OnFailure = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem, err error) {
 		switch {
 		case attempts < e.maxAttempts && shouldRetryEvent(resp.Status):
-			e.logger.Debug("Retrying to index event",
+			e.logger.Debug("Retrying to index span",
 				zap.Int("attempt", attempts),
 				zap.Int("status", resp.Status),
 				zap.NamedError("reason", err))
@@ -130,17 +133,17 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 
 		case resp.Status == 0 && err != nil:
 			// Encoding error. We didn't even attempt to send the event
-			e.logger.Error("Drop event: failed to add event to the bulk request buffer.",
+			e.logger.Error("Drop span: failed to add span to the bulk request buffer.",
 				zap.NamedError("reason", err))
 
 		case err != nil:
-			e.logger.Error("Drop event: failed to index event",
+			e.logger.Error("Drop span: failed to index span",
 				zap.Int("attempt", attempts),
 				zap.Int("status", resp.Status),
 				zap.NamedError("reason", err))
 
 		default:
-			e.logger.Error(fmt.Sprintf("Drop event: failed to index event: %#v", resp.Error),
+			e.logger.Error(fmt.Sprintf("Drop span: failed to index span: %#v", resp.Error),
 				zap.Int("attempt", attempts),
 				zap.Int("status", resp.Status))
 		}

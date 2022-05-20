@@ -27,7 +27,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -133,15 +132,6 @@ func TestTracesExporter_New(t *testing.T) {
 	}
 }
 
-func generateTracesOneEmptyResourceSpans(opName string) ptrace.Traces {
-	td := ptrace.NewTraces()
-	resourceSpan := td.ResourceSpans().AppendEmpty()
-	il := resourceSpan.ScopeSpans().AppendEmpty()
-	span := il.Spans().AppendEmpty()
-	span.SetName(opName)
-	return td
-}
-
 func TestExporter_PushTraceRecord(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
@@ -151,8 +141,8 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
+		mustSendTraces(t, exporter, `{"message": "test1"}`)
+		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 		rec.WaitItems(2)
 	})
@@ -171,7 +161,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
+		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 		rec.WaitItems(1)
 	})
@@ -217,7 +207,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 
 						testConfig := configurer(server.URL)
 						exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
-						mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
+						mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 						time.Sleep(200 * time.Millisecond)
 						assert.Equal(t, int64(1), attempts.Load())
@@ -235,7 +225,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
+		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
@@ -256,7 +246,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
+		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 		rec.WaitItems(1)
 	})
@@ -269,7 +259,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
+		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
@@ -309,11 +299,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test_id1"))
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test_id2"))
-		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test_id3"))
+		mustSendTraces(t, exporter, `{"message": "test1", "idx": 0}`)
+		mustSendTraces(t, exporter, `{"message": "test2", "idx": 1}`)
+		mustSendTraces(t, exporter, `{"message": "test3", "idx": 2}`)
 
-		wg.Wait() // <- this blocks forever if the event is not retried
+		wg.Wait() // <- this blocks forever if the trace is not retried
 
 		assert.Equal(t, [3]int{1, 2, 1}, attempts)
 	})
@@ -340,7 +330,7 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, td ptrace.Traces) {
-	err := exporter.pushTraceData(context.TODO(), td)
+func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
+	err := exporter.pushSpan(context.TODO(), []byte(contents))
 	require.NoError(t, err)
 }
