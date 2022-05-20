@@ -144,13 +144,11 @@ func (e *elasticsearchExporter) pushEvent(ctx context.Context, document []byte) 
 				zap.NamedError("reason", err))
 
 			attempts++
-			_, seekerr := body.Seek(0, io.SeekStart)
-			if seekerr != nil {
+			if _, seekerr := body.Seek(0, io.SeekStart); seekerr != nil {
 				e.logger.Error("failed to set the next offset.",
 					zap.NamedError("reason", seekerr))
 			}
-			indexererr := e.bulkIndexer.Add(ctx, item)
-			if indexererr != nil {
+			if indexererr := e.bulkIndexer.Add(ctx, item); indexererr != nil {
 				e.logger.Error("failed to add item to indexer.",
 					zap.NamedError("reason", indexererr))
 			}

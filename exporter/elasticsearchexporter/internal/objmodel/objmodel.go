@@ -44,7 +44,6 @@ package objmodel // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"io"
-	"log"
 	"math"
 	"sort"
 	"strings"
@@ -252,13 +251,14 @@ func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
 func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 	err := w.OnObjectStart(-1, structform.AnyType)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
-	defer func() {
+	defer func() error {
 		err = w.OnObjectFinished()
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
+		return nil
 	}()
 
 	for i := range doc.fields {
@@ -267,9 +267,8 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 			continue
 		}
 
-		err = w.OnKey(fld.key)
-		if err != nil {
-			log.Fatalln(err)
+		if err = w.OnKey(fld.key); err != nil {
+			return err
 		}
 		if err = fld.value.iterJSON(w, true); err != nil {
 			return err
@@ -285,13 +284,14 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 	err := w.OnObjectStart(-1, structform.AnyType)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
-	defer func() {
+	defer func() error {
 		err = w.OnObjectFinished()
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
+		return nil
 	}()
 
 	for i := range doc.fields {
@@ -317,18 +317,16 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 					delta = delta[idx+1:]
 					level--
-					err = w.OnObjectFinished()
-					if err != nil {
-						log.Fatalln(err)
+					if err = w.OnObjectFinished(); err != nil {
+						return err
 					}
 				}
 
 				objPrefix = key[:L]
 			} else { // no common prefix, close all objects we reported so far.
 				for ; level > 0; level-- {
-					err = w.OnObjectFinished()
-					if err != nil {
-						log.Fatalln(err)
+					if err = w.OnObjectFinished(); err != nil {
+						return err
 					}
 				}
 				objPrefix = ""
@@ -346,33 +344,28 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 			level++
 			objPrefix = key[:len(objPrefix)+idx+1]
 			fieldName := key[start : start+idx]
-			err = w.OnKey(fieldName)
-			if err != nil {
-				log.Fatalln(err)
+			if err = w.OnKey(fieldName); err != nil {
+				return err
 			}
-			err = w.OnObjectStart(-1, structform.AnyType)
-			if err != nil {
-				log.Fatalln(err)
+			if err = w.OnObjectStart(-1, structform.AnyType); err != nil {
+				return err
 			}
 		}
 
 		// report value
 		fieldName := key[len(objPrefix):]
-		err = w.OnKey(fieldName)
-		if err != nil {
-			log.Fatalln(err)
+		if err = w.OnKey(fieldName); err != nil {
+			return err
 		}
-		err = fld.value.iterJSON(w, true)
-		if err != nil {
-			log.Fatalln(err)
+		if err = fld.value.iterJSON(w, true); err != nil {
+			return err
 		}
 	}
 
 	// close all pending object levels
 	for ; level > 0; level-- {
-		err = w.OnObjectFinished()
-		if err != nil {
-			log.Fatalln(err)
+		if err = w.OnObjectFinished(); err != nil {
+			return err
 		}
 	}
 
@@ -493,18 +486,16 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 		}
 		return v.doc.iterJSON(w, dedot)
 	case KindArr:
-		err := w.OnArrayStart(-1, structform.AnyType)
-		if err != nil {
-			log.Fatalln(err)
+		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
+			return err
 		}
 		for i := range v.arr {
-			if err = v.arr[i].iterJSON(w, dedot); err != nil {
+			if err := v.arr[i].iterJSON(w, dedot); err != nil {
 				return err
 			}
 		}
-		err = w.OnArrayFinished()
-		if err != nil {
-			log.Fatalln(err)
+		if err := w.OnArrayFinished(); err != nil {
+			return err
 		}
 	}
 
