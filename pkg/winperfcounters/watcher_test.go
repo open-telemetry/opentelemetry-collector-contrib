@@ -21,136 +21,46 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 )
 
-// Test_PathBuilder tests that paths are built correctly given a ObjectConfig
-func Test_PathBuilder(t *testing.T) {
+func TestCounterPath(t *testing.T) {
 	testCases := []struct {
-		name          string
-		cfgs          []ObjectConfig
-		expectedErr   string
-		expectedPaths []string
+		name         string
+		object       string
+		instance     string
+		counterName  string
+		expectedPath string
 	}{
 		{
-			name: "basicPath",
-			cfgs: []ObjectConfig{
-				{
-					Object:   "Memory",
-					Counters: []CounterConfig{{Name: "Committed Bytes"}},
-				},
-			},
-			expectedPaths: []string{"\\Memory\\Committed Bytes"},
+			name:         "basicPath",
+			object:       "Memory",
+			counterName:  "Committed Bytes",
+			expectedPath: "\\Memory\\Committed Bytes",
 		},
 		{
-			name: "multiplePaths",
-			cfgs: []ObjectConfig{
-				{
-					Object:   "Memory",
-					Counters: []CounterConfig{{Name: "Committed Bytes"}},
-				},
-				{
-					Object:   "Memory",
-					Counters: []CounterConfig{{Name: "Available Bytes"}},
-				},
-			},
-			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
-		},
-		{
-			name: "multipleIndividualCounters",
-			cfgs: []ObjectConfig{
-				{
-					Object: "Memory",
-					Counters: []CounterConfig{
-						{Name: "Committed Bytes"},
-						{Name: "Available Bytes"},
-					},
-				},
-				{
-					Object:   "Memory",
-					Counters: []CounterConfig{},
-				},
-			},
-			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
-		},
-		{
-			name: "invalidCounter",
-			cfgs: []ObjectConfig{
-				{
-					Object:   "Broken",
-					Counters: []CounterConfig{{Name: "Broken Counter"}},
-				},
-			},
-
-			expectedErr: "counter \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n",
-		},
-		{
-			name: "multipleInvalidCounters",
-			cfgs: []ObjectConfig{
-				{
-					Object:   "Broken",
-					Counters: []CounterConfig{{Name: "Broken Counter"}},
-				},
-				{
-					Object:   "Broken part 2",
-					Counters: []CounterConfig{{Name: "Broken again"}},
-				},
-			},
-			expectedErr: "counter \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n; counter \\Broken part 2\\Broken again: The specified object was not found on the computer.\r\n",
+			name:         "basicPathWithInstance",
+			object:       "Web Service",
+			instance:     "_Total",
+			counterName:  "Current Connections",
+			expectedPath: "\\Web Service(_Total)\\Current Connections",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			var errs error
-			allWatchers := []PerfCounterWatcher{}
-			for _, cfg := range test.cfgs {
-				watchers, err := cfg.BuildPaths()
-				if err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
-				allWatchers = append(allWatchers, watchers...)
-			}
-
-			if test.expectedErr != "" {
-				require.EqualError(t, errs, test.expectedErr)
-				return
-			}
-
-			actualPaths := []string{}
-			for _, watcher := range allWatchers {
-				actualPaths = append(actualPaths, watcher.Path())
-			}
-
-			require.Equal(t, test.expectedPaths, actualPaths)
+			path := counterPath(test.object, test.instance, test.counterName)
+			require.Equal(t, test.expectedPath, path)
 		})
 	}
 }
 
 // Test_Scraping_Wildcard tests that wildcard instances pull out values
 func Test_Scraping_Wildcard(t *testing.T) {
-	counterVals := []CounterValue{}
-	var errs error
-
-	cfg := ObjectConfig{
-		Object:    "LogicalDisk",
-		Instances: []string{"*"},
-		Counters:  []CounterConfig{{Name: "Free Megabytes"}},
-	}
-	watchers, err := cfg.BuildPaths()
+	watcher, err := NewWatcher("LogicalDisk", "*", "Free Megabytes")
 	require.NoError(t, err)
 
-	for _, watcher := range watchers {
-		value, err := watcher.ScrapeData()
-		if err != nil {
-			errs = multierr.Append(errs, err)
-			continue
-		}
+	values, err := watcher.ScrapeData()
+	require.NoError(t, err)
 
-		require.NoError(t, err)
-		counterVals = append(counterVals, value...)
-	}
-
-	require.GreaterOrEqual(t, len(counterVals), 3)
+	require.GreaterOrEqual(t, len(values), 3)
 }
