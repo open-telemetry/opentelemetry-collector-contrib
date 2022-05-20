@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/vmware/govmomi v0.28.0
-	go.opentelemetry.io/collector v0.50.1-0.20220429151328-041f39835df7
+	go.opentelemetry.io/collector v0.51.0
 	go.opentelemetry.io/collector/pdata v0.51.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
@@ -20,13 +20,14 @@ require (
 require gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.49.0
+	github.com/basgys/goxml2json v1.1.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.51.0
 	go.opentelemetry.io/collector/model v0.50.0
 	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
 )
 
 require (
-	github.com/basgys/goxml2json v1.1.0 // indirect
+	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -36,7 +37,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
