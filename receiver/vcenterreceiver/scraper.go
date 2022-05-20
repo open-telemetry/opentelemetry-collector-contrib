@@ -84,18 +84,18 @@ func (v *vcenterMetricScraper) collectDatacenters(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	errs := &scrapererror.ScrapeErrors{}
 	for _, dc := range datacenters {
-		v.collectClusters(ctx, dc)
+		v.collectClusters(ctx, dc, errs)
 	}
-	return nil
+	return errs.Combine()
 }
 
-func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *object.Datacenter) error {
-	errs := &scrapererror.ScrapeErrors{}
-
+func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *object.Datacenter, errs *scrapererror.ScrapeErrors) {
 	clusters, err := v.client.Clusters(ctx, datacenter)
 	if err != nil {
-		return err
+		errs.Add(err)
+		return
 	}
 	now := pdata.NewTimestampFromTime(time.Now())
 
@@ -106,8 +106,6 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 		v.collectCluster(ctx, now, c, errs)
 	}
 	v.collectResourcePools(ctx, now, errs)
-
-	return errs.Combine()
 }
 
 func (v *vcenterMetricScraper) collectCluster(

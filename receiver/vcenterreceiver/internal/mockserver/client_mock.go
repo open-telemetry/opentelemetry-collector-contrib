@@ -59,6 +59,7 @@ func MockServer(t *testing.T, responsesFolder embed.FS) *httptest.Server {
 		}
 
 		jsonified, err := xj.Convert(r.Body)
+		require.NoError(t, err)
 		sr := &soapRequest{}
 		err = json.Unmarshal(jsonified.Bytes(), sr)
 		require.NoError(t, err)
@@ -77,7 +78,7 @@ func MockServer(t *testing.T, responsesFolder embed.FS) *httptest.Server {
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/xml")
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	return vsphereMock
 }
@@ -85,11 +86,11 @@ func MockServer(t *testing.T, responsesFolder embed.FS) *httptest.Server {
 func routeBody(t *testing.T, requestType string, body map[string]interface{}) ([]byte, error) {
 	switch requestType {
 	case "RetrieveServiceContent":
-		return loadResponse(t, "service-content.xml")
+		return loadResponse("service-content.xml")
 	case "Login":
-		return loadResponse(t, "login.xml")
+		return loadResponse("login.xml")
 	case "Logout":
-		return loadResponse(t, "logout.xml")
+		return loadResponse("logout.xml")
 	case "RetrieveProperties":
 		return routeRetreiveProperties(t, body)
 	case "QueryPerf":
@@ -127,10 +128,10 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 
 	switch {
 	case content == "group-d1" && contentType == "Folder":
-		return loadResponse(t, "datacenter.xml")
+		return loadResponse("datacenter.xml")
 
 	case content == "datacenter-3" && contentType == "Datacenter":
-		return loadResponse(t, "datacenter-properties.xml")
+		return loadResponse("datacenter-properties.xml")
 
 	case content == "domain-c8" && contentType == "ClusterComputeResource":
 		if propSetArray {
@@ -139,81 +140,81 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 				spec := prop.(map[string]interface{})
 				specType := spec["type"].(string)
 				if specType == "ResourcePool" {
-					return loadResponse(t, "resource-pool.xml")
+					return loadResponse("resource-pool.xml")
 				}
 			}
 		}
 		path := propSet["pathSet"].(string)
 		switch path {
 		case "datastore":
-			return loadResponse(t, "cluster-datastore.xml")
+			return loadResponse("cluster-datastore.xml")
 		case "summary":
-			return loadResponse(t, "cluster-summary.xml")
+			return loadResponse("cluster-summary.xml")
 		case "host":
-			return loadResponse(t, "host-list.xml")
+			return loadResponse("host-list.xml")
 		}
 
 	case content == "PerfMgr" && contentType == "PerformanceManager":
-		return loadResponse(t, "perf-manager.xml")
+		return loadResponse("perf-manager.xml")
 
 	case content == "group-h5" && contentType == "Folder":
 		// TODO: look into propset for when to grab the parent resource
 		if objectSet["skip"] == "true" {
-			return loadResponse(t, "host-cluster.xml")
+			return loadResponse("host-cluster.xml")
 		}
-		return loadResponse(t, "host-parent.xml")
+		return loadResponse("host-parent.xml")
 
 	case content == "datastore-1003" && contentType == "Datastore":
 		if objectSetArray {
-			return loadResponse(t, "datastore-list.xml")
+			return loadResponse("datastore-list.xml")
 		}
-		return loadResponse(t, "datastore-summary.xml")
+		return loadResponse("datastore-summary.xml")
 
 	case contentType == "HostSystem":
 		if ps, ok := propSet["pathSet"].([]interface{}); ok {
 			for _, v := range ps {
 				if v == "summary.hardware" {
-					return loadResponse(t, "host-properties.xml")
+					return loadResponse("host-properties.xml")
 				}
 			}
 		} else {
 			ps, ok := propSet["pathSet"].(string)
 			require.True(t, ok)
 			if ps == "name" {
-				return loadResponse(t, "host-names.xml")
+				return loadResponse("host-names.xml")
 			}
 
 		}
 
 	case content == "group-v4" && contentType == "Folder":
 		if propSetArray {
-			return loadResponse(t, "vm-group.xml")
+			return loadResponse("vm-group.xml")
 		}
 		if propSet == nil {
-			return loadResponse(t, "vm-folder.xml")
+			return loadResponse("vm-folder.xml")
 		}
-		return loadResponse(t, "vm-folder-parent.xml")
+		return loadResponse("vm-folder-parent.xml")
 
 	case content == "vm-1040" && contentType == "VirtualMachine":
 		if propSet["pathSet"] == "summary.runtime.host" {
-			return loadResponse(t, "vm-host.xml")
+			return loadResponse("vm-host.xml")
 		}
-		return loadResponse(t, "vm-properties.xml")
+		return loadResponse("vm-properties.xml")
 
 	case (content == "group-v1034" || content == "group-v1001") && contentType == "Folder":
-		return loadResponse(t, "vm-empty-folder.xml")
+		return loadResponse("vm-empty-folder.xml")
 
 	case contentType == "ResourcePool":
 		if ps, ok := propSet["pathSet"].([]interface{}); ok {
 			for _, prop := range ps {
 				if prop == "summary" {
-					return loadResponse(t, "resource-pool-summary.xml")
+					return loadResponse("resource-pool-summary.xml")
 				}
 			}
 		}
 
 		if ss, ok := objectSet["selectSet"].(map[string]interface{}); ok && ss["path"] == "resourcePool" {
-			return loadResponse(t, "resource-pool-group.xml")
+			return loadResponse("resource-pool-group.xml")
 		}
 
 	case objectSetArray:
@@ -224,7 +225,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 			mObj := m["obj"].(map[string](interface{}))
 			typeString := mObj["-type"]
 			if typeString == "HostSystem" {
-				return loadResponse(t, "host-names.xml")
+				return loadResponse("host-names.xml")
 			}
 		}
 	}
@@ -239,14 +240,14 @@ func routePerformanceQuery(t *testing.T, body map[string]interface{}) ([]byte, e
 	entity := querySpec["entity"].(map[string]interface{})
 	switch entity["-type"] {
 	case "HostSystem":
-		return loadResponse(t, "host-performance-counters.xml")
+		return loadResponse("host-performance-counters.xml")
 	case "VirtualMachine":
-		return loadResponse(t, "vm-performance-counters.xml")
+		return loadResponse("vm-performance-counters.xml")
 	}
 
 	return []byte{}, errNotFound
 }
 
-func loadResponse(t *testing.T, filename string) ([]byte, error) {
+func loadResponse(filename string) ([]byte, error) {
 	return responses.ReadFile(filepath.Join("internal", "mockserver", "responses", filename))
 }
