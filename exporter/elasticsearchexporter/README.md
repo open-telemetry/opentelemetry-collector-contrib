@@ -17,10 +17,14 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
   of `endpoints`.
 - `num_workers` (optional): Number of workers publishing bulk requests concurrently.
-- `index`: The
+- `logs_index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
   name to publish events to. The default value is `logs-generic-default`.
+- `traces_index`: The
+  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
+  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  name to publish traces to. The default value is `traces-generic-default`.
 - `pipeline` (optional): Optional [Ingest Node](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html)
   pipeline ID used for processing documents published by the exporter.
 - `flush`: Event bulk buffer flush settings
@@ -84,9 +88,23 @@ nodes will automatically be used for load balancing.
 
 ```yaml
 exporters:
-  elasticsearch:
-    endpoints:
-    - "https://localhost:9200"
+  elasticsearch/trace:
+    endpoints: [https://elastic.example.com:9200]
+    traces_index: trace_index
+  elasticsearch/log:
+    endpoints: [http://localhost:9200]
+    logs_index: my_log_index
+······
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch/log]
+    traces:
+      receivers: [otlp]
+      exporters: [elasticsearch/trace]
+      processors: [batch]
 ```
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
