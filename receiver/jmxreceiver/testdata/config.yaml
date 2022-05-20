@@ -3,7 +3,7 @@ receivers:
   jmx/all:
     jar_path: myjarpath
     endpoint: myendpoint:12345
-    groovy_script: mygroovyscriptpath
+    target_system: jvm
     collection_interval: 15s
     username: myusername
     password: mypassword
@@ -20,24 +20,31 @@ receivers:
     truststore_password: mytruststorepassword
     remote_profile: myremoteprofile
     realm: myrealm
-    properties:
-      property.one: value.one
-      property.two: value.two.a=value.two.b,value.two.c=value.two.d
+    log_level: trace
+    resource_attributes:
+      one: two
     additional_jars:
       - /path/to/additional.jar
   jmx/missingendpoint:
-    groovy_script: mygroovyscriptpath
+    target_system: jvm
   jmx/missinggroovy:
     endpoint: service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi
   jmx/invalidinterval:
     endpoint: myendpoint:23456
-    groovy_script: mygroovyscriptpath
+    target_system: jvm
     collection_interval: -100ms
   jmx/invalidotlptimeout:
     endpoint: myendpoint:34567
-    groovy_script: mygroovyscriptpath
+    target_system: jvm
     otlp:
       timeout: -100ms
+  jmx/invalidloglevel:
+    endpoint: myendpoint:55555
+    target_system: jvm
+    log_level: truth
+  jmx/invalidtargetsystem:
+    endpoint: myendpoint:55555
+    target_system: jvm,nonsense
 
 processors:
   nop:

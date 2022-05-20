@@ -46,7 +46,7 @@ func TestScrape_Others(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), &Config{})
+			scraper, err := newDiskScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			if test.ioCountersFunc != nil {

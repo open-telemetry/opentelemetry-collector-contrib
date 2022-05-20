@@ -1,8 +1,10 @@
 # Cumulative to Delta Processor
 
-**Status: under development; Not recommended for production usage.**
-
-Supported pipeline types: metrics
+| Status                   |           |
+| ------------------------ | --------- |
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 ## Description
 
@@ -72,3 +74,6 @@ processors:
         # If include/exclude are not specified
         # convert all cumulative sum metrics to delta
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

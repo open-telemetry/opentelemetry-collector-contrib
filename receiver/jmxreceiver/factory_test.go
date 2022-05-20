@@ -38,7 +38,7 @@ func TestWithInvalidConfig(t *testing.T) {
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system`", err.Error())
 	require.Nil(t, r)
 }
 
@@ -48,7 +48,7 @@ func TestWithValidConfig(t *testing.T) {
 
 	cfg := f.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "myendpoint:12345"
-	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
+	cfg.(*Config).TargetSystem = "jvm"
 
 	params := componenttest.NewNopReceiverCreateSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
@@ -65,9 +65,7 @@ func TestWithSetProperties(t *testing.T) {
 
 	cfg := f.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "myendpoint:12345"
-	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
-	cfg.(*Config).Properties["org.slf4j.simpleLogger.defaultLogLevel"] = "trace"
-	cfg.(*Config).Properties["org.java.fake.property"] = "true"
+	cfg.(*Config).TargetSystem = "jvm"
 
 	params := componenttest.NewNopReceiverCreateSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
