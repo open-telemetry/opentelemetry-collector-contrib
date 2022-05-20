@@ -33,7 +33,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 type mockPerfCounter struct {
@@ -77,10 +76,10 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Gauge:       GaugeMetric{},
 					},
 				},
-				PerfCounters: []winperfcounters.ObjectConfig{
-					{Object: "Memory", Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes", MetricRep: winperfcounters.MetricRep{Name: "bytes.committed"}}}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []winperfcounters.CounterConfig{{Name: "% Idle Time", MetricRep: winperfcounters.MetricRep{Name: "cpu.idle"}}}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []winperfcounters.CounterConfig{{Name: "% Processor Time", MetricRep: winperfcounters.MetricRep{Name: "processor.time"}}}},
+				PerfCounters: []ObjectConfig{
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", MetricRep: MetricRep{Name: "bytes.committed"}}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{Name: "% Idle Time", MetricRep: MetricRep{Name: "cpu.idle"}}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{Name: "% Processor Time", MetricRep: MetricRep{Name: "processor.time"}}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -96,8 +95,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Sum:         SumMetric{},
 					},
 				},
-				PerfCounters: []winperfcounters.ObjectConfig{
-					{Object: "Memory", Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes", MetricRep: winperfcounters.MetricRep{Name: "bytes.committed"}}}},
+				PerfCounters: []ObjectConfig{
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", MetricRep: MetricRep{Name: "bytes.committed"}}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -106,8 +105,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "NoMetricDefinition",
 			cfg: &Config{
-				PerfCounters: []winperfcounters.ObjectConfig{
-					{Object: "Memory", Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes"}}},
+				PerfCounters: []ObjectConfig{
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -116,20 +115,20 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "InvalidCounter",
 			cfg: &Config{
-				PerfCounters: []winperfcounters.ObjectConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "Memory",
-						Counters: []winperfcounters.CounterConfig{{Name: "Committed Bytes", MetricRep: winperfcounters.MetricRep{Name: "Committed Bytes"}}},
+						Counters: []CounterConfig{{Name: "Committed Bytes", MetricRep: MetricRep{Name: "Committed Bytes"}}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []winperfcounters.CounterConfig{{Name: "Invalid Counter", MetricRep: winperfcounters.MetricRep{Name: "invalid"}}},
+						Counters: []CounterConfig{{Name: "Invalid Counter", MetricRep: MetricRep{Name: "invalid"}}},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
 			startMessage: "some performance counters could not be initialized",
-			startErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
+			startErr:     "failed to create perf counter with path \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
 		},
 	}
 
@@ -165,8 +164,98 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues)
+			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestInitWatchers(t *testing.T) {
+	testCases := []struct {
+		name          string
+		cfgs          []ObjectConfig
+		expectedErr   string
+		expectedPaths []string
+	}{
+		{
+			name: "basicPath",
+			cfgs: []ObjectConfig{
+				{
+					Object:   "Memory",
+					Counters: []CounterConfig{{Name: "Committed Bytes"}},
+				},
+			},
+			expectedPaths: []string{"\\Memory\\Committed Bytes"},
+		},
+		{
+			name: "multiplePaths",
+			cfgs: []ObjectConfig{
+				{
+					Object:   "Memory",
+					Counters: []CounterConfig{{Name: "Committed Bytes"}},
+				},
+				{
+					Object:   "Memory",
+					Counters: []CounterConfig{{Name: "Available Bytes"}},
+				},
+			},
+			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
+		},
+		{
+			name: "multipleIndividualCounters",
+			cfgs: []ObjectConfig{
+				{
+					Object: "Memory",
+					Counters: []CounterConfig{
+						{Name: "Committed Bytes"},
+						{Name: "Available Bytes"},
+					},
+				},
+				{
+					Object:   "Memory",
+					Counters: []CounterConfig{},
+				},
+			},
+			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
+		},
+		{
+			name: "invalidCounter",
+			cfgs: []ObjectConfig{
+				{
+					Object:   "Broken",
+					Counters: []CounterConfig{{Name: "Broken Counter"}},
+				},
+			},
+
+			expectedErr: "failed to create perf counter with path \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n",
+		},
+		{
+			name: "multipleInvalidCounters",
+			cfgs: []ObjectConfig{
+				{
+					Object:   "Broken",
+					Counters: []CounterConfig{{Name: "Broken Counter"}},
+				},
+				{
+					Object:   "Broken part 2",
+					Counters: []CounterConfig{{Name: "Broken again"}},
+				},
+			},
+			expectedErr: "failed to create perf counter with path \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n; failed to create perf counter with path \\Broken part 2\\Broken again: The specified object was not found on the computer.\r\n",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			watchers, errs := initWatchers(test.cfgs)
+			if test.expectedErr != "" {
+				require.EqualError(t, errs, test.expectedErr)
+			} else {
+				require.NoError(t, errs)
+			}
+			for i, watcher := range watchers {
+				require.Equal(t, test.expectedPaths[i], watcher.Path())
+			}
 		})
 	}
 }

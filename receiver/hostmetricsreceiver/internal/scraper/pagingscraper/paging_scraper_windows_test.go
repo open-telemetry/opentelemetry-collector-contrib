@@ -65,7 +65,7 @@ func TestScrape_Errors(t *testing.T) {
 		{
 			name:             "pageFileError",
 			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
-			expectedErr:      "err1",
+			expectedErr:      "failed to read page file stats: err1",
 			expectedErrCount: pagingUsageMetricsLen,
 		},
 		{
@@ -90,7 +90,7 @@ func TestScrape_Errors(t *testing.T) {
 			name:             "multipleErrors",
 			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			getObjectErr:     errors.New("err2"),
-			expectedErr:      "err1; err2",
+			expectedErr:      "failed to read page file stats: err1; err2",
 			expectedErrCount: pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}
@@ -100,7 +100,7 @@ func TestScrape_Errors(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsSettings()
 			metricsConfig.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), &Config{Metrics: metricsConfig})
+			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}

@@ -60,7 +60,7 @@ func TestScrape(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -81,7 +81,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -99,7 +99,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -117,7 +117,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 				Endpoint: mockClient.URL,
 			},
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NotNil(t, scraper.client)
@@ -131,7 +131,7 @@ func TestStartBadUrl(t *testing.T) {
 				Endpoint: "\x00",
 			},
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
@@ -146,7 +146,7 @@ func TestScraperRecordNoStat(t *testing.T) {
 			},
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.host = componenttest.NewNopHost()
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})

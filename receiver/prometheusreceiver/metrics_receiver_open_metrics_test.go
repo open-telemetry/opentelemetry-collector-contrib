@@ -15,10 +15,11 @@
 package prometheusreceiver
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -61,6 +62,9 @@ func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pmetric.ResourceMetr
 
 // Test open metrics positive test cases
 func TestOpenMetricsPositive(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10148")
+	}
 	targetsMap := getOpenMetricsTestData(false)
 	targets := make([]*testData, 0)
 	for k, v := range targetsMap {
@@ -143,7 +147,7 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 }
 
 func readTestCase(testName string) (string, error) {
-	filePath := fmt.Sprintf("%s/%s/metrics", testDir, testName)
+	filePath := filepath.Join(testDir, testName, "metrics")
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Printf("failed opening file: %s", filePath)

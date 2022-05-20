@@ -21,22 +21,37 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestSqlServerScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	s := newSqlServerScraper(
-		componenttest.NewNopReceiverCreateSettings().Logger,
-		cfg,
-	)
+	logger, obsLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(logger)
+	s := newSqlServerScraper(settings, cfg)
+
 	s.start(context.Background(), nil)
-	require.Equal(t, len(s.watchers), 21)
-	data, err := s.scrape(context.Background())
+	assert.Equal(t, 0, len(s.watcherRecorders))
+	assert.Equal(t, 21, obsLogs.Len())
+	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
+	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("The specified object was not found on the computer.").Len())
+	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:General Statistics\\").Len())
+	assert.Equal(t, 3, obsLogs.FilterMessageSnippet("\\SQLServer:SQL Statistics\\").Len())
+	assert.Equal(t, 2, obsLogs.FilterMessageSnippet("\\SQLServer:Locks(_Total)\\").Len())
+	assert.Equal(t, 6, obsLogs.FilterMessageSnippet("\\SQLServer:Buffer Manager\\").Len())
+	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:Access Methods(_Total)\\").Len())
+	assert.Equal(t, 8, obsLogs.FilterMessageSnippet("\\SQLServer:Databases(*)\\").Len())
+
+	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
-	require.NotNil(t, data)
+	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+
 	err = s.shutdown(context.Background())
 	require.NoError(t, err)
 }
