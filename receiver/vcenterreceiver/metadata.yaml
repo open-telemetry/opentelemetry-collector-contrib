@@ -1,4 +1,4 @@
-name: vmwarevcenterreceiver
+name: vcenterreceiver
 
 resource_attributes:
   vcenter.cluster.name:
@@ -74,15 +74,6 @@ metrics:
   vcenter.cluster.cpu.effective:
     enabled: true
     description: The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
-    unit: "{MHz}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    attributes: []
-  vcenter.cluster.cpu.used:
-    enabled: true
-    description: The amount of CPU used by the cluster.
     unit: "{MHz}"
     sum:
       monotonic: false

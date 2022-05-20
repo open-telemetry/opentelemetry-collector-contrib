@@ -64,7 +64,7 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotVcenter
 	}
-	vr := newVmwareVcenterScraper(params.Logger, cfg)
+	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
 		vr.scrape,

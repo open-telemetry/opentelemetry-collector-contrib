@@ -20,7 +20,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -420,7 +421,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -820,7 +822,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1214,7 +1217,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1303,7 +1307,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1495,7 +1500,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1687,7 +1693,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1879,7 +1886,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -2053,7 +2061,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -2161,7 +2170,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -2212,7 +2222,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/vmwarevcenterreceiver"
+                        "name": "otelcol/vcenterreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
