@@ -3,8 +3,7 @@
 ### Overview
 
 The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/README.md)
-to report metrics from a target MBean server using a built-in or your custom `otel` helper-utilizing
-Groovy script.
+to report metrics from a target MBean server using a built-in `otel` helper-utilizing Groovy script.
 
 Status: alpha
 
@@ -35,10 +34,8 @@ receivers:
     username: my_jmx_username
     # determined by the environment variable value
     password: $MY_JMX_PASSWORD
-    # will be set as system properties for the underlying java command
-    properties:
-      otel.resource.attributes: my.attr=my.value,my.other.attr=my.other.value
-      some.system.property: some.system.property.value
+    resource_attributes: my.attr=my.value,my.other.attr=my.other.value
+    log_level: info
     additional_jars:
       - /path/to/other.jar
 ```
@@ -59,19 +56,10 @@ _Required._
 
 ### target_system
 
-The built-in target system metric gatherer script to run.
+The built-in target system (or systems) metric gatherer script to run.
+Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
 
 Corresponds to the `otel.jmx.target.system` property.
-
-One of `groovy_script` or `target_system` is _required_.  Both cannot be specified at the same time.
-
-### groovy_script
-
-The path of the Groovy script the Metric Gatherer should run.
-
-Corresponds to the `otel.jmx.groovy.script` property.
-
-One of `groovy_script` or `target_system` is _required_.  Both cannot be specified at the same time.
 
 ### collection_interval (default: `10s`)
 
@@ -90,11 +78,6 @@ Corresponds to the `otel.jmx.username` property.
 The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
-
-### properties
-
-A map of property names to values to be used as system properties set as command line options
-(e.g. `-Dproperty.name=property.value`).
 
 ### otlp.endpoint (default: `0.0.0.0:<random open port>`)
 
@@ -158,7 +141,18 @@ The realm, as required by remote profile SASL/DIGEST-MD5.
 
 Corresponds to the `otel.jmx.realm` property.
 
-
 ### additional_jars
 
 Additional JARs to be included in the java command classpath.
+
+### resource_attributes
+
+List of resource attributes that will be applied to any metrics emitted from the metrics gatherer.
+
+Corresponds to the `otel.resource.attributes` property.
+
+### log_level
+
+SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
+
+Corresponds to the `org.slf4j.simpleLogger.defaultLogLevel` property.

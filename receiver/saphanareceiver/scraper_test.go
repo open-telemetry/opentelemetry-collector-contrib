@@ -38,7 +38,7 @@ func TestScraper(t *testing.T) {
 	dbWrapper := &testDBWrapper{}
 	initializeWrapper(t, dbWrapper, allQueryMetrics)
 
-	sc, err := newSapHanaScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
@@ -103,7 +103,7 @@ func TestDisabledMetrics(t *testing.T) {
 	cfg.Metrics.SaphanaVolumeOperationSize.Enabled = false
 	cfg.Metrics.SaphanaVolumeOperationTime.Enabled = false
 
-	sc, err := newSapHanaScraper(componenttest.NewNopTelemetrySettings(), cfg, &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)

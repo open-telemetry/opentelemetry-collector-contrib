@@ -51,7 +51,7 @@ func TestWriteConfigDoc(t *testing.T) {
 		outputFilename = dir
 		return nil
 	})
-	expectedPath := "receiver/otlpreceiver/config.md"
+	expectedPath := filepath.Join("receiver", "otlpreceiver", "config.md")
 	assert.True(t, strings.HasSuffix(outputFilename, expectedPath))
 }
 

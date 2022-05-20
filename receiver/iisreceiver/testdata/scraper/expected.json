@@ -320,7 +320,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/iisreceiver"
+                  "name": "otelcol/iisreceiver",
+                  "version": "latest"
                }
             }
          ]

@@ -1,19 +1,20 @@
 # Transform Processor
 
-| Status                   |                  |
-| ------------------------ | ---------------- |
-| Stability                | [In development] |
-| Supported pipeline types | traces, logs     |
-| Distributions            | none             |
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [In development]      |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | none                  |
 
-The transform processor modifies telemetry based on configuration using the Telemetry Query Language.
+The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language).
 It takes a list of queries which are performed in the order specified in the config.
 
 Queries are composed of the following parts
 - Path expressions: Fields within the incoming data can be referenced using expressions composed of the names as defined
 in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]`. If the path expression begins with
-`resource.` or `instrumentation_library.`, it will reference those values.
+`resource.` or `instrumentation_library.`, it will reference those values.  For metrics, `name`, `description`, `unit`, `type`, `is_monotonic`, and `aggregation_temporality` are accessed via `metric.`
   - The name `instrumentation_library` within OpenTelemetry is currently under discussion and may be changed in the future.
+  - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
 - Literals: Strings, ints, and floats can be referenced as literal values
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
@@ -46,11 +47,6 @@ exporters:
 
 processors:
   transform:
-    logs:
-      queries:
-        - set(severity_text, "FAIL") where body == "request failed"
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
-        - set(body, attributes["http.route"])
     traces:
       queries:
         - set(status.code, 1) where attributes["http.path"] == "/health"
@@ -60,6 +56,18 @@ processors:
         - limit(resource.attributes, 100)
         - truncate_all(attributes, 4096)
         - truncate_all(resource.attributes, 4096)
+    metrics:
+      queries:
+        - set(metric.description, "Sum") where metric.type == "Sum"
+        - keep_keys(resource.attributes, "host.name")
+        - limit(attributes, 100)
+        - truncate_all(attributes, 4096)
+        - truncate_all(resource.attributes, 4096)
+    logs:
+      queries:
+        - set(severity_text, "FAIL") where body == "request failed"
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - set(body, attributes["http.route"])
 service:
   pipelines:
     logs:
@@ -74,11 +82,6 @@ service:
 
 This processor will perform the operations in order for 
 
-All logs
-
-1) Set severity text to FAIL if the body contains a string text "request failed"
-2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
-3) Set `body` to the `http.route` attribute if it is set
 
 All spans
 
@@ -90,4 +93,16 @@ All spans
 6) Truncate all span attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
 
-[In development]: https://github.com/open-telemetry/opentelemetry-collector-contrib#in-development
+All metrics and their data points
+
+1) Set metric description to "Sum" if the metric type is "Sum"
+2) Keep only the `host.name` resource attributes
+4) Limit all data point attributes such that each data point has no more than 100 attributes.
+6) Truncate all data point attributes such that no string value has more than 4096 characters.
+7) Truncate all resource attributes such that no string value has more than 4096 characters.
+
+All logs
+
+1) Set severity text to FAIL if the body contains a string text "request failed"
+2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+3) Set `body` to the `http.route` attribute if it is set

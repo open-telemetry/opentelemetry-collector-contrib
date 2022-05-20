@@ -18,7 +18,6 @@
 package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -129,130 +128,6 @@ func Test_PathBuilder(t *testing.T) {
 	}
 }
 
-type mockPerfCounter struct {
-	path        string
-	watchErr    error
-	shutdownErr error
-	value       float64
-	MetricRep
-}
-
-func newMockPerfCounter(path string, watchErr, shutdownErr error, value float64, metric MetricRep) *mockPerfCounter {
-	return &mockPerfCounter{path: path, watchErr: watchErr, shutdownErr: shutdownErr, value: value, MetricRep: metric}
-}
-
-// Path
-func (mpc *mockPerfCounter) Path() string {
-	return mpc.path
-}
-
-// ScrapeData
-func (mpc *mockPerfCounter) ScrapeData() ([]CounterValue, error) {
-	return []CounterValue{{Value: mpc.value}}, mpc.watchErr
-}
-
-// Close
-func (mpc *mockPerfCounter) Close() error {
-	return mpc.shutdownErr
-}
-
-func (mpc *mockPerfCounter) GetMetricRep() MetricRep {
-	return MetricRep{}
-}
-
-// Test_Scraping ensures that watchers watch appropriately using mocked perfcounters to
-// pass valus through
-func Test_Scraping(t *testing.T) {
-	testCases := []struct {
-		name            string
-		watchers        []PerfCounterWatcher
-		expectedErr     string
-		expectedWatched []CounterValue
-	}{
-		{
-			name: "basicWatcher",
-			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path", nil, nil, 1, MetricRep{
-					Name: "metric",
-				}),
-			},
-			expectedWatched: []CounterValue{
-				{
-					MetricRep: MetricRep{
-						Name: "metric",
-					},
-					Value: 1,
-				},
-			},
-		},
-		{
-			name: "multipleWatchers",
-			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path", nil, nil, 1, MetricRep{
-					Name: "metric",
-				}),
-				newMockPerfCounter("path2", nil, nil, 2, MetricRep{
-					Name: "metric",
-				}),
-			},
-			expectedWatched: []CounterValue{
-				{
-					MetricRep: MetricRep{
-						Name: "metric",
-					},
-					Value: 1,
-				},
-				{
-					MetricRep: MetricRep{
-						Name: "metric2",
-					},
-					Value: 2,
-				},
-			},
-		},
-		{
-			name: "brokenWatcher",
-			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path2", fmt.Errorf("failed to watch"), nil, 2, MetricRep{}),
-			},
-			expectedErr: "failed to watch",
-		},
-		{
-			name: "multipleBrokenWatchers",
-			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path2", fmt.Errorf("failed to watch"), nil, 2, MetricRep{}),
-				newMockPerfCounter("path2", fmt.Errorf("failed to watch again"), nil, 2, MetricRep{}),
-			},
-			expectedErr: "failed to watch; failed to watch again",
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			counterVals := []CounterValue{}
-			var errs error
-
-			for _, watcher := range test.watchers {
-				value, err := watcher.ScrapeData()
-				if err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
-
-				require.NoError(t, err)
-				counterVals = append(counterVals, value...)
-			}
-
-			if test.expectedErr != "" {
-				require.EqualError(t, errs, test.expectedErr)
-				return
-			}
-
-			require.Equal(t, test.expectedWatched, counterVals)
-		})
-	}
-}
-
 // Test_Scraping_Wildcard tests that wildcard instances pull out values
 func Test_Scraping_Wildcard(t *testing.T) {
 	counterVals := []CounterValue{}
@@ -278,50 +153,4 @@ func Test_Scraping_Wildcard(t *testing.T) {
 	}
 
 	require.GreaterOrEqual(t, len(counterVals), 3)
-}
-
-// Test_Closing ensures that watchers close appropriately
-func Test_Closing(t *testing.T) {
-	testCases := []struct {
-		name        string
-		watchers    []PerfCounterWatcher
-		expectedErr string
-	}{
-		{
-			name: "closeWithNoFail",
-			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path", nil, nil, 1, MetricRep{}),
-			},
-		},
-		{
-			name: "brokenWatcher",
-			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path2", nil, fmt.Errorf("failed to close"), 2, MetricRep{}),
-			},
-			expectedErr: "failed to close",
-		},
-		{
-			name: "multipleBrokenWatchers",
-			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path2", nil, fmt.Errorf("failed to close again"), 2, MetricRep{}),
-			},
-			expectedErr: "failed to close; failed to close again",
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			var errs error
-
-			for _, watcher := range test.watchers {
-				errs = multierr.Append(errs, watcher.Close())
-			}
-
-			if test.expectedErr != "" {
-				require.EqualError(t, errs, test.expectedErr)
-				return
-			}
-			require.NoError(t, errs)
-		})
-	}
 }

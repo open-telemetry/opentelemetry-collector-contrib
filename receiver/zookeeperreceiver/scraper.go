@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -53,7 +54,7 @@ func (z *zookeeperMetricsScraper) Name() string {
 	return typeStr
 }
 
-func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperMetricsScraper, error) {
+func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	if err != nil {
 		return nil, err
@@ -64,9 +65,9 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 	}
 
 	return &zookeeperMetricsScraper{
-		logger:                logger,
+		logger:                settings.Logger,
 		config:                config,
-		mb:                    metadata.NewMetricsBuilder(config.Metrics),
+		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,
