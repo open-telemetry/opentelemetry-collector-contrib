@@ -2,11 +2,7 @@ name: check-links
 on:
   push:
     branches: [ main ]
-    paths-ignore:
-      - 'cmd/builder/**'
   pull_request:
-    paths-ignore:
-      - 'cmd/builder/**'
 
 jobs:
   changedfiles:
@@ -42,4 +38,3 @@ jobs:
             --verbose \
             --config .github/workflows/check_links_config.json \
             ${{needs.changedfiles.outputs.md}}
-            
