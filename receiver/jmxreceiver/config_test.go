@@ -199,7 +199,8 @@ func TestLoadConfig(t *testing.T) {
 		}, r6)
 	err = r6.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/nonexistentjar error validating `jar_path`: error hashing file: open testdata/file_does_not_exist.jar: no such file or directory", err.Error())
+	// Error is different based on OS, which is why this is contains, not equals
+	assert.Contains(t, err.Error(), "jmx/nonexistentjar error validating `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:")
 
 	r7 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidjar")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r7))
