@@ -342,6 +342,7 @@ jobs:
           name: collector-packages
           path: ./dist/*
   windows-msi:
+    if: false # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
     runs-on: windows-latest
     needs: [cross-compile]
     steps:
@@ -379,7 +380,7 @@ jobs:
 
   publish-check:
     runs-on: ubuntu-latest
-    needs: [build-package, windows-msi]
+    needs: [build-package]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -397,7 +398,7 @@ jobs:
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
   publish-dev:
     runs-on: ubuntu-latest
-    needs: [lint, unittest, integration-tests, build-package, windows-msi]
+    needs: [lint, unittest, integration-tests, build-package]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - name: Checkout Repo
@@ -458,7 +459,7 @@ jobs:
             docker push otel/opentelemetry-collector-contrib-dev:latest
   publish-stable:
     runs-on: ubuntu-latest
-    needs: [lint, unittest, integration-tests, build-package, windows-msi]
+    needs: [lint, unittest, integration-tests, build-package]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - name: Checkout Repo
