@@ -17,7 +17,7 @@ package stanza // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
 )

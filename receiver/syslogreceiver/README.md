@@ -1,7 +1,6 @@
 # Syslog Receiver
 
-Parses Syslogs from tcp/udp using
-the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
+Parses Syslogs received over TCP or UDP.
 
 Supported pipeline types: logs
 
@@ -15,11 +14,11 @@ Supported pipeline types: logs
 | `udp`      |`nil`                | Defined udp_input operator. (see the UDP configuration section)  |
 | `protocol`    | required         | The protocol to parse the syslog messages as. Options are `rfc3164` and `rfc5424` |
 | `location`    | `UTC`            | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
-| `timestamp`   | `nil`            | An optional [timestamp](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator                                                                                               |
-| `severity`    | `nil`            | An optional [severity](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/docs/types/severity.md) block which will parse a severity field before passing the entry to the output operator
+| `timestamp`   | `nil`            | An optional [timestamp](../../pkg/stanza/docs/operators/types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator                                                                                               |
+| `severity`    | `nil`            | An optional [severity](../../pkg/stanza/docs/operators/docs/types/severity.md) block which will parse a severity field before passing the entry to the output operator
 | `attributes`   | {}               | A map of `key: value` labels to add to the entry's attributes    |
 | `resource` | {}               | A map of `key: value` labels to add to the entry's resource  |
-| `operators`            | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
+| `operators`            | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 
 ### Operators
 
@@ -57,11 +56,11 @@ The `tcp_input` operator supports TLS, disabled by default.
 
 ## Additional Terminology and Features
 
-- An [entry](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/entry.md) is the base representation of log data as it moves through a pipeline. All operators either create, modify, or consume entries.
-- A [field](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/field.md) is used to reference values in an entry.
-- A common [expression](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/expression.md) syntax is used in several operators. For example, expressions can be used to [filter](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/filter.md) or [route](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/router.md) entries.
-- [timestamp](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/timestamp.md) parsing is available as a block within all parser operators, and also as a standalone operator. Many common timestamp layouts are supported.
-- [severity](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/severity.md) parsing is available as a block within all parser operators, and also as a standalone operator. Stanza uses a flexible severity representation which is automatically interpreted by the stanza receiver.
+- An [entry](../../pkg/stanza/docs/operators/types/entry.md) is the base representation of log data as it moves through a pipeline. All operators either create, modify, or consume entries.
+- A [field](../../pkg/stanza/docs/operators/types/field.md) is used to reference values in an entry.
+- A common [expression](../../pkg/stanza/docs/operators/types/expression.md) syntax is used in several operators. For example, expressions can be used to [filter](../../pkg/stanza/docs/operators/filter.md) or [route](../../pkg/stanza/docs/operators/router.md) entries.
+- [timestamp](../../pkg/stanza/docs/operators/types/timestamp.md) parsing is available as a block within all parser operators, and also as a standalone operator. Many common timestamp layouts are supported.
+- [severity](../../pkg/stanza/docs/operators/types/severity.md) parsing is available as a block within all parser operators, and also as a standalone operator. Stanza uses a flexible severity representation which is automatically interpreted by the stanza receiver.
 
 ## Example Configurations
 

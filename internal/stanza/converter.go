@@ -27,7 +27,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
