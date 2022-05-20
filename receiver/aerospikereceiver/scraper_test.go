@@ -22,10 +22,6 @@ import (
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v5"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +31,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 )
 
 func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
@@ -129,7 +130,7 @@ func TestScrapeNode(t *testing.T) {
 			}
 			expectedMetrics := tc.setupExpectedMetrics(t)
 			client.AssertExpectations(t)
-			scrapertest.CompareMetrics(expectedMetrics, receiver.mb.Emit())
+			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, receiver.mb.Emit()))
 		})
 	}
 }

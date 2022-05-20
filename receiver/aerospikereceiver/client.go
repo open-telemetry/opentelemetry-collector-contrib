@@ -15,9 +15,11 @@
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
 import (
+	"fmt"
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v5"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
 )
 
@@ -66,7 +68,9 @@ func newASClient(host string, port int, username, password string, timeout time.
 }
 
 func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo, error) {
-	c.conn.SetTimeout(time.Now().Add(c.timeout), c.timeout)
+	if err := c.conn.SetTimeout(time.Now().Add(c.timeout), c.timeout); err != nil {
+		return nil, fmt.Errorf("failed to set timeout: %w", err)
+	}
 	var response model.InfoResponse
 	response, err := c.conn.RequestInfo(model.NamespaceKey(namespace))
 	if err != nil {
@@ -77,7 +81,9 @@ func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo,
 }
 
 func (c *defaultASClient) Info() (*model.NodeInfo, error) {
-	c.conn.SetTimeout(time.Now().Add(c.timeout), c.timeout)
+	if err := c.conn.SetTimeout(time.Now().Add(c.timeout), c.timeout); err != nil {
+		return nil, fmt.Errorf("failed to set timeout: %w", err)
+	}
 	var response model.InfoResponse
 	response, err := c.conn.RequestInfo("namespaces", "node", "statistics", "services")
 	if err != nil {
