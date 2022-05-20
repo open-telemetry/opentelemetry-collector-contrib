@@ -46,10 +46,11 @@ func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVar
 	return &expVarScraper{
 		cfg: cfg,
 		set: &set,
+		mb:  metadata.NewMetricsBuilder(cfg.MetricsConfig),
 	}
 }
 
-func (e expVarScraper) start(_ context.Context, host component.Host) error {
+func (e *expVarScraper) start(_ context.Context, host component.Host) error {
 	httpClient, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.set.TelemetrySettings)
 	if err != nil {
 		return err
@@ -58,17 +59,15 @@ func (e expVarScraper) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e expVarScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (e *expVarScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	emptyMetrics := pmetric.NewMetrics()
 	resp, err := e.httpClient.Get(e.cfg.Endpoint)
-	defer func(b io.ReadCloser) {
-		_ = b.Close()
-	}(resp.Body)
 	if err != nil {
 		return emptyMetrics, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return emptyMetrics, fmt.Errorf("received %d status code from server", resp.StatusCode)
+		return emptyMetrics, fmt.Errorf("expected 200 but received %d status code", resp.StatusCode)
 	}
 
 	result, err := decodeResponseBody(resp.Body)

@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -66,18 +66,18 @@ func TestFailedLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_schemeless_endpoint_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_schemeless_endpoint_config.yaml"), factories)
 	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: scheme must be 'http' or 'https', but was 'localhost'")
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_hostless_endpoint_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_hostless_endpoint_config.yaml"), factories)
 	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: host not found in HTTP endpoint")
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_collection_interval_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_collection_interval_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* error decoding 'collection_interval': time: invalid duration \"fourminutes\"")
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_metric_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_metric_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics.process.runtime.memstats.total_alloc' has invalid keys: invalid_field")
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_metric_name.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_metric_name.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics' has invalid keys: bad_metric.name")
 }
