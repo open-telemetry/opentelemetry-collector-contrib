@@ -30,7 +30,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -71,7 +70,7 @@ func TestConsumerCantBeNil(t *testing.T) {
 		nil,
 		componenttest.NewNopReceiverCreateSettings(),
 	)
-	assert.True(t, errors.Is(err, componenterror.ErrNilNextConsumer), "consumer is nil should be detected")
+	assert.True(t, errors.Is(err, component.ErrNilNextConsumer), "consumer is nil should be detected")
 }
 
 func TestProxyCreationFailed(t *testing.T) {

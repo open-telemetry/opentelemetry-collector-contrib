@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -81,7 +80,7 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	consumer consumer.Traces) (component.TracesReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForTrace()
 	if err != nil {
@@ -99,7 +98,7 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForMetric()
 	if err != nil {
@@ -117,7 +116,7 @@ func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	consumer consumer.Logs) (component.LogsReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForLog()
 	if err != nil {
