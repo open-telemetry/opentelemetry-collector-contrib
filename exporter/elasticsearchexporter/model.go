@@ -41,6 +41,12 @@ type encodeModel struct {
 	dedot bool
 }
 
+const (
+	traceIDField   = "traceID"
+	spanIDField    = "spanID"
+	attributeField = "attribute"
+)
+
 func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
@@ -67,15 +73,14 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTimestamp("endTimestamp", span.EndTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
+	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
 	document.AddID("TraceId", span.TraceID())
 	document.AddID("SpanId", span.SpanID())
 	document.AddID("ParentSpanId", span.ParentSpanID())
 	document.AddString("Name", span.Name())
 	document.AddString("Kind", span.Kind().String())
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
-	linkJson, _ := json.Marshal(span.Links())
-	document.AddString("Link", string(linkJson))
+	document.AddString("Link", spanLinksToString(span.Links()))
 	document.AddAttributes("Attributes", span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
 
@@ -88,4 +93,18 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
+}
+
+func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
+	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
+	for i := 0; i < spanLinkSlice.Len(); i++ {
+		spanLink := spanLinkSlice.At(i)
+		link := map[string]interface{}{}
+		link[spanIDField] = spanLink.SpanID().HexString()
+		link[traceIDField] = spanLink.TraceID().HexString()
+		link[attributeField] = spanLink.Attributes().AsRaw()
+		linkArray = append(linkArray, link)
+	}
+	linkArrayBytes, _ := json.Marshal(&linkArray)
+	return string(linkArrayBytes)
 }
