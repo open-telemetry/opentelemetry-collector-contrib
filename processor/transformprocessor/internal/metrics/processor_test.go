@@ -80,6 +80,19 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("Sum")
 			},
 		},
+		{
+			query: `set(metric.aggregation_temporality, 1) where metric.aggregation_temporality == 0`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+			},
+		},
+		{
+			query: `set(metric.is_monotonic, "true") where metric.is_monotonic == "false"`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetIsMonotonic(true)
+			},
+		},
 	}
 
 	for _, tt := range tests {
