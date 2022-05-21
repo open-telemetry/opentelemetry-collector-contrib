@@ -8,8 +8,6 @@
 
 This receiver queries MySQL's global status and InnoDB tables.
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
-
 ## Prerequisites
 
 This receiver supports MySQL version 8.0
