@@ -17,7 +17,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
 
     *   Download a [binary or package of the OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases) that is appropriate for your platform, and includes the Google Cloud exporter.
     *   Create your own main package in Go, that pulls in just the plugins you need.
-    *   Use the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector-builder) to generate the Go main package and `go.mod`.
+    *   Use the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) to generate the Go main package and `go.mod`.
 
     </details>
 

@@ -97,7 +97,7 @@ func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curr
 		}
 
 		for _, counterValue := range counterValues {
-			dbName := counterValue.Attributes["instance"]
+			dbName := counterValue.InstanceName
 
 			// it's important to initialize new values for the closure.
 			val := counterValue.Value
