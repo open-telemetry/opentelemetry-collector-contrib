@@ -182,3 +182,19 @@ func TestJSONParseError(t *testing.T) {
 	_, err = scraper.scrape(context.Background())
 	require.NotNil(t, err)
 }
+
+func TestEmptyResponseBodyError(t *testing.T) {
+	ms := newMockServer(t, filepath.Join("testdata", "response", "bad_data_empty_response.json"))
+	defer ms.Close()
+	cfg := newDefaultConfig().(*Config)
+	cfg.Endpoint = ms.URL + "/debug/vars"
+	cfg.MetricsConfig = allMetricsDisabled
+	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	expectedMetrics := pmetric.NewMetrics() // empty
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.EqualError(t, err, "could not decode response body to JSON: EOF")
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}

@@ -73,7 +73,7 @@ func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	result, err := decodeResponseBody(resp.Body)
 	if err != nil {
-		return emptyMetrics, err
+		return emptyMetrics, fmt.Errorf("could not decode response body to JSON: %v", err)
 	}
 	memStats := result.MemStats
 	if memStats == nil {
