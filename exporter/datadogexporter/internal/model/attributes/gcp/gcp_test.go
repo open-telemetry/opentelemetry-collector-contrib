@@ -24,11 +24,13 @@ import (
 )
 
 const (
-	testHostname     = "hostname"
-	testHostID       = "hostID"
-	testCloudZone    = "zone"
-	testHostType     = "machineType"
-	testCloudAccount = "projectID"
+	testShortHostname = "hostname"
+	testHostID        = "hostID"
+	testCloudZone     = "zone"
+	testHostType      = "machineType"
+	testCloudAccount  = "projectID"
+	testHostname      = testShortHostname + ".c." + testCloudAccount + ".internal"
+	testBadHostname   = "badhostname"
 )
 
 func TestHostnameFromAttributes(t *testing.T) {
@@ -56,7 +58,22 @@ func TestHostInfoFromAttributes(t *testing.T) {
 		conventions.AttributeCloudAccountID:        testCloudAccount,
 	})
 	hostInfo := HostInfoFromAttributes(attrs)
-	assert.ElementsMatch(t, hostInfo.HostAliases, []string{fmt.Sprintf("%s.%s", testHostID, testCloudAccount)})
+	assert.ElementsMatch(t, hostInfo.HostAliases, []string{fmt.Sprintf("%s.%s", testShortHostname, testCloudAccount)})
+	assert.ElementsMatch(t, hostInfo.GCPTags,
+		[]string{"instance-id:hostID", "zone:zone", "instance-type:machineType", "project:projectID"})
+}
+
+func TestHostInfoFromAttributesBadHostname(t *testing.T) {
+	attrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+		conventions.AttributeHostID:                testHostID,
+		conventions.AttributeHostName:              testBadHostname,
+		conventions.AttributeCloudAvailabilityZone: testCloudZone,
+		conventions.AttributeHostType:              testHostType,
+		conventions.AttributeCloudAccountID:        testCloudAccount,
+	})
+	hostInfo := HostInfoFromAttributes(attrs)
+	assert.ElementsMatch(t, hostInfo.HostAliases, []string{fmt.Sprintf("%s.%s", testBadHostname, testCloudAccount)})
 	assert.ElementsMatch(t, hostInfo.GCPTags,
 		[]string{"instance-id:hostID", "zone:zone", "instance-type:machineType", "project:projectID"})
 }
