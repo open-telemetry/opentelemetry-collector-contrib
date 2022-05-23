@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -93,19 +94,19 @@ var (
 	}
 )
 
-func newMockServer(t *testing.T, responseBodyFile string) *httptest.Server {
+func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
 	file, err := os.Open(responseBodyFile)
-	require.NoError(t, err)
+	assert.NoError(tb, err)
 	fileContents, err := ioutil.ReadAll(file)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/debug/vars" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write(fileContents)
-			require.NoError(t, err)
+			require.NoError(tb, err)
 			return
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 }
 

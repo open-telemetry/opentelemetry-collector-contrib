@@ -36,10 +36,10 @@ type expVar struct {
 }
 
 type expVarScraper struct {
-	cfg        *Config
-	set        *component.ReceiverCreateSettings
-	httpClient *http.Client
-	mb         *metadata.MetricsBuilder
+	cfg    *Config
+	set    *component.ReceiverCreateSettings
+	client *http.Client
+	mb     *metadata.MetricsBuilder
 }
 
 func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVarScraper {
@@ -51,17 +51,17 @@ func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVar
 }
 
 func (e *expVarScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.set.TelemetrySettings)
+	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}
-	e.httpClient = httpClient
+	e.client = client
 	return nil
 }
 
 func (e *expVarScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	emptyMetrics := pmetric.NewMetrics()
-	resp, err := e.httpClient.Get(e.cfg.Endpoint)
+	resp, err := e.client.Get(e.cfg.Endpoint)
 	if err != nil {
 		return emptyMetrics, err
 	}
