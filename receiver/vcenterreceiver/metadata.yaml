@@ -27,6 +27,12 @@ attributes:
     enum:
       - available
       - used
+  disk_type:
+    description: The type of storage device that is being recorded.
+    type: string
+    enum:
+      - virtual
+      - physical
   host_effective:
     value: effective
     description: Whether the host is effective in the vCenter cluster.
@@ -166,6 +172,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [disk_direction]
+    extended_documentation: As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
   vcenter.host.disk.latency.avg:
     enabled: true
     description: The latency of operations to the host system's disk.
@@ -181,7 +188,7 @@ metrics:
     gauge:
       value_type: int
     attributes: []
-    extended_documentation: As measured over the most recent 20s interval.
+    extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 3.
   vcenter.host.memory.utilization:
     enabled: true
     description: The percentage of the host system's memory capacity that is being utilized.
@@ -316,10 +323,10 @@ metrics:
   vcenter.vm.disk.latency.avg:
     enabled: true
     description: The latency of operations to the virtual machine's disk.
-    unit: µs
+    unit: ms
     gauge:
       value_type: int
-    attributes: [disk_direction]
+    attributes: [disk_direction, disk_type]
     extended_documentation: Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
   vcenter.vm.disk.latency.max:
     enabled: true

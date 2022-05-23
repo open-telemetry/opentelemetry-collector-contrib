@@ -216,6 +216,32 @@ var MapAttributeDiskState = map[string]AttributeDiskState{
 	"used":      AttributeDiskStateUsed,
 }
 
+// AttributeDiskType specifies the a value disk_type attribute.
+type AttributeDiskType int
+
+const (
+	_ AttributeDiskType = iota
+	AttributeDiskTypeVirtual
+	AttributeDiskTypePhysical
+)
+
+// String returns the string representation of the AttributeDiskType.
+func (av AttributeDiskType) String() string {
+	switch av {
+	case AttributeDiskTypeVirtual:
+		return "virtual"
+	case AttributeDiskTypePhysical:
+		return "physical"
+	}
+	return ""
+}
+
+// MapAttributeDiskType is a helper map of string to AttributeDiskType attribute value.
+var MapAttributeDiskType = map[string]AttributeDiskType{
+	"virtual":  AttributeDiskTypeVirtual,
+	"physical": AttributeDiskTypePhysical,
+}
+
 // AttributeHostEffective specifies the a value host_effective attribute.
 type AttributeHostEffective int
 
@@ -1609,12 +1635,12 @@ type metricVcenterVMDiskLatencyAvg struct {
 func (m *metricVcenterVMDiskLatencyAvg) init() {
 	m.data.SetName("vcenter.vm.disk.latency.avg")
 	m.data.SetDescription("The latency of operations to the virtual machine's disk.")
-	m.data.SetUnit("µs")
+	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskDirectionAttributeValue string) {
+func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskDirectionAttributeValue string, diskTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1623,6 +1649,7 @@ func (m *metricVcenterVMDiskLatencyAvg) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert("direction", pcommon.NewValueString(diskDirectionAttributeValue))
+	dp.Attributes().Insert("disk_type", pcommon.NewValueString(diskTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2480,8 +2507,8 @@ func (mb *MetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Time
 }
 
 // RecordVcenterVMDiskLatencyAvgDataPoint adds a data point to vcenter.vm.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
-	mb.metricVcenterVMDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection, diskTypeAttributeValue AttributeDiskType) {
+	mb.metricVcenterVMDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String(), diskTypeAttributeValue.String())
 }
 
 // RecordVcenterVMDiskLatencyMaxDataPoint adds a data point to vcenter.vm.disk.latency.max metric.

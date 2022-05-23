@@ -123,6 +123,8 @@ func (v *vcenterMetricScraper) collectCluster(
 	s := moCluster.Summary.GetComputeResourceSummary()
 	v.mb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
 	v.mb.RecordVcenterClusterCPUEffectiveDataPoint(now, int64(s.EffectiveCpu))
+	v.mb.RecordVcenterClusterMemoryEffectiveDataPoint(now, s.EffectiveMemory)
+	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), metadata.AttributeHostEffectiveFalse)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), metadata.AttributeHostEffectiveTrue)
 	v.mb.EmitForResource(

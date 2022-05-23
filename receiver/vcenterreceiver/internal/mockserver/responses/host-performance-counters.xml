@@ -915,6 +915,61 @@
                     <value>0</value>
                     <value>0</value>
                 </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>133</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>899</value>
+                    <value>899</value>
+                    <value>905</value>
+                    <value>1000</value>
+                    <value>1002</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>124</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>499</value>
+                    <value>568</value>
+                    <value>476</value>
+                    <value>387</value>
+                    <value>977</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>518</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>781</value>
+                    <value>789</value>
+                    <value>645</value>
+                    <value>781</value>
+                    <value>782</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>522</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>781</value>
+                    <value>789</value>
+                    <value>645</value>
+                    <value>781</value>
+                    <value>782</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>131</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>781</value>
+                    <value>789</value>
+                    <value>645</value>
+                    <value>781</value>
+                    <value>782</value>
+                </value>
             </returnval>
         </QueryPerfResponse>
     </soapenv:Body>

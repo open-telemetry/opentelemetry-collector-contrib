@@ -232,6 +232,13 @@
                     </id>
                     <value>0</value>
                 </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>133</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>899</value>
+                </value>
             </returnval>
         </QueryPerfResponse>
     </soapenv:Body>

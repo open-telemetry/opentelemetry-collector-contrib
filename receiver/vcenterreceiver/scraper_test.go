@@ -16,7 +16,6 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"embed"
 	"path/filepath"
 	"testing"
 
@@ -31,12 +30,9 @@ import (
 	mock "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 )
 
-//go:embed internal/mockserver/responses/*
-var resources embed.FS
-
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
-	mockServer := mock.MockServer(t, resources)
+	mockServer := mock.MockServer(t)
 
 	cfg := &Config{
 		Metrics:  metadata.DefaultMetricsSettings(),

@@ -34,6 +34,7 @@ type vcenterClient struct {
 	vimDriver *vim25.Client
 	finder    *find.Finder
 	pc        *property.Collector
+	pm        *performance.Manager
 	cfg       *Config
 }
 
@@ -71,6 +72,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	vc.vimDriver = client.Client
 	vc.pc = property.DefaultCollector(vc.vimDriver)
 	vc.finder = find.NewFinder(vc.vimDriver)
+	vc.pm = performance.NewManager(vc.vimDriver)
 	return nil
 }
 
@@ -129,17 +131,19 @@ func (vc *vcenterClient) performanceQuery(
 	names []string,
 	objs []vt.ManagedObjectReference,
 ) (*perfSampleResult, error) {
-	mgr := performance.NewManager(vc.vimDriver)
-	mgr.Sort = true
-	sample, err := mgr.SampleByName(ctx, spec, names, objs)
+	if vc.pm == nil {
+		return &perfSampleResult{}, nil
+	}
+	vc.pm.Sort = true
+	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
 	if err != nil {
 		return nil, err
 	}
-	result, err := mgr.ToMetricSeries(ctx, sample)
+	result, err := vc.pm.ToMetricSeries(ctx, sample)
 	if err != nil {
 		return nil, err
 	}
-	counterInfoByName, err := mgr.CounterInfoByName(ctx)
+	counterInfoByName, err := vc.pm.CounterInfoByName(ctx)
 	if err != nil {
 		return nil, err
 	}

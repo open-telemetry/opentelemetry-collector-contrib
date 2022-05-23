@@ -111,6 +111,7 @@ var hostPerfMetricList = []string{
 	"disk.deviceWriteLatency.average",
 	"disk.kernelReadLatency.average",
 	"disk.kernelWriteLatency.average",
+	"disk.maxTotalLatency.latest",
 	"disk.read.average",
 	"disk.write.average",
 }
@@ -149,9 +150,9 @@ var vmPerfMetricList = []string{
 	"net.usage.average",
 
 	// disk metrics
-	"disk.write.average",
 	"disk.totalWriteLatency.average",
 	"disk.totalReadLatency.average",
+	"disk.maxTotalLatency.latest",
 	"virtualDisk.totalWriteLatency.average",
 	"virtualDisk.totalReadLatency.average",
 }
@@ -198,11 +199,15 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Performance monitoring level 2 metrics required
-				case "disk.totalReadLatency.average", "virtualDisk.totalReadLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
-				case "disk.totalWriteLatency.average", "virtualDisk.totalWriteLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
-				case "disk.maxTotalLatency":
+				case "disk.totalReadLatency.average":
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypePhysical)
+				case "virtualDisk.totalReadLatency.average":
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypeVirtual)
+				case "disk.totalWriteLatency.average":
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypePhysical)
+				case "virtualDisk.totalWriteLatency.average":
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypeVirtual)
+				case "disk.maxTotalLatency.latest":
 					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}
 			}
@@ -229,10 +234,6 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Following requires performance level 2
-				case "disk.read.usage":
-					v.mb.RecordVcenterHostDiskThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
-				case "disk.write.usage":
-					v.mb.RecordVcenterHostDiskThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
 				case "net.errorsRx.summation":
 					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.errorsTx.summation":
@@ -243,6 +244,12 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
 				case "disk.maxTotalLatency.latest":
 					v.mb.RecordVcenterHostDiskLatencyMaxDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
+
+				// Following requires performance level 4
+				case "disk.read.average":
+					v.mb.RecordVcenterHostDiskThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
+				case "disk.write.average":
+					v.mb.RecordVcenterHostDiskThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
 				}
 			}
 		}

@@ -15,9 +15,9 @@
 package mockserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 
 import (
-	"embed"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -38,8 +38,6 @@ const (
 
 var errNotFound = errors.New("not found")
 
-var responses embed.FS
-
 type soapRequest struct {
 	Envelope soapEnvelope `json:"Envelope"`
 }
@@ -49,8 +47,7 @@ type soapEnvelope struct {
 }
 
 // MockServer has access to recorded SOAP responses and will serve them over http based off the scraper's API calls
-func MockServer(t *testing.T, responsesFolder embed.FS) *httptest.Server {
-	responses = responsesFolder
+func MockServer(t *testing.T) *httptest.Server {
 	vsphereMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authUser, _, _ := r.BasicAuth()
 		if authUser == MockUser500Response {
@@ -158,9 +155,15 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 		return loadResponse("perf-manager.xml")
 
 	case content == "group-h5" && contentType == "Folder":
-		// TODO: look into propset for when to grab the parent resource
-		if objectSet["skip"] == "true" {
-			return loadResponse("host-cluster.xml")
+		if propSetArray {
+			arr := specSet["propSet"].([]interface{})
+			for _, i := range arr {
+				m, ok := i.(map[string]interface{})
+				require.True(t, ok)
+				if m["type"] == "ClusterComputeResource" {
+					return loadResponse("host-cluster.xml")
+				}
+			}
 		}
 		return loadResponse("host-parent.xml")
 
@@ -244,10 +247,9 @@ func routePerformanceQuery(t *testing.T, body map[string]interface{}) ([]byte, e
 	case "VirtualMachine":
 		return loadResponse("vm-performance-counters.xml")
 	}
-
 	return []byte{}, errNotFound
 }
 
 func loadResponse(filename string) ([]byte, error) {
-	return responses.ReadFile(filepath.Join("internal", "mockserver", "responses", filename))
+	return ioutil.ReadFile(filepath.Join("internal", "mockserver", "responses", filename))
 }

@@ -28,7 +28,6 @@ import (
 	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vim25"
-	_ "github.com/vmware/govmomi/vsan/simulator"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -55,6 +54,10 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		}
 		scraper.client.vimDriver = c
 		scraper.client.finder = find.NewFinder(c)
+		// Performance metrics rely on time based publishing so this is inherently flaky for a
+		// integration test, so setting the performance manager to nil to not attempt to compare
+		// performance metrcs. Coverage for this is encompassed in ./scraper_test.go
+		scraper.client.pm = nil
 		err := scraper.Start(ctx, componenttest.NewNopHost())
 		require.NoError(t, err)
 
@@ -62,11 +65,19 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, metrics)
 
+		// the vcsim will auto assign the VM to one of the listed hosts, so this is a way to ignore the host.name for those vm metrics
+		// please see #10129
+		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			if _, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("vcenter.host.name"); ok {
+				metrics.ResourceMetrics().At(i).Resource().Attributes().Remove("vcenter.host.name")
+				metrics.ResourceMetrics().At(i).Resource().Attributes().InsertString("vcenter.host.name", "DC0_C0_H0")
+			}
+		}
+
 		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.json")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
-		err = scrapertest.CompareMetrics(expectedMetrics, metrics, scrapertest.IgnoreMetricValues())
-		require.NoError(t, err)
+		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, metrics, scrapertest.IgnoreMetricValues()))
 
 		err = scraper.Shutdown(ctx)
 		require.NoError(t, err)
