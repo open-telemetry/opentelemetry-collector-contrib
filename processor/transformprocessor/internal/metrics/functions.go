@@ -17,8 +17,9 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 // registry is a map of names to functions for metrics pipelines only
