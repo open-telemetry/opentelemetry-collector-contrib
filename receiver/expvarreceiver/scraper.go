@@ -107,10 +107,12 @@ func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	e.mb.RecordProcessRuntimeMemstatsOtherSysDataPoint(now, int64(memStats.OtherSys))
 	e.mb.RecordProcessRuntimeMemstatsNextGcDataPoint(now, int64(memStats.NextGC))
 	e.mb.RecordProcessRuntimeMemstatsPauseTotalDataPoint(now, int64(memStats.PauseTotalNs))
-	e.mb.RecordProcessRuntimeMemstatsLastPauseDataPoint(now, int64(memStats.PauseNs[(memStats.NumGC+255)%256]))
 	e.mb.RecordProcessRuntimeMemstatsNumGcDataPoint(now, int64(memStats.NumGC))
 	e.mb.RecordProcessRuntimeMemstatsNumForcedGcDataPoint(now, int64(memStats.NumForcedGC))
 	e.mb.RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(now, memStats.GCCPUFraction)
+	// Memstats exposes a circular buffer of recent GC stop-the-world pause times.
+	// The most recent pause is at PauseNs[(NumGC+255)%256].
+	e.mb.RecordProcessRuntimeMemstatsLastPauseDataPoint(now, int64(memStats.PauseNs[(memStats.NumGC+255)%256]))
 
 	return e.mb.Emit(), nil
 }
