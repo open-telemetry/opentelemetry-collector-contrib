@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/mongodb-forks/digest v1.0.3
+	github.com/mongodb-forks/digest v1.0.4
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/atlas v0.16.0
 	go.opentelemetry.io/collector v0.51.0
