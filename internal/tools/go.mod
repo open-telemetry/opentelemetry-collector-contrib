@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220502161954-e2bf744925c0
 	go.opentelemetry.io/build-tools/crosslink v0.0.0-20220502161954-e2bf744925c0
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210920164323-2ceabab23375
-	go.opentelemetry.io/build-tools/multimod v0.0.0-20220110194441-2a9d5288bd70
+	go.opentelemetry.io/build-tools/multimod v0.0.0-20220502161954-e2bf744925c0
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
 )
 

@@ -1,5 +1,11 @@
 # Elasticsearch Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www.elastic.co/elasticsearch).
 
 ## Configuration options
@@ -82,3 +88,5 @@ exporters:
     endpoints:
     - "https://localhost:9200"
 ```
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
