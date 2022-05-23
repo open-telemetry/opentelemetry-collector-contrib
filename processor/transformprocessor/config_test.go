@@ -41,7 +41,7 @@ func TestLoadingConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	p0 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.EqualValues(t, p0, &Config{
+	assert.Equal(t, p0, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Traces: SignalConfig{
 			Queries: []string{
