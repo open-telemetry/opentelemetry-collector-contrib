@@ -62,6 +62,9 @@ func (e *expVarScraper) start(_ context.Context, host component.Host) error {
 func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	emptyMetrics := pmetric.NewMetrics()
 	req, err := http.NewRequestWithContext(ctx, "GET", e.cfg.Endpoint, nil)
+	if err != nil {
+		return emptyMetrics, err
+	}
 	resp, err := e.client.Do(req)
 	if err != nil {
 		return emptyMetrics, err
