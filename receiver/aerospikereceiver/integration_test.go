@@ -37,7 +37,7 @@ func TestAerospikeIntegration(t *testing.T) {
 	t.Parallel()
 
 	ct := containertest.New(t)
-	container := ct.StartImage("docker.io/amd64/aerospike:ce-6.0.0.1", containertest.WithPortReady(3000))
+	container := ct.StartImage("aerospike:ce-5.7.0.17", containertest.WithPortReady(3000))
 
 	f := aerospikereceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*aerospikereceiver.Config)
