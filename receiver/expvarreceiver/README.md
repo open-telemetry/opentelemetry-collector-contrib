@@ -11,7 +11,7 @@ which exposes various information about the Go runtime.
 
 ### Default
 
-By default, without any configuration, a request will be sent to `http://localhost:8080/debug/vars` 
+By default, without any configuration, a request will be sent to `http://localhost:8000/debug/vars` 
 every 60 seconds. The default configuration is achieved by the following:
 
 ```yaml

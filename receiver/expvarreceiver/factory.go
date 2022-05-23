@@ -29,7 +29,8 @@ import (
 
 const (
 	typeStr         = "expvar"
-	defaultEndpoint = "http://localhost:8000/debug/vars"
+	defaultPath     = "/debug/vars"
+	defaultEndpoint = "http://localhost:8000" + defaultPath
 	defaultTimeout  = 3 * time.Second
 )
 
