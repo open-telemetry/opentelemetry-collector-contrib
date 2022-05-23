@@ -37,19 +37,24 @@ type perfCounterMetricWatcher struct {
 	MetricRep
 }
 
+type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+
 // scraper is the type that scrapes various host metrics.
 type scraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
 	watchers []perfCounterMetricWatcher
+
+	// for mocking
+	newWatcher newWatcherFunc
 }
 
 func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
-	return &scraper{cfg: cfg, settings: settings, watchers: []perfCounterMetricWatcher{}}
+	return &scraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcher}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	watchers, err := initWatchers(s.cfg.PerfCounters)
+	watchers, err := s.initWatchers()
 	if err != nil {
 		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
 	}
@@ -57,14 +62,14 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func initWatchers(objConfigs []ObjectConfig) ([]perfCounterMetricWatcher, error) {
+func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 	var errs error
 	var watchers []perfCounterMetricWatcher
 
-	for _, objCfg := range objConfigs {
+	for _, objCfg := range s.cfg.PerfCounters {
 		for _, instance := range instancesFromConfig(objCfg) {
 			for _, counterCfg := range objCfg.Counters {
-				pcw, err := winperfcounters.NewWatcher(objCfg.Object, instance, counterCfg.Name)
+				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name)
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue
@@ -167,12 +172,13 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	}
 
 	dp := dps.AppendEmpty()
-	dp.Attributes().InsertString(instanceLabelName, counterValue.InstanceName)
 	if attributes != nil {
 		for attKey, attVal := range attributes {
 			dp.Attributes().InsertString(attKey, attVal)
 		}
-
+	}
+	if counterValue.InstanceName != "" {
+		dp.Attributes().InsertString(instanceLabelName, counterValue.InstanceName)
 	}
 
 	dp.SetTimestamp(now)
