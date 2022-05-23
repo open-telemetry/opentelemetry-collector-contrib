@@ -2,7 +2,7 @@ name: flinkmetricsreceiver
 
 resource_attributes:
   # These resource attributes are Flinks system scope variables, which contains context information about metrics. These are required to uniquely identify incoming metrics as the same job can run multiple times concurrently. See https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#system-scope for more information.
-  flink.host.name:
+  host.name:
     description: The host name.
     type: string
   flink.taskmanager.id:

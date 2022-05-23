@@ -74,7 +74,7 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 			_ = s.mb.RecordFlinkJobmanagerJvmMemoryHeapUsedDataPoint(now, metric.Value)
 		}
 	}
-	s.mb.EmitForResource(metadata.WithFlinkHostName(jobmanagerMetrics.Host))
+	s.mb.EmitForResource(metadata.WithHostName(jobmanagerMetrics.Host))
 }
 
 func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, taskmanagerMetricInstances []*models.TaskmanagerMetrics) {
@@ -133,7 +133,7 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 	}
 	if len(taskmanagerMetricInstances) > 0 {
 		s.mb.EmitForResource(
-			metadata.WithFlinkHostName(taskmanagerMetricInstances[0].Host),
+			metadata.WithHostName(taskmanagerMetricInstances[0].Host),
 			metadata.WithFlinkTaskmanagerID(taskmanagerMetricInstances[0].TaskmanagerID),
 		)
 	}
@@ -160,7 +160,7 @@ func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetr
 	}
 	if len(jobsMetricsInstances) > 0 {
 		s.mb.EmitForResource(
-			metadata.WithFlinkHostName(jobsMetricsInstances[0].Host),
+			metadata.WithHostName(jobsMetricsInstances[0].Host),
 			metadata.WithFlinkJobName(jobsMetricsInstances[0].JobName),
 		)
 	}
@@ -180,7 +180,7 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 			}
 			if i == len(subtaskMetrics.Metrics)-1 {
 				s.mb.EmitForResource(
-					metadata.WithFlinkHostName(subtaskMetrics.Host),
+					metadata.WithHostName(subtaskMetrics.Host),
 					metadata.WithFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID),
 					metadata.WithFlinkJobName(subtaskMetrics.JobName),
 					metadata.WithFlinkTaskName(subtaskMetrics.TaskName),
@@ -209,7 +209,7 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 			}
 			if i == len(subtaskMetrics.Metrics)-1 {
 				s.mb.EmitForResource(
-					metadata.WithFlinkHostName(subtaskMetrics.Host),
+					metadata.WithHostName(subtaskMetrics.Host),
 					metadata.WithFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID),
 					metadata.WithFlinkJobName(subtaskMetrics.JobName),
 					metadata.WithFlinkTaskName(subtaskMetrics.TaskName),

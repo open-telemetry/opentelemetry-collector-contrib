@@ -2937,13 +2937,6 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithFlinkHostName sets provided value as "flink.host.name" attribute for current resource.
-func WithFlinkHostName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("flink.host.name", val)
-	}
-}
-
 // WithFlinkJobName sets provided value as "flink.job.name" attribute for current resource.
 func WithFlinkJobName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
@@ -2969,6 +2962,13 @@ func WithFlinkTaskName(val string) ResourceMetricsOption {
 func WithFlinkTaskmanagerID(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().UpsertString("flink.taskmanager.id", val)
+	}
+}
+
+// WithHostName sets provided value as "host.name" attribute for current resource.
+func WithHostName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("host.name", val)
 	}
 }
 

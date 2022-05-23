@@ -71,11 +71,11 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| flink.host.name | The host name. | String |
 | flink.job.name | The job name. | String |
 | flink.subtask.index | The subtask index. | String |
 | flink.task.name | The task name. | String |
 | flink.taskmanager.id | The taskmanager ID. | String |
+| host.name | The host name. | String |
 
 ## Metric attributes
 
