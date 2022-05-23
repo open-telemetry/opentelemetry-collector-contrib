@@ -17,6 +17,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"time"
 )
 
 // Config defines configuration for the exporter.
@@ -37,6 +38,18 @@ type ResolverSettings struct {
 	DNS    *DNSResolver    `mapstructure:"dns"`
 }
 
+func createDefaultResolverSettings() ResolverSettings {
+	return ResolverSettings{
+		Static: nil,
+		DNS: &DNSResolver{
+			Hostname: "",
+			Port:     "",
+			Interval: defaultResInterval,
+			Timeout:  defaultResTimeout,
+		},
+	}
+}
+
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
 type StaticResolver struct {
 	Hostnames []string `mapstructure:"hostnames"`
@@ -44,6 +57,8 @@ type StaticResolver struct {
 
 // DNSResolver defines the configuration for the DNS resolver
 type DNSResolver struct {
-	Hostname string `mapstructure:"hostname"`
-	Port     string `mapstructure:"port"`
+	Hostname string        `mapstructure:"hostname"`
+	Port     string        `mapstructure:"port"`
+	Interval time.Duration `mapstructure:"interval"`
+	Timeout  time.Duration `mapstructure:"timeout"`
 }

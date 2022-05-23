@@ -81,7 +81,7 @@ func newLoadBalancer(params component.ExporterCreateSettings, cfg config.Exporte
 		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
 
 		var err error
-		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port)
+		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port, oCfg.Resolver.DNS.Interval, oCfg.Resolver.DNS.Timeout)
 		if err != nil {
 			return nil, err
 		}

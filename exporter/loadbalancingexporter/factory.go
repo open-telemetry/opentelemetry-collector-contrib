@@ -17,7 +17,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -50,6 +49,7 @@ func createDefaultConfig() config.Exporter {
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
+		Resolver: createDefaultResolverSettings(),
 	}
 }
 

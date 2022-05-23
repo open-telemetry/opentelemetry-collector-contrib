@@ -59,7 +59,7 @@ type netResolver interface {
 	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
 }
 
-func newDNSResolver(logger *zap.Logger, hostname string, port string) (*dnsResolver, error) {
+func newDNSResolver(logger *zap.Logger, hostname string, port string, interval time.Duration, timeout time.Duration) (*dnsResolver, error) {
 	if len(hostname) == 0 {
 		return nil, errNoHostname
 	}
@@ -69,8 +69,8 @@ func newDNSResolver(logger *zap.Logger, hostname string, port string) (*dnsResol
 		hostname:    hostname,
 		port:        port,
 		resolver:    &net.Resolver{},
-		resInterval: defaultResInterval,
-		resTimeout:  defaultResTimeout,
+		resInterval: interval,
+		resTimeout:  timeout,
 		stopCh:      make(chan struct{}),
 	}, nil
 }
@@ -82,6 +82,9 @@ func (r *dnsResolver) start(ctx context.Context) error {
 
 	go r.periodicallyResolve()
 
+	r.logger.Debug("DNS resolver started",
+		zap.String("hostname", r.hostname), zap.String("port", r.port),
+		zap.Duration("interval", r.resInterval), zap.Duration("timeout", r.resTimeout))
 	return nil
 }
 
@@ -104,6 +107,8 @@ func (r *dnsResolver) periodicallyResolve() {
 			ctx, cancel := context.WithTimeout(context.Background(), r.resTimeout)
 			if _, err := r.resolve(ctx); err != nil {
 				r.logger.Warn("failed to resolve", zap.Error(err))
+			} else {
+				r.logger.Debug("resolved successfully")
 			}
 			cancel()
 		case <-r.stopCh:

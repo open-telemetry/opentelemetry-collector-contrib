@@ -30,7 +30,7 @@ import (
 
 func TestInitialDNSResolution(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -60,7 +60,7 @@ func TestInitialDNSResolution(t *testing.T) {
 
 func TestInitialDNSResolutionWithPort(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -90,7 +90,7 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 
 func TestErrNoHostname(t *testing.T) {
 	// test
-	res, err := newDNSResolver(zap.NewNop(), "", "")
+	res, err := newDNSResolver(zap.NewNop(), "", "", 5*time.Second, 1*time.Second)
 
 	// verify
 	assert.Nil(t, res)
@@ -99,7 +99,7 @@ func TestErrNoHostname(t *testing.T) {
 
 func TestCantResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -118,7 +118,7 @@ func TestCantResolve(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	resolve := []net.IPAddr{
@@ -181,7 +181,7 @@ func TestEqualStringSlice(t *testing.T) {
 
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	counter := 0
@@ -238,7 +238,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -280,7 +280,7 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 
 func TestShutdownClearsCallbacks(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{}
