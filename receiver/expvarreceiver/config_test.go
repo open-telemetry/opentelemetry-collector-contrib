@@ -72,6 +72,9 @@ func TestFailedLoadConfig(t *testing.T) {
 	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_hostless_endpoint_config.yaml"), factories)
 	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: host not found in HTTP endpoint")
 
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_invalid_url_config.yaml"), factories)
+	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: endpoint is not a valid URL: parse \"#$%^&*()_\": invalid URL escape \"%^&\"")
+
 	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_collection_interval_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* error decoding 'collection_interval': time: invalid duration \"fourminutes\"")
 
