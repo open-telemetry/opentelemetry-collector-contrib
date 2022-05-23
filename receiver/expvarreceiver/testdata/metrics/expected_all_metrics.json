@@ -5,7 +5,8 @@
       "scopeMetrics": [
         {
           "scope": {
-            "name": "otelcol/expvarreceiver"
+            "name": "otelcol/expvarreceiver",
+            "version": "latest"
           },
           "metrics": [
             {
