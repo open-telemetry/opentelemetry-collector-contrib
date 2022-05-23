@@ -181,7 +181,7 @@ func TestEqualStringSlice(t *testing.T) {
 
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
 	counter := 0
@@ -216,7 +216,6 @@ func TestPeriodicallyResolve(t *testing.T) {
 			return resolve[0], nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
 
 	wg := sync.WaitGroup{}
 	res.onChange(func(backends []string) {
@@ -238,7 +237,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -263,7 +262,6 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 			return resolve, nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
 
 	// test
 	wg.Add(2)
