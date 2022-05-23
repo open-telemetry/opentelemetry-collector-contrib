@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func hello() (ExprFunc, error) {
@@ -39,21 +41,21 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "string literal",
 			val: Value{
-				String: strp("str"),
+				String: testhelper.Strp("str"),
 			},
 			want: "str",
 		},
 		{
 			name: "float literal",
 			val: Value{
-				Float: floatp(1.2),
+				Float: testhelper.Floatp(1.2),
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
 			val: Value{
-				Int: intp(12),
+				Int: testhelper.Intp(12),
 			},
 			want: int64(12),
 		},

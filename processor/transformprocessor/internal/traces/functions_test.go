@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_newFunctionCall(t *testing.T) {
@@ -53,7 +54,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("cat"),
+						String: testhelper.Strp("cat"),
 					},
 				},
 			},
@@ -80,7 +81,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -104,7 +105,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -131,10 +132,10 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 					{
-						String: strp("test2"),
+						String: testhelper.Strp("test2"),
 					},
 				},
 			},
@@ -183,7 +184,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -212,7 +213,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(0),
+						Int: testhelper.Intp(0),
 					},
 				},
 			},
@@ -241,7 +242,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(100),
+						Int: testhelper.Intp(100),
 					},
 				},
 			},
@@ -270,7 +271,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(11),
+						Int: testhelper.Intp(11),
 					},
 				},
 			},
@@ -302,7 +303,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(11),
+						Int: testhelper.Intp(11),
 					},
 				},
 			},
@@ -331,7 +332,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -358,7 +359,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(0),
+						Int: testhelper.Intp(0),
 					},
 				},
 			},
@@ -384,7 +385,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(100),
+						Int: testhelper.Intp(100),
 					},
 				},
 			},
@@ -416,7 +417,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
