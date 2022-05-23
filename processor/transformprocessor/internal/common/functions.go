@@ -247,6 +247,11 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 					return nil, fmt.Errorf("invalid argument at position %v, must be a string", i)
 				}
 				args = append(args, reflect.ValueOf(*argDef.String))
+			case "bool":
+				if argDef.Bool == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be a bool", i)
+				}
+				args = append(args, reflect.ValueOf(bool(*argDef.Bool)))
 			}
 		}
 		val := reflect.ValueOf(f)

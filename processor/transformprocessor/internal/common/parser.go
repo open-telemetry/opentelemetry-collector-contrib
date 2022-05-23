@@ -20,6 +20,15 @@ import (
 	"go.uber.org/multierr"
 )
 
+// Type for capturing booleans, see:
+// https://github.com/alecthomas/participle#capturing-boolean-value
+type Boolean bool
+
+func (b *Boolean) Capture(values []string) error {
+	*b = values[0] == "true"
+	return nil
+}
+
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
 // nolint:govet
 type ParsedQuery struct {
@@ -47,6 +56,7 @@ type Invocation struct {
 // nolint:govet
 type Value struct {
 	Invocation *Invocation `( @@`
+	Bool       *Boolean    `| @("true" | "false")`
 	String     *string     `| @String`
 	Float      *float64    `| @Float`
 	Int        *int64      `| @Int`

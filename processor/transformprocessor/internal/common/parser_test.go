@@ -278,6 +278,40 @@ func Test_parse(t *testing.T) {
 				Condition: nil,
 			},
 		},
+		{
+			query: `convert_gauge_to_sum("cumulative", false)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "convert_gauge_to_sum",
+					Arguments: []Value{
+						{
+							String: strp("cumulative"),
+						},
+						{
+							Bool: boolp(false),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
+		{
+			query: `convert_gauge_to_sum("cumulative", true)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "convert_gauge_to_sum",
+					Arguments: []Value{
+						{
+							String: strp("cumulative"),
+						},
+						{
+							Bool: boolp(true),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -303,4 +337,20 @@ func Test_parse_failure(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+func strp(s string) *string {
+	return &s
+}
+
+func floatp(f float64) *float64 {
+	return &f
+}
+
+func intp(i int64) *int64 {
+	return &i
+}
+
+func boolp(b bool) *Boolean {
+	return (*Boolean)(&b)
 }

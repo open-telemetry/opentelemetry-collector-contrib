@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
@@ -40,7 +41,7 @@ func TestLoadingConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	p0 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p0, &Config{
+	assert.EqualValues(t, p0, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Traces: SignalConfig{
 			Queries: []string{
@@ -56,7 +57,7 @@ func TestLoadingConfig(t *testing.T) {
 				`keep_keys(attributes, "http.method", "http.path")`,
 			},
 
-			functions: traces.DefaultFunctions(),
+			functions: metrics.DefaultFunctions(),
 		},
 		Logs: SignalConfig{
 			Queries: []string{
