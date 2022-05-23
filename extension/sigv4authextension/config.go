@@ -36,8 +36,9 @@ type Config struct {
 
 // AssumeRole holds the configuration needed to assume a role
 type AssumeRole struct {
-	ARN         string `mapstructure:"arn,omitempty"`
-	SessionName string `mapstructure:"session_name,omitempty"`
+	ARN         string   `mapstructure:"arn,omitempty"`
+	ARNs        []string `mapstructure:"arns,omitempty"`
+	SessionName string   `mapstructure:"session_name,omitempty"`
 }
 
 // compile time check that the Config struct satisfies the config.Extension interface

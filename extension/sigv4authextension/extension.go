@@ -88,10 +88,19 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+	if cfg.AssumeRole.ARN != "" && len(cfg.AssumeRole.ARNs) > 0 {
+		return nil, errors.New("Must not set `arn` and `arns`")
+	}
 	if cfg.AssumeRole.ARN != "" {
 		stsSvc := sts.NewFromConfig(awscfg)
 
 		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.AssumeRole.ARN)
+		awscfg.Credentials = aws.NewCredentialsCache(provider)
+	}
+	if len(cfg.AssumeRole.ARNs) > 0 {
+		stsSvc := sts.NewFromConfig(awscfg)
+
+		provider := NewAssumeChainedRoleProvider(stsSvc, cfg.AssumeRole.ARNs)
 		awscfg.Credentials = aws.NewCredentialsCache(provider)
 	}
 

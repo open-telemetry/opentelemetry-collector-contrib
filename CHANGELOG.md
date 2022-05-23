@@ -22,6 +22,7 @@
 - `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
+- `sigv2authextension`: Support AWS role chaining (#10256)
 
 ### 🧰 Bug fixes 🧰
 
