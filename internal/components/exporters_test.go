@@ -55,7 +55,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -390,10 +390,10 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "newrelic",
+			exporter: "mezmo",
 			getConfigFn: func() config.Exporter {
-				cfg := expFactories["newrelic"].CreateDefaultConfig().(*newrelicexporter.Config)
-				cfg.CommonConfig.HostOverride = "http://" + endpoint
+				cfg := expFactories["mezmo"].CreateDefaultConfig().(*mezmoexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},

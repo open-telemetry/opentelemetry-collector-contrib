@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -93,7 +94,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "not matching slice type",
+			name: "keep_keys not matching slice type",
 			inv: Invocation{
 				Function: "keep_keys",
 				Arguments: []Value{
@@ -113,7 +114,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "not int",
+			name: "truncate_all not int",
 			inv: Invocation{
 				Function: "truncate_all",
 				Arguments: []Value{
@@ -132,11 +133,88 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "truncate_all negative limit",
+			inv: Invocation{
+				Function: "truncate_all",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(-1),
+					},
+				},
+			},
+		},
+		{
+			name: "limit not int",
+			inv: Invocation{
+				Function: "limit",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						String: strp("not an int"),
+					},
+				},
+			},
+		},
+		{
+			name: "limit negative limit",
+			inv: Invocation{
+				Function: "limit",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(-1),
+					},
+				},
+			},
+		},
+		{
+			name: "function call returns error",
+			inv: Invocation{
+				Function: "testing_error",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, DefaultFunctions(), testParsePath)
+
+			functions := DefaultFunctions()
+			functions["testing_error"] = functionThatHasAnError
+
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
 			assert.Error(t, err)
 		})
 	}
+}
+
+func functionThatHasAnError() (ExprFunc, error) {
+	err := errors.New("testing")
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, err
 }

@@ -622,7 +622,7 @@ func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pcommon.NewValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -726,7 +726,7 @@ func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolOperations, pcommon.NewValueString(bufferPoolOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(bufferPoolOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -830,7 +830,7 @@ func (m *metricMysqlBufferPoolPages) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolPages, pcommon.NewValueString(bufferPoolPagesAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(bufferPoolPagesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -883,7 +883,7 @@ func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pcommon.NewValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert("status", pcommon.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -936,7 +936,7 @@ func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Command, pcommon.NewValueString(commandAttributeValue))
+	dp.Attributes().Insert("command", pcommon.NewValueString(commandAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -989,7 +989,7 @@ func (m *metricMysqlDoubleWrites) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DoubleWrites, pcommon.NewValueString(doubleWritesAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(doubleWritesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1042,7 +1042,7 @@ func (m *metricMysqlHandlers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Handler, pcommon.NewValueString(handlerAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(handlerAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1095,7 +1095,7 @@ func (m *metricMysqlLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Locks, pcommon.NewValueString(locksAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(locksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1148,7 +1148,7 @@ func (m *metricMysqlLogOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.LogOperations, pcommon.NewValueString(logOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(logOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1201,7 +1201,7 @@ func (m *metricMysqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operations, pcommon.NewValueString(operationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1254,7 +1254,7 @@ func (m *metricMysqlPageOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.PageOperations, pcommon.NewValueString(pageOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(pageOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1307,7 +1307,7 @@ func (m *metricMysqlRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowLocks, pcommon.NewValueString(rowLocksAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(rowLocksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1360,7 +1360,7 @@ func (m *metricMysqlRowOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowOperations, pcommon.NewValueString(rowOperationsAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(rowOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1413,7 +1413,7 @@ func (m *metricMysqlSorts) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Sorts, pcommon.NewValueString(sortsAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(sortsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1466,7 +1466,7 @@ func (m *metricMysqlThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Threads, pcommon.NewValueString(threadsAttributeValue))
+	dp.Attributes().Insert("kind", pcommon.NewValueString(threadsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1568,19 +1568,37 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/mysqlreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
@@ -1601,6 +1619,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricMysqlRowOperations.emit(ils.Metrics())
 	mb.metricMysqlSorts.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -1610,8 +1631,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -1623,42 +1644,42 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pcommon.Tim
 }
 
 // RecordMysqlBufferPoolLimitDataPoint adds a data point to mysql.buffer_pool.limit metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pcommon.Timestamp, val string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolLimit, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, i)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolLimit, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlBufferPoolOperationsDataPoint adds a data point to mysql.buffer_pool.operations metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pcommon.Timestamp, val string, bufferPoolOperationsAttributeValue AttributeBufferPoolOperations) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, i, bufferPoolOperationsAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolOperationsAttributeValue AttributeBufferPoolOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, val, bufferPoolOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlBufferPoolPageFlushesDataPoint adds a data point to mysql.buffer_pool.page_flushes metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pcommon.Timestamp, val string) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolPageFlushes, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, i)
+func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolPageFlushes, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlBufferPoolPagesDataPoint adds a data point to mysql.buffer_pool.pages metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pcommon.Timestamp, val string, bufferPoolPagesAttributeValue AttributeBufferPoolPages) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlBufferPoolPages, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, i, bufferPoolPagesAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolPagesAttributeValue AttributeBufferPoolPages) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolPages, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, val, bufferPoolPagesAttributeValue.String())
 	return nil
 }
 
@@ -1668,112 +1689,112 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pcommon.Timesta
 }
 
 // RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.
-func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, val string, commandAttributeValue AttributeCommand) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlCommands, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, i, commandAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inputVal string, commandAttributeValue AttributeCommand) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlCommands, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlDoubleWritesDataPoint adds a data point to mysql.double_writes metric.
-func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp, val string, doubleWritesAttributeValue AttributeDoubleWrites) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlDoubleWrites, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, i, doubleWritesAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp, inputVal string, doubleWritesAttributeValue AttributeDoubleWrites) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlDoubleWrites, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, val, doubleWritesAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlHandlersDataPoint adds a data point to mysql.handlers metric.
-func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, val string, handlerAttributeValue AttributeHandler) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlHandlers, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, i, handlerAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, inputVal string, handlerAttributeValue AttributeHandler) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlHandlers, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, val, handlerAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlLocksDataPoint adds a data point to mysql.locks metric.
-func (mb *MetricsBuilder) RecordMysqlLocksDataPoint(ts pcommon.Timestamp, val string, locksAttributeValue AttributeLocks) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlLocks, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlLocks.recordDataPoint(mb.startTime, ts, i, locksAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlLocksDataPoint(ts pcommon.Timestamp, inputVal string, locksAttributeValue AttributeLocks) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlLocks, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlLocks.recordDataPoint(mb.startTime, ts, val, locksAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlLogOperationsDataPoint adds a data point to mysql.log_operations metric.
-func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp, val string, logOperationsAttributeValue AttributeLogOperations) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlLogOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, i, logOperationsAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp, inputVal string, logOperationsAttributeValue AttributeLogOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlLogOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, val, logOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlOperationsDataPoint adds a data point to mysql.operations metric.
-func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, val string, operationsAttributeValue AttributeOperations) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, i, operationsAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlPageOperationsDataPoint adds a data point to mysql.page_operations metric.
-func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestamp, val string, pageOperationsAttributeValue AttributePageOperations) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlPageOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, i, pageOperationsAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestamp, inputVal string, pageOperationsAttributeValue AttributePageOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlPageOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlRowLocksDataPoint adds a data point to mysql.row_locks metric.
-func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pcommon.Timestamp, val string, rowLocksAttributeValue AttributeRowLocks) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlRowLocks, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlRowLocks.recordDataPoint(mb.startTime, ts, i, rowLocksAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pcommon.Timestamp, inputVal string, rowLocksAttributeValue AttributeRowLocks) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlRowLocks, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlRowLocks.recordDataPoint(mb.startTime, ts, val, rowLocksAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlRowOperationsDataPoint adds a data point to mysql.row_operations metric.
-func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp, val string, rowOperationsAttributeValue AttributeRowOperations) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlRowOperations, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, i, rowOperationsAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp, inputVal string, rowOperationsAttributeValue AttributeRowOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlRowOperations, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, val, rowOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlSortsDataPoint adds a data point to mysql.sorts metric.
-func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pcommon.Timestamp, val string, sortsAttributeValue AttributeSorts) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlSorts, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlSorts.recordDataPoint(mb.startTime, ts, i, sortsAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pcommon.Timestamp, inputVal string, sortsAttributeValue AttributeSorts) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlSorts, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlSorts.recordDataPoint(mb.startTime, ts, val, sortsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlThreadsDataPoint adds a data point to mysql.threads metric.
-func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, val string, threadsAttributeValue AttributeThreads) error {
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for MysqlThreads, value was %s: %w", val, err)
-	} else {
-		mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, i, threadsAttributeValue.String())
+func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inputVal string, threadsAttributeValue AttributeThreads) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlThreads, value was %s: %w", inputVal, err)
 	}
+	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue.String())
 	return nil
 }
 
@@ -1785,53 +1806,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// BufferPoolData (The status of buffer pool data.)
-	BufferPoolData string
-	// BufferPoolOperations (The buffer pool operations types.)
-	BufferPoolOperations string
-	// BufferPoolPages (The buffer pool pages types.)
-	BufferPoolPages string
-	// Command (The command types.)
-	Command string
-	// DoubleWrites (The doublewrite types.)
-	DoubleWrites string
-	// Handler (The handler types.)
-	Handler string
-	// Locks (The table locks type.)
-	Locks string
-	// LogOperations (The log operation types.)
-	LogOperations string
-	// Operations (The operation types.)
-	Operations string
-	// PageOperations (The page operation types.)
-	PageOperations string
-	// RowLocks (The row lock type.)
-	RowLocks string
-	// RowOperations (The row operation type.)
-	RowOperations string
-	// Sorts (The sort count type.)
-	Sorts string
-	// Threads (The thread count type.)
-	Threads string
-}{
-	"status",
-	"operation",
-	"kind",
-	"command",
-	"kind",
-	"kind",
-	"kind",
-	"operation",
-	"operation",
-	"operation",
-	"kind",
-	"operation",
-	"kind",
-	"kind",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

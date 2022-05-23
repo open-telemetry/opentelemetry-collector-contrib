@@ -91,11 +91,11 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pcommon.NewValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pcommon.NewValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pcommon.NewValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("mode", pcommon.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert("mountpoint", pcommon.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -148,11 +148,11 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pcommon.NewValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pcommon.NewValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pcommon.NewValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("mode", pcommon.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert("mountpoint", pcommon.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -203,10 +203,10 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Device, pcommon.NewValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pcommon.NewValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pcommon.NewValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pcommon.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert("device", pcommon.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert("mode", pcommon.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert("mountpoint", pcommon.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -280,26 +280,47 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/filesystem")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemFilesystemInodesUsage.emit(ils.Metrics())
 	mb.metricSystemFilesystemUsage.emit(ils.Metrics())
 	mb.metricSystemFilesystemUtilization.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -309,8 +330,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -339,26 +360,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Device (Identifier of the filesystem.)
-	Device string
-	// Mode (Mountpoint mode such "ro", "rw", etc.)
-	Mode string
-	// Mountpoint (Mountpoint path.)
-	Mountpoint string
-	// State (Breakdown of filesystem usage by type.)
-	State string
-	// Type (Filesystem type, such as, "ext4", "tmpfs", etc.)
-	Type string
-}{
-	"device",
-	"mode",
-	"mountpoint",
-	"state",
-	"type",
-}
-
-// A is an alias for Attributes.
-var A = Attributes

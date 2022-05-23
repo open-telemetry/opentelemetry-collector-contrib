@@ -311,8 +311,39 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 }
 
 func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
+	const (
+		metadataPrefix = "metadata."
+		authPrefix     = "auth."
+	)
+
 	ci := client.FromContext(ctx)
-	vals := ci.Metadata.Get(key)
+	var vals []string
+
+	switch {
+	case strings.HasPrefix(key, metadataPrefix):
+		mdKey := strings.TrimPrefix(key, metadataPrefix)
+		vals = ci.Metadata.Get(mdKey)
+	case strings.HasPrefix(key, authPrefix):
+		if ci.Auth == nil {
+			return pcommon.Value{}, false
+		}
+
+		attrName := strings.TrimPrefix(key, authPrefix)
+		attr := ci.Auth.GetAttribute(attrName)
+
+		switch a := attr.(type) {
+		case string:
+			return pcommon.NewValueString(a), true
+		case []string:
+			vals = a
+		default:
+			// TODO: Warn about unexpected attribute types.
+			return pcommon.Value{}, false
+		}
+	default:
+		// Fallback to metadata for backwards compatibility.
+		vals = ci.Metadata.Get(key)
+	}
 
 	if len(vals) == 0 {
 		return pcommon.Value{}, false

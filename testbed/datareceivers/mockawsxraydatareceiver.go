@@ -76,12 +76,11 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 		return err
 	}
 
-	return ar.receiver.Start(context.Background(), ar)
+	return ar.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (ar *MockAwsXrayDataReceiver) Stop() error {
-	ar.receiver.Shutdown(context.Background())
-	return nil
+	return ar.receiver.Shutdown(context.Background())
 }
 
 func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {

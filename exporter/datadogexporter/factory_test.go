@@ -70,8 +70,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
-			Key:  "API_KEY",
-			Site: "SITE",
+			Key:              "API_KEY",
+			Site:             "SITE",
+			FailOnInvalidKey: false,
 		},
 
 		Metrics: ddconfig.MetricsConfig{
@@ -94,7 +95,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "APM_URL",
 			},
@@ -151,8 +151,9 @@ func TestLoadConfig(t *testing.T) {
 		Tags:       []string{"example:tag"},
 	}, apiConfig.TagsConfig)
 	assert.Equal(t, ddconfig.APIConfig{
-		Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		Site: "datadoghq.eu",
+		Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Site:             "datadoghq.eu",
+		FailOnInvalidKey: true,
 	}, apiConfig.API)
 	assert.Equal(t, ddconfig.MetricsConfig{
 		TCPAddr: confignet.TCPAddr{
@@ -173,7 +174,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, apiConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
-		SampleRate: 1,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.eu",
 		},
@@ -202,8 +202,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		API: ddconfig.APIConfig{
-			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			Site: "datadoghq.com",
+			Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			Site:             "datadoghq.com",
+			FailOnInvalidKey: false,
 		},
 
 		Metrics: ddconfig.MetricsConfig{
@@ -226,7 +227,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
@@ -303,8 +303,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	}, apiConfig.TagsConfig)
 	assert.Equal(t,
 		ddconfig.APIConfig{
-			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			Site: "datadoghq.eu",
+			Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			Site:             "datadoghq.eu",
+			FailOnInvalidKey: false,
 		}, apiConfig.API)
 	assert.Equal(t,
 		ddconfig.MetricsConfig{
@@ -327,7 +328,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		}, apiConfig.Metrics)
 	assert.Equal(t,
 		ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.test",
 			},
@@ -357,8 +357,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		EnvVarTags: "envexample:tag envexample2:tag",
 	}, defaultConfig.TagsConfig)
 	assert.Equal(t, ddconfig.APIConfig{
-		Key:  "replacedapikey",
-		Site: "datadoghq.test",
+		Key:              "replacedapikey",
+		Site:             "datadoghq.test",
+		FailOnInvalidKey: false,
 	}, defaultConfig.API)
 	assert.Equal(t, ddconfig.MetricsConfig{
 		TCPAddr: confignet.TCPAddr{
@@ -379,7 +380,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		},
 	}, defaultConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
-		SampleRate: 1,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.com",
 		},
@@ -417,6 +417,49 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
+func TestCreateAPIMetricsExporterFailOnInvalidkey(t *testing.T) {
+	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
+	defer server.Close()
+
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// Use the mock server for API key validation
+	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
+	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.HostMetadata.Enabled = false
+
+	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
+		c.API.FailOnInvalidKey = true
+		ctx := context.Background()
+		exp, err := factory.CreateMetricsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, exp)
+	})
+	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
+		c.API.FailOnInvalidKey = false
+		ctx := context.Background()
+		exp, err := factory.CreateMetricsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, exp)
+	})
+}
+
 func TestCreateAPITracesExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
@@ -445,6 +488,49 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+}
+
+func TestCreateAPITracesExporterFailOnInvalidkey(t *testing.T) {
+	server := testutils.DatadogServerMock(testutils.ValidateAPIKeyEndpointInvalid)
+	defer server.Close()
+
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// Use the mock server for API key validation
+	c := (cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")]).(*ddconfig.Config)
+	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.HostMetadata.Enabled = false
+
+	t.Run("fail_on_invalid_key is true", func(t *testing.T) {
+		c.API.FailOnInvalidKey = true
+		ctx := context.Background()
+		exp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, exp)
+	})
+	t.Run("fail_on_invalid_key is false", func(t *testing.T) {
+		c.API.FailOnInvalidKey = false
+		ctx := context.Background()
+		exp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg.Exporters[config.NewComponentIDWithName(typeStr, "api")],
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, exp)
+	})
 }
 
 func TestOnlyMetadata(t *testing.T) {
@@ -493,7 +579,9 @@ func TestOnlyMetadata(t *testing.T) {
 
 	err = expTraces.Start(ctx, nil)
 	assert.NoError(t, err)
-	defer expTraces.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, expTraces.Shutdown(ctx))
+	}()
 
 	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
 	require.NoError(t, err)

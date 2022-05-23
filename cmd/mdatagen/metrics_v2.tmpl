@@ -95,8 +95,7 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- end }}
 }
 
-func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp
-{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{ end }}
+func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
 {{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue string {{ end }}) {
 	if !m.settings.Enabled {
 		return
@@ -104,11 +103,9 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	{{- if $metric.Data.HasMetricValueType }}
 	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
-	{{- end }}
 	{{- range $metric.Attributes }}
-	dp.Attributes().Insert(A.{{ .Render }}, pcommon.NewValueString({{ .RenderUnexported }}AttributeValue))
+	dp.Attributes().Insert("{{ attributeKey .}}", pcommon.NewValueString({{ .RenderUnexported }}AttributeValue))
 	{{- end }}
 }
 
@@ -185,37 +182,58 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 {{- range $name, $attr := .ResourceAttributes }}
 // With{{ $name.Render }} sets provided value as "{{ $name }}" attribute for current resource.
-func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().Upsert{{ $attr.Type }}("{{ $name }}", val)
+func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().Upsert{{ $attr.Type }}("{{ $name }}", val)
 	}
 }
 {{ end }}
 
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	{{- if .SemConvVersion }}
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	{{- end }}
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/{{ .Name }}")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	{{- range $name, $metric := .Metrics }}
 	mb.metric{{- $name.Render }}.emit(ils.Metrics())
 	{{- end }}
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -225,8 +243,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -235,44 +253,29 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
-	{{- if $metric.Data.HasMetricInputType }}, val {{ $metric.Data.MetricInputType.String }}
-	{{- else }}
-	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{- end }}
-	{{- end -}}
+	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
+	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
+	{{- end }}
 	{{- range $metric.Attributes -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}string{{ end }}
 	{{- end }})
 	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
 	{{- if $metric.Data.HasMetricInputType }}
-	{{- if $metric.Data.HasMetricValueType }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
-	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		return fmt.Errorf("failed to parse float for {{ $name.Render }}, value was %s: %w", val, err)
-	} else {
-		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
-		{{- if $metric.Data.HasMetricValueType }}, f {{ end }}
-		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
+	val, err := strconv.ParseFloat(inputVal, 64)
+	{{- else if eq $metric.Data.MetricValueType.BasicType "int64" }}
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	{{- end }}
+	if err != nil {
+		return fmt.Errorf("failed to parse {{ $metric.Data.MetricValueType.BasicType }} for {{ $name.Render }}, value was %s: %w", inputVal, err)
 	}
 	{{- end }}
-	{{- if eq $metric.Data.MetricValueType.BasicType "int64" }}
-	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		return fmt.Errorf("failed to parse int for {{ $name.Render }}, value was %s: %w", val, err)
-	} else {
-		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
-		{{- if $metric.Data.HasMetricValueType }}, i {{ end }}
+	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
 		{{- range $metric.Attributes -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
 		{{- end }})
-	}
-	{{- end }}
+	{{- if $metric.Data.HasMetricInputType }}
 	return nil
-	{{- end }}
-	{{- else }}
-	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
-		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
-		{{- range $metric.Attributes -}}
-		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
-		{{- end }})
 	{{- end }}
 }
 {{ end }}
@@ -285,22 +288,3 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 		op(mb)
 	}
 }
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-{{- range $name, $info := .Attributes }}
-	// {{ $name.Render }} ({{ $info.Description }})
-	{{ $name.Render }} string
-{{- end }}
-}{
-{{- range $name, $info := .Attributes }}
-	{{- if $info.Value }}
-	"{{ $info.Value }}",
-	{{- else }}
-	"{{ $name }}",
-	{{- end }}
-{{- end }}
-}
-
-// A is an alias for Attributes.
-var A = Attributes

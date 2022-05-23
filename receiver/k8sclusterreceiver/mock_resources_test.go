@@ -88,9 +88,8 @@ func createClusterQuota(t *testing.T, client *fakeQuota.Clientset, numQuotas int
 	for i := 0; i < numQuotas; i++ {
 		q := &quotav1.ClusterResourceQuota{
 			ObjectMeta: v1.ObjectMeta{
-				Name:        fmt.Sprintf("test-clusterquota-%d", i),
-				UID:         types.UID(fmt.Sprintf("test-clusterquota-%d-uid", i)),
-				ClusterName: "test-openshift-cluster",
+				Name: fmt.Sprintf("test-clusterquota-%d", i),
+				UID:  types.UID(fmt.Sprintf("test-clusterquota-%d-uid", i)),
 			},
 			Status: quotav1.ClusterResourceQuotaStatus{
 				Total: corev1.ResourceQuotaStatus{

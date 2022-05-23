@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package sumologicexporter
 
 import (
@@ -21,7 +22,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/atomic"
 )
 
 type senderTest struct {
@@ -39,16 +40,16 @@ type senderTest struct {
 }
 
 func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.Request)) *senderTest {
-	var reqCounter int32
+	reqCounter := atomic.NewInt32(0)
 	// generate a test server so we can capture and inspect the request
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if len(cb) == 0 {
 			return
 		}
 
-		if c := int(atomic.LoadInt32(&reqCounter)); assert.Greater(t, len(cb), c) {
+		if c := int(reqCounter.Load()); assert.Greater(t, len(cb), c) {
 			cb[c](w, req)
-			atomic.AddInt32(&reqCounter, 1)
+			reqCounter.Inc()
 		}
 	}))
 

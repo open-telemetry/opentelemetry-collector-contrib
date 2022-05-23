@@ -51,7 +51,7 @@ func (zr *zipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 		return err
 	}
 
-	return zr.receiver.Start(context.Background(), zr)
+	return zr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (zr *zipkinDataReceiver) Stop() error {

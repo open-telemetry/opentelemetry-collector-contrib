@@ -49,10 +49,8 @@
 //   - k8s.pod.uid
 //   - k8s.pod.start_time
 //   - k8s.deployment.name
-//   - k8s.cluster.name
 //   - k8s.node.name
-// Not all the attributes are guaranteed to be added. For example `k8s.cluster.name` usually is not provided by k8s API,
-// so likely it won't be set as an attribute.
+// Not all the attributes are guaranteed to be added.
 //
 // The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
@@ -135,7 +133,6 @@
 //            - k8s.pod.name
 //            - k8s.pod.uid
 //            - k8s.deployment.name
-//            - k8s.cluster.name
 //            - k8s.namespace.name
 //            - k8s.node.name
 //            - k8s.pod.start_time

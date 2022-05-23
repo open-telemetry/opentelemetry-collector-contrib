@@ -70,7 +70,7 @@ func TestRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningHostnames := []string{}
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
@@ -114,7 +114,7 @@ func TestTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
 	runningTags := []string{}

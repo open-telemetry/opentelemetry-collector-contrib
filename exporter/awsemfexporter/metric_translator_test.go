@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package awsemfexporter
 
 import (
@@ -413,8 +414,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	ilm.Scope().SetName("cloudwatch-lib")
 
 	noNamespaceMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceNamespace)
-	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceName)
+	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
+	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
 
 	counterMetrics := map[string]*metricInfo{
 		"spanCounter": {

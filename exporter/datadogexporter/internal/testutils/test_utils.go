@@ -17,6 +17,7 @@ package testutils // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
@@ -39,20 +40,38 @@ type DatadogServer struct {
 }
 
 // DatadogServerMock mocks a Datadog backend server
-func DatadogServerMock() *DatadogServer {
+func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogServer {
 	metadataChan := make(chan []byte)
-	handler := http.NewServeMux()
-	handler.HandleFunc("/api/v1/validate", validateAPIKeyEndpoint)
-	handler.HandleFunc("/api/v1/series", metricsEndpoint)
-	handler.HandleFunc("/intake", newMetadataEndpoint(metadataChan))
-	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	mux := http.NewServeMux()
 
-	srv := httptest.NewServer(handler)
+	handlers := map[string]http.HandlerFunc{
+		"/api/v1/validate": validateAPIKeyEndpoint,
+		"/api/v1/series":   metricsEndpoint,
+		"/intake":          newMetadataEndpoint(metadataChan),
+		"/":                func(w http.ResponseWriter, r *http.Request) {},
+	}
+	for _, f := range overwriteHandlerFuncs {
+		p, hf := f()
+		handlers[p] = hf
+	}
+	for pattern, handler := range handlers {
+		mux.HandleFunc(pattern, handler)
+	}
+
+	srv := httptest.NewServer(mux)
 
 	return &DatadogServer{
 		srv,
 		metadataChan,
 	}
+}
+
+// OverwriteHandleFuncs allows to overwrite the default handler functions
+type OverwriteHandleFunc func() (string, http.HandlerFunc)
+
+// ValidateAPIKeyEndpointInvalid returns a handler function that returns an invalid API key response
+func ValidateAPIKeyEndpointInvalid() (string, http.HandlerFunc) {
+	return "/api/v1/validate", validateAPIKeyEndpointInvalid
 }
 
 type validateAPIKeyResponse struct {
@@ -64,7 +83,21 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	resJSON, _ := json.Marshal(res)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(resJSON)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
+	res := validateAPIKeyResponse{Valid: false}
+	resJSON, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 type metricsResponse struct {
@@ -77,7 +110,10 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	w.Write(resJSON)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {

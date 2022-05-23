@@ -77,7 +77,6 @@ func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
 			},
 		},
 		Traces: config.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
@@ -91,7 +90,9 @@ func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
 
 	assert.NoError(t, err)
 
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	ctx := context.Background()
 	errConsume := exporter.ConsumeTraces(ctx, td)
@@ -186,8 +187,7 @@ func TestPushTraceData(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 		Traces: config.TracesConfig{
-			SampleRate: 1,
-			TCPAddr:    confignet.TCPAddr{Endpoint: server.URL},
+			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 
 		HostMetadata: config.HostMetadataConfig{

@@ -86,6 +86,19 @@
                               ],
                               "startTimeUnixNano": "1649969943717902800",
                               "timeUnixNano": "1649969943717902800"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "sent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
                            }
                         ],
                         "isMonotonic": true
@@ -98,6 +111,19 @@
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "received"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
+                           },
                            {
                               "asInt": "1",
                               "attributes": [
@@ -128,7 +154,85 @@
                                  {
                                     "key": "request",
                                     "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
                                        "stringValue": "get"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "head"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "options"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "post"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "put"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649969943717902800",
+                              "timeUnixNano": "1649969943717902800"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "trace"
                                     }
                                  }
                               ],

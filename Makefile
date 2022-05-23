@@ -4,7 +4,7 @@ RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
 
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
+BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
@@ -12,7 +12,7 @@ COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+ALL_MODULES := $(shell find . -type f -not -path '*/pkg/stanza/*' -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
@@ -37,7 +37,11 @@ all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 .PHONY: all
-all: common gotest otelcontribcol otelcontribcol-unstable
+all: all-common gotest otelcontribcol otelcontribcol-unstable
+
+.PHONY: all-common
+all-common:
+	@$(MAKE) for-all-target TARGET="common"
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
@@ -155,13 +159,23 @@ gendependabot:
 		echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}; \
 	done
 
+# Append root module to all modules
 GOMODULES = $(ALL_MODULES) $(PWD)
+
+# Define a delegation target for each module
 .PHONY: $(GOMODULES)
-MODULEDIRS = $(GOMODULES:%=for-all-target-%)
-for-all-target: $(MODULEDIRS)
-$(MODULEDIRS):
-	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
+$(GOMODULES):
+	@echo "Running target '$(TARGET)' in module '$@'"
+	$(MAKE) -C $@ $(TARGET)
+
+# Triggers each module's delegation target
 .PHONY: for-all-target
+for-all-target: $(GOMODULES)
+
+# Debugging target, which helps to quickly determine whether for-all-target is working or not.
+.PHONY: all-pwd
+all-pwd:
+	$(MAKE) for-all-target TARGET="pwd"
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools

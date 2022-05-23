@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package dynatraceexporter
 
 import (
@@ -115,8 +116,8 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetExplicitBounds([]float64{0, 2, 4, 8})
-	doubleHistogramDataPoint.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
+	doubleHistogramDataPoint.SetMExplicitBounds([]float64{0, 2, 4, 8})
+	doubleHistogramDataPoint.SetMBucketCounts([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
 	doubleHistogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 
