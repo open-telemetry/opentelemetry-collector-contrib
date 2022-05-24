@@ -20,8 +20,9 @@ package windowseventlogreceiver // import "github.com/open-telemetry/opentelemet
 import (
 	"errors"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/config"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 // DecodeInputConfig unmarshals the input operator
