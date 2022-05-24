@@ -69,7 +69,9 @@ func TestInputJournald(t *testing.T) {
 
 	err = op.Start(testutil.NewMockPersister("test"))
 	require.NoError(t, err)
-	defer op.Stop()
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
 
 	expected := map[string]interface{}{
 		"_BOOT_ID":                   "c4fa36de06824d21835c05ff80c54468",

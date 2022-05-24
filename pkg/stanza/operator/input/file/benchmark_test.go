@@ -37,11 +37,14 @@ type benchFile struct {
 	log func(int)
 }
 
-func simpleTextFile(file *os.File) *benchFile {
+func simpleTextFile(b *testing.B, file *os.File) *benchFile {
 	line := stringWithLength(49) + "\n"
 	return &benchFile{
 		File: file,
-		log:  func(_ int) { file.WriteString(line) },
+		log: func(_ int) {
+			_, err := file.WriteString(line)
+			require.NoError(b, err)
+		},
 	}
 }
 
@@ -146,7 +149,7 @@ func BenchmarkFileInput(b *testing.B) {
 			files := []*benchFile{}
 			for _, path := range bench.paths {
 				file := openFile(b, filepath.Join(rootDir, path))
-				files = append(files, simpleTextFile(file))
+				files = append(files, simpleTextFile(b, file))
 			}
 
 			cfg := bench.config()
@@ -173,7 +176,9 @@ func BenchmarkFileInput(b *testing.B) {
 
 			b.ResetTimer()
 			err = op.Start(testutil.NewMockPersister("test"))
-			defer op.Stop()
+			defer func() {
+				require.NoError(b, op.Stop())
+			}()
 			require.NoError(b, err)
 
 			// write the remainder of lines while running
