@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.51.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.29.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
 	go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af
@@ -48,3 +48,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/stor
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ../../internal/stanza
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
