@@ -8,12 +8,12 @@ Parser operators can parse a scope name and attach the resulting value to a log 
 
 | Field          | Default   | Description |
 | ---            | ---       | ---         |
-| `parse_from`   | required  | The [field](/docs/types/field.md) from which the value will be parsed. |
+| `parse_from`   | required  | The [field](../types/field.md) from which the value will be parsed. |
 
 
 ### How to use `scope_name` parsing
 
-All parser operators, such as [`regex_parser`](/docs/operators/regex_parser.md) support these fields inside of a `scope_name` block.
+All parser operators, such as [`regex_parser`](../operators/regex_parser.md) support these fields inside of a `scope_name` block.
 
 If a `scope_name` block is specified, the parser operator will perform the parsing _after_ performing its other parsing actions, but _before_ passing the entry to the specified output operator.
 
