@@ -28,6 +28,7 @@
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
+- `dynatraceexporter`: Fix issue on histogram min and max calculation. (#10257)
 
 ## v0.51.0
 
