@@ -7,7 +7,12 @@ to connect and collect.
 
 Aerospike versions 4.9, 5.x, and 6.x are supported.
 
-Supported pipeline types: `metrics`
+| Status                   |           |
+| ------------------------ | --------- |
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 
 ## Configuration
 
@@ -24,7 +29,7 @@ Configuration parameters:
 ```yaml
 receivers:
     aerospike:
-        endpoint: http://localhost:9000
+        endpoint: localhost:9000
         collect_cluster_metrics: false
         collection_interval: 30s
 ```
