@@ -1532,8 +1532,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "aggregation_temporality",
 				},
 			},
-			orig: pmetric.MetricAggregationTemporalityCumulative,
-			new:  pmetric.MetricAggregationTemporalityDelta,
+			orig: int64(2),
+			new:  int64(1),
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 			},
@@ -1548,8 +1548,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "is_monotonic",
 				},
 			},
-			orig: true,
-			new:  false,
+			orig: "true",
+			new:  "false",
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetIsMonotonic(false)
 			},

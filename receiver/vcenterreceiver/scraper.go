@@ -22,7 +22,8 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/mo"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -65,14 +66,14 @@ func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 	return v.client.Disconnect(ctx)
 }
 
-func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
 		v.client = newVcenterClient(v.config)
 	}
 
 	// ensure connection before scraping
 	if err := v.client.EnsureConnection(ctx); err != nil {
-		return pdata.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
+		return pmetric.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
 
 	err := v.collectDatacenters(ctx)
@@ -97,7 +98,7 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 		errs.Add(err)
 		return
 	}
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, c := range clusters {
 		v.collectHosts(ctx, now, c, errs)
@@ -110,7 +111,7 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 
 func (v *vcenterMetricScraper) collectCluster(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	c *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -134,7 +135,7 @@ func (v *vcenterMetricScraper) collectCluster(
 
 func (v *vcenterMetricScraper) collectDatastores(
 	ctx context.Context,
-	colTime pdata.Timestamp,
+	colTime pcommon.Timestamp,
 	cluster *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -151,7 +152,7 @@ func (v *vcenterMetricScraper) collectDatastores(
 
 func (v *vcenterMetricScraper) collectDatastore(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	ds *object.Datastore,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -170,7 +171,7 @@ func (v *vcenterMetricScraper) collectDatastore(
 
 func (v *vcenterMetricScraper) collectHosts(
 	ctx context.Context,
-	colTime pdata.Timestamp,
+	colTime pcommon.Timestamp,
 	cluster *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -187,7 +188,7 @@ func (v *vcenterMetricScraper) collectHosts(
 
 func (v *vcenterMetricScraper) collectHost(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	host *object.HostSystem,
 	cluster *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
@@ -214,7 +215,7 @@ func (v *vcenterMetricScraper) collectHost(
 
 func (v *vcenterMetricScraper) collectResourcePools(
 	ctx context.Context,
-	ts pdata.Timestamp,
+	ts pcommon.Timestamp,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	rps, err := v.client.ResourcePools(ctx)
@@ -240,7 +241,7 @@ func (v *vcenterMetricScraper) collectResourcePools(
 
 func (v *vcenterMetricScraper) collectVMs(
 	ctx context.Context,
-	colTime pdata.Timestamp,
+	colTime pcommon.Timestamp,
 	cluster *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -295,7 +296,7 @@ func (v *vcenterMetricScraper) collectVMs(
 
 func (v *vcenterMetricScraper) collectVM(
 	ctx context.Context,
-	colTime pdata.Timestamp,
+	colTime pcommon.Timestamp,
 	vm mo.VirtualMachine,
 	errs *scrapererror.ScrapeErrors,
 ) {
