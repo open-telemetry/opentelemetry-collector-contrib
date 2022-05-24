@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxexporter
 
 import (
@@ -421,7 +420,12 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
-			defer sfxExp.Shutdown(context.Background())
+			defer func() {
+				err = sfxExp.Shutdown(context.Background())
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}()
 
 			err = sfxExp.ConsumeMetrics(context.Background(), tt.metrics)
 

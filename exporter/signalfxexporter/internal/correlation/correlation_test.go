@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package correlation
 
 import (
@@ -44,10 +43,10 @@ func TestTrackerAddSpans(t *testing.T) {
 	attr.InsertString("host.name", "localhost")
 
 	// Add empty first, should ignore.
-	tracker.AddSpans(context.Background(), ptrace.NewTraces())
+	require.NoError(t, tracker.AddSpans(context.Background(), ptrace.NewTraces()))
 	assert.Nil(t, tracker.traceTracker)
 
-	tracker.AddSpans(context.Background(), traces)
+	require.NoError(t, tracker.AddSpans(context.Background(), traces))
 
 	assert.NotNil(t, tracker.traceTracker, "trace tracker should be set")
 

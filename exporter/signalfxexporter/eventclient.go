@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
 import (
 	"context"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path"
 	"strings"
@@ -94,7 +94,10 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
+		_, err := io.Copy(ioutil.Discard, resp.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
 		resp.Body.Close()
 	}()
 

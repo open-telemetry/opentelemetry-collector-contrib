@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxexporter
 
 import (
@@ -625,7 +624,7 @@ func TestDefaultCPUTranslations(t *testing.T) {
 func TestDefaultExcludes_translated(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	setDefaultExcludes(cfg)
+	require.NoError(t, setDefaultExcludes(cfg))
 
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
