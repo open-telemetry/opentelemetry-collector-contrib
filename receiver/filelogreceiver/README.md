@@ -14,7 +14,7 @@ Supported pipeline types: logs
 | `exclude`                    | []               | A list of file glob patterns to exclude from reading                                                               |
 | `start_at`                   | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
 | `multiline`                  |                  | A `multiline` configuration block. See below for more details                                                      |
-| `force_flush_period`         | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes [duration](../../pkg/stanza/docs/operators/types/duration.md) as value. Zero means waiting for new data forever |
+| `force_flush_period`         | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes [duration](../../pkg/stanza/docs/types/duration.md) as value. Zero means waiting for new data forever |
 | `encoding`                   | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`          | `true`           | Whether to add the file name as the attribute `log.file.name`. |
 | `include_file_path`          | `false`          | Whether to add the file path as the attribute `log.file.path`. |
@@ -29,7 +29,7 @@ Supported pipeline types: logs
 | `operators`                  | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 | `converter`                  | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`plog.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
 
-[entry_link]: https://github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/blob/v0.23.0/entry/entry.go#L43-L54
+[entry_link]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/entry/entry.go
 [pdata_logrecord_link]: https://github.com/open-telemetry/opentelemetry-collector/blob/v0.40.0/model/pdata/generated_log.go#L553-L564
 [converter_link]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.40.0/internal/stanza/converter.go#L41-L82
 
@@ -66,11 +66,11 @@ Other less common encodings are supported on a best-effort basis. See [https://w
 
 ## Additional Terminology and Features
 
-- An [entry](../../pkg/stanza/docs/operators/types/entry.md) is the base representation of log data as it moves through a pipeline. All operators either create, modify, or consume entries.
-- A [field](../../pkg/stanza/docs/operators/types/field.md) is used to reference values in an entry.
-- A common [expression](../../pkg/stanza/docs/operators/types/expression.md) syntax is used in several operators. For example, expressions can be used to [filter](../../pkg/stanza/docs/operators/filter.md) or [route](../../pkg/stanza/docs/operators/router.md) entries.
-- [timestamp](../../pkg/stanza/docs/operators/types/timestamp.md) parsing is available as a block within all parser operators, and also as a standalone operator. Many common timestamp layouts are supported.
-- [severity](../../pkg/stanza/docs/operators/types/severity.md) parsing is available as a block within all parser operators, and also as a standalone operator. Stanza uses a flexible severity representation which is automatically interpreted by the stanza receiver.
+- An [entry](../../pkg/stanza/docs/types/entry.md) is the base representation of log data as it moves through a pipeline. All operators either create, modify, or consume entries.
+- A [field](../../pkg/stanza/docs/types/field.md) is used to reference values in an entry.
+- A common [expression](../../pkg/stanza/docs/types/expression.md) syntax is used in several operators. For example, expressions can be used to [filter](../../pkg/stanza/docs/operators/filter.md) or [route](../../pkg/stanza/docs/operators/router.md) entries.
+- [timestamp](../../pkg/stanza/docs/types/timestamp.md) parsing is available as a block within all parser operators, and also as a standalone operator. Many common timestamp layouts are supported.
+- [severity](../../pkg/stanza/docs/types/severity.md) parsing is available as a block within all parser operators, and also as a standalone operator. Stanza uses a flexible severity representation which is automatically interpreted by the stanza receiver.
 
 
 ## Example - Tailing a simple json file
