@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/trans
 go 1.17
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-alpha8
+	github.com/alecthomas/participle/v2 v2.0.0-alpha9
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
