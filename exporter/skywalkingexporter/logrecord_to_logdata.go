@@ -80,14 +80,14 @@ func resourceToLogData(resource pcommon.Resource, logData *logpb.LogData) {
 	})
 }
 
-func instrumentationLibraryToLogData(instrumentationLibrary pcommon.InstrumentationScope, logData *logpb.LogData) {
-	if nameValue := instrumentationLibrary.Name(); nameValue != "" {
+func instrumentationLibraryToLogData(scope pcommon.InstrumentationScope, logData *logpb.LogData) {
+	if nameValue := scope.Name(); nameValue != "" {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   instrumentationName,
 			Value: nameValue,
 		})
 	}
-	if version := instrumentationLibrary.Version(); version != "" {
+	if version := scope.Version(); version != "" {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   instrumentationVersion,
 			Value: version,
