@@ -31,7 +31,6 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -129,7 +128,7 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // instance is created.
 func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	if r.metricsConsumer == nil && r.logsConsumer == nil {
-		return componenterror.ErrNilNextConsumer
+		return component.ErrNilNextConsumer
 	}
 
 	// set up the listener

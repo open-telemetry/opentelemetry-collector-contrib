@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -47,7 +46,7 @@ func newAWSECSContainermetrics(
 	nextConsumer consumer.Metrics,
 	rest ecsutil.RestClient) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &awsEcsContainerMetricsReceiver{

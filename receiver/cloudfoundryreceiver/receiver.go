@@ -23,7 +23,6 @@ import (
 
 	"code.cloudfoundry.org/go-loggregator"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -55,7 +54,7 @@ func newCloudFoundryReceiver(
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	return &cloudFoundryReceiver{
