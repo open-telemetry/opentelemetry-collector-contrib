@@ -37,7 +37,7 @@ def _aws_http_request(method, path, cred_value):
             headers={"Authorization": cred_value},
             method=method,
         ),
-        timeout=2000,
+        timeout=5,
         context=ssl.create_default_context(
             cafile="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         ),

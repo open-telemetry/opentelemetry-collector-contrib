@@ -34,7 +34,7 @@ def _aws_http_request(method, path, headers):
         Request(
             "http://169.254.169.254" + path, headers=headers, method=method
         ),
-        timeout=1000,
+        timeout=5,
     ) as response:
         return response.read().decode("utf-8")
 
