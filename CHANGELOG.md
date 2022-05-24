@@ -14,6 +14,7 @@
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
+- `expvarreceiver`: Add implementation of new receiver. (#10183)
 
 ### 💡 Enhancements 💡
 
@@ -30,6 +31,7 @@
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
 - `podmanreceiver`: Container Stats Error structure (#9397)
+- `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
 - `tailsamplingprocessor`: Fix composite sampler with inverse policy
 
 ## v0.51.0
