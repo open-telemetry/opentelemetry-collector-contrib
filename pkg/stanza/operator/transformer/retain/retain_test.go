@@ -400,7 +400,7 @@ func TestBuildAndProcess(t *testing.T) {
 
 			retain := op.(*RetainOperator)
 			fake := testutil.NewFakeOutput(t)
-			retain.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, retain.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = retain.Process(context.Background(), val)
 			if tc.expectErr {

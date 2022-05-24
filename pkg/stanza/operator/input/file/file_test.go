@@ -42,7 +42,9 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 	_ = openTemp(t, tempDir)
 	err := operator.Start(testutil.NewMockPersister("test"))
 	require.NoError(t, err)
-	operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 }
 
 // AddFields tests that the `log.file.name` and `log.file.path` fields are included
@@ -59,7 +61,9 @@ func TestAddFileFields(t *testing.T) {
 	writeString(t, temp, "testlog\n")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	e := waitForOne(t, logReceived)
 	require.Equal(t, filepath.Base(temp.Name()), e.Attributes["log.file.name"])
@@ -99,7 +103,9 @@ func TestAddFileResolvedFields(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	e := waitForOne(t, logReceived)
 	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["log.file.name"])
@@ -160,7 +166,9 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	writeString(t, file1, "testlog\n")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	e := waitForOne(t, logReceived)
 	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["log.file.name"])
@@ -199,7 +207,9 @@ func TestReadExistingLogs(t *testing.T) {
 	writeString(t, temp, "testlog1\ntestlog2\n")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 	waitForMessage(t, logReceived, "testlog2")
@@ -262,7 +272,9 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			require.Greater(t, bytesWritten, 0)
 			require.NoError(t, err)
 			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-			defer operator.Stop()
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
 
 			tc.test(t, logReceived)
 		})
@@ -340,7 +352,9 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			require.Greater(t, bytesWritten, 0)
 			require.NoError(t, err)
 			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-			defer operator.Stop()
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
 
 			tc.test(t, logReceived)
 		})
@@ -356,7 +370,9 @@ func TestReadNewLogs(t *testing.T) {
 
 	// Poll once so we know this isn't a new file
 	operator.poll(context.Background())
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	// Create a new file
 	temp := openTemp(t, tempDir)
@@ -376,7 +392,9 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	// Start with a file with an entry in it, and expect that entry
 	// to come through when we poll for the first time
@@ -400,7 +418,9 @@ func TestStartAtEnd(t *testing.T) {
 		cfg.StartAt = "end"
 	}, nil)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
@@ -423,7 +443,9 @@ func TestStartAtEndNewFile(t *testing.T) {
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 	operator.persister = testutil.NewMockPersister("test")
 	operator.startAtBeginning = false
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	operator.poll(context.Background())
 	temp := openTemp(t, tempDir)
@@ -447,7 +469,9 @@ func TestNoNewline(t *testing.T) {
 	writeString(t, temp, "testlog1\ntestlog2")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 	waitForMessage(t, logReceived, "testlog2")
@@ -462,7 +486,9 @@ func TestSkipEmpty(t *testing.T) {
 	writeString(t, temp, "testlog1\n\ntestlog2\n")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 	waitForMessage(t, logReceived, "testlog2")
@@ -474,7 +500,9 @@ func TestSplitWrite(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1")
@@ -491,7 +519,9 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temp := openTemp(t, tempDir)
 	temp2 := openTemp(t, tempDir)
@@ -516,7 +546,9 @@ func TestDecodeBufferIsResized(t *testing.T) {
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temp := openTemp(t, tempDir)
 	expected := stringWithLength(1<<12 + 1)
@@ -536,7 +568,9 @@ func TestMultiFileSimple(t *testing.T) {
 	writeString(t, temp2, "testlog2\n")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessages(t, logReceived, []string{"testlog1", "testlog2"})
 }
@@ -571,7 +605,9 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessages(t, logReceived, expected)
 	wg.Wait()
@@ -595,7 +631,9 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temps := make([]*os.File, 0, numFiles)
 	for i := 0; i < numFiles; i++ {
@@ -629,7 +667,9 @@ func TestOffsetsAfterRestart(t *testing.T) {
 
 	// Start the operator and expect a message
 	require.NoError(t, operator.Start(persister))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	waitForMessage(t, logReceived, "testlog1")
 
 	// Restart the operator. Stop and build a new
@@ -655,7 +695,9 @@ func TestOffsetsAfterRestart_BigFiles(t *testing.T) {
 
 	// Start the operator
 	require.NoError(t, operator.Start(persister))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	waitForMessage(t, logReceived, log1)
 
 	// Restart the operator
@@ -679,7 +721,9 @@ func TestOffsetsAfterRestart_BigFilesWrittenWhileOff(t *testing.T) {
 
 	// Start the operator and expect the first message
 	require.NoError(t, operator.Start(persister))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	waitForMessage(t, logReceived, log1)
 
 	// Stop the operator and write a new message
@@ -703,12 +747,15 @@ func TestManyLogsDelivered(t *testing.T) {
 
 	// Start the operator
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	// Write lots of logs
 	temp := openTemp(t, tempDir)
 	for _, message := range expectedMessages {
-		temp.WriteString(message + "\n")
+		_, err := temp.WriteString(message + "\n")
+		require.NoError(t, err)
 	}
 
 	// Expect each of them to come through once
@@ -741,7 +788,9 @@ func TestFileBatching(t *testing.T) {
 		},
 	)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temps := make([]*os.File, 0, files)
 	for i := 0; i < files; i++ {
@@ -752,7 +801,8 @@ func TestFileBatching(t *testing.T) {
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
 			message := fmt.Sprintf("%s %d %d", stringWithLength(100), i, j)
-			temp.WriteString(message + "\n")
+			_, err := temp.WriteString(message + "\n")
+			require.NoError(t, err)
 			expectedMessages = append(expectedMessages, message)
 		}
 	}
@@ -769,7 +819,8 @@ func TestFileBatching(t *testing.T) {
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
 			message := fmt.Sprintf("%s %d %d", stringWithLength(20), i, j)
-			temp.WriteString(message + "\n")
+			_, err := temp.WriteString(message + "\n")
+			require.NoError(t, err)
 			expectedMessages = append(expectedMessages, message)
 		}
 	}
@@ -787,7 +838,9 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	t.Parallel()
 
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temp := openTemp(t, tempDir)
 	tempCopy := openFile(t, temp.Name())
@@ -830,7 +883,9 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			operator, _, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
 				cfg.FingerprintSize = helper.ByteSize(maxFP)
 			}, nil)
-			defer operator.Stop()
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
@@ -940,7 +995,9 @@ func TestEncodings(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-			defer operator.Stop()
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
 
 			for _, expected := range tc.expected {
 				select {
