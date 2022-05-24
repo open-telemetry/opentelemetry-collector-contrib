@@ -1,5 +1,12 @@
 # Authenticator - OAuth2 Client Credentials
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [contrib]             |
+
+
 This extension provides OAuth2 Client Credentials flow authenticator for HTTP and gRPC based exporters. The extension
 fetches and refreshes the token after expiry automatically. For further details about OAuth2 Client Credentials flow (2-legged workflow)
 refer https://datatracker.ietf.org/doc/html/rfc6749#section-4.4.
@@ -66,3 +73,6 @@ Following are the configuration fields
   This is optional and not setting this configuration implies there is no timeout on the client.
 
 For more information on client side TLS settings, see [configtls README](../../config/configtls/README.md).
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
