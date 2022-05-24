@@ -30,7 +30,7 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Install Dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -85,7 +85,7 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Collector Binaries
         uses: actions/download-artifact@v3

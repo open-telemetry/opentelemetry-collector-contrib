@@ -30,7 +30,7 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: stability-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: stability-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}-${{ github.event.number }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -67,7 +67,7 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: stability-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          key: stability-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}-${{ github.event.number }}
       - name: Run Stability Tests
         run: make stability-tests
         env:
