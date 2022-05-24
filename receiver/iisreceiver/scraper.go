@@ -19,7 +19,6 @@ package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -35,31 +34,46 @@ import (
 )
 
 type iisReceiver struct {
-	params        component.ReceiverCreateSettings
-	config        *Config
-	consumer      consumer.Metrics
-	watchers      []winperfcounters.PerfCounterWatcher
-	metricBuilder *metadata.MetricsBuilder
+	params           component.TelemetrySettings
+	config           *Config
+	consumer         consumer.Metrics
+	watcherRecorders []watcherRecorder
+	metricBuilder    *metadata.MetricsBuilder
+
+	// for mocking
+	newWatcher func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+}
+
+// watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
+type watcherRecorder struct {
+	watcher  winperfcounters.PerfCounterWatcher
+	recorder recordFunc
 }
 
 // newIisReceiver returns an iisReceiver
-func newIisReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
-	return &iisReceiver{params: params, config: cfg, consumer: consumer, metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics)}
+func newIisReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
+	return &iisReceiver{
+		params:        settings.TelemetrySettings,
+		config:        cfg,
+		consumer:      consumer,
+		metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		newWatcher:    winperfcounters.NewWatcher,
+	}
 }
 
 // start builds the paths to the watchers
 func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
-	rcvr.watchers = []winperfcounters.PerfCounterWatcher{}
+	rcvr.watcherRecorders = []watcherRecorder{}
 
 	var errors scrapererror.ScrapeErrors
-	for _, objCfg := range getScraperCfgs() {
-		objWatchers, err := objCfg.BuildPaths()
-		if err != nil {
-			errors.AddPartial(1, fmt.Errorf("some performance counters could not be initialized; %w", err))
-			continue
-		}
-		for _, objWatcher := range objWatchers {
-			rcvr.watchers = append(rcvr.watchers, objWatcher)
+	for _, pcr := range perfCounterRecorders {
+		for perfCounterName, recorder := range pcr.recorders {
+			w, err := rcvr.newWatcher(pcr.object, pcr.instance, perfCounterName)
+			if err != nil {
+				errors.AddPartial(1, err)
+				continue
+			}
+			rcvr.watcherRecorders = append(rcvr.watcherRecorders, watcherRecorder{w, recorder})
 		}
 	}
 
@@ -71,19 +85,17 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	for _, watcher := range rcvr.watchers {
-		counterValues, err := watcher.ScrapeData()
+	for _, wr := range rcvr.watcherRecorders {
+		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
 			rcvr.params.Logger.Warn("some performance counters could not be scraped; ", zap.Error(err))
 			continue
 		}
-		var metricRep winperfcounters.MetricRep
 		value := 0.0
 		for _, counterValue := range counterValues {
 			value += counterValue.Value
-			metricRep = counterValue.MetricRep
 		}
-		rcvr.metricBuilder.RecordAny(now, value, metricRep.Name, metricRep.Attributes)
+		wr.recorder(rcvr.metricBuilder, now, value)
 	}
 
 	return rcvr.metricBuilder.Emit(), errs
@@ -92,8 +104,8 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 // shutdown closes the watchers
 func (rcvr iisReceiver) shutdown(ctx context.Context) error {
 	var errs error
-	for _, watcher := range rcvr.watchers {
-		err := watcher.Close()
+	for _, wr := range rcvr.watcherRecorders {
+		err := wr.watcher.Close()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		}

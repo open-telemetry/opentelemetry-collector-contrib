@@ -4,13 +4,48 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `datadogexporter`: Replace HistogramMode defined as string with enum.
-- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
-- `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚩 Deprecations 🚩
 
-- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement.
+### 🚀 New components 🚀
+
+- `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
+- `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
+- `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
+- `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
+
+### 💡 Enhancements 💡
+
+- `transformprocessor`: Add transformation of metrics (#10100)
+- `transformprocessor`: Include transform processor in components (#10134)
+- `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+- `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
+
+### 🧰 Bug fixes 🧰
+
+- `datadogexporter`: add error checks for datadog exporter (#9964)
+- `datadogexporter`: Fix host aliases not being properly sent to the Datadog backend (#9748)
+- `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
+- `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
+- `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
+- `podmanreceiver`: Container Stats Error structure (#9397)
+- `tailsamplingprocessor`: Fix composite sampler with inverse policy
+
+## v0.51.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Replace HistogramMode defined as string with enum. (#9589)
+- `pkg/translator/signalfx`: Change signalfx translator to expose To/From translator structs. (#9740)
+- `transformprocessor`: Add parameter validation to `truncate_all` and `limit` functions.  The `limit` parameter can no longer be negative. (#9783)
+- `newrelicexporter` deleted. Use New Relic [native OTLP ingest](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-setup/) instead. (#9894)
+- `k8sclusterreceiver`: Removing `ClusterName` as per https://github.com/kubernetes/apimachinery/commit/430b920312ca0fa10eca95967764ff08f34083a3. (#9885)
+
+### 🚩 Deprecations 🚩
+
+- `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement. (#9258)
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
 
 ### 🚀 New components 🚀
 
@@ -28,12 +63,14 @@
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
+- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
 - `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
+- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 
 ### 🧰 Bug fixes 🧰
 
@@ -50,7 +87,9 @@
 - `prometheusreceiver`: Handle the condition where `up` metric value is NaN (#9253)
 - `tanzuobservabilityexporter`: Make metrics stanza in config be optional (#9098)
 - `filelogreceiver`: Update Kubernetes examples to fix native OTel logs collection issue where 0 length logs cause errors (#9754)
-- `tailsamplingprocessor`: Fix composite sampler with inverse policy
+- `logstransformprocessor`: Resolve node ordering to fix intermittent failures (#9761)
+- `awsinsightreceiver`: Migrate from `ConfigMapsResourceLock` to `ConfigMapsLeasesResourceLock` as per https://github.com/kubernetes/client-go/commit/276ea3ed979947d7cdd4b3d708862245ddcd8883 (#9885)
+- `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Add support for []string type for converting log record entries (#9887)
 
 ## v0.50.0
 
@@ -832,7 +871,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - [`prometheus` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`prometheusremotewrite` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusremotewriteexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`zipkin` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/zipkinexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
-- [`attribute` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributeprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`attribute` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`filter` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`probabilisticsampler` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`resource` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourceprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
@@ -1385,7 +1424,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ### 🚀 New components 🚀
 
 - `f5cloud` exporter to export metric, trace, and log data to F5 Cloud
-- `jmx` receiver to report metrics from a target MBean server in conjunction with the [JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/contrib/jmx-metrics/README.md)
+- `jmx` receiver to report metrics from a target MBean server in conjunction with the [JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/v1.0.0-alpha/contrib/jmx-metrics/README.md)
 
 ### 🛑 Breaking changes 🛑
 
@@ -1560,7 +1599,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - Move signalfx correlation code out of `sapm` to `signalfxcorrelation` exporter (#1376)
 - Move Splunk specific utils outside of common (#1306)
 - `stackdriver` exporter:
-    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/stackdriverexporter/README.md).
+    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.14.0/exporter/stackdriverexporter/README.md).
     - Trace status codes no longer reflect gRPC codes as per spec changes: open-telemetry/opentelemetry-specification#1067
 - `datadog` exporter: Remove option to change the namespace prefix (#1483)
 

@@ -19,12 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	winperfcounters "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 var creationParams = componenttest.NewNopReceiverCreateSettings()
@@ -36,10 +34,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 
-	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
+	cfg.(*Config).PerfCounters = []ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []winperfcounters.CounterConfig{{Name: "counter", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
 		},
 	}
 
@@ -57,10 +55,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
+	cfg.(*Config).PerfCounters = []ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []winperfcounters.CounterConfig{{Name: "counter", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
 		},
 	}
 
@@ -73,32 +71,32 @@ func TestCreateTracesReceiver(t *testing.T) {
 	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
 func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
+	cfg.(*Config).PerfCounters = []ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []winperfcounters.CounterConfig{{Name: "counter"}},
+			Counters: []CounterConfig{{Name: "counter"}},
 		},
 	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
+	cfg.(*Config).PerfCounters = []ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []winperfcounters.CounterConfig{{Name: "counter", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
 		},
 	}
 
@@ -112,6 +110,6 @@ func TestCreateLogsReceiver(t *testing.T) {
 
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 }

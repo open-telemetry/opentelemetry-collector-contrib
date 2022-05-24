@@ -36,6 +36,7 @@ const (
 
 // scraper for FileSystem Metrics
 type scraper struct {
+	settings component.ReceiverCreateSettings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
@@ -52,13 +53,13 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
 	}
 
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
 	return scraper, nil
 }
 
@@ -68,7 +69,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 

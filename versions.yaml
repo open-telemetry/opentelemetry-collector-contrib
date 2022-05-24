@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.50.0
+    version: v0.51.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -48,7 +48,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/observiqexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter
@@ -106,6 +106,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
@@ -138,6 +139,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
@@ -146,6 +148,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
@@ -166,6 +169,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
@@ -194,5 +198,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
+
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools

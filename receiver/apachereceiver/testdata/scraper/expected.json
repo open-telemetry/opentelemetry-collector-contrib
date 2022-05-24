@@ -5,7 +5,8 @@
       "scopeMetrics": [
         {
           "scope": {
-            "name": "otelcol/apachereceiver"
+            "name": "otelcol/apachereceiver",
+            "version": "latest"
           },
           "metrics": [
             {

@@ -20,15 +20,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/noop"
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver, error) {
@@ -87,8 +89,8 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
-			consumer := &mockLogsConsumer{}
-			logsReceiver, err := createNoopReceiver(wc, consumer)
+			cl := &consumertest.LogsSink{}
+			logsReceiver, err := createNoopReceiver(wc, cl)
 			require.NoError(b, err)
 
 			err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
@@ -97,7 +99,7 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				consumer.ResetReceivedCount()
+				cl.Reset()
 
 				go func() {
 					ctx := context.Background()
@@ -108,9 +110,9 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 
 				require.Eventually(b,
 					func() bool {
-						return consumer.Received() == entryCount
+						return cl.LogRecordCount() == entryCount
 					},
-					30*time.Second, 5*time.Millisecond, "Did not receive all logs (only received %d)", consumer.Received(),
+					30*time.Second, 5*time.Millisecond, "Did not receive all logs (only received %d)", cl.LogRecordCount(),
 				)
 			}
 		})
@@ -126,8 +128,8 @@ func TestEmitterToConsumer(t *testing.T) {
 
 	entries := complexEntriesForNDifferentHosts(entryCount, hostsCount)
 
-	consumer := &mockLogsConsumer{}
-	logsReceiver, err := createNoopReceiver(workerCount, consumer)
+	cl := &consumertest.LogsSink{}
+	logsReceiver, err := createNoopReceiver(workerCount, cl)
 	require.NoError(t, err)
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
@@ -142,13 +144,13 @@ func TestEmitterToConsumer(t *testing.T) {
 
 	require.Eventually(t,
 		func() bool {
-			return consumer.Received() == entryCount
+			return cl.LogRecordCount() == entryCount
 		},
-		5*time.Second, 5*time.Millisecond, "Did not receive all logs (only received %d)", consumer.Received(),
+		5*time.Second, 5*time.Millisecond, "Did not receive all logs (only received %d)", cl.LogRecordCount(),
 	)
 
 	// Wait for a small bit of time in order to let any potential extra entries drain out of the pipeline
 	<-time.After(500 * time.Millisecond)
 
-	require.Equal(t, entryCount, consumer.Received())
+	require.Equal(t, entryCount, cl.LogRecordCount())
 }

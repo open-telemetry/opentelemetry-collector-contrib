@@ -49,7 +49,6 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.InsertString(semconv.AttributeK8SClusterName, ev.ObjectMeta.ClusterName)
 	resourceAttrs.InsertString(semconv.AttributeK8SNodeName, ev.Source.Host)
 
 	// Attributes related to the object causing the event.

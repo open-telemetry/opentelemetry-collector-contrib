@@ -47,7 +47,7 @@ check_collector_versions_correct() {
       if grep -q "$collector_module" "$mod_file"; then
          mod_line=$(grep "$collector_module" "$mod_file")
          version=$(echo "$mod_line" | cut -d" " -f2)
-         
+
          # To account for a module on its own 'require' line,
          # the version field is shifted right by 1
          if [ "$version" == "$collector_module" ]; then

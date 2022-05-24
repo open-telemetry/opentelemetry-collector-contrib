@@ -21,20 +21,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
-// FromPdataConverter converts a set of entry.Entry into pdata.Logs
+// FromPdataConverter converts a set of entry.Entry into plog.Logs
 //
 // The diagram below illustrates the internal communication inside the FromPdataConverter:
 //
 //            ┌─────────────────────────────────┐
 //            │ Batch()                         │
-//  ┌─────────┤  Ingests pdata.Logs, splits up  │
+//  ┌─────────┤  Ingests plog.Logs, splits up   │
 //  │         │  and places them on workerChan  │
 //  │         └─────────────────────────────────┘
 //  │
@@ -107,9 +107,9 @@ func (c *FromPdataConverter) OutChannel() <-chan []*entry.Entry {
 }
 
 type fromConverterWorkerItem struct {
-	Resource       pdata.Resource
-	LogRecordSlice pdata.LogRecordSlice
-	Scope          pdata.ScopeLogs
+	Resource       pcommon.Resource
+	LogRecordSlice plog.LogRecordSlice
+	Scope          plog.ScopeLogs
 }
 
 // workerLoop is responsible for obtaining pdata logs from Batch() calls,
@@ -136,8 +136,8 @@ func (c *FromPdataConverter) workerLoop() {
 	}
 }
 
-// Batch takes in an set of pdata.Logs and sends it to an available worker for processing.
-func (c *FromPdataConverter) Batch(pLogs pdata.Logs) error {
+// Batch takes in an set of plog.Logs and sends it to an available worker for processing.
+func (c *FromPdataConverter) Batch(pLogs plog.Logs) error {
 	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
 		rls := pLogs.ResourceLogs().At(i)
 		for j := 0; j < rls.ScopeLogs().Len(); j++ {
@@ -174,10 +174,10 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 	return result
 }
 
-// ConvertFrom converts pdata.Logs into a slice of entry.Entry
+// ConvertFrom converts plog.Logs into a slice of entry.Entry
 // To be used in a stateless setting like tests where ease of use is more
 // important than performance or throughput.
-func ConvertFrom(pLogs pdata.Logs) []*entry.Entry {
+func ConvertFrom(pLogs plog.Logs) []*entry.Entry {
 	result := make([]*entry.Entry, 0, pLogs.LogRecordCount())
 	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
 		rls := pLogs.ResourceLogs().At(i)
@@ -189,8 +189,8 @@ func ConvertFrom(pLogs pdata.Logs) []*entry.Entry {
 	return result
 }
 
-// convertFrom converts pdata.LogRecord into provided entry.Entry.
-func convertFrom(src pdata.LogRecord, ent *entry.Entry) {
+// convertFrom converts plog.LogRecord into provided entry.Entry.
+func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	// if src.Timestamp == 0, then leave ent.Timestamp as nil
 	if src.Timestamp() != 0 {
 		ent.Timestamp = src.Timestamp().AsTime()
@@ -223,16 +223,16 @@ func convertFrom(src pdata.LogRecord, ent *entry.Entry) {
 	}
 }
 
-func valueToMap(value pdata.Map) map[string]interface{} {
+func valueToMap(value pcommon.Map) map[string]interface{} {
 	rawMap := map[string]interface{}{}
-	value.Range(func(k string, v pdata.Value) bool {
+	value.Range(func(k string, v pcommon.Value) bool {
 		rawMap[k] = valueToInterface(v)
 		return true
 	})
 	return rawMap
 }
 
-func valueToInterface(value pdata.Value) interface{} {
+func valueToInterface(value pcommon.Value) interface{} {
 	switch value.Type() {
 	case pcommon.ValueTypeEmpty:
 		return nil
@@ -245,7 +245,7 @@ func valueToInterface(value pdata.Value) interface{} {
 	case pcommon.ValueTypeInt:
 		return value.IntVal()
 	case pcommon.ValueTypeBytes:
-		return value.BytesVal()
+		return value.MBytesVal()
 	case pcommon.ValueTypeMap:
 		return value.MapVal().AsRaw()
 	case pcommon.ValueTypeSlice:
@@ -259,7 +259,7 @@ func valueToInterface(value pdata.Value) interface{} {
 	}
 }
 
-var fromPdataSevMap = map[pdata.SeverityNumber]entry.Severity{
+var fromPdataSevMap = map[plog.SeverityNumber]entry.Severity{
 	plog.SeverityNumberUNDEFINED: entry.Default,
 	plog.SeverityNumberTRACE:     entry.Trace,
 	plog.SeverityNumberTRACE2:    entry.Trace2,

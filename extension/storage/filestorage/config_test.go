@@ -17,6 +17,7 @@ package filestorage
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -72,7 +73,7 @@ func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
 
 	err := cfg.Validate()
 	require.Error(t, err)
-	require.EqualError(t, err, "directory must exist: stat /not/a/dir: no such file or directory")
+	require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
 }
 
 func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
@@ -82,6 +83,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	file, err := os.CreateTemp("", "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
+		require.NoError(t, file.Close())
 		require.NoError(t, os.Remove(file.Name()))
 	})
 

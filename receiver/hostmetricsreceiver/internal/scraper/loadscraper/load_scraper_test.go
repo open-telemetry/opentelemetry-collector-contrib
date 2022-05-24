@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
@@ -38,7 +37,13 @@ const (
 	bootTime     = 100
 )
 
+// Skips test without applying unused rule
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 func TestScrape(t *testing.T) {
+	skip(t, "Flaky test. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10030")
 	type testCase struct {
 		name         string
 		bootTimeFunc func() (uint64, error)
@@ -78,7 +83,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), zap.NewNop(), test.config)
+			scraper := newLoadScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), test.config)
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
 			}

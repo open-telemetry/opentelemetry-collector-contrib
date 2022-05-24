@@ -51,7 +51,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -97,12 +97,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
@@ -129,6 +131,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
@@ -190,6 +193,7 @@ func Components() (component.Factories, error) {
 		awsecscontainermetricsreceiver.NewFactory(),
 		awsfirehosereceiver.NewFactory(),
 		awsxrayreceiver.NewFactory(),
+		bigipreceiver.NewFactory(),
 		carbonreceiver.NewFactory(),
 		cloudfoundryreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
@@ -215,6 +219,7 @@ func Components() (component.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
+		nsxtreceiver.NewFactory(),
 		nginxreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
@@ -276,7 +281,7 @@ func Components() (component.Factories, error) {
 		loggingexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
-		newrelicexporter.NewFactory(),
+		mezmoexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
@@ -317,6 +322,7 @@ func Components() (component.Factories, error) {
 		spanprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
+		transformprocessor.NewFactory(),
 	}
 	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
 	if err != nil {

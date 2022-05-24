@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +36,7 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 var traceID = pcommon.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *TraceData {
-	trace := &TraceData{SpanCount: 1}
+	trace := &TraceData{SpanCount: atomic.NewInt64(1)}
 	return trace
 }
 
@@ -63,7 +64,7 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{
 		ReceivedBatches: traceBatches,
-		SpanCount:       1,
+		SpanCount:       atomic.NewInt64(1),
 	}
 }
 

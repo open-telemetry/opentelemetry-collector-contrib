@@ -40,7 +40,6 @@ func TestReplicasetMetrics(t *testing.T) {
 			"k8s.replicaset.uid":  "test-replicaset-1-uid",
 			"k8s.replicaset.name": "test-replicaset-1",
 			"k8s.namespace.name":  "test-namespace",
-			"k8s.cluster.name":    "test-cluster",
 		},
 	)
 
@@ -54,10 +53,9 @@ func TestReplicasetMetrics(t *testing.T) {
 func newReplicaSet(id string) *appsv1.ReplicaSet {
 	return &appsv1.ReplicaSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-replicaset-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-replicaset-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-replicaset-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-replicaset-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

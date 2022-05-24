@@ -32,13 +32,13 @@ import (
 // Runs intermittently, fetching info from SAP HANA, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type sapHanaScraper struct {
-	settings component.TelemetrySettings
+	settings component.ReceiverCreateSettings
 	cfg      *Config
 	mbs      map[string]*metadata.MetricsBuilder
 	factory  sapHanaConnectionFactory
 }
 
-func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
+func newSapHanaScraper(settings component.ReceiverCreateSettings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,
@@ -57,7 +57,7 @@ func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string)
 	key := string(bytes)
 	mb, ok := s.mbs[key]
 	if !ok {
-		mb = metadata.NewMetricsBuilder(s.cfg.Metrics)
+		mb = metadata.NewMetricsBuilder(s.cfg.Metrics, s.settings.BuildInfo)
 		s.mbs[key] = mb
 	}
 
@@ -91,7 +91,7 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for saphana scraper: %w", err))
 			continue
 		}
-		resourceOptions := []metadata.ResourceOption{metadata.WithDbSystem("saphana")}
+		resourceOptions := []metadata.ResourceMetricsOption{metadata.WithDbSystem("saphana")}
 		for attribute, value := range resourceAttributes {
 			if attribute == "host" {
 				resourceOptions = append(resourceOptions, metadata.WithSaphanaHost(value))

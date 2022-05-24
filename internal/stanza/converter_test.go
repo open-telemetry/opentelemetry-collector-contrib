@@ -23,11 +23,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
@@ -220,7 +221,7 @@ func TestConvert(t *testing.T) {
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.InsertBytes("bytes", []byte("asdf"))
+		m.InsertMBytes("bytes", []byte("asdf"))
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }
@@ -592,7 +593,7 @@ func TestConvertSimpleBody(t *testing.T) {
 	require.False(t, anyToBody(false).BoolVal())
 
 	require.Equal(t, "string", anyToBody("string").StringVal())
-	require.Equal(t, []byte("bytes"), anyToBody([]byte("bytes")).BytesVal())
+	require.Equal(t, []byte("bytes"), anyToBody([]byte("bytes")).MBytesVal())
 
 	require.Equal(t, int64(1), anyToBody(1).IntVal())
 	require.Equal(t, int64(1), anyToBody(int8(1)).IntVal())
@@ -643,7 +644,7 @@ func TestConvertMapBody(t *testing.T) {
 	}
 	for _, k := range []string{"bytes"} {
 		v, _ = result.Get(k)
-		require.Equal(t, []byte(k), v.BytesVal())
+		require.Equal(t, []byte(k), v.MBytesVal())
 	}
 	for _, k := range []string{"int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64"} {
 		v, _ = result.Get(k)
@@ -682,7 +683,7 @@ func TestConvertArrayBody(t *testing.T) {
 	require.True(t, result.At(0).BoolVal())
 	require.False(t, result.At(1).BoolVal())
 	require.Equal(t, "string", result.At(2).StringVal())
-	require.Equal(t, []byte("bytes"), result.At(3).BytesVal())
+	require.Equal(t, []byte("bytes"), result.At(3).MBytesVal())
 
 	require.Equal(t, int64(1), result.At(4).IntVal())  // int
 	require.Equal(t, int64(1), result.At(5).IntVal())  // int8

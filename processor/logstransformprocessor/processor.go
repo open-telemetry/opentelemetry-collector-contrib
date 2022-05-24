@@ -17,30 +17,39 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"runtime"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+	"gonum.org/v1/gonum/graph/topo"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
+
+type outputType struct {
+	logs plog.Logs
+	err  error
+}
 
 type logsTransformProcessor struct {
 	logger *zap.Logger
 	config *Config
 	id     config.ComponentID
 
-	pipe          pipeline.Pipeline
+	pipe          *pipeline.DirectedPipeline
+	firstOperator operator.Operator
 	emitter       *stanza.LogEmitter
 	converter     *stanza.Converter
 	fromConverter *stanza.FromPdataConverter
 	wg            sync.WaitGroup
-	outputChannel chan pdata.Logs
+	outputChannel chan outputType
 }
 
 func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
@@ -90,6 +99,15 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 
 	ltp.pipe = pipe
 
+	orderedNodes, err := topo.Sort(pipe.Graph)
+	if err != nil {
+		return err
+	}
+	if len(orderedNodes) == 0 {
+		return errors.New("processor requires at least one operator to be configured")
+	}
+	ltp.firstOperator = orderedNodes[0].(pipeline.OperatorNode).Operator()
+
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
 	if baseCfg.Converter.WorkerCount > 0 {
 		wkrCount = baseCfg.Converter.WorkerCount
@@ -104,7 +122,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	ltp.fromConverter = stanza.NewFromPdataConverter(wkrCount, ltp.logger)
 	ltp.fromConverter.Start()
 
-	ltp.outputChannel = make(chan pdata.Logs)
+	ltp.outputChannel = make(chan outputType)
 
 	// Below we're starting 3 loops:
 	// * first which reads all the logs translated by the fromConverter and then forwards
@@ -128,7 +146,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	return nil
 }
 
-func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	// Add the logs to the chain
 	err := ltp.fromConverter.Batch(ld)
 	if err != nil {
@@ -141,12 +159,15 @@ func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld pdata.Log
 		case <-doneChan:
 			ltp.logger.Debug("loop stopped")
 			return ld, errors.New("processor interrupted")
-		case pLogs, ok := <-ltp.outputChannel:
+		case output, ok := <-ltp.outputChannel:
 			if !ok {
 				return ld, errors.New("processor encountered an issue receiving logs from stanza operators pipeline")
 			}
+			if output.err != nil {
+				return ld, err
+			}
 
-			return pLogs, nil
+			return output.logs, nil
 		}
 	}
 }
@@ -165,13 +186,14 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 		case entries, ok := <-ltp.fromConverter.OutChannel():
 			if !ok {
 				ltp.logger.Debug("fromConverter channel got closed")
-				continue
+				return
 			}
 
 			for _, e := range entries {
 				// Add item to the first operator of the pipeline manually
-				if err := ltp.pipe.Operators()[0].Process(ctx, e); err != nil {
-					ltp.logger.Error("unexpected error encountered adding entries to pipeline", zap.Error(err))
+				if err := ltp.firstOperator.Process(ctx, e); err != nil {
+					ltp.outputChannel <- outputType{err: fmt.Errorf("processor encountered an issue with the pipeline: %w", err)}
+					break
 				}
 			}
 		}
@@ -188,15 +210,14 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
 		case <-ctx.Done():
 			ltp.logger.Debug("emitter loop stopped")
 			return
-
 		case e, ok := <-ltp.emitter.OutChannel():
 			if !ok {
 				ltp.logger.Debug("emitter channel got closed")
-				continue
+				return
 			}
 
 			if err := ltp.converter.Batch(e); err != nil {
-				ltp.logger.Error("unexpected error encountered batching logs to converter", zap.Error(err))
+				ltp.outputChannel <- outputType{err: fmt.Errorf("processor encountered an issue with the converter: %w", err)}
 			}
 		}
 	}
@@ -215,10 +236,10 @@ func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context) {
 		case pLogs, ok := <-ltp.converter.OutChannel():
 			if !ok {
 				ltp.logger.Debug("converter channel got closed")
-				continue
+				return
 			}
 
-			ltp.outputChannel <- pLogs
+			ltp.outputChannel <- outputType{logs: pLogs, err: nil}
 		}
 	}
 }

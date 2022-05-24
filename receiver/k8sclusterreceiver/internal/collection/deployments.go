@@ -46,7 +46,6 @@ func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {
 			conventions.AttributeK8SDeploymentUID:  string(dep.UID),
 			conventions.AttributeK8SDeploymentName: dep.Name,
 			conventions.AttributeK8SNamespaceName:  dep.Namespace,
-			conventions.AttributeK8SClusterName:    dep.ClusterName,
 		},
 	}
 }
