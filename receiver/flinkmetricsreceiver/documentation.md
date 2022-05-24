@@ -12,51 +12,30 @@ These are the metrics available for this scraper.
 | **flink.job.last_checkpoint.size** | The total size of the last checkpoint. | By | Sum(Int) | <ul> </ul> |
 | **flink.job.last_checkpoint.time** | The end to end duration of the last checkpoint. | ms | Sum(Int) | <ul> </ul> |
 | **flink.job.restart.count** | The total number of restarts since this job was submitted, including full restarts and fine-grained restarts. | {restarts} | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.class_loader.classes_loaded** | The total number of classes loaded since the start of the JVM for a jobmanager. | {classes} | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.cpu.load** | The recent CPU usage of the JVM for a jobmanager. | 1 | Gauge(Double) | <ul> </ul> |
-| **flink.jobmanager.jvm.cpu.time** | The CPU time used by the JVM for a jobmanager. | ns | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.garbage_collector.collection.count** | The total number of collections that have occurred for a jobmanager. | {collections} | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
-| **flink.jobmanager.jvm.garbage_collector.collection.time** | The total time spent performing garbage collection for a jobmanager. | ms | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
-| **flink.jobmanager.jvm.memory.direct.total_capacity** | The total capacity of all buffers in the direct buffer pool for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.direct.used** | The amount of memory used by the JVM for the direct buffer pool for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.heap.committed** | The amount of heap memory guaranteed to be available to the JVM for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.heap.max** | The maximum amount of heap memory that can be used for memory management for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.heap.used** | The amount of heap memory currently used for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.mapped.total_capacity** | The number of buffers in the mapped buffer pool for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.mapped.used** | The amount of memory used by the JVM for the mapped buffer pool for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.metaspace.committed** | The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.metaspace.max** | The maximum amount of memory that can be used in the Metaspace memory pool for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.metaspace.used** | The amount of memory currently used in the Metaspace memory pool for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.non_heap.committed** | The amount of non-heap memory guaranteed to be available to the JVM for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.non_heap.max** | The maximum amount of non-heap memory that can be used for memory management for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.memory.non_heap.used** | The amount of non-heap memory currently used for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.jvm.threads.count** | The total number of live threads for a jobmanager. | {threads} | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.memory.managed.total** | The total amount of managed memory for a jobmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.jobmanager.memory.managed.used** | The amount of managed memory currently used for a jobmanager. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.class_loader.classes_loaded** | The total number of classes loaded since the start of the JVM. | {classes} | Sum(Int) | <ul> </ul> |
+| **flink.jvm.cpu.load** | The recent CPU usage of the JVM. | 1 | Gauge(Double) | <ul> </ul> |
+| **flink.jvm.cpu.time** | The CPU time used by the JVM. | ns | Sum(Int) | <ul> </ul> |
+| **flink.jvm.garbage_collector.collection.count** | The total number of collections that have occurred. | {collections} | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
+| **flink.jvm.garbage_collector.collection.time** | The total time spent performing garbage collection. | ms | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
+| **flink.jvm.memory.direct.total_capacity** | The total capacity of all buffers in the direct buffer pool. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.direct.used** | The amount of memory used by the JVM for the direct buffer pool. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.heap.committed** | The amount of heap memory guaranteed to be available to the JVM. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.heap.max** | The maximum amount of heap memory that can be used for memory management. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.heap.used** | The amount of heap memory currently used. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.mapped.total_capacity** | The number of buffers in the mapped buffer pool. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.mapped.used** | The amount of memory used by the JVM for the mapped buffer pool. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.metaspace.committed** | The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.metaspace.max** | The maximum amount of memory that can be used in the Metaspace memory pool. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.metaspace.used** | The amount of memory currently used in the Metaspace memory pool. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.non_heap.committed** | The amount of non-heap memory guaranteed to be available to the JVM. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.non_heap.max** | The maximum amount of non-heap memory that can be used for memory management. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.non_heap.used** | The amount of non-heap memory currently used. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.threads.count** | The total number of live threads. | {threads} | Sum(Int) | <ul> </ul> |
+| **flink.memory.managed.total** | The total amount of managed memory. | By | Sum(Int) | <ul> </ul> |
+| **flink.memory.managed.used** | The amount of managed memory currently used. | By | Sum(Int) | <ul> </ul> |
 | **flink.operator.record.count** | The number of records this operator type has. | {records} | Sum(Int) | <ul> <li>operator_name</li> <li>record</li> </ul> |
 | **flink.operator.watermark.output** | The last watermark this operator has emitted. | ms | Sum(Int) | <ul> <li>operator_name</li> </ul> |
 | **flink.task.record.count** | The number of records this task type has. | {records} | Sum(Int) | <ul> <li>record</li> </ul> |
-| **flink.taskmanager.jvm.class_loader.classes_loaded** | The total number of classes loaded since the start of the JVM for a taskmanager. | {classes} | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.cpu.load** | The recent CPU usage of the JVM for a taskmanager. | 1 | Gauge(Double) | <ul> </ul> |
-| **flink.taskmanager.jvm.cpu.time** | The CPU time used by the JVM for a taskmanager. | ns | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.garbage_collector.collection.count** | The total number of collections that have occurred for a taskmanager. | {collections} | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
-| **flink.taskmanager.jvm.garbage_collector.collection.time** | The total time spent performing garbage collection for a taskmanager. | ms | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
-| **flink.taskmanager.jvm.memory.direct.total_capacity** | The total capacity of all buffers in the direct buffer pool for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.direct.used** | The amount of memory used by the JVM for the direct buffer pool for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.heap.committed** | The amount of heap memory guaranteed to be available to the JVM for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.heap.max** | The maximum amount of heap memory that can be used for memory management for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.heap.used** | The amount of heap memory currently used for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.mapped.total_capacity** | The number of buffers in the mapped buffer pool for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.mapped.used** | The amount of memory used by the JVM for the mapped buffer pool for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.metaspace.committed** | The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.metaspace.max** | The maximum amount of memory that can be used in the Metaspace memory pool for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.metaspace.used** | The amount of memory currently used in the Metaspace memory pool for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.non_heap.committed** | The amount of non-heap memory guaranteed to be available to the JVM for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.non_heap.max** | The maximum amount of non-heap memory that can be used for memory management for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.memory.non_heap.used** | The amount of non-heap memory currently used for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.jvm.threads.count** | The total number of live threads for a taskmanager. | {threads} | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.memory.managed.total** | The total amount of managed memory for a taskmanager. | By | Sum(Int) | <ul> </ul> |
-| **flink.taskmanager.memory.managed.used** | The amount of managed memory currently used for a taskmanager. | By | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -72,6 +51,7 @@ metrics:
 | Name | Description | Type |
 | ---- | ----------- | ---- |
 | flink.job.name | The job name. | String |
+| flink.resource.type | The resource type is the flink scope type in which a metric belongs to. | String |
 | flink.subtask.index | The subtask index. | String |
 | flink.task.name | The task name. | String |
 | flink.taskmanager.id | The taskmanager ID. | String |
@@ -81,7 +61,7 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| checkpoint | The checkpoint type. | in_progress, completed, failed |
-| garbage_collector_name | The garbage collector name. |  |
+| checkpoint | The number of checkpoints in progress, completed or that failed. | in_progress, completed, failed |
+| garbage_collector_name | The garbage collector name. | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
 | operator_name | The operator name. |  |
-| record | The record type. | in, out, late_records_dropped |
+| record | The number of records received in, sent out or dropped due to arriving late. | in, out, late_records_dropped |

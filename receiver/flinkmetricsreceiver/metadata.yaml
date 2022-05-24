@@ -17,43 +17,39 @@ resource_attributes:
   flink.subtask.index:
     description: The subtask index.
     type: string
+  flink.resource.type:
+    description: The flink scope type in which a metric belongs to.
+    type: string
 
 attributes:
   operator_name:
     description: The operator name.
     type: string
   garbage_collector_name:
-    description: The garbage collector name.
+    description: The names for the parallel scavenge and garbage first garbage collectors.
     type: string
+    enum: [ PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation ]
   checkpoint:
-    description: The checkpoint type. 
+    description: The number of checkpoints in progress, completed or that failed. 
     type: string
     enum: [ in_progress, completed, failed ]
   record:
-    description: The record type.
+    description: The number of records received in, sent out or dropped due to arriving late.
     type: string
     enum: [ in, out, late_records_dropped ]
 
 metrics:
-  flink.jobmanager.jvm.cpu.load:
+  flink.jvm.cpu.load:
     enabled: true
-    description: The recent CPU usage of the JVM for a jobmanager.
+    description: The recent CPU usage of the JVM.
     unit: 1
     gauge:
       value_type: double
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.cpu.load:
+  flink.jvm.cpu.time:
     enabled: true
-    description: The recent CPU usage of the JVM for a taskmanager.
-    unit: 1
-    gauge:
-      value_type: double
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.cpu.time:
-    enabled: true
-    description: The CPU time used by the JVM for a jobmanager.
+    description: The CPU time used by the JVM.
     unit: ns
     sum:
       monotonic: true
@@ -61,19 +57,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.cpu.time:
+  flink.jvm.memory.heap.used:
     enabled: true
-    description: The CPU time used by the JVM for a taskmanager.
-    unit: ns
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.memory.heap.used:
-    enabled: true
-    description: The amount of heap memory currently used for a jobmanager.
+    description: The amount of heap memory currently used.
     unit: By
     sum:
       monotonic: false
@@ -81,9 +67,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.heap.used:
+  flink.jvm.memory.heap.committed:
     enabled: true
-    description: The amount of heap memory currently used for a taskmanager.
+    description: The amount of heap memory guaranteed to be available to the JVM.
     unit: By
     sum:
       monotonic: false
@@ -91,9 +77,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jobmanager.jvm.memory.heap.committed:
+  flink.jvm.memory.heap.max:
     enabled: true
-    description: The amount of heap memory guaranteed to be available to the JVM for a jobmanager.
+    description: The maximum amount of heap memory that can be used for memory management.
     unit: By
     sum:
       monotonic: false
@@ -101,9 +87,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.heap.committed:
+  flink.jvm.memory.non_heap.used:
     enabled: true
-    description: The amount of heap memory guaranteed to be available to the JVM for a taskmanager.
+    description: The amount of non-heap memory currently used.
     unit: By
     sum:
       monotonic: false
@@ -111,9 +97,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jobmanager.jvm.memory.heap.max:
+  flink.jvm.memory.non_heap.committed:
     enabled: true
-    description: The maximum amount of heap memory that can be used for memory management for a jobmanager.
+    description: The amount of non-heap memory guaranteed to be available to the JVM.
     unit: By
     sum:
       monotonic: false
@@ -121,9 +107,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.heap.max:
+  flink.jvm.memory.non_heap.max:
     enabled: true
-    description: The maximum amount of heap memory that can be used for memory management for a taskmanager.
+    description: The maximum amount of non-heap memory that can be used for memory management.
     unit: By
     sum:
       monotonic: false
@@ -131,9 +117,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jobmanager.jvm.memory.non_heap.used:
+  flink.jvm.memory.metaspace.used:
     enabled: true
-    description: The amount of non-heap memory currently used for a jobmanager.
+    description: The amount of memory currently used in the Metaspace memory pool.
     unit: By
     sum:
       monotonic: false
@@ -141,9 +127,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.non_heap.used:
+  flink.jvm.memory.metaspace.committed:
     enabled: true
-    description: The amount of non-heap memory currently used for a taskmanager.
+    description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
     unit: By
     sum:
       monotonic: false
@@ -151,9 +137,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jobmanager.jvm.memory.non_heap.committed:
+  flink.jvm.memory.metaspace.max:
     enabled: true
-    description: The amount of non-heap memory guaranteed to be available to the JVM for a jobmanager.
+    description: The maximum amount of memory that can be used in the Metaspace memory pool.
     unit: By
     sum:
       monotonic: false
@@ -161,9 +147,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.non_heap.committed:
+  flink.jvm.memory.direct.used:
     enabled: true
-    description: The amount of non-heap memory guaranteed to be available to the JVM for a taskmanager.
+    description: The amount of memory used by the JVM for the direct buffer pool.
     unit: By
     sum:
       monotonic: false
@@ -171,9 +157,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jobmanager.jvm.memory.non_heap.max:
+  flink.jvm.memory.direct.total_capacity:
     enabled: true
-    description: The maximum amount of non-heap memory that can be used for memory management for a jobmanager.
+    description: The total capacity of all buffers in the direct buffer pool.
     unit: By
     sum:
       monotonic: false
@@ -181,9 +167,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.non_heap.max:
+  flink.jvm.memory.mapped.used:
     enabled: true
-    description: The maximum amount of non-heap memory that can be used for memory management for a taskmanager.
+    description: The amount of memory used by the JVM for the mapped buffer pool.
     unit: By
     sum:
       monotonic: false
@@ -191,9 +177,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jobmanager.jvm.memory.metaspace.used:
+  flink.jvm.memory.mapped.total_capacity:
     enabled: true
-    description: The amount of memory currently used in the Metaspace memory pool for a jobmanager.
+    description: The number of buffers in the mapped buffer pool.
     unit: By
     sum:
       monotonic: false
@@ -201,9 +187,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.metaspace.used:
+  flink.memory.managed.used:
     enabled: true
-    description: The amount of memory currently used in the Metaspace memory pool for a taskmanager.
+    description: The amount of managed memory currently used.
     unit: By
     sum:
       monotonic: false
@@ -211,9 +197,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jobmanager.jvm.memory.metaspace.committed:
+  flink.memory.managed.total:
     enabled: true
-    description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool for a jobmanager.
+    description: The total amount of managed memory.
     unit: By
     sum:
       monotonic: false
@@ -221,159 +207,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.memory.metaspace.committed:
+  flink.jvm.threads.count:
     enabled: true
-    description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.memory.metaspace.max:
-    enabled: true
-    description: The maximum amount of memory that can be used in the Metaspace memory pool for a jobmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.jvm.memory.metaspace.max:
-    enabled: true
-    description: The maximum amount of memory that can be used in the Metaspace memory pool for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.memory.direct.used:
-    enabled: true
-    description: The amount of memory used by the JVM for the direct buffer pool for a jobmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.jvm.memory.direct.used:
-    enabled: true
-    description: The amount of memory used by the JVM for the direct buffer pool for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.memory.direct.total_capacity:
-    enabled: true
-    description: The total capacity of all buffers in the direct buffer pool for a jobmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.jvm.memory.direct.total_capacity:
-    enabled: true
-    description: The total capacity of all buffers in the direct buffer pool for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.memory.mapped.used:
-    enabled: true
-    description: The amount of memory used by the JVM for the mapped buffer pool for a jobmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.jvm.memory.mapped.used:
-    enabled: true
-    description: The amount of memory used by the JVM for the mapped buffer pool for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.memory.mapped.total_capacity:
-    enabled: true
-    description: The number of buffers in the mapped buffer pool for a jobmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.jvm.memory.mapped.total_capacity:
-    enabled: true
-    description: The number of buffers in the mapped buffer pool for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.memory.managed.used:
-    enabled: true
-    description: The amount of managed memory currently used for a jobmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.memory.managed.used:
-    enabled: true
-    description: The amount of managed memory currently used for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.memory.managed.total:
-    enabled: true
-    description: The total amount of managed memory for a jobmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.memory.managed.total:
-    enabled: true
-    description: The total amount of managed memory for a taskmanager.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.threads.count:
-    enabled: true
-    description: The total number of live threads for a jobmanager.
+    description: The total number of live threads.
     unit: "{threads}"
     sum:
       monotonic: false
@@ -381,19 +217,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.taskmanager.jvm.threads.count:
+  flink.jvm.garbage_collector.collection.count:
     enabled: true
-    description: The total number of live threads for a taskmanager.
-    unit: "{threads}"
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jobmanager.jvm.garbage_collector.collection.count:
-    enabled: true
-    description: The total number of collections that have occurred for a jobmanager.
+    description: The total number of collections that have occurred.
     unit: "{collections}"
     sum:
       monotonic: true
@@ -401,19 +227,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: [ garbage_collector_name ]
-  flink.taskmanager.jvm.garbage_collector.collection.count:
+  flink.jvm.garbage_collector.collection.time:
     enabled: true
-    description: The total number of collections that have occurred for a taskmanager.
-    unit: "{collections}"
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: [ garbage_collector_name ]
-  flink.jobmanager.jvm.garbage_collector.collection.time:
-    enabled: true
-    description: The total time spent performing garbage collection for a jobmanager.
+    description: The total time spent performing garbage collection.
     unit: ms
     sum:
       monotonic: true
@@ -421,29 +237,9 @@ metrics:
       value_type: int
       input_type: string
     attributes: [ garbage_collector_name ]
-  flink.taskmanager.jvm.garbage_collector.collection.time:
+  flink.jvm.class_loader.classes_loaded:
     enabled: true
-    description: The total time spent performing garbage collection for a taskmanager.
-    unit: ms
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: [ garbage_collector_name ]
-  flink.jobmanager.jvm.class_loader.classes_loaded:
-    enabled: true
-    description: The total number of classes loaded since the start of the JVM for a jobmanager.
-    unit: "{classes}"
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.taskmanager.jvm.class_loader.classes_loaded:
-    enabled: true
-    description: The total number of classes loaded since the start of the JVM for a taskmanager.
+    description: The total number of classes loaded since the start of the JVM.
     unit: "{classes}"
     sum:
       monotonic: false

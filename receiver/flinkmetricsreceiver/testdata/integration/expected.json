@@ -8,6 +8,12 @@
                   "value": {
                      "stringValue": "job-localhost"
                   }
+               },
+               {
+                  "key": "flink.resource.type",
+                  "value": {
+                     "stringValue": "jobmanager"
+                  }
                }
             ]
          },
@@ -15,44 +21,44 @@
             {
                "metrics": [
                   {
-                     "description": "The total number of classes loaded since the start of the JVM for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.class_loader.classes_loaded",
+                     "description": "The total number of classes loaded since the start of the JVM.",
+                     "name": "flink.jvm.class_loader.classes_loaded",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "9411",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "9409",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "{classes}"
                   },
                   {
-                     "description": "The recent CPU usage of the JVM for a jobmanager.",
+                     "description": "The recent CPU usage of the JVM.",
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asDouble": 0.026395939086294416,
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asDouble": 0.03344092963202066,
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
-                     "name": "flink.jobmanager.jvm.cpu.load",
+                     "name": "flink.jvm.cpu.load",
                      "unit": "1"
                   },
                   {
-                     "description": "The CPU time used by the JVM for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.cpu.time",
+                     "description": "The CPU time used by the JVM.",
+                     "name": "flink.jvm.cpu.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "10250000000",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "13510000000",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -60,8 +66,8 @@
                      "unit": "ns"
                   },
                   {
-                     "description": "The total number of collections that have occurred for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.garbage_collector.collection.count",
+                     "description": "The total number of collections that have occurred.",
+                     "name": "flink.jvm.garbage_collector.collection.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -75,8 +81,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "2",
@@ -88,8 +94,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -97,13 +103,13 @@
                      "unit": "{collections}"
                   },
                   {
-                     "description": "The total time spent performing garbage collection for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.garbage_collector.collection.time",
+                     "description": "The total time spent performing garbage collection.",
+                     "name": "flink.jvm.garbage_collector.collection.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "57",
+                              "asInt": "58",
                               "attributes": [
                                  {
                                     "key": "garbage_collector_name",
@@ -112,11 +118,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
-                              "asInt": "25",
+                              "asInt": "21",
                               "attributes": [
                                  {
                                     "key": "garbage_collector_name",
@@ -125,8 +131,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -134,210 +140,210 @@
                      "unit": "ms"
                   },
                   {
-                     "description": "The total capacity of all buffers in the direct buffer pool for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.direct.total_capacity",
+                     "description": "The total capacity of all buffers in the direct buffer pool.",
+                     "name": "flink.jvm.memory.direct.total_capacity",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "537733",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "539780",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of memory used by the JVM for the direct buffer pool for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.direct.used",
+                     "description": "The amount of memory used by the JVM for the direct buffer pool.",
+                     "name": "flink.jvm.memory.direct.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "537734",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "539781",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of heap memory guaranteed to be available to the JVM for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.heap.committed",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1029177344",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The maximum amount of heap memory that can be used for memory management for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.heap.max",
+                     "description": "The amount of heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jvm.memory.heap.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "1029177344",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of heap memory currently used for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.heap.used",
+                     "description": "The maximum amount of heap memory that can be used for memory management.",
+                     "name": "flink.jvm.memory.heap.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "220360216",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "1029177344",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The number of buffers in the mapped buffer pool for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.mapped.total_capacity",
+                     "description": "The amount of heap memory currently used.",
+                     "name": "flink.jvm.memory.heap.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "220280352",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of buffers in the mapped buffer pool.",
+                     "name": "flink.jvm.memory.mapped.total_capacity",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of memory used by the JVM for the mapped buffer pool for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.mapped.used",
+                     "description": "The amount of memory used by the JVM for the mapped buffer pool.",
+                     "name": "flink.jvm.memory.mapped.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.metaspace.committed",
+                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
+                     "name": "flink.jvm.memory.metaspace.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "58720256",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.metaspace.max",
+                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
+                     "name": "flink.jvm.memory.metaspace.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "268435456",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of memory currently used in the Metaspace memory pool for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.metaspace.used",
+                     "description": "The amount of memory currently used in the Metaspace memory pool.",
+                     "name": "flink.jvm.memory.metaspace.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "54800520",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "54766080",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of non-heap memory guaranteed to be available to the JVM for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.non_heap.committed",
+                     "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jvm.memory.non_heap.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "78184448",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "78249984",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The maximum amount of non-heap memory that can be used for memory management for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.non_heap.max",
+                     "description": "The maximum amount of non-heap memory that can be used for memory management.",
+                     "name": "flink.jvm.memory.non_heap.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "780140544",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of non-heap memory currently used for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.memory.non_heap.used",
+                     "description": "The amount of non-heap memory currently used.",
+                     "name": "flink.jvm.memory.non_heap.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "73569392",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "73615360",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The total number of live threads for a jobmanager.",
-                     "name": "flink.jobmanager.jvm.threads.count",
+                     "description": "The total number of live threads.",
+                     "name": "flink.jvm.threads.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "75",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "77",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
@@ -365,6 +371,12 @@
                   "value": {
                      "stringValue": "taskmanagerID"
                   }
+               },
+               {
+                  "key": "flink.resource.type",
+                  "value": {
+                     "stringValue": "taskmanager"
+                  }
                }
             ]
          },
@@ -372,44 +384,44 @@
             {
                "metrics": [
                   {
-                     "description": "The total number of classes loaded since the start of the JVM for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.class_loader.classes_loaded",
+                     "description": "The total number of classes loaded since the start of the JVM.",
+                     "name": "flink.jvm.class_loader.classes_loaded",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "8956",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "8965",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "{classes}"
                   },
                   {
-                     "description": "The recent CPU usage of the JVM for a taskmanager.",
+                     "description": "The recent CPU usage of the JVM.",
                      "gauge": {
                         "dataPoints": [
                            {
-                              "asDouble": 0.03183496752833312,
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asDouble": 0.04338789295921018,
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
-                     "name": "flink.taskmanager.jvm.cpu.load",
+                     "name": "flink.jvm.cpu.load",
                      "unit": "1"
                   },
                   {
-                     "description": "The CPU time used by the JVM for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.cpu.time",
+                     "description": "The CPU time used by the JVM.",
+                     "name": "flink.jvm.cpu.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "8830000000",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "12570000000",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -417,8 +429,8 @@
                      "unit": "ns"
                   },
                   {
-                     "description": "The total number of collections that have occurred for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.garbage_collector.collection.count",
+                     "description": "The total number of collections that have occurred.",
+                     "name": "flink.jvm.garbage_collector.collection.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -432,8 +444,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "0",
@@ -445,8 +457,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -454,8 +466,8 @@
                      "unit": "{collections}"
                   },
                   {
-                     "description": "The total time spent performing garbage collection for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.garbage_collector.collection.time",
+                     "description": "The total time spent performing garbage collection.",
+                     "name": "flink.jvm.garbage_collector.collection.time",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
@@ -469,11 +481,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
-                              "asInt": "49",
+                              "asInt": "57",
                               "attributes": [
                                  {
                                     "key": "garbage_collector_name",
@@ -482,8 +494,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -491,240 +503,240 @@
                      "unit": "ms"
                   },
                   {
-                     "description": "The total capacity of all buffers in the direct buffer pool for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.direct.total_capacity",
+                     "description": "The total capacity of all buffers in the direct buffer pool.",
+                     "name": "flink.jvm.memory.direct.total_capacity",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "135547906",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of memory used by the JVM for the direct buffer pool for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.direct.used",
+                     "description": "The amount of memory used by the JVM for the direct buffer pool.",
+                     "name": "flink.jvm.memory.direct.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "135547907",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of heap memory guaranteed to be available to the JVM for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.heap.committed",
+                     "description": "The amount of heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jvm.memory.heap.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "536870912",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The maximum amount of heap memory that can be used for memory management for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.heap.max",
+                     "description": "The maximum amount of heap memory that can be used for memory management.",
+                     "name": "flink.jvm.memory.heap.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "536870912",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of heap memory currently used for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.heap.used",
+                     "description": "The amount of heap memory currently used.",
+                     "name": "flink.jvm.memory.heap.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "138412032",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "141033464",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The number of buffers in the mapped buffer pool for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.mapped.total_capacity",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The amount of memory used by the JVM for the mapped buffer pool for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.mapped.used",
+                     "description": "The number of buffers in the mapped buffer pool.",
+                     "name": "flink.jvm.memory.mapped.total_capacity",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.metaspace.committed",
+                     "description": "The amount of memory used by the JVM for the mapped buffer pool.",
+                     "name": "flink.jvm.memory.mapped.used",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.",
+                     "name": "flink.jvm.memory.metaspace.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "57360384",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.metaspace.max",
+                     "description": "The maximum amount of memory that can be used in the Metaspace memory pool.",
+                     "name": "flink.jvm.memory.metaspace.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "268435456",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of memory currently used in the Metaspace memory pool for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.metaspace.used",
+                     "description": "The amount of memory currently used in the Metaspace memory pool.",
+                     "name": "flink.jvm.memory.metaspace.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "54143736",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "54202184",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of non-heap memory guaranteed to be available to the JVM for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.non_heap.committed",
+                     "description": "The amount of non-heap memory guaranteed to be available to the JVM.",
+                     "name": "flink.jvm.memory.non_heap.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "75923456",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "76382208",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The maximum amount of non-heap memory that can be used for memory management for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.non_heap.max",
+                     "description": "The maximum amount of non-heap memory that can be used for memory management.",
+                     "name": "flink.jvm.memory.non_heap.max",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "780140544",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of non-heap memory currently used for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.memory.non_heap.used",
+                     "description": "The amount of non-heap memory currently used.",
+                     "name": "flink.jvm.memory.non_heap.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "72059848",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "72697256",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The total number of live threads for a taskmanager.",
-                     "name": "flink.taskmanager.jvm.threads.count",
+                     "description": "The total number of live threads.",
+                     "name": "flink.jvm.threads.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "58",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "{threads}"
                   },
                   {
-                     "description": "The total amount of managed memory for a taskmanager.",
-                     "name": "flink.taskmanager.memory.managed.total",
+                     "description": "The total amount of managed memory.",
+                     "name": "flink.memory.managed.total",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "536870920",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
                      "unit": "By"
                   },
                   {
-                     "description": "The amount of managed memory currently used for a taskmanager.",
-                     "name": "flink.taskmanager.memory.managed.used",
+                     "description": "The amount of managed memory currently used.",
+                     "name": "flink.memory.managed.used",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
@@ -774,8 +786,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "0",
@@ -787,8 +799,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "2",
@@ -800,8 +812,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
@@ -814,9 +826,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "4963",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "8428",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
@@ -829,9 +841,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "50",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "asInt": "29",
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
@@ -845,8 +857,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
@@ -905,7 +917,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "663",
+                              "asInt": "2494",
                               "attributes": [
                                  {
                                     "key": "record",
@@ -914,8 +926,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "0",
@@ -927,8 +939,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -997,11 +1009,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
-                              "asInt": "631",
+                              "asInt": "2475",
                               "attributes": [
                                  {
                                     "key": "record",
@@ -1010,8 +1022,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -1071,7 +1083,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "663",
+                              "asInt": "2494",
                               "attributes": [
                                  {
                                     "key": "operator_name",
@@ -1086,8 +1098,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "0",
@@ -1105,8 +1117,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -1129,8 +1141,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },
@@ -1189,7 +1201,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "631",
+                              "asInt": "2475",
                               "attributes": [
                                  {
                                     "key": "operator_name",
@@ -1204,8 +1216,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "0",
@@ -1223,8 +1235,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "0",
@@ -1242,8 +1254,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "0",
@@ -1261,8 +1273,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ],
                         "isMonotonic": true
@@ -1285,8 +1297,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            },
                            {
                               "asInt": "-9223372036854775808",
@@ -1298,8 +1310,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1653314861614937000",
-                              "timeUnixNano": "1653314861715696000"
+                              "startTimeUnixNano": "1653425040127965000",
+                              "timeUnixNano": "1653425040228204000"
                            }
                         ]
                      },

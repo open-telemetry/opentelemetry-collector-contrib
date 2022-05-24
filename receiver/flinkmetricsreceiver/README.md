@@ -12,8 +12,6 @@ This receiver uses Flink's [REST API](https://nightlies.apache.org/flink/flink-d
 
 This receiver supports Apache Flink versions `1.13.6` and `1.14.4`.
 
-The current latest stable release is 1.14.4 and Flink supports the current and previous minor release with bugfixes.
-
 By default, authentication is not required. However, [Flink recommends](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/security/security-ssl/#external--rest-connectivity) using a “side car proxy” that Binds the REST endpoint to the loopback interface and to start a REST proxy that authenticates and forwards the request to Flink.
 
 [SSL](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/security/security-ssl/#external--rest-connectivity) can be enabled with the following REST endpoint [options](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/security/security-ssl/#rest-endpoints-external-connectivity) for external connectivity and have a self signed certificate or be self signed.
