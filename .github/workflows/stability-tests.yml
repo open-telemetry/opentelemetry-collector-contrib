@@ -9,6 +9,7 @@ on:
 jobs:
   setup-environment:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       stabilitytest_matrix: ${{ steps.splitstabilitytest.outputs.stabilitytest_matrix}}
     steps:

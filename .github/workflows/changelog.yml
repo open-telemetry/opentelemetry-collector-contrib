@@ -9,6 +9,7 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
+      - '!dependabot/go_modules/**'
 jobs:
   changelog:
     runs-on: ubuntu-latest

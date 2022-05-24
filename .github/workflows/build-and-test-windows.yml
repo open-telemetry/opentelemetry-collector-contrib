@@ -21,6 +21,7 @@ jobs:
           - internal
           - other
     runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
