@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
-	google.golang.org/api v0.79.0
+	google.golang.org/api v0.80.0
 )
 
 require (
