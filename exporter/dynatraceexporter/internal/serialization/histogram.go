@@ -94,5 +94,15 @@ func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 		max = bounds[maxIdx]
 	}
 
+	// Set min to average when higher than average. This can happen when most values are lower than first boundary (falling in first bucket).
+	// Set max to average when lower than average. This can happen when most values are higher than last boundary (falling in last bucket).
+	avg := dp.Sum() / float64(dp.Count())
+	if min > avg {
+		min = avg
+	}
+	if max < avg {
+		max = avg
+	}
+
 	return min, max
 }
