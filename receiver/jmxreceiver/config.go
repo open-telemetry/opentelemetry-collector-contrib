@@ -189,13 +189,13 @@ func hashFile(path string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func (c *Config) validateJar(hashMap map[string]supportedJar, jar string) error {
+func (c *Config) validateJar(supportedJarDetails map[string]supportedJar, jar string) error {
 	hash, err := hashFile(jar)
 	if err != nil {
 		return fmt.Errorf("error hashing file: %w", err)
 	}
 
-	jarDetails, ok := hashMap[hash]
+	jarDetails, ok := supportedJarDetails[hash]
 	if !ok {
 		return errors.New("jar hash does not match known versions")
 	}
