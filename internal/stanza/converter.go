@@ -27,10 +27,11 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 // Converter converts a batch of entry.Entry into plog.Logs aggregating translated

@@ -16,6 +16,7 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -43,9 +44,6 @@ func HostInfoFromAttributes(attrs pcommon.Map) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
 	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
-		// Add host id as a host alias to preserve backwards compatibility
-		// The Datadog Agent does not do this
-		hostInfo.HostAliases = append(hostInfo.HostAliases, hostID.StringVal())
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("instance-id:%s", hostID.StringVal()))
 	}
 
@@ -59,6 +57,20 @@ func HostInfoFromAttributes(attrs pcommon.Map) (hostInfo *HostInfo) {
 
 	if cloudAccount, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("project:%s", cloudAccount.StringVal()))
+	}
+
+	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
+		if cloudAccount, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
+			name := hostName.StringVal()
+			if strings.Count(name, ".") >= 3 {
+				// Unless the host.name attribute has been tampered with, use the same logic as the Agent to
+				// extract the hostname: https://github.com/DataDog/datadog-agent/blob/7.36.0/pkg/util/cloudproviders/gce/gce.go#L106
+				name = strings.SplitN(name, ".", 2)[0]
+			}
+			alias := fmt.Sprintf("%s.%s", name, cloudAccount.StringVal())
+			hostInfo.HostAliases = append(hostInfo.HostAliases, alias)
+		}
+
 	}
 
 	return
