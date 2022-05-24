@@ -171,11 +171,11 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 	}
 }
 
-func getJaegerProtoSpanTags(span ptrace.Span, instrumentationLibrary pcommon.InstrumentationScope) []model.KeyValue {
+func getJaegerProtoSpanTags(span ptrace.Span, scope pcommon.InstrumentationScope) []model.KeyValue {
 	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
 	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
 
-	libraryTags, libraryTagsFound := getTagsFromInstrumentationLibrary(instrumentationLibrary)
+	libraryTags, libraryTagsFound := getTagsFromInstrumentationLibrary(scope)
 
 	tagsCount := span.Attributes().Len() + len(libraryTags)
 

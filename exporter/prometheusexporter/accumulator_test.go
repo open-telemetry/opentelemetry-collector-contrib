@@ -348,7 +348,7 @@ func TestAccumulateMetrics(t *testing.T) {
 			v := m.(*accumulatedValue)
 			vLabels, vTS, vValue, vTemporality, vIsMonotonic := getMetricProperties(ilm2.Metrics().At(0))
 
-			require.Equal(t, v.instrumentationLibrary.Name(), "test")
+			require.Equal(t, v.scope.Name(), "test")
 			require.Equal(t, v.value.DataType(), ilm2.Metrics().At(0).DataType())
 			vLabels.Range(func(k string, v pcommon.Value) bool {
 				r, _ := m2Labels.Get(k)
