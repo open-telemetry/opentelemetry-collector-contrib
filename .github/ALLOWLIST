@@ -29,8 +29,6 @@ internal/sharedcomponent
 internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
-pkg/stanza
-pkg/stanza/internal/tools
 pkg/translator/jaeger
 pkg/translator/opencensus
 pkg/translator/prometheusremotewrite

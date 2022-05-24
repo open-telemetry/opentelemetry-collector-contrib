@@ -307,6 +307,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.51.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.51.0 // indirect
@@ -389,7 +390,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.51.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.51.0 // indirect
-	github.com/open-telemetry/opentelemetry-log-collection v0.29.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect
@@ -682,6 +682,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersi
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 

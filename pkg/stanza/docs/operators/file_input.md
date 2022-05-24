@@ -41,7 +41,7 @@ If using multiline, last log can sometimes be not flushed due to waiting for mor
 In order to forcefully flush last buffered log after certain period of time,
 use `force_flush_period` option.
 
-Also refer to [recombine](/docs/operators/recombine.md) operator for merging events with greater control.
+Also refer to [recombine](../operators/recombine.md) operator for merging events with greater control.
 
 ### File rotation
 
