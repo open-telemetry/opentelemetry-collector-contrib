@@ -116,7 +116,7 @@ All metrics and their data points
 6) Truncate all data point attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
 8) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
-9) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic sum.
+9) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
 
 All logs
 
