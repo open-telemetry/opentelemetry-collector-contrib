@@ -51,7 +51,7 @@ metrics:
 | Name | Description | Type |
 | ---- | ----------- | ---- |
 | flink.job.name | The job name. | String |
-| flink.resource.type | The resource type is the flink scope type in which a metric belongs to. | String |
+| flink.resource.type | The flink scope type in which a metric belongs to. | String |
 | flink.subtask.index | The subtask index. | String |
 | flink.task.name | The task name. | String |
 | flink.taskmanager.id | The taskmanager ID. | String |
@@ -62,6 +62,6 @@ metrics:
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | checkpoint | The number of checkpoints in progress, completed or that failed. | in_progress, completed, failed |
-| garbage_collector_name | The garbage collector name. | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
+| garbage_collector_name | The names for the parallel scavenge and garbage first garbage collectors. | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
 | operator_name | The operator name. |  |
 | record | The number of records received in, sent out or dropped due to arriving late. | in, out, late_records_dropped |
