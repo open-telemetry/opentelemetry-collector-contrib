@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -213,9 +214,9 @@ func TestMetadataErrorCases(t *testing.T) {
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
 				mbs: &metadata.MetricsBuilders{
-					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 				},
 			}
 
@@ -239,10 +240,10 @@ func TestNilHandling(t *testing.T) {
 			VolumeMetricGroup:    true,
 		},
 		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 		},
 	}
 	assert.NotPanics(t, func() {

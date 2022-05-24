@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
@@ -69,10 +70,9 @@ func (b *Bookmark) Render(buffer Buffer) (string, error) {
 		return "", fmt.Errorf("bookmark handle is not open")
 	}
 
-	var bufferUsed, propertyCount uint32
-	err := evtRender(0, b.handle, EvtRenderBookmark, buffer.SizeBytes(), buffer.FirstByte(), &bufferUsed, &propertyCount)
+	bufferUsed, _, err := evtRender(0, b.handle, EvtRenderBookmark, buffer.SizeBytes(), buffer.FirstByte())
 	if err == ErrorInsufficientBuffer {
-		buffer.UpdateSizeBytes(bufferUsed)
+		buffer.UpdateSizeBytes(*bufferUsed)
 		return b.Render(buffer)
 	}
 
@@ -80,7 +80,7 @@ func (b *Bookmark) Render(buffer Buffer) (string, error) {
 		return "", fmt.Errorf("syscall to 'EvtRender' failed: %s", err)
 	}
 
-	return buffer.ReadString(bufferUsed)
+	return buffer.ReadString(*bufferUsed)
 }
 
 // Close will close the bookmark handle.

@@ -32,32 +32,66 @@ import (
 
 const instanceLabelName = "instance"
 
+type perfCounterMetricWatcher struct {
+	winperfcounters.PerfCounterWatcher
+	MetricRep
+}
+
+type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+
 // scraper is the type that scrapes various host metrics.
 type scraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
-	watchers []winperfcounters.PerfCounterWatcher
+	watchers []perfCounterMetricWatcher
+
+	// for mocking
+	newWatcher newWatcherFunc
 }
 
 func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
-	return &scraper{cfg: cfg, settings: settings}
+	return &scraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcher}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	watchers := []winperfcounters.PerfCounterWatcher{}
-	for _, objCfg := range s.cfg.PerfCounters {
-		objWatchers, err := objCfg.BuildPaths()
-		if err != nil {
-			s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
-			continue
-		}
-		for _, objWatcher := range objWatchers {
-			watchers = append(watchers, objWatcher)
-		}
+	watchers, err := s.initWatchers()
+	if err != nil {
+		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
 	}
 	s.watchers = watchers
-
 	return nil
+}
+
+func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
+	var errs error
+	var watchers []perfCounterMetricWatcher
+
+	for _, objCfg := range s.cfg.PerfCounters {
+		for _, instance := range instancesFromConfig(objCfg) {
+			for _, counterCfg := range objCfg.Counters {
+				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name)
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
+
+				watcher := perfCounterMetricWatcher{
+					PerfCounterWatcher: pcw,
+					MetricRep:          MetricRep{Name: pcw.Path()},
+				}
+				if counterCfg.MetricRep.Name != "" {
+					watcher.MetricRep.Name = counterCfg.MetricRep.Name
+					if counterCfg.MetricRep.Attributes != nil {
+						watcher.MetricRep.Attributes = counterCfg.MetricRep.Attributes
+					}
+				}
+
+				watchers = append(watchers, watcher)
+			}
+		}
+	}
+
+	return watchers, errs
 }
 
 func (s *scraper) shutdown(context.Context) error {
@@ -103,35 +137,32 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		metrics[name] = builtMetric
 	}
 
-	counterVals := []winperfcounters.CounterValue{}
 	for _, watcher := range s.watchers {
-		scrapedCounterValues, err := watcher.ScrapeData()
+		counterVals, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		counterVals = append(counterVals, scrapedCounterValues...)
-	}
 
-	for _, scrapedValue := range counterVals {
-		var metric pmetric.Metric
-		metricRep := scrapedValue.MetricRep
-		if builtmetric, ok := metrics[metricRep.Name]; ok {
-			metric = builtmetric
-		} else {
-			metric = metricSlice.AppendEmpty()
-			metric.SetDataType(pmetric.MetricDataTypeGauge)
-			metric.SetName(metricRep.Name)
-			metric.SetUnit("1")
+		for _, val := range counterVals {
+			var metric pmetric.Metric
+			if builtmetric, ok := metrics[watcher.MetricRep.Name]; ok {
+				metric = builtmetric
+			} else {
+				metric = metricSlice.AppendEmpty()
+				metric.SetDataType(pmetric.MetricDataTypeGauge)
+				metric.SetName(watcher.MetricRep.Name)
+				metric.SetUnit("1")
+			}
+
+			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
 		}
-
-		initializeMetricDps(metric, now, scrapedValue.Value, metricRep.Attributes)
 	}
-
 	return md, errs
 }
 
-func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterValue float64, attributes map[string]string) {
+func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterValue winperfcounters.CounterValue,
+	attributes map[string]string) {
 	var dps pmetric.NumberDataPointSlice
 
 	if metric.DataType() == pmetric.MetricDataTypeGauge {
@@ -145,9 +176,25 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 		for attKey, attVal := range attributes {
 			dp.Attributes().InsertString(attKey, attVal)
 		}
-
+	}
+	if counterValue.InstanceName != "" {
+		dp.Attributes().InsertString(instanceLabelName, counterValue.InstanceName)
 	}
 
 	dp.SetTimestamp(now)
-	dp.SetDoubleVal(counterValue)
+	dp.SetDoubleVal(counterValue.Value)
+}
+
+func instancesFromConfig(oc ObjectConfig) []string {
+	if len(oc.Instances) == 0 {
+		return []string{""}
+	}
+
+	for _, instance := range oc.Instances {
+		if instance == "*" {
+			return []string{"*"}
+		}
+	}
+
+	return oc.Instances
 }

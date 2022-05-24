@@ -20,12 +20,15 @@
 - `transformprocessor`: Add transformation of metrics (#10100)
 - `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+- `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 
 ### 🧰 Bug fixes 🧰
 
 - `datadogexporter`: add error checks for datadog exporter (#9964)
+- `datadogexporter`: Fix host aliases not being properly sent to the Datadog backend (#9748)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
+- `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
 - `transformprocessor`: Fix issue where incorrect error was returned if a bad path was passed to a function (#10141)
 
 ## v0.51.0
@@ -66,6 +69,7 @@
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
 - `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
+- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 
 ### 🧰 Bug fixes 🧰
 
@@ -866,7 +870,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - [`prometheus` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`prometheusremotewrite` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusremotewriteexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`zipkin` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/zipkinexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
-- [`attribute` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributeprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`attribute` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`filter` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`probabilisticsampler` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`resource` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourceprocessor) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
@@ -1419,7 +1423,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ### 🚀 New components 🚀
 
 - `f5cloud` exporter to export metric, trace, and log data to F5 Cloud
-- `jmx` receiver to report metrics from a target MBean server in conjunction with the [JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/contrib/jmx-metrics/README.md)
+- `jmx` receiver to report metrics from a target MBean server in conjunction with the [JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/v1.0.0-alpha/contrib/jmx-metrics/README.md)
 
 ### 🛑 Breaking changes 🛑
 
@@ -1594,7 +1598,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - Move signalfx correlation code out of `sapm` to `signalfxcorrelation` exporter (#1376)
 - Move Splunk specific utils outside of common (#1306)
 - `stackdriver` exporter:
-    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/stackdriverexporter/README.md).
+    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.14.0/exporter/stackdriverexporter/README.md).
     - Trace status codes no longer reflect gRPC codes as per spec changes: open-telemetry/opentelemetry-specification#1067
 - `datadog` exporter: Remove option to change the namespace prefix (#1483)
 
