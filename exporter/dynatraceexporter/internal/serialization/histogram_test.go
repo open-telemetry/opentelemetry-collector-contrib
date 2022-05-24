@@ -65,16 +65,16 @@ func Test_serializeHistogram(t *testing.T) {
 		assert.Equal(t, "prefix.delta_nonempty_first_last_hist,key=value gauge,min=10,max=15,sum=30,count=2 1626438600000", got)
 	})
 
-	t.Run("when average > lowest boundary, min = average", func(t *testing.T) {
+	t.Run("when average < lowest boundary, min = average", func(t *testing.T) {
 		// average = 5, lowest boundary = 10
-		histWitMaxGreaterAvg := pmetric.NewHistogramDataPoint()
-		histWitMaxGreaterAvg.SetMExplicitBounds([]float64{10, 20})
-		histWitMaxGreaterAvg.SetMBucketCounts([]uint64{2, 0, 0})
-		histWitMaxGreaterAvg.SetCount(2)
-		histWitMaxGreaterAvg.SetSum(10)
-		histWitMaxGreaterAvg.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+		histWitMinLessAvg := pmetric.NewHistogramDataPoint()
+		histWitMinLessAvg.SetMExplicitBounds([]float64{10, 20})
+		histWitMinLessAvg.SetMBucketCounts([]uint64{2, 0, 0})
+		histWitMinLessAvg.SetCount(2)
+		histWitMinLessAvg.SetSum(10)
+		histWitMinLessAvg.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeHistogram("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, histWitMaxGreaterAvg)
+		got, err := serializeHistogram("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, histWitMinLessAvg)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_nonempty_first_last_hist,key=value gauge,min=5,max=10,sum=10,count=2 1626438600000", got)
 	})
