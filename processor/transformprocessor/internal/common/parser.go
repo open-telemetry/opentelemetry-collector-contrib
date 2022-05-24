@@ -56,10 +56,10 @@ type Invocation struct {
 // nolint:govet
 type Value struct {
 	Invocation *Invocation `( @@`
-	Bool       *Boolean    `| @("true" | "false")`
 	String     *string     `| @String`
 	Float      *float64    `| @Float`
 	Int        *int64      `| @Int`
+	Bool       *Boolean    `| @("true" | "false")`
 	Path       *Path       `| @@ )`
 }
 
