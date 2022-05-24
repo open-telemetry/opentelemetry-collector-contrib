@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.44.20
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
+	go.opentelemetry.io/collector v0.51.1-0.20220524222013-82d92526afeb
 	go.uber.org/zap v1.21.0
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
-	go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af // indirect
+	go.opentelemetry.io/collector/pdata v0.51.1-0.20220524222013-82d92526afeb // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect

@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.51.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
-	go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af
+	go.opentelemetry.io/collector v0.51.1-0.20220524222013-82d92526afeb
+	go.opentelemetry.io/collector/pdata v0.51.1-0.20220524222013-82d92526afeb
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -65,7 +65,7 @@ require (
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.51.1-0.20220519211145-c56d20e9e0af // indirect
+	go.opentelemetry.io/collector/semconv v0.51.1-0.20220524222013-82d92526afeb // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect

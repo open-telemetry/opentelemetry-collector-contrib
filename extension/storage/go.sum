@@ -280,10 +280,10 @@ github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxt
 go.etcd.io/bbolt v1.3.6 h1:/ecaJf0sk1l4l6V4awd65v2C3ILy7MSj+s/x1ADCIMU=
 go.etcd.io/bbolt v1.3.6/go.mod h1:qXsaaIqmgQH0T+OPdb99Bf+PKfBBQVAdyD6TY9G8XM4=
 go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
-go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af h1:FQtF3PEE+iF0xqwFyNVE4KC5gdRxwCCZ+vkGPZHj/E8=
-go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af/go.mod h1:vYUTb51+Tpc+ziTx2VfKZtvO/tKfJo7NosYyXymB78A=
-go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af h1:eX2HuWOgtK/KYzn5grV3iLy7D7OrZeOYG+96rUq4twA=
-go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af/go.mod h1:GJUTfTv8mlYpHRjcmHXVbvJr48EW/q/P/HuBvpXAE58=
+go.opentelemetry.io/collector v0.51.1-0.20220524222013-82d92526afeb h1:X9O/VIFsK1ZOmK4de94y/umUIB13V9l/knJxAU7HBWw=
+go.opentelemetry.io/collector v0.51.1-0.20220524222013-82d92526afeb/go.mod h1:vYUTb51+Tpc+ziTx2VfKZtvO/tKfJo7NosYyXymB78A=
+go.opentelemetry.io/collector/pdata v0.51.1-0.20220524222013-82d92526afeb h1:Bhmya4lIQamTlBpdL0LMrd8QwnbE/06dgkJV2hSE5Vg=
+go.opentelemetry.io/collector/pdata v0.51.1-0.20220524222013-82d92526afeb/go.mod h1:GJUTfTv8mlYpHRjcmHXVbvJr48EW/q/P/HuBvpXAE58=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 h1:WenoaOMNP71oq3KkMZ/jnxI9xU/JSCLw8yZILSI2lfU=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 h1:mac9BKRqwaX6zxHPDe3pvmWpwuuIM0vuXv2juCnQevE=
 go.opentelemetry.io/contrib/zpages v0.32.0 h1:AVKTx5ppWDaem7A61HFsO1T3CK/t6kFRQoZQMj0/TW4=

@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.51.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
+	go.opentelemetry.io/collector v0.51.1-0.20220524222013-82d92526afeb
 	go.uber.org/zap v1.21.0
 
 )
@@ -32,7 +32,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af // indirect
+	go.opentelemetry.io/collector/pdata v0.51.1-0.20220524222013-82d92526afeb // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
