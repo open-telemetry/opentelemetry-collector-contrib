@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
