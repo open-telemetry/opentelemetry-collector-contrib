@@ -21,6 +21,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -133,6 +134,9 @@ func TestExporter_New(t *testing.T) {
 }
 
 func TestExporter_PushEvent(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10178")
+	}
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
