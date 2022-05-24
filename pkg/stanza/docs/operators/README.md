@@ -35,7 +35,6 @@ General purpose:
 - [copy](./copy.md)
 - [filter](./filter.md)
 - [flatten](./flatten.md)
-- [metadata](./metadata.md)
 - [move](./move.md)
 - [recombine](./recombine.md)
 - [remove](./remove.md)
