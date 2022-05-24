@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -60,7 +60,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		factory.CreateDefaultConfig(),
 		nil,
 	)
-	require.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	require.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	require.Nil(t, traceReceiver)
 }
 

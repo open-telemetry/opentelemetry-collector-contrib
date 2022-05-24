@@ -18,14 +18,18 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/gobwas/glob"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var registry = map[string]interface{}{
-	"keep_keys":    keepKeys,
-	"set":          set,
-	"truncate_all": truncateAll,
-	"limit":        limit,
+	"keep_keys":           keepKeys,
+	"set":                 set,
+	"truncate_all":        truncateAll,
+	"limit":               limit,
+	"replace_match":       replaceMatch,
+	"replace_all_matches": replaceAllMatches,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -140,6 +144,52 @@ func limit(target GetSetter, limit int64) (ExprFunc, error) {
 	}, nil
 }
 
+func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
+	glob, err := glob.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
+	}
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+		if valStr, ok := val.(string); ok {
+			if glob.Match(valStr) {
+				target.Set(ctx, replacement)
+			}
+		}
+		return nil
+	}, nil
+}
+
+func replaceAllMatches(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
+	glob, err := glob.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
+	}
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+		if attrs, ok := val.(pcommon.Map); ok {
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			attrs.Range(func(key string, value pcommon.Value) bool {
+				if glob.Match(value.StringVal()) {
+					updated.InsertString(key, replacement)
+				} else {
+					updated.Insert(key, value)
+				}
+				return true
+			})
+			target.Set(ctx, updated)
+		}
+		return nil
+	}, nil
+}
+
 // TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
 // Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
@@ -192,6 +242,11 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
 				}
 				args = append(args, reflect.ValueOf(*argDef.Int))
+			case "string":
+				if argDef.String == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be a string", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.String))
 			}
 		}
 		val := reflect.ValueOf(f)

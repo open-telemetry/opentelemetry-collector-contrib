@@ -21,12 +21,16 @@
 - `transformprocessor`: Add transformation of metrics (#10100)
 - `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+- `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 
 ### 🧰 Bug fixes 🧰
 
 - `datadogexporter`: add error checks for datadog exporter (#9964)
+- `datadogexporter`: Fix host aliases not being properly sent to the Datadog backend (#9748)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
+- `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
+- `podmanreceiver`: Container Stats Error structure (#9397)
 
 ## v0.51.0
 

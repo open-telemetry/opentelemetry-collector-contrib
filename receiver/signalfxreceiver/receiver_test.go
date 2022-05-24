@@ -36,7 +36,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -66,7 +65,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantStartErr: componenterror.ErrNilNextConsumer,
+			wantStartErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "default_endpoint",
