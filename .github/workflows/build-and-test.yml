@@ -29,7 +29,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -85,7 +85,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Cache Lint Build
         uses: actions/cache@v3
         with:
@@ -120,7 +120,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: CheckDoc
         run: make checkdoc
       - name: Porto
@@ -169,7 +169,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Cache Test Build
         uses: actions/cache@v3
         with:
@@ -208,7 +208,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Run Integration Tests
         run: make integration-tests-with-cover
 
@@ -233,7 +233,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
@@ -257,7 +257,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
 
@@ -299,7 +299,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Build Collector ${{ matrix.binary }}
         run: make otelcontribcol-${{ matrix.binary }}
       - name: Upload Collector Binaries
@@ -429,7 +429,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Download Binaries
         uses: actions/download-artifact@v3
         with:
@@ -490,7 +490,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.event.number }}
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
