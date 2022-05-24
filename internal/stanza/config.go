@@ -17,9 +17,10 @@ package stanza // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 // BaseConfig is the common configuration of a stanza-based receiver

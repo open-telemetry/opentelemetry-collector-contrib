@@ -14,6 +14,7 @@
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
+- `expvarreceiver`: Add implementation of new receiver. (#10183)
 
 ### 💡 Enhancements 💡
 
@@ -25,9 +26,12 @@
 ### 🧰 Bug fixes 🧰
 
 - `datadogexporter`: add error checks for datadog exporter (#9964)
+- `datadogexporter`: Fix host aliases not being properly sent to the Datadog backend (#9748)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
+- `podmanreceiver`: Container Stats Error structure (#9397)
+- `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
 - `dynatraceexporter`: Fix issue on histogram min and max calculation. (#10257)
 
 ## v0.51.0

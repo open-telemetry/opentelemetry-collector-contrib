@@ -18,10 +18,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -44,6 +40,16 @@ jobs:
         uses: actions/checkout@v2
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
+  check-codeowners:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Check Code Owner Existence
+        run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
+      - name: Check Component Existence
+        run: ./.github/workflows/scripts/check-codeowners.sh check_component_existence
   lint-matrix:
     strategy:
       matrix:
@@ -64,10 +70,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -99,10 +101,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -148,10 +146,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -187,10 +181,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -212,10 +202,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -236,10 +222,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -278,10 +260,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -407,10 +385,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
+      - name: Mkdir bin and dist
         run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
       - name: Cache Go
         id: go-cache
@@ -468,10 +444,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
+      - name: Mkdir bin and dist
         run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
       - name: Cache Go
         id: go-cache
