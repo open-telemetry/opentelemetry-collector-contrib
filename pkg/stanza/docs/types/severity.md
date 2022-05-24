@@ -10,7 +10,7 @@ Parser operators can parse a severity and attach the resulting value to a log en
 
 | Field          | Default   | Description |
 | ---            | ---       | ---         |
-| `parse_from`   | required  | The [field](/docs/types/field.md) from which the value will be parsed. |
+| `parse_from`   | required  | The [field](../types/field.md) from which the value will be parsed. |
 | `preset`       | `default` | A predefined set of values that should be interpretted at specific severity levels. |
 | `mapping`      |           | A custom set of values that should be interpretted at designated severity levels. |
 
@@ -146,7 +146,7 @@ The following configurations are equivalent:
 
 ### How to use severity parsing
 
-All parser operators, such as [`regex_parser`](/docs/operators/regex_parser.md) support these fields inside of a `severity` block.
+All parser operators, such as [`regex_parser`](../operators/regex_parser.md) support these fields inside of a `severity` block.
 
 If a severity block is specified, the parser operator will perform the severity parsing _after_ performing its other parsing actions, but _before_ passing the entry to the specified output operator.
 
@@ -164,7 +164,7 @@ If a severity block is specified, the parser operator will perform the severity 
 
 ---
 
-As a special case, the [`severity_parser`](/docs/operators/severity_parser.md) operator supports these fields inline. This is because severity parsing is the primary purpose of the operator.
+As a special case, the [`severity_parser`](../operators/severity_parser.md) operator supports these fields inline. This is because severity parsing is the primary purpose of the operator.
 ```yaml
 - type: severity_parser
   parse_from: body.severity_field

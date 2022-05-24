@@ -8,9 +8,9 @@ The `retain` operator keeps the specified list of fields, and removes the rest.
 | ---        | ---              | ---         |
 | `id`       | `retain`         | A unique identifier for the operator. |
 | `output`   | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `fields`   | required         | A list of [fields](/docs/types/field.md) to be kept. |
-| `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
-| `if`       |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
+| `fields`   | required         | A list of [fields](../types/field.md) to be kept. |
+| `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
+| `if`       |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 <hr>
 <b>NOTE:</b> If no fields in a group (attributes, resource, or body) are specified, that entire group will be retained.
 <hr>

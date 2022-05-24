@@ -175,6 +175,8 @@ github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQ
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.51.0 h1:X86ui6NzWXPOEGH/a/fKfRhJcoeuiH37AlPitmLWi0M=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.51.0 h1:2YxOGOt9u+WAZHYc2FBYNibVLIr72WX0rZQ77BSADtY=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.51.0/go.mod h1:C1u1UeaKydtRNDdUy3vIPiNwunv5VQzxlUTDtFk9mDA=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.51.0 h1:k1wNuCUXL89xQBz83iT+laQmiZtId9u/KKRu6q93jHg=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.51.0/go.mod h1:PeLJ21kL64S+xBjKEqNSylSjKBVIEqgPVacUBxnTcXM=
 github.com/open-telemetry/opentelemetry-log-collection v0.29.1 h1:/Norji0OWQelS2sruZwjckJiKWrP9LO0LZd23KhWXfQ=
 github.com/open-telemetry/opentelemetry-log-collection v0.29.1/go.mod h1:jc765D8x90g+kMfDSSb0MxoEURxoCxz1fV0dutvzlrc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
