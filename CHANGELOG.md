@@ -30,6 +30,8 @@
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
 - `podmanreceiver`: Container Stats Error structure (#9397)
+- `jaeger`: Update OTLP-Jaeger translation of span events according to the OTel Spec: use `event` log field instead
+  of `message` to represent OTel Span Event Name (#10273)
 
 ## v0.51.0
 
