@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 // Test for valid functions are in internal/traces/functions_test.go as there are many different data model cases.
@@ -41,10 +43,10 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				Function: "set",
 				Arguments: []Value{
 					{
-						String: strp("not path"),
+						String: testhelper.Strp("not path"),
 					},
 					{
-						String: strp("cat"),
+						String: testhelper.Strp("cat"),
 					},
 				},
 			},
@@ -108,7 +110,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(10),
+						Int: testhelper.Intp(10),
 					},
 				},
 			},
@@ -128,7 +130,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						String: strp("not an int"),
+						String: testhelper.Strp("not an int"),
 					},
 				},
 			},
@@ -148,7 +150,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(-1),
+						Int: testhelper.Intp(-1),
 					},
 				},
 			},
@@ -168,7 +170,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						String: strp("not an int"),
+						String: testhelper.Strp("not an int"),
 					},
 				},
 			},
@@ -188,7 +190,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(-1),
+						Int: testhelper.Intp(-1),
 					},
 				},
 			},
