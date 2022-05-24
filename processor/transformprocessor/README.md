@@ -75,6 +75,8 @@ processors:
         - limit(attributes, 100)
         - truncate_all(attributes, 4096)
         - truncate_all(resource.attributes, 4096)
+        - convert_sum_to_gauge() where metric.name == "system.processes.count"
+        - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
     logs:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
@@ -113,6 +115,8 @@ All metrics and their data points
 4) Limit all data point attributes such that each data point has no more than 100 attributes.
 6) Truncate all data point attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
+8) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
+9) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic sum.
 
 All logs
 
