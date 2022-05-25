@@ -2,7 +2,11 @@
 
 **Status: experimental**
 
-Supported pipeline types: logs.
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
 
 This exporter supports sending OpenTelemetry logs to [ClickHouse](https://clickhouse.com/). It will also support spans and metrics in the future.
 > ClickHouse is an open-source, high performance columnar OLAP database management system for real-time analytics using SQL.
@@ -112,3 +116,6 @@ TTL Timestamp + INTERVAL 3 DAY
 PARTITION BY toDate(Timestamp)
 ORDER BY (toUnixTimestamp(Timestamp));
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
