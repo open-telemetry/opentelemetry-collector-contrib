@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
