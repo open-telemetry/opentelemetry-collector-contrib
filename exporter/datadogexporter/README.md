@@ -1,5 +1,11 @@
 # Datadog Exporter
 
+| Status                   |                |
+| ------------------------ |----------------|
+| Stability                | [beta]         |
+| Supported pipeline types | trace, metrics |
+| Distributions            | [contrib]      |
+
 This exporter sends metric and trace data to [Datadog](https://datadoghq.com). For environment specific setup instructions visit the [Datadog Documentation](https://docs.datadoghq.com/tracing/setup_overview/open_standards/#opentelemetry-collector-datadog-exporter).
 
 > Please review the Collector's [security
@@ -108,3 +114,6 @@ There are a number of optional settings for configuring how to send your metrics
 | `summaries::mode` | Mode for summaries. Valid values are `noquantiles` (no quantiles metrics) and `gauges` (one metric per quantile). | `gauges` |
 | `histograms::mode` | Mode for histograms. Valid values are `nobuckets` (no bucket metrics), `counters` (one metric per bucket) and `distributions` (send as Datadog distributions, recommended). | `distributions` |
 | `histograms::send_count_sum_metrics` | Whether to report sum and count for histograms as separate metrics. | `false` |
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
