@@ -8,15 +8,15 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **flink.job.checkpoints.count** | The number of checkpoints by type. | {checkpoints} | Sum(Int) | <ul> <li>checkpoint</li> </ul> |
+| **flink.job.checkpoint.count** | The number of checkpoints by type. | {checkpoints} | Sum(Int) | <ul> <li>checkpoint</li> </ul> |
 | **flink.job.last_checkpoint.size** | The total size of the last checkpoint. | By | Sum(Int) | <ul> </ul> |
-| **flink.job.last_checkpoint.time** | The end to end duration of the last checkpoint. | ms | Sum(Int) | <ul> </ul> |
+| **flink.job.last_checkpoint.time** | The end to end duration of the last checkpoint. | ms | Gauge(Int) | <ul> </ul> |
 | **flink.job.restart.count** | The total number of restarts since this job was submitted, including full restarts and fine-grained restarts. | {restarts} | Sum(Int) | <ul> </ul> |
 | **flink.jvm.class_loader.classes_loaded** | The total number of classes loaded since the start of the JVM. | {classes} | Sum(Int) | <ul> </ul> |
 | **flink.jvm.cpu.load** | The recent CPU usage of the JVM. | 1 | Gauge(Double) | <ul> </ul> |
 | **flink.jvm.cpu.time** | The CPU time used by the JVM. | ns | Sum(Int) | <ul> </ul> |
-| **flink.jvm.garbage_collector.collection.count** | The total number of collections that have occurred. | {collections} | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
-| **flink.jvm.garbage_collector.collection.time** | The total time spent performing garbage collection. | ms | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
+| **flink.jvm.gc.collections.count** | The total number of collections that have occurred. | {collections} | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
+| **flink.jvm.gc.collections.time** | The total time spent performing garbage collection. | ms | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
 | **flink.jvm.memory.direct.total_capacity** | The total capacity of all buffers in the direct buffer pool. | By | Sum(Int) | <ul> </ul> |
 | **flink.jvm.memory.direct.used** | The amount of memory used by the JVM for the direct buffer pool. | By | Sum(Int) | <ul> </ul> |
 | **flink.jvm.memory.heap.committed** | The amount of heap memory guaranteed to be available to the JVM. | By | Sum(Int) | <ul> </ul> |
@@ -33,9 +33,9 @@ These are the metrics available for this scraper.
 | **flink.jvm.threads.count** | The total number of live threads. | {threads} | Sum(Int) | <ul> </ul> |
 | **flink.memory.managed.total** | The total amount of managed memory. | By | Sum(Int) | <ul> </ul> |
 | **flink.memory.managed.used** | The amount of managed memory currently used. | By | Sum(Int) | <ul> </ul> |
-| **flink.operator.record.count** | The number of records this operator type has. | {records} | Sum(Int) | <ul> <li>operator_name</li> <li>record</li> </ul> |
+| **flink.operator.record.count** | The number of records an operator has. | {records} | Sum(Int) | <ul> <li>operator_name</li> <li>record</li> </ul> |
 | **flink.operator.watermark.output** | The last watermark this operator has emitted. | ms | Sum(Int) | <ul> <li>operator_name</li> </ul> |
-| **flink.task.record.count** | The number of records this task type has. | {records} | Sum(Int) | <ul> <li>record</li> </ul> |
+| **flink.task.record.count** | The number of records a task has. | {records} | Sum(Int) | <ul> <li>record</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -64,4 +64,4 @@ metrics:
 | checkpoint | The number of checkpoints in progress, completed or that failed. | in_progress, completed, failed |
 | garbage_collector_name | The names for the parallel scavenge and garbage first garbage collectors. | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
 | operator_name | The operator name. |  |
-| record | The number of records received in, sent out or dropped due to arriving late. | in, out, late_records_dropped |
+| record | The number of records received in, sent out or dropped due to arriving late. | in, out, dropped |

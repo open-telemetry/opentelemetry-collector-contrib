@@ -29,13 +29,13 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 		case "Status.JVM.CPU.Load":
 			_ = s.mb.RecordFlinkJvmCPULoadDataPoint(now, metric.Value)
 		case "Status.JVM.GarbageCollector.PS_MarkSweep.Time":
-			_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSMarkSweep)
+			_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSMarkSweep)
 		case "Status.JVM.GarbageCollector.PS_Scavenge.Time":
-			_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSScavenge)
+			_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSScavenge)
 		case "Status.JVM.GarbageCollector.PS_MarkSweep.Count":
-			_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSMarkSweep)
+			_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSMarkSweep)
 		case "Status.JVM.GarbageCollector.PS_Scavenge.Count":
-			_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSScavenge)
+			_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSScavenge)
 		case "Status.Flink.Memory.Managed.Used":
 			_ = s.mb.RecordFlinkMemoryManagedUsedDataPoint(now, metric.Value)
 		case "Status.Flink.Memory.Managed.Total":
@@ -85,13 +85,13 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 		for _, metric := range taskmanagerMetrics.Metrics {
 			switch metric.ID {
 			case "Status.JVM.GarbageCollector.G1_Young_Generation.Count":
-				_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1YoungGeneration)
+				_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1YoungGeneration)
 			case "Status.JVM.GarbageCollector.G1_Old_Generation.Count":
-				_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1OldGeneration)
+				_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1OldGeneration)
 			case "Status.JVM.GarbageCollector.G1_Old_Generation.Time":
-				_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1OldGeneration)
+				_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1OldGeneration)
 			case "Status.JVM.GarbageCollector.G1_Young_Generation.Time":
-				_ = s.mb.RecordFlinkJvmGarbageCollectorCollectionTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1YoungGeneration)
+				_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1YoungGeneration)
 			case "Status.JVM.CPU.Load":
 				_ = s.mb.RecordFlinkJvmCPULoadDataPoint(now, metric.Value)
 			case "Status.Flink.Memory.Managed.Used":
@@ -153,11 +153,11 @@ func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetr
 			case "lastCheckpointDuration":
 				_ = s.mb.RecordFlinkJobLastCheckpointTimeDataPoint(now, metric.Value)
 			case "numberOfInProgressCheckpoints":
-				_ = s.mb.RecordFlinkJobCheckpointsCountDataPoint(now, metric.Value, metadata.AttributeCheckpointInProgress)
+				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointInProgress)
 			case "numberOfCompletedCheckpoints":
-				_ = s.mb.RecordFlinkJobCheckpointsCountDataPoint(now, metric.Value, metadata.AttributeCheckpointCompleted)
+				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointCompleted)
 			case "numberOfFailedCheckpoints":
-				_ = s.mb.RecordFlinkJobCheckpointsCountDataPoint(now, metric.Value, metadata.AttributeCheckpointFailed)
+				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointFailed)
 			}
 		}
 	}
@@ -179,7 +179,7 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 			case metric.ID == "numRecordsOut":
 				_ = s.mb.RecordFlinkTaskRecordCountDataPoint(now, metric.Value, metadata.AttributeRecordOut)
 			case metric.ID == "numLateRecordsDropped":
-				_ = s.mb.RecordFlinkTaskRecordCountDataPoint(now, metric.Value, metadata.AttributeRecordLateRecordsDropped)
+				_ = s.mb.RecordFlinkTaskRecordCountDataPoint(now, metric.Value, metadata.AttributeRecordDropped)
 			}
 		}
 		s.mb.EmitForResource(
@@ -203,7 +203,7 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName[0], metadata.AttributeRecordOut)
 			case strings.Contains(metric.ID, ".numLateRecordsDropped"):
 				operatorName := strings.Split(metric.ID, ".numLateRecordsDropped")
-				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName[0], metadata.AttributeRecordLateRecordsDropped)
+				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName[0], metadata.AttributeRecordDropped)
 			case strings.Contains(metric.ID, ".currentOutputWatermark"):
 				operatorName := strings.Split(metric.ID, ".currentOutputWatermark")
 				_ = s.mb.RecordFlinkOperatorWatermarkOutputDataPoint(now, metric.Value, operatorName[0])

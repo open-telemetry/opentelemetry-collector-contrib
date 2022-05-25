@@ -20,6 +20,7 @@ resource_attributes:
   flink.resource.type:
     description: The flink scope type in which a metric belongs to.
     type: string
+    enum: [ jobmanager, taskmanager ]
 
 attributes:
   operator_name:
@@ -36,7 +37,7 @@ attributes:
   record:
     description: The number of records received in, sent out or dropped due to arriving late.
     type: string
-    enum: [ in, out, late_records_dropped ]
+    enum: [ in, out, dropped ]
 
 metrics:
   flink.jvm.cpu.load:
@@ -217,7 +218,7 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.garbage_collector.collection.count:
+  flink.jvm.gc.collections.count:
     enabled: true
     description: The total number of collections that have occurred.
     unit: "{collections}"
@@ -227,7 +228,7 @@ metrics:
       value_type: int
       input_type: string
     attributes: [ garbage_collector_name ]
-  flink.jvm.garbage_collector.collection.time:
+  flink.jvm.gc.collections.time:
     enabled: true
     description: The total time spent performing garbage collection.
     unit: ms
@@ -242,7 +243,7 @@ metrics:
     description: The total number of classes loaded since the start of the JVM.
     unit: "{classes}"
     sum:
-      monotonic: false
+      monotonic: true
       aggregation: cumulative
       value_type: int
       input_type: string
@@ -252,7 +253,7 @@ metrics:
     description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
     unit: "{restarts}"
     sum:
-      monotonic: false
+      monotonic: true
       aggregation: cumulative
       value_type: int
       input_type: string
@@ -261,9 +262,7 @@ metrics:
     enabled: true
     description: The end to end duration of the last checkpoint.
     unit: ms
-    sum:
-      monotonic: false
-      aggregation: cumulative
+    gauge:
       value_type: int
       input_type: string
     attributes: []
@@ -277,7 +276,7 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.job.checkpoints.count:
+  flink.job.checkpoint.count:
     enabled: true
     description: The number of checkpoints by type.
     unit: "{checkpoints}"
@@ -289,7 +288,7 @@ metrics:
     attributes: [ checkpoint ]
   flink.task.record.count:
     enabled: true
-    description: The number of records this task type has.
+    description: The number of records a task has.
     unit: "{records}"
     sum:
       monotonic: true
@@ -299,7 +298,7 @@ metrics:
     attributes: [ record ]
   flink.operator.record.count:
     enabled: true
-    description: The number of records this operator type has.
+    description: The number of records an operator has.
     unit: "{records}"
     sum:
       monotonic: true
