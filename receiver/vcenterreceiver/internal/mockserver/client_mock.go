@@ -32,8 +32,6 @@ const (
 	MockUsername = "otelu"
 	// MockPassword is the correct password for authentication to the Mock Server
 	MockPassword = "otelp"
-	// MockUser500Response will cause the MockServer to return a 500 response code
-	MockUser500Response = "500user"
 )
 
 var errNotFound = errors.New("not found")
@@ -49,12 +47,7 @@ type soapEnvelope struct {
 // MockServer has access to recorded SOAP responses and will serve them over http based off the scraper's API calls
 func MockServer(t *testing.T) *httptest.Server {
 	vsphereMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authUser, _, _ := r.BasicAuth()
-		if authUser == MockUser500Response {
-			w.WriteHeader(500)
-			return
-		}
-
+		// converting to JSON in order to iterate over map keys
 		jsonified, err := xj.Convert(r.Body)
 		require.NoError(t, err)
 		sr := &soapRequest{}

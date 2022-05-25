@@ -1018,8 +1018,8 @@ type metricVcenterHostDiskThroughput struct {
 // init fills vcenter.host.disk.throughput metric with initial data.
 func (m *metricVcenterHostDiskThroughput) init() {
 	m.data.SetName("vcenter.host.disk.throughput")
-	m.data.SetDescription("The throughput to the host system's disk.")
-	m.data.SetUnit("By/s")
+	m.data.SetDescription("Average number of kilobytes read from the disk each second.")
+	m.data.SetUnit("{KBy/s}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)

@@ -54,7 +54,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		}
 		scraper.client.vimDriver = c
 		scraper.client.finder = find.NewFinder(c)
-		// Performance metrics rely on time based publishing so this is inherently flaky for a
+		// Performance metrics rely on time based publishing so this is inherently flaky for an
 		// integration test, so setting the performance manager to nil to not attempt to compare
 		// performance metrcs. Coverage for this is encompassed in ./scraper_test.go
 		scraper.client.pm = nil

@@ -103,8 +103,8 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 	for _, c := range clusters {
 		v.collectHosts(ctx, now, c, errs)
 		v.collectDatastores(ctx, now, c, errs)
-		v.collectVMs(ctx, now, c, errs)
-		v.collectCluster(ctx, now, c, errs)
+		poweredOnVMs, poweredOffVMs := v.collectVMs(ctx, now, c, errs)
+		v.collectCluster(ctx, now, c, poweredOnVMs, poweredOffVMs, errs)
 	}
 	v.collectResourcePools(ctx, now, errs)
 }
@@ -113,8 +113,12 @@ func (v *vcenterMetricScraper) collectCluster(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	c *object.ClusterComputeResource,
+	poweredOnVMs, poweredOffVMs int64,
 	errs *scrapererror.ScrapeErrors,
 ) {
+	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOnVMs, metadata.AttributeVMCountPowerStateOn)
+	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOffVMs, metadata.AttributeVMCountPowerStateOff)
+
 	var moCluster mo.ClusterComputeResource
 	err := c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
 	if err != nil {
@@ -244,13 +248,12 @@ func (v *vcenterMetricScraper) collectVMs(
 	colTime pcommon.Timestamp,
 	cluster *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
-) {
+) (poweredOnVMs int64, poweredOffVMs int64) {
 	vms, err := v.client.VMs(ctx)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
 	}
-	poweredOffVMs := 0
 	for _, vm := range vms {
 		var moVM mo.VirtualMachine
 		err := vm.Properties(ctx, vm.Reference(), []string{
@@ -268,6 +271,8 @@ func (v *vcenterMetricScraper) collectVMs(
 
 		if string(moVM.Runtime.PowerState) == "poweredOff" {
 			poweredOffVMs++
+		} else {
+			poweredOnVMs++
 		}
 
 		host, err := vm.HostSystem(ctx)
@@ -289,9 +294,7 @@ func (v *vcenterMetricScraper) collectVMs(
 			metadata.WithVcenterHostName(hostname),
 		)
 	}
-
-	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(len(vms))-int64(poweredOffVMs), metadata.AttributeVMCountPowerStateOn)
-	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(poweredOffVMs), metadata.AttributeVMCountPowerStateOff)
+	return poweredOnVMs, poweredOffVMs
 }
 
 func (v *vcenterMetricScraper) collectVM(

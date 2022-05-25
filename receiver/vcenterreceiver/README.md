@@ -10,9 +10,9 @@ Supported pipeline types: `metrics`
 
 This receiver has been built to support ESXi and vCenter versions:
 
+- 7.5
 - 7.0
 - 6.7
-- 7.5
 
 A “Read Only” user assigned to a vSphere with permissions to the vCenter server, cluster and all subsequent resources being monitored must be specified in order for the receiver to retrieve information about them.
 

@@ -21,7 +21,7 @@ These are the metrics available for this scraper.
 | **vcenter.host.cpu.utilization** | The CPU utilization of the host system. | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel read and write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> <li>disk_direction</li> </ul> |
 | **vcenter.host.disk.latency.max** | Highest latency value across all disks used by the host. As measured over the most recent 20s interval. Requires Performance Level 3. | ms | Gauge(Int) | <ul> </ul> |
-| **vcenter.host.disk.throughput** | The throughput to the host system's disk. As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4. | By/s | Sum(Int) | <ul> <li>disk_direction</li> </ul> |
+| **vcenter.host.disk.throughput** | Average number of kilobytes read from the disk each second. As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4. | {KBy/s} | Sum(Int) | <ul> <li>disk_direction</li> </ul> |
 | **vcenter.host.memory.usage** | The amount of memory the host system is using. | MBy | Sum(Int) | <ul> </ul> |
 | **vcenter.host.memory.utilization** | The percentage of the host system's memory capacity that is being utilized. | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.host.network.packet.count** | The number of packets sent and received, as measured over the most recent 20s interval. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
