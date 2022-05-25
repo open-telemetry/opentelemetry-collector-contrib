@@ -130,6 +130,5 @@ issues:
     - path: .
       linters:
         - revive
-        - gosec
         - misspell
         - govet
