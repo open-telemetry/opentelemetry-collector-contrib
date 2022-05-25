@@ -1,8 +1,12 @@
 # F5 Cloud Exporter
 
-Exports data via HTTP to [F5 Cloud](https://portal.cloudservices.f5.com/).
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Supported pipeline types | trace, logs, metrics |
+| Distributions            | [contrib]            |
 
-Supported pipeline types: metrics, traces, logs
+Exports data via HTTP to [F5 Cloud](https://portal.cloudservices.f5.com/).
 
 > :construction: This exporter is in beta and configuration fields are subject to change.
 
@@ -40,3 +44,6 @@ configurations [here](./testdata/config.yaml).
 
 This exporter also offers proxy support as documented 
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
