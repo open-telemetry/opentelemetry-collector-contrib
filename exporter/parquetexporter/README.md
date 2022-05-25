@@ -2,7 +2,7 @@
 
 | Status                   |                      |
 | ------------------------ |----------------------|
-| Stability                | [beta]               |
+| Stability                | [in-development]               |
 | Supported pipeline types | trace, logs, metrics |
 | Distributions            | [contrib]            |
 
@@ -31,5 +31,5 @@ exporters:
 The full list of settings exposed for this exporter are documented [here](config.go)
 with detailed sample configurations [here](testdata/config.yaml).
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[in-development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
