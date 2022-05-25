@@ -90,7 +90,7 @@ func TestScraperLoop(t *testing.T) {
 
 type mockClient chan containerStatsReport
 
-func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
+func (c mockClient) factory(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
 	return c, nil
 }
 

@@ -32,7 +32,7 @@ type receiver struct {
 	config        *Config
 	set           component.ReceiverCreateSettings
 	clientFactory clientFactory
-	client        client
+	client        PodmanClient
 }
 
 func newReceiver(
@@ -48,7 +48,7 @@ func newReceiver(
 	}
 
 	if clientFactory == nil {
-		clientFactory = newPodmanClient
+		clientFactory = newLibpodClient
 	}
 
 	recv := &receiver{

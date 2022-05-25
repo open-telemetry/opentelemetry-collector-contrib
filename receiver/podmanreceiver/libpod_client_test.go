@@ -60,7 +60,7 @@ func TestWatchingTimeouts(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := newPodmanClient(zap.NewNop(), config)
+	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -109,7 +109,7 @@ func TestStats(t *testing.T) {
 		Timeout: 5 * time.Second,
 	}
 
-	cli, err := newPodmanClient(zap.NewNop(), config)
+	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -167,7 +167,7 @@ func TestStatsError(t *testing.T) {
 		Timeout: 5 * time.Second,
 	}
 
-	cli, err := newPodmanClient(zap.NewNop(), config)
+	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
