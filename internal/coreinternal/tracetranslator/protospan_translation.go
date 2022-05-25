@@ -20,8 +20,6 @@ import (
 
 // Some of the keys used to represent OTLP constructs as tags or annotations in other formats.
 const (
-	TagMessage = "message"
-
 	TagSpanKind = "span.kind"
 
 	TagError         = "error"

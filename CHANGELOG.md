@@ -28,6 +28,8 @@
 - `datadogexporter`: add error checks for datadog exporter (#9964)
 - `datadogexporter`: Fix host aliases not being properly sent to the Datadog backend (#9748)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
+- `jaeger`: Update OTLP-Jaeger translation of span events according to the OTel Spec: use `event` log field instead
+  of `message` to represent OTel Span Event Name (#10273)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
 - `signalfxexporter`: Emit prometheus compatible histogram/summary to signalfx #10299
