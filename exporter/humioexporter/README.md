@@ -3,7 +3,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [beta]    |
-| Supported pipeline types | trace     |
+| Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
 Exports data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.com/reference/api/ingest/).
