@@ -1,8 +1,12 @@
 # Parquet File Exporter
 
-Sends pipeline data to Parquet files.
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Supported pipeline types | trace, logs, metrics |
+| Distributions            | [contrib]            |
 
-Supported pipeline types: logs, metrics, traces
+Sends pipeline data to Parquet files.
 
 > :construction: This receiver is in beta and configuration fields are subject to change.
 
@@ -26,3 +30,6 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](config.go)
 with detailed sample configurations [here](testdata/config.yaml).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
