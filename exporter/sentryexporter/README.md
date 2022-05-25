@@ -1,5 +1,11 @@
 # Sentry Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | trace     |
+| Distributions            | [contrib] |
+
 The Sentry Exporter allows you to send traces to [Sentry](https://sentry.io/).
 
 For more details about distributed tracing in Sentry, please view [our documentation](https://docs.sentry.io/performance-monitoring/distributed-tracing/).
@@ -45,3 +51,6 @@ with start_otel_span("start") as span:
 ```
 
 Now if traces are ingested into Sentry, you can associate them to errors that occurred during the trace using the `trace_id`. For a full list of the Sentry SDKs and platforms, please check the [Sentry documentation](https://docs.sentry.io/platforms/).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
