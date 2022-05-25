@@ -1,10 +1,10 @@
 # Azure Monitor Exporter
 
-| Status                   |             |
-| ------------------------ |-------------|
-| Stability                | [beta]      |
-| Supported pipeline types | trace, logs |
-| Distributions            | [contrib]   |
+| Status                   |              |
+| ------------------------ |--------------|
+| Stability                | [beta]       |
+| Supported pipeline types | traces, logs |
+| Distributions            | [contrib]    |
 
 ## Configuration
 
