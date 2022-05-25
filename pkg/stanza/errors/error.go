@@ -33,8 +33,8 @@ func (e AgentError) Error() string {
 	if len(e.Details) == 0 {
 		return e.Description
 	}
-	marshalled, _ := json.Marshal(e.Details)
-	return fmt.Sprintf("%s: %s", e.Description, string(marshalled))
+	marshaled, _ := json.Marshal(e.Details)
+	return fmt.Sprintf("%s: %s", e.Description, string(marshaled))
 }
 
 // MarshalLogObject will define the representation of this error when logging.
