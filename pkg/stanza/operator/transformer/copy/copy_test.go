@@ -303,7 +303,7 @@ func TestBuildAndProcess(t *testing.T) {
 
 			copy := op.(*CopyOperator)
 			fake := testutil.NewFakeOutput(t)
-			copy.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, copy.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = copy.Process(context.Background(), val)
 			if tc.expectErr {

@@ -119,7 +119,7 @@ func countTotalSpanCases(spanPairsFile string) (int, error) {
 	return count, err
 }
 
-func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, instrumentationLibrary pcommon.InstrumentationScope) {
+func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, scope pcommon.InstrumentationScope) {
 	if tracingInputs.InstrumentationLibrary == LibraryNone {
 		return
 	}
@@ -128,6 +128,6 @@ func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, ins
 	if index > 0 {
 		verStr = ""
 	}
-	instrumentationLibrary.SetName(nameStr)
-	instrumentationLibrary.SetVersion(verStr)
+	scope.SetName(nameStr)
+	scope.SetVersion(verStr)
 }

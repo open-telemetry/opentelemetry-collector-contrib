@@ -131,6 +131,4 @@ issues:
       linters:
         - revive
         - gosec
-        - errcheck
-        - misspell
         - govet

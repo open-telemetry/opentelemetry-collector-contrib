@@ -121,8 +121,8 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	}
 }
 
-func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]ptrace.SpanSlice {
-	spansByLibrary := make(map[instrumentationLibrary]ptrace.SpanSlice)
+func jSpansToInternal(spans []*model.Span) map[scope]ptrace.SpanSlice {
+	spansByLibrary := make(map[scope]ptrace.SpanSlice)
 
 	for _, span := range spans {
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
@@ -133,12 +133,12 @@ func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]ptrace.Spa
 	return spansByLibrary
 }
 
-type instrumentationLibrary struct {
+type scope struct {
 	name, version string
 }
 
-func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary]ptrace.SpanSlice) {
-	il := getInstrumentationLibrary(span)
+func jSpanToInternal(span *model.Span, spansByLibrary map[scope]ptrace.SpanSlice) {
+	il := getScope(span)
 	ss, found := spansByLibrary[il]
 	if !found {
 		ss = ptrace.NewSpanSlice()
@@ -375,8 +375,8 @@ func getTraceStateFromAttrs(attrs pcommon.Map) ptrace.TraceState {
 	return traceState
 }
 
-func getInstrumentationLibrary(span *model.Span) instrumentationLibrary {
-	il := instrumentationLibrary{}
+func getScope(span *model.Span) scope {
+	il := scope{}
 	if libraryName, ok := getAndDeleteTag(span, conventions.OtelLibraryName); ok {
 		il.name = libraryName
 		if libraryVersion, ok := getAndDeleteTag(span, conventions.OtelLibraryVersion); ok {

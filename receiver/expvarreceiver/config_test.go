@@ -23,8 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -49,20 +50,37 @@ func TestLoadConfig(t *testing.T) {
 	expectedCfg = factory.CreateDefaultConfig().(*Config)
 	expectedCfg.SetIDName("custom")
 	expectedCfg.CollectionInterval = time.Second * 30
-	expectedCfg.HTTP = &confighttp.HTTPClientSettings{
-		Endpoint: "http://localhost:8000/custom/path",
-		Timeout:  time.Second * 5,
-	}
-	expectedCfg.MetricsConfig = []MetricConfig{
-		{
-			Name:    "example_metric.enabled",
-			Enabled: true,
-		},
-		{
-			Name:    "example_metric.disabled",
-			Enabled: false,
-		},
-	}
+	expectedCfg.Endpoint = "http://localhost:8000/custom/path"
+	expectedCfg.Timeout = time.Second * 5
+	expectedCfg.MetricsConfig = metadata.DefaultMetricsSettings()
+	expectedCfg.MetricsConfig.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
+	expectedCfg.MetricsConfig.ProcessRuntimeMemstatsMallocs.Enabled = false
 
 	assert.Equal(t, expectedCfg, cfg.Receivers[config.NewComponentIDWithName(typeStr, "custom")])
+}
+
+func TestFailedLoadConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_schemeless_endpoint_config.yaml"), factories)
+	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: scheme must be 'http' or 'https', but was 'localhost'")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_hostless_endpoint_config.yaml"), factories)
+	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: host not found in HTTP endpoint")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_invalid_url_config.yaml"), factories)
+	assert.EqualError(t, err, "receiver \"expvar\" has invalid configuration: endpoint is not a valid URL: parse \"#$%^&*()_\": invalid URL escape \"%^&\"")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_collection_interval_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* error decoding 'collection_interval': time: invalid duration \"fourminutes\"")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_metric_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics.process.runtime.memstats.total_alloc' has invalid keys: invalid_field")
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config", "bad_metric_name.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for \"expvar\": 1 error(s) decoding:\n\n* 'metrics' has invalid keys: bad_metric.name")
 }
