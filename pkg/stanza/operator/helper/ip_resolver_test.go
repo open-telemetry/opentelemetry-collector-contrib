@@ -24,17 +24,17 @@ import (
 )
 
 func TestIPResolverCacheLookup(t *testing.T) {
-	resolver := NewIpResolver()
+	resolver := NewIPResolver()
 	resolver.cache["127.0.0.1"] = cacheEntry{
 		hostname:   "definitely invalid hostname",
 		expireTime: time.Now().Add(time.Hour),
 	}
 
-	require.Equal(t, "definitely invalid hostname", resolver.GetHostFromIp("127.0.0.1"))
+	require.Equal(t, "definitely invalid hostname", resolver.GetHostFromIP("127.0.0.1"))
 }
 
 func TestIPResolverCacheInvalidation(t *testing.T) {
-	resolver := NewIpResolver()
+	resolver := NewIPResolver()
 
 	resolver.cache["127.0.0.1"] = cacheEntry{
 		hostname:   "definitely invalid hostname",
@@ -44,24 +44,24 @@ func TestIPResolverCacheInvalidation(t *testing.T) {
 	resolver.Stop()
 	resolver.invalidateCache()
 
-	hostname := resolver.lookupIpAddr("127.0.0.1")
-	require.Equal(t, hostname, resolver.GetHostFromIp("127.0.0.1"))
+	hostname := resolver.lookupIPAddr("127.0.0.1")
+	require.Equal(t, hostname, resolver.GetHostFromIP("127.0.0.1"))
 }
 
 func TestIPResolver100Hits(t *testing.T) {
-	resolver := NewIpResolver()
+	resolver := NewIPResolver()
 	resolver.cache["127.0.0.1"] = cacheEntry{
 		hostname:   "definitely invalid hostname",
 		expireTime: time.Now().Add(time.Hour),
 	}
 
 	for i := 0; i < 100; i++ {
-		require.Equal(t, "definitely invalid hostname", resolver.GetHostFromIp("127.0.0.1"))
+		require.Equal(t, "definitely invalid hostname", resolver.GetHostFromIP("127.0.0.1"))
 	}
 }
 
 func TestIPResolverWithMultipleStops(t *testing.T) {
-	resolver := NewIpResolver()
+	resolver := NewIPResolver()
 
 	resolver.Stop()
 	resolver.Stop()

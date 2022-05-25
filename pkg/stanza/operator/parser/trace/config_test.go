@@ -39,11 +39,11 @@ func TestTraceParserConfig(t *testing.T) {
 			Name: "spanid",
 			Expect: func() *TraceParserConfig {
 				parseFrom := entry.NewBodyField("app_span_id")
-				cfg := helper.SpanIdConfig{}
+				cfg := helper.SpanIDConfig{}
 				cfg.ParseFrom = &parseFrom
 
 				c := defaultCfg()
-				c.SpanId = &cfg
+				c.SpanID = &cfg
 				return c
 			}(),
 		},
@@ -51,11 +51,11 @@ func TestTraceParserConfig(t *testing.T) {
 			Name: "traceid",
 			Expect: func() *TraceParserConfig {
 				parseFrom := entry.NewBodyField("app_trace_id")
-				cfg := helper.TraceIdConfig{}
+				cfg := helper.TraceIDConfig{}
 				cfg.ParseFrom = &parseFrom
 
 				c := defaultCfg()
-				c.TraceId = &cfg
+				c.TraceID = &cfg
 				return c
 			}(),
 		},

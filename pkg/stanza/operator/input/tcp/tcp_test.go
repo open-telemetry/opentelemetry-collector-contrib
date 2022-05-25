@@ -176,13 +176,13 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 					ip := addr.IP.String()
 					expectedAttributes["net.host.ip"] = addr.IP.String()
 					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.host.name"] = tcpInput.resolver.GetHostFromIp(ip)
+					expectedAttributes["net.host.name"] = tcpInput.resolver.GetHostFromIP(ip)
 				}
 				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 					ip := addr.IP.String()
 					expectedAttributes["net.peer.ip"] = ip
 					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.peer.name"] = tcpInput.resolver.GetHostFromIp(ip)
+					expectedAttributes["net.peer.name"] = tcpInput.resolver.GetHostFromIP(ip)
 				}
 				require.Equal(t, expectedMessage, entry.Body)
 				require.Equal(t, expectedAttributes, entry.Attributes)

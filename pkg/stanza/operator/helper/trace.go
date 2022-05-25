@@ -24,15 +24,15 @@ import (
 
 // NewTraceParser creates a new trace parser with default values
 func NewTraceParser() TraceParser {
-	traceId := entry.NewBodyField("trace_id")
-	spanId := entry.NewBodyField("span_id")
+	traceID := entry.NewBodyField("trace_id")
+	spanID := entry.NewBodyField("span_id")
 	traceFlags := entry.NewBodyField("trace_flags")
 	return TraceParser{
-		TraceId: &TraceIdConfig{
-			ParseFrom: &traceId,
+		TraceID: &TraceIDConfig{
+			ParseFrom: &traceID,
 		},
-		SpanId: &SpanIdConfig{
-			ParseFrom: &spanId,
+		SpanID: &SpanIDConfig{
+			ParseFrom: &spanID,
 		},
 		TraceFlags: &TraceFlagsConfig{
 			ParseFrom: &traceFlags,
@@ -42,16 +42,16 @@ func NewTraceParser() TraceParser {
 
 // TraceParser is a helper that parses trace spans (and flags) onto an entry.
 type TraceParser struct {
-	TraceId    *TraceIdConfig    `mapstructure:"trace_id,omitempty"    json:"trace_id,omitempty"    yaml:"trace_id,omitempty"`
-	SpanId     *SpanIdConfig     `mapstructure:"span_id,omitempty"     json:"span_id,omitempty"     yaml:"span_id,omitempty"`
+	TraceID    *TraceIDConfig    `mapstructure:"trace_id,omitempty"    json:"trace_id,omitempty"    yaml:"trace_id,omitempty"`
+	SpanID     *SpanIDConfig     `mapstructure:"span_id,omitempty"     json:"span_id,omitempty"     yaml:"span_id,omitempty"`
 	TraceFlags *TraceFlagsConfig `mapstructure:"trace_flags,omitempty" json:"trace_flags,omitempty" yaml:"trace_flags,omitempty"`
 }
 
-type TraceIdConfig struct {
+type TraceIDConfig struct {
 	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
 }
 
-type SpanIdConfig struct {
+type SpanIDConfig struct {
 	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
 }
 
@@ -61,19 +61,19 @@ type TraceFlagsConfig struct {
 
 // Validate validates a TraceParser, and reconfigures it if necessary
 func (t *TraceParser) Validate() error {
-	if t.TraceId == nil {
-		t.TraceId = &TraceIdConfig{}
+	if t.TraceID == nil {
+		t.TraceID = &TraceIDConfig{}
 	}
-	if t.TraceId.ParseFrom == nil {
+	if t.TraceID.ParseFrom == nil {
 		field := entry.NewBodyField("trace_id")
-		t.TraceId.ParseFrom = &field
+		t.TraceID.ParseFrom = &field
 	}
-	if t.SpanId == nil {
-		t.SpanId = &SpanIdConfig{}
+	if t.SpanID == nil {
+		t.SpanID = &SpanIDConfig{}
 	}
-	if t.SpanId.ParseFrom == nil {
+	if t.SpanID.ParseFrom == nil {
 		field := entry.NewBodyField("span_id")
-		t.SpanId.ParseFrom = &field
+		t.SpanID.ParseFrom = &field
 	}
 	if t.TraceFlags == nil {
 		t.TraceFlags = &TraceFlagsConfig{}
@@ -101,17 +101,17 @@ func parseHexField(entry *entry.Entry, field *entry.Field) ([]byte, error) {
 
 // Parse will parse a trace (trace_id, span_id and flags) from a field and attach it to the entry
 func (t *TraceParser) Parse(entry *entry.Entry) error {
-	var errTraceId, errSpanId, errTraceFlags error
-	entry.TraceID, errTraceId = parseHexField(entry, t.TraceId.ParseFrom)
-	entry.SpanID, errSpanId = parseHexField(entry, t.SpanId.ParseFrom)
+	var errTraceID, errSpanID, errTraceFlags error
+	entry.TraceID, errTraceID = parseHexField(entry, t.TraceID.ParseFrom)
+	entry.SpanID, errSpanID = parseHexField(entry, t.SpanID.ParseFrom)
 	entry.TraceFlags, errTraceFlags = parseHexField(entry, t.TraceFlags.ParseFrom)
-	if errTraceId != nil || errTraceFlags != nil || errSpanId != nil {
+	if errTraceID != nil || errTraceFlags != nil || errSpanID != nil {
 		err := errors.NewError("Error decoding traces for logs", "")
-		if errTraceId != nil {
-			_ = err.WithDetails("trace_id", errTraceId.Error())
+		if errTraceID != nil {
+			_ = err.WithDetails("trace_id", errTraceID.Error())
 		}
-		if errSpanId != nil {
-			_ = err.WithDetails("span_id", errSpanId.Error())
+		if errSpanID != nil {
+			_ = err.WithDetails("span_id", errSpanID.Error())
 		}
 		if errTraceFlags != nil {
 			_ = err.WithDetails("trace_flags", errTraceFlags.Error())

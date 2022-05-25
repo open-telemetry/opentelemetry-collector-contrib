@@ -63,7 +63,7 @@ func TestBuild(t *testing.T) {
 			func() (*TraceParserConfig, error) {
 				parseFrom := entry.NewBodyField("app_span_id")
 				cfg := NewTraceParserConfig("test_id")
-				cfg.SpanId.ParseFrom = &parseFrom
+				cfg.SpanID.ParseFrom = &parseFrom
 				return cfg, nil
 			},
 			false,
@@ -73,7 +73,7 @@ func TestBuild(t *testing.T) {
 			func() (*TraceParserConfig, error) {
 				parseFrom := entry.NewBodyField("app_trace_id")
 				cfg := NewTraceParserConfig("test_id")
-				cfg.TraceId.ParseFrom = &parseFrom
+				cfg.TraceID.ParseFrom = &parseFrom
 				return cfg, nil
 			},
 			false,
@@ -136,8 +136,8 @@ func TestProcess(t *testing.T) {
 				spanFrom := entry.NewBodyField("app_span_id")
 				traceFrom := entry.NewBodyField("app_trace_id")
 				flagsFrom := entry.NewBodyField("trace_flags_field")
-				cfg.SpanId.ParseFrom = &spanFrom
-				cfg.TraceId.ParseFrom = &traceFrom
+				cfg.SpanID.ParseFrom = &spanFrom
+				cfg.TraceID.ParseFrom = &traceFrom
 				cfg.TraceFlags.ParseFrom = &flagsFrom
 				return cfg.Build(testutil.Logger(t))
 			},

@@ -132,9 +132,15 @@ issues:
         - gosec
         - misspell
         - govet
-    - path: operator
+    - path: operator/input
       linters:
-        - gosec
-        - misspell
-        - govet
+        - revive
+    - path: operator/output
+      linters:
+        - revive
+    - path: operator/parser
+      linters:
+        - revive
+    - path: operator/transformer
+      linters:
         - revive
