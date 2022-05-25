@@ -421,10 +421,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
-				err = sfxExp.Shutdown(context.Background())
-				if err != nil {
-					log.Fatalln(err)
-				}
+				require.NoError(t, sfxExp.Shutdown(context.Background()))
 			}()
 
 			err = sfxExp.ConsumeMetrics(context.Background(), tt.metrics)

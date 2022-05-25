@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"path"
 	"strings"
@@ -96,7 +95,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 	defer func() {
 		_, err := io.Copy(ioutil.Discard, resp.Body)
 		if err != nil {
-			log.Fatalln(err)
+			s.logger.Warn(err.Error())
 		}
 		resp.Body.Close()
 	}()
