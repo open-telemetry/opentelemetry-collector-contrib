@@ -71,7 +71,7 @@ Following are the configuration fields
 - [**timeout**](https://golang.org/src/net/http/client.go#L90) -  **Optional** specifies the timeout on the underlying client to authorization server for fetching the tokens (initial and while refreshing).
   This is optional and not setting this configuration implies there is no timeout on the client.
 
-For more information on client side TLS settings, see [configtls README](../../config/configtls/README.md).
+For more information on client side TLS settings, see [configtls README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls).
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
