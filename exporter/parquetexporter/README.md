@@ -1,10 +1,10 @@
 # Parquet File Exporter
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [in-development]     |
-| Supported pipeline types | trace, logs, metrics |
-| Distributions            | none                 |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [in-development]      |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | none                  |
 
 Sends pipeline data to Parquet files.
 
