@@ -32,4 +32,3 @@ The full list of settings exposed for this exporter are documented [here](config
 with detailed sample configurations [here](testdata/config.yaml).
 
 [in-development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
