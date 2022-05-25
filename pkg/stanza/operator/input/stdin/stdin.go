@@ -35,7 +35,7 @@ func init() {
 // NewConfig creates a new stdin input config with default values
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewConfig(operatorID, "stdin"),
+		InputConfig: helper.NewInputConfig(operatorID, "stdin"),
 	}
 }
 

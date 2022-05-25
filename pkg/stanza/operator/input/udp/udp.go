@@ -41,7 +41,7 @@ func init() {
 // NewConfig creates a new UDP input config with default values
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewConfig(operatorID, "udp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, "udp_input"),
 		BaseConfig: BaseConfig{
 			Encoding: helper.NewEncodingConfig(),
 			Multiline: helper.MultilineConfig{

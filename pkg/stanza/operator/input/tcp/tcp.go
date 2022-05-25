@@ -49,7 +49,7 @@ func init() {
 // NewConfig creates a new TCP input config with default values
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewConfig(operatorID, "tcp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, "tcp_input"),
 		BaseConfig: BaseConfig{
 			Multiline: helper.NewMultilineConfig(),
 			Encoding:  helper.NewEncodingConfig(),

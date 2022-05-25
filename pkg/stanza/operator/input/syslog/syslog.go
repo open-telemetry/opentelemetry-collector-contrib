@@ -31,7 +31,7 @@ func init() {
 }
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewConfig(operatorID, "syslog_input"),
+		InputConfig: helper.NewInputConfig(operatorID, "syslog_input"),
 	}
 }
 

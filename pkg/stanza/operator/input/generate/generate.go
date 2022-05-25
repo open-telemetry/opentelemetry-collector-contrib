@@ -34,7 +34,7 @@ func init() {
 // NewConfig creates a new generate input config with default values
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewConfig(operatorID, "generate_input"),
+		InputConfig: helper.NewInputConfig(operatorID, "generate_input"),
 	}
 }
 

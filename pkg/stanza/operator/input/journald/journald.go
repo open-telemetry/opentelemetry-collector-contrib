@@ -42,7 +42,7 @@ func init() {
 
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewConfig(operatorID, "journald_input"),
+		InputConfig: helper.NewInputConfig(operatorID, "journald_input"),
 		StartAt:     "end",
 		Priority:    "info",
 	}

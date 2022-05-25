@@ -74,7 +74,7 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 // NewConfig will return an event log config with default values.
 func NewConfig() *Config {
 	return &Config{
-		InputConfig: helper.NewConfig("", "windows_eventlog_input"),
+		InputConfig: helper.NewInputConfig("", "windows_eventlog_input"),
 		MaxReads:    100,
 		StartAt:     "end",
 		PollInterval: helper.Duration{
