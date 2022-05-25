@@ -40,7 +40,9 @@ func TestInputGenerate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, op.Start(testutil.NewMockPersister("test")))
-	defer op.Stop()
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
 
 	for i := 0; i < 5; i++ {
 		fake.ExpectBody(t, "test message")

@@ -1,0 +1,16 @@
+receivers:
+  expvar:
+    endpoint: "https:///this/aint/a/good/endpoint"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [expvar]
+      processors: [nop]
+      exporters: [nop]

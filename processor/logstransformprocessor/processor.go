@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
-	"gonum.org/v1/gonum/graph/topo"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -98,15 +97,11 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	}
 
 	ltp.pipe = pipe
-
-	orderedNodes, err := topo.Sort(pipe.Graph)
-	if err != nil {
-		return err
-	}
-	if len(orderedNodes) == 0 {
+	pipelineOperators := pipe.Operators()
+	if len(pipelineOperators) == 0 {
 		return errors.New("processor requires at least one operator to be configured")
 	}
-	ltp.firstOperator = orderedNodes[0].(pipeline.OperatorNode).Operator()
+	ltp.firstOperator = pipelineOperators[0]
 
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
 	if baseCfg.Converter.WorkerCount > 0 {

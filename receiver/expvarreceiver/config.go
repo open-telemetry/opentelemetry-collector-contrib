@@ -21,34 +21,28 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	HTTP                                    *confighttp.HTTPClientSettings `mapstructure:",squash"`
-	MetricsConfig                           []MetricConfig                 `mapstructure:"metrics"`
-}
-
-type MetricConfig struct {
-	Name    string `mapstructure:"name"`
-	Enabled bool   `mapstructure:"enabled"`
+	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	MetricsConfig                           metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
 var _ config.Receiver = (*Config)(nil)
 
 func (c *Config) Validate() error {
-	if c.HTTP == nil {
-		return fmt.Errorf("must specify http_client configuration when using expvar receiver")
-	}
-	u, err := url.Parse(c.HTTP.Endpoint)
+	u, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return fmt.Errorf("endpoint is not a valid URL: %v", err)
 	}
-	if u.Host == "" {
-		return fmt.Errorf("host not found in HTTP endpoint")
-	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("scheme must be 'http' or 'https', but was '%s'", u.Scheme)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("host not found in HTTP endpoint")
 	}
 	return nil
 }
