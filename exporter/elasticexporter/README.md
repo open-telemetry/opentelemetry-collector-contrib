@@ -1,5 +1,11 @@
 # Elastic native support for OpenTelemetry
 
+| Status                   |                  |
+| ------------------------ |------------------|
+| Stability                | [beta]           |
+| Supported pipeline types | trace, metrics   |
+| Distributions            | [contrib]        |
+
 ℹ️ Since version 7.13, Elastic supports native OTLP ingestion. This means you can use an [OTLP exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) to send data to Elastic, instead of the OpenTelemetry Collector Exporter for Elastic. **The `otlp` exporter is the recommended way to integrate the OpenTelemetry Collector to Elastic.**
 
 For more details, see the [Elastic documentation to integrate with OpenTelemetry](https://www.elastic.co/guide/en/apm/get-started/current/open-telemetry-elastic.html).
@@ -136,3 +142,6 @@ exporters:
         apm_server_url: "https://elasticapm.example.com"
         secret_token: "hunter2"
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
