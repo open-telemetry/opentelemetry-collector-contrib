@@ -4,7 +4,7 @@
 | Status                   |                 |
 | ------------------------ |-----------------|
 | Stability                | [deprecated]    |
-| Supported pipeline types | trace, metrics  |
+| Supported pipeline types | traces, metrics |
 | Distributions            | [contrib]       |
 
 ℹ️ This exporter has been deprecated due to Elastic APM Server supporting native OTLP ingestion since version 7.13. This means you can use an [OTLP exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) to send data to Elastic APM Server, instead of the OpenTelemetry Collector Exporter for Elastic. **The `otlp` exporter is the recommended way to integrate the OpenTelemetry Collector to Elastic.**
