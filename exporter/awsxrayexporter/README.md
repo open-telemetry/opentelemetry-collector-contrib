@@ -3,7 +3,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [beta]    |
-| Supported pipeline types | trace     |
+| Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
 This exporter converts OpenTelemetry spans to
