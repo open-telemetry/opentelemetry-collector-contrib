@@ -1,6 +1,10 @@
 # Trace ID aware load-balancing exporter
 
-Supported pipeline types: traces, logs
+| Status                   |              |
+| ------------------------ |--------------|
+| Stability                | [beta]       |
+| Supported pipeline types | trace, logs  |
+| Distributions            | [contrib]    |
 
 This is an exporter that will consistently export spans and logs belonging to the same trace to the same backend.
 
@@ -184,3 +188,7 @@ The following metrics are recorded by this processor:
 * `otelcol_loadbalancer_num_backend_updates` records how many of the resolutions resulted in a new list of backends. Use this information to understand how frequent your backend updates are and how often the ring is rebalanced. If the DNS hostname is always returning the same list of IP addresses but this metric keeps increasing, it might indicate a bug in the load balancer.
 * `otelcol_loadbalancer_backend_latency` measures the latency for each backend.
 * `otelcol_loadbalancer_backend_outcome` counts what the outcomes were for each endpoint, `success=true|false`.
+
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
