@@ -3,7 +3,7 @@
 | Status                   |              |
 | ------------------------ |--------------|
 | Stability                | [beta]       |
-| Supported pipeline types | traces, logs  |
+| Supported pipeline types | traces, logs |
 | Distributions            | [contrib]    |
 
 This is an exporter that will consistently export spans and logs belonging to the same trace to the same backend.
