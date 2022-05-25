@@ -2,11 +2,21 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.52.0
+
 ### 🛑 Breaking changes 🛑
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
-
-### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
 
@@ -22,16 +32,23 @@
 - `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
+- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
+- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 
 ### 🧰 Bug fixes 🧰
 
 - `datadogexporter`: add error checks for datadog exporter (#9964)
 - `datadogexporter`: Fix host aliases not being properly sent to the Datadog backend (#9748)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
+- `jaeger`: Update OTLP-Jaeger translation of span events according to the OTel Spec: use `event` log field instead
+  of `message` to represent OTel Span Event Name (#10273)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
+- `signalfxexporter`: Emit prometheus compatible histogram/summary to signalfx #10299
+  - This behavior can be reverted using the `exporter.signalfxexporter.PrometheusCompatible` featuregate.
 - `podmanreceiver`: Container Stats Error structure (#9397)
 - `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
+- `tanzuobservabilityexporter`: add  error checks for tanzuobservability exporter (#10188)
 
 ## v0.51.0
 
@@ -64,14 +81,12 @@
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
-- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
 - `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
-- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 
 ### 🧰 Bug fixes 🧰
 

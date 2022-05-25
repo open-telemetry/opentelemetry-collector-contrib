@@ -6,6 +6,7 @@ on:
 jobs:
   add-owner:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: run
         uses: kentaro-m/auto-assign-action@v1.2.1
