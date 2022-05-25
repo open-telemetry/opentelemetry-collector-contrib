@@ -21,6 +21,7 @@ package podmanreceiver
 import (
 	"context"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -94,7 +95,7 @@ func (c mockClient) factory(logger *zap.Logger, cfg *Config) (PodmanClient, erro
 	return c, nil
 }
 
-func (c mockClient) stats(context.Context) ([]containerStats, error) {
+func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error) {
 	report := <-c
 	if report.Error.Message != "" {
 		return nil, errors.New(report.Error.Message)

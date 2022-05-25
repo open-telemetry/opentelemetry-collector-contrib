@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -37,9 +36,6 @@ var (
 type libpodClient struct {
 	conn     *http.Client
 	endpoint string
-
-	// The maximum amount of time to wait for Podman API responses
-	timeout time.Duration
 }
 
 func newLibpodClient(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
@@ -50,7 +46,6 @@ func newLibpodClient(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
 	c := &libpodClient{
 		conn:     connection,
 		endpoint: fmt.Sprintf("http://d/v%s/libpod", cfg.APIVersion),
-		timeout:  cfg.Timeout,
 	}
 	return c, nil
 }
@@ -67,13 +62,8 @@ func (c *libpodClient) request(ctx context.Context, path string, params url.Valu
 	return c.conn.Do(req)
 }
 
-func (c *libpodClient) stats(ctx context.Context) ([]containerStats, error) {
-	params := url.Values{}
-	params.Add("stream", "false")
-
-	statsCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-	resp, err := c.request(statsCtx, "/containers/stats", params)
+func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]containerStats, error) {
+	resp, err := c.request(ctx, "/containers/stats", options)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +89,7 @@ func (c *libpodClient) stats(ctx context.Context) ([]containerStats, error) {
 }
 
 func (c *libpodClient) ping(ctx context.Context) error {
-	pingCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-	resp, err := c.request(pingCtx, "/_ping", nil)
+	resp, err := c.request(ctx, "/_ping", nil)
 	if err != nil {
 		return err
 	}

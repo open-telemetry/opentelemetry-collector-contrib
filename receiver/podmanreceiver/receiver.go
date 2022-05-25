@@ -32,7 +32,7 @@ type receiver struct {
 	config        *Config
 	set           component.ReceiverCreateSettings
 	clientFactory clientFactory
-	client        PodmanClient
+	scraper       *ContainerScraper
 }
 
 func newReceiver(
@@ -65,17 +65,19 @@ func newReceiver(
 }
 
 func (r *receiver) start(context.Context, component.Host) error {
-	c, err := r.clientFactory(r.set.Logger, r.config)
-	if err == nil {
-		r.client = c
+	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
+	if err != nil {
+		return err
 	}
-	return err
+
+	r.scraper = NewContainerScraper(podmanClient, r.set.Logger, r.config)
+	return nil
 }
 
 func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var err error
 
-	stats, err := r.client.stats(ctx)
+	stats, err := r.scraper.FetchContainerStats(ctx)
 	if err != nil {
 		r.set.Logger.Error("error fetching stats", zap.Error(err))
 		return pmetric.Metrics{}, err
