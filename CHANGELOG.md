@@ -2,11 +2,21 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.52.0
+
 ### 🛑 Breaking changes 🛑
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
-
-### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
 
@@ -22,6 +32,8 @@
 - `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
+- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
+- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 
 ### 🧰 Bug fixes 🧰
 
@@ -36,6 +48,7 @@
   - This behavior can be reverted using the `exporter.signalfxexporter.PrometheusCompatible` featuregate.
 - `podmanreceiver`: Container Stats Error structure (#9397)
 - `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
+- `tanzuobservabilityexporter`: add  error checks for tanzuobservability exporter (#10188)
 
 ## v0.51.0
 
@@ -68,18 +81,15 @@
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
-- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
 - `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
-- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 
 ### 🧰 Bug fixes 🧰
 
-- `tanzuobservabilityexporter`: add  error checks for tanzuobservability exporter (#10188)
 - `k8sclusterreceiver`: Fix the receiver to work with 1.19 and 1.20 k8s API versions (#9523)
 - `azuremonitorexporter`: Fix log exporter bug related to incorrectly mapping SpanId (#9579)
 - `mysqlreceiver`: Fix attribute values mismatch with its definition (#9688)
