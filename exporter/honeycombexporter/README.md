@@ -3,7 +3,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [beta]    |
-| Supported pipeline types | trace     |
+| Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
 **NOTE:** Honeycomb now supports OTLP ingest directly. This means you can use an [OTLP](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) exporter and no longer need this exporter to send data to Honeycomb.
