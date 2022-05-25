@@ -13,7 +13,9 @@
 // limitations under the License.
 
 package testhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
-import "go.opentelemetry.io/collector/pdata/pcommon"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
 func Strp(s string) *string {
 	return &s
