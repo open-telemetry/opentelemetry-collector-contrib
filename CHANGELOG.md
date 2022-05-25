@@ -29,6 +29,8 @@
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
+- `signalfxexporter`: Emit prometheus compatible histogram/summary to signalfx #10299
+  - This behavior can be reverted using the `exporter.signalfxexporter.PrometheusCompatible` featuregate.
 
 ## v0.51.0
 
