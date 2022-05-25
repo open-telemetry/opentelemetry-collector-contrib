@@ -79,6 +79,14 @@ func Test_keep_keys(t *testing.T) {
 				expectedMap.Clear()
 			},
 		},
+		{
+			name:   "input is not a pcommon.Map",
+			target: target,
+			keys:   []string{"no match"},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -98,4 +106,47 @@ func Test_keep_keys(t *testing.T) {
 			assert.Equal(t, expected, scenarioMap)
 		})
 	}
+}
+
+func Test_keep_keys_bad_input(t *testing.T) {
+	input := pcommon.NewValueString("not a map")
+	ctx := testhelper.TestTransformContext{
+		Item: input,
+	}
+
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	keys := []string{"anything"}
+
+	exprFunc, _ := keepKeys(target, keys)
+	exprFunc(ctx)
+
+	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+}
+
+func Test_keep_keys_get_nil(t *testing.T) {
+	ctx := testhelper.TestTransformContext{
+		Item: nil,
+	}
+
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	keys := []string{"anything"}
+
+	exprFunc, _ := keepKeys(target, keys)
+	exprFunc(ctx)
 }

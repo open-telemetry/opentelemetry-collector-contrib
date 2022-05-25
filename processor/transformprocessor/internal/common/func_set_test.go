@@ -72,3 +72,24 @@ func Test_set(t *testing.T) {
 		})
 	}
 }
+
+func Test_set_get_nil(t *testing.T) {
+	ctx := testhelper.TestTransformContext{
+		Item: nil,
+	}
+
+	setter := &testGetSetter{
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	getter := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+	}
+
+	exprFunc, _ := set(setter, getter)
+	exprFunc(ctx)
+}

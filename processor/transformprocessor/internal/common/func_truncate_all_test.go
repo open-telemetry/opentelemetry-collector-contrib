@@ -108,3 +108,62 @@ func Test_truncate_all(t *testing.T) {
 		})
 	}
 }
+
+func Test_truncate_all_validation(t *testing.T) {
+	tests := []struct {
+		name   string
+		target GetSetter
+		limit  int64
+	}{
+		{
+			name:   "limit less than zero",
+			target: &testGetSetter{},
+			limit:  int64(-1),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := truncateAll(tt.target, tt.limit)
+			assert.Error(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
+		})
+	}
+}
+
+func Test_truncate_all_bad_input(t *testing.T) {
+	input := pcommon.NewValueString("not a map")
+	ctx := testhelper.TestTransformContext{
+		Item: input,
+	}
+
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	exprFunc, _ := truncateAll(target, 1)
+	exprFunc(ctx)
+
+	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+}
+
+func Test_truncate_all_get_nil(t *testing.T) {
+	ctx := testhelper.TestTransformContext{
+		Item: nil,
+	}
+
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	exprFunc, _ := truncateAll(target, 1)
+	exprFunc(ctx)
+}

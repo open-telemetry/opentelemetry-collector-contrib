@@ -123,3 +123,42 @@ func Test_limit_validation(t *testing.T) {
 		})
 	}
 }
+
+func Test_limit_bad_input(t *testing.T) {
+	input := pcommon.NewValueString("not a map")
+	ctx := testhelper.TestTransformContext{
+		Item: input,
+	}
+
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	exprFunc, _ := limit(target, 1)
+	exprFunc(ctx)
+
+	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+}
+
+func Test_limit_get_nil(t *testing.T) {
+	ctx := testhelper.TestTransformContext{
+		Item: nil,
+	}
+
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	exprFunc, _ := limit(target, 1)
+	exprFunc(ctx)
+}
