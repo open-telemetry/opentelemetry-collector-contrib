@@ -12,6 +12,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
+
 ## v0.52.0
 
 ### 🛑 Breaking changes 🛑
@@ -49,7 +51,6 @@
 - `podmanreceiver`: Container Stats Error structure (#9397)
 - `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
 - `tanzuobservabilityexporter`: add  error checks for tanzuobservability exporter (#10188)
-- `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
 
 ## v0.51.0
 
