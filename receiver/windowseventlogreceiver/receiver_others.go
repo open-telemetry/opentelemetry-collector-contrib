@@ -12,13 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
+// +build !windows
+
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 const typeStr = "windowseventlog"
@@ -52,6 +58,11 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 // BaseConfig gets the base config from config, for now
 func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
 	return cfg.(*WindowsLogConfig).BaseConfig
+}
+
+// DecodeInputConfig unmarshals the input operator
+func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
+	return nil, errors.New("the windows eventlog receiver is only supported on Windows")
 }
 
 // WindowsLogConfig defines configuration for the windowseventlog receiver

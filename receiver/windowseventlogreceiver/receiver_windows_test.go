@@ -108,12 +108,12 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	}
 
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
-	require.Eventually(t, logsReceived, 2*time.Minute, 200*time.Millisecond)
+	require.Eventually(t, logsReceived, 10*time.Second, 200*time.Millisecond)
 	results := sink.AllLogs()
 	require.Len(t, results, 1)
 
 	records := results[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	require.Equal(t, records.Len(), 1)
+	require.Equal(t, 1, records.Len())
 
 	record := records.At(0)
 	body := record.Body().MapVal().AsRaw()
