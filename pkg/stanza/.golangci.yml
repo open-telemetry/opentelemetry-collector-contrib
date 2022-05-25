@@ -133,9 +133,6 @@ issues:
     - path: operator/input
       linters:
         - revive
-    - path: operator/output
-      linters:
-        - revive
     - path: operator/parser
       linters:
         - revive
