@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtre
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.51.0
-	go.opentelemetry.io/collector v0.51.1-0.20220524222013-82d92526afeb
-	go.opentelemetry.io/collector/pdata v0.51.1-0.20220524222013-82d92526afeb
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.52.0
+	go.opentelemetry.io/collector v0.52.0
+	go.opentelemetry.io/collector/pdata v0.52.0
 )
 
-require github.com/open-telemetry/opentelemetry-log-collection v0.29.1 // indirect
+require github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.52.0 // indirect
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -51,8 +51,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.51.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.52.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.3.0 // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
@@ -63,3 +63,11 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ../../internal/stanza
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../syslogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
