@@ -2,7 +2,7 @@
 
 | Status                   |                  |
 | ------------------------ |------------------|
-| Stability                | [beta]           |
+| Stability                | [deprecated]           |
 | Supported pipeline types | trace, metrics   |
 | Distributions            | [contrib]        |
 
@@ -143,5 +143,5 @@ exporters:
         secret_token: "hunter2"
 ```
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
