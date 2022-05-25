@@ -1,8 +1,12 @@
 # Splunk HTTP Event Collector (HEC) Exporter
 
-How to send metrics to a Splunk HEC endpoint.
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Supported pipeline types | trace, logs, metrics |
+| Distributions            | [contrib]            |
 
-Supported pipeline types: logs, metrics, traces
+How to send metrics to a Splunk HEC endpoint.
 
 > :construction: This receiver is in beta and configuration fields are subject to change.
 
@@ -105,3 +109,6 @@ with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
