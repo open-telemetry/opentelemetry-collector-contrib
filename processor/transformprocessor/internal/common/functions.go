@@ -34,8 +34,7 @@ func DefaultFunctions() map[string]interface{} {
 	return registry
 }
 
-// TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
-// Visible for testing
+// NewFunctionCall Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
 		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser)

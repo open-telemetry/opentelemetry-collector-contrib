@@ -87,29 +87,9 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "keep_keys not matching slice type",
+			name: "not enough args",
 			inv: Invocation{
-				Function: "keep_keys",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "attributes",
-								},
-							},
-						},
-					},
-					{
-						Int: testhelper.Intp(10),
-					},
-				},
-			},
-		},
-		{
-			name: "truncate_all not int",
-			inv: Invocation{
-				Function: "truncate_all",
+				Function: "testing_multiple_args",
 				Arguments: []Value{
 					{
 						Path: &Path{
@@ -119,119 +99,6 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 								},
 							},
 						},
-					},
-					{
-						String: testhelper.Strp("not an int"),
-					},
-				},
-			},
-		},
-		{
-			name: "truncate_all negative limit",
-			inv: Invocation{
-				Function: "truncate_all",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Int: testhelper.Intp(-1),
-					},
-				},
-			},
-		},
-		{
-			name: "limit not int",
-			inv: Invocation{
-				Function: "limit",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						String: testhelper.Strp("not an int"),
-					},
-				},
-			},
-		},
-		{
-			name: "limit negative limit",
-			inv: Invocation{
-				Function: "limit",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Int: testhelper.Intp(-1),
-					},
-				},
-			},
-		},
-		{
-			name: "function call returns error",
-			inv: Invocation{
-				Function: "testing_error",
-			},
-		},
-		{
-			name: "replace_match invalid pattern",
-			inv: Invocation{
-				Function: "replace_match",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name:   "attributes",
-									MapKey: testhelper.Strp("test"),
-								},
-							},
-						},
-					},
-					{
-						String: testhelper.Strp("\\*"),
-					},
-					{
-						String: testhelper.Strp("test"),
-					},
-				},
-			},
-		},
-		{
-			name: "replace_all_matches invalid pattern",
-			inv: Invocation{
-				Function: "replace_all_matches",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "attributes",
-								},
-							},
-						},
-					},
-					{
-						String: testhelper.Strp("\\*"),
 					},
 					{
 						String: testhelper.Strp("test"),
