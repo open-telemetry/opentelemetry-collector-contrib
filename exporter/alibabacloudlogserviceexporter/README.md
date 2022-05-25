@@ -1,10 +1,10 @@
 # AlibabaCloud LogService Exporter
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [beta]               |
-| Supported pipeline types | trace, logs, metrics |
-| Distributions            | [contrib]            |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
 This exporter supports sending OpenTelemetry data to [LogService](https://www.alibabacloud.com/product/log-service).
 
