@@ -3,7 +3,7 @@
 | Status                   |              |
 | ------------------------ |--------------|
 | Stability                | [beta]       |
-| Supported pipeline types | trace, logs  |
+| Supported pipeline types | traces, logs |
 | Distributions            | [contrib]    |
 
 The Coralogix exporter sends traces to [Coralogix](https://coralogix.com/) as
