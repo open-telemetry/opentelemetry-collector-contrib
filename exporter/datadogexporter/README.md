@@ -1,10 +1,10 @@
 # Datadog Exporter
 
-| Status                   |                |
-| ------------------------ |----------------|
-| Stability                | [beta]         |
-| Supported pipeline types | trace, metrics |
-| Distributions            | [contrib]      |
+| Status                   |                 |
+| ------------------------ |-----------------|
+| Stability                | [beta]          |
+| Supported pipeline types | traces, metrics |
+| Distributions            | [contrib]       |
 
 This exporter sends metric and trace data to [Datadog](https://datadoghq.com). For environment specific setup instructions visit the [Datadog Documentation](https://docs.datadoghq.com/tracing/setup_overview/open_standards/#opentelemetry-collector-datadog-exporter).
 
