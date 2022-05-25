@@ -129,7 +129,12 @@ issues:
         - gosec
     - path: .
       linters:
-        - revive
         - gosec
         - misspell
         - govet
+    - path: operator
+      linters:
+        - gosec
+        - misspell
+        - govet
+        - revive

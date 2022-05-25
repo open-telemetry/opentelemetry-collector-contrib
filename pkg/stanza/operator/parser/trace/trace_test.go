@@ -149,8 +149,8 @@ func TestProcess(t *testing.T) {
 				},
 			},
 			&entry.Entry{
-				SpanId:     testSpanIDBytes,
-				TraceId:    testTraceIDBytes,
+				SpanID:     testSpanIDBytes,
+				TraceID:    testTraceIDBytes,
 				TraceFlags: testTraceFlagsBytes,
 				Body: map[string]interface{}{
 					"app_span_id":       "480140f3d770a5ae32f0a22b6a812cff",
@@ -281,15 +281,15 @@ func TestTraceParserParse(t *testing.T) {
 			require.Equal(t, tc.expectedRecord, e.Body)
 			traceId, _ := hex.DecodeString(tc.traceId)
 			if len(tc.traceId) == 0 {
-				require.Nil(t, e.TraceId)
+				require.Nil(t, e.TraceID)
 			} else {
-				require.Equal(t, traceId, e.TraceId)
+				require.Equal(t, traceId, e.TraceID)
 			}
 			spanId, _ := hex.DecodeString(tc.spanId)
 			if len(tc.spanId) == 0 {
-				require.Nil(t, e.SpanId)
+				require.Nil(t, e.SpanID)
 			} else {
-				require.Equal(t, spanId, e.SpanId)
+				require.Equal(t, spanId, e.SpanID)
 			}
 			traceFlags, _ := hex.DecodeString(tc.traceFlags)
 			if len(tc.traceFlags) == 0 {

@@ -102,8 +102,8 @@ func parseHexField(entry *entry.Entry, field *entry.Field) ([]byte, error) {
 // Parse will parse a trace (trace_id, span_id and flags) from a field and attach it to the entry
 func (t *TraceParser) Parse(entry *entry.Entry) error {
 	var errTraceId, errSpanId, errTraceFlags error
-	entry.TraceId, errTraceId = parseHexField(entry, t.TraceId.ParseFrom)
-	entry.SpanId, errSpanId = parseHexField(entry, t.SpanId.ParseFrom)
+	entry.TraceID, errTraceId = parseHexField(entry, t.TraceId.ParseFrom)
+	entry.SpanID, errSpanId = parseHexField(entry, t.SpanId.ParseFrom)
 	entry.TraceFlags, errTraceFlags = parseHexField(entry, t.TraceFlags.ParseFrom)
 	if errTraceId != nil || errTraceFlags != nil || errSpanId != nil {
 		err := errors.NewError("Error decoding traces for logs", "")
