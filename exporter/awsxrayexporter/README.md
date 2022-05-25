@@ -1,5 +1,11 @@
 # AWS X-Ray Tracing Exporter for OpenTelemetry Collector
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | trace     |
+| Distributions            | [contrib] |
+
 This exporter converts OpenTelemetry spans to
 [AWS X-Ray Segment Documents](https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html)
 and then sends them directly to X-Ray using the
@@ -66,3 +72,6 @@ This exporter follows default credential resolution for the
 
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the
 credential configuration.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
