@@ -28,6 +28,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_multiple_args"] = functionWithMultipleArgs
+	functions["testing_string"] = functionWithString
 
 	tests := []struct {
 		name string
@@ -85,41 +86,12 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "keep_keys not matching slice type",
+			name: "not matching arg type",
 			inv: Invocation{
-				Function: "keep_keys",
+				Function: "testing_string",
 				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "attributes",
-								},
-							},
-						},
-					},
 					{
 						Int: intp(10),
-					},
-				},
-			},
-		},
-		{
-			name: "truncate_all not int",
-			inv: Invocation{
-				Function: "truncate_all",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						String: strp("not an int"),
 					},
 				},
 			},
@@ -140,26 +112,6 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 					},
 					{
 						Int: intp(-1),
-					},
-				},
-			},
-		},
-		{
-			name: "limit not int",
-			inv: Invocation{
-				Function: "limit",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						String: strp("not an int"),
 					},
 				},
 			},
