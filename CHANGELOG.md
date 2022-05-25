@@ -32,7 +32,7 @@
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
 - `podmanreceiver`: Container Stats Error structure (#9397)
 - `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
-- `dynatraceexporter`: Fix issue on histogram min and max calculation. (#10257)
+- `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
 
 ## v0.51.0
 
