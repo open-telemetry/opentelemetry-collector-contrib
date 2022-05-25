@@ -3,7 +3,6 @@
 | Status                   |                      |
 | ------------------------ |----------------------|
 | Stability                | [beta]               |
-| Supported pipeline types | trace, metrics, logs |
 | Distributions            | [contrib]            |
 
 This extension implements a `configauth.ServerAuthenticator`, to be used in receivers inside the `auth` settings. The authenticator type has to be set to `oidc`.
