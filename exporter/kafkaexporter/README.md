@@ -1,10 +1,14 @@
 # Kafka Exporter
 
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Supported pipeline types | trace, logs, metrics |
+| Distributions            | [contrib]            |
+
 Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a synchronous producer
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
 processors for higher throughput and resiliency. Message payload encoding is configurable.
-
-Supported pipeline types: logs, metrics, traces
 
 The following settings are required:
 - `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
@@ -79,3 +83,6 @@ exporters:
       - localhost:9092
     protocol_version: 2.0.0
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
