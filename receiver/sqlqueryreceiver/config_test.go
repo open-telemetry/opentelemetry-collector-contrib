@@ -29,7 +29,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	sqlCfg := cfg.(*Config)
-	assert.Equal(t, time.Second, sqlCfg.ScraperControllerSettings.CollectionInterval)
+	assert.Equal(t, 10*time.Second, sqlCfg.ScraperControllerSettings.CollectionInterval)
 }
 
 func TestParseConfig(t *testing.T) {

@@ -43,7 +43,7 @@ type Metric struct {
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: time.Second,
+			CollectionInterval: 10 * time.Second,
 		},
 	}
 }
