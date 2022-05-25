@@ -1,7 +1,12 @@
 # Humio Exporter
-Exports data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.com/reference/api/ingest/).
 
-Supported pipeline types: traces (with metrics and logs to follow soon)
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | trace     |
+| Distributions            | [contrib] |
+
+Exports data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.com/reference/api/ingest/).
 
 > :construction: This exporter is currently intended for evaluation purposes only! It has yet to be enabled in the build.
 
@@ -107,3 +112,6 @@ curl $YOUR_HUMIO_URL/api/v1/repositories/$REPOSITORY_NAME/taggrouping \
   -H 'Content-Type: application/json' \
   -d '[ {"field": "trace_id","modulus": 16} ]'
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
