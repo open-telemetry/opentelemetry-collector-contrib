@@ -20,6 +20,7 @@ type MetricSettings struct {
 // MetricsSettings provides settings for flinkmetricsreceiver metrics.
 type MetricsSettings struct {
 	FlinkJobCheckpointCount           MetricSettings `mapstructure:"flink.job.checkpoint.count"`
+	FlinkJobCheckpointInProgress      MetricSettings `mapstructure:"flink.job.checkpoint.in_progress"`
 	FlinkJobLastCheckpointSize        MetricSettings `mapstructure:"flink.job.last_checkpoint.size"`
 	FlinkJobLastCheckpointTime        MetricSettings `mapstructure:"flink.job.last_checkpoint.time"`
 	FlinkJobRestartCount              MetricSettings `mapstructure:"flink.job.restart.count"`
@@ -52,6 +53,9 @@ type MetricsSettings struct {
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		FlinkJobCheckpointCount: MetricSettings{
+			Enabled: true,
+		},
+		FlinkJobCheckpointInProgress: MetricSettings{
 			Enabled: true,
 		},
 		FlinkJobLastCheckpointSize: MetricSettings{
@@ -143,7 +147,6 @@ type AttributeCheckpoint int
 
 const (
 	_ AttributeCheckpoint = iota
-	AttributeCheckpointInProgress
 	AttributeCheckpointCompleted
 	AttributeCheckpointFailed
 )
@@ -151,8 +154,6 @@ const (
 // String returns the string representation of the AttributeCheckpoint.
 func (av AttributeCheckpoint) String() string {
 	switch av {
-	case AttributeCheckpointInProgress:
-		return "in_progress"
 	case AttributeCheckpointCompleted:
 		return "completed"
 	case AttributeCheckpointFailed:
@@ -163,9 +164,8 @@ func (av AttributeCheckpoint) String() string {
 
 // MapAttributeCheckpoint is a helper map of string to AttributeCheckpoint attribute value.
 var MapAttributeCheckpoint = map[string]AttributeCheckpoint{
-	"in_progress": AttributeCheckpointInProgress,
-	"completed":   AttributeCheckpointCompleted,
-	"failed":      AttributeCheckpointFailed,
+	"completed": AttributeCheckpointCompleted,
+	"failed":    AttributeCheckpointFailed,
 }
 
 // AttributeGarbageCollectorName specifies the a value garbage_collector_name attribute.
@@ -241,10 +241,10 @@ type metricFlinkJobCheckpointCount struct {
 // init fills flink.job.checkpoint.count metric with initial data.
 func (m *metricFlinkJobCheckpointCount) init() {
 	m.data.SetName("flink.job.checkpoint.count")
-	m.data.SetDescription("The number of checkpoints by type.")
+	m.data.SetDescription("The number of checkpoints completed or failed.")
 	m.data.SetUnit("{checkpoints}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -278,6 +278,57 @@ func (m *metricFlinkJobCheckpointCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJobCheckpointCount(settings MetricSettings) metricFlinkJobCheckpointCount {
 	m := metricFlinkJobCheckpointCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricFlinkJobCheckpointInProgress struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills flink.job.checkpoint.in_progress metric with initial data.
+func (m *metricFlinkJobCheckpointInProgress) init() {
+	m.data.SetName("flink.job.checkpoint.in_progress")
+	m.data.SetDescription("The number of checkpoints in progress.")
+	m.data.SetUnit("{checkpoints}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricFlinkJobCheckpointInProgress) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricFlinkJobCheckpointInProgress) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricFlinkJobCheckpointInProgress) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricFlinkJobCheckpointInProgress(settings MetricSettings) metricFlinkJobCheckpointInProgress {
+	m := metricFlinkJobCheckpointInProgress{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1678,6 +1729,7 @@ type MetricsBuilder struct {
 	metricsBuffer                           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo // contains version information
 	metricFlinkJobCheckpointCount           metricFlinkJobCheckpointCount
+	metricFlinkJobCheckpointInProgress      metricFlinkJobCheckpointInProgress
 	metricFlinkJobLastCheckpointSize        metricFlinkJobLastCheckpointSize
 	metricFlinkJobLastCheckpointTime        metricFlinkJobLastCheckpointTime
 	metricFlinkJobRestartCount              metricFlinkJobRestartCount
@@ -1723,6 +1775,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               buildInfo,
 		metricFlinkJobCheckpointCount:           newMetricFlinkJobCheckpointCount(settings.FlinkJobCheckpointCount),
+		metricFlinkJobCheckpointInProgress:      newMetricFlinkJobCheckpointInProgress(settings.FlinkJobCheckpointInProgress),
 		metricFlinkJobLastCheckpointSize:        newMetricFlinkJobLastCheckpointSize(settings.FlinkJobLastCheckpointSize),
 		metricFlinkJobLastCheckpointTime:        newMetricFlinkJobLastCheckpointTime(settings.FlinkJobLastCheckpointTime),
 		metricFlinkJobRestartCount:              newMetricFlinkJobRestartCount(settings.FlinkJobRestartCount),
@@ -1845,6 +1898,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFlinkJobCheckpointCount.emit(ils.Metrics())
+	mb.metricFlinkJobCheckpointInProgress.emit(ils.Metrics())
 	mb.metricFlinkJobLastCheckpointSize.emit(ils.Metrics())
 	mb.metricFlinkJobLastCheckpointTime.emit(ils.Metrics())
 	mb.metricFlinkJobRestartCount.emit(ils.Metrics())
@@ -1898,6 +1952,16 @@ func (mb *MetricsBuilder) RecordFlinkJobCheckpointCountDataPoint(ts pcommon.Time
 		return fmt.Errorf("failed to parse int64 for FlinkJobCheckpointCount, value was %s: %w", inputVal, err)
 	}
 	mb.metricFlinkJobCheckpointCount.recordDataPoint(mb.startTime, ts, val, checkpointAttributeValue.String())
+	return nil
+}
+
+// RecordFlinkJobCheckpointInProgressDataPoint adds a data point to flink.job.checkpoint.in_progress metric.
+func (mb *MetricsBuilder) RecordFlinkJobCheckpointInProgressDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for FlinkJobCheckpointInProgress, value was %s: %w", inputVal, err)
+	}
+	mb.metricFlinkJobCheckpointInProgress.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

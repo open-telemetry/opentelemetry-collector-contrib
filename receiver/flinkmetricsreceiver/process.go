@@ -153,7 +153,7 @@ func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetr
 			case "lastCheckpointDuration":
 				_ = s.mb.RecordFlinkJobLastCheckpointTimeDataPoint(now, metric.Value)
 			case "numberOfInProgressCheckpoints":
-				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointInProgress)
+				_ = s.mb.RecordFlinkJobCheckpointInProgressDataPoint(now, metric.Value)
 			case "numberOfCompletedCheckpoints":
 				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointCompleted)
 			case "numberOfFailedCheckpoints":

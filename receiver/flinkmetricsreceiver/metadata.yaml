@@ -31,9 +31,9 @@ attributes:
     type: string
     enum: [ PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation ]
   checkpoint:
-    description: The number of checkpoints in progress, completed or that failed. 
+    description: The number of checkpoints completed or that failed. 
     type: string
-    enum: [ in_progress, completed, failed ]
+    enum: [ completed, failed ]
   record:
     description: The number of records received in, sent out or dropped due to arriving late.
     type: string
@@ -278,14 +278,24 @@ metrics:
     attributes: []
   flink.job.checkpoint.count:
     enabled: true
-    description: The number of checkpoints by type.
+    description: The number of checkpoints completed or failed.
+    unit: "{checkpoints}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ checkpoint ]
+  flink.job.checkpoint.in_progress:
+    enabled: true
+    description: The number of checkpoints in progress.
     unit: "{checkpoints}"
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
       input_type: string
-    attributes: [ checkpoint ]
+    attributes: []
   flink.task.record.count:
     enabled: true
     description: The number of records a task has.

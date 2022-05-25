@@ -8,7 +8,8 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **flink.job.checkpoint.count** | The number of checkpoints by type. | {checkpoints} | Sum(Int) | <ul> <li>checkpoint</li> </ul> |
+| **flink.job.checkpoint.count** | The number of checkpoints completed or failed. | {checkpoints} | Sum(Int) | <ul> <li>checkpoint</li> </ul> |
+| **flink.job.checkpoint.in_progress** | The number of checkpoints in progress. | {checkpoints} | Sum(Int) | <ul> </ul> |
 | **flink.job.last_checkpoint.size** | The total size of the last checkpoint. | By | Sum(Int) | <ul> </ul> |
 | **flink.job.last_checkpoint.time** | The end to end duration of the last checkpoint. | ms | Gauge(Int) | <ul> </ul> |
 | **flink.job.restart.count** | The total number of restarts since this job was submitted, including full restarts and fine-grained restarts. | {restarts} | Sum(Int) | <ul> </ul> |
@@ -61,7 +62,7 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| checkpoint | The number of checkpoints in progress, completed or that failed. | in_progress, completed, failed |
+| checkpoint | The number of checkpoints completed or that failed. | completed, failed |
 | garbage_collector_name | The names for the parallel scavenge and garbage first garbage collectors. | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
 | operator_name | The operator name. |  |
 | record | The number of records received in, sent out or dropped due to arriving late. | in, out, dropped |
