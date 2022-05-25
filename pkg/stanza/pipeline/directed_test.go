@@ -309,5 +309,5 @@ func TestPipelineOperators(t *testing.T) {
 	require.NoError(t, err)
 
 	operators := pipeline.Operators()
-	require.ElementsMatch(t, []operator.Operator{mockOperator1, mockOperator2, mockOperator3}, operators)
+	require.Equal(t, []operator.Operator{mockOperator1, mockOperator2, mockOperator3}, operators)
 }

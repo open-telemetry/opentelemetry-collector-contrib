@@ -232,7 +232,9 @@ func BenchmarkUdpInput(b *testing.B) {
 	go func() {
 		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
 		require.NoError(b, err)
-		defer udpInput.Stop()
+		defer func() {
+			require.NoError(b, udpInput.Stop())
+		}()
 		defer conn.Close()
 		message := []byte("message\n")
 		for {
