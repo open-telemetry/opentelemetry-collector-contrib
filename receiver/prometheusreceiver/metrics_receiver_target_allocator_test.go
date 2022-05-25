@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !race
+
 package prometheusreceiver
 
 import (
@@ -19,6 +21,7 @@ import (
 	"encoding/json"
 	commonconfig "github.com/prometheus/common/config"
 	promConfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -41,6 +44,7 @@ type MockTargetAllocator struct {
 	accessIndex map[string]*int32
 	wg          *sync.WaitGroup
 	srv         *httptest.Server
+	waitIndex   map[string]int
 }
 
 type mockTargetAllocatorResponse struct {
@@ -90,7 +94,8 @@ func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 	_, _ = rw.Write(pages[index].data)
 
 	// release WaitGroup after all endpoints have been hit by Prometheus SD once. After that we will call them manually
-	if index == 0 {
+	wait := mta.waitIndex[req.URL.Path]
+	if index == wait {
 		mta.wg.Done()
 	}
 }
@@ -126,8 +131,8 @@ func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorRespons
 	return responsesMap, responsesIndexMap, nil
 }
 
-func setupMockTargetAllocator(rawResponses map[string][]mockTargetAllocatorResponseRaw) (*MockTargetAllocator, error) {
-	responsesMap, responsesIndexMap, err := transformTAResponseMap(rawResponses)
+func setupMockTargetAllocator(responses Responses) (*MockTargetAllocator, error) {
+	responsesMap, responsesIndexMap, err := transformTAResponseMap(responses.responses)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +140,7 @@ func setupMockTargetAllocator(rawResponses map[string][]mockTargetAllocatorRespo
 	mockTA := &MockTargetAllocator{
 		endpoints:   responsesMap,
 		accessIndex: responsesIndexMap,
+		waitIndex:   responses.releaserMap,
 		wg:          &sync.WaitGroup{},
 	}
 	mockTA.srv = httptest.NewUnstartedServer(mockTA)
@@ -152,60 +158,67 @@ func labelSetTargetsToList(sets []model.LabelSet) []string {
 	return result
 }
 
+type Responses struct {
+	releaserMap map[string]int
+	responses   map[string][]mockTargetAllocatorResponseRaw
+}
+
 func TestTargetAllocatorJobRetrieval(t *testing.T) {
 	for _, tc := range []struct {
 		desc      string
-		responses map[string][]mockTargetAllocatorResponseRaw
+		responses Responses
 		cfg       *Config
 		want      ExpectedTestResult
 	}{
 		{
 			desc: "default",
-			responses: map[string][]mockTargetAllocatorResponseRaw{
-				"/jobs": {
-					mockTargetAllocatorResponseRaw{code: 200, data: map[string]LinkJSON{
-						"job1": {Link: "/jobs/job1/targets"},
-						"job2": {Link: "/jobs/job2/targets"},
-					}},
-				},
-				"/jobs/job1/targets": {
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter":     "london",
-								"__meta_prometheus_job": "node",
-							}},
-					}},
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter":     "london",
-								"__meta_prometheus_job": "node",
-							}},
-					}},
-				},
-				"/jobs/job2/targets": {
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter":     "london",
-								"__meta_prometheus_job": "alertmanager",
-							}},
-					}},
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter":     "london",
-								"__meta_prometheus_job": "alertmanager",
-							}},
-					}},
+			responses: Responses{
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/jobs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]LinkJSON{
+							"job1": {Link: "/jobs/job1/targets"},
+							"job2": {Link: "/jobs/job2/targets"},
+						}},
+					},
+					"/jobs/job1/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								}},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								}},
+						}},
+					},
+					"/jobs/job2/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								}},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								}},
+						}},
+					},
 				},
 			},
 			cfg: &Config{
 				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &TargetAllocator{
-					Interval:    60 * time.Second,
+					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
 					HTTPSDConfig: &promHTTP.SDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{
@@ -238,51 +251,53 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 		},
 		{
 			desc: "update labels and targets",
-			responses: map[string][]mockTargetAllocatorResponseRaw{
-				"/jobs": {
-					mockTargetAllocatorResponseRaw{code: 200, data: map[string]LinkJSON{
-						"job1": {Link: "/jobs/job1/targets"},
-						"job2": {Link: "/jobs/job2/targets"},
-					}},
-				},
-				"/jobs/job1/targets": {
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter":     "london",
-								"__meta_prometheus_job": "node",
-							}},
-					}},
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"localhost:9090"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter":     "london",
-								"__meta_prometheus_job": "node",
-								"test":                  "aTest",
-							}},
-					}},
-				},
-				"/jobs/job2/targets": {
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"10.0.40.3:9100"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter":     "london",
-								"__meta_prometheus_job": "alertmanager",
-							}},
-					}},
-					mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-						{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
-							Labels: map[model.LabelName]model.LabelValue{
-								"__meta_datacenter": "london",
-							}},
-					}},
+			responses: Responses{
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/jobs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]LinkJSON{
+							"job1": {Link: "/jobs/job1/targets"},
+							"job2": {Link: "/jobs/job2/targets"},
+						}},
+					},
+					"/jobs/job1/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								}},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"localhost:9090"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+									"test":                  "aTest",
+								}},
+						}},
+					},
+					"/jobs/job2/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "alertmanager",
+								}},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter": "london",
+								}},
+						}},
+					},
 				},
 			},
 			cfg: &Config{
 				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &TargetAllocator{
-					Interval:    60 * time.Second,
+					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
 					HTTPSDConfig: &promHTTP.SDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
@@ -310,16 +325,22 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 		},
 		{
 			desc: "endpoint is not reachable",
-			responses: map[string][]mockTargetAllocatorResponseRaw{
-				"/jobs": {
-					mockTargetAllocatorResponseRaw{code: 404, data: map[string]LinkJSON{}},
+			responses: Responses{
+				releaserMap: map[string]int{
+					"/jobs": 1, // we are too fast if we ignore the first wait a tick
+				},
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/jobs": {
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]LinkJSON{}},
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]LinkJSON{}},
+					},
 				},
 			},
 			cfg: &Config{
 				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &TargetAllocator{
-					Interval:    60 * time.Second,
+					Interval:    50 * time.Millisecond,
 					CollectorID: "collector-1",
 					HTTPSDConfig: &promHTTP.SDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
@@ -355,13 +376,9 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			if tc.want.empty {
 				// if no base config is supplied and the job retrieval fails and therefor no configuration is available
 				// PrometheusSD adds a static provider as default
-
-				// we have here a race condition inside the discovery manager. `providers` can be nil or an array of
-				// the size of 1
-				if providers == nil {
-					return
-				}
 				require.Len(t, providers, 1)
+				require.IsType(t, discovery.StaticConfig{}, providers[0].Config())
+				return
 			}
 
 			for _, provider := range providers {
