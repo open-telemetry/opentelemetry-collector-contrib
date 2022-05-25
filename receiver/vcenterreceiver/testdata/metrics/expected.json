@@ -228,8 +228,8 @@
                         },
                         {
                             "name": "vcenter.host.disk.throughput",
-                            "description": "The throughput to the host system's disk.",
-                            "unit": "By/s",
+                            "description": "Average number of kilobytes read from the disk each second.",
+                            "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
