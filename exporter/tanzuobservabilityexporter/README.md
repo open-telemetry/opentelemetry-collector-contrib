@@ -1,10 +1,10 @@
 # Tanzu Observability (Wavefront) Exporter
 
-| Status                   |                |
-| ------------------------ |----------------|
-| Stability                | [beta]         |
+| Status                   |                 |
+| ------------------------ |-----------------|
+| Stability                | [beta]          |
 | Supported pipeline types | traces, metrics |
-| Distributions            | [contrib]      |
+| Distributions            | [contrib]       |
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
