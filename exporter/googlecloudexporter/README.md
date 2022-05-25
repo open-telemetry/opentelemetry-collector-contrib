@@ -1,5 +1,11 @@
 # Google Cloud Exporter
 
+| Status                   |                    |
+| ------------------------ |--------------------|
+| Stability                | [beta]             |
+| Supported pipeline types | trace, metrics |
+| Distributions            | [contrib]          |
+
 This exporter can be used to send metrics and traces to Google Cloud Monitoring and Trace (formerly known as Stackdriver) respectively.
 
 ## Getting started
@@ -374,3 +380,6 @@ Additional configuration for the metric exporter:
 
 - `metric.prefix` (optional): MetricPrefix overrides the prefix / namespace of the Google Cloud metric type identifier. If not set, defaults to "custom.googleapis.com/opencensus/"
 - `metric.skip_create_descriptor` (optional): Whether to skip creating the metric descriptor.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
