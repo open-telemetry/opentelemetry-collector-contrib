@@ -3,7 +3,6 @@
 | Status                   |                      |
 |--------------------------|----------------------|
 | Stability                | [beta]               |
-| Supported pipeline types | trace, metrics, logs |
 | Distributions            | [contrib]            |
 
 
