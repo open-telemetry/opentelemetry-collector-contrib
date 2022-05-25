@@ -1,5 +1,11 @@
 # Google Cloud Pubsub Exporter
 
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Supported pipeline types | trace, logs, metrics |
+| Distributions            | [contrib]            |
+
 > ⚠️ This is a community-provided module. It has been developed and extensively tested at Collibra, but it is not officially supported by GCP.
 
 This exporter sends OTLP messages to a Google Cloud [Pubsub](https://cloud.google.com/pubsub) topic.
@@ -102,3 +108,6 @@ scenario is `behavior: earliest` with a reasonable `allow_drift` of `1h`.
 
 Allowed behavior values are `current` or `earliest`. For `allow_drift` the default is `0s`, so make sure to set the 
 value.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
