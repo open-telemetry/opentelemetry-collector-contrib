@@ -8,9 +8,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.51.0
 	github.com/stretchr/testify v1.7.1
 	github.com/wavefronthq/wavefront-sdk-go v0.9.11
-	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
-	go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af
-	go.opentelemetry.io/collector/semconv v0.51.1-0.20220519211145-c56d20e9e0af
+	go.opentelemetry.io/collector v0.51.1-0.20220524222013-82d92526afeb
+	go.opentelemetry.io/collector/pdata v0.51.1-0.20220524222013-82d92526afeb
+	go.opentelemetry.io/collector/semconv v0.51.1-0.20220524222013-82d92526afeb
 	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
