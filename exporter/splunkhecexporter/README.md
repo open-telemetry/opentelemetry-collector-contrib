@@ -1,10 +1,10 @@
 # Splunk HTTP Event Collector (HEC) Exporter
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [beta]               |
-| Supported pipeline types | trace, logs, metrics |
-| Distributions            | [contrib]            |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
 How to send metrics to a Splunk HEC endpoint.
 
