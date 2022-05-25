@@ -1,5 +1,11 @@
 # AWS CloudWatch EMF Exporter for OpenTelemetry Collector
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types |  metrics  |
+| Distributions            | [contrib] |
+
 This exporter converts OpenTelemetry metrics to 
 [AWS CloudWatch Embedded Metric Format(EMF)](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html)
 and then sends them directly to CloudWatch Logs using the 
@@ -80,3 +86,6 @@ exporters:
         resource_to_telemetry_conversion:
             enabled: true
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
