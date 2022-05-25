@@ -88,6 +88,26 @@ func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]contain
 	return report.Stats, nil
 }
 
+func (c *libpodClient) list(ctx context.Context, options url.Values) ([]Container, error) {
+	resp, err := c.request(ctx, "/containers/json", options)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var report []Container
+	err = json.Unmarshal(bytes, &report)
+	if err != nil {
+		return nil, err
+	}
+	return report, nil
+}
+
 func (c *libpodClient) ping(ctx context.Context) error {
 	resp, err := c.request(ctx, "/_ping", nil)
 	if err != nil {
@@ -98,4 +118,31 @@ func (c *libpodClient) ping(ctx context.Context) error {
 		return fmt.Errorf("ping response was %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func (c *libpodClient) events(ctx context.Context, options url.Values) (<-chan Event, <-chan error) {
+	events := make(chan Event)
+	errs := make(chan error)
+	go func() {
+		resp, err := c.request(ctx, "/events", options)
+		if err != nil {
+			errs <- err
+		}
+		dec := json.NewDecoder(resp.Body)
+		for {
+			var e Event
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				err := dec.Decode(&e)
+				if err != nil {
+					errs <- err
+				} else {
+					events <- e
+				}
+			}
+		}
+	}()
+	return events, errs
 }

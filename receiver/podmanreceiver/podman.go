@@ -12,6 +12,8 @@ type clientFactory func(logger *zap.Logger, cfg *Config) (PodmanClient, error)
 type PodmanClient interface {
 	ping(context.Context) error
 	stats(context.Context, url.Values) ([]containerStats, error)
+	list(context.Context, url.Values) ([]Container, error)
+	events(context.Context, url.Values) (<-chan Event, <-chan error)
 }
 
 type ContainerScraper struct {
