@@ -8,6 +8,7 @@ jobs:
   changedfiles:
     name: changed files
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       md: ${{ steps.changes.outputs.md }}
     steps:
