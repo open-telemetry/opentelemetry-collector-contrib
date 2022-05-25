@@ -64,13 +64,18 @@ func newReceiver(
 	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
-func (r *receiver) start(context.Context, component.Host) error {
+func (r *receiver) start(ctx context.Context, _ component.Host) error {
+	var err error
 	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return err
 	}
 
 	r.scraper = NewContainerScraper(podmanClient, r.set.Logger, r.config)
+	if err = r.scraper.LoadContainerList(ctx); err != nil {
+		return err
+	}
+	go r.scraper.ContainerEventLoop(ctx)
 	return nil
 }
 

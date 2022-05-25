@@ -69,8 +69,8 @@ func TestScraperLoop(t *testing.T) {
 	consumer := make(mockConsumer)
 
 	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer, client.factory)
-	assert.NotNil(t, r)
 	require.NoError(t, err)
+	assert.NotNil(t, r)
 
 	go func() {
 		client <- containerStatsReport{
@@ -107,6 +107,8 @@ func (c mockClient) ping(context.Context) error {
 	return nil
 }
 
+type mockConsumer chan pmetric.Metrics
+
 func (c mockClient) list(context.Context, url.Values) ([]Container, error) {
 	return []Container{Container{Id: "c1"}}, nil
 }
@@ -114,8 +116,6 @@ func (c mockClient) list(context.Context, url.Values) ([]Container, error) {
 func (c mockClient) events(context.Context, url.Values) (<-chan Event, <-chan error) {
 	return nil, nil
 }
-
-type mockConsumer chan pmetric.Metrics
 
 func (m mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}

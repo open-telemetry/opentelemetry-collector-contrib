@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -48,41 +47,6 @@ func tmpSock(t *testing.T) (net.Listener, string) {
 	}
 
 	return listener, addr
-}
-
-func TestWatchingTimeouts(t *testing.T) {
-	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
-
-	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
-		Timeout:  50 * time.Millisecond,
-	}
-
-	client, err := newLibpodClient(zap.NewNop(), config)
-	assert.NotNil(t, client)
-	assert.Nil(t, err)
-
-	cli := NewContainerScraper(client, zap.NewNop(), config)
-	assert.NotNil(t, cli)
-
-	expectedError := "context deadline exceeded"
-
-	shouldHaveTaken := time.Now().Add(100 * time.Millisecond).UnixNano()
-
-	_, err = cli.FetchContainerStats(context.Background())
-	require.Error(t, err)
-
-	containers, err := cli.FetchContainerStats(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expectedError)
-	assert.Nil(t, containers)
-
-	assert.GreaterOrEqual(
-		t, time.Now().UnixNano(), shouldHaveTaken,
-		"Client timeouts don't appear to have been exercised.",
-	)
 }
 
 func TestStats(t *testing.T) {
