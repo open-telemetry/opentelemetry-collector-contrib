@@ -8,6 +8,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- `elasticexporter`: Deprecate Elastic Exporter (#10314)
+
 ### 🚀 New components 🚀
 
 - `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
