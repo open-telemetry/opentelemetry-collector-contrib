@@ -340,9 +340,9 @@ func jLogsToSpanEvents(logs []model.Log, dest ptrace.SpanEventSlice) {
 		attrs.Clear()
 		attrs.EnsureCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
-		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
+		if name, ok := attrs.Get(eventNameAttr); ok {
 			event.SetName(name.StringVal())
-			attrs.Remove(tracetranslator.TagMessage)
+			attrs.Remove(eventNameAttr)
 		}
 	}
 }

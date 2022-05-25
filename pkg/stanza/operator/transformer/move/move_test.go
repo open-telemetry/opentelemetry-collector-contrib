@@ -518,7 +518,7 @@ func TestProcessAndBuild(t *testing.T) {
 
 			move := op.(*MoveOperator)
 			fake := testutil.NewFakeOutput(t)
-			move.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, move.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = move.Process(context.Background(), val)
 			if tc.expectErr {
