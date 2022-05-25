@@ -1,10 +1,10 @@
 # Kafka Exporter
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [beta]               |
-| Supported pipeline types | trace, logs, metrics |
-| Distributions            | [contrib]            |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
 Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a synchronous producer
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
