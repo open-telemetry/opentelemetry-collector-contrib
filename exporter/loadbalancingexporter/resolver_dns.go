@@ -63,6 +63,12 @@ func newDNSResolver(logger *zap.Logger, hostname string, port string, interval t
 	if len(hostname) == 0 {
 		return nil, errNoHostname
 	}
+	if interval == 0 {
+		interval = defaultResInterval
+	}
+	if timeout == 0 {
+		timeout = defaultResTimeout
+	}
 
 	return &dnsResolver{
 		logger:      logger,

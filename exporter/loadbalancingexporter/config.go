@@ -38,18 +38,6 @@ type ResolverSettings struct {
 	DNS    *DNSResolver    `mapstructure:"dns"`
 }
 
-func createDefaultResolverSettings() ResolverSettings {
-	return ResolverSettings{
-		Static: nil,
-		DNS: &DNSResolver{
-			Hostname: "",
-			Port:     "",
-			Interval: defaultResInterval,
-			Timeout:  defaultResTimeout,
-		},
-	}
-}
-
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
 type StaticResolver struct {
 	Hostnames []string `mapstructure:"hostnames"`
