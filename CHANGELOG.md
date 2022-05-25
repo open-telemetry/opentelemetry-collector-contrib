@@ -14,6 +14,7 @@
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
+- `expvarreceiver`: Add implementation of new receiver. (#10183)
 
 ### 💡 Enhancements 💡
 
@@ -31,6 +32,8 @@
 - `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
 - `signalfxexporter`: Emit prometheus compatible histogram/summary to signalfx #10299
   - This behavior can be reverted using the `exporter.signalfxexporter.PrometheusCompatible` featuregate.
+- `podmanreceiver`: Container Stats Error structure (#9397)
+- `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
 
 ## v0.51.0
 
@@ -136,7 +139,6 @@
 - `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
 - `riakreceiver`: Fix issue where user configured metric settings were ignored. (#9561)
 - `sqlserverreceiver`: Update `sqlserver.transaction_log.growth.count` and `sqlserver.transaction_log.shrink.count` to be monotonic sums. (#9522)
-- `podmanreceiver`: Container Stats Error structure (#9397)
 
 ## v0.49.0
 

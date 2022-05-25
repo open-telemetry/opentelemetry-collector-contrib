@@ -706,6 +706,6 @@ func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}
-	writer.SetOutputs([]operator.Operator{fakeOut})
+	require.NoError(t, writer.SetOutputs([]operator.Operator{fakeOut}))
 	return writer, fakeOut
 }
