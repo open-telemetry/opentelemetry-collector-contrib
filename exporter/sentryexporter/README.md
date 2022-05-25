@@ -3,7 +3,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [beta]    |
-| Supported pipeline types | trace     |
+| Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
 The Sentry Exporter allows you to send traces to [Sentry](https://sentry.io/).
