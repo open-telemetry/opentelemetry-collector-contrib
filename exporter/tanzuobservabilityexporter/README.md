@@ -1,5 +1,14 @@
 # Tanzu Observability (Wavefront) Exporter
 
+| Status                   |                |
+| ------------------------ |----------------|
+| Stability                | [beta]         |
+| Supported pipeline types | trace, metrics |
+| Distributions            | [contrib]      |
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
 This exporter supports sending metrics and traces to [Tanzu Observability](https://tanzu.vmware.com/observability).
 
 ## Prerequisites
@@ -206,3 +215,6 @@ bucket counts to estimate the 95th percentile of http.response_times over the la
 
 A summary is converted to multiple gauge metrics: one gauge for every quantile in the summary. A special "quantile" tag
 contains avalue between 0 and 1 indicating the quantile for which the value belongs.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
