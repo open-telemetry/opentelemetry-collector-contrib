@@ -1,10 +1,10 @@
 # InfluxDB Exporter
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [beta]               |
-| Supported pipeline types | trace, logs, metrics |
-| Distributions            | [contrib]            |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
 This exporter supports sending tracing, metrics, and logging data to [InfluxDB](https://www.influxdata.com/products/).
 
