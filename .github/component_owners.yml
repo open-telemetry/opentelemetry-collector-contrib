@@ -7,6 +7,10 @@ components:
     - oxeye-nikolay
     - nikosokolik
 
+  instrumentation/opentelemetry-instrumentation-boto3sqs:
+    - oxeye-nikolay
+    - nikosokolik
+
   propagator/opentelemetry-propagator-aws-xray:
     - NathanielRN
 

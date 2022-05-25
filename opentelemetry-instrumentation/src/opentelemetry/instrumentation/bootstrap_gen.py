@@ -36,6 +36,10 @@ libraries = {
         "library": "boto~=2.0",
         "instrumentation": "opentelemetry-instrumentation-boto==0.31b0",
     },
+    "boto3": {
+        "library": "boto3 ~= 1.0",
+        "instrumentation": "opentelemetry-instrumentation-boto3sqs==0.31b0",
+    },
     "botocore": {
         "library": "botocore ~= 1.0",
         "instrumentation": "opentelemetry-instrumentation-botocore==0.31b0",

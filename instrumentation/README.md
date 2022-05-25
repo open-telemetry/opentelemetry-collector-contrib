@@ -7,6 +7,7 @@
 | [opentelemetry-instrumentation-asyncpg](./opentelemetry-instrumentation-asyncpg) | asyncpg >= 0.12.0 |
 | [opentelemetry-instrumentation-aws-lambda](./opentelemetry-instrumentation-aws-lambda) | aws_lambda |
 | [opentelemetry-instrumentation-boto](./opentelemetry-instrumentation-boto) | boto~=2.0 |
+| [opentelemetry-instrumentation-boto3sqs](./opentelemetry-instrumentation-boto3sqs) | boto3 ~= 1.0 |
 | [opentelemetry-instrumentation-botocore](./opentelemetry-instrumentation-botocore) | botocore ~= 1.0 |
 | [opentelemetry-instrumentation-celery](./opentelemetry-instrumentation-celery) | celery >= 4.0, < 6.0 |
 | [opentelemetry-instrumentation-dbapi](./opentelemetry-instrumentation-dbapi) | dbapi |
