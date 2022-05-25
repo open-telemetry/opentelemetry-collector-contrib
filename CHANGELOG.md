@@ -12,6 +12,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `transformprocessor`: Fix issue where incorrect error was returned if a bad path was passed to a function (#10141)
+
 ## v0.52.0
 
 ### 🛑 Breaking changes 🛑
