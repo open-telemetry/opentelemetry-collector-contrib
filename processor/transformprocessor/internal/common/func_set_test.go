@@ -17,26 +17,17 @@ package common
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type ExprSetter struct {
-	Setter func(ctx TransformContext, val interface{})
-}
-
-func (path ExprSetter) Set(ctx TransformContext, val interface{}) {
-	path.Setter(ctx, val)
-}
-
 func Test_set(t *testing.T) {
-	input := ptrace.NewSpan()
-	input.SetName("bear")
+	input := pcommon.NewValueString("original name")
 
 	target := &testGetSetter{
 		setter: func(ctx TransformContext, val interface{}) {
-			ctx.GetItem().(ptrace.Span).SetName(val.(string))
+			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
 		},
 	}
 
@@ -44,44 +35,40 @@ func Test_set(t *testing.T) {
 		name   string
 		setter Setter
 		getter Getter
-		want   func(ptrace.Span)
+		want   func(pcommon.Value)
 	}{
 		{
 			name:   "set name",
 			setter: target,
 			getter: literal{value: "new name"},
-			want: func(span ptrace.Span) {
-				input.CopyTo(span)
-				span.SetName("new name")
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStringVal("new name")
 			},
 		},
 		{
 			name:   "set nil value",
 			setter: target,
 			getter: literal{value: nil},
-			want: func(span ptrace.Span) {
-				input.CopyTo(span)
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStringVal("original name")
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			span := ptrace.NewSpan()
-			input.CopyTo(span)
+			scenarioValue := pcommon.NewValueString(input.StringVal())
 
-			ctx := testTransformContext{
-				span:     span,
-				il:       pcommon.NewInstrumentationScope(),
-				resource: pcommon.NewResource(),
+			ctx := testhelper.TestTransformContext{
+				Item: scenarioValue,
 			}
 
 			exprFunc, _ := set(tt.setter, tt.getter)
 			exprFunc(ctx)
 
-			expected := ptrace.NewSpan()
+			expected := pcommon.NewValueString("")
 			tt.want(expected)
 
-			assert.Equal(t, expected, span)
+			assert.Equal(t, expected, scenarioValue)
 		})
 	}
 }

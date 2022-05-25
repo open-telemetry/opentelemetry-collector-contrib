@@ -449,16 +449,16 @@ func Test_newFunctionCall(t *testing.T) {
 							Fields: []common.Field{
 								{
 									Name:   "attributes",
-									MapKey: strp("test"),
+									MapKey: testhelper.Strp("test"),
 								},
 							},
 						},
 					},
 					{
-						String: strp("hello*"),
+						String: testhelper.Strp("hello*"),
 					},
 					{
-						String: strp("hello {universe}"),
+						String: testhelper.Strp("hello {universe}"),
 					},
 				},
 			},
@@ -483,16 +483,16 @@ func Test_newFunctionCall(t *testing.T) {
 							Fields: []common.Field{
 								{
 									Name:   "attributes",
-									MapKey: strp("test"),
+									MapKey: testhelper.Strp("test"),
 								},
 							},
 						},
 					},
 					{
-						String: strp("goodbye*"),
+						String: testhelper.Strp("goodbye*"),
 					},
 					{
-						String: strp("goodbye {universe}"),
+						String: testhelper.Strp("goodbye {universe}"),
 					},
 				},
 			},
@@ -522,10 +522,10 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("hello*"),
+						String: testhelper.Strp("hello*"),
 					},
 					{
-						String: strp("hello {universe}"),
+						String: testhelper.Strp("hello {universe}"),
 					},
 				},
 			},
@@ -555,10 +555,10 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("goodbye*"),
+						String: testhelper.Strp("goodbye*"),
 					},
 					{
-						String: strp("goodbye {universe}"),
+						String: testhelper.Strp("goodbye {universe}"),
 					},
 				},
 			},

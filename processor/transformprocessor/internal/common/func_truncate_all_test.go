@@ -13,3 +13,98 @@
 // limitations under the License.
 
 package common
+
+import (
+	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
+func Test_truncate_all(t *testing.T) {
+	input := pcommon.NewMap()
+	input.InsertString("test", "hello world")
+	input.InsertInt("test2", 3)
+	input.InsertBool("test3", true)
+
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			return ctx.GetItem()
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			ctx.GetItem().(pcommon.Map).Clear()
+			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
+		},
+	}
+
+	tests := []struct {
+		name   string
+		target GetSetter
+		limit  int64
+		want   func(pcommon.Map)
+	}{
+		{
+			name:   "truncate map",
+			target: target,
+			limit:  1,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "h")
+				expectedMap.InsertInt("test2", 3)
+				expectedMap.InsertBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate map to zero",
+			target: target,
+			limit:  0,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "")
+				expectedMap.InsertInt("test2", 3)
+				expectedMap.InsertBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate nothing",
+			target: target,
+			limit:  100,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertInt("test2", 3)
+				expectedMap.InsertBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate exact",
+			target: target,
+			limit:  11,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertInt("test2", 3)
+				expectedMap.InsertBool("test3", true)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scenarioMap := pcommon.NewMap()
+			input.CopyTo(scenarioMap)
+
+			ctx := testhelper.TestTransformContext{
+				Item: scenarioMap,
+			}
+
+			exprFunc, _ := truncateAll(tt.target, tt.limit)
+			exprFunc(ctx)
+
+			expected := pcommon.NewMap()
+			tt.want(expected)
+
+			assert.Equal(t, expected, scenarioMap)
+		})
+	}
+}

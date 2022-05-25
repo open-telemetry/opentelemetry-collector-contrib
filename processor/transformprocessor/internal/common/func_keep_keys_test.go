@@ -17,27 +17,24 @@ package common
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func Test_keep_keys(t *testing.T) {
-	input := ptrace.NewSpan()
-	input.SetName("bear")
-	attrs := pcommon.NewMap()
-	attrs.InsertString("test", "hello world")
-	attrs.InsertInt("test2", 3)
-	attrs.InsertBool("test3", true)
-	attrs.CopyTo(input.Attributes())
+	input := pcommon.NewMap()
+	input.InsertString("test", "hello world")
+	input.InsertInt("test2", 3)
+	input.InsertBool("test3", true)
 
 	target := &testGetSetter{
 		getter: func(ctx TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Attributes()
+			return ctx.GetItem()
 		},
 		setter: func(ctx TransformContext, val interface{}) {
-			ctx.GetItem().(ptrace.Span).Attributes().Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(ptrace.Span).Attributes())
+			ctx.GetItem().(pcommon.Map).Clear()
+			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
 		},
 	}
 
@@ -45,74 +42,60 @@ func Test_keep_keys(t *testing.T) {
 		name   string
 		target GetSetter
 		keys   []string
-		want   func(ptrace.Span)
+		want   func(pcommon.Map)
 	}{
 		{
 			name:   "keep one",
 			target: target,
 			keys:   []string{"test"},
-			want: func(span ptrace.Span) {
-				input.CopyTo(span)
-				span.Attributes().Clear()
-				attrs := pcommon.NewMap()
-				attrs.InsertString("test", "hello world")
-				attrs.CopyTo(span.Attributes())
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
 			},
 		},
 		{
 			name:   "keep two",
 			target: target,
 			keys:   []string{"test", "test2"},
-			want: func(span ptrace.Span) {
-				input.CopyTo(span)
-				span.Attributes().Clear()
-				attrs := pcommon.NewMap()
-				attrs.InsertString("test", "hello world")
-				attrs.InsertInt("test2", 3)
-				attrs.CopyTo(span.Attributes())
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertInt("test2", 3)
 			},
 		},
 		{
 			name:   "keep none",
 			target: target,
 			keys:   []string{},
-			want: func(span ptrace.Span) {
-				input.CopyTo(span)
-				span.Attributes().Clear()
-				attrs := pcommon.NewMap()
-				attrs.CopyTo(span.Attributes())
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
 			},
 		},
 		{
 			name:   "no match",
 			target: target,
 			keys:   []string{"no match"},
-			want: func(span ptrace.Span) {
-				input.CopyTo(span)
-				span.Attributes().Clear()
-				attrs := pcommon.NewMap()
-				attrs.CopyTo(span.Attributes())
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			span := ptrace.NewSpan()
-			input.CopyTo(span)
+			scenarioMap := pcommon.NewMap()
+			input.CopyTo(scenarioMap)
 
-			ctx := testTransformContext{
-				span:     span,
-				il:       pcommon.NewInstrumentationScope(),
-				resource: pcommon.NewResource(),
+			ctx := testhelper.TestTransformContext{
+				Item: scenarioMap,
 			}
 
 			exprFunc, _ := keepKeys(tt.target, tt.keys)
 			exprFunc(ctx)
 
-			expected := ptrace.NewSpan()
+			expected := pcommon.NewMap()
 			tt.want(expected)
 
-			assert.Equal(t, expected, span)
+			assert.Equal(t, expected, scenarioMap)
 		})
 	}
 }
