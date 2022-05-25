@@ -87,14 +87,14 @@ zv9WEy+9p05Aet+12x3dzRu93+yRIEYbSZ35NOUWfQ+gspF5rGgpxA==
 
 func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewTCPInputConfig("test_id")
+		cfg := NewConfig("test_id")
 		cfg.ListenAddress = ":0"
 
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
-		tcpInput := op.(*TCPInput)
+		tcpInput := op.(*Input)
 		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
@@ -136,7 +136,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewTCPInputConfig("test_id")
+		cfg := NewConfig("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
 
@@ -144,7 +144,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
-		tcpInput := op.(*TCPInput)
+		tcpInput := op.(*Input)
 		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
@@ -200,7 +200,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 	}
 }
 
-func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
+func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
 		f, err := os.Create("test.crt")
 		require.NoError(t, err)
@@ -218,7 +218,7 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 		require.NoError(t, err)
 		f.Close()
 
-		cfg := NewTCPInputConfig("test_id")
+		cfg := NewConfig("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.TLS = helper.NewTLSServerConfig(&configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
@@ -231,7 +231,7 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
-		tcpInput := op.(*TCPInput)
+		tcpInput := op.(*Input)
 		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
 
 		entryChan := make(chan *entry.Entry, 1)
@@ -274,13 +274,13 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 func TestBuild(t *testing.T) {
 	cases := []struct {
 		name      string
-		inputBody TCPInputConfig
+		inputBody Config
 		expectErr bool
 	}{
 		{
 			"default-auto-address",
-			TCPInputConfig{
-				TCPBaseConfig: TCPBaseConfig{
+			Config{
+				BaseConfig: BaseConfig{
 					ListenAddress: ":0",
 				},
 			},
@@ -288,8 +288,8 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"default-fixed-address",
-			TCPInputConfig{
-				TCPBaseConfig: TCPBaseConfig{
+			Config{
+				BaseConfig: BaseConfig{
 					ListenAddress: "10.0.0.1:0",
 				},
 			},
@@ -297,8 +297,8 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"default-fixed-address-port",
-			TCPInputConfig{
-				TCPBaseConfig: TCPBaseConfig{
+			Config{
+				BaseConfig: BaseConfig{
 					ListenAddress: "10.0.0.1:9000",
 				},
 			},
@@ -306,8 +306,8 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"buffer-size-valid-default",
-			TCPInputConfig{
-				TCPBaseConfig: TCPBaseConfig{
+			Config{
+				BaseConfig: BaseConfig{
 					MaxLogSize:    0,
 					ListenAddress: "10.0.0.1:9000",
 				},
@@ -316,8 +316,8 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"buffer-size-valid-min",
-			TCPInputConfig{
-				TCPBaseConfig: TCPBaseConfig{
+			Config{
+				BaseConfig: BaseConfig{
 					MaxLogSize:    65536,
 					ListenAddress: "10.0.0.1:9000",
 				},
@@ -326,8 +326,8 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"buffer-size-negative",
-			TCPInputConfig{
-				TCPBaseConfig: TCPBaseConfig{
+			Config{
+				BaseConfig: BaseConfig{
 					MaxLogSize:    -1,
 					ListenAddress: "10.0.0.1:9000",
 				},
@@ -336,11 +336,11 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"tls-enabled-with-no-such-file-error",
-			TCPInputConfig{
-				TCPBaseConfig: TCPBaseConfig{
+			Config{
+				BaseConfig: BaseConfig{
 					MaxLogSize:    65536,
 					ListenAddress: "10.0.0.1:9000",
-					TLS:           createTlsConfig("/tmp/cert/missing", "/tmp/key/missing"),
+					TLS:           createTLSConfig("/tmp/cert/missing", "/tmp/key/missing"),
 				},
 			},
 			true,
@@ -349,7 +349,7 @@ func TestBuild(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewTCPInputConfig("test_id")
+			cfg := NewConfig("test_id")
 			cfg.ListenAddress = tc.inputBody.ListenAddress
 			cfg.MaxLogSize = tc.inputBody.MaxLogSize
 			cfg.TLS = tc.inputBody.TLS
@@ -363,19 +363,19 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func TestTcpInput(t *testing.T) {
+func TestTCPInput(t *testing.T) {
 	t.Run("Simple", tcpInputTest([]byte("message\n"), []string{"message"}))
 	t.Run("CarriageReturn", tcpInputTest([]byte("message\r\n"), []string{"message"}))
 }
 
-func TestTcpInputAattributes(t *testing.T) {
+func TestTCPInputAattributes(t *testing.T) {
 	t.Run("Simple", tcpInputAttributesTest([]byte("message\n"), []string{"message"}))
 	t.Run("CarriageReturn", tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}))
 }
 
-func TestTLSTcpInput(t *testing.T) {
-	t.Run("Simple", tlsTCPInputTest([]byte("message\n"), []string{"message"}))
-	t.Run("CarriageReturn", tlsTCPInputTest([]byte("message\r\n"), []string{"message"}))
+func TestTLSTCPInput(t *testing.T) {
+	t.Run("Simple", tlsInputTest([]byte("message\n"), []string{"message"}))
+	t.Run("CarriageReturn", tlsInputTest([]byte("message\r\n"), []string{"message"}))
 }
 
 func TestFailToBind(t *testing.T) {
@@ -395,13 +395,13 @@ func TestFailToBind(t *testing.T) {
 		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
 	}
 
-	var startTCP func(port int) (*TCPInput, error) = func(int) (*TCPInput, error) {
-		cfg := NewTCPInputConfig("test_id")
+	var startTCP = func(int) (*Input, error) {
+		cfg := NewConfig("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		mockOutput := testutil.Operator{}
-		tcpInput := op.(*TCPInput)
+		tcpInput := op.(*Input)
 		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -422,15 +422,15 @@ func TestFailToBind(t *testing.T) {
 	require.Error(t, err, "expected second tcp operator to fail to start")
 }
 
-func BenchmarkTcpInput(b *testing.B) {
-	cfg := NewTCPInputConfig("test_id")
+func BenchmarkTCPInput(b *testing.B) {
+	cfg := NewConfig("test_id")
 	cfg.ListenAddress = ":0"
 
 	op, err := cfg.Build(testutil.Logger(b))
 	require.NoError(b, err)
 
 	fakeOutput := testutil.NewFakeOutput(b)
-	tcpInput := op.(*TCPInput)
+	tcpInput := op.(*Input)
 	tcpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
 	err = tcpInput.Start(testutil.NewMockPersister("test"))
@@ -466,7 +466,7 @@ func BenchmarkTcpInput(b *testing.B) {
 	defer close(done)
 }
 
-func createTlsConfig(cert string, key string) *helper.TLSServerConfig {
+func createTLSConfig(cert string, key string) *helper.TLSServerConfig {
 	return helper.NewTLSServerConfig(&configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
 			CertFile: cert,
