@@ -5,6 +5,7 @@ package metadata
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
@@ -186,10 +187,11 @@ func newMetricSystemCPULoadAverage5m(settings MetricSettings) metricSystemCPULoa
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                     pcommon.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity               int               // maximum observed number of metrics per resource.
-	resourceCapacity              int               // maximum observed number of resource attributes.
-	metricsBuffer                 pmetric.Metrics   // accumulates metrics data before emitting.
+	startTime                     pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity               int                 // maximum observed number of metrics per resource.
+	resourceCapacity              int                 // maximum observed number of resource attributes.
+	metricsBuffer                 pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                     component.BuildInfo // contains version information
 	metricSystemCPULoadAverage15m metricSystemCPULoadAverage15m
 	metricSystemCPULoadAverage1m  metricSystemCPULoadAverage1m
 	metricSystemCPULoadAverage5m  metricSystemCPULoadAverage5m
@@ -205,10 +207,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
+		buildInfo:                     buildInfo,
 		metricSystemCPULoadAverage15m: newMetricSystemCPULoadAverage15m(settings.SystemCPULoadAverage15m),
 		metricSystemCPULoadAverage1m:  newMetricSystemCPULoadAverage1m(settings.SystemCPULoadAverage1m),
 		metricSystemCPULoadAverage5m:  newMetricSystemCPULoadAverage5m(settings.SystemCPULoadAverage5m),
@@ -263,6 +266,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/load")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemCPULoadAverage15m.emit(ils.Metrics())
 	mb.metricSystemCPULoadAverage1m.emit(ils.Metrics())

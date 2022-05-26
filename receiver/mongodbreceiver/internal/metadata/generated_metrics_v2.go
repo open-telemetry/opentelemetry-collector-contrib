@@ -5,6 +5,7 @@ package metadata
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -834,10 +835,11 @@ func newMetricMongodbStorageSize(settings MetricSettings) metricMongodbStorageSi
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                    pcommon.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity              int               // maximum observed number of metrics per resource.
-	resourceCapacity             int               // maximum observed number of resource attributes.
-	metricsBuffer                pmetric.Metrics   // accumulates metrics data before emitting.
+	startTime                    pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity              int                 // maximum observed number of metrics per resource.
+	resourceCapacity             int                 // maximum observed number of resource attributes.
+	metricsBuffer                pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                    component.BuildInfo // contains version information
 	metricMongodbCacheOperations metricMongodbCacheOperations
 	metricMongodbCollectionCount metricMongodbCollectionCount
 	metricMongodbConnectionCount metricMongodbConnectionCount
@@ -862,10 +864,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                pmetric.NewMetrics(),
+		buildInfo:                    buildInfo,
 		metricMongodbCacheOperations: newMetricMongodbCacheOperations(settings.MongodbCacheOperations),
 		metricMongodbCollectionCount: newMetricMongodbCollectionCount(settings.MongodbCollectionCount),
 		metricMongodbConnectionCount: newMetricMongodbConnectionCount(settings.MongodbConnectionCount),
@@ -935,6 +938,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/mongodbreceiver")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricMongodbCacheOperations.emit(ils.Metrics())
 	mb.metricMongodbCollectionCount.emit(ils.Metrics())

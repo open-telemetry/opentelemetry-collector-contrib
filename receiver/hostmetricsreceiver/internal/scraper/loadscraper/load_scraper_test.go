@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
@@ -84,7 +83,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), zap.NewNop(), test.config)
+			scraper := newLoadScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), test.config)
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
 			}

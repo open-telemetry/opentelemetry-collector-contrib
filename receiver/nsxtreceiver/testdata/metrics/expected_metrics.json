@@ -32,7 +32,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -233,7 +234,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -428,7 +430,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -582,7 +585,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -783,7 +787,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -978,7 +983,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1132,7 +1138,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1333,7 +1340,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -1528,7 +1536,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/nsxtreceiver"
+                        "name": "otelcol/nsxtreceiver",
+                        "version": "latest"
                     },
                     "metrics": [
                         {

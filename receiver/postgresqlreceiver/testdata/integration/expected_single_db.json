@@ -4,7 +4,8 @@
          "scopeMetrics": [
             {
                "scope": {
-                  "name": "otelcol/postgresqlreceiver"
+                  "name": "otelcol/postgresqlreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {

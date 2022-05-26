@@ -6,14 +6,14 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.11
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.30.2-0.20220512190557-875976f87023
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.52.0
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.51.0
-	go.opentelemetry.io/collector/pdata v0.51.0
-	go.opentelemetry.io/collector/semconv v0.51.0
-	google.golang.org/api v0.79.0
+	go.opentelemetry.io/collector v0.52.0
+	go.opentelemetry.io/collector/pdata v0.52.0
+	go.opentelemetry.io/collector/semconv v0.52.0
+	google.golang.org/api v0.80.0
 	google.golang.org/genproto v0.0.0-20220505152158-f39f71e6c8f3
 	google.golang.org/grpc v1.46.2
 	google.golang.org/protobuf v1.28.0
@@ -27,7 +27,7 @@ require (
 	cloud.google.com/go/trace v1.2.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.6.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.30.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.11 // indirect
+	github.com/aws/aws-sdk-go v1.44.20 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect

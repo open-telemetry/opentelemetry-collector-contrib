@@ -20,9 +20,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func TestLogEmitter(t *testing.T) {

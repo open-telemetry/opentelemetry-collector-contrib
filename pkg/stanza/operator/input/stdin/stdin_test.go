@@ -32,7 +32,7 @@ func TestStdin(t *testing.T) {
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
-	op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
@@ -41,9 +41,12 @@ func TestStdin(t *testing.T) {
 	stdin.stdin = r
 
 	require.NoError(t, stdin.Start(testutil.NewMockPersister("test")))
-	defer stdin.Stop()
+	defer func() {
+		require.NoError(t, stdin.Stop())
+	}()
 
-	w.WriteString("test")
+	_, err = w.WriteString("test")
+	require.NoError(t, err)
 	w.Close()
 	fake.ExpectBody(t, "test")
 }

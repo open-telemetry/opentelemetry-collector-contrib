@@ -123,6 +123,10 @@ func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory str
 	if err != nil {
 		return nil, err
 	}
+	err = file.Close()
+	if err != nil {
+		return nil, err
+	}
 
 	// use temporary file as compaction target
 	options := bboltOptions(timeout)

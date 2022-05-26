@@ -15,6 +15,8 @@ in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]
 `resource.` or `instrumentation_library.`, it will reference those values.  For metrics, `name`, `description`, `unit`, `type`, `is_monotonic`, and `aggregation_temporality` are accessed via `metric.`
   - The name `instrumentation_library` within OpenTelemetry is currently under discussion and may be changed in the future.
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
+  - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
+  - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
 - Literals: Strings, ints, and floats can be referenced as literal values
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
@@ -30,6 +32,10 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 - `truncate_all(target, limit)` - `target` is a path expression to a map type field. `limit` is a non-negative integer.  The map will be mutated such that all string values are truncated to the limit. e.g., `truncate_all(attributes, 100)` will truncate all string values in `attributes` such that all string values have less than or equal to 100 characters.  Non-string values are ignored.
 
 - `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is a non-negative integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `limit(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
+
+- `replace_match(target, pattern, replacement)` - `target` is a path expression to a telemetry field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. If `target` matches `pattern` it will get replaced with `replacement`. e.g., `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
+
+- `replace_all_matches(target, pattern, replacement)` - `target` is a path expression to a map type field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. Each string value in `target` that matches `pattern` will get replaced with `replacement`. e.g., `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
@@ -52,6 +58,7 @@ processors:
         - set(status.code, 1) where attributes["http.path"] == "/health"
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
         - set(name, attributes["http.route"])
+        - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
         - limit(attributes, 100)
         - limit(resource.attributes, 100)
         - truncate_all(attributes, 4096)
@@ -66,8 +73,9 @@ processors:
     logs:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
         - set(body, attributes["http.route"])
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
 service:
   pipelines:
     logs:
@@ -82,12 +90,12 @@ service:
 
 This processor will perform the operations in order for 
 
-
 All spans
 
 1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `name` to the `http.route` attribute if it is set
+2) Replace the value of an attribute named `http.target` with `/user/{userId}/list/{listId}` if the value matched `/user/*/list/*`
 4) Limit all span attributes such that each span has no more than 100 attributes.
 5) Limit all resource attributes such that each resource no more than 100 attributes.
 6) Truncate all span attributes such that no string value has more than 4096 characters.
@@ -104,5 +112,8 @@ All metrics and their data points
 All logs
 
 1) Set severity text to FAIL if the body contains a string text "request failed"
-2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+2) Replace any attribute value that matches `/user/*/list/*` with `/user/{userId}/list/{listId}`
 3) Set `body` to the `http.route` attribute if it is set
+4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+
+[In development]: https://github.com/open-telemetry/opentelemetry-collector#in-development

@@ -86,6 +86,7 @@ internal/stanza/                                     @open-telemetry/collector-c
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
+pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth

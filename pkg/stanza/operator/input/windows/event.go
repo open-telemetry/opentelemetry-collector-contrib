@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
@@ -31,10 +32,9 @@ func (e *Event) RenderSimple(buffer Buffer) (EventXML, error) {
 		return EventXML{}, fmt.Errorf("event handle does not exist")
 	}
 
-	var bufferUsed, propertyCount uint32
-	err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte(), &bufferUsed, &propertyCount)
+	bufferUsed, _, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
 	if err == ErrorInsufficientBuffer {
-		buffer.UpdateSizeBytes(bufferUsed)
+		buffer.UpdateSizeBytes(*bufferUsed)
 		return e.RenderSimple(buffer)
 	}
 
@@ -42,7 +42,7 @@ func (e *Event) RenderSimple(buffer Buffer) (EventXML, error) {
 		return EventXML{}, fmt.Errorf("syscall to 'EvtRender' failed: %s", err)
 	}
 
-	bytes, err := buffer.ReadBytes(bufferUsed)
+	bytes, err := buffer.ReadBytes(*bufferUsed)
 	if err != nil {
 		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %s", err)
 	}
