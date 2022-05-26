@@ -83,7 +83,9 @@ func TestWatchNamespace(t *testing.T) {
 	op.OutputOperators = []operator.Operator{fake}
 
 	op.startWatchingNamespace(ctx, "test_namespace")
-	defer op.Stop()
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
 
 	select {
 	case e := <-fake.Received:

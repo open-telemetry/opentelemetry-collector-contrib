@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.51.0
+    version: v0.52.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -106,6 +106,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
@@ -190,7 +191,9 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
@@ -200,4 +203,3 @@ module-sets:
 
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
-  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza

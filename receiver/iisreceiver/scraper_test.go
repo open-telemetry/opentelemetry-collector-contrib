@@ -99,7 +99,6 @@ func TestScrapeFailure(t *testing.T) {
 type mockPerfCounter struct {
 	watchErr error
 	value    float64
-	winperfcounters.MetricRep
 }
 
 func newMockWatcherFactory(watchErr error, value float64) func(string, string,
@@ -122,8 +121,4 @@ func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error)
 // Close
 func (mpc *mockPerfCounter) Close() error {
 	return nil
-}
-
-func (mpc *mockPerfCounter) GetMetricRep() winperfcounters.MetricRep {
-	return winperfcounters.MetricRep{}
 }

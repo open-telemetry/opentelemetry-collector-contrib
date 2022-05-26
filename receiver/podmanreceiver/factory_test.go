@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -43,7 +43,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	params := componenttest.NewNopReceiverCreateSettings()
 	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, consumertest.NewNop())
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)
 
 	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, config, consumertest.NewNop())

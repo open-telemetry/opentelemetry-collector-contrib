@@ -86,6 +86,7 @@ internal/stanza/                                     @open-telemetry/collector-c
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
+pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
@@ -161,7 +162,9 @@ receiver/statsdreceiver/                             @open-telemetry/collector-c
 receiver/syslogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tcplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/udplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/vcenterreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/wavefrontreceiver/                          @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/windowseventlogreceiver/                    @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
 receiver/zipkinreceiver/                             @open-telemetry/collector-contrib-approvers @pmm-sumo
 receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski

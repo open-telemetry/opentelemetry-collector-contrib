@@ -125,14 +125,14 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 					ip := addr.IP.String()
 					expectedAttributes["net.host.ip"] = addr.IP.String()
 					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.host.name"] = udpInput.resolver.GetHostFromIp(ip)
+					expectedAttributes["net.host.name"] = udpInput.resolver.GetHostFromIP(ip)
 				}
 				// LocalAddr for conn is a client (peer) address
 				if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
 					ip := addr.IP.String()
 					expectedAttributes["net.peer.ip"] = ip
 					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.peer.name"] = udpInput.resolver.GetHostFromIp(ip)
+					expectedAttributes["net.peer.name"] = udpInput.resolver.GetHostFromIP(ip)
 				}
 				require.Equal(t, expectedBody, entry.Body)
 				require.Equal(t, expectedAttributes, entry.Attributes)
@@ -232,7 +232,9 @@ func BenchmarkUdpInput(b *testing.B) {
 	go func() {
 		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
 		require.NoError(b, err)
-		defer udpInput.Stop()
+		defer func() {
+			require.NoError(b, udpInput.Stop())
+		}()
 		defer conn.Close()
 		message := []byte("message\n")
 		for {

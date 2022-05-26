@@ -222,11 +222,11 @@ func TestSeverityParser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			rootCfg := parseSeverityTestConfig(rootField, tc.mappingSet, tc.mapping)
-			rootEntry := makeTestEntry(rootField, tc.sample)
+			rootEntry := makeTestEntry(t, rootField, tc.sample)
 			t.Run("root", runSeverityParseTest(rootCfg, rootEntry, tc.buildErr, tc.parseErr, tc.expected))
 
 			nonRootCfg := parseSeverityTestConfig(someField, tc.mappingSet, tc.mapping)
-			nonRootEntry := makeTestEntry(someField, tc.sample)
+			nonRootEntry := makeTestEntry(t, someField, tc.sample)
 			t.Run("non-root", runSeverityParseTest(nonRootCfg, nonRootEntry, tc.buildErr, tc.parseErr, tc.expected))
 		})
 	}
@@ -272,9 +272,9 @@ func parseSeverityTestConfig(parseFrom entry.Field, preset string, mapping map[i
 	return cfg
 }
 
-func makeTestEntry(field entry.Field, value interface{}) *entry.Entry {
+func makeTestEntry(t *testing.T, field entry.Field, value interface{}) *entry.Entry {
 	e := entry.New()
-	e.Set(field, value)
+	require.NoError(t, e.Set(field, value))
 	return e
 }
 

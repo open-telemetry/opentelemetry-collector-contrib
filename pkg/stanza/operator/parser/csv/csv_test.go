@@ -624,10 +624,11 @@ func TestParserCSV(t *testing.T) {
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
-			op.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 			ots := time.Now()
-			for i, inputEntry := range tc.inputEntries {
+			for i := range tc.inputEntries {
+				inputEntry := tc.inputEntries[i]
 				inputEntry.ObservedTimestamp = ots
 				err = op.Process(context.Background(), &inputEntry)
 				if tc.expectProcessErr {
@@ -863,7 +864,7 @@ cc""",dddd,eeee`,
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
-			op.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 			entry := entry.New()
 			entry.Body = tc.input
@@ -885,7 +886,7 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 		require.NoError(t, err)
 
 		fake := testutil.NewFakeOutput(t)
-		op.SetOutputs([]operator.Operator{fake})
+		require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 		entry := entry.New()
 		entry.Body = "{\"name\": \"stanza\"}"

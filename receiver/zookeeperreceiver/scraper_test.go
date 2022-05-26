@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"net"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -45,6 +46,10 @@ type logMsg struct {
 }
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10171")
+	}
+
 	tests := []struct {
 		name                         string
 		expectedMetricsFilename      string

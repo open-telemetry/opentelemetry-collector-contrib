@@ -21,10 +21,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 // FromPdataConverter converts a set of entry.Entry into plog.Logs
@@ -209,11 +210,11 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 
 	if !src.TraceID().IsEmpty() {
 		buffer := src.TraceID().Bytes()
-		ent.TraceId = buffer[:]
+		ent.TraceID = buffer[:]
 	}
 	if !src.SpanID().IsEmpty() {
 		buffer := src.SpanID().Bytes()
-		ent.SpanId = buffer[:]
+		ent.SpanID = buffer[:]
 	}
 	if src.Flags() != 0 {
 		a := make([]byte, 4)

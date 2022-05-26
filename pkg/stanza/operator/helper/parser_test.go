@@ -67,15 +67,15 @@ func TestParserConfigBuildValid(t *testing.T) {
 		ParseFrom: &sevField,
 	}
 
-	traceIdField := entry.NewBodyField("trace_id")
-	spanIdField := entry.NewBodyField("span_id")
+	traceIDField := entry.NewBodyField("trace_id")
+	spanIDField := entry.NewBodyField("span_id")
 	traceFlagsField := entry.NewBodyField("trace_flags")
 	cfg.TraceParser = &TraceParser{
-		TraceId: &TraceIdConfig{
-			ParseFrom: &traceIdField,
+		TraceID: &TraceIDConfig{
+			ParseFrom: &traceIDField,
 		},
-		SpanId: &SpanIdConfig{
-			ParseFrom: &spanIdField,
+		SpanID: &SpanIDConfig{
+			ParseFrom: &spanIDField,
 		},
 		TraceFlags: &TraceFlagsConfig{
 			ParseFrom: &traceFlagsField,
@@ -706,6 +706,6 @@ func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}
-	writer.SetOutputs([]operator.Operator{fakeOut})
+	require.NoError(t, writer.SetOutputs([]operator.Operator{fakeOut}))
 	return writer, fakeOut
 }

@@ -24,14 +24,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 func TestStart(t *testing.T) {

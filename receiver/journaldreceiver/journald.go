@@ -18,13 +18,13 @@
 package journaldreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/journald"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 )
 
 const typeStr = "journald"

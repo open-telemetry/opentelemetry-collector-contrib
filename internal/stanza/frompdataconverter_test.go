@@ -19,11 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func BenchmarkConvertFromPdataSimple(b *testing.B) {
@@ -212,8 +213,8 @@ func TestConvertFrom(t *testing.T) {
 		)
 
 		assert.Equal(t, entry.Error, e.Severity)
-		assert.Equal(t, []byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}, e.TraceId)
-		assert.Equal(t, []byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}, e.SpanId)
+		assert.Equal(t, []byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}, e.TraceID)
+		assert.Equal(t, []byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}, e.SpanID)
 		assert.Equal(t, uint8(0x01), e.TraceFlags[0])
 	}
 }

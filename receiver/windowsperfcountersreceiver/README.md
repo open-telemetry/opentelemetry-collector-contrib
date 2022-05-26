@@ -153,15 +153,5 @@ service:
       receivers: [windowsperfcounters]
 ```
 
-## Recommended configuration for common applications
-
-### IIS
-
-TODO
-
-### SQL Server
-
-TODO
-
 ## Known Limitation
 - The network interface is not available inside the container. Hence, the metrics for the object `Network Interface` aren't generated in that scenario. In the case of sub-process, it captures `Network Interface` metrics. There is a similar open issue in [Github](https://github.com/influxdata/telegraf/issues/5357) and [Docker](https://forums.docker.com/t/unable-to-collect-network-metrics-inside-windows-container-on-windows-server-2016-data-center/69480) forum.

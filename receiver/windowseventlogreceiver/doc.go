@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,21 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
-
-package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
-
-func (pc *ObjectConfig) instances() []string {
-	if len(pc.Instances) == 0 {
-		return []string{""}
-	}
-
-	for _, instance := range pc.Instances {
-		if instance == "*" {
-			return []string{"*"}
-		}
-	}
-
-	return pc.Instances
-}
+// Package stanzareceiver implements a receiver that can be used by the
+// Opentelemetry collector to receive logs using the stanza log agent
+package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"

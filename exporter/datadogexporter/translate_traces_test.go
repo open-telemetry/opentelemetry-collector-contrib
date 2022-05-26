@@ -244,9 +244,9 @@ func TestObfuscation(t *testing.T) {
 	resource := rs.Resource()
 	resource.Attributes().InsertString("service.name", "sure")
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 
 	span := ilss.Spans().AppendEmpty()
 
@@ -1180,7 +1180,7 @@ func TestILTagsExctraction(t *testing.T) {
 
 	tags := map[string]string{}
 
-	extractInstrumentationLibraryTags(il, tags)
+	extractScopeTags(il, tags)
 
 	assert.Equal(t, "", tags[conventions.OtelLibraryName])
 
@@ -1315,9 +1315,9 @@ func TestSamplingWeightedStatsAggregations(t *testing.T) {
 
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 	span.Attributes().InsertString("_sample_rate", "0.2")
 	span.SetKind(ptrace.SpanKindServer)
@@ -1357,9 +1357,9 @@ func TestSanitization(t *testing.T) {
 	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	ilss.Spans().EnsureCapacity(1)
 
 	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
@@ -1455,9 +1455,9 @@ func TestSpanNameMapping(t *testing.T) {
 	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 
 	traceID := pcommon.NewTraceID(mockTraceID)
@@ -1507,9 +1507,9 @@ func TestSpanEnvClobbering(t *testing.T) {
 
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 
 	traceID := pcommon.NewTraceID(mockTraceID)
@@ -1553,9 +1553,9 @@ func TestSpanRateLimitTag(t *testing.T) {
 
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 
 	attribs := map[string]interface{}{

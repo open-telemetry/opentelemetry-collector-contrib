@@ -46,13 +46,13 @@ func TestProcess(t *testing.T) {
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
-	op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 	entry := entry.New()
 	entry.AddAttribute("label", "value")
 	entry.AddResourceKey("resource", "value")
-	entry.TraceId = []byte{0x01}
-	entry.SpanId = []byte{0x01}
+	entry.TraceID = []byte{0x01}
+	entry.SpanID = []byte{0x01}
 	entry.TraceFlags = []byte{0x01}
 
 	expected := entry.Copy()

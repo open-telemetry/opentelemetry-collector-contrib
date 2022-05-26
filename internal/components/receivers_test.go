@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -255,6 +254,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Depends on carbon receiver to be running correctly
 		},
 		{
+			receiver:     "windowseventlog",
+			skipLifecyle: true, // Requires a running windows process
+		},
+		{
 			receiver:     "windowsperfcounters",
 			skipLifecyle: true, // Requires a running windows process
 		},
@@ -296,6 +299,9 @@ func TestDefaultReceivers(t *testing.T) {
 				}
 				return cfg
 			},
+		},
+		{
+			receiver: "vcenter",
 		},
 	}
 
@@ -342,7 +348,7 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 
 	for _, createFn := range createFns {
 		firstRcvr, err := createFn(ctx, receiverCreateSet, getConfigFn())
-		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

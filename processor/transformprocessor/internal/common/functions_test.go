@@ -199,6 +199,53 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				Function: "testing_error",
 			},
 		},
+		{
+			name: "replace_match invalid pattern",
+			inv: Invocation{
+				Function: "replace_match",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name:   "attributes",
+									MapKey: strp("test"),
+								},
+							},
+						},
+					},
+					{
+						String: strp("\\*"),
+					},
+					{
+						String: strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "replace_all_matches invalid pattern",
+			inv: Invocation{
+				Function: "replace_all_matches",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: strp("\\*"),
+					},
+					{
+						String: strp("test"),
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
