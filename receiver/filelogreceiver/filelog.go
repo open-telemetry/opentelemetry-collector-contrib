@@ -70,7 +70,7 @@ type FileLogConfig struct {
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*FileLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := file.NewInputConfig("file_input")
+	inputCfg := file.NewConfig("file_input")
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err
 	}

@@ -66,7 +66,7 @@ type TCPLogConfig struct {
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*TCPLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := tcp.NewTCPInputConfig("tcp_input")
+	inputCfg := tcp.NewConfig("tcp_input")
 
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err

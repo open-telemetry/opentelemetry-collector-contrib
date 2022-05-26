@@ -66,7 +66,7 @@ type UDPLogConfig struct {
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*UDPLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := udp.NewUDPInputConfig("udp_input")
+	inputCfg := udp.NewConfig("udp_input")
 
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err

@@ -51,7 +51,7 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 // when IncludeFileName and IncludeFilePath are set to true
 func TestAddFileFields(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileName = true
 		cfg.IncludeFilePath = true
 	}, nil)
@@ -74,7 +74,7 @@ func TestAddFileFields(t *testing.T) {
 // when IncludeFileNameResolved and IncludeFilePathResolved are set to true
 func TestAddFileResolvedFields(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileName = true
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
@@ -125,7 +125,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 // monitored file (symlink) -> middleSymlink -> file_2
 func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileName = true
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
@@ -262,7 +262,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
-			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
 				cfg.Encoding.Encoding = "nop"
 			}, nil)
@@ -342,7 +342,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
-			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = tc.maxLogSize
 				cfg.Encoding.Encoding = "nop"
 			}, nil)
@@ -414,7 +414,7 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 // we don't read any entries that were in the file before startup
 func TestStartAtEnd(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
 	}, nil)
 	operator.persister = testutil.NewMockPersister("test")
@@ -460,7 +460,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 // even if the file doesn't end in a newline
 func TestNoNewline(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.Splitter = helper.NewSplitterConfig()
 		cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
 	}, nil)
@@ -780,7 +780,7 @@ func TestFileBatching(t *testing.T) {
 	actualMessages := make([]string, 0, files*linesPerFile)
 
 	operator, logReceived, tempDir := newTestFileOperator(t,
-		func(cfg *InputConfig) {
+		func(cfg *Config) {
 			cfg.MaxConcurrentFiles = maxConcurrentFiles
 		},
 		func(out *testutil.FakeOutput) {
@@ -880,7 +880,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 	for _, lineLen := range lineLens {
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
-			operator, _, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, _, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.FingerprintSize = helper.ByteSize(maxFP)
 			}, nil)
 			defer func() {
@@ -985,7 +985,7 @@ func TestEncodings(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			operator, receivedEntries, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, receivedEntries, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.Encoding = helper.EncodingConfig{Encoding: tc.encoding}
 			}, nil)
 
