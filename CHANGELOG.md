@@ -6,12 +6,12 @@
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
-
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
+- `flinkmetricsreceiver`: Add implementation of Flink Metric Receiver (#10121)
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 
@@ -36,7 +36,6 @@
 
 ### 🚀 New components 🚀
 
-- `flinkmetricsreceiver`: Add implementation of Flink Metric Receiver (#10121)
 - `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)

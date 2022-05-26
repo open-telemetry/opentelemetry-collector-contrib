@@ -42,7 +42,7 @@ attributes:
 metrics:
   flink.jvm.cpu.load:
     enabled: true
-    description: The CPU usage (%) of the JVM for a jobmanager or taskmanager.
+    description: The CPU usage of the JVM for a jobmanager or taskmanager.
     unit: 1
     gauge:
       value_type: double

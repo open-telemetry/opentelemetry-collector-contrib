@@ -132,11 +132,9 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 				_ = s.mb.RecordFlinkJvmMemoryHeapUsedDataPoint(now, metric.Value)
 			}
 		}
-	}
-	if len(taskmanagerMetricInstances) > 0 {
 		s.mb.EmitForResource(
-			metadata.WithHostName(taskmanagerMetricInstances[0].Host),
-			metadata.WithFlinkTaskmanagerID(taskmanagerMetricInstances[0].TaskmanagerID),
+			metadata.WithHostName(taskmanagerMetrics.Host),
+			metadata.WithFlinkTaskmanagerID(taskmanagerMetrics.TaskmanagerID),
 			metadata.WithFlinkResourceType("taskmanager"),
 		)
 	}
@@ -160,11 +158,9 @@ func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetr
 				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointFailed)
 			}
 		}
-	}
-	if len(jobsMetricsInstances) > 0 {
 		s.mb.EmitForResource(
-			metadata.WithHostName(jobsMetricsInstances[0].Host),
-			metadata.WithFlinkJobName(jobsMetricsInstances[0].JobName),
+			metadata.WithHostName(jobsMetrics.Host),
+			metadata.WithFlinkJobName(jobsMetrics.JobName),
 		)
 	}
 }
@@ -180,21 +176,7 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 				_ = s.mb.RecordFlinkTaskRecordCountDataPoint(now, metric.Value, metadata.AttributeRecordOut)
 			case metric.ID == "numLateRecordsDropped":
 				_ = s.mb.RecordFlinkTaskRecordCountDataPoint(now, metric.Value, metadata.AttributeRecordDropped)
-			}
-		}
-		s.mb.EmitForResource(
-			metadata.WithHostName(subtaskMetrics.Host),
-			metadata.WithFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID),
-			metadata.WithFlinkJobName(subtaskMetrics.JobName),
-			metadata.WithFlinkTaskName(subtaskMetrics.TaskName),
-			metadata.WithFlinkSubtaskIndex(subtaskMetrics.SubtaskIndex),
-		)
-	}
-
-	for _, subtaskMetrics := range subtaskMetricsInstances {
-		for _, metric := range subtaskMetrics.Metrics {
-			switch {
-			// record operator metrics
+				// record operator metrics
 			case strings.Contains(metric.ID, ".numRecordsIn"):
 				operatorName := strings.Split(metric.ID, ".numRecordsIn")
 				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName[0], metadata.AttributeRecordIn)

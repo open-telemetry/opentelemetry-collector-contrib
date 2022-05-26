@@ -126,11 +126,21 @@ func TestScraperScrape(t *testing.T) {
 		TaskmanagerID: "mock-taskmanager-id",
 		Metrics:       *taskmanagerMetricsResponse,
 	})
+	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
+		Host:          "mock-host2",
+		TaskmanagerID: "mock-taskmanager-id2",
+		Metrics:       *taskmanagerMetricsResponse,
+	})
 
 	jobsMetricsInstances := []*models.JobMetrics{}
 	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
 		Host:    "mock-host",
 		JobName: "mock-job-name",
+		Metrics: *jobsMetricsResponse,
+	})
+	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
+		Host:    "mock-host2",
+		JobName: "mock-job-name2",
 		Metrics: *jobsMetricsResponse,
 	})
 

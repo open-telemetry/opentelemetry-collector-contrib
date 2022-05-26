@@ -14,7 +14,7 @@ These are the metrics available for this scraper.
 | **flink.job.last_checkpoint.time** | The end to end duration of the last checkpoint. | ms | Gauge(Int) | <ul> </ul> |
 | **flink.job.restart.count** | The total number of restarts since this job was submitted, including full restarts and fine-grained restarts. | {restarts} | Sum(Int) | <ul> </ul> |
 | **flink.jvm.class_loader.classes_loaded** | The total number of classes loaded since the start of the JVM. | {classes} | Sum(Int) | <ul> </ul> |
-| **flink.jvm.cpu.load** | The CPU usage (%) of the JVM for a jobmanager or taskmanager. | 1 | Gauge(Double) | <ul> </ul> |
+| **flink.jvm.cpu.load** | The CPU usage of the JVM for a jobmanager or taskmanager. | 1 | Gauge(Double) | <ul> </ul> |
 | **flink.jvm.cpu.time** | The CPU time used by the JVM for a jobmanager or taskmanager. | ns | Sum(Int) | <ul> </ul> |
 | **flink.jvm.gc.collections.count** | The total number of collections that have occurred. | {collections} | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
 | **flink.jvm.gc.collections.time** | The total time spent performing garbage collection. | ms | Sum(Int) | <ul> <li>garbage_collector_name</li> </ul> |
