@@ -16,20 +16,26 @@ package elasticsearchreceiver
 
 import (
 	"context"
-	"fmt"
-	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"net"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 var (
-	containerRequest7_9 = testcontainers.ContainerRequest{
+	containerRequest7_9_3 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.elasticsearch",
+			Dockerfile: "Dockerfile.elasticsearch.7_9_3",
 		},
 		ExposedPorts: []string{"9200:9200"},
 		WaitingFor: wait.ForListeningPort("9200").
@@ -41,9 +47,37 @@ func TestElasticsearchIntegration(t *testing.T) {
 	//Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest7_9)
+		container := getContainer(t, containerRequest7_9_3)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
 		//todo
-		fmt.Println(container)
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Endpoint = net.JoinHostPort(hostname, "9200")
+
+		consumer := new(consumertest.MetricsSink)
+		settings := componenttest.NewNopReceiverCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMtrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.7_9.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues())
+		//err = scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues())
+		//require.NoError(t, err)
 	})
 }
 
@@ -57,9 +91,7 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 		})
 	require.NoError(t, err)
 
-	// no cmd
-	code, err := container.Exec(context.Background(), []string{"eswrapper"})
+	err = container.Start(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, 0, code)
 	return container
 }
