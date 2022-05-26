@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version"
 )
 
 type ComponentsFunc func() (component.Factories, error)

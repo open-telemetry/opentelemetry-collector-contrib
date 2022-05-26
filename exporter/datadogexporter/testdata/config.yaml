@@ -23,9 +23,6 @@ exporters:
       site: datadoghq.eu
       fail_on_invalid_key: true
 
-    traces:
-      sample_rate: 1
-
   datadog/api2:
     hostname: customhostname
 
@@ -42,7 +39,6 @@ exporters:
       report_quantiles: false
 
     traces:
-      sample_rate: 1
       endpoint: https://trace.agent.datadoghq.test
 
   datadog/default:

@@ -17,7 +17,7 @@ package ecsinfo
 import (
 	"context"
 	"errors"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -39,18 +39,18 @@ func TestGetCGroupPathForTask(t *testing.T) {
 		{
 			name:    "Task cgroup path exist",
 			input:   "test1",
-			wantRes: path.Join(cgroupMount, controller, "ecs", "test1"),
+			wantRes: filepath.Join(cgroupMount, controller, "ecs", "test1"),
 		},
 		{
 			name:    "Legacy Task cgroup path exist",
 			input:   "test4",
-			wantRes: path.Join(cgroupMount, controller, "ecs", clusterName, "test4"),
+			wantRes: filepath.Join(cgroupMount, controller, "ecs", clusterName, "test4"),
 		},
 		{
 			name:    "CGroup Path does not exist",
 			input:   "test5",
 			wantRes: "",
-			err:     errors.New("CGroup Path " + path.Join(cgroupMount, controller, "ecs", clusterName, "test5") + " does not exist"),
+			err:     errors.New("CGroup Path " + filepath.Join(cgroupMount, controller, "ecs", clusterName, "test5") + " does not exist"),
 		},
 	}
 

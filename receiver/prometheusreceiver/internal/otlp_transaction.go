@@ -17,7 +17,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/common/model"
@@ -33,8 +32,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type transactionPdata struct {
-	id                   int64
+type transaction struct {
 	isNew                bool
 	ctx                  context.Context
 	useStartTimeMetric   bool
@@ -43,42 +41,37 @@ type transactionPdata struct {
 	externalLabels       labels.Labels
 	nodeResource         *pcommon.Resource
 	logger               *zap.Logger
-	receiverID           config.ComponentID
-	metricBuilder        *metricBuilderPdata
+	metricBuilder        *metricBuilder
 	job, instance        string
-	jobsMap              *JobsMapPdata
+	jobsMap              *JobsMap
 	obsrecv              *obsreport.Receiver
 	startTimeMs          int64
 }
 
-type txConfig struct {
-	jobsMap              *JobsMapPdata
-	useStartTimeMetric   bool
-	startTimeMetricRegex string
-	receiverID           config.ComponentID
-	sink                 consumer.Metrics
-	externalLabels       labels.Labels
-	settings             component.ReceiverCreateSettings
-}
-
-func newTransactionPdata(ctx context.Context, txc *txConfig) *transactionPdata {
-	return &transactionPdata{
-		id:                   atomic.AddInt64(&idSeq, 1),
+func newTransaction(
+	ctx context.Context,
+	jobsMap *JobsMap,
+	useStartTimeMetric bool,
+	startTimeMetricRegex string,
+	receiverID config.ComponentID,
+	sink consumer.Metrics,
+	externalLabels labels.Labels,
+	settings component.ReceiverCreateSettings) *transaction {
+	return &transaction{
 		ctx:                  ctx,
 		isNew:                true,
-		sink:                 txc.sink,
-		jobsMap:              txc.jobsMap,
-		useStartTimeMetric:   txc.useStartTimeMetric,
-		startTimeMetricRegex: txc.startTimeMetricRegex,
-		receiverID:           txc.receiverID,
-		externalLabels:       txc.externalLabels,
-		logger:               txc.settings.Logger,
-		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: txc.receiverID, Transport: transport, ReceiverCreateSettings: txc.settings}),
+		sink:                 sink,
+		jobsMap:              jobsMap,
+		useStartTimeMetric:   useStartTimeMetric,
+		startTimeMetricRegex: startTimeMetricRegex,
+		externalLabels:       externalLabels,
+		logger:               settings.Logger,
+		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: settings}),
 	}
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transactionPdata) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (pointCount storage.SeriesRef, err error) {
+func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (pointCount storage.SeriesRef, err error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -99,11 +92,11 @@ func (t *transactionPdata) Append(ref storage.SeriesRef, labels labels.Labels, a
 	return 0, t.metricBuilder.AddDataPoint(labels, atMs, value)
 }
 
-func (t *transactionPdata) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
+func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	return 0, nil
 }
 
-func (t *transactionPdata) initTransaction(labels labels.Labels) error {
+func (t *transaction) initTransaction(labels labels.Labels) error {
 	metadataCache, err := getMetadataCache(t.ctx)
 	if err != nil {
 		return err
@@ -117,13 +110,13 @@ func (t *transactionPdata) initTransaction(labels labels.Labels) error {
 		t.job = job
 		t.instance = instance
 	}
-	t.nodeResource = CreateNodeAndResourcePdata(job, instance, metadataCache.SharedLabels())
-	t.metricBuilder = newMetricBuilderPdata(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
+	t.nodeResource = CreateNodeAndResource(job, instance, metadataCache.SharedLabels())
+	t.metricBuilder = newMetricBuilder(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
 	t.isNew = false
 	return nil
 }
 
-func (t *transactionPdata) Commit() error {
+func (t *transaction) Commit() error {
 	if t.isNew {
 		return nil
 	}
@@ -144,10 +137,10 @@ func (t *transactionPdata) Commit() error {
 			return err
 		}
 		// Otherwise adjust the startTimestamp for all the metrics.
-		t.adjustStartTimestampPdata(metricsL)
+		t.adjustStartTimestamp(metricsL)
 	} else {
 		// TODO: Derive numPoints in this case.
-		_ = NewMetricsAdjusterPdata(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
+		_ = NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
 	}
 
 	if metricsL.Len() > 0 {
@@ -159,7 +152,7 @@ func (t *transactionPdata) Commit() error {
 	return nil
 }
 
-func (t *transactionPdata) Rollback() error {
+func (t *transaction) Rollback() error {
 	t.startTimeMs = -1
 	return nil
 }
@@ -170,7 +163,7 @@ func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(secs, nanos))
 }
 
-func (t transactionPdata) adjustStartTimestampPdata(metricsL *pmetric.MetricSlice) {
+func (t transaction) adjustStartTimestamp(metricsL *pmetric.MetricSlice) {
 	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
 	for i := 0; i < metricsL.Len(); i++ {
 		metric := metricsL.At(i)
@@ -205,7 +198,7 @@ func (t transactionPdata) adjustStartTimestampPdata(metricsL *pmetric.MetricSlic
 	}
 }
 
-func (t *transactionPdata) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetric.Metrics {
+func (t *transaction) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rms.ScopeMetrics().AppendEmpty()

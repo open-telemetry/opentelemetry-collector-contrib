@@ -39,7 +39,6 @@ func TestJobMetrics(t *testing.T) {
 			"k8s.job.uid":        "test-job-1-uid",
 			"k8s.job.name":       "test-job-1",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
@@ -80,10 +79,9 @@ func newJob(id string) *batchv1.Job {
 	c := int32(10)
 	return &batchv1.Job{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-job-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-job-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-job-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-job-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

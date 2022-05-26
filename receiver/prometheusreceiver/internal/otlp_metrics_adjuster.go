@@ -61,7 +61,7 @@ import (
 
 // timeseriesinfo contains the information necessary to adjust from the initial point and to detect
 // resets.
-type timeseriesinfoPdata struct {
+type timeseriesinfo struct {
 	mark     bool
 	initial  *pmetric.Metric
 	previous *pmetric.Metric
@@ -69,21 +69,21 @@ type timeseriesinfoPdata struct {
 
 // timeseriesMap maps from a timeseries instance (metric * label values) to the timeseries info for
 // the instance.
-type timeseriesMapPdata struct {
+type timeseriesMap struct {
 	sync.RWMutex
 	// The mutex is used to protect access to the member fields. It is acquired for the entirety of
 	// AdjustMetricSlice() and also acquired by gc().
 
 	mark   bool
-	tsiMap map[string]*timeseriesinfoPdata
+	tsiMap map[string]*timeseriesinfo
 }
 
 // Get the timeseriesinfo for the timeseries associated with the metric and label values.
-func (tsm *timeseriesMapPdata) get(metric *pmetric.Metric, kv pcommon.Map) *timeseriesinfoPdata {
+func (tsm *timeseriesMap) get(metric *pmetric.Metric, kv pcommon.Map) *timeseriesinfo {
 	// This should only be invoked be functions called (directly or indirectly) by AdjustMetricSlice().
 	// The lock protecting tsm.tsiMap is acquired there.
 	name := metric.Name()
-	sig := getTimeseriesSignaturePdata(name, kv)
+	sig := getTimeseriesSignature(name, kv)
 	if metric.DataType() == pmetric.MetricDataTypeHistogram {
 		// There are 2 types of Histograms whose aggregation temporality needs distinguishing:
 		// * CumulativeHistogram
@@ -93,7 +93,7 @@ func (tsm *timeseriesMapPdata) get(metric *pmetric.Metric, kv pcommon.Map) *time
 	}
 	tsi, ok := tsm.tsiMap[sig]
 	if !ok {
-		tsi = &timeseriesinfoPdata{}
+		tsi = &timeseriesinfo{}
 		tsm.tsiMap[sig] = tsi
 	}
 	tsm.mark = true
@@ -102,7 +102,7 @@ func (tsm *timeseriesMapPdata) get(metric *pmetric.Metric, kv pcommon.Map) *time
 }
 
 // Create a unique timeseries signature consisting of the metric name and label values.
-func getTimeseriesSignaturePdata(name string, kv pcommon.Map) string {
+func getTimeseriesSignature(name string, kv pcommon.Map) string {
 	labelValues := make([]string, 0, kv.Len())
 	kv.Sort().Range(func(_ string, attrValue pcommon.Value) bool {
 		value := attrValue.StringVal()
@@ -115,7 +115,7 @@ func getTimeseriesSignaturePdata(name string, kv pcommon.Map) string {
 }
 
 // Remove timeseries that have aged out.
-func (tsm *timeseriesMapPdata) gc() {
+func (tsm *timeseriesMap) gc() {
 	tsm.Lock()
 	defer tsm.Unlock()
 	// this shouldn't happen under the current gc() strategy
@@ -132,28 +132,28 @@ func (tsm *timeseriesMapPdata) gc() {
 	tsm.mark = false
 }
 
-func newTimeseriesMapPdata() *timeseriesMapPdata {
-	return &timeseriesMapPdata{mark: true, tsiMap: map[string]*timeseriesinfoPdata{}}
+func newTimeseriesMap() *timeseriesMap {
+	return &timeseriesMap{mark: true, tsiMap: map[string]*timeseriesinfo{}}
 }
 
-// JobsMapPdata maps from a job instance to a map of timeseriesPdata instances for the job.
-type JobsMapPdata struct {
+// JobsMap maps from a job instance to a map of timeseries instances for the job.
+type JobsMap struct {
 	sync.RWMutex
 	// The mutex is used to protect access to the member fields. It is acquired for most of
 	// get() and also acquired by gc().
 
 	gcInterval time.Duration
 	lastGC     time.Time
-	jobsMap    map[string]*timeseriesMapPdata
+	jobsMap    map[string]*timeseriesMap
 }
 
-// NewJobsMap creates a new (empty) JobsMapPdata.
-func NewJobsMapPdata(gcInterval time.Duration) *JobsMapPdata {
-	return &JobsMapPdata{gcInterval: gcInterval, lastGC: time.Now(), jobsMap: make(map[string]*timeseriesMapPdata)}
+// NewJobsMap creates a new (empty) JobsMap.
+func NewJobsMap(gcInterval time.Duration) *JobsMap {
+	return &JobsMap{gcInterval: gcInterval, lastGC: time.Now(), jobsMap: make(map[string]*timeseriesMap)}
 }
 
 // Remove jobs and timeseries that have aged out.
-func (jm *JobsMapPdata) gc() {
+func (jm *JobsMap) gc() {
 	jm.Lock()
 	defer jm.Unlock()
 	// once the structure is locked, confirm that gc() is still necessary
@@ -161,7 +161,7 @@ func (jm *JobsMapPdata) gc() {
 		for sig, tsm := range jm.jobsMap {
 			tsm.RLock()
 			tsmNotMarked := !tsm.mark
-			// take a read lock here, no need to get a full lock as we have a lock on the JobsMapPdata
+			// take a read lock here, no need to get a full lock as we have a lock on the JobsMap
 			tsm.RUnlock()
 			if tsmNotMarked {
 				delete(jm.jobsMap, sig)
@@ -174,7 +174,7 @@ func (jm *JobsMapPdata) gc() {
 	}
 }
 
-func (jm *JobsMapPdata) maybeGC() {
+func (jm *JobsMap) maybeGC() {
 	// speculatively check if gc() is necessary, recheck once the structure is locked
 	jm.RLock()
 	defer jm.RUnlock()
@@ -183,7 +183,7 @@ func (jm *JobsMapPdata) maybeGC() {
 	}
 }
 
-func (jm *JobsMapPdata) get(job, instance string) *timeseriesMapPdata {
+func (jm *JobsMap) get(job, instance string) *timeseriesMap {
 	sig := job + ":" + instance
 	// a read locke is taken here as we will not need to modify jobsMap if the target timeseriesMap is available.
 	jm.RLock()
@@ -201,22 +201,22 @@ func (jm *JobsMapPdata) get(job, instance string) *timeseriesMapPdata {
 	if ok2 {
 		return tsm2
 	}
-	tsm2 = newTimeseriesMapPdata()
+	tsm2 = newTimeseriesMap()
 	jm.jobsMap[sig] = tsm2
 	return tsm2
 }
 
-// MetricsAdjusterPdata takes a map from a metric instance to the initial point in the metrics instance
+// MetricsAdjuster takes a map from a metric instance to the initial point in the metrics instance
 // and provides AdjustMetricSlice, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
-type MetricsAdjusterPdata struct {
-	tsm    *timeseriesMapPdata
+type MetricsAdjuster struct {
+	tsm    *timeseriesMap
 	logger *zap.Logger
 }
 
 // NewMetricsAdjuster is a constructor for MetricsAdjuster.
-func NewMetricsAdjusterPdata(tsm *timeseriesMapPdata, logger *zap.Logger) *MetricsAdjusterPdata {
-	return &MetricsAdjusterPdata{
+func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.Logger) *MetricsAdjuster {
+	return &MetricsAdjuster{
 		tsm:    tsm,
 		logger: logger,
 	}
@@ -225,7 +225,7 @@ func NewMetricsAdjusterPdata(tsm *timeseriesMapPdata, logger *zap.Logger) *Metri
 // AdjustMetricSlice takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 // Returns the total number of timeseries that had reset start times.
-func (ma *MetricsAdjusterPdata) AdjustMetricSlice(metricL *pmetric.MetricSlice) int {
+func (ma *MetricsAdjuster) AdjustMetricSlice(metricL *pmetric.MetricSlice) int {
 	resets := 0
 	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 	// nothing else can modify the data used for adjustment.
@@ -241,7 +241,7 @@ func (ma *MetricsAdjusterPdata) AdjustMetricSlice(metricL *pmetric.MetricSlice) 
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 // Returns the total number of timeseries that had reset start times.
-func (ma *MetricsAdjusterPdata) AdjustMetrics(metrics *pmetric.Metrics) int {
+func (ma *MetricsAdjuster) AdjustMetrics(metrics *pmetric.Metrics) int {
 	resets := 0
 	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 	// nothing else can modify the data used for adjustment.
@@ -261,7 +261,7 @@ func (ma *MetricsAdjusterPdata) AdjustMetrics(metrics *pmetric.Metrics) int {
 }
 
 // Returns the number of timeseries with reset start times.
-func (ma *MetricsAdjusterPdata) adjustMetric(metric *pmetric.Metric) int {
+func (ma *MetricsAdjuster) adjustMetric(metric *pmetric.Metric) int {
 	switch metric.DataType() {
 	case pmetric.MetricDataTypeGauge:
 		// gauges don't need to be adjusted so no additional processing is necessary
@@ -272,7 +272,7 @@ func (ma *MetricsAdjusterPdata) adjustMetric(metric *pmetric.Metric) int {
 }
 
 // Returns  the number of timeseries that had reset start times.
-func (ma *MetricsAdjusterPdata) adjustMetricPoints(metric *pmetric.Metric) int {
+func (ma *MetricsAdjuster) adjustMetricPoints(metric *pmetric.Metric) int {
 	switch dataType := metric.DataType(); dataType {
 	case pmetric.MetricDataTypeGauge:
 		return ma.adjustMetricGauge(metric)
@@ -295,7 +295,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricPoints(metric *pmetric.Metric) int {
 
 // Returns true if 'current' was adjusted and false if 'current' is an the initial occurrence or a
 // reset of the timeseries.
-func (ma *MetricsAdjusterPdata) adjustMetricGauge(current *pmetric.Metric) (resets int) {
+func (ma *MetricsAdjuster) adjustMetricGauge(current *pmetric.Metric) (resets int) {
 	currentPoints := current.Gauge().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {
@@ -343,7 +343,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricGauge(current *pmetric.Metric) (rese
 	return
 }
 
-func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pmetric.Metric) (resets int) {
+func (ma *MetricsAdjuster) adjustMetricHistogram(current *pmetric.Metric) (resets int) {
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -408,7 +408,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pmetric.Metric) (
 	return
 }
 
-func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pmetric.Metric) (resets int) {
+func (ma *MetricsAdjuster) adjustMetricSum(current *pmetric.Metric) (resets int) {
 	currentPoints := current.Sum().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {
@@ -462,7 +462,7 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pmetric.Metric) (resets
 	return
 }
 
-func (ma *MetricsAdjusterPdata) adjustMetricSummary(current *pmetric.Metric) (resets int) {
+func (ma *MetricsAdjuster) adjustMetricSummary(current *pmetric.Metric) (resets int) {
 	currentPoints := current.Summary().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {
@@ -506,7 +506,6 @@ func (ma *MetricsAdjusterPdata) adjustMetricSummary(current *pmetric.Metric) (re
 		if (currentSummary.Count() != 0 &&
 			previousSummary.Count() != 0 &&
 			currentSummary.Count() < previousSummary.Count()) ||
-
 			(currentSummary.Sum() != 0 &&
 				previousSummary.Sum() != 0 &&
 				currentSummary.Sum() < previousSummary.Sum()) {

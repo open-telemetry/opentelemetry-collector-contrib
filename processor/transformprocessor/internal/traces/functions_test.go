@@ -31,6 +31,7 @@ func Test_newFunctionCall(t *testing.T) {
 	attrs.InsertString("test", "hello world")
 	attrs.InsertInt("test2", 3)
 	attrs.InsertBool("test3", true)
+	attrs.InsertString("test4", "hello")
 	attrs.CopyTo(input.Attributes())
 
 	tests := []struct {
@@ -194,6 +195,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "h")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "h")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -223,6 +225,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -252,6 +255,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -281,6 +285,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -313,13 +318,97 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
 		{
-			name: "truncate resource negative",
+			name: "limit attributes",
 			inv: common.Invocation{
-				Function: "truncate_all",
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(1),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit attributes zero",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(0),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit attributes nothing",
+			inv: common.Invocation{
+				Function: "limit",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(100),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "limit resource attributes",
+			inv: common.Invocation{
+				Function: "limit",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -334,7 +423,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(-1),
+						Int: intp(1),
 					},
 				},
 			},
@@ -345,6 +434,141 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_match",
+			inv: common.Invocation{
+				Function: "replace_match",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name:   "attributes",
+									MapKey: strp("test"),
+								},
+							},
+						},
+					},
+					{
+						String: strp("hello*"),
+					},
+					{
+						String: strp("hello {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello {universe}")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_match doesn't match",
+			inv: common.Invocation{
+				Function: "replace_match",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name:   "attributes",
+									MapKey: strp("test"),
+								},
+							},
+						},
+					},
+					{
+						String: strp("goodbye*"),
+					},
+					{
+						String: strp("goodbye {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_all_matches",
+			inv: common.Invocation{
+				Function: "replace_all_matches",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: strp("hello*"),
+					},
+					{
+						String: strp("hello {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello {universe}")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello {universe}")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_all_matches no matches",
+			inv: common.Invocation{
+				Function: "replace_all_matches",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: strp("goodbye*"),
+					},
+					{
+						String: strp("goodbye {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},

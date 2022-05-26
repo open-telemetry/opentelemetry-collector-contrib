@@ -22,10 +22,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/otel/metric/nonrecording"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
@@ -91,14 +89,8 @@ func TestFailOnMultipleStorageExtensions(t *testing.T) {
 
 func createReceiver(t *testing.T) *receiver {
 	params := component.ReceiverCreateSettings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger:         zaptest.NewLogger(t),
-			TracerProvider: trace.NewNoopTracerProvider(),
-			MeterProvider:  nonrecording.NewNoopMeterProvider(),
-			MetricsLevel:   configtelemetry.LevelNone,
-		},
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
-	mockConsumer := mockLogsConsumer{}
 
 	factory := NewFactory(TestReceiverType{})
 
@@ -106,7 +98,7 @@ func createReceiver(t *testing.T) *receiver {
 		context.Background(),
 		params,
 		factory.CreateDefaultConfig(),
-		&mockConsumer,
+		consumertest.NewNop(),
 	)
 	require.NoError(t, err, "receiver should successfully build")
 

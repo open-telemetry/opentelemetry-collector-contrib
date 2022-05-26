@@ -49,33 +49,25 @@ type metricDataAccumulator struct {
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
 	time                  time.Time
+	mbs                   *metadata.MetricsBuilders
 }
-
-const (
-	scopeName = "otelcol/kubeletstatsreceiver"
-)
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	if !a.metricGroupsToCollect[NodeMetricGroup] {
 		return
 	}
 
-	md := pmetric.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	fillNodeResource(rm.Resource(), s)
-
-	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(scopeName)
-
-	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), metadata.NodeCPUMetrics, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), metadata.NodeMemoryMetrics, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), metadata.NodeFilesystemMetrics, s.Fs, currentTime)
-	addNetworkMetrics(ilm.Metrics(), metadata.NodeNetworkMetrics, s.Network, startTime, currentTime)
+	addCPUMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeCPUMetrics, s.CPU, currentTime)
+	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime)
+	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
+	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
 
-	a.m = append(a.m, md)
+	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithK8sNodeName(s.NodeName),
+	))
 }
 
 func (a *metricDataAccumulator) podStats(s stats.PodStats) {
@@ -83,21 +75,18 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 		return
 	}
 
-	md := pmetric.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	fillPodResource(rm.Resource(), s)
-
-	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(scopeName)
-
-	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), metadata.PodCPUMetrics, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), metadata.PodMemoryMetrics, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
-	addNetworkMetrics(ilm.Metrics(), metadata.PodNetworkMetrics, s.Network, startTime, currentTime)
+	addCPUMetrics(a.mbs.PodMetricsBuilder, metadata.PodCPUMetrics, s.CPU, currentTime)
+	addMemoryMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryMetrics, s.Memory, currentTime)
+	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
+	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 
-	a.m = append(a.m, md)
+	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithK8sPodUID(s.PodRef.UID),
+		metadata.WithK8sPodName(s.PodRef.Name),
+		metadata.WithK8sNamespaceName(s.PodRef.Namespace),
+	))
 }
 
 func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.ContainerStats) {
@@ -105,10 +94,8 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	md := pmetric.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-
-	if err := fillContainerResource(rm.Resource(), sPod, s, a.metadata); err != nil {
+	ro, err := getContainerResourceOptions(sPod, s, a.metadata)
+	if err != nil {
 		a.logger.Warn(
 			"failed to fetch container metrics",
 			zap.String("pod", sPod.PodRef.Name),
@@ -117,15 +104,12 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(scopeName)
-
-	startTime := pcommon.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), metadata.ContainerCPUMetrics, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), metadata.ContainerMemoryMetrics, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
-	a.m = append(a.m, md)
+	addCPUMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerCPUMetrics, s.CPU, currentTime)
+	addMemoryMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryMetrics, s.Memory, currentTime)
+	addFilesystemMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
+
+	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(ro...))
 }
 
 func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeStats) {
@@ -133,10 +117,8 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	md := pmetric.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-
-	if err := fillVolumeResource(rm.Resource(), sPod, s, a.metadata); err != nil {
+	ro, err := getVolumeResourceOptions(sPod, s, a.metadata)
+	if err != nil {
 		a.logger.Warn(
 			"Failed to gather additional volume metadata. Skipping metric collection.",
 			zap.String("pod", sPod.PodRef.Name),
@@ -145,10 +127,8 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	ilm := rm.ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(scopeName)
-
 	currentTime := pcommon.NewTimestampFromTime(a.time)
-	addVolumeMetrics(ilm.Metrics(), metadata.K8sVolumeMetrics, s, currentTime)
-	a.m = append(a.m, md)
+	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sVolumeMetrics, s, currentTime)
+
+	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(ro...))
 }

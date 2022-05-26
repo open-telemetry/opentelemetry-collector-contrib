@@ -37,13 +37,13 @@ type mySQLScraper struct {
 }
 
 func newMySQLScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 ) *mySQLScraper {
 	return &mySQLScraper{
-		logger: logger,
+		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics),
+		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 

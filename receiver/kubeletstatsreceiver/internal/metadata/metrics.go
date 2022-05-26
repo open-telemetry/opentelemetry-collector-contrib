@@ -14,113 +14,128 @@
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 
+import "go.opentelemetry.io/collector/pdata/pcommon"
+
+type RecordDoubleDataPointFunc func(*MetricsBuilder, pcommon.Timestamp, float64)
+
+type RecordIntDataPointFunc func(*MetricsBuilder, pcommon.Timestamp, int64)
+
+type RecordIntDataPointWithDirectionFunc func(*MetricsBuilder, pcommon.Timestamp, int64, string, AttributeDirection)
+
+type MetricsBuilders struct {
+	NodeMetricsBuilder      *MetricsBuilder
+	PodMetricsBuilder       *MetricsBuilder
+	ContainerMetricsBuilder *MetricsBuilder
+	OtherMetricsBuilder     *MetricsBuilder
+}
+
 type CPUMetrics struct {
-	Time        MetricIntf
-	Utilization MetricIntf
+	Time        RecordDoubleDataPointFunc
+	Utilization RecordDoubleDataPointFunc
 }
 
 var NodeCPUMetrics = CPUMetrics{
-	Time:        M.K8sNodeCPUTime,
-	Utilization: M.K8sNodeCPUUtilization,
+	Time:        (*MetricsBuilder).RecordK8sNodeCPUTimeDataPoint,
+	Utilization: (*MetricsBuilder).RecordK8sNodeCPUUtilizationDataPoint,
 }
 
 var PodCPUMetrics = CPUMetrics{
-	Time:        M.K8sPodCPUTime,
-	Utilization: M.K8sPodCPUUtilization,
+	Time:        (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
+	Utilization: (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
 }
 
 var ContainerCPUMetrics = CPUMetrics{
-	Time:        M.ContainerCPUTime,
-	Utilization: M.ContainerCPUUtilization,
+	Time:        (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
+	Utilization: (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
 }
 
 type MemoryMetrics struct {
-	Available       MetricIntf
-	Usage           MetricIntf
-	Rss             MetricIntf
-	WorkingSet      MetricIntf
-	PageFaults      MetricIntf
-	MajorPageFaults MetricIntf
+	Available       RecordIntDataPointFunc
+	Usage           RecordIntDataPointFunc
+	Rss             RecordIntDataPointFunc
+	WorkingSet      RecordIntDataPointFunc
+	PageFaults      RecordIntDataPointFunc
+	MajorPageFaults RecordIntDataPointFunc
 }
 
 var NodeMemoryMetrics = MemoryMetrics{
-	Available:       M.K8sNodeMemoryAvailable,
-	Usage:           M.K8sNodeMemoryUsage,
-	Rss:             M.K8sNodeMemoryRss,
-	WorkingSet:      M.K8sNodeMemoryWorkingSet,
-	PageFaults:      M.K8sNodeMemoryPageFaults,
-	MajorPageFaults: M.K8sNodeMemoryMajorPageFaults,
+	Available:       (*MetricsBuilder).RecordK8sNodeMemoryAvailableDataPoint,
+	Usage:           (*MetricsBuilder).RecordK8sNodeMemoryUsageDataPoint,
+	Rss:             (*MetricsBuilder).RecordK8sNodeMemoryRssDataPoint,
+	WorkingSet:      (*MetricsBuilder).RecordK8sNodeMemoryWorkingSetDataPoint,
+	PageFaults:      (*MetricsBuilder).RecordK8sNodeMemoryPageFaultsDataPoint,
+	MajorPageFaults: (*MetricsBuilder).RecordK8sNodeMemoryMajorPageFaultsDataPoint,
 }
 
 var PodMemoryMetrics = MemoryMetrics{
-	Available:       M.K8sPodMemoryAvailable,
-	Usage:           M.K8sPodMemoryUsage,
-	Rss:             M.K8sPodMemoryRss,
-	WorkingSet:      M.K8sPodMemoryWorkingSet,
-	PageFaults:      M.K8sPodMemoryPageFaults,
-	MajorPageFaults: M.K8sPodMemoryMajorPageFaults,
+	Available:       (*MetricsBuilder).RecordK8sPodMemoryAvailableDataPoint,
+	Usage:           (*MetricsBuilder).RecordK8sPodMemoryUsageDataPoint,
+	Rss:             (*MetricsBuilder).RecordK8sPodMemoryRssDataPoint,
+	WorkingSet:      (*MetricsBuilder).RecordK8sPodMemoryWorkingSetDataPoint,
+	PageFaults:      (*MetricsBuilder).RecordK8sPodMemoryPageFaultsDataPoint,
+	MajorPageFaults: (*MetricsBuilder).RecordK8sPodMemoryMajorPageFaultsDataPoint,
 }
 
 var ContainerMemoryMetrics = MemoryMetrics{
-	Available:       M.ContainerMemoryAvailable,
-	Usage:           M.ContainerMemoryUsage,
-	Rss:             M.ContainerMemoryRss,
-	WorkingSet:      M.ContainerMemoryWorkingSet,
-	PageFaults:      M.ContainerMemoryPageFaults,
-	MajorPageFaults: M.ContainerMemoryMajorPageFaults,
+	Available:       (*MetricsBuilder).RecordContainerMemoryAvailableDataPoint,
+	Usage:           (*MetricsBuilder).RecordContainerMemoryUsageDataPoint,
+	Rss:             (*MetricsBuilder).RecordContainerMemoryRssDataPoint,
+	WorkingSet:      (*MetricsBuilder).RecordContainerMemoryWorkingSetDataPoint,
+	PageFaults:      (*MetricsBuilder).RecordContainerMemoryPageFaultsDataPoint,
+	MajorPageFaults: (*MetricsBuilder).RecordContainerMemoryMajorPageFaultsDataPoint,
 }
 
 type FilesystemMetrics struct {
-	Available MetricIntf
-	Capacity  MetricIntf
-	Usage     MetricIntf
+	Available RecordIntDataPointFunc
+	Capacity  RecordIntDataPointFunc
+	Usage     RecordIntDataPointFunc
 }
 
 var NodeFilesystemMetrics = FilesystemMetrics{
-	Available: M.K8sNodeFilesystemAvailable,
-	Capacity:  M.K8sNodeFilesystemCapacity,
-	Usage:     M.K8sNodeFilesystemUsage,
+	Available: (*MetricsBuilder).RecordK8sNodeFilesystemAvailableDataPoint,
+	Capacity:  (*MetricsBuilder).RecordK8sNodeFilesystemCapacityDataPoint,
+	Usage:     (*MetricsBuilder).RecordK8sNodeFilesystemUsageDataPoint,
 }
 
 var PodFilesystemMetrics = FilesystemMetrics{
-	Available: M.K8sPodFilesystemAvailable,
-	Capacity:  M.K8sPodFilesystemCapacity,
-	Usage:     M.K8sPodFilesystemUsage,
+	Available: (*MetricsBuilder).RecordK8sPodFilesystemAvailableDataPoint,
+	Capacity:  (*MetricsBuilder).RecordK8sPodFilesystemCapacityDataPoint,
+	Usage:     (*MetricsBuilder).RecordK8sPodFilesystemUsageDataPoint,
 }
 
 var ContainerFilesystemMetrics = FilesystemMetrics{
-	Available: M.ContainerFilesystemAvailable,
-	Capacity:  M.ContainerFilesystemCapacity,
-	Usage:     M.ContainerFilesystemUsage,
+	Available: (*MetricsBuilder).RecordContainerFilesystemAvailableDataPoint,
+	Capacity:  (*MetricsBuilder).RecordContainerFilesystemCapacityDataPoint,
+	Usage:     (*MetricsBuilder).RecordContainerFilesystemUsageDataPoint,
 }
 
 type NetworkMetrics struct {
-	IO     MetricIntf
-	Errors MetricIntf
+	IO     RecordIntDataPointWithDirectionFunc
+	Errors RecordIntDataPointWithDirectionFunc
 }
 
 var NodeNetworkMetrics = NetworkMetrics{
-	IO:     M.K8sNodeNetworkIo,
-	Errors: M.K8sNodeNetworkErrors,
+	IO:     (*MetricsBuilder).RecordK8sNodeNetworkIoDataPoint,
+	Errors: (*MetricsBuilder).RecordK8sNodeNetworkErrorsDataPoint,
 }
 
 var PodNetworkMetrics = NetworkMetrics{
-	IO:     M.K8sPodNetworkIo,
-	Errors: M.K8sPodNetworkErrors,
+	IO:     (*MetricsBuilder).RecordK8sPodNetworkIoDataPoint,
+	Errors: (*MetricsBuilder).RecordK8sPodNetworkErrorsDataPoint,
 }
 
 type VolumeMetrics struct {
-	Available  MetricIntf
-	Capacity   MetricIntf
-	Inodes     MetricIntf
-	InodesFree MetricIntf
-	InodesUsed MetricIntf
+	Available  RecordIntDataPointFunc
+	Capacity   RecordIntDataPointFunc
+	Inodes     RecordIntDataPointFunc
+	InodesFree RecordIntDataPointFunc
+	InodesUsed RecordIntDataPointFunc
 }
 
 var K8sVolumeMetrics = VolumeMetrics{
-	Available:  M.K8sVolumeAvailable,
-	Capacity:   M.K8sVolumeCapacity,
-	Inodes:     M.K8sVolumeInodes,
-	InodesFree: M.K8sVolumeInodesFree,
-	InodesUsed: M.K8sVolumeInodesUsed,
+	Available:  (*MetricsBuilder).RecordK8sVolumeAvailableDataPoint,
+	Capacity:   (*MetricsBuilder).RecordK8sVolumeCapacityDataPoint,
+	Inodes:     (*MetricsBuilder).RecordK8sVolumeInodesDataPoint,
+	InodesFree: (*MetricsBuilder).RecordK8sVolumeInodesFreeDataPoint,
+	InodesUsed: (*MetricsBuilder).RecordK8sVolumeInodesUsedDataPoint,
 }

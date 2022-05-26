@@ -277,7 +277,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pmetric.Histog
 			dp.SetSum(distributionValue.GetSum())
 			dp.SetCount(uint64(distributionValue.GetCount()))
 			ocHistogramBucketsToMetrics(distributionValue.GetBuckets(), dp)
-			dp.SetExplicitBounds(distributionValue.GetBucketOptions().GetExplicit().GetBounds())
+			dp.SetMExplicitBounds(distributionValue.GetBucketOptions().GetExplicit().GetBounds())
 		}
 	}
 }
@@ -321,7 +321,7 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 			exemplarToMetrics(ocBuckets[i].GetExemplar(), exemplar)
 		}
 	}
-	dp.SetBucketCounts(buckets)
+	dp.SetMBucketCounts(buckets)
 }
 
 func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, dp pmetric.SummaryDataPoint) {

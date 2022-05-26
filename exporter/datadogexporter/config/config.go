@@ -235,6 +235,7 @@ type TracesConfig struct {
 	// SampleRate is the rate at which to sample this event. Default is 1,
 	// meaning no sampling. If you want to send one event out of every 250
 	// times Send() is called, you would specify 250 here.
+	// Deprecated: [v0.50.0] Not used anywhere.
 	SampleRate uint `mapstructure:"sample_rate"`
 
 	// ignored resources
@@ -532,6 +533,8 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	if c.Env != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
 	}
-
+	if c.Traces.SampleRate != 0 {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "traces.sample_rate", "v0.52.0", 9771))
+	}
 	return nil
 }

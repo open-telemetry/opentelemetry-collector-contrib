@@ -1,0 +1,45 @@
+#####################################################
+#
+# List of components in OpenTelemetry Collector Contrib
+# waiting on owners to be assigned
+#
+#####################################################
+#
+# Learn about membership in OpenTelemetry community:
+#  https://github.com/open-telemetry/community/blob/main/community-membership.md
+#
+#
+# Learn about CODEOWNERS file format:
+#  https://help.github.com/en/articles/about-code-owners
+#
+
+cmd/configschema
+examples/demo/client
+examples/demo/server
+exporter/opencensusexporter
+exporter/parquetexporter
+extension/fluentbitextension
+extension/httpforwarder
+extension/sigv4authextension
+extension/storage
+internal/common
+internal/containertest
+internal/coreinternal
+internal/sharedcomponent
+internal/tools
+pkg/batchperresourceattr
+pkg/experimentalmetricmetadata
+pkg/translator/jaeger
+pkg/translator/opencensus
+pkg/translator/prometheusremotewrite
+pkg/translator/signalfx
+pkg/translator/zipkin
+pkg/winperfcounters
+processor/deltatorateprocessor
+processor/metricsgenerationprocessor
+receiver/opencensusreceiver
+receiver/podmanreceiver
+receiver/simpleprometheusreceiver
+receiver/simpleprometheusreceiver/examples/federation/prom-counter
+testbed
+testbed/mockdatareceivers/mockawsxrayreceiver

@@ -51,7 +51,6 @@ func futureDefaultConfig() *Config {
 			},
 		},
 		Traces: TracesConfig{
-			SampleRate:      1,
 			IgnoreResources: []string{},
 		},
 		HostMetadata: HostMetadataConfig{

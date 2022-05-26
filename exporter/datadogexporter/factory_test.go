@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package datadogexporter
 
 import (
@@ -96,7 +95,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "APM_URL",
 			},
@@ -176,7 +174,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, apiConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
-		SampleRate: 1,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.eu",
 		},
@@ -230,7 +227,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
@@ -332,7 +328,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		}, apiConfig.Metrics)
 	assert.Equal(t,
 		ddconfig.TracesConfig{
-			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.test",
 			},
@@ -385,7 +380,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		},
 	}, defaultConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
-		SampleRate: 1,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.com",
 		},
@@ -585,7 +579,9 @@ func TestOnlyMetadata(t *testing.T) {
 
 	err = expTraces.Start(ctx, nil)
 	assert.NoError(t, err)
-	defer expTraces.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, expTraces.Shutdown(ctx))
+	}()
 
 	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
 	require.NoError(t, err)

@@ -116,7 +116,7 @@ func TestSerializeBody(t *testing.T) {
 			[]byte(`["a","b"]`),
 		},
 		{
-			pcommon.NewValueBytes([]byte(`abc`)),
+			pcommon.NewValueMBytes([]byte(`abc`)),
 			[]byte(`"YWJj"`),
 		},
 	}

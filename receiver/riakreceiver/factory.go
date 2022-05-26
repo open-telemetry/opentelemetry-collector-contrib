@@ -60,7 +60,7 @@ func createMetricsReceiver(ctx context.Context, params component.ReceiverCreateS
 		return nil, errConfigNotRiak
 	}
 
-	riakScraper := newScraper(params.Logger, cfg, params.TelemetrySettings)
+	riakScraper := newScraper(params.Logger, cfg, params)
 	scraper, err := scraperhelper.NewScraper(typeStr, riakScraper.scrape, scraperhelper.WithStart(riakScraper.start))
 	if err != nil {
 		return nil, err

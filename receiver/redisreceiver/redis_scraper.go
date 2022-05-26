@@ -33,7 +33,7 @@ import (
 // and feeding them to a metricsConsumer.
 type redisScraper struct {
 	redisSvc *redisSvc
-	settings component.ReceiverCreateSettings
+	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
 	uptime   time.Duration
 }
@@ -57,8 +57,8 @@ func newRedisScraper(cfg *Config, settings component.ReceiverCreateSettings) (sc
 func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
 	rs := &redisScraper{
 		redisSvc: newRedisSvc(client),
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 	return scraperhelper.NewScraper(typeStr, rs.Scrape)
 }

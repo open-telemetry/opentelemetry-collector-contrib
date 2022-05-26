@@ -155,7 +155,7 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	}
 	switch err := err.(type) {
 	case net.Error:
-		if !err.Temporary() {
+		if !err.Temporary() { // nolint SA1019
 			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: err})
 		}
 	default:

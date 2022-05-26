@@ -19,17 +19,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func BenchmarkConvertFromPdataSimple(b *testing.B) {
 	b.StopTimer()
-	pLogs := pdata.NewLogs()
+	pLogs := plog.NewLogs()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -47,7 +47,7 @@ func BenchmarkConvertFromPdataComplex(b *testing.B) {
 	}
 }
 
-func baseMap() pdata.Map {
+func baseMap() pcommon.Map {
 	obj := pcommon.NewMap()
 	arr := pcommon.NewValueSlice()
 	arr.SliceVal().AppendEmpty().SetStringVal("666")
@@ -57,19 +57,19 @@ func baseMap() pdata.Map {
 	obj.InsertInt("int", 123)
 	obj.InsertDouble("double", 12.34)
 	obj.InsertString("string", "hello")
-	obj.InsertBytes("bytes", []byte{0xa1, 0xf0, 0x02, 0xff})
+	obj.InsertMBytes("bytes", []byte{0xa1, 0xf0, 0x02, 0xff})
 	return obj
 }
 
-func baseMapValue() pdata.Value {
+func baseMapValue() pcommon.Value {
 	v := pcommon.NewValueMap()
 	baseMap := baseMap()
 	baseMap.CopyTo(v.MapVal())
 	return v
 }
 
-func complexPdataForNDifferentHosts(count int, n int) pdata.Logs {
-	pLogs := pdata.NewLogs()
+func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
+	pLogs := plog.NewLogs()
 	logs := pLogs.ResourceLogs()
 
 	for i := 0; i < count; i++ {
@@ -125,7 +125,7 @@ func TestRoundTrip(t *testing.T) {
 	require.Equal(t, initialLogs, pLogs)
 }
 
-func sortComplexData(pLogs pdata.Logs) {
+func sortComplexData(pLogs plog.Logs) {
 	pLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
 	attrObject, _ := pLogs.ResourceLogs().At(0).Resource().Attributes().Get("object")
 	attrObject.MapVal().Sort()
@@ -222,7 +222,7 @@ func TestConvertFrom(t *testing.T) {
 func TestConvertFromSeverity(t *testing.T) {
 	cases := []struct {
 		expectedSeverity entry.Severity
-		severityNumber   pdata.SeverityNumber
+		severityNumber   plog.SeverityNumber
 	}{
 		{entry.Default, plog.SeverityNumberUNDEFINED},
 		{entry.Trace, plog.SeverityNumberTRACE},
@@ -254,7 +254,7 @@ func TestConvertFromSeverity(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%v", tc.severityNumber), func(t *testing.T) {
 			entry := entry.New()
-			logRecord := pdata.NewLogRecord()
+			logRecord := plog.NewLogRecord()
 			logRecord.SetSeverityNumber(tc.severityNumber)
 			convertFrom(logRecord, entry)
 			require.Equal(t, tc.expectedSeverity, entry.Severity)

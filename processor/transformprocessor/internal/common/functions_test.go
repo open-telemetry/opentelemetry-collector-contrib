@@ -94,7 +94,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "not matching slice type",
+			name: "keep_keys not matching slice type",
 			inv: Invocation{
 				Function: "keep_keys",
 				Arguments: []Value{
@@ -114,7 +114,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "not int",
+			name: "truncate_all not int",
 			inv: Invocation{
 				Function: "truncate_all",
 				Arguments: []Value{
@@ -134,9 +134,116 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "truncate_all negative limit",
+			inv: Invocation{
+				Function: "truncate_all",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(-1),
+					},
+				},
+			},
+		},
+		{
+			name: "limit not int",
+			inv: Invocation{
+				Function: "limit",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						String: strp("not an int"),
+					},
+				},
+			},
+		},
+		{
+			name: "limit negative limit",
+			inv: Invocation{
+				Function: "limit",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						Int: intp(-1),
+					},
+				},
+			},
+		},
+		{
 			name: "function call returns error",
 			inv: Invocation{
 				Function: "testing_error",
+			},
+		},
+		{
+			name: "replace_match invalid pattern",
+			inv: Invocation{
+				Function: "replace_match",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name:   "attributes",
+									MapKey: strp("test"),
+								},
+							},
+						},
+					},
+					{
+						String: strp("\\*"),
+					},
+					{
+						String: strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "replace_all_matches invalid pattern",
+			inv: Invocation{
+				Function: "replace_all_matches",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: strp("\\*"),
+					},
+					{
+						String: strp("test"),
+					},
+				},
 			},
 		},
 	}

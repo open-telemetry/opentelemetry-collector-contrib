@@ -18,13 +18,18 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/gobwas/glob"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var registry = map[string]interface{}{
-	"keep_keys":    keepKeys,
-	"set":          set,
-	"truncate_all": truncateAll,
+	"keep_keys":           keepKeys,
+	"set":                 set,
+	"truncate_all":        truncateAll,
+	"limit":               limit,
+	"replace_match":       replaceMatch,
+	"replace_all_matches": replaceAllMatches,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -72,6 +77,9 @@ func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
 }
 
 func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
+	}
 	return func(ctx TransformContext) interface{} {
 		if limit < 0 {
 			return nil
@@ -96,6 +104,87 @@ func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
 			})
 			target.Set(ctx, updated)
 			// TODO: Write log when truncation is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		}
+		return nil
+	}, nil
+}
+
+func limit(target GetSetter, limit int64) (ExprFunc, error) {
+	if limit < 0 {
+		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
+	}
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			if int64(attrs.Len()) <= limit {
+				return nil
+			}
+
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			count := int64(0)
+			attrs.Range(func(key string, val pcommon.Value) bool {
+				if count < limit {
+					updated.Insert(key, val)
+					count++
+					return true
+				}
+				return false
+			})
+			target.Set(ctx, updated)
+			// TODO: Write log when limiting is performed
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		}
+		return nil
+	}, nil
+}
+
+func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
+	glob, err := glob.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
+	}
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+		if valStr, ok := val.(string); ok {
+			if glob.Match(valStr) {
+				target.Set(ctx, replacement)
+			}
+		}
+		return nil
+	}, nil
+}
+
+func replaceAllMatches(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
+	glob, err := glob.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
+	}
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+		if attrs, ok := val.(pcommon.Map); ok {
+			updated := pcommon.NewMap()
+			updated.EnsureCapacity(attrs.Len())
+			attrs.Range(func(key string, value pcommon.Value) bool {
+				if glob.Match(value.StringVal()) {
+					updated.InsertString(key, replacement)
+				} else {
+					updated.Insert(key, value)
+				}
+				return true
+			})
+			target.Set(ctx, updated)
 		}
 		return nil
 	}, nil
@@ -153,6 +242,11 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 					return nil, fmt.Errorf("invalid argument at position %v, must be an int", i)
 				}
 				args = append(args, reflect.ValueOf(*argDef.Int))
+			case "string":
+				if argDef.String == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be a string", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.String))
 			}
 		}
 		val := reflect.ValueOf(f)

@@ -303,13 +303,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[tagNodeName] = pod.Spec.NodeName
 	}
 
-	if c.Rules.Cluster {
-		clusterName := pod.GetClusterName()
-		if clusterName != "" {
-			tags[conventions.AttributeK8SClusterName] = clusterName
-		}
-	}
-
 	for _, r := range c.Rules.Labels {
 		r.extractFromPodMetadata(pod.Labels, tags, "k8s.pod.labels.%s")
 	}

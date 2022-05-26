@@ -204,6 +204,7 @@ func (p *MockParallelDetector) Detect(ctx context.Context) (pcommon.Resource, st
 // TestDetectResource_Parallel validates that Detect is only called once, even if there
 // are multiple calls to ResourceProvider.Get
 func TestDetectResource_Parallel(t *testing.T) {
+	t.Skip("skipping flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10292")
 	const iterations = 5
 
 	md1 := NewMockParallelDetector()
