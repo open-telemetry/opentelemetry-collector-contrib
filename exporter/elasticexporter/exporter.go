@@ -157,7 +157,7 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs ptrace.Res
 func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pmetric.ResourceMetrics) (int, error) {
 	var w fastjson.Writer
 	if err := elastic.EncodeResourceMetadata(rm.Resource(), &w); err != nil {
-		return 1, err
+		return rm.ScopeMetrics().Len(), err
 	}
 	var errs error
 	var totalDropped int
