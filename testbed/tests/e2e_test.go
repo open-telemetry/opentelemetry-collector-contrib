@@ -124,19 +124,19 @@ func TestBallastMemory(t *testing.T) {
 			// During garbage collection, we may observe the ballast in rss.
 			// If this happens, allow a brief window for garbage collection to complete.
 			garbageCollectionMax := lenientMax + float32(test.ballastSize)
+
+			rssTooHigh := fmt.Sprintf("The RSS memory usage (%d) is >10%% higher than the limit (%d).", rss, test.maxRSS)
+
 			if rss > test.ballastSize && float32(rss) <= garbageCollectionMax {
 				t.Log("Possible garbage collection under way. Remeasuring RSS.")
 				tc.WaitForN(func() bool {
 					rss, vms, _ = tc.AgentMemoryInfo()
 					return float32(rss) <= lenientMax
-				}, time.Second, fmt.Sprintf("The RSS memory usage (%d) is >10%% higher than the limit (%d).", rss, test.maxRSS))
-
-				// Now wait a moment and take one more measurement, to ensure we didn't just observe a momentary dip
-				time.Sleep(100 * time.Millisecond)
-				rss, vms, _ = tc.AgentMemoryInfo()
+				}, time.Second, rssTooHigh)
+			} else {
+				assert.LessOrEqual(t, float32(rss), lenientMax, rssTooHigh)
 			}
 
-			assert.LessOrEqual(t, float32(rss), lenientMax, fmt.Sprintf("The RSS memory usage (%d) is >10%% higher than the limit (%d).", rss, test.maxRSS))
 			cleanup()
 			tc.Stop()
 		})
