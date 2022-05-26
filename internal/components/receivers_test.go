@@ -254,6 +254,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Depends on carbon receiver to be running correctly
 		},
 		{
+			receiver:     "windowseventlog",
+			skipLifecyle: true, // Requires a running windows process
+		},
+		{
 			receiver:     "windowsperfcounters",
 			skipLifecyle: true, // Requires a running windows process
 		},

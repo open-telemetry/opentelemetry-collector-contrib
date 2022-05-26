@@ -70,6 +70,7 @@
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
+- `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 
 ### 💡 Enhancements 💡
 
