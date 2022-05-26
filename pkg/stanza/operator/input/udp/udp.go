@@ -95,7 +95,7 @@ func (c UDPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 
 	var resolver *helper.IPResolver = nil
 	if c.AddAttributes {
-		resolver = helper.NewIpResolver()
+		resolver = helper.NewIPResolver()
 	}
 
 	udpInput := &UDPInput{
@@ -185,14 +185,14 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 						ip := addr.IP.String()
 						entry.AddAttribute("net.host.ip", addr.IP.String())
 						entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-						entry.AddAttribute("net.host.name", u.resolver.GetHostFromIp(ip))
+						entry.AddAttribute("net.host.name", u.resolver.GetHostFromIP(ip))
 					}
 
 					if addr, ok := remoteAddr.(*net.UDPAddr); ok {
 						ip := addr.IP.String()
 						entry.AddAttribute("net.peer.ip", ip)
 						entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-						entry.AddAttribute("net.peer.name", u.resolver.GetHostFromIp(ip))
+						entry.AddAttribute("net.peer.name", u.resolver.GetHostFromIP(ip))
 					}
 				}
 
