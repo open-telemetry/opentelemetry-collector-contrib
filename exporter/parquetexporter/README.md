@@ -28,7 +28,7 @@ exporters:
     path: /var/output/log.parquet
 ```
 
-The full list of settings exposed for this exporter are documented [here](config.go)
+The full list of settings exposed for this exporter is going to be documented later
 with detailed sample configurations [here](testdata/config.yaml).
 
 [in-development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
