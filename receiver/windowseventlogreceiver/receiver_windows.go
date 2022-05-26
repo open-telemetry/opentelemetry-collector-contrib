@@ -64,7 +64,7 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*WindowsLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := windows.NewDefaultConfig()
+	inputCfg := windows.NewConfig()
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err
 	}

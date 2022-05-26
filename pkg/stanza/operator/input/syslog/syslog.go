@@ -27,22 +27,22 @@ import (
 )
 
 func init() {
-	operator.Register("syslog_input", func() operator.Builder { return NewSyslogInputConfig("") })
+	operator.Register("syslog_input", func() operator.Builder { return NewConfig("") })
 }
-func NewSyslogInputConfig(operatorID string) *SyslogInputConfig {
-	return &SyslogInputConfig{
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, "syslog_input"),
 	}
 }
 
-type SyslogInputConfig struct {
+type Config struct {
 	helper.InputConfig      `yaml:",inline"`
 	syslog.SyslogBaseConfig `yaml:",inline"`
-	Tcp                     *tcp.TCPBaseConfig `json:"tcp" yaml:"tcp"`
-	Udp                     *udp.UDPBaseConfig `json:"udp" yaml:"udp"`
+	TCP                     *tcp.BaseConfig `json:"tcp" yaml:"tcp"`
+	UDP                     *udp.BaseConfig `json:"udp" yaml:"udp"`
 }
 
-func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputBase, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -57,9 +57,9 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 		return nil, fmt.Errorf("failed to resolve syslog config: %s", err)
 	}
 
-	if c.Tcp != nil {
-		tcpInputCfg := tcp.NewTCPInputConfig(inputBase.ID() + "_internal_tcp")
-		tcpInputCfg.TCPBaseConfig = *c.Tcp
+	if c.TCP != nil {
+		tcpInputCfg := tcp.NewConfig(inputBase.ID() + "_internal_tcp")
+		tcpInputCfg.BaseConfig = *c.TCP
 
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
@@ -71,16 +71,16 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 			return nil, fmt.Errorf("failed to set outputs")
 		}
 
-		return &SyslogInput{
+		return &Input{
 			InputOperator: inputBase,
-			tcp:           tcpInput.(*tcp.TCPInput),
+			tcp:           tcpInput.(*tcp.Input),
 			parser:        syslogParser.(*syslog.SyslogParser),
 		}, nil
 	}
 
-	if c.Udp != nil {
-		udpInputCfg := udp.NewUDPInputConfig(inputBase.ID() + "_internal_udp")
-		udpInputCfg.UDPBaseConfig = *c.Udp
+	if c.UDP != nil {
+		udpInputCfg := udp.NewConfig(inputBase.ID() + "_internal_udp")
+		udpInputCfg.BaseConfig = *c.UDP
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
@@ -92,9 +92,9 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 			return nil, fmt.Errorf("failed to set outputs")
 		}
 
-		return &SyslogInput{
+		return &Input{
 			InputOperator: inputBase,
-			udp:           udpInput.(*udp.UDPInput),
+			udp:           udpInput.(*udp.Input),
 			parser:        syslogParser.(*syslog.SyslogParser),
 		}, nil
 	}
@@ -102,16 +102,16 @@ func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 	return nil, fmt.Errorf("need tcp config or udp config")
 }
 
-// SyslogInput is an operator that listens for log entries over tcp.
-type SyslogInput struct {
+// Input is an operator that listens for log entries over tcp.
+type Input struct {
 	helper.InputOperator
-	tcp    *tcp.TCPInput
-	udp    *udp.UDPInput
+	tcp    *tcp.Input
+	udp    *udp.Input
 	parser *syslog.SyslogParser
 }
 
 // Start will start listening for log entries over tcp or udp.
-func (t *SyslogInput) Start(p operator.Persister) error {
+func (t *Input) Start(p operator.Persister) error {
 	if t.tcp != nil {
 		return t.tcp.Start(p)
 	}
@@ -119,7 +119,7 @@ func (t *SyslogInput) Start(p operator.Persister) error {
 }
 
 // Stop will stop listening for messages.
-func (t *SyslogInput) Stop() error {
+func (t *Input) Stop() error {
 	if t.tcp != nil {
 		return t.tcp.Stop()
 	}
@@ -127,7 +127,7 @@ func (t *SyslogInput) Stop() error {
 }
 
 // SetOutputs will set the outputs of the internal syslog parser.
-func (t *SyslogInput) SetOutputs(operators []operator.Operator) error {
+func (t *Input) SetOutputs(operators []operator.Operator) error {
 	t.parser.SetOutputIDs(t.GetOutputIDs())
 	return t.parser.SetOutputs(operators)
 }
