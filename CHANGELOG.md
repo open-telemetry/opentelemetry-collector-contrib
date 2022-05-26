@@ -7,6 +7,8 @@
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
+- `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
+- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 
 ### 💡 Enhancements 💡
 
@@ -72,7 +74,6 @@
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
-- `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 
 ### 💡 Enhancements 💡
 
@@ -130,7 +131,6 @@
 ### 🚀 New components 🚀
 
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
-- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
 
