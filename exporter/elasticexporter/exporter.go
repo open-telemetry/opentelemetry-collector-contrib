@@ -126,7 +126,7 @@ func newTransport(config *Config) (transport.Transport, error) {
 func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs ptrace.ResourceSpans) (int, error) {
 	var w fastjson.Writer
 	if err := elastic.EncodeResourceMetadata(rs.Resource(), &w); err != nil {
-		return 1, err
+		return rs.ScopeSpans().Len(), err
 	}
 
 	var errs []error
