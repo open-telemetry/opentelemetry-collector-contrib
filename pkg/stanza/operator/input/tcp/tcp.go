@@ -111,7 +111,7 @@ func (c TCPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, err
 
 	var resolver *helper.IPResolver = nil
 	if c.AddAttributes {
-		resolver = helper.NewIpResolver()
+		resolver = helper.NewIPResolver()
 	}
 
 	tcpInput := &TCPInput{
@@ -265,14 +265,14 @@ func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel c
 					ip := addr.IP.String()
 					entry.AddAttribute("net.peer.ip", ip)
 					entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-					entry.AddAttribute("net.peer.name", t.resolver.GetHostFromIp(ip))
+					entry.AddAttribute("net.peer.name", t.resolver.GetHostFromIP(ip))
 				}
 
 				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 					ip := addr.IP.String()
 					entry.AddAttribute("net.host.ip", addr.IP.String())
 					entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-					entry.AddAttribute("net.host.name", t.resolver.GetHostFromIp(ip))
+					entry.AddAttribute("net.host.name", t.resolver.GetHostFromIP(ip))
 				}
 			}
 

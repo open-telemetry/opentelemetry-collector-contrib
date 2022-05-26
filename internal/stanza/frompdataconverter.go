@@ -210,11 +210,11 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 
 	if !src.TraceID().IsEmpty() {
 		buffer := src.TraceID().Bytes()
-		ent.TraceId = buffer[:]
+		ent.TraceID = buffer[:]
 	}
 	if !src.SpanID().IsEmpty() {
 		buffer := src.SpanID().Bytes()
-		ent.SpanId = buffer[:]
+		ent.SpanID = buffer[:]
 	}
 	if src.Flags() != 0 {
 		a := make([]byte, 4)
