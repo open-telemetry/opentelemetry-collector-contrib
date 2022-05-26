@@ -163,6 +163,7 @@ receiver/syslogreceiver/                             @open-telemetry/collector-c
 receiver/tcplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/udplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/wavefrontreceiver/                          @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/windowseventlogreceiver/                    @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
 receiver/zipkinreceiver/                             @open-telemetry/collector-contrib-approvers @pmm-sumo
 receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski

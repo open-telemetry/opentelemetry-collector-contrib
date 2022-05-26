@@ -129,8 +129,6 @@ issues:
         - gosec
     - path: .
       linters:
-        - gosec
-        - misspell
         - govet
     - path: operator/input
       linters:
