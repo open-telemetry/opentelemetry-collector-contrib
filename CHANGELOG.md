@@ -7,6 +7,8 @@
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
+- `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
+- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 
 ### 💡 Enhancements 💡
 
@@ -63,19 +65,18 @@
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement. (#9258)
-- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968)
 
 ### 🚀 New components 🚀
 
 - `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
 - `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
 - `logstransformprocessor`: Add implementation of Logs Transform Processor (#9335)
-- `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
-- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch`
   to `otelcol/elasticsearchreceiver` (#9757)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
@@ -128,7 +129,6 @@
 ### 🚀 New components 🚀
 
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
-- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
 
@@ -161,7 +161,7 @@
 
 This release contains an issue in
 [Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver)
-causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being 
+causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being
 investigated and will be fixed in one of the new releases. More details:
 https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
@@ -176,7 +176,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 - `attributesprocessor`: Remove log names from filters (#9131)
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
-  - Users may have to update monitoring for a few Kubernetes cpu metrics, for 
+  - Users may have to update monitoring for a few Kubernetes cpu metrics, for
     more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
