@@ -130,6 +130,10 @@ func TestBallastMemory(t *testing.T) {
 					rss, vms, _ = tc.AgentMemoryInfo()
 					return float32(rss) <= lenientMax
 				}, time.Second, fmt.Sprintf("The RSS memory usage (%d) is >10%% higher than the limit (%d).", rss, test.maxRSS))
+
+				// Now wait a moment and take one more measurement, to ensure we didn't just observe a momentary dip
+				time.Sleep(100 * time.Millisecond)
+				rss, vms, _ = tc.AgentMemoryInfo()
 			}
 
 			assert.LessOrEqual(t, float32(rss), lenientMax, fmt.Sprintf("The RSS memory usage (%d) is >10%% higher than the limit (%d).", rss, test.maxRSS))
