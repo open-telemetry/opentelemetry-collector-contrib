@@ -547,7 +547,7 @@ type metricFlinkJvmCPULoad struct {
 // init fills flink.jvm.cpu.load metric with initial data.
 func (m *metricFlinkJvmCPULoad) init() {
 	m.data.SetName("flink.jvm.cpu.load")
-	m.data.SetDescription("The recent CPU usage of the JVM.")
+	m.data.SetDescription("The CPU usage (%) of the JVM for a jobmanager or taskmanager.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
@@ -596,7 +596,7 @@ type metricFlinkJvmCPUTime struct {
 // init fills flink.jvm.cpu.time metric with initial data.
 func (m *metricFlinkJvmCPUTime) init() {
 	m.data.SetName("flink.jvm.cpu.time")
-	m.data.SetDescription("The CPU time used by the JVM.")
+	m.data.SetDescription("The CPU time used by the JVM for a jobmanager or taskmanager.")
 	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
