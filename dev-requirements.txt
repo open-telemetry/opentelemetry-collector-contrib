@@ -13,5 +13,5 @@ readme-renderer~=24.0
 bleach==4.1.0 # transient dependency for readme-renderer
 grpcio-tools==1.29.0
 mypy-protobuf>=1.23
-protobuf>=3.13.0
+protobuf~=3.13
 markupsafe==2.0.1
