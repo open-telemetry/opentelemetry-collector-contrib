@@ -121,9 +121,10 @@ func TestBallastMemory(t *testing.T) {
 			lenientMax := 1.1 * float32(test.maxRSS)
 
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6927#issuecomment-1138624098
-			// During garbage collection, we may observe the ballast in rss. If this happens, remeasure once.
+			// During garbage collection, we may observe the ballast in rss.
+			// If this happens, allow a brief window for garbage collection to complete.
 			garbageCollectionMax := lenientMax + float32(test.ballastSize)
-			if float32(rss) > lenientMax && float32(rss) <= garbageCollectionMax {
+			if rss > test.ballastSize && float32(rss) <= garbageCollectionMax {
 				t.Log("Possible garbage collection under way. Remeasuring RSS.")
 				tc.WaitForN(func() bool {
 					rss, vms, _ = tc.AgentMemoryInfo()
