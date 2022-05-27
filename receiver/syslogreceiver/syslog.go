@@ -68,7 +68,7 @@ func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, 
 	logConfig := cfg.(*SysLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
 	inputCfg := syslog.NewConfig("syslog_input")
-	inputCfg.SyslogBaseConfig = syslogparser.NewSyslogParserConfig("syslog_parser").SyslogBaseConfig
+	inputCfg.BaseConfig = syslogparser.NewConfig("syslog_parser").BaseConfig
 
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err

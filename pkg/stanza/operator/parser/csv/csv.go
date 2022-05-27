@@ -29,18 +29,18 @@ import (
 )
 
 func init() {
-	operator.Register("csv_parser", func() operator.Builder { return NewCSVParserConfig("") })
+	operator.Register("csv_parser", func() operator.Builder { return NewConfig("") })
 }
 
-// NewCSVParserConfig creates a new csv parser config with default values
-func NewCSVParserConfig(operatorID string) *CSVParserConfig {
-	return &CSVParserConfig{
+// NewConfig creates a new csv parser config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		ParserConfig: helper.NewParserConfig(operatorID, "csv_parser"),
 	}
 }
 
-// CSVParserConfig is the configuration of a csv parser operator.
-type CSVParserConfig struct {
+// Config is the configuration of a csv parser operator.
+type Config struct {
 	helper.ParserConfig `yaml:",inline"`
 
 	Header          string `json:"header" yaml:"header"`
@@ -50,7 +50,7 @@ type CSVParserConfig struct {
 }
 
 // Build will build a csv parser operator.
-func (c CSVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c CSVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, er
 		headers = strings.Split(c.Header, c.FieldDelimiter)
 	}
 
-	return &CSVParser{
+	return &Parser{
 		ParserOperator:  parserOperator,
 		header:          headers,
 		headerAttribute: c.HeaderAttribute,
@@ -89,8 +89,8 @@ func (c CSVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, er
 	}, nil
 }
 
-// CSVParser is an operator that parses csv in an entry.
-type CSVParser struct {
+// Parser is an operator that parses csv in an entry.
+type Parser struct {
 	helper.ParserOperator
 	fieldDelimiter  rune
 	header          []string
@@ -102,7 +102,7 @@ type CSVParser struct {
 type parseFunc func(interface{}) (interface{}, error)
 
 // Process will parse an entry for csv.
-func (r *CSVParser) Process(ctx context.Context, e *entry.Entry) error {
+func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
 	parse := r.parse
 
 	// If we have a headerAttribute set we need to dynamically generate our parser function
