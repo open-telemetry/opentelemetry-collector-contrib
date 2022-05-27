@@ -130,9 +130,6 @@ issues:
     - path: .
       linters:
         - govet
-    - path: operator/parser
-      linters:
-        - revive
     - path: operator/transformer
       linters:
         - revive

@@ -398,7 +398,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 }
 
 func newDummyJSON(dummyID string) operator.Config {
-	return operator.Config{Builder: json.NewJSONParserConfig(dummyID)}
+	return operator.Config{Builder: json.NewConfig(dummyID)}
 }
 
 func newDummyCopy(dummyID string) operator.Config {

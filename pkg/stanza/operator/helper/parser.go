@@ -36,12 +36,12 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 type ParserConfig struct {
 	TransformerConfig `mapstructure:",squash" yaml:",inline"`
 
-	ParseFrom            entry.Field           `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
-	ParseTo              entry.Field           `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
-	TimeParser           *TimeParser           `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
-	SeverityParserConfig *SeverityParserConfig `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
-	TraceParser          *TraceParser          `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
-	ScopeNameParser      *ScopeNameParser      `mapstructure:"scope_name,omitempty"     json:"scope_name,omitempty"     yaml:"scope_name,omitempty"`
+	ParseFrom       entry.Field      `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
+	ParseTo         entry.Field      `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
+	TimeParser      *TimeParser      `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
+	Config          *Config          `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
+	TraceParser     *TraceParser     `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
+	ScopeNameParser *ScopeNameParser `mapstructure:"scope_name,omitempty"     json:"scope_name,omitempty"     yaml:"scope_name,omitempty"`
 }
 
 // Build will build a parser operator.
@@ -64,8 +64,8 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 		parserOperator.TimeParser = c.TimeParser
 	}
 
-	if c.SeverityParserConfig != nil {
-		severityParser, err := c.SeverityParserConfig.Build(logger)
+	if c.Config != nil {
+		severityParser, err := c.Config.Build(logger)
 		if err != nil {
 			return ParserOperator{}, err
 		}
