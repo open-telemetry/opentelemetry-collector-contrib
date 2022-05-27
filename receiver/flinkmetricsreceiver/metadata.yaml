@@ -88,7 +88,7 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.non_heap.used:
+  flink.jvm.memory.nonheap.used:
     enabled: true
     description: The amount of non-heap memory currently used.
     unit: By
@@ -98,7 +98,7 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.non_heap.committed:
+  flink.jvm.memory.nonheap.committed:
     enabled: true
     description: The amount of non-heap memory guaranteed to be available to the JVM.
     unit: By
@@ -108,7 +108,7 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.non_heap.max:
+  flink.jvm.memory.nonheap.max:
     enabled: true
     description: The maximum amount of non-heap memory that can be used for memory management.
     unit: By

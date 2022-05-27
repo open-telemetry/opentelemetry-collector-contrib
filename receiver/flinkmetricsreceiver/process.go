@@ -53,11 +53,11 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 		case "Status.JVM.Memory.Metaspace.Committed":
 			_ = s.mb.RecordFlinkJvmMemoryMetaspaceCommittedDataPoint(now, metric.Value)
 		case "Status.JVM.Memory.NonHeap.Max":
-			_ = s.mb.RecordFlinkJvmMemoryNonHeapMaxDataPoint(now, metric.Value)
+			_ = s.mb.RecordFlinkJvmMemoryNonheapMaxDataPoint(now, metric.Value)
 		case "Status.JVM.Memory.NonHeap.Committed":
-			_ = s.mb.RecordFlinkJvmMemoryNonHeapCommittedDataPoint(now, metric.Value)
+			_ = s.mb.RecordFlinkJvmMemoryNonheapCommittedDataPoint(now, metric.Value)
 		case "Status.JVM.Memory.NonHeap.Used":
-			_ = s.mb.RecordFlinkJvmMemoryNonHeapUsedDataPoint(now, metric.Value)
+			_ = s.mb.RecordFlinkJvmMemoryNonheapUsedDataPoint(now, metric.Value)
 		case "Status.JVM.Memory.Metaspace.Max":
 			_ = s.mb.RecordFlinkJvmMemoryMetaspaceMaxDataPoint(now, metric.Value)
 		case "Status.JVM.Memory.Direct.MemoryUsed":
@@ -111,11 +111,11 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 			case "Status.JVM.Memory.Metaspace.Committed":
 				_ = s.mb.RecordFlinkJvmMemoryMetaspaceCommittedDataPoint(now, metric.Value)
 			case "Status.JVM.Memory.NonHeap.Max":
-				_ = s.mb.RecordFlinkJvmMemoryNonHeapMaxDataPoint(now, metric.Value)
+				_ = s.mb.RecordFlinkJvmMemoryNonheapMaxDataPoint(now, metric.Value)
 			case "Status.JVM.Memory.NonHeap.Committed":
-				_ = s.mb.RecordFlinkJvmMemoryNonHeapCommittedDataPoint(now, metric.Value)
+				_ = s.mb.RecordFlinkJvmMemoryNonheapCommittedDataPoint(now, metric.Value)
 			case "Status.JVM.Memory.NonHeap.Used":
-				_ = s.mb.RecordFlinkJvmMemoryNonHeapUsedDataPoint(now, metric.Value)
+				_ = s.mb.RecordFlinkJvmMemoryNonheapUsedDataPoint(now, metric.Value)
 			case "Status.JVM.Memory.Metaspace.Max":
 				_ = s.mb.RecordFlinkJvmMemoryMetaspaceMaxDataPoint(now, metric.Value)
 			case "Status.JVM.Memory.Direct.MemoryUsed":

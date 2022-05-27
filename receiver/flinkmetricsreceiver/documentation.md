@@ -28,9 +28,9 @@ These are the metrics available for this scraper.
 | **flink.jvm.memory.metaspace.committed** | The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool. | By | Sum(Int) | <ul> </ul> |
 | **flink.jvm.memory.metaspace.max** | The maximum amount of memory that can be used in the Metaspace memory pool. | By | Sum(Int) | <ul> </ul> |
 | **flink.jvm.memory.metaspace.used** | The amount of memory currently used in the Metaspace memory pool. | By | Sum(Int) | <ul> </ul> |
-| **flink.jvm.memory.non_heap.committed** | The amount of non-heap memory guaranteed to be available to the JVM. | By | Sum(Int) | <ul> </ul> |
-| **flink.jvm.memory.non_heap.max** | The maximum amount of non-heap memory that can be used for memory management. | By | Sum(Int) | <ul> </ul> |
-| **flink.jvm.memory.non_heap.used** | The amount of non-heap memory currently used. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.nonheap.committed** | The amount of non-heap memory guaranteed to be available to the JVM. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.nonheap.max** | The maximum amount of non-heap memory that can be used for memory management. | By | Sum(Int) | <ul> </ul> |
+| **flink.jvm.memory.nonheap.used** | The amount of non-heap memory currently used. | By | Sum(Int) | <ul> </ul> |
 | **flink.jvm.threads.count** | The total number of live threads. | {threads} | Sum(Int) | <ul> </ul> |
 | **flink.memory.managed.total** | The total amount of managed memory. | By | Sum(Int) | <ul> </ul> |
 | **flink.memory.managed.used** | The amount of managed memory currently used. | By | Sum(Int) | <ul> </ul> |

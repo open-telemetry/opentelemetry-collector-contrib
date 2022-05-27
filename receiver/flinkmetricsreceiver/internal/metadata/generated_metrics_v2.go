@@ -39,9 +39,9 @@ type MetricsSettings struct {
 	FlinkJvmMemoryMetaspaceCommitted  MetricSettings `mapstructure:"flink.jvm.memory.metaspace.committed"`
 	FlinkJvmMemoryMetaspaceMax        MetricSettings `mapstructure:"flink.jvm.memory.metaspace.max"`
 	FlinkJvmMemoryMetaspaceUsed       MetricSettings `mapstructure:"flink.jvm.memory.metaspace.used"`
-	FlinkJvmMemoryNonHeapCommitted    MetricSettings `mapstructure:"flink.jvm.memory.non_heap.committed"`
-	FlinkJvmMemoryNonHeapMax          MetricSettings `mapstructure:"flink.jvm.memory.non_heap.max"`
-	FlinkJvmMemoryNonHeapUsed         MetricSettings `mapstructure:"flink.jvm.memory.non_heap.used"`
+	FlinkJvmMemoryNonheapCommitted    MetricSettings `mapstructure:"flink.jvm.memory.nonheap.committed"`
+	FlinkJvmMemoryNonheapMax          MetricSettings `mapstructure:"flink.jvm.memory.nonheap.max"`
+	FlinkJvmMemoryNonheapUsed         MetricSettings `mapstructure:"flink.jvm.memory.nonheap.used"`
 	FlinkJvmThreadsCount              MetricSettings `mapstructure:"flink.jvm.threads.count"`
 	FlinkMemoryManagedTotal           MetricSettings `mapstructure:"flink.memory.managed.total"`
 	FlinkMemoryManagedUsed            MetricSettings `mapstructure:"flink.memory.managed.used"`
@@ -112,13 +112,13 @@ func DefaultMetricsSettings() MetricsSettings {
 		FlinkJvmMemoryMetaspaceUsed: MetricSettings{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonHeapCommitted: MetricSettings{
+		FlinkJvmMemoryNonheapCommitted: MetricSettings{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonHeapMax: MetricSettings{
+		FlinkJvmMemoryNonheapMax: MetricSettings{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonHeapUsed: MetricSettings{
+		FlinkJvmMemoryNonheapUsed: MetricSettings{
 			Enabled: true,
 		},
 		FlinkJvmThreadsCount: MetricSettings{
@@ -1254,15 +1254,15 @@ func newMetricFlinkJvmMemoryMetaspaceUsed(settings MetricSettings) metricFlinkJv
 	return m
 }
 
-type metricFlinkJvmMemoryNonHeapCommitted struct {
+type metricFlinkJvmMemoryNonheapCommitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills flink.jvm.memory.non_heap.committed metric with initial data.
-func (m *metricFlinkJvmMemoryNonHeapCommitted) init() {
-	m.data.SetName("flink.jvm.memory.non_heap.committed")
+// init fills flink.jvm.memory.nonheap.committed metric with initial data.
+func (m *metricFlinkJvmMemoryNonheapCommitted) init() {
+	m.data.SetName("flink.jvm.memory.nonheap.committed")
 	m.data.SetDescription("The amount of non-heap memory guaranteed to be available to the JVM.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -1270,7 +1270,7 @@ func (m *metricFlinkJvmMemoryNonHeapCommitted) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricFlinkJvmMemoryNonHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricFlinkJvmMemoryNonheapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1281,14 +1281,14 @@ func (m *metricFlinkJvmMemoryNonHeapCommitted) recordDataPoint(start pcommon.Tim
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricFlinkJvmMemoryNonHeapCommitted) updateCapacity() {
+func (m *metricFlinkJvmMemoryNonheapCommitted) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricFlinkJvmMemoryNonHeapCommitted) emit(metrics pmetric.MetricSlice) {
+func (m *metricFlinkJvmMemoryNonheapCommitted) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1296,8 +1296,8 @@ func (m *metricFlinkJvmMemoryNonHeapCommitted) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricFlinkJvmMemoryNonHeapCommitted(settings MetricSettings) metricFlinkJvmMemoryNonHeapCommitted {
-	m := metricFlinkJvmMemoryNonHeapCommitted{settings: settings}
+func newMetricFlinkJvmMemoryNonheapCommitted(settings MetricSettings) metricFlinkJvmMemoryNonheapCommitted {
+	m := metricFlinkJvmMemoryNonheapCommitted{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1305,15 +1305,15 @@ func newMetricFlinkJvmMemoryNonHeapCommitted(settings MetricSettings) metricFlin
 	return m
 }
 
-type metricFlinkJvmMemoryNonHeapMax struct {
+type metricFlinkJvmMemoryNonheapMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills flink.jvm.memory.non_heap.max metric with initial data.
-func (m *metricFlinkJvmMemoryNonHeapMax) init() {
-	m.data.SetName("flink.jvm.memory.non_heap.max")
+// init fills flink.jvm.memory.nonheap.max metric with initial data.
+func (m *metricFlinkJvmMemoryNonheapMax) init() {
+	m.data.SetName("flink.jvm.memory.nonheap.max")
 	m.data.SetDescription("The maximum amount of non-heap memory that can be used for memory management.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -1321,7 +1321,7 @@ func (m *metricFlinkJvmMemoryNonHeapMax) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricFlinkJvmMemoryNonHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricFlinkJvmMemoryNonheapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1332,14 +1332,14 @@ func (m *metricFlinkJvmMemoryNonHeapMax) recordDataPoint(start pcommon.Timestamp
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricFlinkJvmMemoryNonHeapMax) updateCapacity() {
+func (m *metricFlinkJvmMemoryNonheapMax) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricFlinkJvmMemoryNonHeapMax) emit(metrics pmetric.MetricSlice) {
+func (m *metricFlinkJvmMemoryNonheapMax) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1347,8 +1347,8 @@ func (m *metricFlinkJvmMemoryNonHeapMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryNonHeapMax(settings MetricSettings) metricFlinkJvmMemoryNonHeapMax {
-	m := metricFlinkJvmMemoryNonHeapMax{settings: settings}
+func newMetricFlinkJvmMemoryNonheapMax(settings MetricSettings) metricFlinkJvmMemoryNonheapMax {
+	m := metricFlinkJvmMemoryNonheapMax{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1356,15 +1356,15 @@ func newMetricFlinkJvmMemoryNonHeapMax(settings MetricSettings) metricFlinkJvmMe
 	return m
 }
 
-type metricFlinkJvmMemoryNonHeapUsed struct {
+type metricFlinkJvmMemoryNonheapUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills flink.jvm.memory.non_heap.used metric with initial data.
-func (m *metricFlinkJvmMemoryNonHeapUsed) init() {
-	m.data.SetName("flink.jvm.memory.non_heap.used")
+// init fills flink.jvm.memory.nonheap.used metric with initial data.
+func (m *metricFlinkJvmMemoryNonheapUsed) init() {
+	m.data.SetName("flink.jvm.memory.nonheap.used")
 	m.data.SetDescription("The amount of non-heap memory currently used.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -1372,7 +1372,7 @@ func (m *metricFlinkJvmMemoryNonHeapUsed) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricFlinkJvmMemoryNonHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricFlinkJvmMemoryNonheapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1383,14 +1383,14 @@ func (m *metricFlinkJvmMemoryNonHeapUsed) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricFlinkJvmMemoryNonHeapUsed) updateCapacity() {
+func (m *metricFlinkJvmMemoryNonheapUsed) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricFlinkJvmMemoryNonHeapUsed) emit(metrics pmetric.MetricSlice) {
+func (m *metricFlinkJvmMemoryNonheapUsed) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1398,8 +1398,8 @@ func (m *metricFlinkJvmMemoryNonHeapUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryNonHeapUsed(settings MetricSettings) metricFlinkJvmMemoryNonHeapUsed {
-	m := metricFlinkJvmMemoryNonHeapUsed{settings: settings}
+func newMetricFlinkJvmMemoryNonheapUsed(settings MetricSettings) metricFlinkJvmMemoryNonheapUsed {
+	m := metricFlinkJvmMemoryNonheapUsed{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1748,9 +1748,9 @@ type MetricsBuilder struct {
 	metricFlinkJvmMemoryMetaspaceCommitted  metricFlinkJvmMemoryMetaspaceCommitted
 	metricFlinkJvmMemoryMetaspaceMax        metricFlinkJvmMemoryMetaspaceMax
 	metricFlinkJvmMemoryMetaspaceUsed       metricFlinkJvmMemoryMetaspaceUsed
-	metricFlinkJvmMemoryNonHeapCommitted    metricFlinkJvmMemoryNonHeapCommitted
-	metricFlinkJvmMemoryNonHeapMax          metricFlinkJvmMemoryNonHeapMax
-	metricFlinkJvmMemoryNonHeapUsed         metricFlinkJvmMemoryNonHeapUsed
+	metricFlinkJvmMemoryNonheapCommitted    metricFlinkJvmMemoryNonheapCommitted
+	metricFlinkJvmMemoryNonheapMax          metricFlinkJvmMemoryNonheapMax
+	metricFlinkJvmMemoryNonheapUsed         metricFlinkJvmMemoryNonheapUsed
 	metricFlinkJvmThreadsCount              metricFlinkJvmThreadsCount
 	metricFlinkMemoryManagedTotal           metricFlinkMemoryManagedTotal
 	metricFlinkMemoryManagedUsed            metricFlinkMemoryManagedUsed
@@ -1794,9 +1794,9 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricFlinkJvmMemoryMetaspaceCommitted:  newMetricFlinkJvmMemoryMetaspaceCommitted(settings.FlinkJvmMemoryMetaspaceCommitted),
 		metricFlinkJvmMemoryMetaspaceMax:        newMetricFlinkJvmMemoryMetaspaceMax(settings.FlinkJvmMemoryMetaspaceMax),
 		metricFlinkJvmMemoryMetaspaceUsed:       newMetricFlinkJvmMemoryMetaspaceUsed(settings.FlinkJvmMemoryMetaspaceUsed),
-		metricFlinkJvmMemoryNonHeapCommitted:    newMetricFlinkJvmMemoryNonHeapCommitted(settings.FlinkJvmMemoryNonHeapCommitted),
-		metricFlinkJvmMemoryNonHeapMax:          newMetricFlinkJvmMemoryNonHeapMax(settings.FlinkJvmMemoryNonHeapMax),
-		metricFlinkJvmMemoryNonHeapUsed:         newMetricFlinkJvmMemoryNonHeapUsed(settings.FlinkJvmMemoryNonHeapUsed),
+		metricFlinkJvmMemoryNonheapCommitted:    newMetricFlinkJvmMemoryNonheapCommitted(settings.FlinkJvmMemoryNonheapCommitted),
+		metricFlinkJvmMemoryNonheapMax:          newMetricFlinkJvmMemoryNonheapMax(settings.FlinkJvmMemoryNonheapMax),
+		metricFlinkJvmMemoryNonheapUsed:         newMetricFlinkJvmMemoryNonheapUsed(settings.FlinkJvmMemoryNonheapUsed),
 		metricFlinkJvmThreadsCount:              newMetricFlinkJvmThreadsCount(settings.FlinkJvmThreadsCount),
 		metricFlinkMemoryManagedTotal:           newMetricFlinkMemoryManagedTotal(settings.FlinkMemoryManagedTotal),
 		metricFlinkMemoryManagedUsed:            newMetricFlinkMemoryManagedUsed(settings.FlinkMemoryManagedUsed),
@@ -1917,9 +1917,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricFlinkJvmMemoryMetaspaceCommitted.emit(ils.Metrics())
 	mb.metricFlinkJvmMemoryMetaspaceMax.emit(ils.Metrics())
 	mb.metricFlinkJvmMemoryMetaspaceUsed.emit(ils.Metrics())
-	mb.metricFlinkJvmMemoryNonHeapCommitted.emit(ils.Metrics())
-	mb.metricFlinkJvmMemoryNonHeapMax.emit(ils.Metrics())
-	mb.metricFlinkJvmMemoryNonHeapUsed.emit(ils.Metrics())
+	mb.metricFlinkJvmMemoryNonheapCommitted.emit(ils.Metrics())
+	mb.metricFlinkJvmMemoryNonheapMax.emit(ils.Metrics())
+	mb.metricFlinkJvmMemoryNonheapUsed.emit(ils.Metrics())
 	mb.metricFlinkJvmThreadsCount.emit(ils.Metrics())
 	mb.metricFlinkMemoryManagedTotal.emit(ils.Metrics())
 	mb.metricFlinkMemoryManagedUsed.emit(ils.Metrics())
@@ -2145,33 +2145,33 @@ func (mb *MetricsBuilder) RecordFlinkJvmMemoryMetaspaceUsedDataPoint(ts pcommon.
 	return nil
 }
 
-// RecordFlinkJvmMemoryNonHeapCommittedDataPoint adds a data point to flink.jvm.memory.non_heap.committed metric.
-func (mb *MetricsBuilder) RecordFlinkJvmMemoryNonHeapCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+// RecordFlinkJvmMemoryNonheapCommittedDataPoint adds a data point to flink.jvm.memory.nonheap.committed metric.
+func (mb *MetricsBuilder) RecordFlinkJvmMemoryNonheapCommittedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for FlinkJvmMemoryNonHeapCommitted, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for FlinkJvmMemoryNonheapCommitted, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkJvmMemoryNonHeapCommitted.recordDataPoint(mb.startTime, ts, val)
+	mb.metricFlinkJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
-// RecordFlinkJvmMemoryNonHeapMaxDataPoint adds a data point to flink.jvm.memory.non_heap.max metric.
-func (mb *MetricsBuilder) RecordFlinkJvmMemoryNonHeapMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
+// RecordFlinkJvmMemoryNonheapMaxDataPoint adds a data point to flink.jvm.memory.nonheap.max metric.
+func (mb *MetricsBuilder) RecordFlinkJvmMemoryNonheapMaxDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for FlinkJvmMemoryNonHeapMax, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for FlinkJvmMemoryNonheapMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkJvmMemoryNonHeapMax.recordDataPoint(mb.startTime, ts, val)
+	mb.metricFlinkJvmMemoryNonheapMax.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
-// RecordFlinkJvmMemoryNonHeapUsedDataPoint adds a data point to flink.jvm.memory.non_heap.used metric.
-func (mb *MetricsBuilder) RecordFlinkJvmMemoryNonHeapUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+// RecordFlinkJvmMemoryNonheapUsedDataPoint adds a data point to flink.jvm.memory.nonheap.used metric.
+func (mb *MetricsBuilder) RecordFlinkJvmMemoryNonheapUsedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse int64 for FlinkJvmMemoryNonHeapUsed, value was %s: %w", inputVal, err)
+		return fmt.Errorf("failed to parse int64 for FlinkJvmMemoryNonheapUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricFlinkJvmMemoryNonHeapUsed.recordDataPoint(mb.startTime, ts, val)
+	mb.metricFlinkJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
