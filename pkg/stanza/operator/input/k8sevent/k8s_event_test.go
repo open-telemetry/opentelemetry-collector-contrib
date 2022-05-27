@@ -70,7 +70,7 @@ func TestWatchNamespace(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	op := &K8sEvents{
+	op := &Input{
 		InputOperator: inputOp,
 		client: &fakev1.FakeCoreV1{
 			Fake: fakeAPI,

@@ -2,9 +2,9 @@
 
 | Status                   |                       |
 | ------------------------ | --------------------- |
-| Stability                | [In development]      |
+| Stability                | [alpha]               |
 | Supported pipeline types | traces, metrics, logs |
-| Distributions            | none                  |
+| Distributions            | [contrib]             |
 
 The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language).
 It takes a list of queries which are performed in the order specified in the config.
@@ -116,4 +116,5 @@ All logs
 3) Set `body` to the `http.route` attribute if it is set
 4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
-[In development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

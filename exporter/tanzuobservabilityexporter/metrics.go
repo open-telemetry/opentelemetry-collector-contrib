@@ -710,10 +710,9 @@ func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramData
 	positiveBucketCounts := dataPoint.Positive().MBucketCounts()
 
 	// The total number of buckets is the number of negative buckets + the number of positive
-	// buckets + 1 for the zero bucket + 1 bucket for negative infinity up to the negative explicit
-	// bound with largest magnitude + 1 bucket for the largest positive explicit bound up to
+	// buckets + 1 for the zero bucket + 1 bucket for the largest positive explicit bound up to
 	// positive infinity.
-	numBucketCounts := 1 + len(negativeBucketCounts) + 1 + len(positiveBucketCounts) + 1
+	numBucketCounts := len(negativeBucketCounts) + 1 + len(positiveBucketCounts) + 1
 
 	// We pre-allocate the slice setting its length to 0 so that GO doesn't have to keep
 	// re-allocating the slice as it grows.
@@ -748,12 +747,8 @@ func appendNegativeBucketsAndExplicitBounds(
 	bucketCounts *[]uint64,
 	explicitBounds *[]float64,
 ) {
-	// The count in the first bucket which includes negative infinity is always 0.
-	*bucketCounts = append(*bucketCounts, 0)
-
 	// The smallest negative explicit bound.
 	le := -math.Pow(base, float64(negativeOffset)+float64(len(negativeBucketCounts)))
-	*explicitBounds = append(*explicitBounds, le)
 
 	// The first negativeBucketCount has a negative explicit bound with the smallest magnitude;
 	// the last negativeBucketCount has a negative explicit bound with the largest magnitude.
