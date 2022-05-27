@@ -11,6 +11,7 @@
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
+
 - `flinkmetricsreceiver`: Add implementation of Flink Metric Receiver (#10121)
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
