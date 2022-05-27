@@ -345,14 +345,14 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	insertToAttributeMap(ent.Attributes, dest.Attributes())
 	insertToAttributeVal(ent.Body, dest.Body())
 
-	if ent.TraceId != nil {
+	if ent.TraceID != nil {
 		var buffer [16]byte
-		copy(buffer[0:16], ent.TraceId)
+		copy(buffer[0:16], ent.TraceID)
 		dest.SetTraceID(pcommon.NewTraceID(buffer))
 	}
-	if ent.SpanId != nil {
+	if ent.SpanID != nil {
 		var buffer [8]byte
-		copy(buffer[0:8], ent.SpanId)
+		copy(buffer[0:8], ent.SpanID)
 		dest.SetSpanID(pcommon.NewSpanID(buffer))
 	}
 	if ent.TraceFlags != nil {

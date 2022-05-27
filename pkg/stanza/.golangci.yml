@@ -129,6 +129,10 @@ issues:
         - gosec
     - path: .
       linters:
-        - revive
-        - gosec
         - govet
+    - path: operator/parser
+      linters:
+        - revive
+    - path: operator/transformer
+      linters:
+        - revive
