@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/gcp"
 
 import "cloud.google.com/go/compute/metadata"
 
-type Metadata interface {
+type Provider interface {
 	OnGCE() bool
 	ProjectID() (string, error)
 	Zone() (string, error)
@@ -27,38 +27,42 @@ type Metadata interface {
 	Get(suffix string) (string, error)
 }
 
-type MetadataImpl struct{}
+type providerImpl struct{}
 
-var _ Metadata = (*MetadataImpl)(nil)
+var _ Provider = (*providerImpl)(nil)
 
-func (m *MetadataImpl) OnGCE() bool {
+func NewProvider() Provider {
+	return &providerImpl{}
+}
+
+func (m *providerImpl) OnGCE() bool {
 	return metadata.OnGCE()
 }
 
-func (m *MetadataImpl) ProjectID() (string, error) {
+func (m *providerImpl) ProjectID() (string, error) {
 	return metadata.ProjectID()
 }
 
-func (m *MetadataImpl) Zone() (string, error) {
+func (m *providerImpl) Zone() (string, error) {
 	return metadata.Zone()
 }
 
-func (m *MetadataImpl) Hostname() (string, error) {
+func (m *providerImpl) Hostname() (string, error) {
 	return metadata.Hostname()
 }
 
-func (m *MetadataImpl) InstanceAttributeValue(attr string) (string, error) {
+func (m *providerImpl) InstanceAttributeValue(attr string) (string, error) {
 	return metadata.InstanceAttributeValue(attr)
 }
 
-func (m *MetadataImpl) InstanceID() (string, error) {
+func (m *providerImpl) InstanceID() (string, error) {
 	return metadata.InstanceID()
 }
 
-func (m *MetadataImpl) InstanceName() (string, error) {
+func (m *providerImpl) InstanceName() (string, error) {
 	return metadata.InstanceName()
 }
 
-func (m *MetadataImpl) Get(suffix string) (string, error) {
+func (m *providerImpl) Get(suffix string) (string, error) {
 	return metadata.Get(suffix)
 }

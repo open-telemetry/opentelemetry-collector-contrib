@@ -23,8 +23,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
 const (
@@ -42,11 +42,11 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
 	log      *zap.Logger
-	metadata gcp.Metadata
+	metadata gcp.Provider
 }
 
 func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{log: params.Logger, metadata: &gcp.MetadataImpl{}}, nil
+	return &Detector{log: params.Logger, metadata: gcp.NewProvider()}, nil
 }
 
 // Detect detects associated resources when running in GKE environment.

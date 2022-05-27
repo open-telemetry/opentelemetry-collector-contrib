@@ -24,8 +24,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
 // TypeStr is type of detector.
@@ -34,11 +34,11 @@ const TypeStr = "gce"
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	metadata gcp.Metadata
+	metadata gcp.Provider
 }
 
 func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{metadata: &gcp.MetadataImpl{}}, nil
+	return &Detector{metadata: gcp.NewProvider()}, nil
 }
 
 func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {

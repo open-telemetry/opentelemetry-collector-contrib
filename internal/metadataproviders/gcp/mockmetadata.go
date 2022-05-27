@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/gcp"
 
 import (
 	"github.com/stretchr/testify/mock"
 )
 
-var _ Metadata = (*MockMetadata)(nil)
+var _ Provider = (*MockMetadata)(nil)
 
 type MockMetadata struct {
 	mock.Mock

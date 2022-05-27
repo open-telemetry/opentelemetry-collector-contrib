@@ -20,7 +20,7 @@ import (
 )
 
 func TestGCEMetadata(t *testing.T) {
-	metadata := &MetadataImpl{}
+	metadata := NewProvider()
 	metadata.OnGCE()
 	metadata.ProjectID()
 	metadata.Zone()
