@@ -110,7 +110,7 @@ func configFromFileViaMapstructure(file string) (*Config, error) {
 
 	raw := map[string]interface{}{}
 
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
+	if err = yaml.Unmarshal(bytes, raw); err != nil {
 		return nil, fmt.Errorf("failed to read data from yaml: %s", err)
 	}
 
