@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 
 import (
 	"context"
@@ -21,32 +21,32 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-type metadataProvider interface {
-	get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error)
-	hostname(ctx context.Context) (string, error)
-	instanceID(ctx context.Context) (string, error)
+type Provider interface {
+	Get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error)
+	Hostname(ctx context.Context) (string, error)
+	InstanceID(ctx context.Context) (string, error)
 }
 
 type metadataClient struct {
 	metadata *ec2metadata.EC2Metadata
 }
 
-var _ metadataProvider = (*metadataClient)(nil)
+var _ Provider = (*metadataClient)(nil)
 
-func newMetadataClient(sess *session.Session) *metadataClient {
+func NewProvider(sess *session.Session) Provider {
 	return &metadataClient{
 		metadata: ec2metadata.New(sess),
 	}
 }
 
-func (c *metadataClient) instanceID(ctx context.Context) (string, error) {
+func (c *metadataClient) InstanceID(ctx context.Context) (string, error) {
 	return c.metadata.GetMetadataWithContext(ctx, "instance-id")
 }
 
-func (c *metadataClient) hostname(ctx context.Context) (string, error) {
+func (c *metadataClient) Hostname(ctx context.Context) (string, error) {
 	return c.metadata.GetMetadataWithContext(ctx, "hostname")
 }
 
-func (c *metadataClient) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
+func (c *metadataClient) Get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
 	return c.metadata.GetInstanceIdentityDocumentWithContext(ctx)
 }

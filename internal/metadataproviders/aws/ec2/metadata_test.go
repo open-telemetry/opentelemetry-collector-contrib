@@ -47,8 +47,8 @@ func TestMetadataProvider_get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := newMetadataClient(tt.args.sess)
-			gotDoc, err := c.get(tt.args.ctx)
+			c := NewProvider(tt.args.sess)
+			gotDoc, err := c.Get(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("get() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -82,8 +82,8 @@ func TestMetadataProvider_available(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := newMetadataClient(tt.args.sess)
-			if _, got := c.instanceID(tt.args.ctx); got != tt.want {
+			c := NewProvider(tt.args.sess)
+			if _, got := c.InstanceID(tt.args.ctx); got != tt.want {
 				t.Errorf("available() = %v, want %v", got, tt.want)
 			}
 		})
