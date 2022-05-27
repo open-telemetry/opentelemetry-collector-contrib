@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/metada
 go 1.17
 
 require (
+	github.com/Showmax/go-fqdn v1.0.0
 	github.com/docker/docker v20.10.16+incompatible
 	github.com/stretchr/testify v1.7.1
 )
