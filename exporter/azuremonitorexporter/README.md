@@ -6,6 +6,8 @@
 | Supported pipeline types | traces, logs |
 | Distributions            | [contrib]    |
 
+This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/en-us/azure/azure-monitor/).
+
 ## Configuration
 
 The following settings are required:
