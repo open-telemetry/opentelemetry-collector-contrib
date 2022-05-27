@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestSyslogWithTcp(t *testing.T) {
@@ -99,15 +99,15 @@ func TestLoadConfig(t *testing.T) {
 
 func testdataConfigYamlAsMap() *SysLogConfig {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
+			Operators:        adapter.OperatorConfigs{},
+			Converter: adapter.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 				WorkerCount:   1,
 			},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"tcp": map[string]interface{}{
 				"listen_address": "0.0.0.0:29018",
 			},
@@ -118,15 +118,15 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
+			Operators:        adapter.OperatorConfigs{},
+			Converter: adapter.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 				WorkerCount:   1,
 			},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"udp": map[string]interface{}{
 				"listen_address": "0.0.0.0:29018",
 			},
@@ -139,11 +139,11 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"tcp": map[string]interface{}{
 				"max_buffer_size": "0.1.0.1-",
 			},

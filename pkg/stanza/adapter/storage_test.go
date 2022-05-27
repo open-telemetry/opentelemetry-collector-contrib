@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:errcheck
-package stanza
+package adapter
 
 import (
 	"context"

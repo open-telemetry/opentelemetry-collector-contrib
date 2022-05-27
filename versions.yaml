@@ -101,7 +101,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata

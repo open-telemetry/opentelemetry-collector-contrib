@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestUdp(t *testing.T) {
@@ -91,11 +91,11 @@ func TestLoadConfig(t *testing.T) {
 
 func testdataConfigYamlAsMap() *UDPLogConfig {
 	return &UDPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"listen_address": "0.0.0.0:29018",
 		},
 	}
@@ -105,11 +105,11 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &UDPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"max_buffer_size": "0.1.0.1-",
 		},
 	}
