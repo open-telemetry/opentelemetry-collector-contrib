@@ -576,7 +576,7 @@ func severityConfigFromFileViaMapstructure(file string, result *Config) error {
 
 	raw := map[string]interface{}{}
 
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
+	if err = yaml.Unmarshal(bytes, raw); err != nil {
 		return fmt.Errorf("failed to read data from yaml: %s", err)
 	}
 
