@@ -16,6 +16,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `googlecloudexporter`: add error checks to googlecloudexporter package. (#10366)
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 
 ## v0.52.0
