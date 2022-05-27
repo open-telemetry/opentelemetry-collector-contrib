@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 
 import (
 	"context"
@@ -21,8 +21,8 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
-type consulMetadataCollector interface {
-	Metadata(context.Context) (*consulMetadata, error)
+type Provider interface {
+	Metadata(context.Context) (*Metadata, error)
 }
 
 type consulMetadataImpl struct {
@@ -30,19 +30,19 @@ type consulMetadataImpl struct {
 	allowedLabels map[string]interface{}
 }
 
-type consulMetadata struct {
-	nodeID       string
-	hostName     string
-	datacenter   string
-	hostMetadata map[string]string
+type Metadata struct {
+	NodeID       string
+	Hostname     string
+	Datacenter   string
+	HostMetadata map[string]string
 }
 
-func newConsulMetadata(client *api.Client, allowedLabels map[string]interface{}) consulMetadataCollector {
+func NewProvider(client *api.Client, allowedLabels map[string]interface{}) Provider {
 	return &consulMetadataImpl{consulClient: client, allowedLabels: allowedLabels}
 }
 
-func (d *consulMetadataImpl) Metadata(ctx context.Context) (*consulMetadata, error) {
-	var metadata consulMetadata
+func (d *consulMetadataImpl) Metadata(ctx context.Context) (*Metadata, error) {
+	var metadata Metadata
 	self, err := d.consulClient.Agent().Self()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get local agent information: %w", err)
@@ -57,19 +57,19 @@ func (d *consulMetadataImpl) Metadata(ctx context.Context) (*consulMetadata, err
 	if !ok {
 		return nil, fmt.Errorf("failed getting consul hostname. was 'NodeName' returned by consul? resp: %+v", config)
 	}
-	metadata.hostName = hostname
+	metadata.Hostname = hostname
 
 	datacenter, ok := config["Datacenter"].(string)
 	if !ok {
 		return nil, fmt.Errorf("failed getting consul datacenter. was 'Datacenter' returned by consul? resp: %+v", config)
 	}
-	metadata.datacenter = datacenter
+	metadata.Datacenter = datacenter
 
 	nodeID, ok := config["NodeID"].(string)
 	if !ok {
 		return nil, fmt.Errorf("failed getting node ID. was 'NodeID' returned by consul? resp: %+v", config)
 	}
-	metadata.nodeID = nodeID
+	metadata.NodeID = nodeID
 
 	meta := self["Meta"]
 	if meta == nil {
@@ -82,7 +82,7 @@ func (d *consulMetadataImpl) Metadata(ctx context.Context) (*consulMetadata, err
 			metaMap[k] = v.(string)
 		}
 	}
-	metadata.hostMetadata = metaMap
+	metadata.HostMetadata = metaMap
 
 	return &metadata, nil
 }
