@@ -548,7 +548,7 @@ type metricFlinkJvmCPULoad struct {
 func (m *metricFlinkJvmCPULoad) init() {
 	m.data.SetName("flink.jvm.cpu.load")
 	m.data.SetDescription("The CPU usage of the JVM for a jobmanager or taskmanager.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
