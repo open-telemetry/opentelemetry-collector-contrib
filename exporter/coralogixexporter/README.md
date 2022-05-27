@@ -1,10 +1,10 @@
 # Coralogix Exporter
 
-| Status                   |              |
-| ------------------------ |--------------|
-| Stability                | [beta]       |
-| Supported pipeline types | traces, logs |
-| Distributions            | [contrib]    |
+| Status                   |                 |
+| ------------------------ |-----------------|
+| Stability                | [beta]          |
+| Supported pipeline types | traces, metrics |
+| Distributions            | [contrib]       |
 
 The Coralogix exporter sends traces to [Coralogix](https://coralogix.com/) as
 Coralogix logs.
