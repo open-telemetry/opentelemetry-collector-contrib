@@ -13,6 +13,7 @@
 ### 💡 Enhancements 💡
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+- `elasticsearchreceiver`: Add integration test (#10165)
 
 ### 🧰 Bug fixes 🧰
 
