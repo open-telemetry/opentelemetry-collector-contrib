@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.44.20
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
-	k8s.io/api v0.24.0
-	k8s.io/apimachinery v0.24.0
+	k8s.io/api v0.24.1
+	k8s.io/apimachinery v0.24.1
 	k8s.io/client-go v0.24.0
 )
 
