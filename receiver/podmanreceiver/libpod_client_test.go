@@ -142,3 +142,67 @@ func TestStatsError(t *testing.T) {
 	assert.Nil(t, stats)
 	assert.EqualError(t, err, errNoStatsFound.Error())
 }
+
+func TestList(t *testing.T) {
+	// list sample
+	listExample := `[{"AutoRemove":false,"Command":["nginx","-g","daemon off;"],"Created":"2022-05-28T11:25:35.999277074+02:00","CreatedAt":"","Exited":false,"ExitedAt":-62135596800,"ExitCode":0,"Id":"aa3e2040dee22a369d2c8f0b712a5ff045e8f1ce47f5e943426ce6664e3ef379","Image":"library/nginxy:latest","ImageID":"12766a6745eea133de9fdcd03ff720fa971fdaf21113d4bc72b417c123b15619","IsInfra":false,"Labels":{"maintainer":"someone"},"Mounts":[],"Names":["sharp_curran"],"Namespaces":{},"Networks":[],"Pid":7892,"Pod":"","PodName":"","Ports":null,"Size":null,"StartedAt":1653729936,"State":"running","Status":""}]`
+
+	listener, addr := tmpSock(t)
+	defer listener.Close()
+	defer os.Remove(addr)
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/containers/json") {
+			_, err := w.Write([]byte(listExample))
+			assert.NoError(t, err)
+		} else {
+			_, err := w.Write([]byte{})
+			assert.NoError(t, err)
+		}
+	}))
+	srv.Listener = listener
+	srv.Start()
+	defer srv.Close()
+
+	config := &Config{
+		Endpoint: fmt.Sprintf("unix://%s", addr),
+		// default timeout
+		Timeout: 5 * time.Second,
+	}
+
+	cli, err := newLibpodClient(zap.NewNop(), config)
+	assert.NotNil(t, cli)
+	assert.Nil(t, err)
+
+	expectedContainer := Container{
+
+		AutoRemove: false,
+		Command:    []string{"nginx", "-g", "daemon off;"},
+		Created:    "2022-05-28T11:25:35.999277074+02:00",
+		CreatedAt:  "",
+		Exited:     false,
+		ExitedAt:   -62135596800,
+		ExitCode:   0,
+		Id:         "aa3e2040dee22a369d2c8f0b712a5ff045e8f1ce47f5e943426ce6664e3ef379",
+		Image:      "library/nginxy:latest",
+		ImageID:    "12766a6745eea133de9fdcd03ff720fa971fdaf21113d4bc72b417c123b15619",
+		IsInfra:    false,
+		Labels:     map[string]string{"maintainer": "someone"},
+		Mounts:     []string{},
+		Names:      []string{"sharp_curran"},
+		Namespaces: map[string]string{},
+		Networks:   []string{},
+		Pid:        7892,
+		Pod:        "",
+		PodName:    "",
+		Ports:      nil,
+		Size:       nil,
+		StartedAt:  1653729936,
+		State:      "running",
+		Status:     "",
+	}
+
+	containers, err := cli.list(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedContainer, containers[0])
+}

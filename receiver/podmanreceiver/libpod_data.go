@@ -26,6 +26,7 @@ type Container struct {
 	CreatedAt  string
 	ExitCode   int
 	Exited     bool
+	ExitedAt   int
 	Id         string
 	Image      string
 	ImageID    string
