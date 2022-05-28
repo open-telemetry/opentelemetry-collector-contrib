@@ -19,13 +19,15 @@ package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
+	"go.uber.org/multierr"
 )
 
 type receiver struct {
@@ -79,18 +81,41 @@ func (r *receiver) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
+type result struct {
+	md  pmetric.Metrics
+	err error
+}
+
 func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	var err error
+	containers := r.scraper.Containers()
+	results := make(chan result, len(containers))
 
-	stats, err := r.scraper.FetchContainerStats(ctx)
-	if err != nil {
-		r.set.Logger.Error("error fetching stats", zap.Error(err))
-		return pmetric.Metrics{}, err
+	wg := &sync.WaitGroup{}
+	wg.Add(len(containers))
+	for _, container := range containers {
+		go func(c Container) {
+			defer wg.Done()
+			stats, err := r.scraper.FetchContainerStats(ctx, c)
+			if err != nil {
+				results <- result{md: pmetric.Metrics{}, err: err}
+				return
+			}
+			results <- result{md: ContainerStatsToMetrics(time.Now(), c, &stats), err: nil}
+		}(container)
 	}
 
+	wg.Wait()
+	close(results)
+
+	var errs error
 	md := pmetric.NewMetrics()
-	for i := range stats {
-		translateStatsToMetrics(&stats[i], time.Now(), md.ResourceMetrics().AppendEmpty())
+	for res := range results {
+		if res.err != nil {
+			// Don't know the number of failed metrics, but one container fetch is a partial error.
+			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
+			continue
+		}
+		res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
 	}
-	return md, nil
+	return md, errs
 }

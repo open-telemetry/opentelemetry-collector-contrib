@@ -36,6 +36,17 @@ func NewContainerScraper(engineClient PodmanClient, logger *zap.Logger, config *
 	}
 }
 
+// Containers provides a slice of Container to use for individual FetchContainerStats calls.
+func (pc *ContainerScraper) Containers() []Container {
+	pc.containersLock.Lock()
+	defer pc.containersLock.Unlock()
+	containers := make([]Container, 0, len(pc.containers))
+	for _, container := range pc.containers {
+		containers = append(containers, container)
+	}
+	return containers
+}
+
 // LoadContainerList will load the initial running container maps for
 // inspection and establishing which containers warrant stat gathering calls
 // by the receiver.
@@ -149,17 +160,18 @@ func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid 
 }
 
 // FetchContainerStats will query the desired container stats
-func (pc *ContainerScraper) FetchContainerStats(ctx context.Context) ([]containerStats, error) {
+func (pc *ContainerScraper) FetchContainerStats(ctx context.Context, c Container) (containerStats, error) {
 	params := url.Values{}
 	params.Add("stream", "false")
-
-	for cid, _ := range pc.containers {
-		params.Add("containers", cid)
-	}
+	params.Add("containers", c.Id)
 
 	statsCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
-	return pc.client.stats(statsCtx, params)
+	stats, err := pc.client.stats(statsCtx, params)
+	if err != nil || len(stats) < 1 {
+		return containerStats{}, err
+	}
+	return stats[0], nil
 }
 
 func (pc *ContainerScraper) persistContainer(c Container) {

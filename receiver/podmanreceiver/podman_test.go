@@ -80,10 +80,10 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.LoadContainerList(context.Background())
 	require.Error(t, err)
 
-	containers, err := cli.FetchContainerStats(context.Background())
+	container, err := cli.FetchContainerStats(context.Background(), Container{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedError)
-	assert.Nil(t, containers)
+	assert.Empty(t, container)
 
 	assert.GreaterOrEqual(
 		t, time.Now().UnixNano(), shouldHaveTaken,

@@ -29,8 +29,7 @@ import (
 func TestTranslateStatsToMetrics(t *testing.T) {
 	ts := time.Now()
 	stats := genContainerStats()
-	md := pmetric.NewMetrics()
-	translateStatsToMetrics(stats, ts, md.ResourceMetrics().AppendEmpty())
+	md := ContainerStatsToMetrics(ts, Container{ImageID: "localimage"}, stats)
 	assertStatsEqualToMetrics(t, stats, md)
 }
 
