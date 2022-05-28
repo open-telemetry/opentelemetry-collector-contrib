@@ -16,7 +16,7 @@ package elasticsearchreceiver
 
 import (
 	"context"
-	"net"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -57,12 +57,13 @@ func TestElasticsearchIntegration(t *testing.T) {
 
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Endpoint = net.JoinHostPort(hostname, "9200")
+		cfg.Endpoint = fmt.Sprintf("http://%s:9200", hostname)
 
 		consumer := new(consumertest.MetricsSink)
 		settings := componenttest.NewNopReceiverCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 		require.NoError(t, err, "failed creating metrics receiver")
+
 		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 		require.Eventuallyf(t, func() bool {
 			return len(consumer.AllMetrics()) > 0
@@ -71,13 +72,11 @@ func TestElasticsearchIntegration(t *testing.T) {
 
 		actualMtrics := consumer.AllMetrics()[0]
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.7_9.json")
+		expectedFile := filepath.Join("testdata", "integration", "expected.7_9_3.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
 		scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues())
-		//err = scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues())
-		//require.NoError(t, err)
 	})
 }
 
