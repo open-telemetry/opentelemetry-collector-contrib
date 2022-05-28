@@ -1,10 +1,10 @@
 # Logzio Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | traces    |
-| Distributions            | [contrib] |
+| Status                   |            |
+| ------------------------ |------------|
+| Stability                | [stable]   |
+| Supported pipeline types | traces     |
+| Distributions            | [contrib]  |
 
 This exporter supports sending trace data to [Logz.io](https://www.logz.io)
 
@@ -84,5 +84,5 @@ service:
       level: debug #activate debug mode
 ```
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#stable
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
