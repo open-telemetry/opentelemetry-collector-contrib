@@ -303,7 +303,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.52.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.52.0 // indirect
@@ -557,8 +556,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrap
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ../../internal/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ../../exporter/alibabacloudlogserviceexporter
 

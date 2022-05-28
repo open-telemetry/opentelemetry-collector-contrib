@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:errcheck
-package stanza // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
 	"context"
