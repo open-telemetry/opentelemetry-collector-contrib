@@ -26,25 +26,25 @@ import (
 )
 
 func init() {
-	operator.Register("remove", func() operator.Builder { return NewRemoveOperatorConfig("") })
+	operator.Register("remove", func() operator.Builder { return NewConfig("") })
 }
 
-// NewRemoveOperatorConfig creates a new remove operator config with default values
-func NewRemoveOperatorConfig(operatorID string) *RemoveOperatorConfig {
-	return &RemoveOperatorConfig{
+// NewConfig creates a new remove operator config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "remove"),
 	}
 }
 
-// RemoveOperatorConfig is the configuration of a remove operator
-type RemoveOperatorConfig struct {
+// Config is the configuration of a remove operator
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
 
 	Field rootableField `mapstructure:"field"  json:"field" yaml:"field"`
 }
 
 // Build will build a Remove operator from the supplied configuration
-func (c RemoveOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -54,25 +54,25 @@ func (c RemoveOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 		return nil, fmt.Errorf("remove: field is empty")
 	}
 
-	return &RemoveOperator{
+	return &Transformer{
 		TransformerOperator: transformerOperator,
 		Field:               c.Field,
 	}, nil
 }
 
-// RemoveOperator is an operator that deletes a field
-type RemoveOperator struct {
+// Transformer is an operator that deletes a field
+type Transformer struct {
 	helper.TransformerOperator
 	Field rootableField
 }
 
 // Process will process an entry with a remove transformation.
-func (p *RemoveOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply the remove operation to an entry
-func (p *RemoveOperator) Transform(entry *entry.Entry) error {
+func (p *Transformer) Transform(entry *entry.Entry) error {
 	if p.Field.allAttributes {
 		entry.Attributes = nil
 		return nil

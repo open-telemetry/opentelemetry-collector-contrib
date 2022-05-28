@@ -70,7 +70,7 @@ func TestKVParserConfig(t *testing.T) {
 			Expect: func() *KVParserConfig {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
-				severityField := helper.NewSeverityParserConfig()
+				severityField := helper.NewConfig()
 				severityField.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
 					"critical": "5xx",
@@ -79,7 +79,7 @@ func TestKVParserConfig(t *testing.T) {
 					"debug":    "2xx",
 				}
 				severityField.Mapping = mapping
-				cfg.SeverityParserConfig = &severityField
+				cfg.Config = &severityField
 				return cfg
 			}(),
 		},

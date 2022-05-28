@@ -1,5 +1,11 @@
 # Sumo Logic Exporter
 
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [beta]        |
+| Supported pipeline types | logs, metrics |
+| Distributions            | [contrib]     |
+
 This exporter supports sending logs and metrics data to [Sumo Logic](https://www.sumologic.com/).
 Traces are exported using native otlphttp exporter as described
 [here](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing)
@@ -61,3 +67,6 @@ exporters:
     metadata_attributes:
       - k8s.*
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

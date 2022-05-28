@@ -173,7 +173,7 @@ func generateThriftSpan() *jaeger.Span {
 				Timestamp: eventTs,
 				Fields: []*jaeger.Tag{
 					{
-						Key:   tracetranslator.TagMessage,
+						Key:   eventNameAttr,
 						VType: jaeger.TagType_STRING,
 						VStr:  &eventName,
 					},
