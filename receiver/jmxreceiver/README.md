@@ -42,7 +42,14 @@ receivers:
 
 ### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
 
-The path for the JMX Metric Gatherer uber JAR to run.
+The path for the JMX Metric Gatherer uber JAR to run. This must represent a released version 1.9+ of the jar, 
+which can be downloaded from [github](https://github.com/open-telemetry/opentelemetry-java-contrib/releases). 
+If a non-released version is required, you can specify a custom version by providing the sha256 hash of your 
+custom version of the jar during collector build time using the `ldflags` option. 
+
+```bash
+go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>" ...
+```
 
 ### endpoint
 The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host
@@ -57,7 +64,15 @@ _Required._
 ### target_system
 
 The built-in target system (or systems) metric gatherer script to run.
-Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
+Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`,  `"jetty"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
+
+If additional target systems must be supported (because of a custom JMX metrics gatherer jar configured using the 
+`MetricsGathererHash` build time config), they can be added with another build time flag.
+
+```bash
+go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>
+       -X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.AdditionalTargetSystems=newtarget,othernewtarget" ...
+```
 
 Corresponds to the `otel.jmx.target.system` property.
 
@@ -127,6 +142,12 @@ The truststore file password if required by SSL.
 
 Corresponds to the `javax.net.ssl.trustStorePassword` property.
 
+### truststore_type
+
+The truststore type if required by SSL.
+
+Corresponds to the `javax.net.ssl.trustStoreType` property.
+
 ### remote_profile
 
 Supported JMX remote profiles are TLS in combination with SASL profiles: SASL/PLAIN, SASL/DIGEST-MD5 and SASL/CRAM-MD5.
@@ -143,7 +164,7 @@ Corresponds to the `otel.jmx.realm` property.
 
 ### additional_jars
 
-Additional JARs to be included in the java command classpath.
+Additional JARs to be included in the java command classpath. This is currently only used for support for `wildfly`, where the Additional Jar should be a version of the jboss-client jar found on your wildfly installation.
 
 ### resource_attributes
 
@@ -153,6 +174,6 @@ Corresponds to the `otel.resource.attributes` property.
 
 ### log_level
 
-SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
+SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`. If not provided, will attempt to match to the current log level of the collector.
 
 Corresponds to the `org.slf4j.simpleLogger.defaultLogLevel` property.

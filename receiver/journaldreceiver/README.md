@@ -1,7 +1,7 @@
 ## `Journald Receiver`
 
-Parses Journald events from systemd journal using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
-Journald receiver is dependent on `journalctl` binary to be present and must be in the $PATH of the agent. 
+Parses Journald events from systemd journal.
+Journald receiver is dependent on `journalctl` binary to be present and must be in the $PATH of the agent.
 Supported pipeline types: logs
 
 > :construction: This receiver is in alpha and configuration fields are subject to change.

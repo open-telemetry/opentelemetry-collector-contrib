@@ -9,6 +9,7 @@ on:
 jobs:
   setup-environment:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
@@ -18,10 +19,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -73,10 +70,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -86,6 +79,12 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install Dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Collector Binaries
         uses: actions/download-artifact@v3
