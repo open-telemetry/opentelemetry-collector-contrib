@@ -13,6 +13,7 @@
 ### 💡 Enhancements 💡
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+- `podmanreceiver`: Fetch containers stats one by one and add container image as metric attribute (#10421)
 
 ### 🧰 Bug fixes 🧰
 
