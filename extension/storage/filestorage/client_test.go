@@ -33,6 +33,9 @@ func TestClientOperations(t *testing.T) {
 
 	client, err := newClient(dbFile, time.Second)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 	testKey := "testKey"
@@ -68,6 +71,9 @@ func TestClientBatchOperations(t *testing.T) {
 
 	client, err := newClient(dbFile, time.Second)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 	testSetEntries := []storage.Operation{
@@ -192,6 +198,8 @@ func TestNewClientTransactionErrors(t *testing.T) {
 
 			// Validate expected behavior
 			tc.validate(t, client)
+
+			require.NoError(t, client.db.Close())
 		})
 	}
 }

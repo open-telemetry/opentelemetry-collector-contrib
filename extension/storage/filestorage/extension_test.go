@@ -55,6 +55,10 @@ func TestExtensionIntegrity(t *testing.T) {
 	for _, c := range components {
 		client, err := se.GetClient(ctx, c.kind, c.name, "")
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, client.Close(ctx))
+		})
+
 		clients[c.name] = client
 	}
 
@@ -116,6 +120,9 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 
 	myBytes := []byte("value")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// Set the data
 	err = client.Set(ctx, "key", myBytes)
@@ -156,6 +163,9 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 		"foo",
 	)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client1.Close(ctx))
+	})
 
 	client2, err := se.GetClient(
 		ctx,
@@ -164,6 +174,9 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 		"bar",
 	)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client2.Close(ctx))
+	})
 
 	myBytes1 := []byte("value1")
 	myBytes2 := []byte("value2")
@@ -256,8 +269,10 @@ func TestCompaction(t *testing.T) {
 		newTestEntity("my_component"),
 		"",
 	)
-
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	files, err := ioutil.ReadDir(tempDir)
 	require.NoError(t, err)
@@ -287,8 +302,11 @@ func TestCompaction(t *testing.T) {
 	// compact the db
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient1.Close(ctx))
+	})
 
 	// check size after compaction
 	newStats, err := os.Stat(path)
@@ -298,15 +316,16 @@ func TestCompaction(t *testing.T) {
 	// remove data from database
 	for i = 0; i < numEntries; i++ {
 		key = fmt.Sprintf("key_%d", i)
-		err = client.Delete(ctx, key)
+		err = fsClient1.Delete(ctx, key)
 		require.NoError(t, err)
 	}
 
 	// compact after data removal
-	c, ok = client.(*fileStorageClient)
-	require.True(t, ok)
-	_, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	fsClient2, err := fsClient1.Compact(ctx, tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient2.Close(ctx))
+	})
 
 	// check size
 	stats = newStats
@@ -338,8 +357,10 @@ func TestCompactionRemoveTemp(t *testing.T) {
 		newTestEntity("my_component"),
 		"",
 	)
-
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// check if only db exists in tempDir
 	files, err := ioutil.ReadDir(tempDir)
@@ -350,8 +371,11 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in the same directory
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient1.Close(ctx))
+	})
 
 	// check if only db exists in tempDir
 	files, err = ioutil.ReadDir(tempDir)
@@ -362,10 +386,11 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in different directory
 	emptyTempDir := t.TempDir()
 
-	c, ok = client.(*fileStorageClient)
-	require.True(t, ok)
-	_, err = c.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	fsClient2, err := fsClient1.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient2.Close(ctx))
+	})
 
 	// check if emptyTempDir is empty after compaction
 	files, err = ioutil.ReadDir(emptyTempDir)
