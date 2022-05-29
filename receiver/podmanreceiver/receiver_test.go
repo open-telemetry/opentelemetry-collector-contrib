@@ -73,11 +73,11 @@ func TestScraperLoop(t *testing.T) {
 	assert.NotNil(t, r)
 
 	go func() {
-		client <- containerStatsReport{
-			Stats: []containerStats{{
+		client <- ContainerStatsReport{
+			Stats: []ContainerStats{{
 				ContainerID: "c1",
 			}},
-			Error: containerStatsReportError{},
+			Error: ContainerStatsReportError{},
 		}
 	}()
 
@@ -89,13 +89,13 @@ func TestScraperLoop(t *testing.T) {
 	r.Shutdown(context.Background())
 }
 
-type mockClient chan containerStatsReport
+type mockClient chan ContainerStatsReport
 
 func (c mockClient) factory(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
 	return c, nil
 }
 
-func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error) {
+func (c mockClient) stats(context.Context, url.Values) ([]ContainerStats, error) {
 	report := <-c
 	if report.Error.Message != "" {
 		return nil, errors.New(report.Error.Message)
@@ -110,7 +110,7 @@ func (c mockClient) ping(context.Context) error {
 type mockConsumer chan pmetric.Metrics
 
 func (c mockClient) list(context.Context, url.Values) ([]Container, error) {
-	return []Container{Container{Id: "c1"}}, nil
+	return []Container{{ID: "c1"}}, nil
 }
 
 func (c mockClient) events(context.Context, url.Values) (<-chan Event, <-chan error) {

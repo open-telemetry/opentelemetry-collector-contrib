@@ -1,3 +1,17 @@
+// Copyright 2022 OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package podmanreceiver
 
 import (
@@ -14,7 +28,7 @@ type clientFactory func(logger *zap.Logger, cfg *Config) (PodmanClient, error)
 
 type PodmanClient interface {
 	ping(context.Context) error
-	stats(context.Context, url.Values) ([]containerStats, error)
+	stats(context.Context, url.Values) ([]ContainerStats, error)
 	list(context.Context, url.Values) ([]Container, error)
 	events(context.Context, url.Values) (<-chan Event, <-chan error)
 }
@@ -53,7 +67,7 @@ func (pc *ContainerScraper) Containers() []Container {
 func (pc *ContainerScraper) LoadContainerList(ctx context.Context) error {
 	params := url.Values{}
 	runningFilter := map[string][]string{
-		"status": []string{"running"},
+		"status": {"running"},
 	}
 	jsonFilter, err := json.Marshal(runningFilter)
 	if err != nil {
@@ -81,8 +95,8 @@ func (pc *ContainerScraper) Events(ctx context.Context, options url.Values) (<-c
 func (pc *ContainerScraper) ContainerEventLoop(ctx context.Context) {
 	filters := url.Values{}
 	cidFilter := map[string][]string{
-		"status": []string{"died", "start"},
-		"type":   []string{"container"},
+		"status": {"died", "start"},
+		"type":   {"container"},
 	}
 	jsonFilter, err := json.Marshal(cidFilter)
 	if err != nil {
@@ -131,13 +145,13 @@ EVENT_LOOP:
 	}
 }
 
-// InspectAndPersistContainer queries inspect api and returns *containerStats and true when container should be queried for stats,
+// InspectAndPersistContainer queries inspect api and returns *ContainerStats and true when container should be queried for stats,
 // nil and false otherwise. Persists the container in the cache if container is
 // running and not excluded.
 func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid string) (*Container, bool) {
 	params := url.Values{}
 	cidFilter := map[string][]string{
-		"id": []string{cid},
+		"id": {cid},
 	}
 	jsonFilter, err := json.Marshal(cidFilter)
 	if err != nil {
@@ -160,25 +174,25 @@ func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid 
 }
 
 // FetchContainerStats will query the desired container stats
-func (pc *ContainerScraper) FetchContainerStats(ctx context.Context, c Container) (containerStats, error) {
+func (pc *ContainerScraper) FetchContainerStats(ctx context.Context, c Container) (ContainerStats, error) {
 	params := url.Values{}
 	params.Add("stream", "false")
-	params.Add("containers", c.Id)
+	params.Add("containers", c.ID)
 
 	statsCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
 	stats, err := pc.client.stats(statsCtx, params)
 	if err != nil || len(stats) < 1 {
-		return containerStats{}, err
+		return ContainerStats{}, err
 	}
 	return stats[0], nil
 }
 
 func (pc *ContainerScraper) persistContainer(c Container) {
-	pc.logger.Debug("Monitoring Podman container", zap.String("id", c.Id))
+	pc.logger.Debug("Monitoring Podman container", zap.String("id", c.ID))
 	pc.containersLock.Lock()
 	defer pc.containersLock.Unlock()
-	pc.containers[c.Id] = c
+	pc.containers[c.ID] = c
 }
 
 func (pc *ContainerScraper) removeContainer(cid string) {

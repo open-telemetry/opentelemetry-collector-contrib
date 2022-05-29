@@ -1,3 +1,17 @@
+// Copyright 2022 OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package podmanreceiver
 
 import (
@@ -21,7 +35,7 @@ import (
 
 type MockClient struct {
 	PingF   func(context.Context) error
-	StatsF  func(context.Context, url.Values) ([]containerStats, error)
+	StatsF  func(context.Context, url.Values) ([]ContainerStats, error)
 	ListF   func(context.Context, url.Values) ([]Container, error)
 	EventsF func(context.Context, url.Values) (<-chan Event, <-chan error)
 }
@@ -30,7 +44,7 @@ func (c *MockClient) ping(ctx context.Context) error {
 	return c.PingF(ctx)
 }
 
-func (c *MockClient) stats(ctx context.Context, options url.Values) ([]containerStats, error) {
+func (c *MockClient) stats(ctx context.Context, options url.Values) ([]ContainerStats, error) {
 	return c.StatsF(ctx, options)
 }
 
@@ -46,7 +60,7 @@ var baseClient = MockClient{
 	PingF: func(context.Context) error {
 		return nil
 	},
-	StatsF: func(context.Context, url.Values) ([]containerStats, error) {
+	StatsF: func(context.Context, url.Values) ([]ContainerStats, error) {
 		return nil, nil
 	},
 	ListF: func(context.Context, url.Values) ([]Container, error) {
@@ -102,7 +116,8 @@ func TestEventLoopHandlesError(t *testing.T) {
 		if strings.Contains(r.URL.Path, "/events") {
 			wg.Done()
 		}
-		w.Write([]byte{})
+		_, err := w.Write([]byte{})
+		assert.NoError(t, err)
 	}))
 	srv.Listener = listener
 	srv.Start()
@@ -153,7 +168,7 @@ func TestEventLoopHandles(t *testing.T) {
 	}
 	eventClient.ListF = func(context.Context, url.Values) ([]Container, error) {
 		return []Container{{
-			Id: "c1",
+			ID: "c1",
 		}}, nil
 	}
 
@@ -166,12 +181,16 @@ func TestEventLoopHandles(t *testing.T) {
 	eventChan <- Event{ID: "c1", Status: "start"}
 
 	assert.Eventually(t, func() bool {
+		cli.containersLock.Lock()
+		defer cli.containersLock.Unlock()
 		return assert.Equal(t, 1, len(cli.containers))
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 
 	eventChan <- Event{ID: "c1", Status: "died"}
 
 	assert.Eventually(t, func() bool {
+		cli.containersLock.Lock()
+		defer cli.containersLock.Unlock()
 		return assert.Equal(t, 0, len(cli.containers))
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 }
@@ -180,7 +199,7 @@ func TestInspectAndPersistContainer(t *testing.T) {
 	inspectClient := baseClient
 	inspectClient.ListF = func(context.Context, url.Values) ([]Container, error) {
 		return []Container{{
-			Id: "c1",
+			ID: "c1",
 		}}, nil
 	}
 

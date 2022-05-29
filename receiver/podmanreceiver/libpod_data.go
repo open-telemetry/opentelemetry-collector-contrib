@@ -27,7 +27,7 @@ type Container struct {
 	ExitCode   int
 	Exited     bool
 	ExitedAt   int
-	Id         string
+	ID         string
 	Image      string
 	ImageID    string
 	IsInfra    bool
@@ -51,7 +51,7 @@ type Event struct {
 	Status string
 }
 
-type containerStats struct {
+type ContainerStats struct {
 	AvgCPU        float64
 	ContainerID   string
 	Name          string
@@ -73,13 +73,13 @@ type containerStats struct {
 	Duration      uint64
 }
 
-type containerStatsReportError struct {
+type ContainerStatsReportError struct {
 	Cause    string
 	Message  string
 	Response int64
 }
 
-type containerStatsReport struct {
-	Error containerStatsReportError
-	Stats []containerStats
+type ContainerStatsReport struct {
+	Error ContainerStatsReportError
+	Stats []ContainerStats
 }

@@ -80,7 +80,7 @@ func TestStats(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	expectedStats := containerStats{
+	expectedStats := ContainerStats{
 		AvgCPU:        42.04781177856639,
 		ContainerID:   "e6af5805edae6c950003abd5451808b277b67077e400f0a6f69d01af116ef014",
 		Name:          "charming_sutherland",
@@ -183,7 +183,7 @@ func TestList(t *testing.T) {
 		Exited:     false,
 		ExitedAt:   -62135596800,
 		ExitCode:   0,
-		Id:         "aa3e2040dee22a369d2c8f0b712a5ff045e8f1ce47f5e943426ce6664e3ef379",
+		ID:         "aa3e2040dee22a369d2c8f0b712a5ff045e8f1ce47f5e943426ce6664e3ef379",
 		Image:      "library/nginxy:latest",
 		ImageID:    "12766a6745eea133de9fdcd03ff720fa971fdaf21113d4bc72b417c123b15619",
 		IsInfra:    false,
