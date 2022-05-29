@@ -17,7 +17,7 @@ from opentelemetry.trace.span import Span
 _LOG = getLogger(__name__)
 
 
-class _PikaGetter(Getter):  # type: ignore
+class _PikaGetter(Getter[CarrierT]):  # type: ignore
     def get(self, carrier: CarrierT, key: str) -> Optional[List[str]]:
         value = carrier.get(key, None)
         if value is None:

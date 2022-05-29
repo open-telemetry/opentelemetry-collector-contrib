@@ -113,7 +113,7 @@ class AwsXRayPropagator(TextMapPropagator):
         self,
         carrier: CarrierT,
         context: typing.Optional[Context] = None,
-        getter: Getter = default_getter,
+        getter: Getter[CarrierT] = default_getter,
     ) -> Context:
         if context is None:
             context = Context()
@@ -275,7 +275,7 @@ class AwsXRayPropagator(TextMapPropagator):
         self,
         carrier: CarrierT,
         context: typing.Optional[Context] = None,
-        setter: Setter = default_setter,
+        setter: Setter[CarrierT] = default_setter,
     ) -> None:
         span = trace.get_current_span(context=context)
 

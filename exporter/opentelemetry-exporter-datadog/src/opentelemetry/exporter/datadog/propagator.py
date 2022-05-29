@@ -40,7 +40,7 @@ class DatadogFormat(TextMapPropagator):
         self,
         carrier: CarrierT,
         context: typing.Optional[Context] = None,
-        getter: Getter = default_getter,
+        getter: Getter[CarrierT] = default_getter,
     ) -> Context:
         if context is None:
             context = Context()
@@ -88,7 +88,7 @@ class DatadogFormat(TextMapPropagator):
         self,
         carrier: CarrierT,
         context: typing.Optional[Context] = None,
-        setter: Setter = default_setter,
+        setter: Setter[CarrierT] = default_setter,
     ) -> None:
         span = get_current_span(context)
         span_context = span.get_span_context()

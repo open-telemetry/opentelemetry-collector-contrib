@@ -91,7 +91,7 @@ ProduceHookT = Optional[Callable[[Span, List, Dict], None]]
 ConsumeHookT = Optional[Callable[[Span, ABCRecord, List, Dict], None]]
 
 
-class KafkaContextGetter(textmap.Getter):
+class KafkaContextGetter(textmap.Getter[textmap.CarrierT]):
     def get(self, carrier: textmap.CarrierT, key: str) -> Optional[List[str]]:
         if carrier is None:
             return None
@@ -108,7 +108,7 @@ class KafkaContextGetter(textmap.Getter):
         return [key for (key, value) in carrier]
 
 
-class KafkaContextSetter(textmap.Setter):
+class KafkaContextSetter(textmap.Setter[textmap.CarrierT]):
     def set(self, carrier: textmap.CarrierT, key: str, value: str) -> None:
         if carrier is None or key is None:
             return

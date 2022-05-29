@@ -59,7 +59,7 @@ _OPENTELEMETRY_ATTRIBUTE_IDENTIFIER: str = "otel."
 _OTEL_IDENTIFIER_LENGTH = len(_OPENTELEMETRY_ATTRIBUTE_IDENTIFIER)
 
 
-class Boto3SQSGetter(Getter):
+class Boto3SQSGetter(Getter[CarrierT]):
     def get(self, carrier: CarrierT, key: str) -> Optional[List[str]]:
         value = carrier.get(f"{_OPENTELEMETRY_ATTRIBUTE_IDENTIFIER}{key}", {})
         if not value:
@@ -75,7 +75,7 @@ class Boto3SQSGetter(Getter):
         ]
 
 
-class Boto3SQSSetter(Setter):
+class Boto3SQSSetter(Setter[CarrierT]):
     def set(self, carrier: CarrierT, key: str, value: str) -> None:
         # This is a limitation defined by AWS for SQS MessageAttributes size
         if len(carrier.items()) < 10:
