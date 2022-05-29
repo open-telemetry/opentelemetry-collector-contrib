@@ -2,11 +2,29 @@
 
 ## Unreleased
 
-### 🛑 Breaking changes 🛑
-
-- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
+## 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+- `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
+- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
+
+### 💡 Enhancements 💡
+
+- `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+
+### 🧰 Bug fixes 🧰
+
+- `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
+- `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
+
+## v0.52.0
+
+### 🛑 Breaking changes 🛑
+
+- `jmxreceiver`: Hash the jars provided to JMX Receiver and only allow if they match an approved list (#9687)
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚀 New components 🚀
 
@@ -14,19 +32,31 @@
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
+- `expvarreceiver`: Add implementation of new receiver. (#10183)
 
 ### 💡 Enhancements 💡
 
 - `transformprocessor`: Add transformation of metrics (#10100)
 - `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
+- `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
+- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
+- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 
 ### 🧰 Bug fixes 🧰
 
 - `datadogexporter`: add error checks for datadog exporter (#9964)
+- `datadogexporter`: Fix host aliases not being properly sent to the Datadog backend (#9748)
 - `groupbyattrsprocessor`: copied aggregationtemporality when grouping metrics. (#9088)
+- `jaeger`: Update OTLP-Jaeger translation of span events according to the OTel Spec: use `event` log field instead
+  of `message` to represent OTel Span Event Name (#10273)
 - `mongodbreceiver`: Fix issue where receiver startup could hang (#10111)
-- `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
+- `transformprocessor`: Fix issue where metric.aggregation_temporality and metric.is_monotic were not actually gettable or settable (#10197)
+- `signalfxexporter`: Emit prometheus compatible histogram/summary to signalfx #10299
+  - This behavior can be reverted using the `exporter.signalfxexporter.PrometheusCompatible` featuregate.
+- `podmanreceiver`: Container Stats Error structure (#9397)
+- `pkg/stanza`: pipeline.Operators() will return a consistently ordered list of operators whenever possible (#9761)
+- `tanzuobservabilityexporter`: add  error checks for tanzuobservability exporter (#10188)
 
 ## v0.51.0
 
@@ -41,7 +71,7 @@
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement. (#9258)
-- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968)
 
 ### 🚀 New components 🚀
 
@@ -52,21 +82,19 @@
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
-- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch`
   to `otelcol/elasticsearchreceiver` (#9757)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
 - `k8sattributesprocessor`: Support regex capture groups in tag_name (#9525)
 - `mongoreceiver`: Update metrics scope name from `otelcol/mongodb` to `otelcol/mongodbreceiver` (#9759)
 - `transformprocessor`: Add new `truncation` function to allow truncating string values in maps such as `attributes` or `resource.attributes` (#9546)
-- `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
 - `datadogexporter`: Add `api.fail_on_invalid_key` to fail fast if api key is invalid (#9426)
 - `transformprocessor`: Add support for functions to validate parameters (#9563)
 - `googlecloudexporter`: Add GCP cloud logging exporter (#9679)
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
 - `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
-- `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 
 ### 🧰 Bug fixes 🧰
 
@@ -139,7 +167,7 @@
 
 This release contains an issue in
 [Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver)
-causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being 
+causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being
 investigated and will be fixed in one of the new releases. More details:
 https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
@@ -154,7 +182,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 - `attributesprocessor`: Remove log names from filters (#9131)
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
-  - Users may have to update monitoring for a few Kubernetes cpu metrics, for 
+  - Users may have to update monitoring for a few Kubernetes cpu metrics, for
     more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩

@@ -15,6 +15,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -310,24 +311,24 @@ func accessMetricAggTemporality() pathGetSetter {
 			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
-				return metric.Sum().AggregationTemporality()
+				return int64(metric.Sum().AggregationTemporality())
 			case pmetric.MetricDataTypeHistogram:
-				return metric.Histogram().AggregationTemporality()
+				return int64(metric.Histogram().AggregationTemporality())
 			case pmetric.MetricDataTypeExponentialHistogram:
-				return metric.ExponentialHistogram().AggregationTemporality()
+				return int64(metric.ExponentialHistogram().AggregationTemporality())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newAggTemporality, ok := val.(pmetric.MetricAggregationTemporality); ok {
+			if newAggTemporality, ok := val.(int64); ok {
 				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
-					metric.Sum().SetAggregationTemporality(newAggTemporality)
+					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
 				case pmetric.MetricDataTypeHistogram:
-					metric.Histogram().SetAggregationTemporality(newAggTemporality)
+					metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
 				case pmetric.MetricDataTypeExponentialHistogram:
-					metric.ExponentialHistogram().SetAggregationTemporality(newAggTemporality)
+					metric.ExponentialHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
 				}
 			}
 		},
@@ -340,16 +341,18 @@ func accessMetricIsMonotonic() pathGetSetter {
 			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
-				return metric.Sum().IsMonotonic()
+				return strconv.FormatBool(metric.Sum().IsMonotonic())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newIsMonotonic, ok := val.(bool); ok {
+			if newIsMonotonic, ok := val.(string); ok {
 				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
-					metric.Sum().SetIsMonotonic(newIsMonotonic)
+					if boolVal, err := strconv.ParseBool(newIsMonotonic); err == nil {
+						metric.Sum().SetIsMonotonic(boolVal)
+					}
 				}
 			}
 		},

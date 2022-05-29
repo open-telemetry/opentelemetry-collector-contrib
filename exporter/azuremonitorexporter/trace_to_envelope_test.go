@@ -34,8 +34,8 @@ const (
 	defaultServiceName                      = "foo"
 	defaultServiceNamespace                 = "ns1"
 	defaultServiceInstance                  = "112345"
-	defaultInstrumentationLibraryName       = "myinstrumentationlib"
-	defaultInstrumentationLibraryVersion    = "1.0"
+	defaultScopeName                        = "myinstrumentationlib"
+	defaultScopeVersion                     = "1.0"
 	defaultHTTPMethod                       = "GET"
 	defaultHTTPServerSpanName               = "/bar"
 	defaultHTTPClientSpanName               = defaultHTTPMethod
@@ -93,7 +93,7 @@ var (
 	}
 
 	defaultResource               = getResource()
-	defaultInstrumentationLibrary = getInstrumentationLibrary()
+	defaultInstrumentationLibrary = getScope()
 )
 
 /*
@@ -602,8 +602,8 @@ func commonRequestDataValidations(
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
 
-	assert.Equal(t, defaultInstrumentationLibraryName, data.Properties[instrumentationLibraryName])
-	assert.Equal(t, defaultInstrumentationLibraryVersion, data.Properties[instrumentationLibraryVersion])
+	assert.Equal(t, defaultScopeName, data.Properties[instrumentationLibraryName])
+	assert.Equal(t, defaultScopeVersion, data.Properties[instrumentationLibraryVersion])
 }
 
 // Validate common RequestData values for HTTP Spans created using the default test values
@@ -853,10 +853,10 @@ func getResource() pcommon.Resource {
 }
 
 // Returns a default instrumentation library
-func getInstrumentationLibrary() pcommon.InstrumentationScope {
+func getScope() pcommon.InstrumentationScope {
 	il := pcommon.NewInstrumentationScope()
-	il.SetName(defaultInstrumentationLibraryName)
-	il.SetVersion(defaultInstrumentationLibraryVersion)
+	il.SetName(defaultScopeName)
+	il.SetVersion(defaultScopeVersion)
 	return il
 }
 

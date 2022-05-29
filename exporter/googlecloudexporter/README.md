@@ -17,7 +17,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
 
     *   Download a [binary or package of the OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases) that is appropriate for your platform, and includes the Google Cloud exporter.
     *   Create your own main package in Go, that pulls in just the plugins you need.
-    *   Use the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector-builder) to generate the Go main package and `go.mod`.
+    *   Use the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) to generate the Go main package and `go.mod`.
 
     </details>
 
@@ -221,9 +221,9 @@ will or will not proxy traffic as defined by these environment variables.
 The logging exporter processes OpenTelemetry log entries and exports them to GCP Cloud Logging. Logs can be collected using one 
 of the opentelemetry-collector-contrib log receivers, such as the [filelogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver).
 
-Log entries must contain any Cloud Logging-specific fields as a matching OpenTelemetry attribute (as shown in examples from the 
-[logs data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#google-cloud-logging)). 
-These attributes can be parsed using the various [log collection operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available) available upstream.
+Log entries must contain any Cloud Logging-specific fields as a matching OpenTelemetry attribute (as shown in examples from the
+[logs data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#google-cloud-logging)).
+These attributes can be parsed using the various [log operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available) available upstream.
 
 For example, the following config parses the [HTTPRequest field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest) from Apache log entries saved in `/var/log/apache.log`. 
 It also parses out the `timestamp` and inserts a non-default `log_name` attribute and GCP [MonitoredResource](https://cloud.google.com/logging/docs/reference/v2/rest/v2/MonitoredResource) attribute.
@@ -325,8 +325,8 @@ to a matching GCP log severity:
 |23 / Fatal|Alert|
 |24 / Fatal|Emergency|
 
-The upstream [severity parser](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/severity.md) (along 
-with the [regex parser](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/regex_parser.md)) allows for 
+The upstream [severity parser](../../pkg/stanza/docs/types/severity.md) (along
+with the [regex parser](../../pkg/stanza/docs/operators/regex_parser.md)) allows for
 additional flexibility in parsing log severity from incoming entries.
 
 ## Recommendations

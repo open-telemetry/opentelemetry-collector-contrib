@@ -26,33 +26,33 @@ import (
 )
 
 func TestBuildValid(t *testing.T) {
-	cfg := NewNoopOperatorConfig("test")
+	cfg := NewConfig("test")
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	require.IsType(t, &NoopOperator{}, op)
+	require.IsType(t, &Transformer{}, op)
 }
 
 func TestBuildInvalid(t *testing.T) {
-	cfg := NewNoopOperatorConfig("test")
+	cfg := NewConfig("test")
 	_, err := cfg.Build(nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "build context is missing a logger")
 }
 
 func TestProcess(t *testing.T) {
-	cfg := NewNoopOperatorConfig("test")
+	cfg := NewConfig("test")
 	cfg.OutputIDs = []string{"fake"}
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
-	op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 	entry := entry.New()
 	entry.AddAttribute("label", "value")
 	entry.AddResourceKey("resource", "value")
-	entry.TraceId = []byte{0x01}
-	entry.SpanId = []byte{0x01}
+	entry.TraceID = []byte{0x01}
+	entry.SpanID = []byte{0x01}
 	entry.TraceFlags = []byte{0x01}
 
 	expected := entry.Copy()
