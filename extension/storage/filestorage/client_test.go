@@ -18,8 +18,6 @@ package filestorage
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -30,7 +28,7 @@ import (
 )
 
 func TestClientOperations(t *testing.T) {
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -65,7 +63,7 @@ func TestClientOperations(t *testing.T) {
 }
 
 func TestClientBatchOperations(t *testing.T) {
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -183,7 +181,7 @@ func TestNewClientTransactionErrors(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			tempDir := newTempDir(t)
+			tempDir := t.TempDir()
 			dbFile := filepath.Join(tempDir, "my_db")
 
 			client, err := newClient(dbFile, timeout)
@@ -202,7 +200,7 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 	temp := defaultBucket
 	defaultBucket = nil
 
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -213,7 +211,7 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 }
 
 func BenchmarkClientGet(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -229,7 +227,7 @@ func BenchmarkClientGet(b *testing.B) {
 }
 
 func BenchmarkClientGet100(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -249,7 +247,7 @@ func BenchmarkClientGet100(b *testing.B) {
 }
 
 func BenchmarkClientSet(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -266,7 +264,7 @@ func BenchmarkClientSet(b *testing.B) {
 }
 
 func BenchmarkClientSet100(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -286,7 +284,7 @@ func BenchmarkClientSet100(b *testing.B) {
 }
 
 func BenchmarkClientDelete(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -309,7 +307,7 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 	entry := make([]byte, entrySizeInBytes)
 	var testKey string
 
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -343,7 +341,7 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	entryCount := 2000
 	var testKey string
 
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -369,11 +367,4 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 		require.NoError(b, err)
 		b.StartTimer()
 	}
-}
-
-func newTempDir(tb testing.TB) string {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(tb, err)
-	tb.Cleanup(func() { os.RemoveAll(tempDir) })
-	return tempDir
 }

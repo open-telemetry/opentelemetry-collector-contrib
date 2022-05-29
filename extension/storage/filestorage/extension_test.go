@@ -188,8 +188,7 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	ctx := context.Background()
 
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -217,8 +216,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 }
 
 func newTestExtension(t *testing.T) storage.Extension {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -240,8 +238,7 @@ func newTestEntity(name string) config.ComponentID {
 func TestCompaction(t *testing.T) {
 	ctx := context.Background()
 
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -323,8 +320,7 @@ func TestCompaction(t *testing.T) {
 func TestCompactionRemoveTemp(t *testing.T) {
 	ctx := context.Background()
 
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -364,8 +360,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	require.Equal(t, fileName, files[0].Name())
 
 	// perform compaction in different directory
-	emptyTempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	emptyTempDir := t.TempDir()
 
 	c, ok = client.(*fileStorageClient)
 	require.True(t, ok)
