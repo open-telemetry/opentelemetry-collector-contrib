@@ -6,13 +6,13 @@
 | Supported pipeline types | metrics           |
 | Distributions            | [core], [contrib] |
 
-Exports data to a [Prometheus](https://prometheus.io/) back-end.
+Exports data in the [Prometheus format](https://prometheus.io/docs/concepts/data_model/), which allows it to be scraped by a [Prometheus](https://prometheus.io/) server.
 
 ## Getting Started
 
 The following settings are required:
 
-- `endpoint` (no default): the address on which the Prometheus scrape handler will be run on.
+- `endpoint` (no default): the address on which metrics will be exposed by the Prometheus scrape handler.
 
 The following settings can be optionally configured:
 
