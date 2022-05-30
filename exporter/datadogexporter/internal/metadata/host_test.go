@@ -15,6 +15,7 @@
 package metadata
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -33,24 +34,32 @@ func TestHost(t *testing.T) {
 	// if the cache key is already set.
 	cache.Cache.Delete(cache.CanonicalHostnameKey)
 
-	host := GetHost(logger, "test-host")
+	p, err := buildCurrentProvider(logger, "test-host")
+	require.NoError(t, err)
+	host, err := p.Hostname(context.Background())
+	require.NoError(t, err)
 	assert.Equal(t, host, "test-host")
 
 	// config.Config.Hostname does not get stored in the cache
-	host = GetHost(logger, "test-host-2")
+	p, err = buildCurrentProvider(logger, "test-host-2")
+	require.NoError(t, err)
+	host, err = p.Hostname(context.Background())
+	require.NoError(t, err)
 	assert.Equal(t, host, "test-host-2")
 
 	// Disable EC2 Metadata service to prevent fetching hostname from there,
 	// in case the test is running on an EC2 instance
 	const awsEc2MetadataDisabled = "AWS_EC2_METADATA_DISABLED"
 	curr := os.Getenv(awsEc2MetadataDisabled)
-	err := os.Setenv(awsEc2MetadataDisabled, "true")
+	err = os.Setenv(awsEc2MetadataDisabled, "true")
 	require.NoError(t, err)
 	defer os.Setenv(awsEc2MetadataDisabled, curr)
 
-	host = GetHost(logger, "")
+	p, err = buildCurrentProvider(logger, "")
+	require.NoError(t, err)
+	host, err = p.Hostname(context.Background())
+	require.NoError(t, err)
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
-	// TODO: Investigate why the returned host contains more data on github actions.
 	assert.Contains(t, host, osHostname)
 }

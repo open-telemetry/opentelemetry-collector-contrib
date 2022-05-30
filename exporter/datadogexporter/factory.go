@@ -16,6 +16,7 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -28,9 +29,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -41,6 +44,17 @@ const (
 
 type factory struct {
 	onceMetadata sync.Once
+
+	onceProvider sync.Once
+	hostProvider provider.HostnameProvider
+	providerErr  error
+}
+
+func (f *factory) HostnameProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+	f.onceProvider.Do(func() {
+		f.hostProvider, f.providerErr = metadata.GetHostnameProvider(logger, configHostname)
+	})
+	return f.hostProvider, f.providerErr
 }
 
 // NewFactory creates a Datadog exporter factory
@@ -136,6 +150,11 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 
+	hostProvider, err := f.HostnameProvider(set.Logger, cfg.Hostname)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn consumer.ConsumeMetricsFunc
 
@@ -147,13 +166,13 @@ func (f *factory) createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
+				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
 			})
 
 			return nil
 		}
 	} else {
-		exp, err := newMetricsExporter(ctx, set, cfg, &f.onceMetadata)
+		exp, err := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
 		if err != nil {
 			cancel()
 			return nil, err
@@ -196,6 +215,11 @@ func (f *factory) createTracesExporter(
 		return nil, err
 	}
 
+	hostProvider, err := f.HostnameProvider(set.Logger, cfg.Hostname)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	var pushTracesFn consumer.ConsumeTracesFunc
 
@@ -207,13 +231,13 @@ func (f *factory) createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
+				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
 			})
 
 			return nil
 		}
 	} else {
-		exporter, err := newTracesExporter(ctx, set, cfg, &f.onceMetadata)
+		exporter, err := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
 		if err != nil {
 			cancel()
 			return nil, err

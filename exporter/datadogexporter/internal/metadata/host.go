@@ -15,44 +15,65 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
-// GetHost gets the hostname according to configuration.
+func buildCurrentProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+	return &currentProvider{
+		logger:         logger,
+		configHostname: configHostname,
+	}, nil
+}
+
+func GetHostnameProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+	return buildCurrentProvider(logger, configHostname)
+}
+
+var _ provider.HostnameProvider = (*currentProvider)(nil)
+
+type currentProvider struct {
+	logger         *zap.Logger
+	configHostname string
+}
+
+// Hostname gets the hostname according to configuration.
 // It checks in the following order
 // 1. Configuration
 // 2. Cache
 // 3. EC2 instance metadata
 // 4. System
-func GetHost(logger *zap.Logger, configHostname string) string {
-	if configHostname != "" {
-		return configHostname
+func (c *currentProvider) Hostname(context.Context) (string, error) {
+	if c.configHostname != "" {
+		return c.configHostname, nil
 	}
 
 	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
-		return cacheVal.(string)
+		return cacheVal.(string), nil
 	}
 
-	ec2Info := ec2.GetHostInfo(logger)
-	hostname := ec2Info.GetHostname(logger)
+	ec2Info := ec2.GetHostInfo(c.logger)
+	hostname := ec2Info.GetHostname(c.logger)
 
 	if hostname == "" {
 		// Get system hostname
-		systemInfo := system.GetHostInfo(logger)
-		hostname = systemInfo.GetHostname(logger)
+		systemInfo := system.GetHostInfo(c.logger)
+		hostname = systemInfo.GetHostname(c.logger)
 	}
 
 	if err := valid.Hostname(hostname); err != nil {
 		// If invalid log but continue
-		logger.Error("Detected hostname is not valid", zap.Error(err))
+		c.logger.Error("Detected hostname is not valid", zap.Error(err))
 	}
 
-	logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
+	c.logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
 	cache.Cache.Set(cache.CanonicalHostnameKey, hostname, cache.NoExpiration)
-	return hostname
+	return hostname, nil
 }

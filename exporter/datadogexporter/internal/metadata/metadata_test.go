@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
@@ -71,8 +72,11 @@ func TestFillHostMetadata(t *testing.T) {
 		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
 	}
 
+	hostProvider, err := GetHostnameProvider(zap.NewNop(), "hostname")
+	require.NoError(t, err)
+
 	metadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
-	fillHostMetadata(params, pcfg, metadata)
+	fillHostMetadata(params, pcfg, hostProvider, metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
 	assert.Equal(t, metadata.Flavor, "otelcontribcol")
@@ -86,7 +90,7 @@ func TestFillHostMetadata(t *testing.T) {
 		Tags:             &HostTags{},
 	}
 
-	fillHostMetadata(params, pcfg, metadataWithVals)
+	fillHostMetadata(params, pcfg, hostProvider, metadataWithVals)
 	assert.Equal(t, metadataWithVals.InternalHostname, "my-custom-hostname")
 	assert.Equal(t, metadataWithVals.Flavor, "otelcontribcol")
 	assert.Equal(t, metadataWithVals.Version, "1.0")
@@ -204,6 +208,9 @@ func TestPusher(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
+	hostProvider, err := GetHostnameProvider(zap.NewNop(), "")
+	require.NoError(t, err)
+
 	attrs := testutils.NewAttributeMap(map[string]string{
 		attributes.AttributeDatadogHostname: "datadog-hostname",
 	})
@@ -214,11 +221,11 @@ func TestPusher(t *testing.T) {
 	defer server.Close()
 	pcfg.MetricsEndpoint = server.URL
 
-	go Pusher(ctx, params, pcfg, attrs)
+	go Pusher(ctx, params, pcfg, hostProvider, attrs)
 
 	body := <-server.MetadataChan
 	var recvMetadata HostMetadata
-	err := json.Unmarshal(body, &recvMetadata)
+	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
 	assert.Equal(t, recvMetadata.Version, mockBuildInfo.Version)
