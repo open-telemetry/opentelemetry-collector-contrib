@@ -25,39 +25,39 @@ import (
 )
 
 func init() {
-	operator.Register("drop_output", func() operator.Builder { return NewDropOutputConfig("") })
+	operator.Register("drop_output", func() operator.Builder { return NewConfig("") })
 }
 
-// NewDropOutputConfig creates a new drop output config with default values
-func NewDropOutputConfig(operatorID string) *DropOutputConfig {
-	return &DropOutputConfig{
+// NewConfig creates a new drop output config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		OutputConfig: helper.NewOutputConfig(operatorID, "drop_output"),
 	}
 }
 
-// DropOutputConfig is the configuration of a drop output operator.
-type DropOutputConfig struct {
+// Config is the configuration of a drop output operator.
+type Config struct {
 	helper.OutputConfig `yaml:",inline"`
 }
 
 // Build will build a drop output operator.
-func (c DropOutputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	outputOperator, err := c.OutputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DropOutput{
+	return &Output{
 		OutputOperator: outputOperator,
 	}, nil
 }
 
-// DropOutput is an operator that consumes and ignores incoming entries.
-type DropOutput struct {
+// Output is an operator that consumes and ignores incoming entries.
+type Output struct {
 	helper.OutputOperator
 }
 
 // Process will drop the incoming entry.
-func (p *DropOutput) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Output) Process(ctx context.Context, entry *entry.Entry) error {
 	return nil
 }

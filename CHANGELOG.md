@@ -4,20 +4,28 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
+- `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
+- `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 
 ### 💡 Enhancements 💡
 
+- `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+
 ### 🧰 Bug fixes 🧰
 
+- `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 - `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
 
 ## v0.52.0
 
 ### 🛑 Breaking changes 🛑
 
+- `jmxreceiver`: Hash the jars provided to JMX Receiver and only allow if they match an approved list (#9687)
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚀 New components 🚀
@@ -65,7 +73,7 @@
 ### 🚩 Deprecations 🚩
 
 - `exporter/azuremonitor`: Deprecate use of LogRecord.Name as the log envelope category name. There is no replacement. (#9258)
-- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968) 
+- `processor/k8sattributes`: Deprecate use of k8s.cluster.name metadata parameter (obsolete) (#9968)
 
 ### 🚀 New components 🚀
 
@@ -76,7 +84,7 @@
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Replace enum attributes values with typed constants (#9683)
-- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch` 
+- `elasticsearchreceiver`: Update metrics scope name from `otelcol/elasticsearch`
   to `otelcol/elasticsearchreceiver` (#9757)
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
@@ -161,7 +169,7 @@
 
 This release contains an issue in
 [Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver)
-causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being 
+causing 30% memory consumption increase when there is a lot of target churn. The issue is currently being
 investigated and will be fixed in one of the new releases. More details:
 https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
@@ -176,7 +184,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 - `attributesprocessor`: Remove log names from filters (#9131)
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
-  - Users may have to update monitoring for a few Kubernetes cpu metrics, for 
+  - Users may have to update monitoring for a few Kubernetes cpu metrics, for
     more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩

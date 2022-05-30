@@ -48,7 +48,7 @@ func (f *fakeJournaldCmd) StdoutPipe() (io.ReadCloser, error) {
 }
 
 func TestInputJournald(t *testing.T) {
-	cfg := NewJournaldInputConfig("my_journald_input")
+	cfg := NewConfig("my_journald_input")
 	cfg.OutputIDs = []string{"output"}
 
 	op, err := cfg.Build(testutil.Logger(t))
@@ -63,7 +63,7 @@ func TestInputJournald(t *testing.T) {
 	err = op.SetOutputs([]operator.Operator{mockOutput})
 	require.NoError(t, err)
 
-	op.(*JournaldInput).newCmd = func(ctx context.Context, cursor []byte) cmd {
+	op.(*Input).newCmd = func(ctx context.Context, cursor []byte) cmd {
 		return &fakeJournaldCmd{}
 	}
 
@@ -118,8 +118,8 @@ func TestInputJournald(t *testing.T) {
 	}
 }
 
-func TestJournaldInputConfig(t *testing.T) {
-	expect := NewJournaldInputConfig("my_journald_input")
+func TestConfig(t *testing.T) {
+	expect := NewConfig("my_journald_input")
 
 	input := map[string]interface{}{
 		"id":         "my_journald_input",
@@ -130,7 +130,7 @@ func TestJournaldInputConfig(t *testing.T) {
 		"resource":   map[string]interface{}{},
 	}
 
-	var actual JournaldInputConfig
+	var actual Config
 	err := helper.UnmarshalMapstructure(input, &actual)
 	require.NoError(t, err)
 	require.Equal(t, expect, &actual)

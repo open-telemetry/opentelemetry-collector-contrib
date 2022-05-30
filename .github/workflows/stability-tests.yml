@@ -61,6 +61,12 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: stability-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Install Dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
       - name: Run Stability Tests
         run: make stability-tests
         env:

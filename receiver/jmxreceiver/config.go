@@ -15,7 +15,12 @@
 package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"io"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -53,6 +58,8 @@ type Config struct {
 	TruststorePath string `mapstructure:"truststore_path"`
 	// The truststore password for SSL
 	TruststorePassword string `mapstructure:"truststore_password"`
+	// The truststore type for SSL
+	TruststoreType string `mapstructure:"truststore_type"`
 	// The JMX remote profile.  Should be one of:
 	// `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or
 	// `"TLS SASL/CRAM-MD5"`, though no enforcement is applied.
@@ -167,12 +174,64 @@ func (c *Config) parseClasspath() string {
 	return strings.Join(classPathElems, ":")
 }
 
+func hashFile(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+func (c *Config) validateJar(supportedJarDetails map[string]supportedJar, jar string) error {
+	hash, err := hashFile(jar)
+	if err != nil {
+		return fmt.Errorf("error hashing file: %w", err)
+	}
+
+	jarDetails, ok := supportedJarDetails[hash]
+	if !ok {
+		return errors.New("jar hash does not match known versions")
+	}
+	if jarDetails.addedValidation != nil {
+		if err = jarDetails.addedValidation(c, jarDetails); err != nil {
+			return fmt.Errorf("jar failed validation: %w", err)
+		}
+	}
+
+	return nil
+}
+
 var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
 var validTargetSystems = map[string]struct{}{"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
-	"jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
+	"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
+var AdditionalTargetSystems = "n/a"
+
+// Separated into two functions for tests
+func init() {
+	initAdditionalTargetSystems()
+}
+
+func initAdditionalTargetSystems() {
+	if AdditionalTargetSystems != "n/a" {
+		additionalTargets := strings.Split(AdditionalTargetSystems, ",")
+		for _, t := range additionalTargets {
+			validTargetSystems[t] = struct{}{}
+		}
+	}
+}
 
 func (c *Config) validate() error {
 	var missingFields []string
+	if c.JARPath == "" {
+		missingFields = append(missingFields, "`jar_path`")
+	}
 	if c.Endpoint == "" {
 		missingFields = append(missingFields, "`endpoint`")
 	}
@@ -188,6 +247,19 @@ func (c *Config) validate() error {
 			baseMsg += "s"
 		}
 		return fmt.Errorf("%v: %v", baseMsg, strings.Join(missingFields, ", "))
+	}
+
+	err := c.validateJar(jmxMetricsGathererVersions, c.JARPath)
+	if err != nil {
+		return fmt.Errorf("%v error validating `jar_path`: %w", c.ID(), err)
+	}
+
+	for _, additionalJar := range c.AdditionalJars {
+		err := c.validateJar(wildflyJarVersions, additionalJar)
+		if err != nil {
+			return fmt.Errorf("%v error validating `additional_jars`. Additional Jar should be a jboss-client.jar from Wildfly, "+
+				"no other integrations require additional jars at this time: %w", c.ID(), err)
+		}
 	}
 
 	if c.CollectionInterval < 0 {
