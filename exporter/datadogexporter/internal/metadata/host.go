@@ -19,21 +19,47 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
+
+const UsePreviewHostnameLogic = false
+
+func buildPreviewProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+	chain, err := provider.Chain(
+		logger,
+		map[string]provider.HostnameProvider{
+			"config": provider.Config(configHostname),
+			"ec2":    ec2.NewProvider(logger),
+			"system": system.NewProvider(logger),
+		},
+		[]string{"config", "ec2", "system"},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return provider.Once(chain), nil
+}
 
 func buildCurrentProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
 	return &currentProvider{
 		logger:         logger,
 		configHostname: configHostname,
+		systemProvider: system.NewProvider(logger),
+		ec2Provider:    ec2.NewProvider(logger),
 	}, nil
 }
 
 func GetHostnameProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+	if UsePreviewHostnameLogic {
+		return buildPreviewProvider(logger, configHostname)
+	}
+
 	return buildCurrentProvider(logger, configHostname)
 }
 
@@ -42,6 +68,8 @@ var _ provider.HostnameProvider = (*currentProvider)(nil)
 type currentProvider struct {
 	logger         *zap.Logger
 	configHostname string
+	systemProvider *system.Provider
+	ec2Provider    *ec2.Provider
 }
 
 // Hostname gets the hostname according to configuration.
@@ -50,7 +78,7 @@ type currentProvider struct {
 // 2. Cache
 // 3. EC2 instance metadata
 // 4. System
-func (c *currentProvider) Hostname(context.Context) (string, error) {
+func (c *currentProvider) Hostname(ctx context.Context) (string, error) {
 	if c.configHostname != "" {
 		return c.configHostname, nil
 	}
@@ -59,13 +87,16 @@ func (c *currentProvider) Hostname(context.Context) (string, error) {
 		return cacheVal.(string), nil
 	}
 
-	ec2Info := ec2.GetHostInfo(c.logger)
+	ec2Info := c.ec2Provider.HostInfo()
 	hostname := ec2Info.GetHostname(c.logger)
 
 	if hostname == "" {
 		// Get system hostname
-		systemInfo := system.GetHostInfo(c.logger)
-		hostname = systemInfo.GetHostname(c.logger)
+		var err error
+		hostname, err = c.systemProvider.Hostname(ctx)
+		if err != nil {
+			c.logger.Debug("system provider is unavailable", zap.Error(err))
+		}
 	}
 
 	if err := valid.Hostname(hostname); err != nil {
