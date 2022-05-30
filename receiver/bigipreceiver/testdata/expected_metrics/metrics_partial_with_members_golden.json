@@ -216,7 +216,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -437,7 +438,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -658,7 +660,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -879,7 +882,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -1115,7 +1119,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -1351,7 +1356,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -1587,7 +1593,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -1823,7 +1830,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]
@@ -2059,7 +2067,8 @@
                   }
                ],
                "scope": {
-                  "name": "otelcol/bigipreceiver"
+                  "name": "otelcol/bigipreceiver",
+                  "version": "latest"
                }
             }
          ]

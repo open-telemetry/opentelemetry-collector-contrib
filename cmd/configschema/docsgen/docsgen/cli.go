@@ -19,7 +19,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"text/template"
@@ -129,7 +129,7 @@ func writeConfigDoc(
 	if err != nil {
 		panic(err)
 	}
-	err = writeFile(path.Join(dir, mdFileName), mdBytes, 0644)
+	err = writeFile(filepath.Join(dir, mdFileName), mdBytes, 0644)
 	if err != nil {
 		panic(err)
 	}

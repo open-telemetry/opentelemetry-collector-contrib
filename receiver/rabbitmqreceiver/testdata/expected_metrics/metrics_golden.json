@@ -4,7 +4,8 @@
          "scopeMetrics": [
             {
                "scope": {
-                  "name": "otelcol/rabbitmqreceiver"
+                  "name": "otelcol/rabbitmqreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {
@@ -88,7 +89,8 @@
          "scopeMetrics": [
             {
                "scope": {
-                  "name": "otelcol/rabbitmqreceiver"
+                  "name": "otelcol/rabbitmqreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {

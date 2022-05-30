@@ -40,7 +40,7 @@ func createMetricsReceiver(
 		return nil, errConfigNotActiveDirectory
 	}
 
-	adds := newActiveDirectoryDSScraper(c.Metrics)
+	adds := newActiveDirectoryDSScraper(c.Metrics, params)
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
 		adds.scrape,

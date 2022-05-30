@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
@@ -76,9 +75,8 @@ func TestExporter(t *testing.T) {
 	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
 	te := newCoralogixExporter(apiConfig, params)
-	te.client.startConnection(context.Background(), componenttest.NewNopHost())
 	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.client.startConnection(context.Background(), componenttest.NewNopHost()))
 	td := ptrace.NewTraces()
-	err := te.tracesPusher(context.Background(), td)
-	assert.Nil(t, err)
+	assert.NoError(t, te.tracesPusher(context.Background(), td))
 }

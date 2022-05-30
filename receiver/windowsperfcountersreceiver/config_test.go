@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
-
-	winperfcounters "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -46,13 +44,13 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
 
-	counterConfig := winperfcounters.CounterConfig{
+	counterConfig := CounterConfig{
 		Name: "counter1",
-		MetricRep: winperfcounters.MetricRep{
+		MetricRep: MetricRep{
 			Name: "metric",
 		},
 	}
-	defaultConfigSingleObject.(*Config).PerfCounters = []winperfcounters.ObjectConfig{{Object: "object", Counters: []winperfcounters.CounterConfig{counterConfig}}}
+	defaultConfigSingleObject.(*Config).PerfCounters = []ObjectConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
 	defaultConfigSingleObject.(*Config).MetricMetaData = map[string]MetricConfig{
 		"metric": {
 			Description: "desc",
@@ -63,10 +61,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, defaultConfigSingleObject, r0)
 
-	counterConfig2 := winperfcounters.CounterConfig{
+	counterConfig2 := CounterConfig{
 		Name: "counter2",
-		MetricRep: winperfcounters.MetricRep{
-
+		MetricRep: MetricRep{
 			Name: "metric2",
 		},
 	}
@@ -77,14 +74,14 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			CollectionInterval: 30 * time.Second,
 		},
-		PerfCounters: []winperfcounters.ObjectConfig{
+		PerfCounters: []ObjectConfig{
 			{
 				Object:   "object1",
-				Counters: []winperfcounters.CounterConfig{counterConfig},
+				Counters: []CounterConfig{counterConfig},
 			},
 			{
 				Object:   "object2",
-				Counters: []winperfcounters.CounterConfig{counterConfig, counterConfig2},
+				Counters: []CounterConfig{counterConfig, counterConfig2},
 			},
 		},
 		MetricMetaData: map[string]MetricConfig{
@@ -114,10 +111,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricsDefined",
 			TestPath: filepath.Join("testdata", "config-nometrics.yaml"),
 			Expected: Config{
-				PerfCounters: []winperfcounters.ObjectConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []winperfcounters.CounterConfig{{Name: "counter1"}},
+						Counters: []CounterConfig{{Name: "counter1"}},
 					},
 				},
 			},
@@ -126,10 +123,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricSpecified",
 			TestPath: filepath.Join("testdata", "config-nometricspecified.yaml"),
 			Expected: Config{
-				PerfCounters: []winperfcounters.ObjectConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []winperfcounters.CounterConfig{{Name: "counter1"}},
+						Counters: []CounterConfig{{Name: "counter1"}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -145,10 +142,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "SumMetric",
 			TestPath: filepath.Join("testdata", "config-summetric.yaml"),
 			Expected: Config{
-				PerfCounters: []winperfcounters.ObjectConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []winperfcounters.CounterConfig{{Name: "counter1", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -167,10 +164,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "MetricUnspecifiedType",
 			TestPath: filepath.Join("testdata", "config-unspecifiedmetrictype.yaml"),
 			Expected: Config{
-				PerfCounters: []winperfcounters.ObjectConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []winperfcounters.CounterConfig{{Name: "counter1", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{

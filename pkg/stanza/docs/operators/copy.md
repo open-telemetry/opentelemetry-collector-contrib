@@ -1,6 +1,6 @@
 ## `copy` operator
 
-The `copy` operator copies a value from one [field](/docs/types/field.md) to another.
+The `copy` operator copies a value from one [field](../types/field.md) to another.
 
 ### Configuration Fields
 
@@ -8,10 +8,10 @@ The `copy` operator copies a value from one [field](/docs/types/field.md) to ano
 | ---        | ---              | ---         |
 | `id`       | `copy`           | A unique identifier for the operator. |
 | `output`   | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `from`     | required         | The [field](/docs/types/field.md) from which the value should be copied. |
-| `to`       | required         | The [field](/docs/types/field.md) to which the value should be copied. |
-| `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
-| `if`       |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
+| `from`     | required         | The [field](../types/field.md) from which the value should be copied. |
+| `to`       | required         | The [field](../types/field.md) to which the value should be copied. |
+| `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
+| `if`       |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
 ### Example Configurations:
 

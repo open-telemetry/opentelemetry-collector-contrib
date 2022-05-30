@@ -14,8 +14,6 @@
 
 package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 
-//go:generate mockery --name=Builder --output=../testutil --outpkg=testutil --filename=operator_builder.go --structname=OperatorBuilder
-
 import (
 	"encoding/json"
 	"fmt"

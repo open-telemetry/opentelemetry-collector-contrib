@@ -46,12 +46,11 @@ func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.T
 		rspans := td.ResourceSpans().At(i)
 		ctx.resource = rspans.Resource()
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			il := rspans.ScopeSpans().At(j).Scope()
-			ctx.il = il
-			spans := rspans.ScopeSpans().At(j).Spans()
+			sspan := rspans.ScopeSpans().At(j)
+			ctx.il = sspan.Scope()
+			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				ctx.span = span
+				ctx.span = spans.At(k)
 
 				for _, statement := range p.queries {
 					if statement.Condition(ctx) {

@@ -19,6 +19,7 @@ import (
 	"go/build"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -31,10 +32,10 @@ import (
 func TestPackageDirLocal(t *testing.T) {
 	pkg := resourcetotelemetry.Settings{}
 	pkgValue := reflect.ValueOf(pkg)
-	dr := testDR("../..")
+	dr := testDR(filepath.Join("..", ".."))
 	output, err := dr.PackageDir(pkgValue.Type())
 	assert.NoError(t, err)
-	assert.Equal(t, "../../pkg/resourcetotelemetry", output)
+	assert.Equal(t, filepath.Join("..", "..", "pkg", "resourcetotelemetry"), output)
 }
 
 func TestPackageDirError(t *testing.T) {
@@ -66,15 +67,15 @@ func TestExternalPkgDir(t *testing.T) {
 	if goPath == "" {
 		goPath = build.Default.GOPATH
 	}
-	testLine, testVers, err := grepMod(path.Join(dr.SrcRoot, "go.mod"), testPkg)
+	testLine, testVers, err := grepMod(filepath.Join(dr.SrcRoot, "go.mod"), testPkg)
 	assert.NoError(t, err)
-	expected := fmt.Sprint(path.Join(goPath, "pkg", "mod", testLine+"@"+testVers, "runtime"))
+	expected := fmt.Sprint(filepath.Join(goPath, "pkg", "mod", testLine+"@"+testVers, "runtime"))
 	assert.Equal(t, expected, pkgPath)
 }
 
 func TestExternalPkgDirReplace(t *testing.T) {
-	pkg := DefaultModule + "/pkg/resourcetotelemetry"
-	pkgPath, err := testDR("../..").externalPackageDir(pkg)
+	pkg := path.Join(DefaultModule, "pkg/resourcetotelemetry")
+	pkgPath, err := testDR(filepath.Join("..", "..")).externalPackageDir(pkg)
 	assert.NoError(t, err)
-	assert.Equal(t, "../../pkg/resourcetotelemetry", pkgPath)
+	assert.Equal(t, filepath.Join("..", "..", "pkg", "resourcetotelemetry"), pkgPath)
 }

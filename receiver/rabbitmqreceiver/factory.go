@@ -60,7 +60,7 @@ func createMetricsReceiver(ctx context.Context, params component.ReceiverCreateS
 		return nil, errConfigNotRabbit
 	}
 
-	rabbitScraper := newScraper(params.Logger, cfg, params.TelemetrySettings)
+	rabbitScraper := newScraper(params.Logger, cfg, params)
 	scraper, err := scraperhelper.NewScraper(typeStr, rabbitScraper.scrape, scraperhelper.WithStart(rabbitScraper.start))
 	if err != nil {
 		return nil, err
