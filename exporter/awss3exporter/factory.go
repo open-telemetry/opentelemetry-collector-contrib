@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awss3exporter
+package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr       = "awss3"
+	typeStr = "awss3"
 )
 
 // NewFactory creates a factory for S3 exporter.
@@ -32,7 +32,6 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter),
 		component.WithLogsExporter(createLogsExporter),
 		component.WithTracesExporter(createTracesExporter))
 }
@@ -42,28 +41,13 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		S3Uploader: S3UploaderConfig{
-			Region:              "us-east-1",
-			S3Partition:         "minute",
+			Region:      "us-east-1",
+			S3Partition: "minute",
 		},
 
-		MetricDescriptors: make([]MetricDescriptor, 0),
-		logger:            nil,
+		MarshalerName: "otlp_json",
+		logger:        nil,
 	}
-}
-
-func createMetricsExporter(ctx context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.MetricsExporter, error) {
-
-	s3Exporter, err := NewS3Exporter(config, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return exporterhelper.NewMetricsExporter(
-		config,
-		params,
-		s3Exporter.ConsumeMetrics)
 }
 
 func createLogsExporter(ctx context.Context,

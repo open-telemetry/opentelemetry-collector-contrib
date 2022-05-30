@@ -22,6 +22,7 @@ exporter/awscloudwatchlogsexporter                   @open-telemetry/collector-c
 exporter/awsemfexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia
 exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-contrib-approvers @Aneurysm9 @alolita
+exporter/awss3exporter/                              @open-telemetry/collector-contrib-approvers @pmm-sumo
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @willarmiros
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti

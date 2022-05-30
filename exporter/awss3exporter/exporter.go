@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awss3exporter
+package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
 	"context"
@@ -27,13 +27,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var logsMarshaler = plog.NewJSONMarshaler()
-var traceMarshaler = ptrace.NewJSONMarshaler()
-
 type S3Exporter struct {
-	config           config.Exporter
-	metricTranslator metricTranslator
-	logger           *zap.Logger
+	config     config.Exporter
+	dataWriter DataWriter
+	logger     *zap.Logger
+	marshaler  Marshaler
 }
 
 func NewS3Exporter(config config.Exporter,
@@ -47,12 +45,22 @@ func NewS3Exporter(config config.Exporter,
 	expConfig := config.(*Config)
 	expConfig.logger = logger
 
-	expConfig.Validate()
+	validateConfig := expConfig.Validate()
+
+	if validateConfig != nil {
+		return nil, validateConfig
+	}
+
+	marshaler, err := NewMarshaler(expConfig.MarshalerName, logger)
+	if err != nil {
+		return nil, errors.New("unknown marshaler")
+	}
 
 	s3Exporter := &S3Exporter{
-		config:           config,
-		metricTranslator: newMetricTranslator(*expConfig),
-		logger:           logger,
+		config:     config,
+		dataWriter: &S3Writer{},
+		logger:     logger,
+		marshaler:  marshaler,
 	}
 	return s3Exporter, nil
 }
