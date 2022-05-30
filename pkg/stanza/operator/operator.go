@@ -14,8 +14,6 @@
 
 package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 
-//go:generate mockery --name=^(Operator)$ --output=../testutil --outpkg=testutil --case=snake
-
 import (
 	"context"
 

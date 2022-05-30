@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,12 +35,33 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 type mockPerfCounter struct {
-	path        string
-	scrapeErr   error
-	shutdownErr error
+	counterValues []winperfcounters.CounterValue
+	metricRep     MetricRep
+	path          string
+	scrapeErr     error
+	closeErr      error
+}
+
+func (w *mockPerfCounter) Path() string {
+	return w.path
+}
+
+func (w *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error) {
+	return w.counterValues, w.scrapeErr
+}
+
+func (w *mockPerfCounter) Close() error {
+	return w.closeErr
+}
+
+func mockPerfCounterFactory(mpc mockPerfCounter) newWatcherFunc {
+	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+		return &mpc, nil
+	}
 }
 
 func Test_WindowsPerfCounterScraper(t *testing.T) {
@@ -247,7 +270,8 @@ func TestInitWatchers(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			watchers, errs := initWatchers(test.cfgs)
+			s := &scraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher}
+			watchers, errs := s.initWatchers()
 			if test.expectedErr != "" {
 				require.EqualError(t, errs, test.expectedErr)
 			} else {
@@ -255,6 +279,120 @@ func TestInitWatchers(t *testing.T) {
 			}
 			for i, watcher := range watchers {
 				require.Equal(t, test.expectedPaths[i], watcher.Path())
+			}
+		})
+	}
+}
+
+func TestScrape(t *testing.T) {
+	testCases := []struct {
+		name              string
+		cfg               Config
+		mockCounterValues []winperfcounters.CounterValue
+	}{
+		{
+			name: "metricsWithoutInstance",
+			cfg: Config{
+				PerfCounters: []ObjectConfig{
+					{
+						Counters: []CounterConfig{
+							{
+								MetricRep: MetricRep{
+									Name: "metric1",
+								},
+							},
+							{
+								MetricRep: MetricRep{
+									Name: "metric2",
+									Attributes: map[string]string{
+										"test.attribute": "test-value",
+									},
+								},
+							},
+						},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric1": {Description: "metric1 description", Unit: "1"},
+					"metric2": {Description: "metric2 description", Unit: "2"},
+				},
+			},
+			mockCounterValues: []winperfcounters.CounterValue{{Value: 1.0}},
+		},
+		{
+			name: "metricsWithInstance",
+			cfg: Config{
+				PerfCounters: []ObjectConfig{
+					{
+						Counters: []CounterConfig{
+							{
+								MetricRep: MetricRep{
+									Name: "metric1",
+								},
+							},
+							{
+								MetricRep: MetricRep{
+									Name: "metric2",
+									Attributes: map[string]string{
+										"test.attribute": "test-value",
+									},
+								},
+							},
+						},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric1": {Description: "metric1 description", Unit: "1"},
+					"metric2": {Description: "metric2 description", Unit: "2"},
+				},
+			},
+			mockCounterValues: []winperfcounters.CounterValue{{InstanceName: "Test Instance", Value: 1.0}},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			mpc := mockPerfCounter{counterValues: test.mockCounterValues}
+			s := &scraper{cfg: &test.cfg, newWatcher: mockPerfCounterFactory(mpc)}
+			errs := s.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, errs)
+
+			m, err := s.scrape(context.Background())
+			require.NoError(t, err)
+			require.Equal(t, 1, m.ResourceMetrics().Len())
+			require.Equal(t, 1, m.ResourceMetrics().At(0).ScopeMetrics().Len())
+
+			metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			metrics.Sort(func(a, b pmetric.Metric) bool {
+				return a.Name() < b.Name()
+			})
+			curMetricsNum := 0
+			for _, pc := range test.cfg.PerfCounters {
+				for _, counterCfg := range pc.Counters {
+					metric := metrics.At(curMetricsNum)
+					assert.Equal(t, counterCfg.MetricRep.Name, metric.Name())
+					metricData := test.cfg.MetricMetaData[counterCfg.MetricRep.Name]
+					assert.Equal(t, metricData.Description, metric.Description())
+					assert.Equal(t, metricData.Unit, metric.Unit())
+					dps := metric.Gauge().DataPoints()
+					assert.Equal(t, len(test.mockCounterValues), dps.Len())
+					for dpIdx, val := range test.mockCounterValues {
+						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleVal())
+						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
+						if val.InstanceName != "" {
+							expectedAttributeLen++
+						}
+						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
+						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
+							if k == instanceLabelName {
+								assert.Equal(t, val.InstanceName, v.StringVal())
+								return true
+							}
+							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.StringVal())
+							return true
+						})
+					}
+					curMetricsNum++
+				}
 			}
 		})
 	}

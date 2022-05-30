@@ -28,24 +28,24 @@ import (
 )
 
 func init() {
-	operator.Register("flatten", func() operator.Builder { return NewFlattenOperatorConfig("") })
+	operator.Register("flatten", func() operator.Builder { return NewConfig("") })
 }
 
-// NewFlattenOperatorConfig creates a new flatten operator config with default values
-func NewFlattenOperatorConfig(operatorID string) *FlattenOperatorConfig {
-	return &FlattenOperatorConfig{
+// NewConfig creates a new flatten operator config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "flatten"),
 	}
 }
 
-// FlattenOperatorConfig is the configuration of a flatten operator
-type FlattenOperatorConfig struct {
+// Config is the configuration of a flatten operator
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
 	Field                    entry.BodyField `mapstructure:"field" json:"field" yaml:"field"`
 }
 
 // Build will build a Flatten operator from the supplied configuration
-func (c FlattenOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -55,25 +55,25 @@ func (c FlattenOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operat
 		return nil, fmt.Errorf("flatten: field cannot be a resource or attribute")
 	}
 
-	return &FlattenOperator{
+	return &Transformer{
 		TransformerOperator: transformerOperator,
 		Field:               c.Field,
 	}, nil
 }
 
-// FlattenOperator flattens an object in the body field
-type FlattenOperator struct {
+// Transformer flattens an object in the body field
+type Transformer struct {
 	helper.TransformerOperator
 	Field entry.BodyField
 }
 
 // Process will process an entry with a flatten transformation.
-func (p *FlattenOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply the flatten operation to an entry
-func (p *FlattenOperator) Transform(entry *entry.Entry) error {
+func (p *Transformer) Transform(entry *entry.Entry) error {
 	parent := p.Field.Parent()
 	val, ok := entry.Delete(p.Field)
 	if !ok {

@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -40,7 +39,7 @@ type receiverCreator struct {
 // newReceiverCreator creates the receiver_creator with the given parameters.
 func newReceiverCreator(params component.ReceiverCreateSettings, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &receiverCreator{

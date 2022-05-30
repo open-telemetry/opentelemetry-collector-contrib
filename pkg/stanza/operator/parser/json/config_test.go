@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestJSONParserConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name:   "default",
@@ -29,7 +29,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_from_simple",
-			Expect: func() *JSONParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
@@ -37,7 +37,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_to_simple",
-			Expect: func() *JSONParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
@@ -45,7 +45,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "on_error_drop",
-			Expect: func() *JSONParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
@@ -53,7 +53,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "timestamp",
-			Expect: func() *JSONParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
@@ -67,10 +67,10 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "severity",
-			Expect: func() *JSONParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
-				severityParser := helper.NewSeverityParserConfig()
+				severityParser := helper.NewConfig()
 				severityParser.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
 					"critical": "5xx",
@@ -79,13 +79,13 @@ func TestJSONParserConfig(t *testing.T) {
 					"debug":    "2xx",
 				}
 				severityParser.Mapping = mapping
-				cfg.SeverityParserConfig = &severityParser
+				cfg.Config = &severityParser
 				return cfg
 			}(),
 		},
 		{
 			Name: "scope_name",
-			Expect: func() *JSONParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				loggerNameParser := helper.NewScopeNameParser()
 				loggerNameParser.ParseFrom = entry.NewBodyField("logger_name_field")
@@ -102,6 +102,6 @@ func TestJSONParserConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *JSONParserConfig {
-	return NewJSONParserConfig("json_parser")
+func defaultCfg() *Config {
+	return NewConfig("json_parser")
 }

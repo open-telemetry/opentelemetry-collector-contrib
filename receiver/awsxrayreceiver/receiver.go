@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -54,7 +53,7 @@ func newReceiver(config *Config,
 	set component.ReceiverCreateSettings) (component.TracesReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
