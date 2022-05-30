@@ -62,7 +62,7 @@ func TestProcessorStart(t *testing.T) {
 				},
 			}
 
-			// Create spanmetrics processor
+			// Create servicegraph processor
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
