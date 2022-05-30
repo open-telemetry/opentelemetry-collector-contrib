@@ -9,6 +9,7 @@
 ### 🚀 New components 🚀
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
+- `servicegraphprocessor`: Add traces processor that builds a map representing the interrelationships between various services in a system (#9232)
 
 ### 💡 Enhancements 💡
 
