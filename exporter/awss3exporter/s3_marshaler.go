@@ -15,40 +15,32 @@
 package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
-type Marshaler interface {
-	MarshalTraces(td ptrace.Traces) ([]byte, error)
-	MarshalLogs(ld plog.Logs) ([]byte, error)
-	MarshalMetrics(md pmetric.Metrics) ([]byte, error)
-	Format() string
+type S3Marshaler struct {
+	logsMarshaler    plog.Marshaler
+	tracesMarshaler  ptrace.Marshaler
+	metricsMarshaler pmetric.Marshaler
+	logger           *zap.Logger
+	format           string
 }
 
-var (
-	ErrUnknownMarshaler = errors.New("unknown marshaler")
-)
+func (marshaler *S3Marshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
+	return marshaler.tracesMarshaler.MarshalTraces(td)
+}
 
-func NewMarshaler(name string, logger *zap.Logger) (Marshaler, error) {
-	marshaler := &S3Marshaler{logger: logger}
-	switch name {
-	case "otlp", "otlp_proto":
-		marshaler.logsMarshaler = &plog.ProtoMarshaler{}
-		marshaler.tracesMarshaler = &ptrace.ProtoMarshaler{}
-		marshaler.metricsMarshaler = &pmetric.ProtoMarshaler{}
-		marshaler.format = "proto"
-	case "otlp_json":
-		marshaler.logsMarshaler = &plog.JSONMarshaler{}
-		marshaler.tracesMarshaler = &ptrace.JSONMarshaler{}
-		marshaler.metricsMarshaler = &pmetric.JSONMarshaler{}
-		marshaler.format = "json"
-	default:
-		return nil, ErrUnknownMarshaler
-	}
-	return marshaler, nil
+func (marshaler *S3Marshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
+	return marshaler.logsMarshaler.MarshalLogs(ld)
+}
+
+func (marshaler *S3Marshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
+	return marshaler.metricsMarshaler.MarshalMetrics(md)
+}
+
+func (marshaler *S3Marshaler) Format() string {
+	return marshaler.format
 }

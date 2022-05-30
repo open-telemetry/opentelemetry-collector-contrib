@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"strconv"
 	"time"
@@ -26,67 +25,43 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/xitongsys/parquet-go-source/s3"
-	"github.com/xitongsys/parquet-go/writer"
-)
-
-const (
-	jsonFormat    = "json"
-	parquetFormat = "parquet"
 )
 
 type S3Writer struct {
 }
 
 // generate the s3 time key based on partition configuration
-func getTimeKey(partition string) string {
+func getTimeKey(time time.Time, partition string) string {
 	var timeKey string
-	t := time.Now()
-	year, month, day := t.Date()
-	hour, minute, _ := t.Clock()
-
-	rand.Int()
+	year, month, day := time.Date()
+	hour, minute, _ := time.Clock()
 
 	if partition == "hour" {
-		timeKey = fmt.Sprintf("year=%d/month=%02d/day=%02d/hour=%02d/", year, month, day, hour)
+		timeKey = fmt.Sprintf("year=%d/month=%02d/day=%02d/hour=%02d", year, month, day, hour)
 	} else {
-		timeKey = fmt.Sprintf("year=%d/month=%02d/day=%02d/hour=%02d/minute=%02d/", year, month, day, hour, minute)
+		timeKey = fmt.Sprintf("year=%d/month=%02d/day=%02d/hour=%02d/minute=%02d", year, month, day, hour, minute)
 	}
 	return timeKey
 }
 
-func getS3Key(bucket string, keyPrefix string, partition string, filePrefix string, fileformat string) string {
-	timeKey := getTimeKey(partition)
-	randomID := rand.Int()
+func randomInRange(low, hi int) int {
+	return low + rand.Intn(hi-low)
+}
 
-	s3Key := bucket + "/" + keyPrefix + "/" + timeKey + "/" + filePrefix + "_" + strconv.Itoa(randomID) + "." + fileformat
+func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileformat string) string {
+	timeKey := getTimeKey(time, partition)
+	randomID := randomInRange(100000000, 999999999)
+
+	s3Key := keyPrefix + "/" + timeKey + "/" + filePrefix + metadata + "_" + strconv.Itoa(randomID) + "." + fileformat
 
 	return s3Key
 }
 
-// read input schema file and parse it to json structure
-func (s3writer *S3Writer) parseParquetInputSchema() (string, error) {
-	content, err := ioutil.ReadFile("./schema/parquet_input_schema")
-	if err != nil {
-		return string(""), nil
-	}
-
-	return string(content), nil
-}
-
-// read output schema file
-func (s3writer *S3Writer) parseParquetOutputSchema() (string, error) {
-	content, err := ioutil.ReadFile("./schema/parquet_output_schema")
-	if err != nil {
-		return string(""), nil
-	}
-	return string(content), nil
-}
-
-func (s3writer *S3Writer) WriteJson(buf []byte, config *Config) error {
-	key := getS3Key(config.S3Uploader.S3Bucket,
+func (s3writer *S3Writer) WriteBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error {
+	time := time.Now()
+	key := getS3Key(time,
 		config.S3Uploader.S3Prefix, config.S3Uploader.S3Partition,
-		config.S3Uploader.FilePrefix, jsonFormat)
+		config.S3Uploader.FilePrefix, metadata, format)
 
 	// create a reader from data data in memory
 	reader := bytes.NewReader(buf)
@@ -110,44 +85,5 @@ func (s3writer *S3Writer) WriteJson(buf []byte, config *Config) error {
 		return err
 	}
 
-	return nil
-}
-
-func (s3writer *S3Writer) WriteParquet(metrics []*ParquetMetric, ctx context.Context, config *Config) error {
-	key := getS3Key(config.S3Uploader.S3Bucket, config.S3Uploader.S3Prefix,
-		config.S3Uploader.S3Partition, config.S3Uploader.FilePrefix, parquetFormat)
-
-	// create new S3 file writer
-	fw, err := s3.NewS3FileWriter(ctx, config.S3Uploader.S3Bucket, key, "bucket-owner-full-control", nil, &aws.Config{
-		Region: aws.String(config.S3Uploader.Region)})
-	if err != nil {
-		return err
-	}
-	// create new parquet file writer
-	parquetOutputSchema, err := s3writer.parseParquetOutputSchema()
-	if err != nil {
-		return err
-	}
-	pw, err := writer.NewParquetWriter(fw, parquetOutputSchema, config.BatchCount)
-	if err != nil {
-		return err
-	}
-	for _, v := range metrics {
-		err = pw.Write(v)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = pw.WriteStop()
-	if err != nil {
-		return err
-	}
-
-	err = fw.Close()
-
-	if err != nil {
-		return err
-	}
 	return nil
 }

@@ -46,9 +46,8 @@ func createDefaultConfig() component.Config {
 			Region:      "us-east-1",
 			S3Partition: "minute",
 		},
-		MarshalerName:     "otlp_json",
-		BatchCount:        1000,
-		MetricDescriptors: make([]MetricDescriptor, 0),
+		MarshalerName: "otlp_json",
+		BatchCount:    1000,
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2022, OpenTelemetry Authors
+// Copyright 2022 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,61 +16,44 @@ package awss3exporter
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 	"testing"
-	"time"
+
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
 
-var testTimestamp = pcommon.Timestamp(time.Date(2022, 05, 17, 12, 30, 0, 0, time.UTC).UnixNano())
+var testLogs = []byte(`{"resourceLogs":[{"resource":{"attributes":[{"key":"_sourceCategory","value":{"stringValue":"logfile"}},{"key":"_sourceHost","value":{"stringValue":"host"}}]},"scopeLogs":[{"scope":{},"logRecords":[{"observedTimeUnixNano":"1654257420681895000","body":{"stringValue":"2022-06-03 13:57:00.62739 +0200 CEST m=+14.018296742 log entry14"},"attributes":[{"key":"log.file.path_resolved","value":{"stringValue":"logwriter/data.log"}}],"traceId":"","spanId":""}]}],"schemaUrl":"https://opentelemetry.io/schemas/1.6.1"}]}`)
 
 type TestWriter struct {
 	t *testing.T
 }
 
-func (testWriter *TestWriter) WriteParquet(metrics []*ParquetMetric, ctx context.Context, config *Config) error {
-	assert.Equal(testWriter.t, 1, len(metrics))
-	_, foundMetric := metrics[0].Metrics["int_sum"]
-	assert.Equal(testWriter.t, true, foundMetric)
-	assert.Equal(testWriter.t, metrics[0].Metrics["int_sum"].Value.(float64), float64(10))
+func (testWriter *TestWriter) WriteBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error {
+	assert.Equal(testWriter.t, testLogs, buf)
 	return nil
 }
 
-func (testWriter *TestWriter) WriteJson(buf []byte, config *Config) error {
-	return nil
+func getTestLogs(tb testing.TB) plog.Logs {
+	logsMarshaler := plog.NewJSONUnmarshaler()
+	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
+	assert.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
+	return logs
 }
 
-func TestConsumeMetrics(t *testing.T) {
-	config := createDefaultConfig()
-	expConfig := config.(*Config)
-	s3Exporter := &S3Exporter{
-		config:           config,
-		metricTranslator: newMetricTranslator(*expConfig),
-		dataWriter:       &TestWriter{t: t},
-		logger:           zap.NewNop(),
+func getLogExporter(t *testing.T) *S3Exporter {
+	marshaler, _ := NewMarshaler("otlp_json", zap.NewNop())
+	exporter := &S3Exporter{
+		config:     createDefaultConfig(),
+		dataWriter: &TestWriter{t},
+		logger:     zap.NewNop(),
+		marshaler:  marshaler,
 	}
-	md := pmetric.NewMetrics()
-	md.ResourceMetrics().EnsureCapacity(2)
-	rm := md.ResourceMetrics().AppendEmpty()
+	return exporter
+}
 
-	ilms := rm.ScopeMetrics()
-	ilms.EnsureCapacity(2)
-	ilm := ilms.AppendEmpty()
-
-	metrics := ilm.Metrics()
-
-	intSumMetric := metrics.AppendEmpty()
-	intSumMetric.SetDataType(pmetric.MetricDataTypeSum)
-	intSumMetric.SetName("int_sum")
-	intSum := intSumMetric.Sum()
-	intSumDataPoints := intSum.DataPoints()
-	intSumDataPoint := intSumDataPoints.AppendEmpty()
-	intSumDataPoint.SetIntVal(10)
-	intSumDataPoint.SetTimestamp(testTimestamp)
-
-	s3Exporter.ConsumeMetrics(context.Background(), md)
-	assert.NotNil(t, md, "failed to create metrics")
-
+func TestLog(t *testing.T) {
+	logs := getTestLogs(t)
+	exporter := getLogExporter(t)
+	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
 }

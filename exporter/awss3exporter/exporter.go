@@ -29,11 +29,10 @@ import (
 )
 
 type S3Exporter struct {
-	config           *Config
-	dataWriter       DataWriter
-	logger           *zap.Logger
-	marshaler        Marshaler
-	metricTranslator metricTranslator
+	config     *Config
+	dataWriter DataWriter
+	logger     *zap.Logger
+	marshaler  Marshaler
 }
 
 var logsMarshaler = &plog.JSONMarshaler{}
@@ -49,11 +48,16 @@ func NewS3Exporter(config *Config,
 
 	logger := params.Logger
 
+	marshaler, err := NewMarshaler(config.MarshalerName, logger)
+	if err != nil {
+		return nil, errors.New("unknown marshaler")
+	}
+
 	s3Exporter := &S3Exporter{
-		config:           config,
-		metricTranslator: newMetricTranslator(config),
-		dataWriter:       &S3Writer{},
-		logger:           logger,
+		config:     config,
+		dataWriter: &S3Writer{},
+		logger:     logger,
+		marshaler:  marshaler,
 	}
 	return s3Exporter, nil
 }
@@ -85,39 +89,32 @@ func (e *S3Exporter) dumpLabels(md pmetric.Metrics) {
 }
 
 func (e *S3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	e.dumpLabels(md)
-	rms := md.ResourceMetrics()
+	buf, err := e.marshaler.MarshalMetrics(md)
 
-	expConfig := e.config
-	var parquetMetrics []*ParquetMetric
-
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		e.metricTranslator.translateOTelToParquetMetric(&rm, &parquetMetrics, expConfig, e.logger)
+	if err != nil {
+		return err
 	}
 
-	e.dataWriter.WriteParquet(parquetMetrics, ctx, expConfig)
-	return nil
+	return e.dataWriter.WriteBuffer(ctx, buf, e.config, "metrics", e.marshaler.Format())
 }
 
 func (e *S3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
-	buf, err := logsMarshaler.MarshalLogs(logs)
+	buf, err := e.marshaler.MarshalLogs(logs)
+
 	if err != nil {
 		return err
 	}
-	expConfig := e.config
 
-	return e.dataWriter.WriteJson(buf, expConfig)
+	return e.dataWriter.WriteBuffer(ctx, buf, e.config, "logs", e.marshaler.Format())
 }
 
 func (e *S3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	buf, err := traceMarshaler.MarshalTraces(traces)
+	buf, err := e.marshaler.MarshalTraces(traces)
 	if err != nil {
 		return err
 	}
-	expConfig := e.config
 
-	return e.dataWriter.WriteJson(buf, expConfig)
+	return e.dataWriter.WriteBuffer(ctx, buf, e.config, "traces", e.marshaler.Format())
 }
 
 func (e *S3Exporter) Shutdown(context.Context) error {

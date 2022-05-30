@@ -16,11 +16,17 @@ package awss3exporter
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+<<<<<<< HEAD
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"testing"
+=======
+	"go.opentelemetry.io/collector/config/configtest"
+>>>>>>> df7ffe6ecc (fixup! aws s3 exporter initial version)
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -29,6 +35,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
+<<<<<<< HEAD
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createMetricsExporter(
@@ -39,6 +46,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, exp)
 }
 
+=======
+>>>>>>> df7ffe6ecc (fixup! aws s3 exporter initial version)
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createTracesExporter(
