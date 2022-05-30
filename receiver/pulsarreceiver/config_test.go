@@ -15,7 +15,6 @@
 package pulsarreceiver
 
 import (
-	"encoding/json"
 	"path/filepath"
 	"testing"
 
@@ -38,20 +37,14 @@ func TestLoadConfig(t *testing.T) {
 
 	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 
-	paramMap := map[string]string{
-		"tlsCertFile": "cert.pem",
-		"tlsKeyFile":  "key.pem",
-	}
-	param, _ := json.Marshal(paramMap)
 	assert.Equal(t, &Config{
 		ReceiverSettings:      config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Topic:                 "otel-pulsar",
-		ServiceUrl:            "pulsar://localhost:6500",
+		Endpoint:              "pulsar://localhost:6500",
 		ConsumerName:          "otel-collector",
 		Subscription:          "otel-collector",
 		Encoding:              defaultEncoding,
 		TLSTrustCertsFilePath: "ca.pem",
-		AuthName:              "tls",
-		AuthParam:             string(param),
+		Authentication:        Authentication{TLS: &TLS{CertFile: "cert.pem", KeyFile: "key.pem"}},
 	}, r)
 }

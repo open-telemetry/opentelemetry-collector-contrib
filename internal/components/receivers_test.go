@@ -218,7 +218,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "pulsar",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["pulsar"].CreateDefaultConfig().(*pulsarreceiver.Config)
-				cfg.ServiceUrl = "unknown:6650"
+				cfg.Endpoint = "unknown:6650"
 				return cfg
 			},
 		},

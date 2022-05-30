@@ -147,6 +147,7 @@ func createDefaultConfig() config.Receiver {
 		Encoding:         defaultEncoding,
 		ConsumerName:     defaultConsumerName,
 		Subscription:     defaultSubscription,
-		ServiceUrl:       defaultServiceUrl,
+		Endpoint:         defaultServiceUrl,
+		Authentication:   Authentication{},
 	}
 }
