@@ -84,5 +84,5 @@ service:
       level: debug #activate debug mode
 ```
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#stable
+[stable]:https://github.com/open-telemetry/opentelemetry-collector#stable
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
