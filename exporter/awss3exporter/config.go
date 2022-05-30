@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awss3exporter
+package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
 	"go.opentelemetry.io/collector/config"
@@ -33,12 +33,8 @@ type S3UploaderConfig struct {
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 
-	FileFormat string           `mapstructure:"file_format"`
-	S3Uploader S3UploaderConfig `mapstructure:"s3uploader"`
-	BatchCount int64            `mapstructure:"batch_count"`
-
-	// MetricDescriptors is the list of override metric descriptors
-	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
+	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
+	MarshalerName string           `mapstructure:"marshaler_name"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.

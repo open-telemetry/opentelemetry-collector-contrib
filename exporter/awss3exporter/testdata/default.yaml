@@ -6,7 +6,6 @@ exporters:
     s3uploader:
       region: 'us-east-1'
       s3_partition: 'minute'
-    batch_count: 1000
         
 processors:
   nop:

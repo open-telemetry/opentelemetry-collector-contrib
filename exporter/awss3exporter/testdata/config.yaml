@@ -9,8 +9,6 @@ exporters:
         s3_prefix: 'bar'
         s3_partition: 'minute'
         
-    batch_count: 1000      
-    
 processors:
   nop:
 

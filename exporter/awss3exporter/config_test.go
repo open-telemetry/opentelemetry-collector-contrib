@@ -15,13 +15,14 @@
 package awss3exporter
 
 import (
+	"path/filepath"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
-	"path/filepath"
-	"testing"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,8 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				Region:      "us-east-1",
 				S3Partition: "minute",
 			},
-			BatchCount:        1000,
-			MetricDescriptors: make([]MetricDescriptor, 0),
+			MarshalerName: "otlp_json",
 		},
 	)
 }
@@ -75,8 +75,7 @@ func TestConfig(t *testing.T) {
 				S3Prefix:    "bar",
 				S3Partition: "minute",
 			},
-			BatchCount:        1000,
-			MetricDescriptors: make([]MetricDescriptor, 0),
+			MarshalerName: "otlp_json",
 		},
 	)
 }

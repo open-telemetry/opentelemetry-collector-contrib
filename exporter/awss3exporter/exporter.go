@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awss3exporter
+package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
 	"context"
@@ -21,21 +21,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
-var logsMarshaler = plog.NewJSONMarshaler()
-var traceMarshaler = ptrace.NewJSONMarshaler()
-
 type S3Exporter struct {
-	config           config.Exporter
-	metricTranslator metricTranslator
-	dataWriter       DataWriter
-	logger           *zap.Logger
+	config     config.Exporter
+	dataWriter DataWriter
+	logger     *zap.Logger
+	marshaler  Marshaler
 }
 
 func NewS3Exporter(config config.Exporter,
@@ -49,13 +44,22 @@ func NewS3Exporter(config config.Exporter,
 	expConfig := config.(*Config)
 	expConfig.logger = logger
 
-	expConfig.Validate()
+	validateConfig := expConfig.Validate()
+
+	if validateConfig != nil {
+		return nil, validateConfig
+	}
+
+	marshaler, err := NewMarshaler(expConfig.MarshalerName, logger)
+	if err != nil {
+		return nil, errors.New("unknown marshaler")
+	}
 
 	s3Exporter := &S3Exporter{
-		config:           config,
-		metricTranslator: newMetricTranslator(*expConfig),
-		dataWriter:       &S3Writer{},
-		logger:           logger,
+		config:     config,
+		dataWriter: &S3Writer{},
+		logger:     logger,
+		marshaler:  marshaler,
 	}
 	return s3Exporter, nil
 }
@@ -68,58 +72,25 @@ func (e *S3Exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *S3Exporter) dumpLabels(md pmetric.Metrics) {
-	rms := md.ResourceMetrics()
-	labels := map[string]string{}
-
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		am := rm.Resource().Attributes()
-		if am.Len() > 0 {
-			am.Range(func(k string, v pcommon.Value) bool {
-				labels[k] = v.StringVal()
-				return true
-			})
-		}
-	}
-
-	e.logger.Info("Processing resource metrics", zap.Any("labels", labels))
-}
-
-func (e *S3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	e.dumpLabels(md)
-	rms := md.ResourceMetrics()
-
-	expConfig := e.config.(*Config)
-	var parquetMetrics []*ParquetMetric
-
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		e.metricTranslator.translateOTelToParquetMetric(&rm, &parquetMetrics, expConfig)
-	}
-
-	e.dataWriter.WriteParquet(parquetMetrics, ctx, expConfig)
-	return nil
-}
-
 func (e *S3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
-	buf, err := logsMarshaler.MarshalLogs(logs)
+	buf, err := e.marshaler.MarshalLogs(logs)
+
 	if err != nil {
 		return err
 	}
 	expConfig := e.config.(*Config)
 
-	return e.dataWriter.WriteJson(buf, expConfig)
+	return e.dataWriter.WriteBuffer(ctx, buf, expConfig, "logs", e.marshaler.Format())
 }
 
 func (e *S3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	buf, err := traceMarshaler.MarshalTraces(traces)
+	buf, err := e.marshaler.MarshalTraces(traces)
 	if err != nil {
 		return err
 	}
 	expConfig := e.config.(*Config)
 
-	return e.dataWriter.WriteJson(buf, expConfig)
+	return e.dataWriter.WriteBuffer(ctx, buf, expConfig, "traces", e.marshaler.Format())
 }
 
 func (e *S3Exporter) Shutdown(context.Context) error {
