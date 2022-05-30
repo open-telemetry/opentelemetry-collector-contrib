@@ -1,5 +1,12 @@
 # Telemetry generator for OpenTelemetry
 
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | traces [WIP]          |
+|                          | metrics [WIP]         |
+| Supported pipeline types | traces, metrics       |
+| Distributions            | [contrib]             |
+
 This utility simulates a client generating **traces** and **metrics**, useful for testing and demonstration purposes.
 
 ## Installing
