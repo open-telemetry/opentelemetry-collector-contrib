@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
