@@ -34,16 +34,17 @@ func Test_createDefaultConfig(t *testing.T) {
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		ServiceUrl:       defaultBroker,
+		Endpoint:         defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:    "",
-		Encoding: defaultEncoding,
+		Topic:          "",
+		Encoding:       defaultEncoding,
+		Authentication: Authentication{},
 	})
 }
 
 func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ServiceUrl = "pulsar://unknown:6650"
+	cfg.Endpoint = "pulsar://unknown:6650"
 
 	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
@@ -54,7 +55,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 
 func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ServiceUrl = "pulsar://unknown:6650"
+	cfg.Endpoint = "pulsar://unknown:6650"
 
 	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
 	mr, err := mf.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
@@ -64,7 +65,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 
 func TestCreateLogsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ServiceUrl = "pulsar://unknown:6650"
+	cfg.Endpoint = "pulsar://unknown:6650"
 
 	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
 	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)

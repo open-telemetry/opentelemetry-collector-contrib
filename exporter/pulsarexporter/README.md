@@ -16,8 +16,24 @@ The following settings can be optionally configured:
     - The following encodings are valid *only* for **traces**.
         - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
         - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
-- `auth_name`: the auth type of `pulsar`. Permitted value: ``,`tls`,`token`,`athenz`,`oauth2`.
-- `auth_param`: the parameter for auth.
+- `auth`
+    - `tls`
+        - `cert_file`:
+        - `key_file`:
+    - `token`
+        - `token`
+    - `oauth2`
+        - `issuer_url`:
+        - `client_id`:
+        - `audience`:
+    - `athenz`
+        - `provider_domain`:
+        - `tenant_domain`:
+        - `tenant_service`:
+        - `private_key`:
+        - `key_id`:
+        - `principal_header`:
+        - `zts_url`:
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
 - `insecure`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
@@ -42,8 +58,10 @@ exporters:
     service_url: pulsar://localhost:6650
     topic: otlp-spans
     encoding: otlp_proto
-    auth_name: tls
-    auth_param: '{"tlsCertFile":"cert.pem","tlsKeyFile":"key.pem"}'
+    auth:
+      tls:
+        cert_file: cert.pem
+        key_file: key.pem
     insecure: false
     tls_trust_certs_file_path: ca.pem
 ```

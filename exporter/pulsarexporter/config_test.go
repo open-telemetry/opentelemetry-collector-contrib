@@ -57,12 +57,11 @@ func TestLoadConfig(t *testing.T) {
 			NumConsumers: 2,
 			QueueSize:    10,
 		},
-		ServiceUrl:            "pulsar://localhost:6650",
+		Endpoint:              "pulsar://localhost:6650",
 		Topic:                 "spans",
 		Encoding:              "otlp-spans",
 		TLSTrustCertsFilePath: "ca.pem",
-		AuthName:              "tls",
-		AuthParam:             "{\"tlsCertFile\":\"cert.pem\",\"tlsKeyFile\":\"key.pem\"}",
+		Authentication:        Authentication{TLS: &TLS{CertFile: "cert.pem", KeyFile: "key.pem"}},
 	}, c)
 }
 
@@ -78,8 +77,6 @@ func TestClientOptions(t *testing.T) {
 	require.Equal(t, 1, len(cfg.Exporters))
 
 	c := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
-	c.AuthName = ""
-	c.AuthParam = ""
 
 	options, err := c.clientOptions()
 	assert.NoError(t, err)

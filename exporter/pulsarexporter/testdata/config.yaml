@@ -1,12 +1,13 @@
 exporters:
   pulsar:
     topic: spans
-    service_url: pulsar://localhost:6650
-    enable_batch: true
+    endpoint: pulsar://localhost:6650
     encoding: otlp-spans
     tls_trust_certs_file_path: ca.pem
-    auth_name: tls
-    auth_param: '{"tlsCertFile":"cert.pem","tlsKeyFile":"key.pem"}'
+    auth:
+      tls:
+        cert_file: cert.pem
+        key_file: key.pem
     timeout: 10s
     sending_queue:
       enabled: true

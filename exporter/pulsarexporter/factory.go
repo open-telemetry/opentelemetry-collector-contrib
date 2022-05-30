@@ -69,10 +69,11 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		ServiceUrl:       defaultBroker,
+		Endpoint:         defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:    "",
-		Encoding: defaultEncoding,
+		Topic:          "",
+		Encoding:       defaultEncoding,
+		Authentication: Authentication{},
 	}
 }
 

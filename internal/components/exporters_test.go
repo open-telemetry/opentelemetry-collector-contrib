@@ -174,7 +174,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "pulsar",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
-				cfg.ServiceUrl = "unknown:6650"
+				cfg.Endpoint = "unknown:6650"
 				return cfg
 			},
 		},
