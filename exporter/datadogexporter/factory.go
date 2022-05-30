@@ -172,10 +172,10 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, err := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
-		if err != nil {
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		if metricsErr != nil {
 			cancel()
-			return nil, err
+			return nil, metricsErr
 		}
 		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
@@ -237,10 +237,10 @@ func (f *factory) createTracesExporter(
 			return nil
 		}
 	} else {
-		exporter, err := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
-		if err != nil {
+		exporter, tracesErr := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		if tracesErr != nil {
 			cancel()
-			return nil, err
+			return nil, tracesErr
 		}
 		pushTracesFn = exporter.pushTraceDataScrubbed
 	}

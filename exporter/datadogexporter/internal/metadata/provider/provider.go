@@ -40,12 +40,12 @@ func (p *chainProvider) Hostname(ctx context.Context) (string, error) {
 	for _, source := range p.priorityList {
 		zapSource := zap.String("source", source)
 		provider := p.providers[source]
-		if hostname, err := provider.Hostname(ctx); err == nil {
+		hostname, err := provider.Hostname(ctx)
+		if err == nil {
 			p.logger.Info("Resolved hostname", zapSource, zap.String("hostname", hostname))
 			return hostname, nil
-		} else {
-			p.logger.Debug("Unavailable hostname provider", zapSource, zap.Error(err))
 		}
+		p.logger.Debug("Unavailable hostname provider", zapSource, zap.Error(err))
 	}
 
 	return "", fmt.Errorf("no provider was available")
