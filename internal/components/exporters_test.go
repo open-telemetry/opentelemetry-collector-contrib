@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -55,6 +54,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -389,6 +389,14 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "mezmo",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["mezmo"].CreateDefaultConfig().(*mezmoexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
 			exporter: "sentry",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["sentry"].CreateDefaultConfig().(*sentryexporter.Config)
@@ -477,7 +485,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 		var exps []component.Exporter
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateSettings, cfg)
-			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 				continue
 			}
 			require.NoError(t, err)

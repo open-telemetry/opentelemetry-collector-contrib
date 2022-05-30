@@ -51,14 +51,14 @@ func TestCompareMetrics(t *testing.T) {
 		{
 			name: "resource-extra",
 			withoutOptions: expectation{
-				err:    errors.New("number of resources does not match"),
+				err:    errors.New("number of resources does not match expected: 1, actual: 2"),
 				reason: "An extra resource should cause a failure.",
 			},
 		},
 		{
 			name: "resource-missing",
 			withoutOptions: expectation{
-				err:    errors.New("number of resources does not match"),
+				err:    errors.New("number of resources does not match expected: 2, actual: 1"),
 				reason: "A missing resource should cause a failure.",
 			},
 		},
@@ -75,14 +75,14 @@ func TestCompareMetrics(t *testing.T) {
 		{
 			name: "resource-instrumentation-library-extra",
 			withoutOptions: expectation{
-				err:    errors.New("number of instrumentation libraries does not match"),
+				err:    errors.New("number of instrumentation libraries does not match expected: 1, actual: 2"),
 				reason: "An extra instrumentation library should cause a failure.",
 			},
 		},
 		{
 			name: "resource-instrumentation-library-missing",
 			withoutOptions: expectation{
-				err:    errors.New("number of instrumentation libraries does not match"),
+				err:    errors.New("number of instrumentation libraries does not match expected: 2, actual: 1"),
 				reason: "An missing instrumentation library should cause a failure.",
 			},
 		},
@@ -103,14 +103,14 @@ func TestCompareMetrics(t *testing.T) {
 		{
 			name: "metric-slice-extra",
 			withoutOptions: expectation{
-				err:    errors.New("metric slices not of same length"),
+				err:    errors.New("number of metrics does not match expected: 1, actual: 2"),
 				reason: "A metric slice with an extra metric should cause a failure.",
 			},
 		},
 		{
 			name: "metric-slice-missing",
 			withoutOptions: expectation{
-				err:    errors.New("metric slices not of same length"),
+				err:    errors.New("number of metrics does not match expected: 1, actual: 0"),
 				reason: "A metric slice with a missing metric should cause a failure.",
 			},
 		},
@@ -157,7 +157,7 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: expectation{
 				err: multierr.Combine(
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-					errors.New("length of datapoints don't match"),
+					errors.New("number of datapoints does not match expected: 1, actual: 2"),
 				),
 				reason: "A data point slice with an extra data point should cause a failure.",
 			},
@@ -167,7 +167,7 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: expectation{
 				err: multierr.Combine(
 					errors.New("datapoints for metric: `sum.one`, do not match expected"),
-					errors.New("length of datapoints don't match"),
+					errors.New("number of datapoints does not match expected: 2, actual: 1"),
 				),
 				reason: "A data point slice with a missing data point should cause a failure.",
 			},

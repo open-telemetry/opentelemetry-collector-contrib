@@ -1,9 +1,12 @@
 # Humio Exporter
+
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | traces    |
+| Distributions            | [contrib] |
+
 Exports data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.com/reference/api/ingest/).
-
-Supported pipeline types: traces (with metrics and logs to follow soon)
-
-> :construction: This exporter is currently intended for evaluation purposes only! It has yet to be enabled in the build.
 
 ## Getting Started
 This exporter provides a set of global configuration options, as well as options specific to each telemetry data type. An example structure is illustrated below:
@@ -40,9 +43,9 @@ This exporter requires as a minimum the following global configuration options:
 In addition, the following optional settings specific to this exporter can be overridden:
 
 - `disable_compression` (default: `false`): Whether to stop compressing payloads with gzip before sending them to Humio. This should only be disabled if compression can be shown to have a negative impact on performance in your specific deployment.
-- `tag` (default: `none`): The strategy to use for tagging telemetry data sent to Humio. By default, tagging is disabled, since it is a complex topic. See [Tagging](#Tagging) for more information, including possible values.
+- `tag` (default: `none`): The strategy to use for tagging telemetry data sent to Humio. By default, tagging is disabled, since it is a complex topic. See [Tagging](#tagging) for more information, including possible values.
 
-This exporter also supports inherited configuration options as described in [Inherited Options](#Inherited-Options). As defined in the [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings), TLS is enabled by default. This can be disabled by overriding the following configuration options:
+This exporter also supports inherited configuration options as described in [Inherited Options](#inherited-options). As defined in the [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings), TLS is enabled by default. This can be disabled by overriding the following configuration options:
 
 - `insecure` (default: `false`): Whether to enable client transport security for the exporter's HTTP connection. Not recommended for production deployments.
 - `insecure_skip_verify` (default: `false`): Whether to skip verifying the server's certificate chain or not. Not recommended for production deployments.
@@ -107,3 +110,6 @@ curl $YOUR_HUMIO_URL/api/v1/repositories/$REPOSITORY_NAME/taggrouping \
   -H 'Content-Type: application/json' \
   -d '[ {"field": "trace_id","modulus": 16} ]'
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

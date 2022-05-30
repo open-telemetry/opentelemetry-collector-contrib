@@ -28,14 +28,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 var (
 	cfg = &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		BaseConfig: stanza.BaseConfig{
-			Operators: stanza.OperatorConfigs{
+		BaseConfig: adapter.BaseConfig{
+			Operators: adapter.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
@@ -48,7 +48,7 @@ var (
 					},
 				},
 			},
-			Converter: stanza.ConverterConfig{
+			Converter: adapter.ConverterConfig{
 				MaxFlushCount: 100,
 				FlushInterval: 100 * time.Millisecond,
 			},

@@ -72,6 +72,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10205")
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
@@ -141,6 +142,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 }
 
 func TestConcurrentTraceMapSize(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126")
 	_, batches := generateIdsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup

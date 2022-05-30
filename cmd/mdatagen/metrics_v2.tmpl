@@ -9,6 +9,7 @@ import (
 	{{- end }}
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	{{- if .SemConvVersion }}
@@ -143,6 +144,7 @@ type MetricsBuilder struct {
 	metricsCapacity          int             // maximum observed number of metrics per resource.
 	resourceCapacity         int             // maximum observed number of resource attributes.
 	metricsBuffer            pmetric.Metrics   // accumulates metrics data before emitting.
+	buildInfo                component.BuildInfo // contains version information
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
 	{{- end }}
@@ -158,10 +160,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:            pmetric.NewMetrics(),
+		buildInfo: 				  buildInfo,
 		{{- range $name, $metric := .Metrics }}
 		metric{{ $name.Render }}: newMetric{{ $name.Render }}(settings.{{ $name.Render }}),
 		{{- end }}
@@ -227,6 +230,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/{{ .Name }}")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	{{- range $name, $metric := .Metrics }}
 	mb.metric{{- $name.Render }}.emit(ils.Metrics())

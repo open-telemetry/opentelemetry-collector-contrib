@@ -5,7 +5,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/mongodb"
+                        "name": "otelcol/mongodb",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -168,7 +169,8 @@
             "scopeMetrics": [
                 {
                     "scope": {
-                        "name": "otelcol/mongodb"
+                        "name": "otelcol/mongodb",
+                        "version": "latest"
                     },
                     "metrics": [
                         {

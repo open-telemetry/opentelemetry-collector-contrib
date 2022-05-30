@@ -27,7 +27,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -69,7 +68,7 @@ var _ http.Handler = (*zipkinReceiver)(nil)
 // newReceiver creates a new zipkinReceiver reference.
 func newReceiver(config *Config, nextConsumer consumer.Traces, settings component.ReceiverCreateSettings) (*zipkinReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	zr := &zipkinReceiver{

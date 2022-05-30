@@ -18,6 +18,7 @@ package golden
 import (
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -27,6 +28,9 @@ import (
 )
 
 func TestWriteMetrics(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10144")
+	}
 	metricslice := testMetrics()
 	metrics := pmetric.NewMetrics()
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())

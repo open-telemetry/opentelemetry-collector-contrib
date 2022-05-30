@@ -43,6 +43,7 @@ exporter/kafkaexporter/                              @open-telemetry/collector-c
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @jpkrohling
+exporter/mezmoexporter/                              @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/observiqexporter/                           @open-telemetry/collector-contrib-approvers @binaryfissiongames
 exporter/prometheusexporter/                         @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/prometheusremotewriteexporter/              @open-telemetry/collector-contrib-approvers @Aneurysm9
@@ -81,10 +82,10 @@ internal/k8sconfig/                                  @open-telemetry/collector-c
 internal/kubelet/                                    @open-telemetry/collector-contrib-approvers @dmitryax
 internal/scrapertest/                                @open-telemetry/collector-contrib-approvers @djaglowski
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
-internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
+pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
@@ -160,7 +161,9 @@ receiver/statsdreceiver/                             @open-telemetry/collector-c
 receiver/syslogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tcplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/udplogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/vcenterreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/wavefrontreceiver/                          @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/windowseventlogreceiver/                    @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
 receiver/windowsperfcountersreceiver/                @open-telemetry/collector-contrib-approvers @dashpole
 receiver/zipkinreceiver/                             @open-telemetry/collector-contrib-approvers @pmm-sumo
 receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski

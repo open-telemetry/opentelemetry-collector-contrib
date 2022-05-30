@@ -251,7 +251,8 @@ func Test_metricTracker_sweeper(t *testing.T) {
 		}
 	}
 	cancel()
-	<-sweepEvent
+	for range sweepEvent {
+	}
 	if !closed.Load() {
 		t.Errorf("Sweeper did not terminate.")
 	}

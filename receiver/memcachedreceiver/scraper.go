@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -34,14 +35,14 @@ type memcachedScraper struct {
 }
 
 func newMemcachedScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 ) memcachedScraper {
 	return memcachedScraper{
-		logger:    logger,
+		logger:    settings.Logger,
 		config:    config,
 		newClient: newMemcachedClient,
-		mb:        metadata.NewMetricsBuilder(config.Metrics),
+		mb:        metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 

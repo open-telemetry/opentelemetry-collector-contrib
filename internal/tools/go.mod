@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220502161954-e2bf744925c0
 	go.opentelemetry.io/build-tools/crosslink v0.0.0-20220502161954-e2bf744925c0
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210920164323-2ceabab23375
-	go.opentelemetry.io/build-tools/multimod v0.0.0-20220110194441-2a9d5288bd70
+	go.opentelemetry.io/build-tools/multimod v0.0.0-20220502161954-e2bf744925c0
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
 )
 
@@ -89,7 +89,7 @@ require (
 	github.com/gostaticanalysis/nilerr v0.1.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-version v1.4.0 // indirect
+	github.com/hashicorp/go-version v1.5.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
@@ -184,7 +184,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220218215828-6cf2b201936e // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect

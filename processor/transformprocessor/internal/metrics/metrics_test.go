@@ -1517,10 +1517,9 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "type",
 				},
 			},
-			orig: pmetric.MetricDataTypeSum,
-			new:  pmetric.MetricDataTypeGauge,
+			orig: "Sum",
+			new:  "Sum",
 			modified: func(metric pmetric.Metric) {
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
 			},
 		},
 		{
@@ -1533,8 +1532,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "aggregation_temporality",
 				},
 			},
-			orig: pmetric.MetricAggregationTemporalityCumulative,
-			new:  pmetric.MetricAggregationTemporalityDelta,
+			orig: int64(2),
+			new:  int64(1),
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 			},
@@ -1549,8 +1548,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "is_monotonic",
 				},
 			},
-			orig: true,
-			new:  false,
+			orig: "true",
+			new:  "false",
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetIsMonotonic(false)
 			},
@@ -1621,4 +1620,8 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pc
 
 func strp(s string) *string {
 	return &s
+}
+
+func intp(i int64) *int64 {
+	return &i
 }

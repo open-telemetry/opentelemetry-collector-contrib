@@ -38,13 +38,13 @@ type elasticsearchScraper struct {
 }
 
 func newElasticSearchScraper(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *elasticsearchScraper {
 	return &elasticsearchScraper{
-		settings: settings,
+		settings: settings.TelemetrySettings,
 		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
