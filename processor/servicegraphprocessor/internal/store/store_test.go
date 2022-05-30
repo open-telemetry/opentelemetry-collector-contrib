@@ -1,3 +1,17 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package store
 
 import (
@@ -18,7 +32,8 @@ func TestStoreUpsertEdge(t *testing.T) {
 	var onCompletedCount int
 	var onExpireCount int
 
-	storeInterface := NewStore(time.Hour, 1, countingCallback(&onCompletedCount), countingCallback(&onExpireCount))
+	storeInterface, err := NewStore(Config{TTL: time.Hour, MaxItems: 1}, countingCallback(&onCompletedCount), countingCallback(&onExpireCount))
+	assert.NoError(t, err)
 
 	s := storeInterface.(*store)
 	assert.Equal(t, 0, s.len())
@@ -69,7 +84,8 @@ func TestStoreUpsertEdge(t *testing.T) {
 func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
 	var onCallbackCounter int
 
-	storeInterface := NewStore(time.Hour, 1, countingCallback(&onCallbackCounter), countingCallback(&onCallbackCounter))
+	storeInterface, err := NewStore(Config{TTL: time.Hour, MaxItems: 1}, countingCallback(&onCallbackCounter), countingCallback(&onCallbackCounter))
+	assert.NoError(t, err)
 
 	s := storeInterface.(*store)
 	assert.Equal(t, 0, s.len())
@@ -113,8 +129,10 @@ func TestStoreExpire(t *testing.T) {
 		assert.True(t, keys[e.key])
 	}
 	// New edges are immediately expired
-	storeInterface := NewStore(-time.Second, testSize, onComplete, countingCallback(&onExpireCount))
+	storeInterface, err := NewStore(Config{MaxItems: testSize}, onComplete, countingCallback(&onExpireCount))
+	assert.NoError(t, err)
 	s := storeInterface.(*store)
+	s.ttl = -time.Second
 
 	for key := range keys {
 		isNew, err := s.UpsertEdge(key, noopCallback)
@@ -129,7 +147,8 @@ func TestStoreExpire(t *testing.T) {
 }
 
 func TestStore_concurrency(t *testing.T) {
-	s := NewStore(10*time.Millisecond, 100000, noopCallback, noopCallback)
+	s, err := NewStore(Config{TTL: 10 * time.Millisecond, MaxItems: 100_000}, noopCallback, noopCallback)
+	assert.NoError(t, err)
 
 	end := make(chan struct{})
 
