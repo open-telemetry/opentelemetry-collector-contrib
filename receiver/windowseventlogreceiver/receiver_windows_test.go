@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 	"golang.org/x/sys/windows/svc/eventlog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -61,8 +61,8 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := &WindowsLogConfig{
-		BaseConfig: stanza.BaseConfig{},
-		Input: stanza.InputConfig{
+		BaseConfig: adapter.BaseConfig{},
+		Input: adapter.InputConfig{
 			"start_at": "end",
 		},
 	}
@@ -135,11 +135,11 @@ func TestReadWindowsEventLogger(t *testing.T) {
 
 func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"channel":  "application",
 			"start_at": "end",
 		},

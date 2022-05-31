@@ -215,6 +215,25 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.jmx.realm"] = jmx.config.Realm
 	}
 
+	if jmx.config.KeystorePath != "" {
+		config["javax.net.ssl.keyStore"] = jmx.config.KeystorePath
+	}
+	if jmx.config.KeystorePassword != "" {
+		config["javax.net.ssl.keyStorePassword"] = jmx.config.KeystorePassword
+	}
+	if jmx.config.KeystoreType != "" {
+		config["javax.net.ssl.keyStoreType"] = jmx.config.KeystoreType
+	}
+	if jmx.config.TruststorePath != "" {
+		config["javax.net.ssl.trustStore"] = jmx.config.TruststorePath
+	}
+	if jmx.config.TruststorePassword != "" {
+		config["javax.net.ssl.trustStorePassword"] = jmx.config.TruststorePassword
+	}
+	if jmx.config.TruststoreType != "" {
+		config["javax.net.ssl.trustStoreType"] = jmx.config.TruststoreType
+	}
+
 	if len(jmx.config.ResourceAttributes) > 0 {
 		attributes := make([]string, 0, len(jmx.config.ResourceAttributes))
 		for k, v := range jmx.config.ResourceAttributes {
