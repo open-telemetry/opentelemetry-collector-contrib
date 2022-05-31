@@ -1,10 +1,10 @@
 # File Exporter
 
-| Status                   |                        |
-| ------------------------ |------------------------|
-| Stability                | [alpha]                |
-| Supported pipeline types | traces, metrics, logs  |
-| Distributions            | [contrib]              |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [alpha]               |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 This exporter will write pipeline data to a JSON file. The data is written in.
 [Protobuf JSON
@@ -32,3 +32,4 @@ exporters:
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
