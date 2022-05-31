@@ -1,5 +1,11 @@
 # Expvar Receiver
 
+| Status                   |                  |
+| ------------------------ |------------------|
+| Stability                | [in-development] |
+| Supported pipeline types | metrics          |
+| Distributions            | [contrib]        |
+
 An Expvar Receiver scrapes metrics from [expvar](https://pkg.go.dev/expvar), 
 which exposes data in JSON format from an HTTP endpoint. The metrics are 
 extracted from the `expvar` variable [memstats](https://pkg.go.dev/runtime#MemStats), 
@@ -46,3 +52,6 @@ receivers:
       process.runtime.memstats.mallocs:
         enabled: false
 ```
+
+[in-development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
