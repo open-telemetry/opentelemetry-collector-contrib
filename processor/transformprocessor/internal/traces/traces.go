@@ -215,7 +215,7 @@ func accessInstrumentationScopeVersion() pathGetSetter {
 func accessTraceID() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceID()
+			return ctx.GetItem().(ptrace.Span).TraceID().HexString()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
@@ -231,7 +231,7 @@ func accessTraceID() pathGetSetter {
 func accessSpanID() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).SpanID()
+			return ctx.GetItem().(ptrace.Span).SpanID().HexString()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
@@ -353,7 +353,7 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 func accessDroppedAttributesCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).DroppedAttributesCount()
+			return int64(ctx.GetItem().(ptrace.Span).DroppedAttributesCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -382,7 +382,7 @@ func accessEvents() pathGetSetter {
 func accessDroppedEventsCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).DroppedEventsCount()
+			return int64(ctx.GetItem().(ptrace.Span).DroppedEventsCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -411,7 +411,7 @@ func accessLinks() pathGetSetter {
 func accessDroppedLinksCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).DroppedLinksCount()
+			return int64(ctx.GetItem().(ptrace.Span).DroppedLinksCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {

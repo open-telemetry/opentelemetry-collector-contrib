@@ -77,7 +77,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig: pcommon.NewTraceID(traceID),
+			orig: pcommon.NewTraceID(traceID).HexString(),
 			new:  hex.EncodeToString(traceID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceID(pcommon.NewTraceID(traceID2))
@@ -90,7 +90,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig: pcommon.NewSpanID(spanID),
+			orig: pcommon.NewSpanID(spanID).HexString(),
 			new:  hex.EncodeToString(spanID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetSpanID(pcommon.NewSpanID(spanID2))
@@ -350,7 +350,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_attributes_count",
 				},
 			},
-			orig: uint32(10),
+			orig: int64(10),
 			new:  int64(20),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedAttributesCount(20)
@@ -379,7 +379,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_events_count",
 				},
 			},
-			orig: uint32(20),
+			orig: int64(20),
 			new:  int64(30),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedEventsCount(30)
@@ -408,7 +408,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_links_count",
 				},
 			},
-			orig: uint32(30),
+			orig: int64(30),
 			new:  int64(40),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedLinksCount(40)
