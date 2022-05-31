@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_newConditionEvaluator(t *testing.T) {
@@ -35,10 +37,10 @@ func Test_newConditionEvaluator(t *testing.T) {
 			name: "literals match",
 			cond: &Condition{
 				Left: Value{
-					String: strp("hello"),
+					String: testhelper.Strp("hello"),
 				},
 				Right: Value{
-					String: strp("hello"),
+					String: testhelper.Strp("hello"),
 				},
 				Op: "==",
 			},
@@ -48,10 +50,10 @@ func Test_newConditionEvaluator(t *testing.T) {
 			name: "literals don't match",
 			cond: &Condition{
 				Left: Value{
-					String: strp("hello"),
+					String: testhelper.Strp("hello"),
 				},
 				Right: Value{
-					String: strp("goodbye"),
+					String: testhelper.Strp("goodbye"),
 				},
 				Op: "!=",
 			},
@@ -70,7 +72,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 					},
 				},
 				Right: Value{
-					String: strp("bear"),
+					String: testhelper.Strp("bear"),
 				},
 				Op: "==",
 			},
@@ -89,7 +91,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 					},
 				},
 				Right: Value{
-					String: strp("cat"),
+					String: testhelper.Strp("cat"),
 				},
 				Op: "!=",
 			},
@@ -116,11 +118,11 @@ func Test_newConditionEvaluator(t *testing.T) {
 	t.Run("invalid", func(t *testing.T) {
 		_, err := newConditionEvaluator(&Condition{
 			Left: Value{
-				String: strp("bear"),
+				String: testhelper.Strp("bear"),
 			},
 			Op: "<>",
 			Right: Value{
-				String: strp("cat"),
+				String: testhelper.Strp("cat"),
 			},
 		}, DefaultFunctions(), testParsePath)
 		assert.Error(t, err)
