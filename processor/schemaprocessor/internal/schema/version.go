@@ -101,12 +101,54 @@ func NewIdentifier(s string) (*Version, error) {
 	}, nil
 }
 
-func (id *Version) String() string {
-	return fmt.Sprint(id.Major, separator, id.Minor, separator, id.Patch)
+func (v *Version) String() string {
+	return fmt.Sprint(v.Major, separator, v.Minor, separator, v.Patch)
 }
 
-func (id *Version) GreaterThan(v *Version) bool
+// Compare returns a digit to represent if the v is equal, less than,
+// or greater than o.
+// The values are 0, 1 and -1 respectively.
+func (v *Version) Compare(o *Version) int {
+	var (
+		major = diff(v.Major, o.Major)
+		minor = diff(v.Minor, o.Minor)
+		patch = diff(v.Patch, o.Patch)
+	)
+	if major != 0 {
+		return major
+	}
+	if minor != 0 {
+		return minor
+	}
+	return patch
+}
 
-func (id *Version) LessThan(v *Version) bool
+func (id *Version) Equal(v *Version) bool {
+	return id.Compare(v) == 0
+}
 
-func (id *Version) Equal(v *Version) bool
+func (id *Version) GreaterThan(v *Version) bool {
+	return id.Compare(v) > 0
+}
+
+func (id *Version) LessThan(v *Version) bool {
+	return id.Compare(v) < 0
+}
+
+func diff(a, b int) int {
+	return gt(a, b) - lt(a, b)
+}
+
+func gt(a, b int) int {
+	if a > b {
+		return 1
+	}
+	return 0
+}
+
+func lt(a, b int) int {
+	if a < b {
+		return 1
+	}
+	return 0
+}
