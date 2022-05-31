@@ -18,6 +18,7 @@
 ### 💡 Enhancements 💡
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+- `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 
 ### 🧰 Bug fixes 🧰
 
