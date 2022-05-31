@@ -33,6 +33,7 @@ pymongo~=3.1
 PyMySQL~=0.9.3
 pyramid>=1.7
 redis>=2.6
+remoulade>=0.50
 sqlalchemy>=1.0
 tornado>=5.1.1
 ddtrace>=0.34.0

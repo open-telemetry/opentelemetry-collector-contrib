@@ -1,5 +1,9 @@
 components:
   
+  instrumentation/opentelemetry-instrumentation-boto3sqs:
+    - oxeye-nikolay
+    - nikosokolik
+  
   instrumentation/opentelemetry-instrumentation-kafka-python:
     - nozik
   
@@ -7,9 +11,9 @@ components:
     - oxeye-nikolay
     - nikosokolik
 
-  instrumentation/opentelemetry-instrumentation-boto3sqs:
-    - oxeye-nikolay
-    - nikosokolik
+  instrumentation/opentelemetry-instrumentation-remoulade:
+    - ben-natan
+    - machine424
 
   propagator/opentelemetry-propagator-aws-xray:
     - NathanielRN
