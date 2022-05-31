@@ -19,6 +19,7 @@
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
+- `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
 
 ### 🧰 Bug fixes 🧰
 
@@ -44,7 +45,6 @@
 
 - `transformprocessor`: Add transformation of metrics (#10100)
 - `transformprocessor`: Include transform processor in components (#10134)
-- `transformprocessor`: Add functions for conversion of scalar metric types (#10255)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 - `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
