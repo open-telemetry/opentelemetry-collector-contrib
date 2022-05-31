@@ -140,14 +140,14 @@ func createProviders(intervalSec int, names ...string) (ps []provider) {
 }
 
 // from https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventlevel
-const verboseEventLevel = 5
+const verboseEventLevel = 2
 
 func createProvider(name string, intervalSec int) provider {
 	s := strconv.Itoa(intervalSec)
 	return provider{
 		name:       name,
 		eventLevel: verboseEventLevel,
-		keywords:   math.MaxInt64,
+		keywords:   0, // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventkeywords
 		args:       providerArgs{"EventCounterIntervalSec": s},
 	}
 }
