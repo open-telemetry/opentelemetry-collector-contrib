@@ -1,5 +1,11 @@
 # Kubernetes Cluster Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 The Kubernetes Cluster receiver collects cluster-level metrics from the Kubernetes
 API server. It uses the K8s API to listen for updates. A single instance of this
 receiver can be used to monitor a cluster.
@@ -341,3 +347,6 @@ Add the following rules to your ClusterRole:
   - list
   - watch
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
