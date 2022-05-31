@@ -134,7 +134,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: uint32(3),
+			orig: int64(3),
 			new:  int64(4),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetFlags(uint32(4))
@@ -342,7 +342,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_attributes_count",
 				},
 			},
-			orig: uint32(10),
+			orig: int64(10),
 			new:  int64(20),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetDroppedAttributesCount(20)

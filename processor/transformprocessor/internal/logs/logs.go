@@ -283,7 +283,7 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 func accessDroppedAttributesCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(plog.LogRecord).DroppedAttributesCount()
+			return int64(ctx.GetItem().(plog.LogRecord).DroppedAttributesCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -296,7 +296,7 @@ func accessDroppedAttributesCount() pathGetSetter {
 func accessFlags() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(plog.LogRecord).Flags()
+			return int64(ctx.GetItem().(plog.LogRecord).Flags())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
