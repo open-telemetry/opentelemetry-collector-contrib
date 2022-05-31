@@ -18,11 +18,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_parse(t *testing.T) {
+	spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
 	tests := []struct {
 		query    string
 		expected *ParsedQuery
@@ -278,6 +282,56 @@ func Test_parse(t *testing.T) {
 				Condition: nil,
 			},
 		},
+		{
+			query: `set(span_id, {0102030405060708})`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "span_id",
+									},
+								},
+							},
+						},
+						{
+							SpanID: &SpanIDWrapper{
+								SpanID: spanID,
+							},
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
+		{
+			query: `set(trace_id, {0102030405060708090a0b0c0d0e0f10})`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "trace_id",
+									},
+								},
+							},
+						},
+						{
+							TraceID: &TraceIDWrapper{
+								TraceID: traceID,
+							},
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -296,6 +350,12 @@ func Test_parse_failure(t *testing.T) {
 		`set(name.)`,
 		`("foo")`,
 		`set("foo") where name =||= "fido"`,
+		`set(span_id, SpanID{not a hex string})`,
+		`set(span_id, SpanID{01})`,
+		`set(span_id, SpanID{010203040506070809})`,
+		`set(trace_id, TraceID{not a hex string})`,
+		`set(trace_id, TraceID{0102030405060708090a0b0c0d0e0f})`,
+		`set(trace_id, TraceID{0102030405060708090a0b0c0d0e0f1011})`,
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {

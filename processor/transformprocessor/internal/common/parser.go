@@ -15,8 +15,12 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"encoding/hex"
+	"errors"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/multierr"
 )
 
@@ -46,11 +50,13 @@ type Invocation struct {
 // expression, function call, or literal.
 // nolint:govet
 type Value struct {
-	Invocation *Invocation `( @@`
-	String     *string     `| @String`
-	Float      *float64    `| @Float`
-	Int        *int64      `| @Int`
-	Path       *Path       `| @@ )`
+	Invocation *Invocation     `( @@`
+	SpanID     *SpanIDWrapper  `| @SpanID`
+	TraceID    *TraceIDWrapper `| @TraceID`
+	String     *string         `| @String`
+	Float      *float64        `| @Float`
+	Int        *int64          `| @Int`
+	Path       *Path           `| @@ )`
 }
 
 // Path represents a telemetry path expression.
@@ -71,6 +77,43 @@ type Field struct {
 type Query struct {
 	Function  ExprFunc
 	Condition condFunc
+}
+
+// SpanIDWrapper is a wrapper for pcommon.SpanID
+// It allows the grammar to capture a span id.
+type SpanIDWrapper struct {
+	SpanID pcommon.SpanID
+}
+
+// Capture is the function that tells the parser how to capture span ids.
+// It will throw an error if the value cannot be decoded or if the resulting
+// array's length is not equal to 8.
+func (s *SpanIDWrapper) Capture(values []string) error {
+	rawStr := values[0]
+	// must drop the wrapping {}
+	spanId, err := ParseSpanId(rawStr[1 : len(rawStr)-1])
+	if err != nil {
+		return err
+	}
+	s.SpanID = spanId
+	return nil
+}
+
+// TraceIDWrapper is a wrapper for pcommon.TraceID
+// It allows the grammar to capture a trace id.
+type TraceIDWrapper struct {
+	TraceID pcommon.TraceID
+}
+
+func (t *TraceIDWrapper) Capture(values []string) error {
+	rawStr := values[0]
+	// must drop the wrapping {}
+	traceId, err := ParseTraceId(rawStr[1 : len(rawStr)-1])
+	if err != nil {
+		return err
+	}
+	t.TraceID = traceId
+	return nil
 }
 
 func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
@@ -124,6 +167,8 @@ func newParser() *participle.Parser {
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
+		{Name: `SpanID`, Pattern: `{[a-fA-F0-9]{16}}`},
+		{Name: `TraceID`, Pattern: `{[a-fA-F0-9]{32}}`},
 		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})
@@ -136,4 +181,30 @@ func newParser() *participle.Parser {
 		panic("Unable to initialize parser, this is a programming error in the transformprocesor")
 	}
 	return parser
+}
+
+func ParseSpanId(spanIDStr string) (pcommon.SpanID, error) {
+	id, err := hex.DecodeString(spanIDStr)
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+	if len(id) != 8 {
+		return pcommon.SpanID{}, errors.New("span ids must be 8 bytes")
+	}
+	var idArr [8]byte
+	copy(idArr[:8], id)
+	return pcommon.NewSpanID(idArr), nil
+}
+
+func ParseTraceId(traceIDStr string) (pcommon.TraceID, error) {
+	id, err := hex.DecodeString(traceIDStr)
+	if err != nil {
+		return pcommon.TraceID{}, err
+	}
+	if len(id) != 16 {
+		return pcommon.TraceID{}, errors.New("traces ids must be 16 bytes")
+	}
+	var idArr [16]byte
+	copy(idArr[:16], id)
+	return pcommon.NewTraceID(idArr), nil
 }

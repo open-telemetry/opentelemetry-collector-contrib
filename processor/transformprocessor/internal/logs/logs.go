@@ -15,14 +15,12 @@
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type logTransformContext struct {
@@ -313,10 +311,9 @@ func accessTraceID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [16]byte
-				copy(idArr[:16], id)
-				ctx.GetItem().(plog.LogRecord).SetTraceID(pcommon.NewTraceID(idArr))
+				if traceId, err := common.ParseTraceId(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceId)
+				}
 			}
 		},
 	}
@@ -329,10 +326,9 @@ func accessSpanID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [8]byte
-				copy(idArr[:8], id)
-				ctx.GetItem().(plog.LogRecord).SetSpanID(pcommon.NewSpanID(idArr))
+				if spanId, err := common.ParseSpanId(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanId)
+				}
 			}
 		},
 	}
