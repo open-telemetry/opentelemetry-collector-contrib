@@ -18,6 +18,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,7 +48,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				Function: "testing_getsetter",
 				Arguments: []Value{
 					{
-						String: strp("not path"),
+						String: testhelper.Strp("not path"),
 					},
 				},
 			},
@@ -80,7 +81,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -91,7 +92,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				Function: "testing_string",
 				Arguments: []Value{
 					{
-						Int: intp(10),
+						Int: testhelper.Intp(10),
 					},
 				},
 			},
@@ -111,7 +112,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(-1),
+						Int: testhelper.Intp(-1),
 					},
 				},
 			},
@@ -131,7 +132,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(-1),
+						Int: testhelper.Intp(-1),
 					},
 				},
 			},
@@ -152,16 +153,16 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 							Fields: []Field{
 								{
 									Name:   "attributes",
-									MapKey: strp("test"),
+									MapKey: testhelper.Strp("test"),
 								},
 							},
 						},
 					},
 					{
-						String: strp("\\*"),
+						String: testhelper.Strp("\\*"),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -181,10 +182,10 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						String: strp("\\*"),
+						String: testhelper.Strp("\\*"),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -221,13 +222,13 @@ func Test_newFunctionCall(t *testing.T) {
 				Function: "testing_string_slice",
 				Arguments: []Value{
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -238,13 +239,13 @@ func Test_newFunctionCall(t *testing.T) {
 				Function: "testing_float_slice",
 				Arguments: []Value{
 					{
-						Float: floatp(1.1),
+						Float: testhelper.Floatp(1.1),
 					},
 					{
-						Float: floatp(1.2),
+						Float: testhelper.Floatp(1.2),
 					},
 					{
-						Float: floatp(1.3),
+						Float: testhelper.Floatp(1.3),
 					},
 				},
 			},
@@ -255,13 +256,13 @@ func Test_newFunctionCall(t *testing.T) {
 				Function: "testing_int_slice",
 				Arguments: []Value{
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -323,7 +324,7 @@ func Test_newFunctionCall(t *testing.T) {
 				Function: "testing_string",
 				Arguments: []Value{
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -334,7 +335,7 @@ func Test_newFunctionCall(t *testing.T) {
 				Function: "testing_float",
 				Arguments: []Value{
 					{
-						Float: floatp(1.1),
+						Float: testhelper.Floatp(1.1),
 					},
 				},
 			},
@@ -345,7 +346,7 @@ func Test_newFunctionCall(t *testing.T) {
 				Function: "testing_int",
 				Arguments: []Value{
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -365,19 +366,19 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 					{
-						Float: floatp(1.1),
+						Float: testhelper.Floatp(1.1),
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
