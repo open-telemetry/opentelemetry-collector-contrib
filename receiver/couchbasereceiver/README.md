@@ -1,10 +1,14 @@
 # Couchbase Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 This receiver fetches stats from a couchbase cluster using the following endpoints:
 - `/pools/default` [endpoint](https://docs.couchbase.com/server/6.5/rest-api/rest-cluster-details.html)
 - `/pools/default/buckets/{bucket_name}/stats` [endpoint](https://docs.couchbase.com/server/6.5/rest-api/rest-bucket-stats.html).
-
-Supported pipeline types: `metrics`
 
 > :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 ## Prerequisites
@@ -39,3 +43,6 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
