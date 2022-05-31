@@ -211,16 +211,16 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 							Fields: []Field{
 								{
 									Name:   "attributes",
-									MapKey: strp("test"),
+									MapKey: testhelper.Strp("test"),
 								},
 							},
 						},
 					},
 					{
-						String: strp("\\*"),
+						String: testhelper.Strp("\\*"),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -240,10 +240,10 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						String: strp("\\*"),
+						String: testhelper.Strp("\\*"),
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
