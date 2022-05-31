@@ -1,7 +1,7 @@
 receivers:
   jmx:
   jmx/all:
-    jar_path: myjarpath
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:12345
     target_system: jvm
     collection_interval: 15s
@@ -24,27 +24,41 @@ receivers:
     resource_attributes:
       one: two
     additional_jars:
-      - /path/to/additional.jar
+      - testdata/fake_additional.jar
   jmx/missingendpoint:
+    jar_path: testdata/fake_jmx.jar
     target_system: jvm
-  jmx/missinggroovy:
+  jmx/missingtarget:
+    jar_path: testdata/fake_jmx.jar
     endpoint: service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi
   jmx/invalidinterval:
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:23456
     target_system: jvm
     collection_interval: -100ms
   jmx/invalidotlptimeout:
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:34567
     target_system: jvm
     otlp:
       timeout: -100ms
+  jmx/nonexistentjar:
+    jar_path: testdata/file_does_not_exist.jar
+    endpoint: myendpoint:23456
+    target_system: jvm
+  jmx/invalidjar:
+    jar_path: testdata/fake_jmx_wrong.jar
+    endpoint: myendpoint:23456
+    target_system: jvm
   jmx/invalidloglevel:
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:55555
     target_system: jvm
     log_level: truth
   jmx/invalidtargetsystem:
+    jar_path: testdata/fake_jmx.jar
     endpoint: myendpoint:55555
-    target_system: jvm,nonsense
+    target_system: jvm,fakejvmtechnology
 
 processors:
   nop:

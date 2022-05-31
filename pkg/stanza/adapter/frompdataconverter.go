@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanza // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
 	"encoding/binary"

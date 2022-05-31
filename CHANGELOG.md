@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
@@ -22,6 +24,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `jmxreceiver`: Hash the jars provided to JMX Receiver and only allow if they match an approved list (#9687)
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚀 New components 🚀
