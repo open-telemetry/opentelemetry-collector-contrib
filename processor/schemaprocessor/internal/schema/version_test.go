@@ -28,13 +28,13 @@ func TestNewIdentifier(t *testing.T) {
 		scenario string
 		input    string
 		err      error
-		ident    *Identifier
+		ident    *Version
 	}{
 		{
 			scenario: "valid schema identifier",
 			input:    "1.33.7",
 			err:      nil,
-			ident:    &Identifier{Major: 1, Minor: 33, Patch: 7},
+			ident:    &Version{Major: 1, Minor: 33, Patch: 7},
 		},
 		{
 			scenario: "schema identifier incomplete",
@@ -69,18 +69,18 @@ func TestParsingIdentifierFromPath(t *testing.T) {
 	tests := []struct {
 		scenario string
 		path     string
-		ident    *Identifier
+		ident    *Version
 		err      error
 	}{
 		{scenario: "No path set", path: "", ident: nil, err: ErrInvalidIdentifier},
 		{scenario: "no schema identifier defined", path: "foo/bar", ident: nil, err: ErrInvalidIdentifier},
-		{scenario: "a valid path with schema identifier", path: "foo/bar/1.8.0", ident: &Identifier{Major: 1, Minor: 8, Patch: 0}, err: nil},
+		{scenario: "a valid path with schema identifier", path: "foo/bar/1.8.0", ident: &Version{Major: 1, Minor: 8, Patch: 0}, err: nil},
 		{scenario: "a path with a trailing slash", path: "foo/bar/1.5.3/", ident: nil, err: ErrInvalidIdentifier},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			ident, err := ReadIdentifierFromPath(tc.path)
+			ident, err := ReadVersionFromPath(tc.path)
 
 			assert.ErrorIs(t, err, tc.err, "Must be the expected error when processor")
 			assert.Equal(t, tc.ident, ident)

@@ -26,19 +26,19 @@ import (
 const separator = "."
 
 var (
-	ErrInvalidIdentifier = errors.New("invalid schema identifier")
+	ErrInvalidIdentifier = errors.New("invalid schema version")
 	ErrInvalidFamily     = errors.New("invalid schema family")
 )
 
-// Identifier is a machine readable version of the string
+// Version is a machine readable version of the string
 // schema identifier that can assist in making indexing easier
-type Identifier struct {
+type Version struct {
 	Major, Minor, Patch int
 }
 
-// ReadIdentifierFromPath allows for parsing paths
+// ReadVersionFromPath allows for parsing paths
 // that end in a schema indentifier
-func ReadIdentifierFromPath(p string) (*Identifier, error) {
+func ReadVersionFromPath(p string) (*Version, error) {
 	if p == "" {
 		return nil, fmt.Errorf("empty path:%w", ErrInvalidIdentifier)
 	}
@@ -51,13 +51,13 @@ func ReadIdentifierFromPath(p string) (*Identifier, error) {
 	return NewIdentifier(ident)
 }
 
-// GetFamilyAndIdentifier takes a schemaURL and separates the family from the identifier.
-func GetFamilyAndIdentifier(schemaURL string) (family string, id *Identifier, err error) {
+// GetFamilyAndVersion takes a schemaURL and separates the family from the identifier.
+func GetFamilyAndVersion(schemaURL string) (family string, id *Version, err error) {
 	u, err := url.Parse(schemaURL)
 	if err != nil {
 		return "", nil, err
 	}
-	id, err = ReadIdentifierFromPath(u.Path)
+	id, err = ReadVersionFromPath(u.Path)
 	if err != nil {
 		return "", nil, err
 	}
@@ -77,7 +77,7 @@ func GetFamilyAndIdentifier(schemaURL string) (family string, id *Identifier, er
 // a schema identifier that is comparable for a machine.
 // The expected string format can be matched by the following regex:
 // [0-9]+\.[0-9]+\.[0-9]+
-func NewIdentifier(s string) (*Identifier, error) {
+func NewIdentifier(s string) (*Version, error) {
 	parts := strings.Split(s, separator)
 
 	if l := len(parts); l != 3 {
@@ -94,13 +94,19 @@ func NewIdentifier(s string) (*Identifier, error) {
 		}
 	}
 
-	return &Identifier{
+	return &Version{
 		Major: vals[0],
 		Minor: vals[1],
 		Patch: vals[2],
 	}, nil
 }
 
-func (id *Identifier) String() string {
+func (id *Version) String() string {
 	return fmt.Sprint(id.Major, separator, id.Minor, separator, id.Patch)
 }
+
+func (id *Version) GreaterThan(v *Version) bool
+
+func (id *Version) LessThan(v *Version) bool
+
+func (id *Version) Equal(v *Version) bool
