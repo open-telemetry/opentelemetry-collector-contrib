@@ -285,10 +285,10 @@ func Test_parse(t *testing.T) {
 					Function: "convert_gauge_to_sum",
 					Arguments: []Value{
 						{
-							String: strp("cumulative"),
+							String: testhelper.Strp("cumulative"),
 						},
 						{
-							Bool: boolp(false),
+							Bool: (*Boolean)(testhelper.Boolp(false)),
 						},
 					},
 				},
@@ -302,10 +302,10 @@ func Test_parse(t *testing.T) {
 					Function: "convert_gauge_to_sum",
 					Arguments: []Value{
 						{
-							String: strp("cumulative"),
+							String: testhelper.Strp("cumulative"),
 						},
 						{
-							Bool: boolp(true),
+							Bool: (*Boolean)(testhelper.Boolp(true)),
 						},
 					},
 				},
@@ -337,20 +337,4 @@ func Test_parse_failure(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
-}
-
-func strp(s string) *string {
-	return &s
-}
-
-func floatp(f float64) *float64 {
-	return &f
-}
-
-func intp(i int64) *int64 {
-	return &i
-}
-
-func boolp(b bool) *Boolean {
-	return (*Boolean)(&b)
 }

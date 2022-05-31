@@ -37,10 +37,10 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 				Function: "convert_gauge_to_sum",
 				Arguments: []common.Value{
 					{
-						String: strp("invalid_agg_temp"),
+						String: testhelper.Strp("invalid_agg_temp"),
 					},
 					{
-						Bool: boolp(true),
+						Bool: (*common.Boolean)(testhelper.Boolp(true)),
 					},
 				},
 			},
@@ -1741,10 +1741,10 @@ func Test_newFunctionCall_Metric_Sum(t *testing.T) {
 				Function: "convert_gauge_to_sum",
 				Arguments: []common.Value{
 					{
-						String: strp("delta"),
+						String: testhelper.Strp("delta"),
 					},
 					{
-						Bool: boolp(false),
+						Bool: (*common.Boolean)(testhelper.Boolp(false)),
 					},
 				},
 			},
@@ -1794,10 +1794,10 @@ func Test_newFunctionCall_Metric_Gauge(t *testing.T) {
 				Function: "convert_gauge_to_sum",
 				Arguments: []common.Value{
 					{
-						String: strp("cumulative"),
+						String: testhelper.Strp("cumulative"),
 					},
 					{
-						Bool: boolp(false),
+						Bool: (*common.Boolean)(testhelper.Boolp(false)),
 					},
 				},
 			},
@@ -1819,10 +1819,10 @@ func Test_newFunctionCall_Metric_Gauge(t *testing.T) {
 				Function: "convert_gauge_to_sum",
 				Arguments: []common.Value{
 					{
-						String: strp("delta"),
+						String: testhelper.Strp("delta"),
 					},
 					{
-						Bool: boolp(true),
+						Bool: (*common.Boolean)(testhelper.Boolp(true)),
 					},
 				},
 			},

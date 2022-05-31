@@ -1618,15 +1618,3 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pc
 
 	return newExemplars, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes
 }
-
-func strp(s string) *string {
-	return &s
-}
-
-func intp(i int64) *int64 {
-	return &i
-}
-
-func boolp(b bool) *common.Boolean {
-	return (*common.Boolean)(&b)
-}
