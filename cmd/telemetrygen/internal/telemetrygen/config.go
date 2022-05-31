@@ -35,7 +35,7 @@ var tracesCmd = &cobra.Command{
 	Short: "Simulates a client generating traces",
 	Example: "telemetrygen traces",
 	RunE: func(cmd *cobra.Command, args []string) error{
-		err := errors.New("[WIP] The 'traces' command is a work in progress, come back later !")
+		err := errors.New("[WIP] The 'traces' command is a work in progress, come back later")
 		return err
 	},
 }
@@ -46,7 +46,7 @@ var metricsCmd = &cobra.Command{
 	Short: "Simulates a client generating metrics",
 	Example: "telemetrygen metrics",
 	RunE: func(cmd *cobra.Command, args []string) error{
-		err := errors.New("[WIP] The 'metrics' command is a work in progress, come back later !")
+		err := errors.New("[WIP] The 'metrics' command is a work in progress, come back later")
 		return err
 	},
 }
