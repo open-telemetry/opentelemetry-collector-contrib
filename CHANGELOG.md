@@ -19,6 +19,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
+- `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
 
 ## v0.52.0
 
