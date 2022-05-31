@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-## 🛑 Breaking changes 🛑
+### 🛑 Breaking changes 🛑
+
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
+- `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 
@@ -19,6 +22,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
+- `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
 
 ## v0.52.0
 
