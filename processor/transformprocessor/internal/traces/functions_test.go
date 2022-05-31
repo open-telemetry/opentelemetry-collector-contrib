@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_newFunctionCall(t *testing.T) {
@@ -31,6 +32,7 @@ func Test_newFunctionCall(t *testing.T) {
 	attrs.InsertString("test", "hello world")
 	attrs.InsertInt("test2", 3)
 	attrs.InsertBool("test3", true)
+	attrs.InsertString("test4", "hello")
 	attrs.CopyTo(input.Attributes())
 
 	tests := []struct {
@@ -53,7 +55,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("cat"),
+						String: testhelper.Strp("cat"),
 					},
 				},
 			},
@@ -80,7 +82,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -104,7 +106,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -131,10 +133,10 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 					{
-						String: strp("test2"),
+						String: testhelper.Strp("test2"),
 					},
 				},
 			},
@@ -183,7 +185,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -194,6 +196,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "h")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "h")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -212,7 +215,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(0),
+						Int: testhelper.Intp(0),
 					},
 				},
 			},
@@ -223,6 +226,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -241,7 +245,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(100),
+						Int: testhelper.Intp(100),
 					},
 				},
 			},
@@ -252,6 +256,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -270,7 +275,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(11),
+						Int: testhelper.Intp(11),
 					},
 				},
 			},
@@ -281,6 +286,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -302,7 +308,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(11),
+						Int: testhelper.Intp(11),
 					},
 				},
 			},
@@ -313,6 +319,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -331,7 +338,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -358,7 +365,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(0),
+						Int: testhelper.Intp(0),
 					},
 				},
 			},
@@ -384,7 +391,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(100),
+						Int: testhelper.Intp(100),
 					},
 				},
 			},
@@ -395,6 +402,7 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},
@@ -416,7 +424,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						Int: intp(1),
+						Int: testhelper.Intp(1),
 					},
 				},
 			},
@@ -427,6 +435,141 @@ func Test_newFunctionCall(t *testing.T) {
 				attrs.InsertString("test", "hello world")
 				attrs.InsertInt("test2", 3)
 				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_match",
+			inv: common.Invocation{
+				Function: "replace_match",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name:   "attributes",
+									MapKey: testhelper.Strp("test"),
+								},
+							},
+						},
+					},
+					{
+						String: testhelper.Strp("hello*"),
+					},
+					{
+						String: testhelper.Strp("hello {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello {universe}")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_match doesn't match",
+			inv: common.Invocation{
+				Function: "replace_match",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name:   "attributes",
+									MapKey: testhelper.Strp("test"),
+								},
+							},
+						},
+					},
+					{
+						String: testhelper.Strp("goodbye*"),
+					},
+					{
+						String: testhelper.Strp("goodbye {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_all_matches",
+			inv: common.Invocation{
+				Function: "replace_all_matches",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: testhelper.Strp("hello*"),
+					},
+					{
+						String: testhelper.Strp("hello {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello {universe}")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello {universe}")
+				attrs.CopyTo(span.Attributes())
+			},
+		},
+		{
+			name: "testing replace_all_matches no matches",
+			inv: common.Invocation{
+				Function: "replace_all_matches",
+				Arguments: []common.Value{
+					{
+						Path: &common.Path{
+							Fields: []common.Field{
+								{
+									Name: "attributes",
+								},
+							},
+						},
+					},
+					{
+						String: testhelper.Strp("goodbye*"),
+					},
+					{
+						String: testhelper.Strp("goodbye {universe}"),
+					},
+				},
+			},
+			want: func(span ptrace.Span) {
+				input.CopyTo(span)
+				span.Attributes().Clear()
+				attrs := pcommon.NewMap()
+				attrs.InsertString("test", "hello world")
+				attrs.InsertInt("test2", 3)
+				attrs.InsertBool("test3", true)
+				attrs.InsertString("test4", "hello")
 				attrs.CopyTo(span.Attributes())
 			},
 		},

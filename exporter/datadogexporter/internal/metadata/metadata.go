@@ -87,7 +87,7 @@ type Meta struct {
 	SocketFqdn string `json:"socket-fqdn,omitempty"`
 
 	// HostAliases are other available host names
-	HostAliases []string `json:"host-aliases,omitempty"`
+	HostAliases []string `json:"host_aliases,omitempty"`
 }
 
 // metadataFromAttributes gets metadata info from attributes following

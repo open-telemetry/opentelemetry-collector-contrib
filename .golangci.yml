@@ -73,13 +73,16 @@ linters-settings:
   revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
+
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
+
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
     local-prefixes: github.com/open-telemetry/opentelemetry-collector-contrib
+
   misspell:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
@@ -92,6 +95,13 @@ linters-settings:
       - metres
       - kilometre
       - kilometres
+
+  depguard:
+    list-type: denylist
+    include-go-root: true
+    packages-with-error-message:
+      # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
+      - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
 
 linters:
   enable:

@@ -197,7 +197,6 @@ func (f *factory) createTracesExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	var pushTracesFn consumer.ConsumeTracesFunc
 
 	if cfg.OnlyMetadata {
@@ -216,6 +215,7 @@ func (f *factory) createTracesExporter(
 	} else {
 		exporter, err := newTracesExporter(ctx, set, cfg, &f.onceMetadata)
 		if err != nil {
+			cancel()
 			return nil, err
 		}
 		pushTracesFn = exporter.pushTraceDataScrubbed

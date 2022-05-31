@@ -60,7 +60,7 @@ func (zs *zipkinDataSender) Start() error {
 	}
 
 	zs.Traces = exp
-	return exp.Start(context.Background(), zs)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (zs *zipkinDataSender) GenConfigYAMLStr() string {

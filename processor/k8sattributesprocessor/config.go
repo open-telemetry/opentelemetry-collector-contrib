@@ -60,7 +60,7 @@ type ExtractConfig struct {
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,
-	//   k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.cluster.name,
+	//   k8s.pod.name, k8s.pod.uid, k8s.deployment.name,
 	//   k8s.node.name, k8s.namespace.name and k8s.pod.start_time
 	//
 	// Specifying anything other than these values will result in an error.

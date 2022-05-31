@@ -104,8 +104,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetTimestamp(ts)
 		histDP.SetCount(16)
 		histDP.SetSum(100.0)
-		histDP.SetExplicitBounds(histBounds)
-		histDP.SetBucketCounts(histCounts)
+		histDP.SetMExplicitBounds(histBounds)
+		histDP.SetMBucketCounts(histCounts)
 		pcommon.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
 	}
 	histDP := pmetric.NewHistogramDataPoint()

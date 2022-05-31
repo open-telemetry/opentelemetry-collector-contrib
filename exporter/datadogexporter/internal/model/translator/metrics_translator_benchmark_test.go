@@ -112,10 +112,10 @@ func createBenchmarkDeltaExponentialHistogramMetrics(n int, b int, additionalAtt
 		}
 
 		point.Negative().SetOffset(2)
-		point.Negative().SetBucketCounts(buckets)
+		point.Negative().SetMBucketCounts(buckets)
 
 		point.Positive().SetOffset(3)
-		point.Positive().SetBucketCounts(buckets)
+		point.Positive().SetMBucketCounts(buckets)
 
 		point.SetTimestamp(seconds(0))
 	}

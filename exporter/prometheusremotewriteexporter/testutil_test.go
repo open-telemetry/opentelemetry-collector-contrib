@@ -300,8 +300,8 @@ func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum floa
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	dp.SetBucketCounts(buckets)
-	dp.SetExplicitBounds(bounds)
+	dp.SetMBucketCounts(buckets)
+	dp.SetMExplicitBounds(bounds)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))

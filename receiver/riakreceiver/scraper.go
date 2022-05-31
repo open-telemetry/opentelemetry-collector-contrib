@@ -41,12 +41,12 @@ type riakScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySettings) *riakScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCreateSettings) *riakScraper {
 	return &riakScraper{
 		logger:   logger,
 		cfg:      cfg,
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 

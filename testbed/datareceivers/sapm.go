@@ -54,7 +54,7 @@ func (sr *SapmDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ cons
 		return err
 	}
 
-	return sr.receiver.Start(context.Background(), sr)
+	return sr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // Stop the receiver.

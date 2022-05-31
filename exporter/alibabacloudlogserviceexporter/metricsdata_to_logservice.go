@@ -217,20 +217,20 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 			int64(dataPoint.Timestamp()),
 			float64(dataPoint.Count())))
 
-		bounds := dataPoint.ExplicitBounds()
+		bounds := dataPoint.MExplicitBounds()
 		boundsStr := make([]string, len(bounds)+1)
 		for i := 0; i < len(bounds); i++ {
 			boundsStr[i] = strconv.FormatFloat(bounds[i], 'g', -1, 64)
 		}
 		boundsStr[len(boundsStr)-1] = infinityBoundValue
 
-		bucketCount := min(len(boundsStr), len(dataPoint.BucketCounts()))
+		bucketCount := min(len(boundsStr), len(dataPoint.MBucketCounts()))
 
 		bucketLabels := labels.Clone()
 		bucketLabels.Append(bucketLabelKey, "")
 		bucketLabels.Sort()
 		for i := 0; i < bucketCount; i++ {
-			bucket := dataPoint.BucketCounts()[i]
+			bucket := dataPoint.MBucketCounts()[i]
 			bucketLabels.Replace(bucketLabelKey, boundsStr[i])
 
 			logs = append(

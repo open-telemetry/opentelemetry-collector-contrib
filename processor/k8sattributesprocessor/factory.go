@@ -226,17 +226,19 @@ func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg config.Processor) {
 		case metadataDeployment:
 			oldName = metadataDeployment
 			newName = conventions.AttributeK8SDeploymentName
-		case metadataCluster:
-			oldName = metadataCluster
-			newName = conventions.AttributeK8SClusterName
 		case metadataNode:
 			oldName = metadataNode
 			newName = conventions.AttributeK8SNodeName
+		case deprecatedMetadataCluster:
+			logger.Warn("cluster metadata param has been deprecated and will be removed soon")
+		case conventions.AttributeK8SClusterName:
+			logger.Warn("k8s.cluster.name metadata param has been deprecated and will be removed soon")
 		}
 		if oldName != "" {
 			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8s-tagger processor", oldName, newName))
 		}
 	}
+
 }
 
 func errWrongKeyConfig(cfg config.Processor) error {

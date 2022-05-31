@@ -37,10 +37,11 @@ const (
 	metadataPodUID     = "podUID"
 	metadataStartTime  = "startTime"
 	metadataDeployment = "deployment"
-	metadataCluster    = "cluster"
 	metadataNode       = "node"
 	// Will be removed when new fields get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
 	metadataPodStartTime = "k8s.pod.start_time"
+	// This one was deprecated, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9886
+	deprecatedMetadataCluster = "cluster"
 )
 
 // option represents a configuration option that can be passes.
@@ -76,7 +77,6 @@ func withExtractMetadata(fields ...string) option {
 				conventions.AttributeK8SPodUID,
 				metadataPodStartTime,
 				conventions.AttributeK8SDeploymentName,
-				conventions.AttributeK8SClusterName,
 				conventions.AttributeK8SNodeName,
 				conventions.AttributeContainerID,
 				conventions.AttributeContainerImageName,
@@ -86,7 +86,7 @@ func withExtractMetadata(fields ...string) option {
 		for _, field := range fields {
 			switch field {
 			// Old conventions handled by the cases metdataNamespace, metadataPodName, metadataPodUID,
-			// metadataStartTime, metadataDeployment, metadataCluster, metadataNode are being supported for backward compatibility.
+			// metadataStartTime, metadataDeployment, deprecatedMetadataCluster, metadataNode are being supported for backward compatibility.
 			// These will be removed when new conventions get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
 			case metdataNamespace, conventions.AttributeK8SNamespaceName:
 				p.rules.Namespace = true
@@ -98,8 +98,6 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.StartTime = true
 			case metadataDeployment, conventions.AttributeK8SDeploymentName:
 				p.rules.Deployment = true
-			case metadataCluster, conventions.AttributeK8SClusterName:
-				p.rules.Cluster = true
 			case metadataNode, conventions.AttributeK8SNodeName:
 				p.rules.Node = true
 			case conventions.AttributeContainerID:
@@ -108,6 +106,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageName = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
+			case deprecatedMetadataCluster, conventions.AttributeK8SClusterName:
+				// This one is deprecated, ignore it
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}

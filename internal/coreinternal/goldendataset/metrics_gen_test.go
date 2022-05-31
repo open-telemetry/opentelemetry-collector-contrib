@@ -59,23 +59,23 @@ func TestGenDefault(t *testing.T) {
 func TestDoubleHistogramFunctions(t *testing.T) {
 	pt := pmetric.NewHistogramDataPoint()
 	setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
-	require.Equal(t, 5, len(pt.ExplicitBounds()))
-	require.Equal(t, 5, len(pt.BucketCounts()))
+	require.Equal(t, 5, len(pt.MExplicitBounds()))
+	require.Equal(t, 5, len(pt.MBucketCounts()))
 
 	addDoubleHistogramVal(pt, 1)
 	require.EqualValues(t, 1, pt.Count())
 	require.EqualValues(t, 1, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[0])
+	require.EqualValues(t, 1, pt.MBucketCounts()[0])
 
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 2, pt.Count())
 	require.EqualValues(t, 3, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[1])
+	require.EqualValues(t, 1, pt.MBucketCounts()[1])
 
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 3, pt.Count())
 	require.EqualValues(t, 5, pt.Sum())
-	require.EqualValues(t, 2, pt.BucketCounts()[1])
+	require.EqualValues(t, 2, pt.MBucketCounts()[1])
 }
 
 func TestGenDoubleHistogram(t *testing.T) {
@@ -85,7 +85,7 @@ func TestGenDoubleHistogram(t *testing.T) {
 	md := MetricsFromCfg(cfg)
 	pts := getMetric(md).Histogram().DataPoints()
 	pt := pts.At(0)
-	buckets := pt.BucketCounts()
+	buckets := pt.MBucketCounts()
 	require.Equal(t, 5, len(buckets))
 	require.EqualValues(t, 2, buckets[2])
 }

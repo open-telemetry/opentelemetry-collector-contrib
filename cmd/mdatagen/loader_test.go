@@ -83,7 +83,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "no_metric_type.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
-				"one of the following has to be specified: sum, gauge, histogram",
+				"one of the following has to be specified: sum, gauge",
 		},
 		{
 			name:    "no enabled",
@@ -96,7 +96,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "two_metric_types.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
-				"only one of the following has to be specified: sum, gauge, histogram",
+				"only one of the following has to be specified: sum, gauge",
 		},
 		{
 			name: "no number types",

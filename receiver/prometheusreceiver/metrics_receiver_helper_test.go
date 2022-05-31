@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"testing"
 
 	gokitlog "github.com/go-kit/log"
@@ -38,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -52,18 +52,17 @@ type mockPrometheusResponse struct {
 type mockPrometheus struct {
 	mu          sync.Mutex // mu protects the fields below.
 	endpoints   map[string][]mockPrometheusResponse
-	accessIndex map[string]*int32
+	accessIndex map[string]*atomic.Int32
 	wg          *sync.WaitGroup
 	srv         *httptest.Server
 }
 
 func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockPrometheus {
-	accessIndex := make(map[string]*int32)
+	accessIndex := make(map[string]*atomic.Int32)
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
 	for k := range endpoints {
-		v := int32(0)
-		accessIndex[k] = &v
+		accessIndex[k] = atomic.NewInt32(0)
 	}
 	mp := &mockPrometheus{
 		wg:          wg,
@@ -84,8 +83,8 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(404)
 		return
 	}
-	index := int(*iptr)
-	atomic.AddInt32(iptr, 1)
+	index := int(iptr.Load())
+	iptr.Add(1)
 	pages := mp.endpoints[req.URL.Path]
 	if index >= len(pages) {
 		if index == len(pages) {
@@ -524,7 +523,7 @@ func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPoin
 	return func(t *testing.T, histogramDataPoint *pmetric.HistogramDataPoint) {
 		assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
 		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
-		assert.Equal(t, buckets, histogramDataPoint.BucketCounts(), "Histogram bucket count values do not match")
+		assert.Equal(t, buckets, histogramDataPoint.MBucketCounts(), "Histogram bucket count values do not match")
 	}
 }
 

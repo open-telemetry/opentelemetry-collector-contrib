@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -87,7 +86,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set.Logger, oCfg, scraperFactories)
+	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
 	if err != nil {
 		return nil, err
 	}
@@ -102,14 +101,14 @@ func createMetricsReceiver(
 
 func createAddScraperOptions(
 	ctx context.Context,
-	logger *zap.Logger,
+	set component.ReceiverCreateSettings,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 
 	for key, cfg := range config.Scrapers {
-		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, logger, key, cfg, factories)
+		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
 		}
@@ -125,7 +124,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set component.ReceiverCreateSettings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -133,6 +132,6 @@ func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key strin
 	}
 
 	ok = true
-	scraper, err = factory.CreateMetricsScraper(ctx, logger, cfg)
+	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
 	return
 }
