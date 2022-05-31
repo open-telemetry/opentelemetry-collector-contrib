@@ -1,8 +1,12 @@
 # AWS Kinesis Data Firehose Receiver
 
-Receiver for ingesting AWS Kinesis Data Firehose delivery stream messages and parsing the records received based on the configured record type.
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
-Supported pipeline types: metrics
+Receiver for ingesting AWS Kinesis Data Firehose delivery stream messages and parsing the records received based on the configured record type.
 
 ## Configuration
 
@@ -49,3 +53,6 @@ See [documentation](https://docs.aws.amazon.com/firehose/latest/dev/create-desti
 ### cwmetrics
 The record type for the CloudWatch metric stream. Expects the format for the records to be JSON.
 See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html) for details.
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
