@@ -46,7 +46,7 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	for _, schemaURL := range c.Prefetch {
-		_, _, err := schema.GetFamilyAndIdentifier(schemaURL)
+		_, _, err := schema.GetFamilyAndVersion(schemaURL)
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func (c *Config) Validate() error {
 
 	families := make(map[string]struct{})
 	for _, target := range c.Targets {
-		family, _, err := schema.GetFamilyAndIdentifier(target)
+		family, _, err := schema.GetFamilyAndVersion(target)
 		if err != nil {
 			return err
 		}
