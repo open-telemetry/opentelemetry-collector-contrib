@@ -4,8 +4,7 @@
 | ------------------------ | --------------------- |
 | Stability                | traces [WIP]          |
 |                          | metrics [WIP]         |
-| Supported pipeline types | traces, metrics       |
-| Distributions            | [contrib]             |
+| Supported signal types   | traces, metrics       |
 
 This utility simulates a client generating **traces** and **metrics**, useful for testing and demonstration purposes.
 
