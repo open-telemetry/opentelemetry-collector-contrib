@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_parse(t *testing.T) {
@@ -32,7 +34,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: strp("foo"),
+							String: testhelper.Strp("foo"),
 						},
 					},
 				},
@@ -46,7 +48,7 @@ func Test_parse(t *testing.T) {
 					Function: "met",
 					Arguments: []Value{
 						{
-							Float: floatp(1.2),
+							Float: testhelper.Floatp(1.2),
 						},
 					},
 				},
@@ -60,7 +62,7 @@ func Test_parse(t *testing.T) {
 					Function: "fff",
 					Arguments: []Value{
 						{
-							Int: intp(12),
+							Int: testhelper.Intp(12),
 						},
 					},
 				},
@@ -74,7 +76,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: strp("foo"),
+							String: testhelper.Strp("foo"),
 						},
 						{
 							Invocation: &Invocation{
@@ -114,7 +116,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -123,7 +125,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -144,7 +146,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -153,7 +155,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -169,7 +171,7 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "==",
 					Right: Value{
-						String: strp("fido"),
+						String: testhelper.Strp("fido"),
 					},
 				},
 			},
@@ -188,7 +190,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -197,7 +199,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -213,7 +215,7 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "!=",
 					Right: Value{
-						String: strp("fido"),
+						String: testhelper.Strp("fido"),
 					},
 				},
 			},
@@ -232,7 +234,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -241,7 +243,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -257,7 +259,7 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "==",
 					Right: Value{
-						String: strp("fido"),
+						String: testhelper.Strp("fido"),
 					},
 				},
 			},
@@ -269,7 +271,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: strp("fo\"o"),
+							String: testhelper.Strp("fo\"o"),
 						},
 					},
 				},
@@ -301,16 +303,4 @@ func Test_parse_failure(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
-}
-
-func strp(s string) *string {
-	return &s
-}
-
-func floatp(f float64) *float64 {
-	return &f
-}
-
-func intp(i int64) *int64 {
-	return &i
 }
