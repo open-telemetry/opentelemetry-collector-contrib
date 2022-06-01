@@ -9,8 +9,6 @@
 Parses Journald events from systemd journal.
 Journald receiver is dependent on `journalctl` binary to be present and must be in the $PATH of the agent.
 
-> :construction: This receiver is in alpha and configuration fields are subject to change.
-
 ## Configuration
 
 | Field                  | Default          | Description                                                                                                        |
