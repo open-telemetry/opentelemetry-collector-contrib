@@ -138,10 +138,7 @@ func (m *manager) RequestSchema(schemaURL string) Schema {
 		)
 		return t
 	}
-	// Locking the translation until the schema has been fetched
-	// and marshaled into a processable format
-	// Important: This does not get unlocked in this scope.
-	t.rw.Lock()
+
 	// Sending request to fetch schema to an async worker to
 	// allow for progress until the last possible moment
 	m.reqs <- schemaURL
@@ -176,10 +173,6 @@ func (m *manager) GetSchema(ctx context.Context, schemaURL string) error {
 	t := m.schemas[family]
 	m.mu.Unlock()
 
-	// T is required to be unlocked at any point that the function finishes
-	// to return, regardless of the processing result
-	defer t.rw.Unlock()
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, http.NoBody)
 	if err != nil {
 		return err
@@ -196,6 +189,9 @@ func (m *manager) GetSchema(ctx context.Context, schemaURL string) error {
 			resp.Body.Close(),
 		)
 	}
+
+	t.rw.Lock()
+	defer t.rw.Unlock()
 
 	content, err := schemaencoder.Parse(resp.Body)
 	if err != nil {
