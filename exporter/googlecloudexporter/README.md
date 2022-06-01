@@ -1,10 +1,10 @@
 # Google Cloud Exporter
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [beta]               |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
 | Supported pipeline types | traces, metrics, logs |
-| Distributions            | [contrib]            |
+| Distributions            | [contrib]             |
 
 This exporter can be used to send metrics and traces to Google Cloud Monitoring and Trace (formerly known as Stackdriver) respectively.
 
