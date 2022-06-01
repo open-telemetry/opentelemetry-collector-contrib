@@ -190,9 +190,6 @@ func (m *manager) GetSchema(ctx context.Context, schemaURL string) error {
 		)
 	}
 
-	t.rw.Lock()
-	defer t.rw.Unlock()
-
 	content, err := schemaencoder.Parse(resp.Body)
 	if err != nil {
 		return multierr.Combine(
