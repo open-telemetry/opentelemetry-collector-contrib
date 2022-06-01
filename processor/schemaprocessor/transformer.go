@@ -24,11 +24,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/schema"
 )
 
 type transformer struct {
 	targets []string
 	log     *zap.Logger
+	manager schema.Manager
 }
 
 func newTransformer(
@@ -40,9 +43,16 @@ func newTransformer(
 	if !ok {
 		return nil, errors.New("invalid configuration provided")
 	}
+	m, err := schema.NewManager(
+		schema.WithManagerLogger(set.Logger.Named("schema-manager")),
+	)
+	if err != nil {
+		return nil, err
+	}
 	return &transformer{
 		log:     set.Logger,
 		targets: cfg.Targets,
+		manager: m,
 	}, nil
 }
 
@@ -61,8 +71,16 @@ func (t transformer) processTraces(ctx context.Context, td ptrace.Traces) (ptrac
 // start will load the remote file definition if it isn't already cached
 // and resolve the schema translation file
 func (t *transformer) start(ctx context.Context, host component.Host) error {
+	go func() {
+		if err := t.manager.ProcessRequests(ctx); err != nil {
+			t.log.Error("Issue with trying to process requests", zap.Error(err))
+		}
+	}()
+
 	for _, target := range t.targets {
 		t.log.Info("Fetching remote schema url", zap.String("schema-url", target))
+		_ = t.manager.RequestSchema(target)
 	}
+
 	return nil
 }
