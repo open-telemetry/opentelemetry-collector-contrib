@@ -26,11 +26,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
+
+var buildInfo = component.BuildInfo{
+	Version: "1.0",
+}
 
 func createSimpleLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
@@ -95,6 +100,7 @@ func TestLogsExporter(t *testing.T) {
 	// Spin up a HTTP server to receive the test exporters...
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, r.Header.Get("User-Agent"))
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -117,7 +123,7 @@ func TestLogsExporter(t *testing.T) {
 		IngestURL: serverURL.String(),
 	}
 
-	exp := newLogsExporter(config, componenttest.NewNopTelemetrySettings())
+	exp := newLogsExporter(config, componenttest.NewNopTelemetrySettings(), buildInfo)
 	require.NotNil(t, exp)
 
 	err = exp.start(context.Background(), componenttest.NewNopHost())
