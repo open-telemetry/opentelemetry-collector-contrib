@@ -93,7 +93,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: `set(metric.is_monotonic, "true") where metric.is_monotonic == "false"`,
+			query: `set(metric.is_monotonic, true) where metric.is_monotonic == false`,
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetIsMonotonic(true)
 			},

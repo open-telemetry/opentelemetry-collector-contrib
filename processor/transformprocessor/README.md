@@ -17,7 +17,7 @@ in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
   - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
   - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
-- Literals: Strings, ints, and floats can be referenced as literal values
+- Literals: Strings, ints, floats, and bools can be referenced as literal values
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
 

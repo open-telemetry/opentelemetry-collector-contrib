@@ -1549,8 +1549,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "is_monotonic",
 				},
 			},
-			orig: "true",
-			new:  "false",
+			orig: true,
+			new:  false,
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetIsMonotonic(false)
 			},

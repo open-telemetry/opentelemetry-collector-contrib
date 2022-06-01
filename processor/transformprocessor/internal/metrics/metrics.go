@@ -16,7 +16,6 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -345,18 +344,16 @@ func accessMetricIsMonotonic() pathGetSetter {
 			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
-				return strconv.FormatBool(metric.Sum().IsMonotonic())
+				return metric.Sum().IsMonotonic()
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newIsMonotonic, ok := val.(string); ok {
+			if newIsMonotonic, ok := val.(bool); ok {
 				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
-					if boolVal, err := strconv.ParseBool(newIsMonotonic); err == nil {
-						metric.Sum().SetIsMonotonic(boolVal)
-					}
+					metric.Sum().SetIsMonotonic(newIsMonotonic)
 				}
 			}
 		},

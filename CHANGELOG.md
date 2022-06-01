@@ -34,6 +34,7 @@
 
 - `jmxreceiver`: Hash the jars provided to JMX Receiver and only allow if they match an approved list (#9687)
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
+- `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
 
 ### 🚀 New components 🚀
 
