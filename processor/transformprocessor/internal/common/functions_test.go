@@ -211,6 +211,7 @@ func Test_newFunctionCall(t *testing.T) {
 	functions["testing_string"] = functionWithString
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt
+	functions["testing_bool"] = functionWithBool
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 
 	tests := []struct {
@@ -353,6 +354,17 @@ func Test_newFunctionCall(t *testing.T) {
 			},
 		},
 		{
+			name: "bool arg",
+			inv: Invocation{
+				Function: "testing_bool",
+				Arguments: []Value{
+					{
+						Bool: (*Boolean)(testhelper.Boolp(true)),
+					},
+				},
+			},
+		},
+		{
 			name: "multiple args",
 			inv: Invocation{
 				Function: "testing_multiple_args",
@@ -442,6 +454,12 @@ func functionWithFloat(_ float64) (ExprFunc, error) {
 }
 
 func functionWithInt(_ int64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithBool(_ bool) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil
