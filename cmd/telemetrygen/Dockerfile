@@ -4,7 +4,6 @@ WORKDIR /src
 ADD . /src
 
 RUN CGO_ENABLED=0 go build -o /telemetrygen
-RUN ls
 
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
