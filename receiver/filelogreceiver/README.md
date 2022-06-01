@@ -8,8 +8,6 @@
 
 Tails and parses logs from files.
 
-> :construction: This receiver is in alpha and configuration fields are subject to change.
-
 ## Configuration
 
 | Field                        | Default          | Description                                                                                                        |
