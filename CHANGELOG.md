@@ -18,9 +18,12 @@
 ### 💡 Enhancements 💡
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+- `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
+- `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
 
 ### 🧰 Bug fixes 🧰
 
+- `transformprocessor`: Fix issue where incorrect error was returned if a bad path was passed to a function (#10141)
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
