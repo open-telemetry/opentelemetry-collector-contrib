@@ -19,6 +19,7 @@
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
+- `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
 
 ### 🧰 Bug fixes 🧰
 
