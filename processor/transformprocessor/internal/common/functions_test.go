@@ -23,13 +23,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
-// Test for valid functions are in internal/traces/functions_test.go as there are many different data model cases.
-func Test_newFunctionCall_invalid(t *testing.T) {
+func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions := DefaultFunctions()
 	functions["testing_error"] = functionThatHasAnError
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_multiple_args"] = functionWithMultipleArgs
+	functions["testing_string"] = functionWithString
 
 	tests := []struct {
 		name string
@@ -87,23 +87,20 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "not enough args",
+			name: "not matching arg type",
 			inv: Invocation{
-				Function: "testing_multiple_args",
+				Function: "testing_string",
 				Arguments: []Value{
 					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						String: testhelper.Strp("test"),
+						Int: testhelper.Intp(10),
 					},
 				},
+			},
+		},
+		{
+			name: "function call returns error",
+			inv: Invocation{
+				Function: "testing_error",
 			},
 		},
 	}
@@ -115,7 +112,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 	}
 }
 
-func Test_newFunctionCall(t *testing.T) {
+func Test_NewFunctionCall(t *testing.T) {
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_float_slice"] = functionWithFloatSlice
@@ -126,6 +123,7 @@ func Test_newFunctionCall(t *testing.T) {
 	functions["testing_string"] = functionWithString
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt
+	functions["testing_bool"] = functionWithBool
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 
 	tests := []struct {
@@ -268,6 +266,17 @@ func Test_newFunctionCall(t *testing.T) {
 			},
 		},
 		{
+			name: "bool arg",
+			inv: Invocation{
+				Function: "testing_bool",
+				Arguments: []Value{
+					{
+						Bool: (*Boolean)(testhelper.Boolp(true)),
+					},
+				},
+			},
+		},
+		{
 			name: "multiple args",
 			inv: Invocation{
 				Function: "testing_multiple_args",
@@ -357,6 +366,12 @@ func functionWithFloat(_ float64) (ExprFunc, error) {
 }
 
 func functionWithInt(_ int64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithBool(_ bool) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil

@@ -2,9 +2,9 @@
 
 | Status                   |                       |
 | ------------------------ | --------------------- |
-| Stability                | [In development]      |
+| Stability                | [alpha]               |
 | Supported pipeline types | traces, metrics, logs |
-| Distributions            | none                  |
+| Distributions            | [contrib]             |
 
 The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language).
 It takes a list of queries which are performed in the order specified in the config.
@@ -36,6 +36,13 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 - `replace_match(target, pattern, replacement)` - `target` is a path expression to a telemetry field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. If `target` matches `pattern` it will get replaced with `replacement`. e.g., `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
 - `replace_all_matches(target, pattern, replacement)` - `target` is a path expression to a map type field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. Each string value in `target` that matches `pattern` will get replaced with `replacement`. e.g., `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
+
+Metric only functions:
+- `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
+**NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md#gauge). Use at your own risk.
+
+- `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". 
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md#sums). Use at your own risk.
 
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
@@ -70,6 +77,8 @@ processors:
         - limit(attributes, 100)
         - truncate_all(attributes, 4096)
         - truncate_all(resource.attributes, 4096)
+        - convert_sum_to_gauge() where metric.name == "system.processes.count"
+        - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
     logs:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
@@ -108,6 +117,8 @@ All metrics and their data points
 4) Limit all data point attributes such that each data point has no more than 100 attributes.
 6) Truncate all data point attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
+8) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
+9) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
 
 All logs
 
@@ -116,4 +127,5 @@ All logs
 3) Set `body` to the `http.route` attribute if it is set
 4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
-[In development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

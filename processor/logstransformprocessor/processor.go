@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -44,9 +44,9 @@ type logsTransformProcessor struct {
 
 	pipe          *pipeline.DirectedPipeline
 	firstOperator operator.Operator
-	emitter       *stanza.LogEmitter
-	converter     *stanza.Converter
-	fromConverter *stanza.FromPdataConverter
+	emitter       *adapter.LogEmitter
+	converter     *adapter.Converter
+	fromConverter *adapter.FromPdataConverter
 	wg            sync.WaitGroup
 	outputChannel chan outputType
 }
@@ -68,16 +68,16 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 		return err
 	}
 
-	emitterOpts := []stanza.LogEmitterOption{
-		stanza.LogEmitterWithLogger(ltp.logger.Sugar()),
+	emitterOpts := []adapter.LogEmitterOption{
+		adapter.LogEmitterWithLogger(ltp.logger.Sugar()),
 	}
 	if baseCfg.Converter.MaxFlushCount > 0 {
-		emitterOpts = append(emitterOpts, stanza.LogEmitterWithMaxBatchSize(baseCfg.Converter.MaxFlushCount))
+		emitterOpts = append(emitterOpts, adapter.LogEmitterWithMaxBatchSize(baseCfg.Converter.MaxFlushCount))
 	}
 	if baseCfg.Converter.FlushInterval > 0 {
-		emitterOpts = append(emitterOpts, stanza.LogEmitterWithFlushInterval(baseCfg.Converter.FlushInterval))
+		emitterOpts = append(emitterOpts, adapter.LogEmitterWithFlushInterval(baseCfg.Converter.FlushInterval))
 	}
-	ltp.emitter = stanza.NewLogEmitter(emitterOpts...)
+	ltp.emitter = adapter.NewLogEmitter(emitterOpts...)
 	pipe, err := pipeline.Config{
 		Operators:     operators,
 		DefaultOutput: ltp.emitter,
@@ -86,12 +86,12 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 		return err
 	}
 
-	storageClient, err := stanza.GetStorageClient(ctx, ltp.id, component.KindProcessor, host)
+	storageClient, err := adapter.GetStorageClient(ctx, ltp.id, component.KindProcessor, host)
 	if err != nil {
 		return err
 	}
 
-	err = pipe.Start(stanza.GetPersister(storageClient))
+	err = pipe.Start(adapter.GetPersister(storageClient))
 	if err != nil {
 		return err
 	}
@@ -108,13 +108,13 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 		wkrCount = baseCfg.Converter.WorkerCount
 	}
 
-	ltp.converter = stanza.NewConverter(
-		stanza.WithLogger(ltp.logger),
-		stanza.WithWorkerCount(wkrCount),
+	ltp.converter = adapter.NewConverter(
+		adapter.WithLogger(ltp.logger),
+		adapter.WithWorkerCount(wkrCount),
 	)
 	ltp.converter.Start()
 
-	ltp.fromConverter = stanza.NewFromPdataConverter(wkrCount, ltp.logger)
+	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
 	ltp.fromConverter.Start()
 
 	ltp.outputChannel = make(chan outputType)

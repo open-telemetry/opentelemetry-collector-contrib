@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package testhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -27,6 +28,10 @@ func Floatp(f float64) *float64 {
 
 func Intp(i int64) *int64 {
 	return &i
+}
+
+func Boolp(b bool) *bool {
+	return &b
 }
 
 type TestTransformContext struct {

@@ -26,25 +26,25 @@ import (
 )
 
 func init() {
-	operator.Register("copy", func() operator.Builder { return NewCopyOperatorConfig("") })
+	operator.Register("copy", func() operator.Builder { return NewConfig("") })
 }
 
-// NewCopyOperatorConfig creates a new copy operator config with default values
-func NewCopyOperatorConfig(operatorID string) *CopyOperatorConfig {
-	return &CopyOperatorConfig{
+// NewConfig creates a new copy operator config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "copy"),
 	}
 }
 
-// CopyOperatorConfig is the configuration of a copy operator
-type CopyOperatorConfig struct {
+// Config is the configuration of a copy operator
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
 	From                     entry.Field `mapstructure:"from" json:"from" yaml:"from"`
 	To                       entry.Field `mapstructure:"to" json:"to" yaml:"to"`
 }
 
 // Build will build a copy operator from the supplied configuration
-func (c CopyOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -58,27 +58,27 @@ func (c CopyOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator,
 		return nil, fmt.Errorf("copy: missing to field")
 	}
 
-	return &CopyOperator{
+	return &Transformer{
 		TransformerOperator: transformerOperator,
 		From:                c.From,
 		To:                  c.To,
 	}, nil
 }
 
-// CopyOperator copies a value from one field and creates a new field with that value
-type CopyOperator struct {
+// Transformer copies a value from one field and creates a new field with that value
+type Transformer struct {
 	helper.TransformerOperator
 	From entry.Field
 	To   entry.Field
 }
 
 // Process will process an entry with a copy transformation.
-func (p *CopyOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply the copy operation to an entry
-func (p *CopyOperator) Transform(e *entry.Entry) error {
+func (p *Transformer) Transform(e *entry.Entry) error {
 	val, exist := p.From.Get(e)
 	if !exist {
 		return fmt.Errorf("copy: from field does not exist in this entry: %s", p.From.String())

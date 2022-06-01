@@ -147,6 +147,11 @@ func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Val
 			return fmt.Errorf("invalid argument at position %v, must be an int", index)
 		}
 		*args = append(*args, reflect.ValueOf(*argDef.Int))
+	case "bool":
+		if argDef.Bool == nil {
+			return fmt.Errorf("invalid argument at position %v, must be a bool", index)
+		}
+		*args = append(*args, reflect.ValueOf(bool(*argDef.Bool)))
 	}
 	return nil
 }
