@@ -23,6 +23,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `transformprocessor`: Fix issue where incorrect error was returned if a bad path was passed to a function (#10141)
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
 
