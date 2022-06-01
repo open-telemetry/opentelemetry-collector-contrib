@@ -1,10 +1,10 @@
 # Host Metrics Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [core], [contrib] |
 
 The Host Metrics receiver generates metrics about the host system scraped
 from various sources. This is intended to be used when the collector is
@@ -132,4 +132,5 @@ service:
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 
