@@ -16,25 +16,25 @@
 package telemetrygen // import "github.com/open-telemetry/opentelemetry-collector-contrib/telemetrygen/internal/telemetrygen"
 
 import (
-	"os"
 	"errors"
+	"os"
 
 	"github.com/spf13/cobra"
 )
 
 // rootCmd is the root command on which will be run children commands
 var rootCmd = &cobra.Command{
-	Use:       "telemetrygen",
-	Short:     "Telemetrygen simulates a client generating traces and metrics",
-	Example:   "telemetrygen metrics\ntelemetrygen traces",
+	Use:     "telemetrygen",
+	Short:   "Telemetrygen simulates a client generating traces and metrics",
+	Example: "telemetrygen metrics\ntelemetrygen traces",
 }
 
 // tracesCmd is the command responsible for sending traces
 var tracesCmd = &cobra.Command{
-	Use: "traces",
-	Short: "Simulates a client generating traces",
+	Use:     "traces",
+	Short:   "Simulates a client generating traces",
 	Example: "telemetrygen traces",
-	RunE: func(cmd *cobra.Command, args []string) error{
+	RunE: func(cmd *cobra.Command, args []string) error {
 		err := errors.New("[WIP] The 'traces' command is a work in progress, come back later")
 		return err
 	},
@@ -42,10 +42,10 @@ var tracesCmd = &cobra.Command{
 
 // metricsCmd is the command responsible for sending metrics
 var metricsCmd = &cobra.Command{
-	Use: "metrics",
-	Short: "Simulates a client generating metrics",
+	Use:     "metrics",
+	Short:   "Simulates a client generating metrics",
 	Example: "telemetrygen metrics",
-	RunE: func(cmd *cobra.Command, args []string) error{
+	RunE: func(cmd *cobra.Command, args []string) error {
 		err := errors.New("[WIP] The 'metrics' command is a work in progress, come back later")
 		return err
 	},
@@ -54,7 +54,7 @@ var metricsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(tracesCmd, metricsCmd)
 
-	// Disabling completion command for end user 
+	// Disabling completion command for end user
 	// https://github.com/spf13/cobra/blob/master/shell_completions.md
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
