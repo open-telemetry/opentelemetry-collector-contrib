@@ -16,7 +16,10 @@ package schema
 
 import (
 	"context"
+	_ "embed"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -24,6 +27,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 )
+
+//go:embed testdata/schema.yml
+var schemaContent []byte
+
+func SchemaHandler(t *testing.T) http.Handler {
+	assert.NotEmpty(t, schemaContent, "SchemaContent MUST not be empty")
+	return http.HandlerFunc(func(wr http.ResponseWriter, r *http.Request) {
+		_, err := wr.Write(schemaContent)
+		assert.NoError(t, err, "Must not have issues writing schema content")
+	})
+}
 
 func TestNewManager(t *testing.T) {
 	t.Parallel()
@@ -55,8 +69,11 @@ func TestNewManager(t *testing.T) {
 func TestRequestSchema(t *testing.T) {
 	t.Parallel()
 
-	const (
-		schemaURL = "http://opentelemetry.io/schemas/1.9.0"
+	s := httptest.NewServer(SchemaHandler(t))
+	t.Cleanup(s.Close)
+
+	var (
+		schemaURL = fmt.Sprintf("http://%s/1.0.0", s.URL)
 	)
 
 	m, err := NewManager(
@@ -69,11 +86,9 @@ func TestRequestSchema(t *testing.T) {
 	require.True(t, ok, "Must return a NoopSchema if no valid schema URL is provided")
 	require.NotNil(t, nop, "Must have a valid schema")
 
-	s, ok := m.RequestSchema(schemaURL).(*translation)
+	tn, ok := m.RequestSchema(schemaURL).(*translation)
 	require.True(t, ok, "Can cast to the concrete type")
-	require.NotNil(t, s, "Must have a valid schema")
-
-	assert.False(t, s.rw.TryRLock(), "The object must be locked for reading")
+	require.NotNil(t, tn, "Must have a valid schema")
 
 	var wg sync.WaitGroup
 	ctx, done := context.WithCancel(context.Background())
@@ -85,12 +100,12 @@ func TestRequestSchema(t *testing.T) {
 		assert.NoError(t, m.ProcessRequests(ctx), "Must not error when shutdown correctly")
 	}(ctx)
 
-	assert.True(t, s.SupportedVersion(&Version{1, 2, 0}), "Must have the version listed as supported")
+	assert.True(t, tn.SupportedVersion(&Version{1, 0, 0}), "Must have the version listed as supported")
 	done()
 
 	wg.Wait()
 
-	s, ok = m.RequestSchema(schemaURL).(*translation)
+	tn, ok = m.RequestSchema(schemaURL).(*translation)
 	require.True(t, ok, "Can cast to the concrete type")
-	require.NotNil(t, s, "Must have a valid schema")
+	require.NotNil(t, tn, "Must have a valid schema")
 }
