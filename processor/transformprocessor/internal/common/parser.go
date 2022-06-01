@@ -56,6 +56,7 @@ type Value struct {
 	String     *string         `| @String`
 	Float      *float64        `| @Float`
 	Int        *int64          `| @Int`
+	Bool       *Boolean        `| @("true" | "false")`
 	Path       *Path           `| @@ )`
 }
 
@@ -105,6 +106,9 @@ type TraceIDWrapper struct {
 	TraceID pcommon.TraceID
 }
 
+// Capture is the function that tells the parser how to capture trace ids.
+// It will throw an error if the value cannot be decoded or if the resulting
+// array's length is not equal to 16.
 func (t *TraceIDWrapper) Capture(values []string) error {
 	rawStr := values[0]
 	// must drop the wrapping {}
@@ -113,6 +117,15 @@ func (t *TraceIDWrapper) Capture(values []string) error {
 		return err
 	}
 	t.TraceID = traceId
+	return nil
+}
+
+// Boolean Type for capturing booleans, see:
+// https://github.com/alecthomas/participle#capturing-boolean-value
+type Boolean bool
+
+func (b *Boolean) Capture(values []string) error {
+	*b = values[0] == "true"
 	return nil
 }
 

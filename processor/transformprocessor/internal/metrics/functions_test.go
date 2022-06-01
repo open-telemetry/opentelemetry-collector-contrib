@@ -26,6 +26,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
+func Test_newFunctionCall_invalid(t *testing.T) {
+	tests := []struct {
+		name string
+		inv  common.Invocation
+	}{
+		{
+			name: "invalid aggregation temporality",
+			inv: common.Invocation{
+				Function: "convert_gauge_to_sum",
+				Arguments: []common.Value{
+					{
+						String: testhelper.Strp("invalid_agg_temp"),
+					},
+					{
+						Bool: (*common.Boolean)(testhelper.Boolp(true)),
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
+			assert.Error(t, err)
+		})
+	}
+}
 func Test_newFunctionCall_NumberDataPoint(t *testing.T) {
 	input := pmetric.NewNumberDataPoint()
 	attrs := pcommon.NewMap()
@@ -1656,6 +1683,169 @@ func Test_newFunctionCall_Metric(t *testing.T) {
 			want: func(metric pmetric.Metric) {
 				input.CopyTo(metric)
 				metric.SetName("ending name")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			input.CopyTo(metric)
+
+			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
+			assert.NoError(t, err)
+			evaluate(metricTransformContext{
+				metric:   metric,
+				il:       pcommon.NewInstrumentationScope(),
+				resource: pcommon.NewResource(),
+			})
+
+			expected := pmetric.NewMetric()
+			tt.want(expected)
+			assert.Equal(t, expected, metric)
+		})
+	}
+}
+
+func Test_newFunctionCall_Metric_Sum(t *testing.T) {
+	input := pmetric.NewMetric()
+	input.SetDataType(pmetric.MetricDataTypeSum)
+
+	dp1 := input.Sum().DataPoints().AppendEmpty()
+	dp1.SetIntVal(10)
+
+	dp2 := input.Sum().DataPoints().AppendEmpty()
+	dp2.SetDoubleVal(14.5)
+
+	tests := []struct {
+		name string
+		inv  common.Invocation
+		want func(pmetric.Metric)
+	}{
+		{
+			name: "convert sum to gauge",
+			inv: common.Invocation{
+				Function:  "convert_sum_to_gauge",
+				Arguments: []common.Value{},
+			},
+			want: func(metric pmetric.Metric) {
+				input.CopyTo(metric)
+
+				dps := input.Sum().DataPoints()
+				metric.SetDataType(pmetric.MetricDataTypeGauge)
+				dps.CopyTo(metric.Gauge().DataPoints())
+			},
+		},
+		{
+			name: "convert gauge to sum (noop)",
+			inv: common.Invocation{
+				Function: "convert_gauge_to_sum",
+				Arguments: []common.Value{
+					{
+						String: testhelper.Strp("delta"),
+					},
+					{
+						Bool: (*common.Boolean)(testhelper.Boolp(false)),
+					},
+				},
+			},
+			want: func(metric pmetric.Metric) {
+				input.CopyTo(metric)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			input.CopyTo(metric)
+
+			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
+			assert.NoError(t, err)
+			evaluate(metricTransformContext{
+				metric:   metric,
+				il:       pcommon.NewInstrumentationScope(),
+				resource: pcommon.NewResource(),
+			})
+
+			expected := pmetric.NewMetric()
+			tt.want(expected)
+			assert.Equal(t, expected, metric)
+		})
+	}
+}
+
+func Test_newFunctionCall_Metric_Gauge(t *testing.T) {
+	input := pmetric.NewMetric()
+	input.SetDataType(pmetric.MetricDataTypeGauge)
+
+	dp1 := input.Gauge().DataPoints().AppendEmpty()
+	dp1.SetIntVal(10)
+
+	dp2 := input.Gauge().DataPoints().AppendEmpty()
+	dp2.SetDoubleVal(14.5)
+
+	tests := []struct {
+		name string
+		inv  common.Invocation
+		want func(pmetric.Metric)
+	}{
+		{
+			name: "convert gauge to sum 1",
+			inv: common.Invocation{
+				Function: "convert_gauge_to_sum",
+				Arguments: []common.Value{
+					{
+						String: testhelper.Strp("cumulative"),
+					},
+					{
+						Bool: (*common.Boolean)(testhelper.Boolp(false)),
+					},
+				},
+			},
+			want: func(metric pmetric.Metric) {
+				input.CopyTo(metric)
+
+				dps := input.Gauge().DataPoints()
+
+				metric.SetDataType(pmetric.MetricDataTypeSum)
+				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.Sum().SetIsMonotonic(false)
+
+				dps.CopyTo(metric.Sum().DataPoints())
+			},
+		},
+		{
+			name: "convert gauge to sum 2",
+			inv: common.Invocation{
+				Function: "convert_gauge_to_sum",
+				Arguments: []common.Value{
+					{
+						String: testhelper.Strp("delta"),
+					},
+					{
+						Bool: (*common.Boolean)(testhelper.Boolp(true)),
+					},
+				},
+			},
+			want: func(metric pmetric.Metric) {
+				input.CopyTo(metric)
+
+				dps := input.Gauge().DataPoints()
+
+				metric.SetDataType(pmetric.MetricDataTypeSum)
+				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				metric.Sum().SetIsMonotonic(true)
+
+				dps.CopyTo(metric.Sum().DataPoints())
+			},
+		},
+		{
+			name: "convert sum to gauge (no-op)",
+			inv: common.Invocation{
+				Function:  "convert_sum_to_gauge",
+				Arguments: []common.Value{},
+			},
+			want: func(metric pmetric.Metric) {
+				input.CopyTo(metric)
 			},
 		},
 	}

@@ -25,3 +25,7 @@ func Floatp(f float64) *float64 {
 func Intp(i int64) *int64 {
 	return &i
 }
+
+func Boolp(b bool) *bool {
+	return &b
+}
