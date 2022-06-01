@@ -17,25 +17,25 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 )
 
-var _ provider.HostnameProvider = (*Provider)(nil)
+var _ source.Provider = (*Provider)(nil)
 
 type Provider struct {
 	detector azure.Provider
 }
 
 // Hostname returns the Azure cloud integration hostname.
-func (p *Provider) Hostname(ctx context.Context) (string, error) {
+func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	metadata, err := p.detector.Metadata(ctx)
 	if err != nil {
-		return "", err
+		return source.Source{}, err
 	}
 
-	return metadata.VMID, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: metadata.VMID}, nil
 }
 
 // NewProvider creates a new Azure hostname provider.

@@ -16,40 +16,49 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
 
 // UsePreviewHostnameLogic decides whether to use the preview hostname logic or not.
 const UsePreviewHostnameLogic = false
 
-func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	dockerProvider, err := docker.NewProvider()
 	if err != nil {
 		return nil, err
 	}
 
+	ecs, err := ecs.NewProvider(set)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)
+	}
+
 	chain, err := provider.Chain(
 		set.Logger,
-		map[string]provider.HostnameProvider{
+		map[string]source.Provider{
 			"config": provider.Config(configHostname),
 			"docker": dockerProvider,
 			"azure":  azure.NewProvider(),
+			"ecs":    ecs,
 			"ec2":    ec2.NewProvider(set.Logger),
 			"gcp":    gcp.NewProvider(),
 			"system": system.NewProvider(set.Logger),
 		},
-		[]string{"config", "docker", "azure", "ec2", "gcp", "system"},
+		[]string{"config", "docker", "azure", "ecs", "ec2", "gcp", "system"},
 	)
 
 	if err != nil {
@@ -59,7 +68,7 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 	return provider.Once(chain), nil
 }
 
-func buildCurrentProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+func buildCurrentProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	return &currentProvider{
 		logger:         set.Logger,
 		configHostname: configHostname,
@@ -68,7 +77,7 @@ func buildCurrentProvider(set component.TelemetrySettings, configHostname string
 	}, nil
 }
 
-func GetHostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+func GetHostnameProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	if UsePreviewHostnameLogic {
 		return buildPreviewProvider(set, configHostname)
 	}
@@ -76,7 +85,7 @@ func GetHostnameProvider(set component.TelemetrySettings, configHostname string)
 	return buildCurrentProvider(set, configHostname)
 }
 
-var _ provider.HostnameProvider = (*currentProvider)(nil)
+var _ source.Provider = (*currentProvider)(nil)
 
 type currentProvider struct {
 	logger         *zap.Logger
@@ -91,7 +100,7 @@ type currentProvider struct {
 // 2. Cache
 // 3. EC2 instance metadata
 // 4. System
-func (c *currentProvider) Hostname(ctx context.Context) (string, error) {
+func (c *currentProvider) hostname(ctx context.Context) (string, error) {
 	if c.configHostname != "" {
 		return c.configHostname, nil
 	}
@@ -106,9 +115,11 @@ func (c *currentProvider) Hostname(ctx context.Context) (string, error) {
 	if hostname == "" {
 		// Get system hostname
 		var err error
-		hostname, err = c.systemProvider.Hostname(ctx)
+		src, err := c.systemProvider.Source(ctx)
 		if err != nil {
 			c.logger.Debug("system provider is unavailable", zap.Error(err))
+		} else {
+			hostname = src.Identifier
 		}
 	}
 
@@ -120,4 +131,13 @@ func (c *currentProvider) Hostname(ctx context.Context) (string, error) {
 	c.logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
 	cache.Cache.Set(cache.CanonicalHostnameKey, hostname, cache.NoExpiration)
 	return hostname, nil
+}
+
+func (c *currentProvider) Source(ctx context.Context) (source.Source, error) {
+	hostname, err := c.hostname(ctx)
+	if err != nil {
+		return source.Source{}, err
+	}
+
+	return source.Source{Kind: source.HostnameKind, Identifier: hostname}, nil
 }

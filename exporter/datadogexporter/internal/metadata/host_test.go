@@ -33,16 +33,16 @@ func TestHost(t *testing.T) {
 
 	p, err := buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host")
 	require.NoError(t, err)
-	host, err := p.Hostname(context.Background())
+	src, err := p.Source(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, host, "test-host")
+	assert.Equal(t, src.Identifier, "test-host")
 
 	// config.Config.Hostname does not get stored in the cache
 	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host-2")
 	require.NoError(t, err)
-	host, err = p.Hostname(context.Background())
+	src, err = p.Source(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, host, "test-host-2")
+	assert.Equal(t, src.Identifier, "test-host-2")
 
 	// Disable EC2 Metadata service to prevent fetching hostname from there,
 	// in case the test is running on an EC2 instance
@@ -54,9 +54,9 @@ func TestHost(t *testing.T) {
 
 	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
-	host, err = p.Hostname(context.Background())
+	src, err = p.Source(context.Background())
 	require.NoError(t, err)
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
-	assert.Contains(t, host, osHostname)
+	assert.Contains(t, src.Identifier, osHostname)
 }

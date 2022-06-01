@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -87,7 +87,7 @@ func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
 	return hi.EC2Hostname
 }
 
-var _ provider.HostnameProvider = (*Provider)(nil)
+var _ source.Provider = (*Provider)(nil)
 
 type Provider struct {
 	once     sync.Once
@@ -104,13 +104,13 @@ func (p *Provider) fillHostInfo() {
 	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
 }
 
-func (p *Provider) Hostname(ctx context.Context) (string, error) {
+func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	p.fillHostInfo()
 	if p.hostInfo.InstanceID == "" {
-		return "", fmt.Errorf("instance ID is unavailable")
+		return source.Source{}, fmt.Errorf("instance ID is unavailable")
 	}
 
-	return p.hostInfo.InstanceID, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: p.hostInfo.InstanceID}, nil
 }
 
 func (p *Provider) HostInfo() *HostInfo {

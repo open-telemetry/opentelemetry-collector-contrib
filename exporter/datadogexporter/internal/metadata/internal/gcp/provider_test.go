@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,9 +84,10 @@ func TestProvider(t *testing.T) {
 				instanceName: testInstance.instanceName,
 			}}
 
-			hostname, err := provider.Hostname(context.Background())
+			src, err := provider.Source(context.Background())
 			require.NoError(t, err)
-			assert.Equal(t, testInstance.hostname, hostname)
+			assert.Equal(t, source.HostnameKind, src.Kind)
+			assert.Equal(t, testInstance.hostname, src.Identifier)
 		})
 	}
 }
