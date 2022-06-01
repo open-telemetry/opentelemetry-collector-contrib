@@ -52,7 +52,7 @@ func TestNewIdentifier(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			ident, err := NewIdentifier(tc.input)
+			ident, err := NewVersion(tc.input)
 
 			assert.ErrorIs(t, err, tc.err, "MUST have the expected error")
 			assert.Equal(t, tc.ident, ident, "MUST match the expected value")

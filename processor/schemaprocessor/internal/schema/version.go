@@ -48,7 +48,7 @@ func ReadVersionFromPath(p string) (*Version, error) {
 		return nil, fmt.Errorf("must not have trailing slash: %w", ErrInvalidIdentifier)
 	}
 	ident := path.Base(p)
-	return NewIdentifier(ident)
+	return NewVersion(ident)
 }
 
 // GetFamilyAndVersion takes a schemaURL and separates the family from the identifier.
@@ -73,11 +73,11 @@ func GetFamilyAndVersion(schemaURL string) (family string, id *Version, err erro
 	return u.String(), id, err
 }
 
-// NewIdentifier converts a near semver like string (ie 1.4.0) into
+// NewVersion converts a near semver like string (ie 1.4.0) into
 // a schema identifier that is comparable for a machine.
 // The expected string format can be matched by the following regex:
 // [0-9]+\.[0-9]+\.[0-9]+
-func NewIdentifier(s string) (*Version, error) {
+func NewVersion(s string) (*Version, error) {
 	parts := strings.Split(s, separator)
 
 	if l := len(parts); l != 3 {
