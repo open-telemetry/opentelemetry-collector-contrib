@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
@@ -72,7 +71,7 @@ func TestFillHostMetadata(t *testing.T) {
 		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
 	}
 
-	hostProvider, err := GetHostnameProvider(zap.NewNop(), "hostname")
+	hostProvider, err := GetHostnameProvider(componenttest.NewNopTelemetrySettings(), "hostname")
 	require.NoError(t, err)
 
 	metadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
@@ -208,7 +207,7 @@ func TestPusher(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
-	hostProvider, err := GetHostnameProvider(zap.NewNop(), "")
+	hostProvider, err := GetHostnameProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
 
 	attrs := testutils.NewAttributeMap(map[string]string{

@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -50,9 +49,9 @@ type factory struct {
 	providerErr  error
 }
 
-func (f *factory) HostnameProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+func (f *factory) HostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
 	f.onceProvider.Do(func() {
-		f.hostProvider, f.providerErr = metadata.GetHostnameProvider(logger, configHostname)
+		f.hostProvider, f.providerErr = metadata.GetHostnameProvider(set, configHostname)
 	})
 	return f.hostProvider, f.providerErr
 }
@@ -150,7 +149,7 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 
-	hostProvider, err := f.HostnameProvider(set.Logger, cfg.Hostname)
+	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -215,7 +214,7 @@ func (f *factory) createTracesExporter(
 		return nil, err
 	}
 
-	hostProvider, err := f.HostnameProvider(set.Logger, cfg.Hostname)
+	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}

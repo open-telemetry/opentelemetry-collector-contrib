@@ -17,6 +17,7 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
@@ -28,13 +29,13 @@ import (
 
 const UsePreviewHostnameLogic = false
 
-func buildPreviewProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
 	chain, err := provider.Chain(
-		logger,
+		set.Logger,
 		map[string]provider.HostnameProvider{
 			"config": provider.Config(configHostname),
-			"ec2":    ec2.NewProvider(logger),
-			"system": system.NewProvider(logger),
+			"ec2":    ec2.NewProvider(set.Logger),
+			"system": system.NewProvider(set.Logger),
 		},
 		[]string{"config", "ec2", "system"},
 	)
@@ -55,12 +56,12 @@ func buildCurrentProvider(logger *zap.Logger, configHostname string) (provider.H
 	}, nil
 }
 
-func GetHostnameProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+func GetHostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
 	if UsePreviewHostnameLogic {
-		return buildPreviewProvider(logger, configHostname)
+		return buildPreviewProvider(set, configHostname)
 	}
 
-	return buildCurrentProvider(logger, configHostname)
+	return buildCurrentProvider(set.Logger, configHostname)
 }
 
 var _ provider.HostnameProvider = (*currentProvider)(nil)
