@@ -532,7 +532,7 @@ func TestKVParser(t *testing.T) {
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
-			op.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 			ots := time.Now()
 			tc.input.ObservedTimestamp = ots

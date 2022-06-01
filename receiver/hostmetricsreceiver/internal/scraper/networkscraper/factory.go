@@ -17,8 +17,8 @@ package networkscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
@@ -45,11 +45,11 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
-	_ *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config internal.Config,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
-	s, err := newNetworkScraper(ctx, cfg)
+	s, err := newNetworkScraper(ctx, settings, cfg)
 	if err != nil {
 		return nil, err
 	}

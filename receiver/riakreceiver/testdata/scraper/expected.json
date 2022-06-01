@@ -4,7 +4,8 @@
          "instrumentationLibraryMetrics": [
             {
                "instrumentationLibrary": {
-                  "name": "otelcol/riakreceiver"
+                  "name": "otelcol/riakreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {

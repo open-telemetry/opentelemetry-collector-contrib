@@ -84,6 +84,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Przemek Maciolek](https://github.com/pmm-sumo), Sumo Logic
+- [Tyler Helmuth](https://github.com/TylerHelmuth), New Relic
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 

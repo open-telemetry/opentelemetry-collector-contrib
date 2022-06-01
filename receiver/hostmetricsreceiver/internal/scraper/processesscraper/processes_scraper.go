@@ -42,8 +42,9 @@ var metricsLength = func() int {
 
 // scraper for Processes Metrics
 type scraper struct {
-	config *Config
-	mb     *metadata.MetricsBuilder
+	settings component.ReceiverCreateSettings
+	config   *Config
+	mb       *metadata.MetricsBuilder
 
 	// for mocking gopsutil
 	getMiscStats func() (*load.MiscStat, error)
@@ -61,8 +62,9 @@ type processesMetadata struct {
 }
 
 // newProcessesScraper creates a set of Processes related metrics
-func newProcessesScraper(_ context.Context, cfg *Config) *scraper {
+func newProcessesScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
 	return &scraper{
+		settings:     settings,
 		config:       cfg,
 		getMiscStats: load.Misc,
 		getProcesses: func() ([]proc, error) {
@@ -82,7 +84,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 

@@ -37,6 +37,7 @@ const (
 
 // scraper for Network Metrics
 type scraper struct {
+	settings  component.ReceiverCreateSettings
 	config    *Config
 	mb        *metadata.MetricsBuilder
 	startTime pcommon.Timestamp
@@ -50,8 +51,8 @@ type scraper struct {
 }
 
 // newNetworkScraper creates a set of Network related metrics
-func newNetworkScraper(_ context.Context, cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
+func newNetworkScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
 
 	var err error
 
@@ -79,7 +80,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	}
 
 	s.startTime = pcommon.Timestamp(bootTime * 1e9)
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 

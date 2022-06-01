@@ -55,7 +55,7 @@ func createMetricsReceiver(ctx context.Context, params component.ReceiverCreateS
 	if !ok {
 		return nil, errConfigNotNSX
 	}
-	s := newScraper(cfg, params.TelemetrySettings)
+	s := newScraper(cfg, params)
 
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
