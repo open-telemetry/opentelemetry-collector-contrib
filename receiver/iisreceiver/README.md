@@ -4,7 +4,7 @@
 | ------------------------ |---------|
 | Stability                | [beta]  |
 | Supported pipeline types | metrics |
-| Distributions            | [none]  |
+| Distributions            | none    |
 
 The `iis` receiver grabs metrics about an IIS instance using the Windows Performance Counters.
 Because of this, it is a Windows only receiver.
