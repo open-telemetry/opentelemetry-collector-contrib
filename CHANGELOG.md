@@ -8,8 +8,10 @@
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
+- `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 
 ### 🚩 Deprecations 🚩
+
 
 ### 🚀 New components 🚀
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
