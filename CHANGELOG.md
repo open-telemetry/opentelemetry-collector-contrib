@@ -11,7 +11,7 @@
 
 ### 🚩 Deprecations 🚩
 
-- `couchbasereceiver`: Removed couchbase receiver as it was never fully implemented ()
+- `couchbasereceiver`: Removed couchbase receiver as it was never fully implemented (#10482)
 
 ### 🚀 New components 🚀
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
