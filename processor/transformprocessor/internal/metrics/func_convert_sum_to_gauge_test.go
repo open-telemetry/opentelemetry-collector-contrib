@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -81,9 +80,7 @@ func Test_convert_sum_to_gauge(t *testing.T) {
 			tt.input.CopyTo(metric)
 
 			ctx := metricTransformContext{
-				metric:   metric,
-				il:       pcommon.NewInstrumentationScope(),
-				resource: pcommon.NewResource(),
+				metric: metric,
 			}
 
 			exprFunc, _ := convertSumToGauge()
