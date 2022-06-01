@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
@@ -254,6 +255,8 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 
 			functions := DefaultFunctions()
 			functions["testing_error"] = functionThatHasAnError
+			functions["testing_span_id"] = functionThatTakesASpanID
+			functions["testing_trace_id"] = functionThatTakesATraceID
 
 			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
 			assert.Error(t, err)
@@ -266,4 +269,63 @@ func functionThatHasAnError() (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, err
+}
+
+func Test_NewFunctionCall(t *testing.T) {
+	spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	functions := make(map[string]interface{})
+	functions["testing_span_id"] = functionThatTakesASpanID
+	functions["testing_trace_id"] = functionThatTakesATraceID
+
+	tests := []struct {
+		name string
+		inv  Invocation
+	}{
+		{
+			name: "span id argument",
+			inv: Invocation{
+				Function: "testing_span_id",
+				Arguments: []Value{
+					{
+						SpanIDWrapper: &SpanIDWrapper{
+							SpanID: &spanID,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "trace id argument",
+			inv: Invocation{
+				Function: "testing_trace_id",
+				Arguments: []Value{
+					{
+						TraceIDWrapper: &TraceIDWrapper{
+							TraceID: &traceID,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func functionThatTakesASpanID(_ pcommon.SpanID) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionThatTakesATraceID(_ pcommon.TraceID) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
 }

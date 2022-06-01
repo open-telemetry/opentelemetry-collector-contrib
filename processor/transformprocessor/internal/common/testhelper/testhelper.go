@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package testhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
 func Strp(s string) *string {
 	return &s
@@ -28,4 +29,12 @@ func Intp(i int64) *int64 {
 
 func Boolp(b bool) *bool {
 	return &b
+}
+
+func SpanIDp(id pcommon.SpanID) *pcommon.SpanID {
+	return &id
+}
+
+func TraceIDp(id pcommon.TraceID) *pcommon.TraceID {
+	return &id
 }

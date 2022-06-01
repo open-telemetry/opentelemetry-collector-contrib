@@ -50,14 +50,14 @@ type Invocation struct {
 // expression, function call, or literal.
 // nolint:govet
 type Value struct {
-	Invocation *Invocation     `( @@`
-	SpanID     *SpanIDWrapper  `| @SpanID`
-	TraceID    *TraceIDWrapper `| @TraceID`
-	String     *string         `| @String`
-	Float      *float64        `| @Float`
-	Int        *int64          `| @Int`
-	Bool       *Boolean        `| @("true" | "false")`
-	Path       *Path           `| @@ )`
+	Invocation     *Invocation     `( @@`
+	SpanIDWrapper  *SpanIDWrapper  `| @SpanIDWrapper`
+	TraceIDWrapper *TraceIDWrapper `| @TraceIDWrapper`
+	String         *string         `| @String`
+	Float          *float64        `| @Float`
+	Int            *int64          `| @Int`
+	Bool           *Boolean        `| @("true" | "false")`
+	Path           *Path           `| @@ )`
 }
 
 // Path represents a telemetry path expression.
@@ -83,7 +83,7 @@ type Query struct {
 // SpanIDWrapper is a wrapper for pcommon.SpanID
 // It allows the grammar to capture a span id.
 type SpanIDWrapper struct {
-	SpanID pcommon.SpanID
+	SpanID *pcommon.SpanID
 }
 
 // Capture is the function that tells the parser how to capture span ids.
@@ -96,14 +96,14 @@ func (s *SpanIDWrapper) Capture(values []string) error {
 	if err != nil {
 		return err
 	}
-	s.SpanID = spanId
+	s.SpanID = &spanId
 	return nil
 }
 
 // TraceIDWrapper is a wrapper for pcommon.TraceID
 // It allows the grammar to capture a trace id.
 type TraceIDWrapper struct {
-	TraceID pcommon.TraceID
+	TraceID *pcommon.TraceID
 }
 
 // Capture is the function that tells the parser how to capture trace ids.
@@ -116,7 +116,7 @@ func (t *TraceIDWrapper) Capture(values []string) error {
 	if err != nil {
 		return err
 	}
-	t.TraceID = traceId
+	t.TraceID = &traceId
 	return nil
 }
 
@@ -180,8 +180,8 @@ func newParser() *participle.Parser {
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `SpanID`, Pattern: `{[a-fA-F0-9]{16}}`},
-		{Name: `TraceID`, Pattern: `{[a-fA-F0-9]{32}}`},
+		{Name: `SpanIDWrapper`, Pattern: `{[a-fA-F0-9]{16}}`},
+		{Name: `TraceIDWrapper`, Pattern: `{[a-fA-F0-9]{32}}`},
 		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})

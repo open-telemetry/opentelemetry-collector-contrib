@@ -65,20 +65,20 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "span id literal",
 			val: Value{
-				SpanID: &SpanIDWrapper{
-					SpanID: spanID,
+				SpanIDWrapper: &SpanIDWrapper{
+					SpanID: &spanID,
 				},
 			},
-			want: pcommon.NewSpanID(spanID.Bytes()),
+			want: testhelper.SpanIDp(pcommon.NewSpanID(spanID.Bytes())),
 		},
 		{
 			name: "trace id literal",
 			val: Value{
-				TraceID: &TraceIDWrapper{
-					TraceID: traceID,
+				TraceIDWrapper: &TraceIDWrapper{
+					TraceID: &traceID,
 				},
 			},
-			want: pcommon.NewTraceID(traceID.Bytes()),
+			want: testhelper.TraceIDp(pcommon.NewTraceID(traceID.Bytes())),
 		},
 		{
 			name: "path expression",

@@ -67,11 +67,17 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 	if i := val.Int; i != nil {
 		return &literal{value: *i}, nil
 	}
-	if w := val.SpanID; w != nil {
-		return &literal{value: w.SpanID}, nil
+	if w := val.SpanIDWrapper; w != nil {
+		if id := val.SpanIDWrapper.SpanID; id != nil {
+			return &literal{value: id}, nil
+		}
+		return nil, fmt.Errorf("SpanID is not set in the wrapper. This is a bug in the transformprocessor")
 	}
-	if w := val.TraceID; w != nil {
-		return &literal{value: w.TraceID}, nil
+	if w := val.TraceIDWrapper; w != nil {
+		if id := val.TraceIDWrapper.TraceID; id != nil {
+			return &literal{value: id}, nil
+		}
+		return nil, fmt.Errorf("TraceID is not set in the wrapper. This is a bug in the transformprocessor")
 	}
 
 	if val.Path != nil {

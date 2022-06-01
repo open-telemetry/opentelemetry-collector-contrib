@@ -220,7 +220,8 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
 			}
 			argDef := inv.Arguments[i]
-			switch argType.Name() {
+			temp := argType.Name()
+			switch temp {
 			case "Setter":
 				fallthrough
 			case "GetSetter":
@@ -252,6 +253,16 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 					return nil, fmt.Errorf("invalid argument at position %v, must be a bool", i)
 				}
 				args = append(args, reflect.ValueOf(bool(*argDef.Bool)))
+			case "SpanID":
+				if argDef.SpanIDWrapper == nil || argDef.SpanIDWrapper.SpanID == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be a SpanID", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.SpanIDWrapper.SpanID))
+			case "TraceID":
+				if argDef.TraceIDWrapper == nil || argDef.TraceIDWrapper.TraceID == nil {
+					return nil, fmt.Errorf("invalid argument at position %v, must be a TraceID", i)
+				}
+				args = append(args, reflect.ValueOf(*argDef.TraceIDWrapper.TraceID))
 			}
 		}
 		val := reflect.ValueOf(f)

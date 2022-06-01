@@ -332,8 +332,8 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							SpanID: &SpanIDWrapper{
-								SpanID: spanID,
+							SpanIDWrapper: &SpanIDWrapper{
+								SpanID: &spanID,
 							},
 						},
 					},
@@ -357,8 +357,8 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							TraceID: &TraceIDWrapper{
-								TraceID: traceID,
+							TraceIDWrapper: &TraceIDWrapper{
+								TraceID: &traceID,
 							},
 						},
 					},
@@ -384,12 +384,12 @@ func Test_parse_failure(t *testing.T) {
 		`set(name.)`,
 		`("foo")`,
 		`set("foo") where name =||= "fido"`,
-		`set(span_id, SpanID{not a hex string})`,
-		`set(span_id, SpanID{01})`,
-		`set(span_id, SpanID{010203040506070809})`,
-		`set(trace_id, TraceID{not a hex string})`,
-		`set(trace_id, TraceID{0102030405060708090a0b0c0d0e0f})`,
-		`set(trace_id, TraceID{0102030405060708090a0b0c0d0e0f1011})`,
+		`set(span_id, SpanIDWrapper{not a hex string})`,
+		`set(span_id, SpanIDWrapper{01})`,
+		`set(span_id, SpanIDWrapper{010203040506070809})`,
+		`set(trace_id, TraceIDWrapper{not a hex string})`,
+		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
+		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
