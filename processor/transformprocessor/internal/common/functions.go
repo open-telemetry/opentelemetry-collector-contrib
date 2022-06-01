@@ -255,7 +255,7 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 				args = append(args, reflect.ValueOf(bool(*argDef.Bool)))
 			case "SpanID":
 				if argDef.SpanIDWrapper == nil || argDef.SpanIDWrapper.SpanID == nil {
-					return nil, fmt.Errorf("invalid argument at position %v, must be a SpanID", i)
+					return nil, fmt.Errorf("invalid argument at position %v, must be a SpanID. Check the documentation for the correct syntax.", i)
 				}
 				args = append(args, reflect.ValueOf(*argDef.SpanIDWrapper.SpanID))
 			case "TraceID":
