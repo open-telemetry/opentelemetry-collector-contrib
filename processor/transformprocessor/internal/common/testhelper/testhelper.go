@@ -14,37 +14,6 @@
 
 package testhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 
-<<<<<<<< HEAD:internal/metadataproviders/gcp/metadata_test.go
-import (
-	"testing"
-)
-
-func TestGCEMetadata(t *testing.T) {
-	metadata := NewProvider()
-	metadata.OnGCE()
-	metadata.ProjectID()
-	metadata.Zone()
-	metadata.Hostname()
-	metadata.InstanceAttributeValue("")
-	metadata.InstanceID()
-	metadata.InstanceName()
-	metadata.Get("")
-|||||||| 143cafc3c:processor/resourcedetectionprocessor/internal/gcp/metadata_test.go
-import (
-	"testing"
-)
-
-func TestGCEMetadata(t *testing.T) {
-	metadata := &MetadataImpl{}
-	metadata.OnGCE()
-	metadata.ProjectID()
-	metadata.Zone()
-	metadata.Hostname()
-	metadata.InstanceAttributeValue("")
-	metadata.InstanceID()
-	metadata.InstanceName()
-	metadata.Get("")
-========
 func Strp(s string) *string {
 	return &s
 }
@@ -55,5 +24,4 @@ func Floatp(f float64) *float64 {
 
 func Intp(i int64) *int64 {
 	return &i
->>>>>>>> upstream/main:processor/transformprocessor/internal/common/testhelper/testhelper.go
 }
