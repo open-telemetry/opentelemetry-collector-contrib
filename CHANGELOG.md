@@ -24,6 +24,7 @@
 
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
+- `resourcedetectionprocessor`: GCP resource detector no longer fails to detect resource when using workload identity (#10486)
 
 ## v0.52.0
 
