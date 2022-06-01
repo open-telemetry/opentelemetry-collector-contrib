@@ -83,7 +83,6 @@ internal/kubelet/                                    @open-telemetry/collector-c
 internal/metadataproviders/                          @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @Aneurysm9 @dashpole
 internal/scrapertest/                                @open-telemetry/collector-contrib-approvers @djaglowski
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
-internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi

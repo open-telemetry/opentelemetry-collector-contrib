@@ -3,7 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/resou
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.23
+	cloud.google.com/go/compute v1.6.1
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.31.0
+	github.com/aws/aws-sdk-go v1.44.24
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.52.0
@@ -15,12 +17,11 @@ require (
 	go.opentelemetry.io/collector/semconv v0.52.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
-	k8s.io/apimachinery v0.24.0
-	k8s.io/client-go v0.24.0
+	k8s.io/apimachinery v0.24.1
+	k8s.io/client-go v0.24.1
 )
 
 require (
-	cloud.google.com/go/compute v1.6.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
@@ -96,7 +97,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.24.0 // indirect
+	k8s.io/api v0.24.1 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect

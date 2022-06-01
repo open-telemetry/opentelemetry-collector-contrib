@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanza
+package adapter
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
-				Builder: noop.NewNoopOperatorConfig(""),
+				Builder: noop.NewConfig(""),
 			},
 		},
 	}.Build(zap.NewNop().Sugar())

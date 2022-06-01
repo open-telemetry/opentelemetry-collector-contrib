@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanza
+package adapter
 
 import (
 	"context"
@@ -120,7 +120,7 @@ func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Conf
 
 	// Allow tests to run without implementing input config
 	if testConfig.Input["type"] == nil {
-		return &operator.Config{Builder: noop.NewNoopOperatorConfig("nop")}, nil
+		return &operator.Config{Builder: noop.NewConfig("nop")}, nil
 	}
 
 	// Allow tests to explicitly prompt a failure

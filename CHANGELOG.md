@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-## 🛑 Breaking changes 🛑
+### 🛑 Breaking changes 🛑
+
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
+- `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
+
+- `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 
 ### 🚩 Deprecations 🚩
 
@@ -13,15 +18,18 @@
 ### 💡 Enhancements 💡
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+- `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 
 ### 🧰 Bug fixes 🧰
 
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
+- `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
 
 ## v0.52.0
 
 ### 🛑 Breaking changes 🛑
 
+- `jmxreceiver`: Hash the jars provided to JMX Receiver and only allow if they match an approved list (#9687)
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚀 New components 🚀

@@ -29,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func TestFilterOperator(t *testing.T) {
+func TestTransformer(t *testing.T) {
 	os.Setenv("TEST_FILTER_OPERATOR_ENV", "foo")
 	defer os.Unsetenv("TEST_FILTER_OPERATOR_ENV")
 
@@ -169,7 +169,7 @@ func TestFilterOperator(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewFilterOperatorConfig("test")
+			cfg := NewConfig("test")
 			cfg.Expression = tc.expression
 
 			op, err := cfg.Build(testutil.Logger(t))
@@ -181,7 +181,7 @@ func TestFilterOperator(t *testing.T) {
 				filtered = false
 			})
 
-			filterOperator, ok := op.(*FilterOperator)
+			filterOperator, ok := op.(*Transformer)
 			require.True(t, ok)
 
 			filterOperator.OutputOperators = []operator.Operator{mockOutput}
@@ -194,7 +194,7 @@ func TestFilterOperator(t *testing.T) {
 }
 
 func TestFilterDropRatio(t *testing.T) {
-	cfg := NewFilterOperatorConfig("test")
+	cfg := NewConfig("test")
 	cfg.Expression = `body.message == "test_message"`
 	cfg.DropRatio = 0.5
 	op, err := cfg.Build(testutil.Logger(t))
@@ -206,7 +206,7 @@ func TestFilterDropRatio(t *testing.T) {
 		processedEntries++
 	})
 
-	filterOperator, ok := op.(*FilterOperator)
+	filterOperator, ok := op.(*Transformer)
 	filterOperator.OutputOperators = []operator.Operator{mockOutput}
 	require.True(t, ok)
 

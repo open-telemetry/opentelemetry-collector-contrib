@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/metada
 go 1.17
 
 require (
-	cloud.google.com/go/compute v1.6.1
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/aws/aws-sdk-go v1.44.23
 	github.com/docker/docker v20.10.16+incompatible
@@ -20,6 +19,8 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/google/btree v1.0.0 // indirect
+	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-hclog v0.12.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
