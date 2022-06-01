@@ -864,6 +864,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 // - Updates as a file is read
 // - Stops updating when the max fingerprint size is reached
 // - Stops exactly at max fingerprint size, regardless of content
+// - Do not change size after fingerprint configuration change
 func TestFingerprintGrowsAndStops(t *testing.T) {
 	t.Parallel()
 
@@ -919,6 +920,26 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 				reader.ReadToEnd(context.Background())
 				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
 			}
+			
+			// Test fingerprint change
+			// Change fingerprint and try to read file again
+			// We do not expect fingerprint change
+			// We test both increasing and decreasing fingerprint size
+			reader.fileInput.fingerprintSize = maxFP * (lineLen / 3)
+			line := stringWithLength(lineLen-1) + "\n"
+			fileContent = append(fileContent, []byte(line)...)
+
+			writeString(t, temp, line)
+			reader.ReadToEnd(context.Background())
+			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+
+			reader.fileInput.fingerprintSize = maxFP / 2
+			line = stringWithLength(lineLen-1) + "\n"
+			fileContent = append(fileContent, []byte(line)...)
+
+			writeString(t, temp, line)
+			reader.ReadToEnd(context.Background())
+			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
 		})
 	}
 }
