@@ -30,6 +30,8 @@
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 - `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
+- `awsprometheusremotewriteexporter`: Fix signing of empty request bodies. (#10578)
+- `sigv4authextension`: Fix signing of empty request bodies. (#10578)
 
 ## v0.52.0
 
