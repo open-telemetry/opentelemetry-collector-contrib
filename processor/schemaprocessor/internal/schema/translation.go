@@ -45,6 +45,8 @@ func (t *translation) SupportedVersion(version *Version) bool {
 }
 
 func (t *translation) Merge(content *ast.Schema) error {
+	t.rw.Lock()
+	defer t.rw.Unlock()
 	// Implementation to come
 	return nil
 }
