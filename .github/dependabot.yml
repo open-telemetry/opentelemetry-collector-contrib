@@ -227,6 +227,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/lumigoauthextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/oauth2clientauthextension"
     schedule:
       interval: "weekly"
