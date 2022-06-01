@@ -123,16 +123,16 @@ func (v *Version) Compare(o *Version) int {
 	return patch
 }
 
-func (id *Version) Equal(v *Version) bool {
-	return id.Compare(v) == 0
+func (v *Version) Equal(o *Version) bool {
+	return v.Compare(o) == 0
 }
 
-func (id *Version) GreaterThan(v *Version) bool {
-	return id.Compare(v) > 0
+func (v *Version) GreaterThan(o *Version) bool {
+	return v.Compare(o) > 0
 }
 
-func (id *Version) LessThan(v *Version) bool {
-	return id.Compare(v) < 0
+func (v *Version) LessThan(o *Version) bool {
+	return v.Compare(o) < 0
 }
 
 func diff(a, b int) int {
