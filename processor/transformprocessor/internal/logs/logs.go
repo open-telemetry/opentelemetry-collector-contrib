@@ -19,9 +19,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type logTransformContext struct {
@@ -315,8 +316,8 @@ func accessTraceID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if traceId, err := common.ParseTraceId(str); err == nil {
-					ctx.GetItem().(plog.LogRecord).SetTraceID(traceId)
+				if traceID, err := common.ParseTraceID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
 				}
 			}
 		},
@@ -330,8 +331,8 @@ func accessSpanID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if spanId, err := common.ParseSpanId(str); err == nil {
-					ctx.GetItem().(plog.LogRecord).SetSpanID(spanId)
+				if spanID, err := common.ParseSpanID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
 				}
 			}
 		},

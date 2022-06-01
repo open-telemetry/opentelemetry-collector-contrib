@@ -223,8 +223,8 @@ func accessTraceID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if traceId, err := common.ParseTraceId(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetTraceID(traceId)
+				if traceID, err := common.ParseTraceID(str); err == nil {
+					ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
 				}
 			}
 		},
@@ -238,8 +238,8 @@ func accessSpanID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				if spanId, err := common.ParseSpanId(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetSpanID(spanId)
+				if spanID, err := common.ParseSpanID(str); err == nil {
+					ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
 				}
 			}
 		},

@@ -92,11 +92,11 @@ type SpanIDWrapper struct {
 func (s *SpanIDWrapper) Capture(values []string) error {
 	rawStr := values[0]
 	// must drop the wrapping {}
-	spanId, err := ParseSpanId(rawStr[1 : len(rawStr)-1])
+	spanID, err := ParseSpanID(rawStr[1 : len(rawStr)-1])
 	if err != nil {
 		return err
 	}
-	s.SpanID = &spanId
+	s.SpanID = &spanID
 	return nil
 }
 
@@ -112,11 +112,11 @@ type TraceIDWrapper struct {
 func (t *TraceIDWrapper) Capture(values []string) error {
 	rawStr := values[0]
 	// must drop the wrapping {}
-	traceId, err := ParseTraceId(rawStr[1 : len(rawStr)-1])
+	traceID, err := ParseTraceID(rawStr[1 : len(rawStr)-1])
 	if err != nil {
 		return err
 	}
-	t.TraceID = &traceId
+	t.TraceID = &traceID
 	return nil
 }
 
@@ -196,7 +196,7 @@ func newParser() *participle.Parser {
 	return parser
 }
 
-func ParseSpanId(spanIDStr string) (pcommon.SpanID, error) {
+func ParseSpanID(spanIDStr string) (pcommon.SpanID, error) {
 	id, err := hex.DecodeString(spanIDStr)
 	if err != nil {
 		return pcommon.SpanID{}, err
@@ -209,7 +209,7 @@ func ParseSpanId(spanIDStr string) (pcommon.SpanID, error) {
 	return pcommon.NewSpanID(idArr), nil
 }
 
-func ParseTraceId(traceIDStr string) (pcommon.TraceID, error) {
+func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
 	id, err := hex.DecodeString(traceIDStr)
 	if err != nil {
 		return pcommon.TraceID{}, err
