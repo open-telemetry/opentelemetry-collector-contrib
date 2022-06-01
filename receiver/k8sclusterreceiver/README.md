@@ -13,8 +13,6 @@ receiver can be used to monitor a cluster.
 Currently this receiver supports authentication via service accounts only. See [example](#example)
 for more information.
 
-> :construction: This receiver is currently in **BETA**.
-
 ## Configuration
 
 The following settings are required:
