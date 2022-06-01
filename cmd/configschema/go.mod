@@ -346,6 +346,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.52.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.52.0 // indirect
@@ -760,6 +761,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotne
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ../../receiver/elasticsearchreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ../../receiver/flinkmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => ../../receiver/fluentforwardreceiver
 
