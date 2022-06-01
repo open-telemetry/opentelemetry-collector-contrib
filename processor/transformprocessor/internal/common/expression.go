@@ -67,6 +67,12 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 	if i := val.Int; i != nil {
 		return &literal{value: *i}, nil
 	}
+	if w := val.SpanID; w != nil {
+		return &literal{value: w.SpanID}, nil
+	}
+	if w := val.TraceID; w != nil {
+		return &literal{value: w.TraceID}, nil
+	}
 
 	if val.Path != nil {
 		return pathParser(val.Path)
