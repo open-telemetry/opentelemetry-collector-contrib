@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/gorilla/mux v1.8.0
-	github.com/jaegertracing/jaeger v1.34.1
+	github.com/jaegertracing/jaeger v1.35.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.52.0
@@ -51,7 +51,7 @@ require (
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
-	google.golang.org/grpc v1.46.2 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
