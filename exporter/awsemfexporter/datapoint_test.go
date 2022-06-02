@@ -426,7 +426,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	assert.Equal(t, expectedDP, dp)
 }
 
-func TestHistogramDataPointSliceAtWithMinMax(t *testing.T){
+func TestHistogramDataPointSliceAtWithMinMax(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]interface{}{"label1": "value1"}
 
@@ -447,8 +447,8 @@ func TestHistogramDataPointSliceAtWithMinMax(t *testing.T){
 		value: &cWMetricStats{
 			Sum:   17.13,
 			Count: 17,
-			Min: 10,
-			Max: 30,
+			Min:   10,
+			Max:   30,
 		},
 		labels: map[string]string{
 			oTellibDimensionKey: instrLibName,
@@ -461,7 +461,7 @@ func TestHistogramDataPointSliceAtWithMinMax(t *testing.T){
 	assert.Equal(t, expectedDP, dp)
 }
 
-func TestHistogramDataPointSliceAtWithoutMinMax(t *testing.T){
+func TestHistogramDataPointSliceAtWithoutMinMax(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]interface{}{"label1": "value1"}
 
@@ -480,8 +480,8 @@ func TestHistogramDataPointSliceAtWithoutMinMax(t *testing.T){
 		value: &cWMetricStats{
 			Sum:   17.13,
 			Count: 17,
-			Min: 0,
-			Max: 0,
+			Min:   0,
+			Max:   0,
 		},
 		labels: map[string]string{
 			oTellibDimensionKey: instrLibName,
