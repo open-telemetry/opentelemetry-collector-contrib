@@ -43,6 +43,7 @@
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 - `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
+- `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
 
 ## v0.52.0
 
