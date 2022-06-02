@@ -90,7 +90,9 @@ func convertToDatadogTd(td ptrace.Traces, fallbackHost string, cfg *config.Confi
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes())
+		// TODO (#10424): Remove and replace by package constant.
+		const usePreviewHostnameLogic = false
+		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes(), usePreviewHostnameLogic)
 		if !ok {
 			host = fallbackHost
 		}
