@@ -30,6 +30,7 @@ type Config struct {
 	PrivateKey                              string                   `mapstructure:"private_key"`
 	Granularity                             string                   `mapstructure:"granularity"`
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	EnableDatabaseMetrics                   bool                     `mapstructure:"enable_database_metrics"`
 
 	RetrySettings exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 }

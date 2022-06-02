@@ -146,11 +146,13 @@ func (s *receiver) extractProcessMetrics(
 		)
 	}
 
-	if err := s.extractProcessDatabaseMetrics(ctx, time, orgName, project, process); err != nil {
-		return errors.Wrap(
-			err,
-			"error when polling process database metrics from MongoDB Atlas",
-		)
+	if s.cfg.EnableDatabaseMetrics {
+		if err := s.extractProcessDatabaseMetrics(ctx, time, orgName, project, process); err != nil {
+			return errors.Wrap(
+				err,
+				"error when polling process database metrics from MongoDB Atlas",
+			)
+		}
 	}
 
 	if err := s.extractProcessDiskMetrics(ctx, time, orgName, project, process); err != nil {

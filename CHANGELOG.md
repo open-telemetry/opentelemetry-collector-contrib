@@ -8,6 +8,7 @@
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
+- `mongodbatlasreceiver`: Add a new default config parameter `enable_database_metrics` (#10576)
 
 ### 🚩 Deprecations 🚩
 
