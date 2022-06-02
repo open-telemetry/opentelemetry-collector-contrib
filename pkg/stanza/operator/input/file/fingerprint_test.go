@@ -44,7 +44,8 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	require.Equal(t, len(fileContents), int(info.Size()))
 
 	// Set the file descriptors pointer to the beginning of the file
-	temp.Seek(0, 0)
+	_, err = temp.Seek(0, 0)
+	require.NoError(t, err)
 
 	fp, err := f.NewFingerprint(temp)
 	require.NoError(t, err)
