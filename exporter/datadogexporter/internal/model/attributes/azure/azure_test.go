@@ -61,7 +61,7 @@ func TestHostInfoFromAttributes(t *testing.T) {
 			attrs: testEmpty,
 		},
 		{
-			name:       "all attributes",
+			name:       "all attributes with preview",
 			attrs:      testAttrs,
 			usePreview: true,
 
@@ -69,7 +69,7 @@ func TestHostInfoFromAttributes(t *testing.T) {
 			hostname: testVMID,
 		},
 		{
-			name:       "empty",
+			name:       "empty with preview",
 			attrs:      testEmpty,
 			usePreview: true,
 		},
