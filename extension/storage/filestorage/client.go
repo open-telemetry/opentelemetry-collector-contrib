@@ -41,6 +41,7 @@ type fileStorageClient struct {
 	db              *bbolt.DB
 	compactionCfg   *CompactionConfig
 	openTimeout     time.Duration
+	cancel          context.CancelFunc
 }
 
 func bboltOptions(timeout time.Duration) *bbolt.Options {
@@ -68,7 +69,12 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 		return nil, err
 	}
 
-	return &fileStorageClient{logger: logger, db: db, compactionCfg: compactionCfg, openTimeout: timeout}, nil
+	client := &fileStorageClient{logger: logger, db: db, compactionCfg: compactionCfg, openTimeout: timeout}
+	if compactionCfg.OnRebound {
+		client.startCompactionLoop(context.Background())
+	}
+
+	return client, nil
 }
 
 // Get will retrieve data from storage that corresponds to the specified key
@@ -123,27 +129,19 @@ func (c *fileStorageClient) Batch(ctx context.Context, ops ...storage.Operation)
 
 	c.compactionMutex.RLock()
 	defer c.compactionMutex.RUnlock()
-	err := c.db.Update(batch)
-	if c.shouldCompactOnWrite() {
-		go func() {
-			onWriteErr := c.Compact(ctx, c.compactionCfg.Directory, c.openTimeout, c.compactionCfg.MaxTransactionSize)
-			if onWriteErr != nil {
-				c.logger.Error("compaction failure",
-					zap.String(directoryKey, c.compactionCfg.Directory),
-					zap.Error(onWriteErr))
-			}
-		}()
-	}
-	return err
+	return c.db.Update(batch)
 }
 
 // Close will close the database
 func (c *fileStorageClient) Close(_ context.Context) error {
+	if c.cancel != nil {
+		c.cancel()
+	}
 	return c.db.Close()
 }
 
 // Compact database. Use temporary file as helper as we cannot replace database in-place
-func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory string, timeout time.Duration, maxTransactionSize int64) error {
+func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Duration, maxTransactionSize int64) error {
 	var err error
 	var file *os.File
 	var compactedDb *bbolt.DB
@@ -213,21 +211,79 @@ func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory str
 	return err
 }
 
-// shouldCompactOnWrite checks whether the conditions for online compaction are met
-func (c *fileStorageClient) shouldCompactOnWrite() bool {
+// startCompactionLoop provides asynchronous compaction function
+func (c *fileStorageClient) startCompactionLoop(ctx context.Context) {
+	ctx, c.cancel = context.WithCancel(ctx)
+
+	go func() {
+		c.logger.Debug("starting compaction loop",
+			zap.Duration("compaction_check_interval", c.compactionCfg.CheckInterval))
+
+		compactionTicker := time.NewTicker(c.compactionCfg.CheckInterval)
+		defer compactionTicker.Stop()
+
+		for {
+			select {
+			case <-compactionTicker.C:
+				if c.shouldCompact() {
+					err := c.Compact(c.compactionCfg.Directory, c.openTimeout, c.compactionCfg.MaxTransactionSize)
+					if err != nil {
+						c.logger.Error("compaction failure",
+							zap.String(directoryKey, c.compactionCfg.Directory),
+							zap.Error(err))
+					}
+				}
+			case <-ctx.Done():
+				c.logger.Debug("shutting down compaction loop")
+				return
+			}
+		}
+	}()
+}
+
+// shouldCompact checks whether the conditions for online compaction are met
+func (c *fileStorageClient) shouldCompact() bool {
 	if !c.compactionCfg.OnRebound {
 		return false
 	}
 
-	dbStats := c.db.Stats()
-	if dbStats.FreelistInuse > int(c.compactionCfg.ReboundSizeBelowMiB) ||
-		dbStats.FreeAlloc+dbStats.FreelistInuse < int(c.compactionCfg.ReboundTotalSizeAboveMiB) {
+	totalSize, dataSize, err := c.getDbSize()
+	if err != nil {
+		c.logger.Error("failed to get db size", zap.Error(err))
 		return false
 	}
 
-	c.logger.Debug("shouldCompactOnWrite returns true",
-		zap.Int("FreelistInuse", dbStats.FreelistInuse),
-		zap.Int("FreeAlloc", dbStats.FreeAlloc))
+	c.logger.Debug("shouldCompact check",
+		zap.Int64("totalSize", totalSize),
+		zap.Int64("dataSize", dataSize))
+
+	if dataSize > c.compactionCfg.ReboundSizeBelowMiB*1048576 ||
+		totalSize < c.compactionCfg.ReboundTotalSizeAboveMiB*1048576 {
+		return false
+	}
+
+	c.logger.Debug("shouldCompact returns true",
+		zap.Int64("totalSize", totalSize),
+		zap.Int64("dataSize", dataSize))
 
 	return true
+}
+
+func (c *fileStorageClient) getDbSize() (totalSizeResult int64, dataSizeResult int64, errResult error) {
+	c.compactionMutex.Lock()
+	defer c.compactionMutex.Unlock()
+
+	var totalSize int64
+
+	err := c.db.View(func(tx *bbolt.Tx) error {
+		totalSize = tx.Size()
+		return nil
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+
+	dbStats := c.db.Stats()
+	dataSize := totalSize - int64(dbStats.FreeAlloc)
+	return totalSize, dataSize, nil
 }

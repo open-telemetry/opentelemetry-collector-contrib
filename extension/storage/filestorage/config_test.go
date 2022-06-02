@@ -63,6 +63,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxTransactionSize:       2048,
 				ReboundTotalSizeAboveMiB: 128,
 				ReboundSizeBelowMiB:      16,
+				CheckInterval:            time.Second * 5,
 			},
 			Timeout: 2 * time.Second,
 		},

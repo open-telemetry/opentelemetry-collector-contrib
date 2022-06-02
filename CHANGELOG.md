@@ -20,6 +20,7 @@
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `filestorageextension`: Add background compaction capability (#9327)
 
 ### 🧰 Bug fixes 🧰
 

@@ -14,21 +14,22 @@ The default timeout is `1s`.
 
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):
-- `compaction.on_start`, which happens when collector starts
-- `compaction.on_rebound`, which happens online when certain criteria are met; it's discussed in more detail below
+- `compaction.on_start` (default: false), which happens when collector starts
+- `compaction.on_rebound` (default: false), which happens online when certain criteria are met; it's discussed in more detail below
 
 `compaction.directory` specifies the directory used for compaction (as a midstep).
 
-`compaction.max_transaction_size` defines maximum size of the compaction transaction.
+`compaction.max_transaction_size` (default: 65536): defines maximum size of the compaction transaction.
 A value of zero will ignore transaction sizes.
 
 ### Rebound (online) compaction
 
 For rebound compaction, there are two additional parameters available:
-- `compaction.rebound_size_below_mib` - specifies the maximum size of actually allocated data for compaction to happen
-- `compaction.rebound_total_size_above_mib` - specifies the minimum overall size of the allocated space (both actually used and free pages)
+- `compaction.rebound_size_below_mib` (default: 10) - specifies the maximum size of actually allocated data for compaction to happen
+- `compaction.rebound_total_size_above_mib` (default: 100) - specifies the minimum overall size of the allocated space (both actually used and free pages)
+- `compaction.check_interval` (default: 5s) - specifies how frequently the conditions for compaction are being checked
 
-The idea behind rebound compaction is that in certain workloads (e.g. [persistent queue](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#persistent-queue)) the storage might grow significantly (e.g. when the exporter is unable to send the data due to network problem) after which it is being emptied as the underlying issue is gone (e.g. network connectivity is back). This leaves a significant space that needs to be reclaimed (also, this space is reported in memory usage as mmap() is used underneath). The optimal conditions for this to happen online is after the storage is largely drained, which is being controlled by `rebound_size_below_mib`. To make sure this is not too sensitive, there's also `rebound_total_size_above_mib` which specifie the total claimed space size that must be met for online compaction to even be considered. Consider following diagram for an example of meeting the rebound (online) compaction conditions.
+The idea behind rebound compaction is that in certain workloads (e.g. [persistent queue](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#persistent-queue)) the storage might grow significantly (e.g. when the exporter is unable to send the data due to network problem) after which it is being emptied as the underlying issue is gone (e.g. network connectivity is back). This leaves a significant space that needs to be reclaimed (also, this space is reported in memory usage as mmap() is used underneath). The optimal conditions for this to happen online is after the storage is largely drained, which is being controlled by `rebound_size_below_mib`. To make sure this is not too sensitive, there's also `rebound_total_size_above_mib` which specifies the total claimed space size that must be met for online compaction to even be considered. Consider following diagram for an example of meeting the rebound (online) compaction conditions.
 
 ```
   ▲

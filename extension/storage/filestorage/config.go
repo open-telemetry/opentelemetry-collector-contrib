@@ -53,6 +53,8 @@ type CompactionConfig struct {
 	ReboundTotalSizeAboveMiB int64 `mapstructure:"rebound_total_size_above_mib"`
 	// MaxTransactionSize specifies the maximum number of items that might be present in single compaction iteration
 	MaxTransactionSize int64 `mapstructure:"max_transaction_size,omitempty"`
+	// CheckInterval specifies frequency of compaction check
+	CheckInterval time.Duration `mapstructure:"check_interval,omitempty"`
 }
 
 func (cfg *Config) Validate() error {
@@ -83,6 +85,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Compaction.MaxTransactionSize < 0 {
 		return errors.New("max transaction size for compaction cannot be less than 0")
+	}
+
+	if cfg.Compaction.OnRebound && cfg.Compaction.CheckInterval <= 0 {
+		return errors.New("compaction check interval must be positive when rebound compaction is set")
 	}
 
 	return nil

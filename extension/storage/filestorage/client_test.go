@@ -218,23 +218,83 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 	defaultBucket = temp
 }
 
-func TestClientCompaction(t *testing.T) {
+func TestClientReboundCompaction(t *testing.T) {
 	tempDir := newTempDir(t)
-	compactDir := newTempDir(t)
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	checkInterval := time.Second
+
+	logger, _ := zap.NewDevelopment()
+	client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
+		OnRebound:                true,
+		CheckInterval:            checkInterval,
+		ReboundSizeBelowMiB:      1,
+		ReboundTotalSizeAboveMiB: 4,
+	})
 	require.NoError(t, err)
 
+	// 1. Fill up the database
+	position := int64(0)
 	ctx := context.Background()
-	var wg sync.WaitGroup
 
-	repeats := 10
+	entrySize := int64(1048576)
+
+	for ; position < 5; position++ {
+		batchWrite := []storage.Operation{
+			storage.SetOperation(fmt.Sprintf("foo-%d", position), make([]byte, entrySize)),
+			storage.SetOperation(fmt.Sprintf("bar-%d", position), []byte("testValueBar")),
+		}
+		err = client.Batch(ctx, batchWrite...)
+		require.NoError(t, err)
+	}
+
+	require.Eventually(t,
+		func() bool {
+			totalSize, realSize, dbErr := client.getDbSize()
+			require.NoError(t, dbErr)
+			return totalSize > position*entrySize && realSize > position*entrySize
+		},
+		10*time.Second, 5*time.Millisecond, "database allocated space for data",
+	)
+
+	// 2. Remove the large entries
+	for i := 0; i < int(position); i++ {
+		err = client.Batch(ctx, storage.DeleteOperation(fmt.Sprintf("foo-%d", i)))
+		require.NoError(t, err)
+	}
+
+	require.Eventually(t,
+		func() bool {
+			totalSize, realSize, dbErr := client.getDbSize()
+			require.NoError(t, dbErr)
+			return totalSize < entrySize && realSize < entrySize
+		},
+		10*time.Second, 5*time.Millisecond, "database cleaned up not used space",
+	)
+}
+
+func TestClientConcurrentCompaction(t *testing.T) {
+	tempDir := newTempDir(t)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	checkInterval := time.Millisecond
+
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{
+		OnRebound:                true,
+		CheckInterval:            checkInterval,
+		ReboundSizeBelowMiB:      1,
+		ReboundTotalSizeAboveMiB: 5,
+	})
+	require.NoError(t, err)
+
+	repeats := 5
+	var wg sync.WaitGroup
+	ctx := context.Background()
 
 	clientOperationsThread := func(id int) {
 		for i := 0; i < repeats; i++ {
 			batchWrite := []storage.Operation{
-				storage.SetOperation(fmt.Sprintf("foo-%d-%d", id, i), []byte("testValueFoo")),
+				storage.SetOperation(fmt.Sprintf("foo-%d-%d", id, i), make([]byte, 1000000)),
 				storage.SetOperation(fmt.Sprintf("bar-%d-%d", id, i), []byte("testValueBar")),
 			}
 			err := client.Batch(ctx, batchWrite...)
@@ -243,7 +303,8 @@ func TestClientCompaction(t *testing.T) {
 			err = client.Batch(ctx, storage.DeleteOperation(fmt.Sprintf("foo-%d-%d", id, i)))
 			require.NoError(t, err)
 
-			time.Sleep(time.Millisecond * 1)
+			// Make sure the requests are somewhat spaced
+			time.Sleep(checkInterval * 2)
 
 			result, err := client.Get(ctx, fmt.Sprintf("foo-%d-%d", id, i))
 			require.NoError(t, err)
@@ -252,26 +313,19 @@ func TestClientCompaction(t *testing.T) {
 			result, err = client.Get(ctx, fmt.Sprintf("bar-%d-%d", id, i))
 			require.NoError(t, err)
 			require.Equal(t, []byte("testValueBar"), result)
+
+			// Make sure the requests are somewhat spaced
+			time.Sleep(checkInterval)
 		}
 
 		wg.Done()
 	}
 
-	for i := 0; i < 20; i++ {
+	// Start a couple of concurrent threads and see how they add/remove data as needed without failures
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go clientOperationsThread(i)
 	}
-
-	wg.Add(1)
-	go func() {
-		for i := 0; i < repeats; i++ {
-			time.Sleep(time.Millisecond * 1)
-			err := client.Compact(ctx, compactDir, time.Second, 1024)
-			require.NoError(t, err)
-		}
-
-		wg.Done()
-	}()
 
 	wg.Wait()
 }
@@ -472,7 +526,7 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{})
 		require.NoError(b, err)
 		b.StartTimer()
-		client.Compact(ctx, tempDir, time.Second, 65536)
+		client.Compact(tempDir, time.Second, 65536)
 		b.StopTimer()
 	}
 }
@@ -513,7 +567,7 @@ func BenchmarkClientCompactDb(b *testing.B) {
 		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{})
 		require.NoError(b, err)
 		b.StartTimer()
-		client.Compact(ctx, tempDir, time.Second, 65536)
+		client.Compact(tempDir, time.Second, 65536)
 		b.StopTimer()
 	}
 }

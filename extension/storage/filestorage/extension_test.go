@@ -300,7 +300,7 @@ func TestCompaction(t *testing.T) {
 	// compact the db
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(ctx))
@@ -321,7 +321,7 @@ func TestCompaction(t *testing.T) {
 	// compact after data removal
 	c, ok = client.(*fileStorageClient)
 	require.True(t, ok)
-	err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(ctx))
@@ -371,7 +371,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in the same directory
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(ctx))
@@ -388,7 +388,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 
 	c, ok = client.(*fileStorageClient)
 	require.True(t, ok)
-	err = c.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	err = c.Compact(emptyTempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(ctx))
