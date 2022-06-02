@@ -26,12 +26,14 @@ import (
 )
 
 const (
-	testHostID      = "example-host-id"
-	testHostName    = "example-host-name"
-	testContainerID = "example-container-id"
-	testClusterName = "clusterName"
-	testNodeName    = "nodeName"
-	testCustomName  = "example-custom-host-name"
+	testHostID       = "example-host-id"
+	testHostName     = "example-host-name"
+	testContainerID  = "example-container-id"
+	testClusterName  = "clusterName"
+	testNodeName     = "nodeName"
+	testCustomName   = "example-custom-host-name"
+	testCloudAccount = "projectID"
+	testGCPHostname  = testHostName + ".c." + testCloudAccount + ".internal"
 )
 
 func TestHostnameFromAttributes(t *testing.T) {
@@ -110,10 +112,22 @@ func TestHostnameFromAttributes(t *testing.T) {
 			attrs: testutils.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
 				conventions.AttributeHostID:        testHostID,
-				conventions.AttributeHostName:      testHostName,
+				conventions.AttributeHostName:      testGCPHostname,
 			}),
 			ok:       true,
-			hostname: testHostName,
+			hostname: testGCPHostname,
+		},
+		{
+			name: "GCP, preview",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeHostID:         testHostID,
+				conventions.AttributeHostName:       testGCPHostname,
+				conventions.AttributeCloudAccountID: testCloudAccount,
+			}),
+			usePreview: true,
+			ok:         true,
+			hostname:   testHostName + "." + testCloudAccount,
 		},
 		{
 			name: "azure",
@@ -124,6 +138,17 @@ func TestHostnameFromAttributes(t *testing.T) {
 			}),
 			ok:       true,
 			hostname: testHostName,
+		},
+		{
+			name: "azure, preview",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+				conventions.AttributeHostID:        testHostID,
+				conventions.AttributeHostName:      testHostName,
+			}),
+			usePreview: true,
+			ok:         true,
+			hostname:   testHostID,
 		},
 		{
 			name: "host id v. hostname",
