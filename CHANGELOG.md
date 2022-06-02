@@ -2,21 +2,34 @@
 
 ## Unreleased
 
-## 🛑 Breaking changes 🛑
+### 🛑 Breaking changes 🛑
+
+- `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
+- `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
+- `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
+- `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 
 ### 🚩 Deprecations 🚩
 
+
 ### 🚀 New components 🚀
+
+- `flinkmetricsreceiver`: Add implementation of Flink Metric Receiver (#10121)
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 
 ### 💡 Enhancements 💡
 
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
+- `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
+- `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
 
 ### 🧰 Bug fixes 🧰
 
+- `transformprocessor`: Fix issue where incorrect error was returned if a bad path was passed to a function (#10141)
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
+- `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
+- `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 
@@ -24,6 +37,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `jmxreceiver`: Hash the jars provided to JMX Receiver and only allow if they match an approved list (#9687)
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 
 ### 🚀 New components 🚀

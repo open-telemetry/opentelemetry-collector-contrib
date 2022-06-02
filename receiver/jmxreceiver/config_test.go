@@ -31,6 +31,9 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	mockJarVersions()
+	defer unmockJarVersions()
+
 	testLogger, _ := zap.NewDevelopment()
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
@@ -42,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 8)
+	assert.Equal(t, len(cfg.Receivers), 10)
 
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r0))
@@ -57,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all")),
-			JARPath:            "myjarpath",
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "myendpoint:12345",
 			TargetSystem:       "jvm",
 			CollectionInterval: 15 * time.Second,
@@ -82,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 			RemoteProfile:      "myremoteprofile",
 			Realm:              "myrealm",
 			AdditionalJars: []string{
-				"/path/to/additional.jar",
+				"testdata/fake_additional.jar",
 			},
 			ResourceAttributes: map[string]string{
 				"one": "two",
@@ -99,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingendpoint")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			JARPath:            "testdata/fake_jmx.jar",
 			TargetSystem:       "jvm",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
@@ -119,12 +122,12 @@ func TestLoadConfig(t *testing.T) {
 		r2.parseProperties(testLogger),
 	)
 
-	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missinggroovy")].(*Config)
+	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missingtarget")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r3))
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missinggroovy")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingtarget")),
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
@@ -136,14 +139,14 @@ func TestLoadConfig(t *testing.T) {
 		}, r3)
 	err = r3.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/missinggroovy missing required field: `target_system`", err.Error())
+	assert.Equal(t, "jmx/missingtarget missing required field: `target_system`", err.Error())
 
 	r4 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidinterval")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r4))
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidinterval")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "myendpoint:23456",
 			TargetSystem:       "jvm",
 			CollectionInterval: -100 * time.Millisecond,
@@ -163,7 +166,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidotlptimeout")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			JARPath:            "testdata/fake_jmx.jar",
 			Endpoint:           "myendpoint:34567",
 			TargetSystem:       "jvm",
 			CollectionInterval: 10 * time.Second,
@@ -178,15 +181,14 @@ func TestLoadConfig(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "jmx/invalidotlptimeout `otlp.timeout` must be positive: -100ms", err.Error())
 
-	r6 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidloglevel")].(*Config)
+	r6 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "nonexistentjar")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r6))
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidloglevel")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			Endpoint:           "myendpoint:55555",
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "nonexistentjar")),
+			JARPath:            "testdata/file_does_not_exist.jar",
+			Endpoint:           "myendpoint:23456",
 			TargetSystem:       "jvm",
-			LogLevel:           "truth",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -197,16 +199,17 @@ func TestLoadConfig(t *testing.T) {
 		}, r6)
 	err = r6.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidloglevel `log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'", err.Error())
+	// Error is different based on OS, which is why this is contains, not equals
+	assert.Contains(t, err.Error(), "jmx/nonexistentjar error validating `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:")
 
-	r7 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidtargetsystem")].(*Config)
+	r7 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidjar")].(*Config)
 	require.NoError(t, configtest.CheckConfigStruct(r7))
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidtargetsystem")),
-			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			Endpoint:           "myendpoint:55555",
-			TargetSystem:       "jvm,nonsense",
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidjar")),
+			JARPath:            "testdata/fake_jmx_wrong.jar",
+			Endpoint:           "myendpoint:23456",
+			TargetSystem:       "jvm",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -217,7 +220,87 @@ func TestLoadConfig(t *testing.T) {
 		}, r7)
 	err = r7.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+	assert.Equal(t, "jmx/invalidjar error validating `jar_path`: jar hash does not match known versions", err.Error())
+
+	r8 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidloglevel")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r8))
+	assert.Equal(t,
+		&Config{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidloglevel")),
+			JARPath:            "testdata/fake_jmx.jar",
+			Endpoint:           "myendpoint:55555",
+			TargetSystem:       "jvm",
+			LogLevel:           "truth",
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
+		}, r8)
+	err = r8.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidloglevel `log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'", err.Error())
+
+	r9 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidtargetsystem")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r9))
+	assert.Equal(t,
+		&Config{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidtargetsystem")),
+			JARPath:            "testdata/fake_jmx.jar",
+			Endpoint:           "myendpoint:55555",
+			TargetSystem:       "jvm,fakejvmtechnology",
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
+		}, r9)
+	err = r9.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+}
+
+func TestCustomMetricsGathererConfig(t *testing.T) {
+	wildflyJarVersions["7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a"] = supportedJar{
+		jar:     "fake wildfly jar",
+		version: "2.3.4",
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, len(cfg.Receivers), 10)
+
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidtargetsystem")].(*Config)
+	require.NoError(t, configtest.CheckConfigStruct(r1))
+	err = r1.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidtargetsystem error validating `jar_path`: jar hash does not match known versions", err.Error())
+
+	MetricsGathererHash = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
+	initSupportedJars()
+
+	err = r1.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+
+	AdditionalTargetSystems = "fakejvmtechnology,anothertechnology"
+	initAdditionalTargetSystems()
+
+	r1.TargetSystem = "jvm,fakejvmtechnology,anothertechnology"
+
+	require.NoError(t, r1.validate())
 }
 
 func TestClassPathParse(t *testing.T) {
@@ -230,34 +313,34 @@ func TestClassPathParse(t *testing.T) {
 		{
 			desc: "Metric Gatherer JAR Only",
 			cfg: &Config{
-				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				JARPath: "testdata/fake_jmx.jar",
 			},
 			existingEnvVal: "",
-			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			expected:       "testdata/fake_jmx.jar",
 		},
 		{
 			desc: "Additional JARS",
 			cfg: &Config{
-				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				JARPath: "testdata/fake_jmx.jar",
 				AdditionalJars: []string{
 					"/path/to/one.jar",
 					"/path/to/two.jar",
 				},
 			},
 			existingEnvVal: "",
-			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
+			expected:       "testdata/fake_jmx.jar:/path/to/one.jar:/path/to/two.jar",
 		},
 		{
 			desc: "Existing ENV Value",
 			cfg: &Config{
-				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				JARPath: "testdata/fake_jmx.jar",
 				AdditionalJars: []string{
 					"/path/to/one.jar",
 					"/path/to/two.jar",
 				},
 			},
 			existingEnvVal: "/pre/existing/class/path/",
-			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
+			expected:       "testdata/fake_jmx.jar:/path/to/one.jar:/path/to/two.jar",
 		},
 	}
 
@@ -271,4 +354,21 @@ func TestClassPathParse(t *testing.T) {
 			require.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func mockJarVersions() {
+	jmxMetricsGathererVersions["5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"] = supportedJar{
+		jar:     "fake jar",
+		version: "1.2.3",
+	}
+
+	wildflyJarVersions["7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a"] = supportedJar{
+		jar:     "fake wildfly jar",
+		version: "2.3.4",
+	}
+}
+
+func unmockJarVersions() {
+	delete(jmxMetricsGathererVersions, "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5")
+	delete(wildflyJarVersions, "7d1a54127b222502f5b79b5fb0803061152a44f92b37e23c6527baf665d4da9a")
 }

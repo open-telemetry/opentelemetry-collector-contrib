@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_newFunctionCall(t *testing.T) {
@@ -52,7 +53,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("fail"),
+						String: testhelper.Strp("fail"),
 					},
 				},
 			},
@@ -76,7 +77,7 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
@@ -103,10 +104,10 @@ func Test_newFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: strp("test"),
+						String: testhelper.Strp("test"),
 					},
 					{
-						String: strp("test2"),
+						String: testhelper.Strp("test2"),
 					},
 				},
 			},
