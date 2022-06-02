@@ -26,14 +26,15 @@ import (
 )
 
 const (
-	testHostID       = "example-host-id"
-	testHostName     = "example-host-name"
-	testContainerID  = "example-container-id"
-	testClusterName  = "clusterName"
-	testNodeName     = "nodeName"
-	testCustomName   = "example-custom-host-name"
-	testCloudAccount = "projectID"
-	testGCPHostname  = testHostName + ".c." + testCloudAccount + ".internal"
+	testHostID                 = "example-host-id"
+	testHostName               = "example-host-name"
+	testContainerID            = "example-container-id"
+	testClusterName            = "clusterName"
+	testNodeName               = "nodeName"
+	testCustomName             = "example-custom-host-name"
+	testCloudAccount           = "projectID"
+	testGCPHostname            = testHostName + ".c." + testCloudAccount + ".internal"
+	testGCPIntegrationHostname = testHostName + "." + testCloudAccount
 )
 
 func TestHostnameFromAttributes(t *testing.T) {
@@ -127,7 +128,7 @@ func TestHostnameFromAttributes(t *testing.T) {
 			}),
 			usePreview: true,
 			ok:         true,
-			hostname:   testHostName + "." + testCloudAccount,
+			hostname:   testGCPIntegrationHostname,
 		},
 		{
 			name: "azure",
