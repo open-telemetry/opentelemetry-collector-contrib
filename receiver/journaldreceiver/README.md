@@ -1,10 +1,13 @@
 ## `Journald Receiver`
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 Parses Journald events from systemd journal.
 Journald receiver is dependent on `journalctl` binary to be present and must be in the $PATH of the agent.
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
 
 ## Configuration
 
@@ -28,3 +31,6 @@ receivers:
       - containerd
     priority: info
 ```
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

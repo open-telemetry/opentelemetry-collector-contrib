@@ -278,6 +278,40 @@ func Test_parse(t *testing.T) {
 				Condition: nil,
 			},
 		},
+		{
+			query: `convert_gauge_to_sum("cumulative", false)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "convert_gauge_to_sum",
+					Arguments: []Value{
+						{
+							String: testhelper.Strp("cumulative"),
+						},
+						{
+							Bool: (*Boolean)(testhelper.Boolp(false)),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
+		{
+			query: `convert_gauge_to_sum("cumulative", true)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "convert_gauge_to_sum",
+					Arguments: []Value{
+						{
+							String: testhelper.Strp("cumulative"),
+						},
+						{
+							Bool: (*Boolean)(testhelper.Boolp(true)),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {

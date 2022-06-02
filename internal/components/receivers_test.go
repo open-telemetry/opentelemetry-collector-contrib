@@ -119,6 +119,9 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "flinkmetrics",
+		},
+		{
 			receiver: "fluentforward",
 		},
 		{
