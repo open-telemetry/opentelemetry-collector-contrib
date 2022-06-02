@@ -273,7 +273,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err := http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err, "Failed to perform a scrape")
 	})
 
