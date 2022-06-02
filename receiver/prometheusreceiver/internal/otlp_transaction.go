@@ -202,7 +202,7 @@ func (t *transaction) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetr
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rms.ScopeMetrics().AppendEmpty()
-	metricsL.MoveAndAppendTo(ilm.Metrics())
+	metricsL.CopyTo(ilm.Metrics())
 	t.nodeResource.CopyTo(rms.Resource())
 	return &metrics
 }
