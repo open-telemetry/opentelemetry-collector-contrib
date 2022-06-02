@@ -932,6 +932,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetCount(3)
 				pt0.SetSum(100)
 				pt0.SetMBucketCounts([]uint64{3})
+				pt0.SetMExplicitBounds([]float64{})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
@@ -961,6 +962,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetCount(3)
 				pt0.SetSum(100)
 				pt0.SetMBucketCounts([]uint64{3})
+				pt0.SetMExplicitBounds([]float64{})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
@@ -1036,6 +1038,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 }
 
 func Test_OTLPMetricBuilder_summary(t *testing.T) {
+	// fix
 	tests := []buildTestData{
 		{
 			name: "no-sum-and-count",
