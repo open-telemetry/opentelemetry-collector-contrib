@@ -14,7 +14,7 @@
 //go:build !windows
 // +build !windows
 
-package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
+package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 
 import (
 	"context"

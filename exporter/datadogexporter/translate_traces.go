@@ -32,6 +32,7 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
@@ -90,9 +91,7 @@ func convertToDatadogTd(td ptrace.Traces, fallbackHost string, cfg *config.Confi
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		// TODO (#10424): Remove and replace by package constant.
-		const usePreviewHostnameLogic = false
-		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes(), usePreviewHostnameLogic)
+		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes(), metadata.UsePreviewHostnameLogic)
 		if !ok {
 			host = fallbackHost
 		}
