@@ -96,15 +96,24 @@ func createSizedPayloadLogData(payloadSize int) plog.Logs {
 	return logs
 }
 
-func TestLogsExporter(t *testing.T) {
-	// Spin up a HTTP server to receive the test exporters...
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, r.Header.Get("User-Agent"))
+type testServer struct {
+	instance *httptest.Server
+	url      string
+}
 
+type httpAssertionCallback func(req *http.Request, body MezmoLogBody)
+type testServerParams struct {
+	t                  *testing.T
+	assertionsCallback httpAssertionCallback
+}
+
+// Creates an HTTP server to test log delivery payloads by applying a set of
+// assertions through the assertCB function.
+func createHTTPServer(params *testServerParams) testServer {
+	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			t.Fatal(err)
+			params.t.Fatal(err)
 		}
 
 		var logBody MezmoLogBody
@@ -112,38 +121,63 @@ func TestLogsExporter(t *testing.T) {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 		}
 
+		params.assertionsCallback(r, logBody)
+
 		w.WriteHeader(http.StatusOK)
 	}))
-	defer server.Close()
 
-	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
+	serverURL, err := url.Parse(httpServer.URL)
+	assert.NoError(params.t, err)
 
-	config := &Config{
-		IngestURL: serverURL.String(),
+	server := testServer{
+		instance: httpServer,
+		url:      serverURL.String(),
 	}
 
-	exp := newLogsExporter(config, componenttest.NewNopTelemetrySettings(), buildInfo)
-	require.NotNil(t, exp)
+	return server
+}
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+func createExporter(t *testing.T, config *Config) *mezmoExporter {
+	exporter := newLogsExporter(config, componenttest.NewNopTelemetrySettings(), buildInfo)
+	require.NotNil(t, exporter)
+
+	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+
+	return exporter
+}
+
+func TestLogsExporter(t *testing.T) {
+	httpServerParams := testServerParams{
+		t: t,
+		assertionsCallback: func(req *http.Request, body MezmoLogBody) {
+			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
+		},
+	}
+	server := createHTTPServer(&httpServerParams)
+	defer server.instance.Close()
+
+	config := &Config{
+		IngestURL: server.url,
+	}
+	exporter := createExporter(t, config)
 
 	t.Run("Test simple log data", func(t *testing.T) {
 		var logs = createSimpleLogData(3)
-		err = exp.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max message size", func(t *testing.T) {
 		var logs = createSizedPayloadLogData(maxMessageSize)
-		err = exp.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max body size", func(t *testing.T) {
 		var logs = createMaxLogData()
-		err = exp.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
 }
