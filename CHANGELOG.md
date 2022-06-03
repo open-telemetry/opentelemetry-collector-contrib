@@ -34,6 +34,7 @@
 - `tailsamplingprocessor`: Fix composite sampler with inverse policy
 - `awsprometheusremotewriteexporter`: Fix signing of empty request bodies. (#10578)
 - `sigv4authextension`: Fix signing of empty request bodies. (#10578)
+- `apachereceiver`: Update units to follow semconv (#10587)
 
 ## v0.52.0
 
