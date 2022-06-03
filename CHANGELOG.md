@@ -30,6 +30,7 @@
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 - `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
+- `resourcedetectionprocessor`: GCP resource detector no longer fails to detect resource when using workload identity (#10486)
 - `awsprometheusremotewriteexporter`: Fix signing of empty request bodies. (#10578)
 - `sigv4authextension`: Fix signing of empty request bodies. (#10578)
 
@@ -151,6 +152,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
+- `sqlreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
 
 ### 💡 Enhancements 💡
 

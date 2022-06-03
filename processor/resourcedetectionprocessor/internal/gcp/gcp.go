@@ -66,7 +66,6 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		b.addZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion)
 		b.add(conventions.AttributeK8SClusterName, d.detector.GKEClusterName)
 		b.add(conventions.AttributeHostID, d.detector.GKEHostID)
-		b.add(conventions.AttributeHostName, d.detector.GKEHostName)
 	case gcp.CloudRun:
 		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
 		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
