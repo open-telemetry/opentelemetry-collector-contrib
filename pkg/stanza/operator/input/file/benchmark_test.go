@@ -29,7 +29,7 @@ import (
 type fileInputBenchmark struct {
 	name   string
 	paths  []string
-	config func() *InputConfig
+	config func() *Config
 }
 
 type benchFile struct {
@@ -55,8 +55,8 @@ func BenchmarkFileInput(b *testing.B) {
 			paths: []string{
 				"file0.log",
 			},
-			config: func() *InputConfig {
-				cfg := NewInputConfig("test_id")
+			config: func() *Config {
+				cfg := NewConfig("test_id")
 				cfg.Include = []string{
 					"file0.log",
 				}
@@ -71,8 +71,8 @@ func BenchmarkFileInput(b *testing.B) {
 				"file2.log",
 				"file3.log",
 			},
-			config: func() *InputConfig {
-				cfg := NewInputConfig("test_id")
+			config: func() *Config {
+				cfg := NewConfig("test_id")
 				cfg.Include = []string{"file*.log"}
 				return cfg
 			},
@@ -85,8 +85,8 @@ func BenchmarkFileInput(b *testing.B) {
 				"log0.log",
 				"log1.log",
 			},
-			config: func() *InputConfig {
-				cfg := NewInputConfig("test_id")
+			config: func() *Config {
+				cfg := NewConfig("test_id")
 				cfg.Include = []string{
 					"file*.log",
 					"log*.log",
@@ -102,8 +102,8 @@ func BenchmarkFileInput(b *testing.B) {
 				"file2.log",
 				"file3.log",
 			},
-			config: func() *InputConfig {
-				cfg := NewInputConfig("test_id")
+			config: func() *Config {
+				cfg := NewConfig("test_id")
 				cfg.Include = []string{
 					"file*.log",
 				}
@@ -116,8 +116,8 @@ func BenchmarkFileInput(b *testing.B) {
 			paths: []string{
 				"file0.log",
 			},
-			config: func() *InputConfig {
-				cfg := NewInputConfig("test_id")
+			config: func() *Config {
+				cfg := NewConfig("test_id")
 				cfg.Include = []string{
 					"file*.log",
 				}
@@ -130,8 +130,8 @@ func BenchmarkFileInput(b *testing.B) {
 			paths: []string{
 				"file0.log",
 			},
-			config: func() *InputConfig {
-				cfg := NewInputConfig("test_id")
+			config: func() *Config {
+				cfg := NewConfig("test_id")
 				cfg.Include = []string{
 					"file*.log",
 				}

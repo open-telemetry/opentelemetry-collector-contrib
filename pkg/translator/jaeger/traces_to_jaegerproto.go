@@ -292,9 +292,10 @@ func spanEventsToJaegerProtoLogs(events ptrace.SpanEventSlice) []model.Log {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		fields := make([]model.KeyValue, 0, event.Attributes().Len()+1)
-		if event.Name() != "" {
+		_, eventAttrFound := event.Attributes().Get(eventNameAttr)
+		if event.Name() != "" && !eventAttrFound {
 			fields = append(fields, model.KeyValue{
-				Key:   tracetranslator.TagMessage,
+				Key:   eventNameAttr,
 				VType: model.ValueType_STRING,
 				VStr:  event.Name(),
 			})
