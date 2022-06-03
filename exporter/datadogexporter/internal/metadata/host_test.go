@@ -21,27 +21,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
 func TestHost(t *testing.T) {
-
-	logger := zap.NewNop()
-
 	// Start with a fresh cache, the following test would fail
 	// if the cache key is already set.
 	cache.Cache.Delete(cache.CanonicalHostnameKey)
 
-	p, err := buildCurrentProvider(logger, "test-host")
+	p, err := buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host")
 	require.NoError(t, err)
 	host, err := p.Hostname(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, host, "test-host")
 
 	// config.Config.Hostname does not get stored in the cache
-	p, err = buildCurrentProvider(logger, "test-host-2")
+	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host-2")
 	require.NoError(t, err)
 	host, err = p.Hostname(context.Background())
 	require.NoError(t, err)
@@ -55,7 +52,7 @@ func TestHost(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Setenv(awsEc2MetadataDisabled, curr)
 
-	p, err = buildCurrentProvider(logger, "")
+	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
 	host, err = p.Hostname(context.Background())
 	require.NoError(t, err)

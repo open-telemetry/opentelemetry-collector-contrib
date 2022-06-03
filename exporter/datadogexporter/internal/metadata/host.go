@@ -48,12 +48,12 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 	return provider.Once(chain), nil
 }
 
-func buildCurrentProvider(logger *zap.Logger, configHostname string) (provider.HostnameProvider, error) {
+func buildCurrentProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
 	return &currentProvider{
-		logger:         logger,
+		logger:         set.Logger,
 		configHostname: configHostname,
-		systemProvider: system.NewProvider(logger),
-		ec2Provider:    ec2.NewProvider(logger),
+		systemProvider: system.NewProvider(set.Logger),
+		ec2Provider:    ec2.NewProvider(set.Logger),
 	}, nil
 }
 
@@ -62,7 +62,7 @@ func GetHostnameProvider(set component.TelemetrySettings, configHostname string)
 		return buildPreviewProvider(set, configHostname)
 	}
 
-	return buildCurrentProvider(set.Logger, configHostname)
+	return buildCurrentProvider(set, configHostname)
 }
 
 var _ provider.HostnameProvider = (*currentProvider)(nil)
