@@ -80,6 +80,7 @@ internal/docker/                                     @open-telemetry/collector-c
 
 internal/k8sconfig/                                  @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/kubelet/                                    @open-telemetry/collector-contrib-approvers @dmitryax
+internal/metadataproviders/                          @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @Aneurysm9 @dashpole
 internal/scrapertest/                                @open-telemetry/collector-contrib-approvers @djaglowski
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 
