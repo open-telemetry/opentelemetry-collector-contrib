@@ -230,4 +230,5 @@
 // as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 // downward API to inject environment variables into the pods and directly use their values
 // as tags.
+// nolint:gocritic
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"

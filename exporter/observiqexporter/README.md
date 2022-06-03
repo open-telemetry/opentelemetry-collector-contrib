@@ -1,8 +1,12 @@
 # observIQ Exporter
 
-This exporter supports sending log data to [observIQ](https://observiq.com/)
+| Status                   |                    |
+| ------------------------ |--------------------|
+| Stability                | [in development]   |
+| Supported pipeline types | logs               |
+| Distributions            | none               |
 
-**This exporter is currently being developed and is not yet ready for use**
+This exporter supports sending log data to [observIQ](https://observiq.com/)
 
 ## Configuration
 
@@ -32,3 +36,5 @@ The full list of settings exposed for this exporter are documented [here](config
 
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development

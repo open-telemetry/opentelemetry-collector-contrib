@@ -491,10 +491,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/receiver/couchbasereceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/receiver/couchdbreceiver"
     schedule:
       interval: "weekly"
