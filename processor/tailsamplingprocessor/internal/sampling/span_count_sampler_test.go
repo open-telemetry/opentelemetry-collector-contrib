@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,77 +15,75 @@
 package sampling
 
 import (
-	"math"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
-func TestSpanCountSampler(t *testing.T) {
-
-	var empty = map[string]interface{}{}
+func TestEvaluate_NumberSpans(t *testing.T) {
 	filter := NewSpanCount(zap.NewNop(), 2)
 
-	resAttr := map[string]interface{}{}
-	resAttr["example"] = 8
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
-		Desc     string
-		Trace    *TraceData
-		Decision Decision
+		Desc        string
+		NumberSpans []int32
+		Decision    Decision
 	}{
 		{
-			Desc:     "nonmatching span attribute",
-			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
-			Decision: NotSampled,
+			"Less spans than the threshold",
+			[]int32{
+				1, 1, 1,
+			},
+			NotSampled,
 		},
 		{
-			Desc:     "span attribute with lower limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
-			Decision: Sampled,
+			"Same number of spans than the threshold",
+			[]int32{
+				1, 2, 1,
+			},
+			Sampled,
 		},
 		{
-			Desc:     "span attribute with upper limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
-			Decision: Sampled,
-		},
-		{
-			Desc:     "span attribute below min limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
-			Decision: NotSampled,
-		},
-		{
-			Desc:     "span attribute above max limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
-			Decision: NotSampled,
+			"Bigger amount of spans than the threashold",
+			[]int32{
+				1, 3, 1,
+			},
+			Sampled,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(pcommon.NewTraceID(u), c.Trace)
+			decision, err := filter.Evaluate(traceID, newTraceWithMultipleSpans(c.NumberSpans))
+
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
 	}
 }
 
-func newTraceIntAttrs(nodeAttrs map[string]interface{}, spanAttrKey string, spanAttrValue int64) *TraceData {
+func newTraceWithMultipleSpans(NumberSpans []int32) *TraceData {
 	var traceBatches []ptrace.Traces
-	traces := ptrace.NewTraces()
-	rs := traces.ResourceSpans().AppendEmpty()
-	pcommon.NewMapFromRaw(nodeAttrs).CopyTo(rs.Resource().Attributes())
-	ils := rs.ScopeSpans().AppendEmpty()
-	span := ils.Spans().AppendEmpty()
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.Attributes().InsertInt(spanAttrKey, spanAttrValue)
-	traceBatches = append(traceBatches, traces)
+
+	// For each trace, going to create the number of spans defined in the array
+	for i := range NumberSpans {
+		//Creates trace
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+
+		for r := 0; r < int(NumberSpans[i]); r++ {
+			span := ils.Spans().AppendEmpty()
+			span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+			span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+		}
+		traceBatches = append(traceBatches, traces)
+	}
+
 	return &TraceData{
 		ReceivedBatches: traceBatches,
 	}
