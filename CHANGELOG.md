@@ -31,6 +31,7 @@
 - `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
 - `resourcedetectionprocessor`: GCP resource detector no longer fails to detect resource when using workload identity (#10486)
+- `tailsamplingprocessor`: Fix composite sampler with inverse policy
 
 ## v0.52.0
 
