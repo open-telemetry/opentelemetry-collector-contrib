@@ -15,6 +15,7 @@
 * @open-telemetry/collector-contrib-approvers
 
 cmd/mdatagen                                         @open-telemetry/collector-contrib-approvers @dmitryax
+cmd/telemetrygen                                     @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
 
 exporter/alibabacloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter                   @open-telemetry/collector-contrib-approvers @boostchicken
