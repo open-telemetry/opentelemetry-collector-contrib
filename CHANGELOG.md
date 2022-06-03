@@ -150,6 +150,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
+- `sqlreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
 
 ### 💡 Enhancements 💡
 
