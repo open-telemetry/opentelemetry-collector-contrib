@@ -32,6 +32,8 @@
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
 - `resourcedetectionprocessor`: GCP resource detector no longer fails to detect resource when using workload identity (#10486)
 - `tailsamplingprocessor`: Fix composite sampler with inverse policy
+- `awsprometheusremotewriteexporter`: Fix signing of empty request bodies. (#10578)
+- `sigv4authextension`: Fix signing of empty request bodies. (#10578)
 
 ## v0.52.0
 
