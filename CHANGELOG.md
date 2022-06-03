@@ -50,6 +50,7 @@
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 - `expvarreceiver`: Add implementation of new receiver. (#10183)
+- `telemetrygen`: Started implementing an upgraded version of `tracegen` generating traces and metrics (#9597)
 
 ### 💡 Enhancements 💡
 
