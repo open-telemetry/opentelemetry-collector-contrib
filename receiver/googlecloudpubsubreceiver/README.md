@@ -4,7 +4,7 @@
 | ------------------------ |-----------------------|
 | Stability                | [beta]                |
 | Supported pipeline types | traces, logs, metrics |
-| Distributions            | [contrib]             |
+| Distributions            | none                  |
 
 > ⚠️ This is a community-provided module. It has been developed and extensively tested at Collibra, but it is not officially supported by GCP.
  
@@ -72,4 +72,3 @@ attributes.content-type = "application/protobuf"
 ```
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
