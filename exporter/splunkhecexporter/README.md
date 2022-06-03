@@ -8,8 +8,6 @@
 
 How to send metrics to a Splunk HEC endpoint.
 
-> :construction: This receiver is in beta and configuration fields are subject to change.
-
 ## Configuration
 
 The following configuration options are required:
