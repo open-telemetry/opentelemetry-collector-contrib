@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import urllib.parse
+from re import escape, sub
 from typing import Dict, Sequence
 
 from wrapt import ObjectProxy
@@ -163,3 +164,11 @@ def _generate_opentelemetry_traceparent(span: Span) -> str:
     _traceparent = _version + "-" + _trace_id + "-" + _span_id + "-" + _flags
     meta.update({"traceparent": _traceparent})
     return meta
+
+
+def _python_path_without_directory(python_path, directory, path_separator):
+    return sub(
+        rf"{escape(directory)}{path_separator}(?!$)",
+        "",
+        python_path,
+    )
