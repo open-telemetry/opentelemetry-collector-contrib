@@ -8,8 +8,6 @@
 
 This receiver fetches stats from a Apache Web Server instance using the `server-status?auto` endpoint.
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
-
 ## Prerequisites
 
 This receiver supports Apache Web Server version 2.4+
