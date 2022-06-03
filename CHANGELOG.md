@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-remoulade` Initial release
   ([#1082](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1082))
 
+### Added
+- Added `opentelemetry-instrumention-confluent-kafka`
+  ([#1111](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1111))
+
+
 ## [1.12.0rc1-0.31b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.12.0rc1-0.31b0) - 2022-05-17
 
 ### Fixed
