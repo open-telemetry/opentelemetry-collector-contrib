@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
+package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 
 func getSystemFQDN() (string, error) {
 	// The Datadog Agent uses CGo to get the FQDN of the host
