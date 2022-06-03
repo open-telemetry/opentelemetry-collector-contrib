@@ -97,10 +97,7 @@ type Meta struct {
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	// TODO (#10424): Remove and replace by package constant.
-	const usePreviewHostnameLogic = false
-
-	if hostname, ok := attributes.HostnameFromAttributes(attrs, usePreviewHostnameLogic); ok {
+	if hostname, ok := attributes.HostnameFromAttributes(attrs, UsePreviewHostnameLogic); ok {
 		hm.InternalHostname = hostname
 		hm.Meta.Hostname = hostname
 	}
@@ -113,11 +110,11 @@ func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
-		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
+		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, UsePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
-		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
+		azureHostInfo := azure.HostInfoFromAttributes(attrs, UsePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
 

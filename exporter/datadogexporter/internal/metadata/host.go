@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
+// UsePreviewHostnameLogic decides whether to use the preview hostname logic or not.
 const UsePreviewHostnameLogic = false
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
