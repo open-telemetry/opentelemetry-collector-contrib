@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package carbonexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 
 import (
@@ -120,10 +119,8 @@ func (cp *connPool) Write(bytes []byte) (int, error) {
 			cp.mtx.Lock()
 			cp.conns = append(cp.conns, conn)
 			cp.mtx.Unlock()
-		} else {
-			if conn != nil {
-				conn.Close()
-			}
+		} else if conn != nil {
+			conn.Close()
 		}
 	}()
 
