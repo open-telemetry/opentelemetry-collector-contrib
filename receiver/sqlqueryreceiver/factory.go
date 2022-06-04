@@ -12,24 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
+package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
 import (
 	"context"
 
-	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 )
 
-type MockProvider struct {
-	mock.Mock
+const typeStr = "sqlquery"
+
+func NewFactory() component.ReceiverFactory {
+	return component.NewReceiverFactory(
+		typeStr,
+		createDefaultConfig,
+		component.WithMetricsReceiver(nilReceiver),
+	)
 }
 
-func (m *MockProvider) Metadata(_ context.Context) (*ComputeMetadata, error) {
-	args := m.MethodCalled("Metadata")
-	arg := args.Get(0)
-	var cm *ComputeMetadata
-	if arg != nil {
-		cm = arg.(*ComputeMetadata)
-	}
-	return cm, args.Error(1)
+func nilReceiver(
+	context.Context,
+	component.ReceiverCreateSettings,
+	config.Receiver,
+	consumer.Metrics,
+) (component.MetricsReceiver, error) {
+	return nil, nil
 }

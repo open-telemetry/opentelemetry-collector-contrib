@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 
 	"github.com/Showmax/go-fqdn"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
 
 // nameInfoProvider abstracts domain name resolution so it can be swapped for
@@ -46,7 +46,7 @@ func newNameInfoProvider() nameInfoProvider {
 	}
 }
 
-type metadataProvider interface {
+type Provider interface {
 	// Hostname returns the OS hostname
 	Hostname() (string, error)
 
@@ -64,10 +64,10 @@ type metadataProvider interface {
 }
 
 type systemMetadataProvider struct {
-	nameInfoProvider nameInfoProvider
+	nameInfoProvider
 }
 
-func newSystemMetadataProvider() metadataProvider {
+func NewProvider() Provider {
 	return systemMetadataProvider{nameInfoProvider: newNameInfoProvider()}
 }
 

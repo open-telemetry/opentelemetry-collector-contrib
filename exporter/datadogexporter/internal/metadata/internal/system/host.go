@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
+package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 
 import (
+	"context"
 	"os"
+	"sync"
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
@@ -57,4 +60,31 @@ func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
 	}
 
 	return hi.FQDN
+}
+
+var _ provider.HostnameProvider = (*Provider)(nil)
+
+type Provider struct {
+	once     sync.Once
+	hostInfo HostInfo
+
+	logger *zap.Logger
+}
+
+func (p *Provider) fillHostInfo() {
+	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
+}
+
+func (p *Provider) Hostname(context.Context) (string, error) {
+	p.fillHostInfo()
+	return p.hostInfo.GetHostname(p.logger), nil
+}
+
+func (p *Provider) HostInfo() *HostInfo {
+	p.fillHostInfo()
+	return &p.hostInfo
+}
+
+func NewProvider(logger *zap.Logger) *Provider {
+	return &Provider{logger: logger}
 }

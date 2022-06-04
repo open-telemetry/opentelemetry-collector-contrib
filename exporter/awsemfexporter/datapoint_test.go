@@ -426,6 +426,74 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	assert.Equal(t, expectedDP, dp)
 }
 
+func TestHistogramDataPointSliceAtWithMinMax(t *testing.T) {
+	instrLibName := "cloudwatch-otel"
+	labels := map[string]interface{}{"label1": "value1"}
+
+	testDPS := pmetric.NewHistogramDataPointSlice()
+	testDP := testDPS.AppendEmpty()
+	testDP.SetCount(uint64(17))
+	testDP.SetSum(17.13)
+	testDP.SetMin(10)
+	testDP.SetMax(30)
+	pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+
+	dps := histogramDataPointSlice{
+		instrLibName,
+		testDPS,
+	}
+
+	expectedDP := dataPoint{
+		value: &cWMetricStats{
+			Sum:   17.13,
+			Count: 17,
+			Min:   10,
+			Max:   30,
+		},
+		labels: map[string]string{
+			oTellibDimensionKey: instrLibName,
+			"label1":            "value1",
+		},
+	}
+
+	assert.Equal(t, 1, dps.Len())
+	dp, _ := dps.At(0)
+	assert.Equal(t, expectedDP, dp)
+}
+
+func TestHistogramDataPointSliceAtWithoutMinMax(t *testing.T) {
+	instrLibName := "cloudwatch-otel"
+	labels := map[string]interface{}{"label1": "value1"}
+
+	testDPS := pmetric.NewHistogramDataPointSlice()
+	testDP := testDPS.AppendEmpty()
+	testDP.SetCount(uint64(17))
+	testDP.SetSum(17.13)
+	pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+
+	dps := histogramDataPointSlice{
+		instrLibName,
+		testDPS,
+	}
+
+	expectedDP := dataPoint{
+		value: &cWMetricStats{
+			Sum:   17.13,
+			Count: 17,
+			Min:   0,
+			Max:   0,
+		},
+		labels: map[string]string{
+			oTellibDimensionKey: instrLibName,
+			"label1":            "value1",
+		},
+	}
+
+	assert.Equal(t, 1, dps.Len())
+	dp, _ := dps.At(0)
+	assert.Equal(t, expectedDP, dp)
+}
+
 func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 

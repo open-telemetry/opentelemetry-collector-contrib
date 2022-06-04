@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
+// Copyright (c) 2018 The Jaeger Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,14 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
+package main
 
-package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/telemetrygen"
+)
 
-func getSystemFQDN() (string, error) {
-	// The Datadog Agent uses CGo to get the FQDN of the host
-	// OpenTelemetry does not allow the use of CGo so this feature
-	// is disabled on Windows
-	return "", nil
+func main() {
+	telemetrygen.Execute()
 }
