@@ -278,7 +278,10 @@ func TestBuildExporterConfig(t *testing.T) {
 	grpcSettings.Endpoint = "the-endpoint"
 	assert.Equal(t, grpcSettings, exporterCfg.GRPCClientSettings)
 
-	assert.Equal(t, defaultCfg.ExporterSettings, exporterCfg.ExporterSettings)
+	exporterSettings := defaultCfg.ExporterSettings
+	exporterSettings.SetIDName("the-endpoint")
+	assert.Equal(t, exporterSettings, exporterCfg.ExporterSettings)
+
 	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
 	assert.Equal(t, defaultCfg.QueueSettings, exporterCfg.QueueSettings)
 	assert.Equal(t, defaultCfg.RetrySettings, exporterCfg.RetrySettings)
