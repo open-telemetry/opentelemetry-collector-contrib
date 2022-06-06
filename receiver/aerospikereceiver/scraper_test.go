@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -75,7 +74,7 @@ func TestScrapeNode(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		setupClient          func() *mocks.Aerospike
-		setupExpectedMetrics func(t *testing.T) pdata.Metrics
+		setupExpectedMetrics func(t *testing.T) pmetric.Metrics
 		expectedErr          string
 	}{
 		{
@@ -85,8 +84,8 @@ func TestScrapeNode(t *testing.T) {
 				client.On("Info").Return(nil, as.ErrNetTimeout)
 				return client
 			},
-			setupExpectedMetrics: func(t *testing.T) pdata.Metrics {
-				return pdata.NewMetrics()
+			setupExpectedMetrics: func(t *testing.T) pmetric.Metrics {
+				return pmetric.NewMetrics()
 			},
 			expectedErr: as.ErrNetTimeout.Error(),
 		},
@@ -97,8 +96,8 @@ func TestScrapeNode(t *testing.T) {
 				client.On("Info").Return(&model.NodeInfo{}, nil)
 				return client
 			},
-			setupExpectedMetrics: func(t *testing.T) pdata.Metrics {
-				return pdata.NewMetrics()
+			setupExpectedMetrics: func(t *testing.T) pmetric.Metrics {
+				return pmetric.NewMetrics()
 			},
 		},
 	}
@@ -140,7 +139,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
-	now := pdata.NewTimestampFromTime(time.Now().UTC())
+	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 
 	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings())
 
