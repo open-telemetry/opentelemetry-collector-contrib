@@ -1038,7 +1038,6 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 }
 
 func Test_OTLPMetricBuilder_summary(t *testing.T) {
-	// fix
 	tests := []buildTestData{
 		{
 			name: "no-sum-and-count",
