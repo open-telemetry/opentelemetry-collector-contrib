@@ -59,7 +59,7 @@ func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) (float
 	return strconv.ParseFloat(v, 64)
 }
 
-// convToPdataMetricType returns the data type and if it is monotonic
+// convToMetricType returns the data type and if it is monotonic
 func convToMetricType(metricType textparse.MetricType) (pmetric.MetricDataType, bool) {
 	switch metricType {
 	case textparse.MetricTypeCounter:
