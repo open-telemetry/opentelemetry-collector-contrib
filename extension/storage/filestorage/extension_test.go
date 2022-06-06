@@ -229,11 +229,9 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 }
 
 func newTestExtension(t *testing.T) storage.Extension {
-	tempDir := t.TempDir()
-
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Directory = tempDir
+	cfg.Directory = t.TempDir()
 
 	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
