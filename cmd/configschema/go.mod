@@ -64,7 +64,7 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.44.27 // indirect
+	github.com/aws/aws-sdk-go v1.44.28 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.9.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.4.3 // indirect
@@ -204,7 +204,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.5 // indirect
+	github.com/klauspost/compress v1.15.6 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
@@ -493,8 +493,8 @@ require (
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
-	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
-	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
+	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
+	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
@@ -502,9 +502,9 @@ require (
 	golang.org/x/tools v0.1.10 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	gonum.org/v1/gonum v0.11.0 // indirect
-	google.golang.org/api v0.81.0 // indirect
+	google.golang.org/api v0.82.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220524023933-508584e28198 // indirect
+	google.golang.org/genproto v0.0.0-20220527130721-00d5c0f3be58 // indirect
 	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.38.1 // indirect

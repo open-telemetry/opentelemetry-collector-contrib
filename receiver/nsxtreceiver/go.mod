@@ -31,7 +31,7 @@ require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/klauspost/compress v1.15.5 // indirect
+	github.com/klauspost/compress v1.15.6 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
