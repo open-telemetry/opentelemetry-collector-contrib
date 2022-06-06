@@ -37,7 +37,7 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	current := time.Now().UnixNano() / 1e6
 	collection := map[string]interface{}{}
 
-	emfPusher, _ := newMockPusherWithEventCheck(t, func(msg string) {
+	emfPusher := newMockPusherWithEventCheck(func(msg string) {
 		if _, ok := collection[msg]; ok {
 			t.Errorf("Sending duplicated event message %s", msg)
 		} else {
@@ -63,9 +63,8 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	maxEventPayloadBytes = defaultMaxEventPayloadBytes
 }
 
-func newMockPusherWithEventCheck(t *testing.T, check func(msg string)) (Pusher, string) {
+func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 	logger := zap.NewNop()
-	tmpfolder := t.TempDir()
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {
 		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
 		for _, event := range input.LogEvents {
@@ -74,7 +73,7 @@ func newMockPusherWithEventCheck(t *testing.T, check func(msg string)) (Pusher, 
 		}
 	})
 	p := newLogPusher(&logGroup, &logStreamName, *svc, logger)
-	return p, tmpfolder
+	return p
 }
 
 //
@@ -174,9 +173,8 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 
 // Need to remove the tmp state folder after testing.
 func newMockPusher() *logPusher {
-	logger := zap.NewNop()
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
-	return newLogPusher(&logGroup, &logStreamName, *svc, logger)
+	return newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
 }
 
 //
