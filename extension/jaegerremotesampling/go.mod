@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/jaegertracing/jaeger v1.35.1
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.52.0
+	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.47.0
 )
@@ -46,7 +46,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/collector/pdata v0.52.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
@@ -62,5 +62,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
