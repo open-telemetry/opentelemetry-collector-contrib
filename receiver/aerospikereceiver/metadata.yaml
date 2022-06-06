@@ -4,7 +4,7 @@ resource_attributes:
   node_name:
     description: Name of the Aerospike node collected from
     type: string
-  namespace:
+  aerospike.namespace:
     description: Name of the Aerospike namespace
     type: string
 
@@ -83,7 +83,7 @@ metrics:
       aggregation: cumulative
   aerospike.node.connection.open:
     enabled: true
-    description: Number of open connections to the node
+    description: Current number of open connections to the node
     extended_documentation: Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat_connections
     unit: '{connections}'
     attributes: [connection_type]

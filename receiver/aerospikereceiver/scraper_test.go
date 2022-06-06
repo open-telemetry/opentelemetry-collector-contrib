@@ -141,19 +141,19 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 
-	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings())
+	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
 
 	expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, 22, metadata.AttributeConnectionTypeClient)
 	expectedMB.EmitForResource(metadata.WithNodeName("Primary Node"))
 
 	expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, 45)
-	expectedMB.EmitForResource(metadata.WithNamespace("test"), metadata.WithNodeName("Primary Node"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithNodeName("Primary Node"))
 
 	expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, 1, metadata.AttributeConnectionTypeClient)
 	expectedMB.EmitForResource(metadata.WithNodeName("Secondary Node"))
 
 	expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, 128, metadata.AttributeNamespaceComponentData)
-	expectedMB.EmitForResource(metadata.WithNamespace("test"), metadata.WithNodeName("Secondary Node"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithNodeName("Secondary Node"))
 
 	initialClient := mocks.NewAerospike(t)
 	initialClient.On("Info").Return(&model.NodeInfo{
@@ -201,7 +201,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		host:          "localhost",
 		port:          3000,
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
 		logger:        logger,
 		config: &Config{
 			CollectClusterMetrics: true,

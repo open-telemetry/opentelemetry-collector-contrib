@@ -66,7 +66,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		},
 		host: host,
 		port: int(port),
-		mb:   metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:   metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo),
 	}, nil
 }
 
@@ -247,5 +247,5 @@ func (r *aerospikeReceiver) emitNamespace(info *model.NamespaceInfo, now pcommon
 	if info.ScanUdfBgError != nil {
 		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanUdfBgError, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultError)
 	}
-	r.mb.EmitForResource(metadata.WithNamespace(info.Name), metadata.WithNodeName(info.Node))
+	r.mb.EmitForResource(metadata.WithAerospikeNamespace(info.Name), metadata.WithNodeName(info.Node))
 }

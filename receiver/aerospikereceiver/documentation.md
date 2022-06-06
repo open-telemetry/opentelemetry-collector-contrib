@@ -14,7 +14,7 @@ These are the metrics available for this scraper.
 | **aerospike.namespace.memory.usage** | Memory currently used by each component of the namespace Aggregate of Aerospike Metrics memory_used_data_bytes, memory_used_index_bytes, memory_used_set_index_bytes, memory_used_sindex_bytes | By | Sum(Int) | <ul> <li>namespace_component</li> </ul> |
 | **aerospike.namespace.scan.count** | Number of scan operations performed on the namespace Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_error, scan_basic_abort, scan_basic_complete, scan_basic_error, scan_ops_bg_abort, scan_ops_bg_complete, scan_ops_bg_error, scan_udf_bg_abort, scan_udf_bg_complete, scan_udf_bg_error | {scans} | Sum(Int) | <ul> <li>scan_type</li> <li>scan_result</li> </ul> |
 | **aerospike.node.connection.count** | Number of connections opened and closed to the node Aggregate of Aerospike Metrics client_connections_closed, client_connections_opened, fabric_connections_closed, fabric_connections_opened, heartbeat_connections_closed, heartbeat_connections_opened | {connections} | Sum(Int) | <ul> <li>connection_type</li> <li>connection_op</li> </ul> |
-| **aerospike.node.connection.open** | Number of open connections to the node Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat_connections | {connections} | Sum(Int) | <ul> <li>connection_type</li> </ul> |
+| **aerospike.node.connection.open** | Current number of open connections to the node Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat_connections | {connections} | Sum(Int) | <ul> <li>connection_type</li> </ul> |
 | **aerospike.node.memory.free** | Percentage of the node's memory which is still free Aerospike Metric system_free_mem_pct | % | Gauge(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
@@ -30,7 +30,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| namespace | Name of the Aerospike namespace | String |
+| aerospike.namespace | Name of the Aerospike namespace | String |
 | node_name | Name of the Aerospike node collected from | String |
 
 ## Metric attributes
