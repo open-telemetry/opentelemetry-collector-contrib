@@ -18,7 +18,6 @@ package adapter
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -104,11 +103,7 @@ func TestHandleConsumeError(t *testing.T) {
 
 func BenchmarkReadLine(b *testing.B) {
 
-	tempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		b.Errorf(err.Error())
-		b.FailNow()
-	}
+	tempDir := b.TempDir()
 
 	filePath := filepath.Join(tempDir, "bench.log")
 
@@ -153,11 +148,7 @@ func BenchmarkReadLine(b *testing.B) {
 
 func BenchmarkParseAndMap(b *testing.B) {
 
-	tempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		b.Errorf(err.Error())
-		b.FailNow()
-	}
+	tempDir := b.TempDir()
 
 	filePath := filepath.Join(tempDir, "bench.log")
 

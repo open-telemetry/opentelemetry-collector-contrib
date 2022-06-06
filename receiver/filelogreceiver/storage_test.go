@@ -37,8 +37,8 @@ func TestStorage(t *testing.T) {
 
 	ctx := context.Background()
 
-	logsDir := newTempDir(t)
-	storageDir := newTempDir(t)
+	logsDir := t.TempDir()
+	storageDir := t.TempDir()
 
 	f := NewFactory()
 
