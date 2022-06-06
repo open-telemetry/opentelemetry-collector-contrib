@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/common v0.34.0
 	github.com/prometheus/prometheus v0.36.0
 	github.com/shirou/gopsutil/v3 v3.22.5
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc
