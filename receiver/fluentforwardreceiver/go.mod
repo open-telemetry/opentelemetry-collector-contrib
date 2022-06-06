@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluent
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	github.com/tinylib/msgp v1.1.6
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
