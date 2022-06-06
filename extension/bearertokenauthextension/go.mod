@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/beare
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.47.0

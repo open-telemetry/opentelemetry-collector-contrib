@@ -5,13 +5,13 @@ go 1.17
 require (
 	cloud.google.com/go/compute v1.6.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.31.0
-	github.com/aws/aws-sdk-go v1.44.26
+	github.com/aws/aws-sdk-go v1.44.27
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.52.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc

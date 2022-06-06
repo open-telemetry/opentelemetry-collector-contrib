@@ -33,7 +33,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.15.5 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
