@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.52.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.52.0
-	go.opentelemetry.io/collector/pdata v0.52.0
+	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
 )
 
 require (
@@ -25,7 +25,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require go.uber.org/zap v1.21.0
