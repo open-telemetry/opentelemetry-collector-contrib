@@ -51,7 +51,7 @@
                            }
                         ]
                      },
-                     "unit": "connections"
+                     "unit": "{connections}"
                   },
                   {
                      "description": "The number of workers currently attached to the HTTP server.",
@@ -97,7 +97,7 @@
                            }
                         ]
                      },
-                     "unit": "workers"
+                     "unit": "{workers}"
                   },
                   {
                      "description": "The number of requests serviced by the HTTP server per second.",
@@ -120,7 +120,7 @@
                         ],
                         "isMonotonic": true
                      },
-                     "unit": "requests"
+                     "unit": "{requests}"
                   },
                   {
                      "description": "Total HTTP server traffic.",
@@ -351,7 +351,7 @@
                            }
                         ]
                      },
-                     "unit": "workers"
+                     "unit": "{workers}"
                   }
                ]
             }
