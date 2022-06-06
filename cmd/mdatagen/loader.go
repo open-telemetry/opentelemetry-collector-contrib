@@ -177,7 +177,7 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	m, err := cp.AsMap()
+	m, err := cp.AsConf()
 	if err != nil {
 		return metadata{}, err
 	}
