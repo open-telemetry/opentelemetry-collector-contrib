@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package filestorage
 
 import (
@@ -28,8 +27,7 @@ import (
 )
 
 func TestClientOperations(t *testing.T) {
-	tempDir := t.TempDir()
-	dbFile := filepath.Join(tempDir, "my_db")
+	dbFile := filepath.Join(t.TempDir(), "my_db")
 
 	client, err := newClient(dbFile, time.Second)
 	require.NoError(t, err)
@@ -194,7 +192,7 @@ func TestNewClientTransactionErrors(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create a problem
-			client.db.Update(tc.setup)
+			require.NoError(t, client.db.Update(tc.setup))
 
 			// Validate expected behavior
 			tc.validate(t, client)
@@ -230,7 +228,8 @@ func BenchmarkClientGet(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Get(ctx, testKey)
+		_, err = client.Get(ctx, testKey)
+		require.NoError(b, err)
 	}
 }
 
@@ -250,7 +249,7 @@ func BenchmarkClientGet100(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Batch(ctx, testEntries...)
+		require.NoError(b, client.Batch(ctx, testEntries...))
 	}
 }
 
@@ -267,7 +266,7 @@ func BenchmarkClientSet(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Set(ctx, testKey, testValue)
+		require.NoError(b, client.Set(ctx, testKey, testValue))
 	}
 }
 
@@ -287,7 +286,7 @@ func BenchmarkClientSet100(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Batch(ctx, testEntries...)
+		require.NoError(b, client.Batch(ctx, testEntries...))
 	}
 }
 
@@ -303,12 +302,12 @@ func BenchmarkClientDelete(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Delete(ctx, testKey)
+		require.NoError(b, client.Delete(ctx, testKey))
 	}
 }
 
 // check the performance impact of the max lifetime DB size
-// bbolt doesn't compact the freelist automatically, so there's a cost even if the data is deleted
+// bolt doesn't compact the freelist automatically, so there's a cost even if the data is deleted
 func BenchmarkClientSetLargeDB(b *testing.B) {
 	entrySizeInBytes := 1024 * 1024
 	entryCount := 2000
@@ -325,19 +324,19 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 
 	for n := 0; n < entryCount; n++ {
 		testKey = fmt.Sprintf("testKey-%d", n)
-		client.Set(ctx, testKey, entry)
+		require.NoError(b, client.Set(ctx, testKey, entry))
 	}
 
 	for n := 0; n < entryCount; n++ {
 		testKey = fmt.Sprintf("testKey-%d", n)
-		client.Delete(ctx, testKey)
+		require.NoError(b, client.Delete(ctx, testKey))
 	}
 
 	testKey = "testKey"
 	testValue := []byte("testValue")
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Set(ctx, testKey, testValue)
+		require.NoError(b, client.Set(ctx, testKey, testValue))
 	}
 }
 
@@ -359,7 +358,7 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 
 	for n := 0; n < entryCount; n++ {
 		testKey = fmt.Sprintf("testKey-%d", n)
-		client.Set(ctx, testKey, entry)
+		require.NoError(b, client.Set(ctx, testKey, entry))
 	}
 
 	err = client.Close(ctx)
