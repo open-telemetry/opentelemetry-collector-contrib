@@ -33,8 +33,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/atomic"
@@ -159,11 +159,11 @@ service:
 		Processors: processors,
 	}
 
-	fmp := filemapprovider.New()
+	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
 			Locations:    []string{confFile.Name()},
-			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
+			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
 		})
 	require.NoError(t, err)
 

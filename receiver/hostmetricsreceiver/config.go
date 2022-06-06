@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -47,7 +48,7 @@ func (cfg *Config) Validate() error {
 }
 
 // Unmarshal a config.Parser into the config struct.
-func (cfg *Config) Unmarshal(componentParser *config.Map) error {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		return nil
 	}

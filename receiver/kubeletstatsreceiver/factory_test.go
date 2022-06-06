@@ -28,9 +28,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -142,7 +142,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *config.Map
+		componentParser *confmap.Conf
 		intoCfg         *Config
 	}
 	tests := []struct {
@@ -160,14 +160,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "Fail initial unmarshal",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "metric_group unset",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg:         &Config{},
 			},
 			result: &Config{
@@ -177,7 +177,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "fail to unmarshall metric_groups",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg:         &Config{},
 			},
 			mockUnmarshallFailure: true,
@@ -186,7 +186,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "successfully override metric_group",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg: &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
