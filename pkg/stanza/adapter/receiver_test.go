@@ -102,10 +102,7 @@ func TestHandleConsumeError(t *testing.T) {
 }
 
 func BenchmarkReadLine(b *testing.B) {
-
-	tempDir := b.TempDir()
-
-	filePath := filepath.Join(tempDir, "bench.log")
+	filePath := filepath.Join(b.TempDir(), "bench.log")
 
 	pipelineYaml := fmt.Sprintf(`
 - type: file_input
@@ -147,10 +144,7 @@ func BenchmarkReadLine(b *testing.B) {
 }
 
 func BenchmarkParseAndMap(b *testing.B) {
-
-	tempDir := b.TempDir()
-
-	filePath := filepath.Join(tempDir, "bench.log")
+	filePath := filepath.Join(b.TempDir(), "bench.log")
 
 	fileInputYaml := fmt.Sprintf(`
 - type: file_input
