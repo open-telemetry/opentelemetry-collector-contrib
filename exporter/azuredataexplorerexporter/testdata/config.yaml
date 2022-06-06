@@ -1,0 +1,30 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  azuredataexplorer:
+    # Kusto cluster uri
+    cluster_name: "https://CLUSTER.kusto.windows.net"
+    # Client Id
+    client_id: "f80da32c-108c-415c-a19e-643f461a677a"
+    # The client secret for the client
+    client_secret: "17cc3f47-e95e-4045-af6c-ec2eea163cc6"
+    # The tenant
+    tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
+    # database for the logs
+    db_name: "oteldb"
+    # raw metric table name
+    metrics_table_name: "RawMetrics"
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [azuredataexplorer]
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [azuredataexplorer]
