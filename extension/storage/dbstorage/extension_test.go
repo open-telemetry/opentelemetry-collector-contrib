@@ -18,7 +18,6 @@ package dbstorage
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"sync"
 	"testing"
 
@@ -108,8 +107,7 @@ func TestExtensionIntegrity(t *testing.T) {
 }
 
 func newTestExtension(t *testing.T) storage.Extension {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)

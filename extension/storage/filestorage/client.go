@@ -52,6 +52,7 @@ func newClient(filePath string, timeout time.Duration) (*fileStorageClient, erro
 		return err
 	}
 	if err := db.Update(initBucket); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 
