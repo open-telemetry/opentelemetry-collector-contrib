@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.52.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
 	google.golang.org/protobuf v1.28.0
 )

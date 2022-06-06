@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.34.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.52.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.uber.org/multierr v1.8.0
@@ -17,7 +17,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/apache/thrift v0.16.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.26 // indirect
+	github.com/aws/aws-sdk-go v1.44.27 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.0-beta.1+incompatible // indirect
