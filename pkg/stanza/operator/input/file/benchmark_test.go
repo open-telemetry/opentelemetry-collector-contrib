@@ -144,7 +144,7 @@ func BenchmarkFileInput(b *testing.B) {
 		b.Run(bench.name, func(b *testing.B) {
 			rootDir := b.TempDir()
 
-			files := []*benchFile{}
+			var files []*benchFile
 			for _, path := range bench.paths {
 				file := openFile(b, filepath.Join(rootDir, path))
 				files = append(files, simpleTextFile(b, file))
