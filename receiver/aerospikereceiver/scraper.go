@@ -38,10 +38,12 @@ type aerospikeReceiver struct {
 	consumer      consumer.Metrics
 	host          string // host/IP of configured Aerospike node
 	port          int    // port of configured Aerospike node
-	clientFactory func(host string, port int, username, password string, timeout time.Duration) (aerospike, error)
+	clientFactory clientFactoryFunc
 	mb            *metadata.MetricsBuilder
 	logger        *zap.Logger
 }
+
+type clientFactoryFunc func(host string, port int, username, password string, timeout time.Duration) (aerospike, error)
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
@@ -86,7 +88,8 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 		r.logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
 		return r.mb.Emit(), err
 	}
-	r.emitNode(info, client, now)
+	r.emitNode(info, now)
+	r.scrapeNamespaces(info, client, now)
 
 	if r.config.CollectClusterMetrics {
 		r.logger.Debug("Collecting peer nodes")
@@ -106,7 +109,8 @@ func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, 
 		return
 	}
 
-	r.emitNode(info, client, now)
+	r.emitNode(info, now)
+	r.scrapeNamespaces(info, client, now)
 }
 
 // scrapeDiscoveredNode connects to a discovered Aerospike node and scrapes it using that connection
@@ -137,53 +141,60 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 	r.scrapeNode(nClient, now, errs)
 }
 
-// emitNode records node metrics and emits the resource. It collects namespace metrics for each namespace on the node
-//
-// The given client is used to collect namespace metrics, which is connected to a single node
-func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, client aerospike, now pcommon.Timestamp) {
-	if stats := info.Statistics; stats != nil {
-		if stats.ClientConnections != nil {
-			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.ClientConnections, metadata.AttributeConnectionTypeClient)
-		}
-		if stats.FabricConnections != nil {
-			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.FabricConnections, metadata.AttributeConnectionTypeFabric)
-		}
-		if stats.HeartbeatConnections != nil {
-			r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.HeartbeatConnections, metadata.AttributeConnectionTypeHeartbeat)
-		}
+// emitNode records node metrics and emits the resource. If statistics are missing in INFO, nothing is recorded
+func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, now pcommon.Timestamp) {
+	stats := info.Statistics
+	if stats == nil {
+		return
+	}
 
-		if stats.ClientConnectionsClosed != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsClosed, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpClose)
-		}
-		if stats.ClientConnectionsOpened != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsOpened, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpOpen)
-		}
-		if stats.FabricConnectionsClosed != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsClosed, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpClose)
-		}
-		if stats.FabricConnectionsOpened != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsOpened, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpOpen)
-		}
-		if stats.HeartbeatConnectionsClosed != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsClosed, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpClose)
-		}
-		if stats.HeartbeatConnectionsOpened != nil {
-			r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsOpened, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpOpen)
-		}
+	if stats.ClientConnections != nil {
+		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.ClientConnections, metadata.AttributeConnectionTypeClient)
+	}
+	if stats.FabricConnections != nil {
+		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.FabricConnections, metadata.AttributeConnectionTypeFabric)
+	}
+	if stats.HeartbeatConnections != nil {
+		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.HeartbeatConnections, metadata.AttributeConnectionTypeHeartbeat)
+	}
+
+	if stats.ClientConnectionsClosed != nil {
+		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsClosed, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpClose)
+	}
+	if stats.ClientConnectionsOpened != nil {
+		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsOpened, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpOpen)
+	}
+	if stats.FabricConnectionsClosed != nil {
+		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsClosed, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpClose)
+	}
+	if stats.FabricConnectionsOpened != nil {
+		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsOpened, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpOpen)
+	}
+	if stats.HeartbeatConnectionsClosed != nil {
+		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsClosed, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpClose)
+	}
+	if stats.HeartbeatConnectionsOpened != nil {
+		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsOpened, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpOpen)
 	}
 
 	r.mb.EmitForResource(metadata.WithNodeName(info.Name))
+}
 
-	if info.Namespaces != nil {
-		for _, n := range info.Namespaces {
-			nInfo, err := client.NamespaceInfo(n)
-			if err != nil {
-				r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
-				continue
-			}
-			nInfo.Node = info.Name
-			r.emitNamespace(nInfo, now)
+// scrapeNamespaces records metrics for all namespaces on a node
+// The given client is used to collect namespace metrics, which is connected to a single node
+func (r *aerospikeReceiver) scrapeNamespaces(info *model.NodeInfo, client aerospike, now pcommon.Timestamp) {
+	if info.Namespaces == nil {
+		return
+	}
+
+	for _, n := range info.Namespaces {
+		nInfo, err := client.NamespaceInfo(n)
+		if err != nil {
+			r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
+			continue
 		}
+		nInfo.Node = info.Name
+		r.emitNamespace(nInfo, now)
 	}
 }
 
