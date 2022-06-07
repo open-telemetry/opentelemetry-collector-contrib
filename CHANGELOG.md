@@ -25,6 +25,7 @@
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
+- `coreinternal/attraction`: Supports pattern for delete and hash attractions (#10822)
 
 ### 🧰 Bug fixes 🧰
 
