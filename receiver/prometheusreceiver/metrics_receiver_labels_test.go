@@ -32,6 +32,7 @@ const targetExternalLabels = `
 go_threads 19`
 
 func TestExternalLabels(t *testing.T) {
+	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10603")
 	targets := []*testData{
 		{
 			name: "target1",

@@ -5,16 +5,16 @@ go 1.17
 require (
 	cloud.google.com/go/compute v1.6.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.31.0
-	github.com/aws/aws-sdk-go v1.44.26
+	github.com/aws/aws-sdk-go v1.44.28
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.52.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.52.0
-	go.opentelemetry.io/collector/pdata v0.52.0
-	go.opentelemetry.io/collector/semconv v0.52.0
+	github.com/stretchr/testify v1.7.2
+	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	k8s.io/apimachinery v0.24.1
@@ -56,7 +56,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.5 // indirect
+	github.com/klauspost/compress v1.15.6 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
@@ -96,7 +96,7 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.24.1 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect

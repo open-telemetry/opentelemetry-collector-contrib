@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtre
 go 1.17
 
 require (
-	go.opentelemetry.io/collector v0.52.0
-	go.opentelemetry.io/collector/pdata v0.52.0
+	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
 )
 
 require github.com/rogpeppe/go-internal v1.8.1 // indirect
@@ -31,9 +31,9 @@ require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/klauspost/compress v1.15.5 // indirect
+	github.com/klauspost/compress v1.15.6 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
@@ -51,7 +51,7 @@ require (
 	github.com/stretchr/objx v0.3.0 // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest

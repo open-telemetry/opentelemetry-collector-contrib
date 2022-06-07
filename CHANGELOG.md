@@ -8,6 +8,7 @@
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
+- `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
 
 ### 🚩 Deprecations 🚩
 
@@ -20,9 +21,11 @@
 
 ### 💡 Enhancements 💡
 
+- `awsemfexporter`: Add min and max support for histograms (#10577)
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
 
 ### 🧰 Bug fixes 🧰
 
@@ -34,6 +37,8 @@
 - `tailsamplingprocessor`: Fix composite sampler with inverse policy
 - `awsprometheusremotewriteexporter`: Fix signing of empty request bodies. (#10578)
 - `sigv4authextension`: Fix signing of empty request bodies. (#10578)
+- `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
+- `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 - `apachereceiver`: Update units to follow semconv (#10587)
 
 ## v0.52.0
@@ -50,6 +55,7 @@
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 - `expvarreceiver`: Add implementation of new receiver. (#10183)
+- `telemetrygen`: Started implementing an upgraded version of `tracegen` generating traces and metrics (#9597)
 
 ### 💡 Enhancements 💡
 

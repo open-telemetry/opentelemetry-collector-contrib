@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.26
+	github.com/aws/aws-sdk-go v1.44.28
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
@@ -12,10 +12,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.52.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.52.0
-	go.opentelemetry.io/collector/pdata v0.52.0
-	go.opentelemetry.io/collector/semconv v0.52.0
+	github.com/stretchr/testify v1.7.2
+	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc
 	go.uber.org/zap v1.21.0
 	google.golang.org/protobuf v1.28.0
 )
@@ -49,8 +49,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.47.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ../../internal/aws/metrics

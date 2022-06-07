@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -99,7 +100,7 @@ func tagsDiffer(cfgTags []string, futureTags []string) bool {
 // warnUseOfEnvVars returns warnings related to automatic environment variable detection.
 // Right now, we automatically get the value for e.g. the API key from DD_API_KEY, even if
 // the user is not doing `api.key: ${DD_API_KEY}`. We are going to remove this functionality.
-func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
+func warnUseOfEnvVars(configMap *confmap.Conf, cfg *Config) (warnings []error) {
 	// We don't see the raw YAML contents from our exporter so, to compare with the new default,
 	// we unmarshal the config map on the future default config and compare the two structs.
 	// Any differences will be due to the change in default configuration.
