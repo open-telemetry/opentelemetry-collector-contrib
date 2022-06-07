@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,19 +47,24 @@ import (
 )
 
 var jaegerAgent = config.NewComponentIDWithName(typeStr, "agent_test")
-
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
+var retryLimit = 3
 
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10368")
-	port := testutil.GetAvailablePort(t)
-	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &configuration{
-		AgentCompactThriftPort:   int(port),
-		AgentCompactThriftConfig: DefaultServerConfigUDP(),
-	})
+	for retries := 1; retries <= retryLimit; retries++ {
+		port := testutil.GetAvailablePort(t)
+		addrForClient := fmt.Sprintf(":%d", port)
+		err := testJaegerAgent(t, addrForClient, &configuration{
+			AgentCompactThriftPort:   int(port),
+			AgentCompactThriftConfig: DefaultServerConfigUDP(),
+		})
+		if err == nil || !strings.HasSuffix(err.Error(), "bind: address already in use") {
+			require.NoError(t, err)
+			break
+		}
+		if retries == retryLimit {
+			assert.Error(t, err, "Failed to allocate free port")
+		}
+	}
 }
 
 func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
@@ -76,28 +82,43 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10369")
-	port := testutil.GetAvailablePort(t)
-	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &configuration{
-		AgentBinaryThriftPort:   int(port),
-		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
-	})
+	for retries := 1; retries <= retryLimit; retries++ {
+		port := testutil.GetAvailablePort(t)
+		addrForClient := fmt.Sprintf(":%d", port)
+		err := testJaegerAgent(t, addrForClient, &configuration{
+			AgentBinaryThriftPort:   int(port),
+			AgentBinaryThriftConfig: DefaultServerConfigUDP(),
+		})
+		if err == nil || !strings.HasSuffix(err.Error(), "bind: address already in use") {
+			require.NoError(t, err)
+			break
+		}
+		if retries == retryLimit {
+			assert.Error(t, err, "Failed to allocate free port")
+		}
+	}
 }
 
 func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10370")
-	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
-	port := testutil.GetAvailablePort(t)
-
-	config := &configuration{
-		AgentBinaryThriftPort:   int(port),
-		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
+	var jr *jReceiver
+	var port uint16
+	for retries := 1; retries <= retryLimit; retries++ {
+		port = testutil.GetAvailablePort(t)
+		config := &configuration{
+			AgentBinaryThriftPort:   int(port),
+			AgentBinaryThriftConfig: DefaultServerConfigUDP(),
+		}
+		set := componenttest.NewNopReceiverCreateSettings()
+		jr = newJaegerReceiver(jaegerAgent, config, nil, set)
+		err := jr.startAgent(componenttest.NewNopHost())
+		if err == nil || !strings.HasSuffix(err.Error(), "bind: address already in use") {
+			require.NoError(t, err, "Start failed")
+			break
+		}
+		if retries == retryLimit {
+			assert.Error(t, err, "Failed to allocate free port")
+		}
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
-
-	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
@@ -192,7 +213,7 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 }
 
-func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
+func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) error {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
 	set := componenttest.NewNopReceiverCreateSettings()
@@ -207,6 +228,9 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 		} else {
 			time.Sleep(50 * time.Millisecond)
 		}
+	}
+	if err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") {
+		return err
 	}
 	require.NoError(t, err, "Start failed")
 
@@ -229,6 +253,8 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	gotTraces := sink.AllTraces()
 	require.Equal(t, 1, len(gotTraces))
 	assert.EqualValues(t, td, gotTraces[0])
+
+	return nil
 }
 
 func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
