@@ -35,6 +35,8 @@
 - `tailsamplingprocessor`: Fix composite sampler with inverse policy
 - `awsprometheusremotewriteexporter`: Fix signing of empty request bodies. (#10578)
 - `sigv4authextension`: Fix signing of empty request bodies. (#10578)
+- `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
+- `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 
 ## v0.52.0
 
