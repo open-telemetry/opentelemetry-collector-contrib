@@ -25,8 +25,8 @@ A value of zero will ignore transaction sizes.
 ### Rebound (online) compaction
 
 For rebound compaction, there are two additional parameters available:
-- `compaction.rebound_size_below_mib` (default: 10) - specifies the maximum size of actually allocated data for compaction to happen
-- `compaction.rebound_total_size_above_mib` (default: 100) - specifies the minimum overall size of the allocated space (both actually used and free pages)
+- `compaction.rebound_size_below_mib` (default: 10) - specifies the size that actually allocated data must drop below before rebound compaction will begin
+- `compaction.rebound_total_size_above_mib` (default: 100) - specifies the minimum overall size of the allocated space (both actually used and free pages) that must be reached before rebound compaction will be considered
 - `compaction.check_interval` (default: 5s) - specifies how frequently the conditions for compaction are being checked
 
 The idea behind rebound compaction is that in certain workloads (e.g. [persistent queue](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#persistent-queue)) the storage might grow significantly (e.g. when the exporter is unable to send the data due to network problem) after which it is being emptied as the underlying issue is gone (e.g. network connectivity is back). This leaves a significant space that needs to be reclaimed (also, this space is reported in memory usage as mmap() is used underneath). The optimal conditions for this to happen online is after the storage is largely drained, which is being controlled by `rebound_size_below_mib`. To make sure this is not too sensitive, there's also `rebound_total_size_above_mib` which specifies the total claimed space size that must be met for online compaction to even be considered. Consider following diagram for an example of meeting the rebound (online) compaction conditions.
