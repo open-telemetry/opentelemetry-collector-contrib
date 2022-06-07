@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
@@ -43,11 +44,12 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 		map[string]provider.HostnameProvider{
 			"config": provider.Config(configHostname),
 			"docker": dockerProvider,
+			"azure":  azure.NewProvider(),
 			"ec2":    ec2.NewProvider(set.Logger),
 			"gcp":    gcp.NewProvider(),
 			"system": system.NewProvider(set.Logger),
 		},
-		[]string{"config", "docker", "ec2", "gcp", "system"},
+		[]string{"config", "docker", "azure", "ec2", "gcp", "system"},
 	)
 
 	if err != nil {
