@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import mock
+from unittest.mock import Mock, patch
 
 import pymysql
 
@@ -22,15 +22,24 @@ from opentelemetry.sdk import resources
 from opentelemetry.test.test_base import TestBase
 
 
+def mock_connect(*args, **kwargs):
+    class MockConnection:
+        def cursor(self):
+            # pylint: disable=no-self-use
+            return Mock()
+
+    return MockConnection()
+
+
 class TestPyMysqlIntegration(TestBase):
     def tearDown(self):
         super().tearDown()
         with self.disable_logging():
             PyMySQLInstrumentor().uninstrument()
 
-    @mock.patch("pymysql.connect")
+    @patch("pymysql.connect", new=mock_connect)
     # pylint: disable=unused-argument
-    def test_instrumentor(self, mock_connect):
+    def test_instrumentor(self):
         PyMySQLInstrumentor().instrument()
 
         cnx = pymysql.connect(database="test")
@@ -58,9 +67,9 @@ class TestPyMysqlIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
 
-    @mock.patch("pymysql.connect")
+    @patch("pymysql.connect", new=mock_connect)
     # pylint: disable=unused-argument
-    def test_custom_tracer_provider(self, mock_connect):
+    def test_custom_tracer_provider(self):
         resource = resources.Resource.create({})
         result = self.create_tracer_provider(resource=resource)
         tracer_provider, exporter = result
@@ -78,9 +87,9 @@ class TestPyMysqlIntegration(TestBase):
 
         self.assertIs(span.resource, resource)
 
-    @mock.patch("pymysql.connect")
+    @patch("pymysql.connect", new=mock_connect)
     # pylint: disable=unused-argument
-    def test_instrument_connection(self, mock_connect):
+    def test_instrument_connection(self):
         cnx = pymysql.connect(database="test")
         query = "SELECT * FROM test"
         cursor = cnx.cursor()
@@ -96,9 +105,9 @@ class TestPyMysqlIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
 
-    @mock.patch("pymysql.connect")
+    @patch("pymysql.connect", new=mock_connect)
     # pylint: disable=unused-argument
-    def test_uninstrument_connection(self, mock_connect):
+    def test_uninstrument_connection(self):
         PyMySQLInstrumentor().instrument()
         cnx = pymysql.connect(database="test")
         query = "SELECT * FROM test"
