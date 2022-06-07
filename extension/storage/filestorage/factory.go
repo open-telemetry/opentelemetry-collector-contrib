@@ -28,10 +28,10 @@ const typeStr config.Type = "file_storage"
 const (
 	// use default bbolt value
 	// https://github.com/etcd-io/bbolt/blob/d5db64bdbfdee1cb410894605f42ffef898f395d/cmd/bbolt/main.go#L1955
-	defaultMaxTransactionSize  = 65536
-	defaultReboundSizeBelowMib = 10
-	defaultReboundSizeAboveMib = 100
-	defaultCompactionInterval  = time.Second * 5
+	defaultMaxTransactionSize         = 65536
+	defaultReboundTriggerThresholdMib = 10
+	defaultReboundNeededThresholdMib  = 100
+	defaultCompactionInterval         = time.Second * 5
 )
 
 // NewFactory creates a factory for HostObserver extension.
@@ -47,13 +47,13 @@ func createDefaultConfig() config.Extension {
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Directory:         getDefaultDirectory(),
 		Compaction: &CompactionConfig{
-			Directory:                getDefaultDirectory(),
-			OnStart:                  false,
-			OnRebound:                false,
-			MaxTransactionSize:       defaultMaxTransactionSize,
-			ReboundSizeBelowMiB:      defaultReboundSizeBelowMib,
-			ReboundTotalSizeAboveMiB: defaultReboundSizeAboveMib,
-			CheckInterval:            defaultCompactionInterval,
+			Directory:                  getDefaultDirectory(),
+			OnStart:                    false,
+			OnRebound:                  false,
+			MaxTransactionSize:         defaultMaxTransactionSize,
+			ReboundNeededThresholdMiB:  defaultReboundTriggerThresholdMib,
+			ReboundTriggerThresholdMiB: defaultReboundNeededThresholdMib,
+			CheckInterval:              defaultCompactionInterval,
 		},
 		Timeout: time.Second,
 	}

@@ -267,8 +267,8 @@ func (c *fileStorageClient) shouldCompact() bool {
 		zap.Int64("totalSize", totalSize),
 		zap.Int64("dataSize", dataSize))
 
-	if dataSize > c.compactionCfg.ReboundSizeBelowMiB*1048576 ||
-		totalSize < c.compactionCfg.ReboundTotalSizeAboveMiB*1048576 {
+	if dataSize > c.compactionCfg.ReboundNeededThresholdMiB*1048576 ||
+		totalSize < c.compactionCfg.ReboundTriggerThresholdMiB*1048576 {
 		return false
 	}
 

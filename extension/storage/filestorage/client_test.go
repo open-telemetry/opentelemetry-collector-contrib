@@ -230,10 +230,10 @@ func TestClientReboundCompaction(t *testing.T) {
 
 	logger, _ := zap.NewDevelopment()
 	client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
-		OnRebound:                true,
-		CheckInterval:            checkInterval,
-		ReboundSizeBelowMiB:      1,
-		ReboundTotalSizeAboveMiB: 4,
+		OnRebound:                  true,
+		CheckInterval:              checkInterval,
+		ReboundNeededThresholdMiB:  1,
+		ReboundTriggerThresholdMiB: 4,
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -287,10 +287,10 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	checkInterval := time.Millisecond
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{
-		OnRebound:                true,
-		CheckInterval:            checkInterval,
-		ReboundSizeBelowMiB:      1,
-		ReboundTotalSizeAboveMiB: 5,
+		OnRebound:                  true,
+		CheckInterval:              checkInterval,
+		ReboundNeededThresholdMiB:  1,
+		ReboundTriggerThresholdMiB: 5,
 	})
 	require.NoError(t, err)
 

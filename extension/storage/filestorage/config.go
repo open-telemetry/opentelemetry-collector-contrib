@@ -47,10 +47,12 @@ type CompactionConfig struct {
 	OnRebound bool `mapstructure:"on_rebound,omitempty"`
 	// Directory specifies where the temporary files for compaction will be stored
 	Directory string `mapstructure:"directory,omitempty"`
-	// ReboundSizeBelowMiB specifies the maximum actually used size for online compaction to happen
-	ReboundSizeBelowMiB int64 `mapstructure:"rebound_size_below_mib"`
-	// ReboundTotalSizeAboveMiB specifies the minimum total allocated size (both used and empty) for online compaction
-	ReboundTotalSizeAboveMiB int64 `mapstructure:"rebound_total_size_above_mib"`
+	// ReboundNeededThresholdMiB specifies the minimum total allocated size (both used and empty)
+	// to mark the need for online compaction
+	ReboundNeededThresholdMiB int64 `mapstructure:"rebound_needed_threshold_mib"`
+	// ReboundTriggerThresholdMiB is used when compaction is marked as needed. When allocated data size drops
+	// below the specified value, the compactions starts and the flag marking need for compaction is cleared
+	ReboundTriggerThresholdMiB int64 `mapstructure:"rebound_trigger_threshold_mib"`
 	// MaxTransactionSize specifies the maximum number of items that might be present in single compaction iteration
 	MaxTransactionSize int64 `mapstructure:"max_transaction_size,omitempty"`
 	// CheckInterval specifies frequency of compaction check
