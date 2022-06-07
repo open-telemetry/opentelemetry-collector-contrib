@@ -34,6 +34,13 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 		Decision    Decision
 	}{
 		{
+			"Only one trace, less than the threshold",
+			[]int32{
+				1,
+			},
+			NotSampled,
+		},
+		{
 			"Less spans than the threshold",
 			[]int32{
 				1, 1, 1,
