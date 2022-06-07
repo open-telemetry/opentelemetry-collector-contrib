@@ -73,20 +73,24 @@ func TestElasticsearchIntegration(t *testing.T) {
 		actualMtrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.7_9_3.json")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
+		//expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		//require.NoError(t, err)
 
 		//override the attribute to the expected one
-		for i := 0; i < actualMtrics.ResourceMetrics().Len(); i++ {
-			if _, ok := actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Get("elasticsearch.node.name"); ok {
-				actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Remove("elasticsearch.node.name")
-				actualMtrics.ResourceMetrics().At(i).Resource().Attributes().InsertString("elasticsearch.node.name", "917e13e55eed")
-			}
-			if _, ok := actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Get("elasticsearch.node.name"); ok {
-				actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Remove("elasticsearch.node.name")
-				actualMtrics.ResourceMetrics().At(i).Resource().Attributes().InsertString("elasticsearch.node.name", "917e13e55eed")
-			}
-		}
+		//for i := 0; i < actualMtrics.ResourceMetrics().Len(); i++ {
+		//	if _, ok := actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Get("elasticsearch.node.name"); ok {
+		//		actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Remove("elasticsearch.node.name")
+		//		actualMtrics.ResourceMetrics().At(i).Resource().Attributes().InsertString("elasticsearch.node.name", "917e13e55eed")
+		//	}
+		//}
+
+		//actualMtricsFile := filepath.Join("testdata", "integration", "actual.7_9_3.json")
+
+		err = golden.WriteMetrics(expectedFile, actualMtrics)
+		require.NoError(t, err)
+
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
 
 		err = scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues())
 		require.NoError(t, err)
