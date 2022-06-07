@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
@@ -366,7 +365,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		state.buf.Reset()
 
 		// Writing truncated bytes back to buffer.
-		state.tmpBuf.WriteTo(state.buf)
+		_, _ = state.tmpBuf.WriteTo(state.buf)
 
 		if state.buf.Len() > 0 {
 			// This means that the current record had overflown the buffer and was not sent
@@ -433,7 +432,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		state.buf.Reset()
 
 		// Writing truncated bytes back to buffer.
-		state.tmpBuf.WriteTo(state.buf)
+		_, _ = state.tmpBuf.WriteTo(state.buf)
 
 		if state.buf.Len() > 0 {
 			// This means that the current record had overflown the buffer and was not sent
@@ -498,7 +497,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		state.buf.Reset()
 
 		// Writing truncated bytes back to buffer.
-		state.tmpBuf.WriteTo(state.buf)
+		_, _ = state.tmpBuf.WriteTo(state.buf)
 
 		if state.buf.Len() > 0 {
 			// This means that the current record had overflown the buffer and was not sent
@@ -612,7 +611,7 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[s
 
 	err = splunk.HandleHTTPCode(resp)
 
-	io.Copy(ioutil.Discard, resp.Body)
+	_, _ = io.Copy(ioutil.Discard, resp.Body)
 
 	return err
 }
