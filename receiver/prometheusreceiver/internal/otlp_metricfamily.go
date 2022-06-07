@@ -382,7 +382,7 @@ func (mf *metricFamily) ToMetric(metrics *pmetric.MetricSlice) (int, int) {
 		return mf.droppedTimeseries, mf.droppedTimeseries
 	}
 
-	metric.CopyTo(metrics.AppendEmpty())
+	metric.MoveTo(metrics.AppendEmpty())
 
 	// note: the total number of points is the number of points+droppedTimeseries.
 	return pointCount + mf.droppedTimeseries, mf.droppedTimeseries
