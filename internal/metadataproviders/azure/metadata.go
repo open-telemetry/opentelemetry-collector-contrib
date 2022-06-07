@@ -15,7 +15,7 @@
 // This file contains code based on the Azure IMDS samples, https://github.com/microsoft/azureimds
 // under the Apache License 2.0
 
-package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
+package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ const (
 	metadataEndpoint = "http://169.254.169.254/metadata/instance/compute"
 )
 
-// Provider gets metadata from the Azure IMDS
+// Provider gets metadata from the Azure IMDS.
 type Provider interface {
 	Metadata(context.Context) (*ComputeMetadata, error)
 }

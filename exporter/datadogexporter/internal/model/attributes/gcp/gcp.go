@@ -28,9 +28,37 @@ type HostInfo struct {
 	GCPTags     []string
 }
 
+func getGCPIntegrationHostname(attrs pcommon.Map) (string, bool) {
+	hostName, ok := attrs.Get(conventions.AttributeHostName)
+	if !ok {
+		// We need the hostname.
+		return "", false
+	}
+
+	name := hostName.StringVal()
+	if strings.Count(name, ".") >= 3 {
+		// Unless the host.name attribute has been tampered with, use the same logic as the Agent to
+		// extract the hostname: https://github.com/DataDog/datadog-agent/blob/7.36.0/pkg/util/cloudproviders/gce/gce.go#L106
+		name = strings.SplitN(name, ".", 2)[0]
+	}
+
+	cloudAccount, ok := attrs.Get(conventions.AttributeCloudAccountID)
+	if !ok {
+		// We need the project ID.
+		return "", false
+	}
+
+	alias := fmt.Sprintf("%s.%s", name, cloudAccount.StringVal())
+	return alias, true
+}
+
 // HostnameFromAttributes gets a valid hostname from labels
 // if available
-func HostnameFromAttributes(attrs pcommon.Map) (string, bool) {
+func HostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
+	if usePreviewRules {
+		return getGCPIntegrationHostname(attrs)
+	}
+
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostName.StringVal(), true
 	}
@@ -40,7 +68,7 @@ func HostnameFromAttributes(attrs pcommon.Map) (string, bool) {
 
 // HostInfoFromAttributes gets GCP host info from attributes following
 // OpenTelemetry semantic conventions
-func HostInfoFromAttributes(attrs pcommon.Map) (hostInfo *HostInfo) {
+func HostInfoFromAttributes(attrs pcommon.Map, usePreviewRules bool) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
 	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
@@ -59,18 +87,8 @@ func HostInfoFromAttributes(attrs pcommon.Map) (hostInfo *HostInfo) {
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("project:%s", cloudAccount.StringVal()))
 	}
 
-	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
-		if cloudAccount, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
-			name := hostName.StringVal()
-			if strings.Count(name, ".") >= 3 {
-				// Unless the host.name attribute has been tampered with, use the same logic as the Agent to
-				// extract the hostname: https://github.com/DataDog/datadog-agent/blob/7.36.0/pkg/util/cloudproviders/gce/gce.go#L106
-				name = strings.SplitN(name, ".", 2)[0]
-			}
-			alias := fmt.Sprintf("%s.%s", name, cloudAccount.StringVal())
-			hostInfo.HostAliases = append(hostInfo.HostAliases, alias)
-		}
-
+	if alias, ok := getGCPIntegrationHostname(attrs); ok && !usePreviewRules {
+		hostInfo.HostAliases = append(hostInfo.HostAliases, alias)
 	}
 
 	return

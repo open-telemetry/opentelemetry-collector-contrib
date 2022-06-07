@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -503,7 +504,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) Unmarshal(configMap *config.Map) error {
+func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if err := handleRemovedSettings(configMap); err != nil {
 		return err
 	}

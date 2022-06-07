@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
+package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 
 import (
 	"context"
@@ -20,10 +20,10 @@ import (
 
 	"github.com/docker/docker/client"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
 
-type dockerMetadata interface {
+type Provider interface {
 	// Hostname returns the OS hostname
 	Hostname(context.Context) (string, error)
 
@@ -31,20 +31,20 @@ type dockerMetadata interface {
 	OSType(context.Context) (string, error)
 }
 
-type dockerMetadataImpl struct {
+type dockerProviderImpl struct {
 	dockerClient *client.Client
 }
 
-func newDockerMetadata(opts ...client.Opt) (dockerMetadata, error) {
+func NewProvider(opts ...client.Opt) (Provider, error) {
 	opts = append(opts, client.FromEnv, client.WithAPIVersionNegotiation())
 	cli, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize Docker client: %w", err)
 	}
-	return &dockerMetadataImpl{dockerClient: cli}, nil
+	return &dockerProviderImpl{dockerClient: cli}, nil
 }
 
-func (d *dockerMetadataImpl) Hostname(ctx context.Context) (string, error) {
+func (d *dockerProviderImpl) Hostname(ctx context.Context) (string, error) {
 	info, err := d.dockerClient.Info(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch Docker information: %w", err)
@@ -52,7 +52,7 @@ func (d *dockerMetadataImpl) Hostname(ctx context.Context) (string, error) {
 	return info.Name, nil
 }
 
-func (d *dockerMetadataImpl) OSType(ctx context.Context) (string, error) {
+func (d *dockerProviderImpl) OSType(ctx context.Context) (string, error) {
 	info, err := d.dockerClient.Info(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch Docker OS type: %w", err)

@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
@@ -171,7 +172,7 @@ func loadConfig(bytes []byte) (Config, error) {
 		return cfg, err
 	}
 
-	if err := config.NewMapFromStringMap(data).UnmarshalExact(&cfg); err != nil {
+	if err := confmap.NewFromStringMap(data).UnmarshalExact(&cfg); err != nil {
 		return cfg, fmt.Errorf("failed to load default exclude metrics: %v", err)
 	}
 

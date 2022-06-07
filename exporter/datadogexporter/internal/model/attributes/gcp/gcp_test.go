@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/testutils"
@@ -33,23 +34,8 @@ const (
 	testBadHostname   = "badhostname"
 )
 
-func TestHostnameFromAttributes(t *testing.T) {
-	attrs := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
-		conventions.AttributeHostID:        testHostID,
-		conventions.AttributeHostName:      testHostname,
-	})
-	hostname, ok := HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testHostname)
-
-	attrs = testutils.NewAttributeMap(map[string]string{})
-	_, ok = HostnameFromAttributes(attrs)
-	assert.False(t, ok)
-}
-
-func TestHostInfoFromAttributes(t *testing.T) {
-	attrs := testutils.NewAttributeMap(map[string]string{
+var (
+	testFullMap = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 		conventions.AttributeHostID:                testHostID,
 		conventions.AttributeHostName:              testHostname,
@@ -57,14 +43,8 @@ func TestHostInfoFromAttributes(t *testing.T) {
 		conventions.AttributeHostType:              testHostType,
 		conventions.AttributeCloudAccountID:        testCloudAccount,
 	})
-	hostInfo := HostInfoFromAttributes(attrs)
-	assert.ElementsMatch(t, hostInfo.HostAliases, []string{fmt.Sprintf("%s.%s", testShortHostname, testCloudAccount)})
-	assert.ElementsMatch(t, hostInfo.GCPTags,
-		[]string{"instance-id:hostID", "zone:zone", "instance-type:machineType", "project:projectID"})
-}
 
-func TestHostInfoFromAttributesBadHostname(t *testing.T) {
-	attrs := testutils.NewAttributeMap(map[string]string{
+	testFullBadMap = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 		conventions.AttributeHostID:                testHostID,
 		conventions.AttributeHostName:              testBadHostname,
@@ -72,8 +52,75 @@ func TestHostInfoFromAttributesBadHostname(t *testing.T) {
 		conventions.AttributeHostType:              testHostType,
 		conventions.AttributeCloudAccountID:        testCloudAccount,
 	})
-	hostInfo := HostInfoFromAttributes(attrs)
-	assert.ElementsMatch(t, hostInfo.HostAliases, []string{fmt.Sprintf("%s.%s", testBadHostname, testCloudAccount)})
-	assert.ElementsMatch(t, hostInfo.GCPTags,
-		[]string{"instance-id:hostID", "zone:zone", "instance-type:machineType", "project:projectID"})
+
+	testGCPIntegrationHostname    = fmt.Sprintf("%s.%s", testShortHostname, testCloudAccount)
+	testGCPIntegrationBadHostname = fmt.Sprintf("%s.%s", testBadHostname, testCloudAccount)
+)
+
+func TestInfoFromAttributes(t *testing.T) {
+	tags := []string{"instance-id:hostID", "zone:zone", "instance-type:machineType", "project:projectID"}
+	tests := []struct {
+		name       string
+		attrs      pcommon.Map
+		usePreview bool
+
+		ok          bool
+		hostname    string
+		hostAliases []string
+		gcpTags     []string
+	}{
+		{
+			name:        "no preview",
+			attrs:       testFullMap,
+			ok:          true,
+			hostname:    testHostname,
+			hostAliases: []string{testGCPIntegrationHostname},
+			gcpTags:     tags,
+		},
+		{
+			name:  "no hostname, no preview",
+			attrs: testutils.NewAttributeMap(map[string]string{}),
+		},
+		{
+			name:       "preview",
+			attrs:      testFullMap,
+			usePreview: true,
+			ok:         true,
+			hostname:   testGCPIntegrationHostname,
+			gcpTags:    tags,
+		},
+		{
+			name:        "bad hostname, no preview",
+			attrs:       testFullBadMap,
+			ok:          true,
+			hostname:    testBadHostname,
+			hostAliases: []string{testGCPIntegrationBadHostname},
+			gcpTags:     tags,
+		},
+		{
+			name:       "bad hostname, preview",
+			attrs:      testFullBadMap,
+			usePreview: true,
+			ok:         true,
+			hostname:   testGCPIntegrationBadHostname,
+			gcpTags:    tags,
+		},
+		{
+			name:       "no hostname, preview",
+			attrs:      testutils.NewAttributeMap(map[string]string{}),
+			usePreview: true,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			hostname, ok := HostnameFromAttributes(testInstance.attrs, testInstance.usePreview)
+			assert.Equal(t, testInstance.ok, ok)
+			assert.Equal(t, testInstance.hostname, hostname)
+
+			hostInfo := HostInfoFromAttributes(testInstance.attrs, testInstance.usePreview)
+			assert.ElementsMatch(t, testInstance.hostAliases, hostInfo.HostAliases)
+			assert.ElementsMatch(t, testInstance.gcpTags, hostInfo.GCPTags)
+		})
+	}
 }
