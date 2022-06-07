@@ -42,6 +42,7 @@ type fileStorageClient struct {
 	compactionCfg   *CompactionConfig
 	openTimeout     time.Duration
 	cancel          context.CancelFunc
+	closed          bool
 }
 
 func bboltOptions(timeout time.Duration) *bbolt.Options {
@@ -134,9 +135,13 @@ func (c *fileStorageClient) Batch(ctx context.Context, ops ...storage.Operation)
 
 // Close will close the database
 func (c *fileStorageClient) Close(_ context.Context) error {
+	c.compactionMutex.Lock()
+	defer c.compactionMutex.Unlock()
+
 	if c.cancel != nil {
 		c.cancel()
 	}
+	c.closed = true
 	return c.db.Close()
 }
 
@@ -169,6 +174,13 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	// use temporary file as compaction target
 	options := bboltOptions(timeout)
 
+	c.compactionMutex.Lock()
+	defer c.compactionMutex.Unlock()
+	if c.closed {
+		c.logger.Debug("skipping compaction since database is already closed")
+		return nil
+	}
+
 	c.logger.Debug("starting compaction",
 		zap.String(directoryKey, c.db.Path()),
 		zap.String(tempDirectoryKey, file.Name()))
@@ -179,8 +191,6 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		return err
 	}
 
-	c.compactionMutex.Lock()
-	defer c.compactionMutex.Unlock()
 	compactionStart := time.Now()
 
 	if err = bbolt.Compact(compactedDb, c.db, maxTransactionSize); err != nil {

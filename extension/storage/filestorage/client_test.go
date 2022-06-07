@@ -17,6 +17,7 @@ package filestorage
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -192,6 +193,9 @@ func TestNewClientTransactionErrors(t *testing.T) {
 
 			client, err := newClient(zap.NewNop(), dbFile, timeout, &CompactionConfig{})
 			require.NoError(t, err)
+			t.Cleanup(func() {
+				require.NoError(t, client.Close(context.TODO()))
+			})
 
 			// Create a problem
 			require.NoError(t, client.db.Update(tc.setup))
@@ -219,7 +223,7 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 }
 
 func TestClientReboundCompaction(t *testing.T) {
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	checkInterval := time.Second
@@ -232,6 +236,9 @@ func TestClientReboundCompaction(t *testing.T) {
 		ReboundTotalSizeAboveMiB: 4,
 	})
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(context.TODO()))
+	})
 
 	// 1. Fill up the database
 	position := int64(0)
@@ -274,7 +281,7 @@ func TestClientReboundCompaction(t *testing.T) {
 }
 
 func TestClientConcurrentCompaction(t *testing.T) {
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	checkInterval := time.Millisecond
@@ -287,8 +294,12 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	repeats := 5
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(context.TODO()))
+	})
+
 	var wg sync.WaitGroup
+	repeats := 5
 	ctx := context.Background()
 
 	clientOperationsThread := func(id int) {
@@ -336,6 +347,9 @@ func BenchmarkClientGet(b *testing.B) {
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 	testKey := "testKey"
@@ -353,6 +367,9 @@ func BenchmarkClientGet100(b *testing.B) {
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 
@@ -373,6 +390,9 @@ func BenchmarkClientSet(b *testing.B) {
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 	testKey := "testKey"
@@ -390,7 +410,9 @@ func BenchmarkClientSet100(b *testing.B) {
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
-
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 	ctx := context.Background()
 
 	testEntries := make([]storage.Operation, 100)
@@ -410,6 +432,9 @@ func BenchmarkClientDelete(b *testing.B) {
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 	testKey := "testKey"
@@ -433,6 +458,9 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 
@@ -467,6 +495,9 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 
@@ -496,26 +527,29 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 	entry := make([]byte, entrySizeInBytes)
 	var testKey string
 
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 
 	for n := 0; n < entryCount; n++ {
 		testKey = fmt.Sprintf("testKey-%d", n)
-		client.Set(ctx, testKey, entry)
+		require.NoError(b, client.Set(ctx, testKey, entry))
 	}
 
 	// Leave one key in the db
 	for n := 0; n < entryCount-1; n++ {
 		testKey = fmt.Sprintf("testKey-%d", n)
-		client.Delete(ctx, testKey)
+		require.NoError(b, client.Delete(ctx, testKey))
 	}
 
-	client.Close(ctx)
+	require.NoError(b, client.Close(ctx))
 
 	b.ResetTimer()
 	b.StopTimer()
@@ -526,7 +560,7 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{})
 		require.NoError(b, err)
 		b.StartTimer()
-		client.Compact(tempDir, time.Second, 65536)
+		require.NoError(b, client.Compact(tempDir, time.Second, 65536))
 		b.StopTimer()
 	}
 }
@@ -537,26 +571,29 @@ func BenchmarkClientCompactDb(b *testing.B) {
 	entry := make([]byte, entrySizeInBytes)
 	var testKey string
 
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
 	require.NoError(b, err)
+	b.Cleanup(func() {
+		require.NoError(b, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 
 	for n := 0; n < entryCount; n++ {
 		testKey = fmt.Sprintf("testKey-%d", n)
-		client.Set(ctx, testKey, entry)
+		require.NoError(b, client.Set(ctx, testKey, entry))
 	}
 
 	// Leave half the keys in the DB
 	for n := 0; n < entryCount/2; n++ {
 		testKey = fmt.Sprintf("testKey-%d", n)
-		client.Delete(ctx, testKey)
+		require.NoError(b, client.Delete(ctx, testKey))
 	}
 
-	client.Close(ctx)
+	require.NoError(b, client.Close(ctx))
 
 	b.ResetTimer()
 	b.StopTimer()
@@ -567,7 +604,7 @@ func BenchmarkClientCompactDb(b *testing.B) {
 		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{})
 		require.NoError(b, err)
 		b.StartTimer()
-		client.Compact(tempDir, time.Second, 65536)
+		require.NoError(b, client.Compact(tempDir, time.Second, 65536))
 		b.StopTimer()
 	}
 }
