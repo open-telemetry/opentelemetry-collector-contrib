@@ -132,7 +132,7 @@ func TestBallastMemory(t *testing.T) {
 				tc.WaitForN(func() bool {
 					rss, vms, _ = tc.AgentMemoryInfo()
 					return float32(rss) <= lenientMax
-				}, time.Second, rssTooHigh)
+				}, time.Second*5, rssTooHigh)
 			} else {
 				assert.LessOrEqual(t, float32(rss), lenientMax, rssTooHigh)
 			}
