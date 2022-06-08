@@ -26,8 +26,8 @@ func spanID(bytes []byte) (ExprFunc, error) {
 	}
 	var idArr [8]byte
 	copy(idArr[:8], bytes)
-	spanId := pcommon.NewSpanID(idArr)
+	id := pcommon.NewSpanID(idArr)
 	return func(ctx TransformContext) interface{} {
-		return spanId
+		return id
 	}, nil
 }

@@ -26,8 +26,8 @@ func traceID(bytes []byte) (ExprFunc, error) {
 	}
 	var idArr [16]byte
 	copy(idArr[:16], bytes)
-	traceId := pcommon.NewTraceID(idArr)
+	id := pcommon.NewTraceID(idArr)
 	return func(ctx TransformContext) interface{} {
-		return traceId
+		return id
 	}, nil
 }
