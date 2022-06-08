@@ -60,6 +60,7 @@
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 - `googlecloudpubsubreceiver` Activate the Google Cloud Pubsub receiver. (#10580)
 - `googlecloudpubsubexporter` Activate the Google Cloud Pubsub exporter. (#10580)
+- `aerospikereceiver`: Add implementation of Aerospike Metric Receiver. (#9961)
 
 ### 💡 Enhancements 💡
 
