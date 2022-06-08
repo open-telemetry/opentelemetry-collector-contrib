@@ -16,6 +16,7 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"fmt"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
