@@ -5,9 +5,9 @@ go 1.17
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
+	go.opentelemetry.io/collector/semconv v0.53.0
 	go.uber.org/multierr v1.8.0
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0
