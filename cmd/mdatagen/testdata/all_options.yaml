@@ -28,13 +28,7 @@ metrics:
       value_type: double
       monotonic: true
       aggregation: cumulative
-    attributes:
-      [
-        freeFormAttribute,
-        freeFormAttributeWithValue,
-        enumAttribute,
-        booleanValueType,
-      ]
+    attributes: [freeFormAttribute, freeFormAttributeWithValue, enumAttribute, booleanValueType]
 
   # An optional metric.
   system.cpu.utilization:

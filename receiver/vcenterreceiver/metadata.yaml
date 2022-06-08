@@ -36,7 +36,6 @@ attributes:
   host_effective:
     value: effective
     description: Whether the host is effective in the vCenter cluster.
-    type: bool
     enum:
       - "true"
       - "false"
