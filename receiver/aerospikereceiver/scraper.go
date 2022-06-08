@@ -43,7 +43,8 @@ type aerospikeReceiver struct {
 	logger        *zap.Logger
 }
 
-type clientFactoryFunc func(host string, port int, username, password string, timeout time.Duration) (aerospike, error)
+// clientFactoryFunc creates an Aerospike connection to the given host and port
+type clientFactoryFunc func(host string, port int) (aerospike, error)
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
@@ -63,8 +64,8 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		logger:   params.Logger,
 		config:   cfg,
 		consumer: consumer,
-		clientFactory: func(host string, port int, username, password string, timeout time.Duration) (aerospike, error) {
-			return newASClient(host, port, username, password, timeout)
+		clientFactory: func(host string, port int) (aerospike, error) {
+			return newASClient(host, port, cfg.Username, cfg.Password, cfg.Timeout)
 		},
 		host: host,
 		port: int(port),
@@ -77,7 +78,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
-	client, err := r.clientFactory(r.host, r.port, r.config.Username, r.config.Password, r.config.Timeout)
+	client, err := r.clientFactory(r.host, r.port)
 	if err != nil {
 		return pmetric.NewMetrics(), fmt.Errorf("failed to connect: %w", err)
 	}
@@ -130,7 +131,7 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 		return
 	}
 
-	nClient, err := r.clientFactory(host, int(port), r.config.Username, r.config.Password, r.config.Timeout)
+	nClient, err := r.clientFactory(host, int(port))
 	if err != nil {
 		r.logger.Warn(err.Error())
 		errs.Add(err)

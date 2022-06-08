@@ -177,7 +177,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	}, nil)
 	peerClient.On("Close").Return()
 
-	clientFactory := func(host string, port int, username, password string, timeout time.Duration) (aerospike, error) {
+	clientFactory := func(host string, port int) (aerospike, error) {
 		switch fmt.Sprintf("%s:%d", host, port) {
 		case "localhost:3000":
 			return initialClient, nil
