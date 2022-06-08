@@ -19,13 +19,14 @@ import (
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v5"
+	"github.com/aerospike/aerospike-client-go/v5/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
 )
 
 type defaultASClient struct {
-	conn    *as.Connection // open connection to Aerospike
-	timeout time.Duration  // timeout for requests, needs to be set each time
+	conn   *as.Connection   // open connection to Aerospike
+	policy *as.ClientPolicy // Timeout and authentication information
 }
 
 // aerospike is the interface that provides information about a given node
@@ -62,17 +63,25 @@ func newASClient(host string, port int, username, password string, timeout time.
 	}
 
 	return &defaultASClient{
-		conn:    conn,
-		timeout: policy.Timeout,
+		conn:   conn,
+		policy: policy,
 	}, nil
 }
 
 func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo, error) {
-	if err := c.conn.SetTimeout(time.Now().Add(c.timeout), c.timeout); err != nil {
+	if err := c.conn.SetTimeout(time.Now().Add(c.policy.Timeout), c.policy.Timeout); err != nil {
 		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
 	var response model.InfoResponse
 	response, err := c.conn.RequestInfo(model.NamespaceKey(namespace))
+
+	// Try to login and get a new session
+	if err != nil && err.Matches(types.EXPIRED_SESSION) {
+		if loginErr := c.conn.Login(c.policy); loginErr != nil {
+			return nil, loginErr
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +90,19 @@ func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo,
 }
 
 func (c *defaultASClient) Info() (*model.NodeInfo, error) {
-	if err := c.conn.SetTimeout(time.Now().Add(c.timeout), c.timeout); err != nil {
+	if err := c.conn.SetTimeout(time.Now().Add(c.policy.Timeout), c.policy.Timeout); err != nil {
 		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
 	var response model.InfoResponse
 	response, err := c.conn.RequestInfo("namespaces", "node", "statistics", "services")
+
+	// Try to login and get a new session
+	if err != nil && err.Matches(types.EXPIRED_SESSION) {
+		if loginErr := c.conn.Login(c.policy); loginErr != nil {
+			return nil, loginErr
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
