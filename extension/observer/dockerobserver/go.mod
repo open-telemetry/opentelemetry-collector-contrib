@@ -5,12 +5,12 @@ go 1.17
 require (
 	github.com/docker/docker v20.10.16+incompatible
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.53.0
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.53.0
 	go.uber.org/zap v1.21.0
 
 )
@@ -41,7 +41,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc // indirect
+	go.opentelemetry.io/collector/pdata v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
