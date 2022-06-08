@@ -116,6 +116,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/foundationdbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
@@ -209,6 +210,7 @@ func Components() (component.Factories, error) {
 		filelogreceiver.NewFactory(),
 		flinkmetricsreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
+		foundationdbreceiver.NewFactory(),
 		googlecloudspannerreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
