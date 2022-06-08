@@ -63,7 +63,7 @@ func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 	bounds := dp.MExplicitBounds()
 	counts := dp.MBucketCounts()
 
-	// shortcut in the case max and min are provided
+	// shortcut in the case both max and min are provided
 	if dp.HasMin() && dp.HasMax() {
 		return dp.Min(), dp.Max()
 	}
