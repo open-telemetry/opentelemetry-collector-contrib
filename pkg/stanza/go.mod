@@ -26,7 +26,7 @@ require (
 require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.53.0
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220607185116-ed0b1a008c1c
 	go.uber.org/multierr v1.8.0
 )
@@ -84,3 +84,5 @@ require (
 )
 
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
