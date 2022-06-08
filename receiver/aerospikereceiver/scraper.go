@@ -89,7 +89,7 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 		return r.mb.Emit(), err
 	}
 	r.emitNode(info, now)
-	r.scrapeNamespaces(info, client, now)
+	r.scrapeNamespaces(info, client, now, errs)
 
 	if r.config.CollectClusterMetrics {
 		r.logger.Debug("Collecting peer nodes")
@@ -110,7 +110,7 @@ func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, 
 	}
 
 	r.emitNode(info, now)
-	r.scrapeNamespaces(info, client, now)
+	r.scrapeNamespaces(info, client, now, errs)
 }
 
 // scrapeDiscoveredNode connects to a discovered Aerospike node and scrapes it using that connection
@@ -182,7 +182,7 @@ func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, now pcommon.Timestamp
 
 // scrapeNamespaces records metrics for all namespaces on a node
 // The given client is used to collect namespace metrics, which is connected to a single node
-func (r *aerospikeReceiver) scrapeNamespaces(info *model.NodeInfo, client aerospike, now pcommon.Timestamp) {
+func (r *aerospikeReceiver) scrapeNamespaces(info *model.NodeInfo, client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	if info.Namespaces == nil {
 		return
 	}
@@ -191,6 +191,7 @@ func (r *aerospikeReceiver) scrapeNamespaces(info *model.NodeInfo, client aerosp
 		nInfo, err := client.NamespaceInfo(n)
 		if err != nil {
 			r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
+			errs.AddPartial(0, err)
 			continue
 		}
 		nInfo.Node = info.Name

@@ -72,10 +72,9 @@ func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
 
 func TestScrapeNode(t *testing.T) {
 	testCases := []struct {
-		name                 string
-		setupClient          func() *mocks.Aerospike
-		setupExpectedMetrics func(t *testing.T) pmetric.Metrics
-		expectedErr          string
+		name        string
+		setupClient func() *mocks.Aerospike
+		expectedErr string
 	}{
 		{
 			name: "error response",
@@ -83,9 +82,6 @@ func TestScrapeNode(t *testing.T) {
 				client := &mocks.Aerospike{}
 				client.On("Info").Return(nil, as.ErrNetTimeout)
 				return client
-			},
-			setupExpectedMetrics: func(t *testing.T) pmetric.Metrics {
-				return pmetric.NewMetrics()
 			},
 			expectedErr: as.ErrNetTimeout.Error(),
 		},
@@ -95,9 +91,6 @@ func TestScrapeNode(t *testing.T) {
 				client := &mocks.Aerospike{}
 				client.On("Info").Return(&model.NodeInfo{}, nil)
 				return client
-			},
-			setupExpectedMetrics: func(t *testing.T) pmetric.Metrics {
-				return pmetric.NewMetrics()
 			},
 		},
 	}
@@ -127,9 +120,8 @@ func TestScrapeNode(t *testing.T) {
 			if tc.expectedErr != "" {
 				assert.EqualError(t, errs.Combine(), tc.expectedErr)
 			}
-			expectedMetrics := tc.setupExpectedMetrics(t)
 			client.AssertExpectations(t)
-			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, receiver.mb.Emit()))
+			require.Equal(t, 0, receiver.mb.Emit().MetricCount())
 		})
 	}
 }
@@ -209,7 +201,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	}
 
 	actualMetrics, err := receiver.scrape(context.Background())
-	require.EqualError(t, err, "connection timeout; address invalid: missing port in address")
+	require.EqualError(t, err, "no such namespace; connection timeout; address invalid: missing port in address")
 
 	expectedMetrics := expectedMB.Emit()
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
