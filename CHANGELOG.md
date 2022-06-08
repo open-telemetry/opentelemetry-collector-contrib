@@ -8,6 +8,8 @@
 
 ### 🚀 New components 🚀
 
+- `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
