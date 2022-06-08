@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.44.28
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.53.0
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220607185116-ed0b1a008c1c
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220607185116-ed0b1a008c1c

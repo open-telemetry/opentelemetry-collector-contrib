@@ -5,9 +5,9 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.44.28
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220607185116-ed0b1a008c1c
 	go.opentelemetry.io/collector/semconv v0.52.1-0.20220607185116-ed0b1a008c1c
@@ -46,7 +46,7 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220607185116-ed0b1a008c1c
 	go.opentelemetry.io/otel/sdk v1.7.0 // indirect
 )

@@ -6,7 +6,7 @@ require (
 	github.com/hashicorp/go-hclog v1.2.1
 	github.com/jaegertracing/jaeger v1.35.1
 	github.com/logzio/jaeger-logzio v1.0.6
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.53.0
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.52.1-0.20220607185116-ed0b1a008c1c
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220607185116-ed0b1a008c1c
@@ -42,7 +42,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.52.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.8 // indirect

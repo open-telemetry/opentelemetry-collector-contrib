@@ -49,7 +49,7 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.53.0
 	go.opentelemetry.io/collector/pdata v0.52.1-0.20220607185116-ed0b1a008c1c
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 )
