@@ -30,6 +30,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 	functions["testing_string"] = functionWithString
+	functions["testing_byte_slice"] = functionWithByteSlice
 
 	tests := []struct {
 		name string
@@ -93,6 +94,23 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []Value{
 					{
 						Int: testhelper.Intp(10),
+					},
+				},
+			},
+		},
+		{
+			name: "not matching arg type when byte slice",
+			inv: Invocation{
+				Function: "testing_byte_slice",
+				Arguments: []Value{
+					{
+						String: testhelper.Strp("test"),
+					},
+					{
+						String: testhelper.Strp("test"),
+					},
+					{
+						String: testhelper.Strp("test"),
 					},
 				},
 			},
