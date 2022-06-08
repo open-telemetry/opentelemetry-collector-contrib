@@ -49,7 +49,7 @@ Usage
 
     exporter = ConsoleMetricExporter()
 
-    set_meter_provider(MeterProvider(PeriodicExportingMetricReader(exporter)))
+    set_meter_provider(MeterProvider([PeriodicExportingMetricReader(exporter)]))
     SystemMetricsInstrumentor().instrument()
 
     # metrics are collected asynchronously
