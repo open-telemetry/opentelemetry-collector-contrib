@@ -81,7 +81,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 		td := constructSpanData()
 		b.StartTimer()
 		err := traceExporter.ConsumeTraces(ctx, td)
-		assert.NotNil(b, err)
+		assert.Error(b, err)
 	}
 }
 
