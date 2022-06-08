@@ -31,8 +31,6 @@ func hello() (ExprFunc, error) {
 }
 
 func Test_newGetter(t *testing.T) {
-	bytes := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-
 	span := ptrace.NewSpan()
 	span.SetName("bear")
 	tests := []struct {
@@ -64,7 +62,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "bytes literal",
 			val: Value{
-				Bytes: (*Bytes)(&bytes),
+				Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 			},
 			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},

@@ -23,8 +23,6 @@ import (
 )
 
 func Test_parse(t *testing.T) {
-	bytes := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-
 	tests := []struct {
 		query    string
 		expected *ParsedQuery
@@ -331,7 +329,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							Bytes: (*Bytes)(&bytes),
+							Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 						},
 					},
 				},

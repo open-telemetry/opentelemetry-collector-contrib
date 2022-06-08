@@ -15,6 +15,7 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -24,6 +25,7 @@ import (
 )
 
 var registry = map[string]interface{}{
+	"TraceID":             TraceID,
 	"keep_keys":           keepKeys,
 	"set":                 set,
 	"truncate_all":        truncateAll,
@@ -187,6 +189,18 @@ func replaceAllMatches(target GetSetter, pattern string, replacement string) (Ex
 			target.Set(ctx, updated)
 		}
 		return nil
+	}, nil
+}
+
+func TraceID(bytes []byte) (ExprFunc, error) {
+	if len(bytes) != 16 {
+		return nil, errors.New("traces ids must be 16 bytes")
+	}
+	var idArr [16]byte
+	copy(idArr[:16], bytes)
+	traceId := pcommon.NewTraceID(idArr)
+	return func(ctx TransformContext) interface{} {
+		return traceId
 	}, nil
 }
 
