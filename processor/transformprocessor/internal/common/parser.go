@@ -50,14 +50,13 @@ type Invocation struct {
 // expression, function call, or literal.
 // nolint:govet
 type Value struct {
-	Invocation     *Invocation     `( @@`
-	SpanIDWrapper  *SpanIDWrapper  `| @SpanIDWrapper`
-	TraceIDWrapper *TraceIDWrapper `| @TraceIDWrapper`
-	String         *string         `| @String`
-	Float          *float64        `| @Float`
-	Int            *int64          `| @Int`
-	Bool           *Boolean        `| @("true" | "false")`
-	Path           *Path           `| @@ )`
+	Invocation *Invocation `( @@`
+	Bytes      *Bytes      `| @Bytes`
+	String     *string     `| @String`
+	Float      *float64    `| @Float`
+	Int        *int64      `| @Int`
+	Bool       *Boolean    `| @("true" | "false")`
+	Path       *Path       `| @@ )`
 }
 
 // Path represents a telemetry path expression.
@@ -80,43 +79,16 @@ type Query struct {
 	Condition condFunc
 }
 
-// SpanIDWrapper is a wrapper for pcommon.SpanID
-// It allows the grammar to capture a span id.
-type SpanIDWrapper struct {
-	SpanID *pcommon.SpanID
-}
+// Bytes type for capturing byte arrays
+type Bytes []byte
 
-// Capture is the function that tells the parser how to capture span ids.
-// It will throw an error if the value cannot be decoded or if the resulting
-// array's length is not equal to 8.
-func (s *SpanIDWrapper) Capture(values []string) error {
-	rawStr := values[0]
-	// must drop the wrapping {}
-	spanID, err := ParseSpanID(rawStr[1 : len(rawStr)-1])
+func (b *Bytes) Capture(values []string) error {
+	rawStr := values[0][2:]
+	bytes, err := hex.DecodeString(rawStr)
 	if err != nil {
 		return err
 	}
-	s.SpanID = &spanID
-	return nil
-}
-
-// TraceIDWrapper is a wrapper for pcommon.TraceID
-// It allows the grammar to capture a trace id.
-type TraceIDWrapper struct {
-	TraceID *pcommon.TraceID
-}
-
-// Capture is the function that tells the parser how to capture trace ids.
-// It will throw an error if the value cannot be decoded or if the resulting
-// array's length is not equal to 16.
-func (t *TraceIDWrapper) Capture(values []string) error {
-	rawStr := values[0]
-	// must drop the wrapping {}
-	traceID, err := ParseTraceID(rawStr[1 : len(rawStr)-1])
-	if err != nil {
-		return err
-	}
-	t.TraceID = &traceID
+	*b = bytes
 	return nil
 }
 
@@ -177,11 +149,10 @@ func parseQuery(raw string) (*ParsedQuery, error) {
 func newParser() *participle.Parser {
 	lex := lexer.MustSimple([]lexer.SimpleRule{
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `SpanIDWrapper`, Pattern: `{[a-fA-F0-9]{16}}`},
-		{Name: `TraceIDWrapper`, Pattern: `{[a-fA-F0-9]{32}}`},
 		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})

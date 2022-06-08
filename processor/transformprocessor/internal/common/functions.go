@@ -237,7 +237,8 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 }
 
 func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
-	switch argType.Elem().Kind() {
+	temp := argType.Elem().Kind()
+	switch temp {
 	case reflect.String:
 		arg := make([]string, 0)
 		for j := startingIndex; j < len(inv.Arguments); j++ {
@@ -265,6 +266,8 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 			arg = append(arg, *inv.Arguments[j].Int)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
+	case reflect.Uint8:
+		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
 	default:
 		return fmt.Errorf("unsupported slice type for function %v", inv.Function)
 	}
@@ -273,7 +276,8 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 
 func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value,
 	functions map[string]interface{}, pathParser PathExpressionParser) error {
-	switch argType.Name() {
+	temp := argType.Name()
+	switch temp {
 	case "Setter":
 		fallthrough
 	case "GetSetter":
@@ -308,16 +312,6 @@ func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Val
 			return fmt.Errorf("invalid argument at position %v, must be a bool", index)
 		}
 		*args = append(*args, reflect.ValueOf(bool(*argDef.Bool)))
-	case "SpanID":
-		if argDef.SpanIDWrapper == nil || argDef.SpanIDWrapper.SpanID == nil {
-			return fmt.Errorf("invalid argument at position %v, must be a SpanID. See the README for SpanID literal's syntax", index)
-		}
-		*args = append(*args, reflect.ValueOf(*argDef.SpanIDWrapper.SpanID))
-	case "TraceID":
-		if argDef.TraceIDWrapper == nil || argDef.TraceIDWrapper.TraceID == nil {
-			return fmt.Errorf("invalid argument at position %v, must be a TraceID. See the README for TraceID literal's syntax", index)
-		}
-		*args = append(*args, reflect.ValueOf(*argDef.TraceIDWrapper.TraceID))
 	}
 	return nil
 }

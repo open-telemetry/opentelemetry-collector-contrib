@@ -31,8 +31,7 @@ func hello() (ExprFunc, error) {
 }
 
 func Test_newGetter(t *testing.T) {
-	spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	bytes := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 
 	span := ptrace.NewSpan()
 	span.SetName("bear")
@@ -63,22 +62,11 @@ func Test_newGetter(t *testing.T) {
 			want: int64(12),
 		},
 		{
-			name: "span id literal",
+			name: "bytes literal",
 			val: Value{
-				SpanIDWrapper: &SpanIDWrapper{
-					SpanID: &spanID,
-				},
+				Bytes: (*Bytes)(&bytes),
 			},
-			want: testhelper.SpanIDp(pcommon.NewSpanID(spanID.Bytes())),
-		},
-		{
-			name: "trace id literal",
-			val: Value{
-				TraceIDWrapper: &TraceIDWrapper{
-					TraceID: &traceID,
-				},
-			},
-			want: testhelper.TraceIDp(pcommon.NewTraceID(traceID.Bytes())),
+			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},
 		{
 			name: "path expression",

@@ -18,10 +18,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/stretchr/testify/assert"
 )
 
 // Test for valid functions are in internal/traces/functions_test.go as there are many different data model cases.
@@ -202,13 +200,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	bytes := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_float_slice"] = functionWithFloatSlice
 	functions["testing_int_slice"] = functionWithIntSlice
+	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
@@ -216,8 +214,6 @@ func Test_NewFunctionCall(t *testing.T) {
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt
 	functions["testing_bool"] = functionWithBool
-	functions["testing_span_id"] = functionThatTakesASpanID
-	functions["testing_trace_id"] = functionThatTakesATraceID
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 
 	tests := []struct {
@@ -371,27 +367,12 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "span id argument",
+			name: "bytes arg",
 			inv: Invocation{
-				Function: "testing_span_id",
+				Function: "testing_byte_slice",
 				Arguments: []Value{
 					{
-						SpanIDWrapper: &SpanIDWrapper{
-							SpanID: &spanID,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "trace id argument",
-			inv: Invocation{
-				Function: "testing_trace_id",
-				Arguments: []Value{
-					{
-						TraceIDWrapper: &TraceIDWrapper{
-							TraceID: &traceID,
-						},
+						Bytes: (*Bytes)(&bytes),
 					},
 				},
 			},
@@ -455,6 +436,12 @@ func functionWithIntSlice(_ []int64) (ExprFunc, error) {
 	}, nil
 }
 
+func functionWithByteSlice(_ []byte) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
 func functionWithSetter(_ Setter) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
@@ -492,18 +479,6 @@ func functionWithInt(_ int64) (ExprFunc, error) {
 }
 
 func functionWithBool(_ bool) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
-	}, nil
-}
-
-func functionThatTakesASpanID(_ pcommon.SpanID) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
-	}, nil
-}
-
-func functionThatTakesATraceID(_ pcommon.TraceID) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil

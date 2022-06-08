@@ -18,14 +18,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_parse(t *testing.T) {
-	spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	bytes := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 
 	tests := []struct {
 		query    string
@@ -317,7 +315,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			query: `set(span_id, {0102030405060708})`,
+			query: `set(attributes["bytes"], 0x0102030405060708)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
@@ -326,40 +324,14 @@ func Test_parse(t *testing.T) {
 							Path: &Path{
 								Fields: []Field{
 									{
-										Name: "span_id",
+										Name:   "attributes",
+										MapKey: testhelper.Strp("bytes"),
 									},
 								},
 							},
 						},
 						{
-							SpanIDWrapper: &SpanIDWrapper{
-								SpanID: &spanID,
-							},
-						},
-					},
-				},
-				Condition: nil,
-			},
-		},
-		{
-			query: `set(trace_id, {0102030405060708090a0b0c0d0e0f10})`,
-			expected: &ParsedQuery{
-				Invocation: Invocation{
-					Function: "set",
-					Arguments: []Value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "trace_id",
-									},
-								},
-							},
-						},
-						{
-							TraceIDWrapper: &TraceIDWrapper{
-								TraceID: &traceID,
-							},
+							Bytes: (*Bytes)(&bytes),
 						},
 					},
 				},
