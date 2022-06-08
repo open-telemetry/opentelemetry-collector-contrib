@@ -275,18 +275,20 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 3, len(groupedMetrics))
 		for _, group := range groupedMetrics {
 			for metricName := range group.metrics {
-				if metricName == "int-gauge" || metricName == "int-sum" {
+				switch metricName {
+				case "int-gauge", "int-sum":
 					assert.Equal(t, 2, len(group.metrics))
-					assert.Equal(t, int64(1608068109347), group.metadata.timestampMs)
-				} else if metricName == "summary" {
+					assert.Equal(t, int64(1608068109347), group.metadata.timestampMs)	
+				case "summary":
 					assert.Equal(t, 1, len(group.metrics))
 					assert.Equal(t, int64(1608068110347), group.metadata.timestampMs)
-				} else {
+				default:
 					// double-gauge should use the default timestamp
 					assert.Equal(t, 1, len(group.metrics))
 					assert.Equal(t, "double-gauge", metricName)
 					assert.Equal(t, timestamp, group.metadata.timestampMs)
 				}
+
 			}
 			expectedLabels := map[string]string{
 				oTellibDimensionKey: "cloudwatch-otel",
