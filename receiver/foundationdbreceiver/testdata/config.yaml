@@ -1,0 +1,20 @@
+receivers:
+  foundationdb:
+  foundationdb/receiver_settings:
+    endpoint: "localhost:8889"
+    max_packet_size: 65527
+    socket_buffer_size: 0
+
+
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [foundationdb]
+      processors: [nop]
+      exporters: [nop]
+
