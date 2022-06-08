@@ -56,7 +56,7 @@ func BenchmarkWithoutPool(b *testing.B) {
 		encoder := json.NewEncoder(buffer)
 		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false)
 		err := encoder.Encode(*segment)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 		logger.Info(buffer.String())
 	}
 }
