@@ -27,7 +27,7 @@ import (
 )
 
 func TestDockerError(t *testing.T) {
-	_, err := newDockerMetadata(client.WithHost("invalidHost"))
+	_, err := NewProvider(client.WithHost("invalidHost"))
 	assert.Error(t, err)
 }
 
@@ -40,7 +40,7 @@ func TestDocker(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	provider, err := newDockerMetadata(client.WithHost(ts.URL))
+	provider, err := NewProvider(client.WithHost(ts.URL))
 	require.NoError(t, err)
 
 	hostname, err := provider.Hostname(context.Background())

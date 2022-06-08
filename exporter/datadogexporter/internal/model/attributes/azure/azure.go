@@ -33,11 +33,11 @@ type HostInfo struct {
 
 // HostInfoFromAttributes gets Azure host info from attributes following
 // OpenTelemetry semantic conventions
-func HostInfoFromAttributes(attrs pcommon.Map) (hostInfo *HostInfo) {
+func HostInfoFromAttributes(attrs pcommon.Map, usePreviewRules bool) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
 	// Add Azure VM ID as a host alias if available for compatibility with Azure integration
-	if vmID, ok := attrs.Get(conventions.AttributeHostID); ok {
+	if vmID, ok := attrs.Get(conventions.AttributeHostID); ok && !usePreviewRules {
 		hostInfo.HostAliases = append(hostInfo.HostAliases, vmID.StringVal())
 	}
 
@@ -45,7 +45,11 @@ func HostInfoFromAttributes(attrs pcommon.Map) (hostInfo *HostInfo) {
 }
 
 // HostnameFromAttributes gets the Azure hostname from attributes
-func HostnameFromAttributes(attrs pcommon.Map) (string, bool) {
+func HostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
+	if vmID, ok := attrs.Get(conventions.AttributeHostID); usePreviewRules && ok {
+		return vmID.StringVal(), true
+	}
+
 	if hostname, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostname.StringVal(), true
 	}

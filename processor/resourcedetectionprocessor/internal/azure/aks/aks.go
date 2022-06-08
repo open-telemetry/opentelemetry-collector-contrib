@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 )
 
 const (

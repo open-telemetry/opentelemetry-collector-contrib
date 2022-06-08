@@ -128,6 +128,10 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "googlecloudspanner",
 		},
 		{
+			receiver:     "googlecloudpubsub",
+			skipLifecyle: true, // Requires a pubsub subscription
+		},
+		{
 			receiver: "hostmetrics",
 		},
 		{

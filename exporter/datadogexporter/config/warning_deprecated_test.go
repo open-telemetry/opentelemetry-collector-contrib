@@ -18,20 +18,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestDeprecationSendMonotonic(t *testing.T) {
 	tests := []struct {
 		name         string
-		cfgMap       *config.Map
+		cfgMap       *confmap.Conf
 		expectedMode CumulativeMonotonicSumMode
 		warnings     []string
 		err          string
 	}{
 		{
 			name: "both metrics::send_monotonic and new metrics::sums::cumulative_monotonic_mode",
-			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+			cfgMap: confmap.NewFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"send_monotonic_counter": true,
 					"sums": map[string]interface{}{
@@ -43,7 +43,7 @@ func TestDeprecationSendMonotonic(t *testing.T) {
 		},
 		{
 			name: "metrics::send_monotonic set to true",
-			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+			cfgMap: confmap.NewFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"send_monotonic_counter": true,
 				},
@@ -55,7 +55,7 @@ func TestDeprecationSendMonotonic(t *testing.T) {
 		},
 		{
 			name: "metrics::send_monotonic set to false",
-			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+			cfgMap: confmap.NewFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"send_monotonic_counter": false,
 				},
@@ -67,12 +67,12 @@ func TestDeprecationSendMonotonic(t *testing.T) {
 		},
 		{
 			name:         "metrics::send_monotonic and metrics::sums::cumulative_monotonic_mode unset",
-			cfgMap:       config.NewMapFromStringMap(map[string]interface{}{}),
+			cfgMap:       confmap.NewFromStringMap(map[string]interface{}{}),
 			expectedMode: CumulativeMonotonicSumModeToDelta,
 		},
 		{
 			name: "metrics::sums::cumulative_monotonic_mode set",
-			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+			cfgMap: confmap.NewFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"sums": map[string]interface{}{
 						"cumulative_monotonic_mode": "raw_value",

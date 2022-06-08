@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -34,6 +35,8 @@ import (
 
 const defaultAMPSigV4Service = "aps"
 
+var errNilRequest = errors.New("sigv4: unable to sign nil *http.Request")
+
 // signingRoundTripper is a Custom RoundTripper that performs AWS Sig V4.
 type signingRoundTripper struct {
 	transport   http.RoundTripper
@@ -44,17 +47,24 @@ type signingRoundTripper struct {
 }
 
 func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	reqBody, err := req.GetBody()
-	if err != nil {
-		return nil, err
+	if req == nil {
+		return nil, errNilRequest
 	}
 
-	content, err := ioutil.ReadAll(reqBody)
-	reqBody.Close()
-	if err != nil {
-		return nil, err
+	body := io.ReadSeeker(nil)
+	if req.GetBody != nil {
+		reqBody, err := req.GetBody()
+		if err != nil {
+			return nil, err
+		}
+
+		content, err := ioutil.ReadAll(reqBody)
+		reqBody.Close()
+		if err != nil {
+			return nil, err
+		}
+		body = bytes.NewReader(content)
 	}
-	body := bytes.NewReader(content)
 
 	// Clone request to ensure thread safety.
 	req2 := cloneRequest(req)
@@ -69,7 +79,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	req2.Header.Set("User-Agent", ua)
 
 	// Sign the request
-	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
+	_, err := si.signer.Sign(req2, body, si.service, si.region, time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("error signing the request: %v", err)
 	}

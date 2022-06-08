@@ -1,8 +1,12 @@
 # F5 Big-IP Receiver
 
-This receiver fetches stats from a F5 Big-IP node using F5's [iControl REST API](https://clouddocs.f5.com/api/icontrol-rest).
+| Status                   |         |
+| ------------------------ |---------|
+| Stability                | [beta]  |
+| Supported pipeline types | metrics |
+| Distributions            | none    |
 
-Supported pipeline types: `metrics`
+This receiver fetches stats from a F5 Big-IP node using F5's [iControl REST API](https://clouddocs.f5.com/api/icontrol-rest).
 
 ## Prerequisites
 
@@ -38,3 +42,5 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta

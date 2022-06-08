@@ -11,10 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
+package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
 
 import (
+	"context"
+	"fmt"
 	"strings"
+	"sync"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -80,4 +85,35 @@ func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
 	}
 
 	return hi.EC2Hostname
+}
+
+var _ provider.HostnameProvider = (*Provider)(nil)
+
+type Provider struct {
+	once     sync.Once
+	hostInfo HostInfo
+
+	logger *zap.Logger
+}
+
+func NewProvider(logger *zap.Logger) *Provider {
+	return &Provider{logger: logger}
+}
+
+func (p *Provider) fillHostInfo() {
+	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
+}
+
+func (p *Provider) Hostname(ctx context.Context) (string, error) {
+	p.fillHostInfo()
+	if p.hostInfo.InstanceID == "" {
+		return "", fmt.Errorf("instance ID is unavailable")
+	}
+
+	return p.hostInfo.InstanceID, nil
+}
+
+func (p *Provider) HostInfo() *HostInfo {
+	p.fillHostInfo()
+	return &p.hostInfo
 }

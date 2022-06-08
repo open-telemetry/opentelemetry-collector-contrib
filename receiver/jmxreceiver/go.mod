@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxrec
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0
 	github.com/shirou/gopsutil/v3 v3.22.5
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector v0.52.0
-	go.opentelemetry.io/collector/pdata v0.52.0
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 
@@ -38,7 +38,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.5 // indirect
+	github.com/klauspost/compress v1.15.6 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -79,8 +79,7 @@ require (
 	google.golang.org/genproto v0.0.0-20220421151946-72621c1f0bd3 // indirect
 	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

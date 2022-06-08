@@ -2,27 +2,42 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.53.0
+
 ### 🛑 Breaking changes 🛑
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
-
-### 🚩 Deprecations 🚩
-
+- `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
 
 ### 🚀 New components 🚀
 
 - `flinkmetricsreceiver`: Add implementation of Flink Metric Receiver (#10121)
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
+- `googlecloudpubsubreceiver` Activate the Google Cloud Pubsub receiver. (#10580)
+- `googlecloudpubsubexporter` Activate the Google Cloud Pubsub exporter. (#10580)
 
 ### 💡 Enhancements 💡
 
+- `awsemfexporter`: Add min and max support for histograms (#10577)
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
+- `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
 
 ### 🧰 Bug fixes 🧰
 
@@ -30,6 +45,13 @@
 - `tanzuobservabilityexporter`: Improve how negative values in exponential histograms are handled. (#10135)
 - `dynatraceexporter`: Ensure min is always less than or equal to mean and max is always greater or equal to mean for histogram estimation. (#10257)
 - `resourcedetectionprocessor`: GCP resource detector now properly detects zone/region on GKE (#10347)
+- `resourcedetectionprocessor`: GCP resource detector no longer fails to detect resource when using workload identity (#10486)
+- `tailsamplingprocessor`: Fix composite sampler with inverse policy
+- `awsprometheusremotewriteexporter`: Fix signing of empty request bodies. (#10578)
+- `sigv4authextension`: Fix signing of empty request bodies. (#10578)
+- `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
+- `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
+- `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
 
 ## v0.52.0
 
@@ -45,6 +67,7 @@
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
 - `nsxtreceiver`: Added implementation of NSX-T Metric Receiver (#9568)
 - `expvarreceiver`: Add implementation of new receiver. (#10183)
+- `telemetrygen`: Started implementing an upgraded version of `tracegen` generating traces and metrics (#9597)
 
 ### 💡 Enhancements 💡
 
@@ -107,6 +130,7 @@
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
 - `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
+- `prometheusreceiver`: Support OpenMetrics Info and Stateset metrics (#9378)
 
 ### 🧰 Bug fixes 🧰
 
@@ -149,6 +173,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
+- `sqlreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
 
 ### 💡 Enhancements 💡
 
