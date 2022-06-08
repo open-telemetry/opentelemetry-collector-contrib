@@ -20,7 +20,7 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"TraceID":             TraceID,
+	"TraceID":             traceID,
 	"keep_keys":           keepKeys,
 	"set":                 set,
 	"truncate_all":        truncateAll,
