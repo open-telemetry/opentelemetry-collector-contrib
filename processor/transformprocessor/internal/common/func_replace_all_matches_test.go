@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
-func Test_replace_all_matches(t *testing.T) {
+func Test_replaceAllMatches(t *testing.T) {
 	input := pcommon.NewMap()
 	input.InsertString("test", "hello world")
 	input.InsertString("test2", "hello")
@@ -91,7 +91,7 @@ func Test_replace_all_matches(t *testing.T) {
 	}
 }
 
-func Test_replace_all_matches_bad_input(t *testing.T) {
+func Test_replaceAllMatches_bad_input(t *testing.T) {
 	input := pcommon.NewValueString("not a map")
 	ctx := testhelper.TestTransformContext{
 		Item: input,
@@ -112,7 +112,7 @@ func Test_replace_all_matches_bad_input(t *testing.T) {
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
-func Test_replace_all_matches_get_nil(t *testing.T) {
+func Test_replaceAllMatches_get_nil(t *testing.T) {
 	ctx := testhelper.TestTransformContext{
 		Item: nil,
 	}

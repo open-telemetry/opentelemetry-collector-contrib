@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_convert_gauge_to_sum(t *testing.T) {
+func Test_convertGaugeToSum(t *testing.T) {
 	gaugeInput := pmetric.NewMetric()
 	gaugeInput.SetDataType(pmetric.MetricDataTypeGauge)
 
@@ -141,7 +141,7 @@ func Test_convert_gauge_to_sum(t *testing.T) {
 	}
 }
 
-func Test_convert_gauge_to_sum_validation(t *testing.T) {
+func Test_convertGaugeToSum_validation(t *testing.T) {
 	tests := []struct {
 		name          string
 		stringAggTemp string

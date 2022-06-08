@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
-func Test_keep_keys(t *testing.T) {
+func Test_keepKeys(t *testing.T) {
 	input := pcommon.NewMap()
 	input.InsertString("test", "hello world")
 	input.InsertInt("test2", 3)
@@ -109,7 +109,7 @@ func Test_keep_keys(t *testing.T) {
 	}
 }
 
-func Test_keep_keys_bad_input(t *testing.T) {
+func Test_keepKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueString("not a map")
 	ctx := testhelper.TestTransformContext{
 		Item: input,
@@ -132,7 +132,7 @@ func Test_keep_keys_bad_input(t *testing.T) {
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
-func Test_keep_keys_get_nil(t *testing.T) {
+func Test_keepKeys_get_nil(t *testing.T) {
 	ctx := testhelper.TestTransformContext{
 		Item: nil,
 	}

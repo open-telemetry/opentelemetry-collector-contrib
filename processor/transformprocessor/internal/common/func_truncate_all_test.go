@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
-func Test_truncate_all(t *testing.T) {
+func Test_truncateAll(t *testing.T) {
 	input := pcommon.NewMap()
 	input.InsertString("test", "hello world")
 	input.InsertInt("test2", 3)
@@ -110,7 +110,7 @@ func Test_truncate_all(t *testing.T) {
 	}
 }
 
-func Test_truncate_all_validation(t *testing.T) {
+func Test_truncateAll_validation(t *testing.T) {
 	tests := []struct {
 		name   string
 		target GetSetter
@@ -130,7 +130,7 @@ func Test_truncate_all_validation(t *testing.T) {
 	}
 }
 
-func Test_truncate_all_bad_input(t *testing.T) {
+func Test_truncateAll_bad_input(t *testing.T) {
 	input := pcommon.NewValueString("not a map")
 	ctx := testhelper.TestTransformContext{
 		Item: input,
@@ -151,7 +151,7 @@ func Test_truncate_all_bad_input(t *testing.T) {
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
-func Test_truncate_all_get_nil(t *testing.T) {
+func Test_truncateAll_get_nil(t *testing.T) {
 	ctx := testhelper.TestTransformContext{
 		Item: nil,
 	}
