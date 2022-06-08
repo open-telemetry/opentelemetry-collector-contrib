@@ -90,7 +90,7 @@ type AndSubPolicyCfg struct {
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
 	// Configs for span counter filter sampling policy evaluator.
-	SpanCountCfg SpanCountCfg `mapstructure:"MinSpans"`
+	SpanCountCfg SpanCountCfg `mapstructure:"min_spacount"`
 }
 
 type AndCfg struct {
@@ -205,7 +205,7 @@ type RateLimitingCfg struct {
 // sampling policy evaluator
 type SpanCountCfg struct {
 	// Minimum number of spans in a Trace
-	MinSpans int32 `mapstructure:"minSpans"`
+	MinSpans int32 `mapstructure:"min_spans"`
 }
 
 // Config holds the configuration for tail-based sampling.
