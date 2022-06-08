@@ -6,8 +6,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.52.0
 	github.com/stretchr/testify v1.7.2
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.52.1-0.20220607185116-ed0b1a008c1c
+	go.opentelemetry.io/collector/pdata v0.52.1-0.20220607185116-ed0b1a008c1c
 	go.uber.org/zap v1.21.0
 )
 
