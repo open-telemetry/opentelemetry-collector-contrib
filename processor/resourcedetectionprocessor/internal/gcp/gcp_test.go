@@ -46,7 +46,6 @@ func TestDetect(t *testing.T) {
 				projectID:           "my-project",
 				cloudPlatform:       gcp.GKE,
 				gkeHostID:           "1472385723456792345",
-				gkeHostName:         "my-gke-node-1234",
 				gkeClusterName:      "my-cluster",
 				gkeAvailabilityZone: "us-central1-c",
 			}},
@@ -57,7 +56,6 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeK8SClusterName:        "my-cluster",
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				conventions.AttributeHostID:                "1472385723456792345",
-				conventions.AttributeHostName:              "my-gke-node-1234",
 			}),
 		},
 		{
@@ -66,7 +64,6 @@ func TestDetect(t *testing.T) {
 				projectID:      "my-project",
 				cloudPlatform:  gcp.GKE,
 				gkeHostID:      "1472385723456792345",
-				gkeHostName:    "my-gke-node-1234",
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
 			}},
@@ -77,7 +74,6 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeK8SClusterName: "my-cluster",
 				conventions.AttributeCloudRegion:    "us-central1",
 				conventions.AttributeHostID:         "1472385723456792345",
-				conventions.AttributeHostName:       "my-gke-node-1234",
 			}),
 		},
 		{
@@ -143,10 +139,32 @@ func TestDetect(t *testing.T) {
 			}),
 		},
 		{
-			desc: "App Engine",
+			desc: "App Engine Standard",
 			detector: &detector{detector: &fakeGCPDetector{
 				projectID:                 "my-project",
-				cloudPlatform:             gcp.AppEngine,
+				cloudPlatform:             gcp.AppEngineStandard,
+				appEngineServiceInstance:  "1472385723456792345",
+				appEngineAvailabilityZone: "us-central1-c",
+				appEngineRegion:           "us-central1",
+				appEngineServiceName:      "my-service",
+				appEngineServiceVersion:   "123456",
+			}},
+			expectedResource: internal.NewResource(map[string]interface{}{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID:        "my-project",
+				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPAppEngine,
+				conventions.AttributeCloudRegion:           "us-central1",
+				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+				conventions.AttributeFaaSName:              "my-service",
+				conventions.AttributeFaaSVersion:           "123456",
+				conventions.AttributeFaaSID:                "1472385723456792345",
+			}),
+		},
+		{
+			desc: "App Engine Flex",
+			detector: &detector{detector: &fakeGCPDetector{
+				projectID:                 "my-project",
+				cloudPlatform:             gcp.AppEngineFlex,
 				appEngineServiceInstance:  "1472385723456792345",
 				appEngineAvailabilityZone: "us-central1-c",
 				appEngineRegion:           "us-central1",
@@ -210,7 +228,6 @@ type fakeGCPDetector struct {
 	gkeRegion                 string
 	gkeClusterName            string
 	gkeHostID                 string
-	gkeHostName               string
 	faaSName                  string
 	faaSVersion               string
 	faaSID                    string
@@ -262,13 +279,6 @@ func (f *fakeGCPDetector) GKEHostID() (string, error) {
 	return f.gkeHostID, nil
 }
 
-func (f *fakeGCPDetector) GKEHostName() (string, error) {
-	if f.err != nil {
-		return "", f.err
-	}
-	return f.gkeHostName, nil
-}
-
 func (f *fakeGCPDetector) FaaSName() (string, error) {
 	if f.err != nil {
 		return "", f.err
@@ -297,11 +307,25 @@ func (f *fakeGCPDetector) FaaSCloudRegion() (string, error) {
 	return f.faaSCloudRegion, nil
 }
 
-func (f *fakeGCPDetector) AppEngineAvailabilityZoneAndRegion() (string, string, error) {
+func (f *fakeGCPDetector) AppEngineFlexAvailabilityZoneAndRegion() (string, string, error) {
 	if f.err != nil {
 		return "", "", f.err
 	}
 	return f.appEngineAvailabilityZone, f.appEngineRegion, nil
+}
+
+func (f *fakeGCPDetector) AppEngineStandardAvailabilityZone() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.appEngineAvailabilityZone, nil
+}
+
+func (f *fakeGCPDetector) AppEngineStandardCloudRegion() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.appEngineRegion, nil
 }
 
 func (f *fakeGCPDetector) AppEngineServiceName() (string, error) {

@@ -4,23 +4,23 @@ go 1.17
 
 require (
 	cloud.google.com/go/spanner v1.33.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.52.0
+	github.com/stretchr/testify v1.7.2
+	go.opentelemetry.io/collector v0.53.0
 	go.uber.org/zap v1.21.0
-	google.golang.org/api v0.81.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	google.golang.org/api v0.82.0
+	gopkg.in/yaml.v3 v3.0.1
 
 )
 
 require (
-	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
-	google.golang.org/grpc v1.46.2
+	google.golang.org/genproto v0.0.0-20220527130721-00d5c0f3be58
+	google.golang.org/grpc v1.47.0
 )
 
 require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
-	go.opentelemetry.io/collector/pdata v0.52.0
+	go.opentelemetry.io/collector/pdata v0.53.0
 )
 
 require (
@@ -58,8 +58,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
-	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
+	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
+	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
@@ -67,5 +67,4 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

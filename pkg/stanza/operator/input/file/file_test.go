@@ -82,11 +82,13 @@ func TestAddFileResolvedFields(t *testing.T) {
 	}, nil)
 
 	// Create temp dir with log file
-	dir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	dir := t.TempDir()
 
 	file, err := ioutil.TempFile(dir, "")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, file.Close())
+	})
 
 	// Create symbolic link in monitored directory
 	symLinkPath := filepath.Join(tempDir, "symlink")
@@ -112,10 +114,6 @@ func TestAddFileResolvedFields(t *testing.T) {
 	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
 	require.Equal(t, filepath.Base(resolved), e.Attributes["log.file.name_resolved"])
 	require.Equal(t, resolved, e.Attributes["log.file.path_resolved"])
-
-	// Clean up (linux based host)
-	// Ignore error on windows host (The process cannot access the file because it is being used by another process.)
-	os.RemoveAll(dir)
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -133,14 +131,19 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	}, nil)
 
 	// Create temp dir with log file
-	dir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	dir := t.TempDir()
 
 	file1, err := ioutil.TempFile(dir, "")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, file1.Close())
+	})
 
 	file2, err := ioutil.TempFile(dir, "")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, file2.Close())
+	})
 
 	// Resolve paths
 	real1, err := filepath.EvalSymlinks(file1.Name())
@@ -190,10 +193,6 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
 	require.Equal(t, filepath.Base(resolved2), e.Attributes["log.file.name_resolved"])
 	require.Equal(t, resolved2, e.Attributes["log.file.path_resolved"])
-
-	// Clean up (linux based host)
-	// Ignore error on windows host (The process cannot access the file because it is being used by another process.)
-	os.RemoveAll(dir)
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we

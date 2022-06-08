@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.52.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.52.0
-	go.opentelemetry.io/collector/pdata v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.53.0
+	github.com/stretchr/testify v1.7.2
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -42,9 +42,9 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gonum.org/v1/gonum v0.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.46.2 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage

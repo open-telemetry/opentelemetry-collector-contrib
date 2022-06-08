@@ -15,13 +15,8 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
-
-	"github.com/gobwas/glob"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var registry = map[string]interface{}{
@@ -38,170 +33,6 @@ type PathExpressionParser func(*Path) (GetSetter, error)
 
 func DefaultFunctions() map[string]interface{} {
 	return registry
-}
-
-func set(target Setter, value Getter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		val := value.Get(ctx)
-		if val != nil {
-			target.Set(ctx, val)
-		}
-		return nil
-	}, nil
-}
-
-func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
-	keySet := make(map[string]struct{}, len(keys))
-	for _, key := range keys {
-		keySet[key] = struct{}{}
-	}
-
-	return func(ctx TransformContext) interface{} {
-		val := target.Get(ctx)
-		if val == nil {
-			return nil
-		}
-
-		if attrs, ok := val.(pcommon.Map); ok {
-			// TODO(anuraaga): Avoid copying when filtering keys https://github.com/open-telemetry/opentelemetry-collector/issues/4756
-			filtered := pcommon.NewMap()
-			filtered.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, val pcommon.Value) bool {
-				if _, ok := keySet[key]; ok {
-					filtered.Insert(key, val)
-				}
-				return true
-			})
-			target.Set(ctx, filtered)
-		}
-		return nil
-	}, nil
-}
-
-func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
-	if limit < 0 {
-		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
-	}
-	return func(ctx TransformContext) interface{} {
-		if limit < 0 {
-			return nil
-		}
-
-		val := target.Get(ctx)
-		if val == nil {
-			return nil
-		}
-
-		if attrs, ok := val.(pcommon.Map); ok {
-			updated := pcommon.NewMap()
-			updated.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, val pcommon.Value) bool {
-				stringVal := val.StringVal()
-				if int64(len(stringVal)) > limit {
-					updated.InsertString(key, stringVal[:limit])
-				} else {
-					updated.Insert(key, val)
-				}
-				return true
-			})
-			target.Set(ctx, updated)
-			// TODO: Write log when truncation is performed
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
-		}
-		return nil
-	}, nil
-}
-
-func limit(target GetSetter, limit int64) (ExprFunc, error) {
-	if limit < 0 {
-		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
-	}
-	return func(ctx TransformContext) interface{} {
-		val := target.Get(ctx)
-		if val == nil {
-			return nil
-		}
-
-		if attrs, ok := val.(pcommon.Map); ok {
-			if int64(attrs.Len()) <= limit {
-				return nil
-			}
-
-			updated := pcommon.NewMap()
-			updated.EnsureCapacity(attrs.Len())
-			count := int64(0)
-			attrs.Range(func(key string, val pcommon.Value) bool {
-				if count < limit {
-					updated.Insert(key, val)
-					count++
-					return true
-				}
-				return false
-			})
-			target.Set(ctx, updated)
-			// TODO: Write log when limiting is performed
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
-		}
-		return nil
-	}, nil
-}
-
-func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
-	glob, err := glob.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
-	}
-	return func(ctx TransformContext) interface{} {
-		val := target.Get(ctx)
-		if val == nil {
-			return nil
-		}
-		if valStr, ok := val.(string); ok {
-			if glob.Match(valStr) {
-				target.Set(ctx, replacement)
-			}
-		}
-		return nil
-	}, nil
-}
-
-func replaceAllMatches(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
-	glob, err := glob.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
-	}
-	return func(ctx TransformContext) interface{} {
-		val := target.Get(ctx)
-		if val == nil {
-			return nil
-		}
-		if attrs, ok := val.(pcommon.Map); ok {
-			updated := pcommon.NewMap()
-			updated.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, value pcommon.Value) bool {
-				if glob.Match(value.StringVal()) {
-					updated.InsertString(key, replacement)
-				} else {
-					updated.Insert(key, value)
-				}
-				return true
-			})
-			target.Set(ctx, updated)
-		}
-		return nil
-	}, nil
-}
-
-func TraceID(bytes []byte) (ExprFunc, error) {
-	if len(bytes) != 16 {
-		return nil, errors.New("traces ids must be 16 bytes")
-	}
-	var idArr [16]byte
-	copy(idArr[:16], bytes)
-	traceId := pcommon.NewTraceID(idArr)
-	return func(ctx TransformContext) interface{} {
-		return traceId
-	}, nil
 }
 
 // NewFunctionCall Visible for testing
@@ -251,8 +82,7 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 }
 
 func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
-	temp := argType.Elem().Kind()
-	switch temp {
+	switch argType.Elem().Kind() {
 	case reflect.String:
 		arg := make([]string, 0)
 		for j := startingIndex; j < len(inv.Arguments); j++ {
@@ -290,8 +120,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 
 func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value,
 	functions map[string]interface{}, pathParser PathExpressionParser) error {
-	temp := argType.Name()
-	switch temp {
+	switch argType.Name() {
 	case "Setter":
 		fallthrough
 	case "GetSetter":

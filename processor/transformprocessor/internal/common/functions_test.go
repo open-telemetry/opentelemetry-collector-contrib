@@ -18,11 +18,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
-// Test for valid functions are in internal/traces/functions_test.go as there are many different data model cases.
 func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions := DefaultFunctions()
 	functions["testing_error"] = functionThatHasAnError
@@ -98,96 +98,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "truncate_all negative limit",
-			inv: Invocation{
-				Function: "truncate_all",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Int: testhelper.Intp(-1),
-					},
-				},
-			},
-		},
-		{
-			name: "limit negative limit",
-			inv: Invocation{
-				Function: "limit",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						Int: testhelper.Intp(-1),
-					},
-				},
-			},
-		},
-		{
 			name: "function call returns error",
 			inv: Invocation{
 				Function: "testing_error",
-			},
-		},
-		{
-			name: "replace_match invalid pattern",
-			inv: Invocation{
-				Function: "replace_match",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name:   "attributes",
-									MapKey: testhelper.Strp("test"),
-								},
-							},
-						},
-					},
-					{
-						String: testhelper.Strp("\\*"),
-					},
-					{
-						String: testhelper.Strp("test"),
-					},
-				},
-			},
-		},
-		{
-			name: "replace_all_matches invalid pattern",
-			inv: Invocation{
-				Function: "replace_all_matches",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "attributes",
-								},
-							},
-						},
-					},
-					{
-						String: testhelper.Strp("\\*"),
-					},
-					{
-						String: testhelper.Strp("test"),
-					},
-				},
 			},
 		},
 	}
@@ -200,8 +113,6 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	bytes := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_float_slice"] = functionWithFloatSlice
@@ -372,7 +283,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_byte_slice",
 				Arguments: []Value{
 					{
-						Bytes: (*Bytes)(&bytes),
+						Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 					},
 				},
 			},
