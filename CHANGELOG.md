@@ -10,6 +10,8 @@
 
 ### 💡 Enhancements 💡
 
+- `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.53.0
@@ -39,7 +41,6 @@
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
 - `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
-- `transformprocessor`: Add SpanID and TraceID literals to the grammar (#10487)
 
 ### 🧰 Bug fixes 🧰
 
