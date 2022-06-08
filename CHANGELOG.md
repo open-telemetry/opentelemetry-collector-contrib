@@ -37,6 +37,7 @@
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
 - `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
 
