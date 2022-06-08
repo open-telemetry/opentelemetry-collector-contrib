@@ -90,7 +90,7 @@ type AndSubPolicyCfg struct {
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
 	// Configs for span counter filter sampling policy evaluator.
-	SpanCountCfg SpanCountCfg `mapstructure:"min_spacount"`
+	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 }
 
 type AndCfg struct {
