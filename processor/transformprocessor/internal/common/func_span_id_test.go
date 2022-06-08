@@ -22,16 +22,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func Test_traceID(t *testing.T) {
+func Test_spanID(t *testing.T) {
 	tests := []struct {
 		name  string
 		bytes []byte
-		want  pcommon.TraceID
+		want  pcommon.SpanID
 	}{
 		{
-			name:  "create trace id",
-			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
-			want:  pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}),
+			name:  "create span id",
+			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8},
+			want:  pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 		},
 	}
 	for _, tt := range tests {
@@ -39,7 +39,7 @@ func Test_traceID(t *testing.T) {
 
 			ctx := testhelper.TestTransformContext{}
 
-			exprFunc, _ := traceID(tt.bytes)
+			exprFunc, _ := spanID(tt.bytes)
 			actual := exprFunc(ctx)
 
 			assert.Equal(t, tt.want, actual)
@@ -47,24 +47,24 @@ func Test_traceID(t *testing.T) {
 	}
 }
 
-func Test_traceID_validation(t *testing.T) {
+func Test_spanID_validation(t *testing.T) {
 	tests := []struct {
 		name  string
 		bytes []byte
 	}{
 		{
-			name:  "byte slice less than 16",
-			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+			name:  "byte slice less than 8",
+			bytes: []byte{1, 2, 3, 4, 5, 6, 7},
 		},
 		{
-			name:  "byte slice longer than 16",
-			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17},
+			name:  "byte slice longer than 8",
+			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := traceID(tt.bytes)
-			assert.Error(t, err, "traces ids must be 16 bytes")
+			assert.Error(t, err, "span ids must be 8 bytes")
 		})
 	}
 }
