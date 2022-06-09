@@ -18,7 +18,6 @@ package filelogreceiver
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -169,7 +168,7 @@ type rotationTest struct {
 func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
 
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
@@ -248,19 +247,6 @@ func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, c
 	t.Cleanup(func() { _ = rotator.Close() })
 
 	return log.New(rotator, "", 0)
-}
-
-func newTempDir(t *testing.T) string {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
-	t.Logf("Temp Dir: %s", tempDir)
-
-	t.Cleanup(func() {
-		os.RemoveAll(tempDir)
-	})
-
-	return tempDir
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {

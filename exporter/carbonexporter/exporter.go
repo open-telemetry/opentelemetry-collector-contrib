@@ -119,10 +119,8 @@ func (cp *connPool) Write(bytes []byte) (int, error) {
 			cp.mtx.Lock()
 			cp.conns = append(cp.conns, conn)
 			cp.mtx.Unlock()
-		} else {
-			if conn != nil {
-				conn.Close()
-			}
+		} else if conn != nil {
+			conn.Close()
 		}
 	}()
 

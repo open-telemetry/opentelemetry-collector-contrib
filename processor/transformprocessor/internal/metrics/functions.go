@@ -18,7 +18,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
+// registry is a map of names to functions for metrics pipelines
+var registry = map[string]interface{}{
+	"convert_sum_to_gauge": convertSumToGauge,
+	"convert_gauge_to_sum": convertGaugeToSum,
+}
+
+func init() {
+	// Init metrics registry with default functions common to all signals
+	for k, v := range common.DefaultFunctions() {
+		registry[k] = v
+	}
+}
+
 func DefaultFunctions() map[string]interface{} {
-	// No metric-only functions yet.
-	return common.DefaultFunctions()
+	return registry
 }

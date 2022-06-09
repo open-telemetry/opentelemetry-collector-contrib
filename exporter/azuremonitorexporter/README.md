@@ -1,6 +1,6 @@
 # Azure Monitor Exporter
 
-This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/en-us/azure/azure-monitor/).
+This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 
 ## Configuration
 
@@ -26,7 +26,7 @@ exporters:
 
 ### Traces
 
-This exporter maps OpenTelemetry trace data to [Application Insights data model](https://docs.microsoft.com/en-us/azure/azure-monitor/app/data-model-dependency-telemetry) using the following schema.
+This exporter maps OpenTelemetry trace data to [Application Insights data model](https://docs.microsoft.com/azure/azure-monitor/app/data-model-dependency-telemetry) using the following schema.
 
 The OpenTelemetry SpanKind determines the Application Insights telemetry type.
 
@@ -56,5 +56,5 @@ The exact mapping can be found [here](trace_to_envelope.go).
 All attributes are also mapped to custom properties if they are booleans or strings and to custom measurements if they are ints or doubles.
 
 ### Logs
-This exporter saves log records to Application Insights `traces` table. 
-[OpenTelemetry Log Data Model TraceId](https://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md#field-traceid) is mapped to `operation_id` column. [TraceId](https://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md#field-traceid) and [SpanId](https://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md#field-spanid) are also mapped to `TraceId` and `SpanId` tags in `customDimensions` column.
+This exporter saves log records to Application Insights `traces` table.
+[TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.

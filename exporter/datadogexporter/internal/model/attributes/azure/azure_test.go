@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/testutils"
@@ -38,22 +39,55 @@ var (
 )
 
 func TestHostInfoFromAttributes(t *testing.T) {
-	hostInfo := HostInfoFromAttributes(testAttrs)
-	require.NotNil(t, hostInfo)
-	assert.ElementsMatch(t, hostInfo.HostAliases, []string{testVMID})
+	tests := []struct {
+		name       string
+		attrs      pcommon.Map
+		usePreview bool
 
-	emptyHostInfo := HostInfoFromAttributes(testEmpty)
-	require.NotNil(t, emptyHostInfo)
-	assert.ElementsMatch(t, emptyHostInfo.HostAliases, []string{})
-}
+		ok       bool
+		hostname string
+		aliases  []string
+	}{
+		{
+			name:  "all attributes",
+			attrs: testAttrs,
 
-func TestHostnameFromAttributes(t *testing.T) {
-	hostname, ok := HostnameFromAttributes(testAttrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testHostname)
+			ok:       true,
+			hostname: testHostname,
+			aliases:  []string{testVMID},
+		},
+		{
+			name:  "empty",
+			attrs: testEmpty,
+		},
+		{
+			name:       "all attributes with preview",
+			attrs:      testAttrs,
+			usePreview: true,
 
-	_, ok = HostnameFromAttributes(testEmpty)
-	assert.False(t, ok)
+			ok:       true,
+			hostname: testVMID,
+		},
+		{
+			name:       "empty with preview",
+			attrs:      testEmpty,
+			usePreview: true,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			hostInfo := HostInfoFromAttributes(testInstance.attrs, testInstance.usePreview)
+			require.NotNil(t, hostInfo)
+			assert.ElementsMatch(t, testInstance.aliases, hostInfo.HostAliases)
+			hostname, ok := HostnameFromAttributes(testInstance.attrs, testInstance.usePreview)
+
+			assert.Equal(t, testInstance.ok, ok)
+			if testInstance.ok || ok {
+				assert.Equal(t, testInstance.hostname, hostname)
+			}
+		})
+	}
 }
 
 func TestClusterNameFromAttributes(t *testing.T) {

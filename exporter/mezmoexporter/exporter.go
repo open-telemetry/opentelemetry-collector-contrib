@@ -29,10 +29,11 @@ import (
 )
 
 type mezmoExporter struct {
-	config   *Config
-	settings component.TelemetrySettings
-	client   *http.Client
-	wg       sync.WaitGroup
+	config          *Config
+	settings        component.TelemetrySettings
+	client          *http.Client
+	userAgentString string
+	wg              sync.WaitGroup
 }
 
 type MezmoLogLine struct {
@@ -47,10 +48,11 @@ type MezmoLogBody struct {
 	Lines []MezmoLogLine `json:"lines"`
 }
 
-func newLogsExporter(config *Config, settings component.TelemetrySettings) *mezmoExporter {
+func newLogsExporter(config *Config, settings component.TelemetrySettings, buildInfo component.BuildInfo) *mezmoExporter {
 	var e = &mezmoExporter{
-		config:   config,
-		settings: settings,
+		config:          config,
+		settings:        settings,
+		userAgentString: fmt.Sprintf("mezmo-otel-exporter/%s", buildInfo.Version),
 	}
 	return e
 }
@@ -156,6 +158,7 @@ func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer([]byte(post)))
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("User-Agent", m.userAgentString)
 	req.Header.Add("apikey", m.config.IngestKey)
 
 	var res *http.Response
