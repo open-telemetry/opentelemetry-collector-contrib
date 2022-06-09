@@ -13,10 +13,12 @@ require (
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -48,5 +50,5 @@ require (
 require (
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
-	go.uber.org/multierr v1.8.0 // indirect
+	go.uber.org/multierr v1.8.0
 )
