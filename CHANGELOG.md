@@ -20,6 +20,7 @@
 - `googlemanagedprometheusexporter` The Google Managed Service for Prometheus exporter is alpha. (#10925)
 
 ### 💡 Enhancements 💡
+- `mongodbatlasreceiver` Add support for receiving alerts (#10854)
 
 - `cmd/mdatagen`: Allow attribute values of any types (#9245)
 - `metricstransformprocessor`: Migrate the processor from OC to pdata (#10817)
