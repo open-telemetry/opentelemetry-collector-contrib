@@ -28,7 +28,7 @@ type Provider struct {
 	detector azure.Provider
 }
 
-// Hostname returns the GCP cloud integration hostname.
+// Hostname returns the Azure cloud integration hostname.
 func (p *Provider) Hostname(ctx context.Context) (string, error) {
 	metadata, err := p.detector.Metadata(ctx)
 	if err != nil {
@@ -38,7 +38,7 @@ func (p *Provider) Hostname(ctx context.Context) (string, error) {
 	return metadata.VMID, nil
 }
 
-// NewProvider creates a new GCP hostname provider.
+// NewProvider creates a new Azure hostname provider.
 func NewProvider() *Provider {
 	return &Provider{detector: azure.NewProvider()}
 }
