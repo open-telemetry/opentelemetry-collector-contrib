@@ -64,7 +64,6 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 }
 
 func newMockPusherWithEventCheck(check func(msg string)) Pusher {
-	logger := zap.NewNop()
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {
 		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
 		for _, event := range input.LogEvents {
@@ -72,7 +71,7 @@ func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 			check(eventMsg)
 		}
 	})
-	p := newLogPusher(&logGroup, &logStreamName, *svc, logger)
+	p := newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
 	return p
 }
 
@@ -88,10 +87,9 @@ func TestLogEvent_eventPayloadBytes(t *testing.T) {
 func TestValidateLogEventWithMutating(t *testing.T) {
 	maxEventPayloadBytes = 64
 
-	logger := zap.NewNop()
 	logEvent := NewEvent(0, "abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
 	logEvent.GeneratedTime = time.Now()
-	err := logEvent.Validate(logger)
+	err := logEvent.Validate(zap.NewNop())
 	assert.Nil(t, err)
 	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
 	assert.Equal(t, 64-perEventHeaderBytes, len(*logEvent.InputLogEvent.Message))
