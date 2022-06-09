@@ -15,6 +15,7 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -337,4 +338,18 @@ func Test_parse_failure(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+func testParsePath(val *Path) (GetSetter, error) {
+	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
+		return &testGetSetter{
+			getter: func(ctx TransformContext) interface{} {
+				return ctx.GetItem()
+			},
+			setter: func(ctx TransformContext, val interface{}) {
+				ctx.GetItem()
+			},
+		}, nil
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }

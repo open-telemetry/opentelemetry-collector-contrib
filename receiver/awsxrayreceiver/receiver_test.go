@@ -117,6 +117,8 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("skipping test on darwin")
 	}
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10596")
+
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
