@@ -12,6 +12,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+
 ## v0.53.0
 
 ### 🛑 Breaking changes 🛑
