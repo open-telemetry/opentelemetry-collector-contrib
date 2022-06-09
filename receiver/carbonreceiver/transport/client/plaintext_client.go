@@ -30,10 +30,9 @@ import (
 // and modified for the needs of testing the Carbon receiver package and is not
 // intended/tested to be used in production.
 type Graphite struct {
-	Host    string
-	Port    int
-	Timeout time.Duration
-	Conn    io.Writer
+	Endpoint string
+	Timeout  time.Duration
+	Conn     io.Writer
 }
 
 // Transport is used as an enum to select the type of transport to be used.
@@ -52,8 +51,8 @@ const defaultTimeout = 5
 // https://github.com/census-ecosystem/opencensus-go-exporter-graphite/tree/master/internal/client
 // and modified for the needs of testing the Carbon receiver package and is not
 // intended/tested to be used in production.
-func NewGraphite(transport Transport, host string, port int) (*Graphite, error) {
-	graphite := &Graphite{Host: host, Port: port}
+func NewGraphite(transport Transport, endpoint string) (*Graphite, error) {
+	graphite := &Graphite{Endpoint: endpoint}
 	err := graphite.connect(transport)
 	if err != nil {
 		return nil, err
@@ -68,7 +67,6 @@ func (g *Graphite) connect(transport Transport) error {
 		cl.Close()
 	}
 
-	address := fmt.Sprintf("%s:%d", g.Host, g.Port)
 	if g.Timeout == 0 {
 		g.Timeout = defaultTimeout * time.Second
 	}
@@ -76,10 +74,10 @@ func (g *Graphite) connect(transport Transport) error {
 	var err error
 	switch transport {
 	case TCP:
-		g.Conn, err = net.DialTimeout("tcp", address, g.Timeout)
+		g.Conn, err = net.DialTimeout("tcp", g.Endpoint, g.Timeout)
 	case UDP:
 		var udpAddr *net.UDPAddr
-		udpAddr, err = net.ResolveUDPAddr("udp", address)
+		udpAddr, err = net.ResolveUDPAddr("udp", g.Endpoint)
 		if err != nil {
 			return err
 		}
