@@ -85,11 +85,16 @@ func GetAvailablePort(t *testing.T) uint16 {
 
 // Get excluded ports on Windows from the command: netsh interface ipv4 show excludedportrange protocol=tcp
 func getExclusionsList(t *testing.T) []portpair {
-	cmd := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
-	output, err := cmd.CombinedOutput()
-	require.NoError(t, err)
+	cmdTCP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
+	outputTCP, errTCP := cmdTCP.CombinedOutput()
+	require.NoError(t, errTCP)
+	exclusions := createExclusionsList(string(outputTCP), t)
 
-	exclusions := createExclusionsList(string(output), t)
+	cmdUDP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=udp")
+	outputUDP, errUDP := cmdUDP.CombinedOutput()
+	require.NoError(t, errUDP)
+	exclusions = append(exclusions, createExclusionsList(string(outputUDP), t)...)
+
 	return exclusions
 }
 
