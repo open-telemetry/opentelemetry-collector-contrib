@@ -1,9 +1,8 @@
 # MongoDB Atlas Receiver
 
 Receives metrics from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 
-via their [monitoring APIs](https://docs.atlas.mongodb.com/reference/api/monitoring-and-logs/)
-
-Additionally, may receive alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/).
+via their [monitoring APIs](https://docs.atlas.mongodb.com/reference/api/monitoring-and-logs/),
+as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/).
 
 Supported pipeline types: metrics, logs
 
