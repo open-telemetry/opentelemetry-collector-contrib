@@ -75,16 +75,9 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		//override the attribute to the expected one
-		for i := 0; i < actualMtrics.ResourceMetrics().Len(); i++ {
-			if _, ok := actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Get("elasticsearch.node.name"); ok {
-				actualMtrics.ResourceMetrics().At(i).Resource().Attributes().Remove("elasticsearch.node.name")
-				actualMtrics.ResourceMetrics().At(i).Resource().Attributes().InsertString("elasticsearch.node.name", "71a321fbc480")
-			}
-		}
-
-		err = scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues())
+		scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
+
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {

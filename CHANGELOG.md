@@ -10,6 +10,8 @@
 
 ### 💡 Enhancements 💡
 
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.53.0
