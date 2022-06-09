@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -49,7 +50,9 @@ func TestPrometheusExporter(t *testing.T) {
 					"foo0":  "bar0",
 					"code0": "one0",
 				},
-				Endpoint:         ":8999",
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: ":8999",
+				},
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
 			},
@@ -57,7 +60,9 @@ func TestPrometheusExporter(t *testing.T) {
 		{
 			config: &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				Endpoint:         ":88999",
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: ":88999",
+				},
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
@@ -107,7 +112,9 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		Endpoint:         ":7777",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+		},
 		MetricExpiration: 120 * time.Minute,
 	}
 
@@ -182,7 +189,9 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		Endpoint:         ":7777",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -258,7 +267,9 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		Endpoint:         ":7777",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{

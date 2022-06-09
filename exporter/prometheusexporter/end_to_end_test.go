@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -69,7 +70,9 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	exporterCfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "test",
-		Endpoint:         ":8787",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":8787",
+		},
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}

@@ -9,7 +9,7 @@
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
-
+- `prometheusexporter`: Use `confighttp.HTTPServerSettings` to allow tls and auth.
 ### 🧰 Bug fixes 🧰
 
 ## v0.53.0
