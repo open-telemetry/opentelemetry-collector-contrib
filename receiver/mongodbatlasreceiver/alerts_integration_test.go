@@ -83,7 +83,6 @@ func TestAlertsReceiver(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			//require.NoError(t, writeLogs(filepath.Join("testdata", "alerts", "golden", payloadName), logs))
 			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
@@ -174,26 +173,6 @@ func calculateHMACb64(secret string, payload []byte) (string, error) {
 	}
 
 	return buf.String(), nil
-}
-
-func writeLogs(path string, logs plog.Logs) error {
-	j, err := plog.NewJSONMarshaler().MarshalLogs(logs)
-	if err != nil {
-		return err
-	}
-
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.Write(j)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func readLogs(path string) (*plog.Logs, error) {
