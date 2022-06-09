@@ -107,6 +107,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "elasticsearch",
 		},
 		{
+			receiver: "expvar",
+		},
+		{
 			receiver: "filelog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
