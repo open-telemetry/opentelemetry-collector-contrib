@@ -516,12 +516,6 @@ func compareLogRecord(expected, actual plog.LogRecord) error {
 			actual.DroppedAttributesCount())
 	}
 
-	// if expected.ObservedTimestamp() != actual.ObservedTimestamp() {
-	// 	return fmt.Errorf("log record ObservedTimestamp doesn't match (expected: %d, actual: %d)",
-	// 		expected.ObservedTimestamp(),
-	// 		actual.ObservedTimestamp())
-	// }
-
 	if expected.Timestamp() != actual.Timestamp() {
 		return fmt.Errorf("log record Timestamp doesn't match (expected: %d, actual: %d)",
 			expected.Timestamp(),
