@@ -22,6 +22,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes value matches, both exact and regex value matches are supported
+- `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `rate_limiting`: Sample based on rate
 - `span_count`: Sample based on the minimum number of spans within a batch. If all traces within the batch have less number of spans than the threshold, the batch will not be sampled.
 - `and`: Sample based on multiple policies, creates an AND policy 
@@ -94,6 +95,11 @@ processors:
             name: test-policy-10,
             type: span_count,
             span_count: {min_spans: 2}
+         },
+         {
+             name: test-policy-11,
+             type: trace_state,
+             trace_state: { key: key3, values: [value1, value2] }
          },
          {
             name: and-policy-1,
