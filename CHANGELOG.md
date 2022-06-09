@@ -8,11 +8,16 @@
 
 ### 🚀 New components 🚀
 
+- `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+
 ### 💡 Enhancements 💡
 
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 
 ### 🧰 Bug fixes 🧰
+
+- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
 
 ## v0.53.0
 
@@ -39,6 +44,7 @@
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
 - `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
 

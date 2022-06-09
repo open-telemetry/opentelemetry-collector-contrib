@@ -355,6 +355,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.53.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.53.0 // indirect
@@ -774,6 +775,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/docke
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver => ../../receiver/dotnetdiagnosticsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ../../receiver/elasticsearchreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver => ../../receiver/expvarreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
 

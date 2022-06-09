@@ -84,4 +84,51 @@ func Test_serializeHistogram(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "", got)
 	})
+
+	t.Run("when min is provided it should be used", func(t *testing.T) {
+		minMaxHist := pmetric.NewHistogramDataPoint()
+		minMaxHist.SetMExplicitBounds([]float64{10, 20})
+		minMaxHist.SetMBucketCounts([]uint64{2, 0, 0})
+		minMaxHist.SetCount(2)
+		minMaxHist.SetSum(10)
+		minMaxHist.SetMin(3)
+		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeHistogram("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		assert.NoError(t, err)
+		// min 3, max 10, sum 10 is impossible but passes consistency check because the estimated max 10 is greater than the mean 5
+		// it is the best we can do without a better max estimate
+		assert.Equal(t, "prefix.min_max_hist gauge,min=3,max=10,sum=10,count=2 1626438600000", got)
+	})
+
+	t.Run("when max is provided it should be used", func(t *testing.T) {
+		minMaxHist := pmetric.NewHistogramDataPoint()
+		minMaxHist.SetMExplicitBounds([]float64{10, 20})
+		minMaxHist.SetMBucketCounts([]uint64{2, 0, 0})
+		minMaxHist.SetCount(2)
+		minMaxHist.SetSum(10)
+		minMaxHist.SetMax(7)
+		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeHistogram("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		assert.NoError(t, err)
+		// min 5, max 7, sum 10 is impossible with count 2 but passes consistency check because the estimated min 10 is reduced to the mean 5
+		// it is the best we can do without a better min estimate
+		assert.Equal(t, "prefix.min_max_hist gauge,min=5,max=7,sum=10,count=2 1626438600000", got)
+	})
+
+	t.Run("when min and max is provided it should be used", func(t *testing.T) {
+		minMaxHist := pmetric.NewHistogramDataPoint()
+		minMaxHist.SetMExplicitBounds([]float64{10, 20})
+		minMaxHist.SetMBucketCounts([]uint64{2, 0, 0})
+		minMaxHist.SetCount(2)
+		minMaxHist.SetSum(10)
+		minMaxHist.SetMin(3)
+		minMaxHist.SetMax(7)
+		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeHistogram("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.min_max_hist gauge,min=3,max=7,sum=10,count=2 1626438600000", got)
+	})
 }
