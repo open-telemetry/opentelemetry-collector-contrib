@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package jaegerthrifthttpexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 
 import (
@@ -98,7 +97,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return consumererror.NewPermanent(err)
 		}
 
-		io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 
 		if resp.StatusCode >= http.StatusBadRequest {

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
@@ -50,7 +51,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		Metrics: SignalConfig{
 			Queries: []string{},
 
-			functions: traces.DefaultFunctions(),
+			functions: metrics.DefaultFunctions(),
 		},
 		Logs: SignalConfig{
 			Queries: []string{},

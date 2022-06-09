@@ -119,10 +119,17 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "flinkmetrics",
+		},
+		{
 			receiver: "fluentforward",
 		},
 		{
 			receiver: "googlecloudspanner",
+		},
+		{
+			receiver:     "googlecloudpubsub",
+			skipLifecyle: true, // Requires a pubsub subscription
 		},
 		{
 			receiver: "hostmetrics",

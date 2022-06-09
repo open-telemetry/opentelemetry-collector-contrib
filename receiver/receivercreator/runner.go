@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -84,10 +85,10 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	discoveredConfig userConfigMap,
 ) (config.Receiver, error) {
 	// Merge in the config values specified in the config file.
-	mergedConfig := config.NewMapFromStringMap(receiver.config)
+	mergedConfig := confmap.NewFromStringMap(receiver.config)
 
 	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := mergedConfig.Merge(config.NewMapFromStringMap(discoveredConfig)); err != nil {
+	if err := mergedConfig.Merge(confmap.NewFromStringMap(discoveredConfig)); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 

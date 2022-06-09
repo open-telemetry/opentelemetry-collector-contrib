@@ -21,8 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestFinder(t *testing.T) {
@@ -129,7 +127,7 @@ func TestFinder(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir := testutil.NewTempDir(t)
+			tempDir := t.TempDir()
 			files := absPath(tempDir, tc.files)
 			include := absPath(tempDir, tc.include)
 			exclude := absPath(tempDir, tc.exclude)

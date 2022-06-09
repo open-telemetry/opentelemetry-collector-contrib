@@ -111,11 +111,12 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 		return nil, fmt.Errorf("expected %s to be type %s but got %s - count reset", name, metricValueTypeToString(oldCount.ValueType()), metricValueTypeToString(dp.ValueType()))
 	}
 
-	if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
+	switch {
+	case dp.ValueType() == pmetric.NumberDataPointValueTypeInt:
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal() - oldCount.IntVal())
-	} else if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
+	case dp.ValueType() == pmetric.NumberDataPointValueTypeDouble:
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal() - oldCount.DoubleVal())
-	} else {
+	default:
 		return nil, fmt.Errorf("%s value type %s not supported", name, metricValueTypeToString(dp.ValueType()))
 	}
 
