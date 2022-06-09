@@ -50,3 +50,6 @@ receivers:
       process.runtime.memstats.mallocs:
         enabled: false
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
