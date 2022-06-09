@@ -1,11 +1,15 @@
 # Expvar Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 An Expvar Receiver scrapes metrics from [expvar](https://pkg.go.dev/expvar), 
 which exposes data in JSON format from an HTTP endpoint. The metrics are 
 extracted from the `expvar` variable [memstats](https://pkg.go.dev/runtime#MemStats), 
 which exposes various information about the Go runtime.
-
-> :construction: This component is in alpha and configuration fields are subject to change.
 
 ## Configuration 
 
