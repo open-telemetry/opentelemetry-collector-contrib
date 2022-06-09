@@ -3,7 +3,7 @@
 git config user.name $GITHUB_ACTOR
 git config user.email $GITHUB_ACTOR@users.noreply.github.com
 
-PR_NAME=dependabot-prs/`date +'%Y-%m-%d-%H%M%S'`
+PR_NAME=dependabot-prs/`date +'%Y-%m-%dT%H%M%S'`
 git checkout -b $PR_NAME
 
 IFS=$'\n'
