@@ -39,7 +39,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap/zaptest"
 )
 
 var testPayloads = []string{
@@ -56,19 +55,30 @@ func TestAlertsReceiver(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
 			sink := &consumertest.LogsSink{}
-			ar, err := newAlertsReceiver(zaptest.NewLogger(t), AlertConfig{
-				Enabled:  true,
-				Secret:   testSecret,
-				Endpoint: fmt.Sprintf("127.0.0.1:%d", testPort),
-			}, sink)
+			fact := NewFactory()
+
+			recv, err := fact.CreateLogsReceiver(
+				context.Background(),
+				componenttest.NewNopReceiverCreateSettings(),
+				&Config{
+					Alerts: AlertConfig{
+						Enabled:  true,
+						Secret:   testSecret,
+						Endpoint: fmt.Sprintf("127.0.0.1:%d", testPort),
+					},
+				},
+				sink,
+			)
 
 			require.NoError(t, err)
 
-			err = ar.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			err = recv.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				assert.NoError(t, ar.Shutdown(context.Background()))
+				assert.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
 			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
@@ -111,25 +121,33 @@ func TestAlertsReceiverTLS(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
 			sink := &consumertest.LogsSink{}
-			ar, err := newAlertsReceiver(zaptest.NewLogger(t), AlertConfig{
-				Enabled:  true,
-				Secret:   testSecret,
-				Endpoint: fmt.Sprintf("127.0.0.1:%d", testPort),
-				TLS: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: filepath.Join("testdata", "alerts", "cert", "cert.pem"),
-						KeyFile:  filepath.Join("testdata", "alerts", "cert", "key.pem"),
+			fact := NewFactory()
+
+			recv, err := fact.CreateLogsReceiver(
+				context.Background(),
+				componenttest.NewNopReceiverCreateSettings(),
+				&Config{
+					Alerts: AlertConfig{
+						Enabled:  true,
+						Secret:   testSecret,
+						Endpoint: fmt.Sprintf("127.0.0.1:%d", testPort),
+						TLS: &configtls.TLSServerSetting{
+							TLSSetting: configtls.TLSSetting{
+								CertFile: filepath.Join("testdata", "alerts", "cert", "cert.pem"),
+								KeyFile:  filepath.Join("testdata", "alerts", "cert", "key.pem"),
+							},
+						},
 					},
 				},
-			}, sink)
-
+				sink,
+			)
 			require.NoError(t, err)
 
-			err = ar.Start(context.Background(), componenttest.NewNopHost())
+			err = recv.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				assert.NoError(t, ar.Shutdown(context.Background()))
+				assert.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
 			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
