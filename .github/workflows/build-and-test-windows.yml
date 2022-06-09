@@ -9,7 +9,28 @@ env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
 
 jobs:
+  setup-environment:
+    runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
+      - name: Cache Go Mod
+        id: go-mod-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\go\pkg\mod
+          key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
   windows-unittest-matrix:
+    needs: [setup-environment]
     strategy:
       matrix:
         group:
@@ -35,13 +56,22 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Cache Go
+      - name: Cache Go Mod
+        id: go-mod-cache
         uses: actions/cache@v3
         with:
           path: |
             ~\go\pkg\mod
+          key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Cache Go Build
+        uses: actions/cache@v3
+        with:
+          path: |
             ~\AppData\Local\go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: go-build-cache-${{ matrix.group }}-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         run: make gotest GROUP=${{ matrix.group }}
   windows-unittest:
