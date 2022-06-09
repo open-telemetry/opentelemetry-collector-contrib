@@ -141,17 +141,24 @@ func (a alertsReceiver) Start(ctx context.Context, host component.Host) error {
 
 func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	if req.ContentLength < 0 {
-		rw.WriteHeader(http.StatusBadRequest)
+		rw.WriteHeader(http.StatusLengthRequired)
 		a.logger.Debug("Got request with no Content-Length specified", zap.String("remote", req.RemoteAddr))
 		return
 	}
 
 	if req.ContentLength > maxContentLength {
-		rw.WriteHeader(http.StatusBadRequest)
+		rw.WriteHeader(http.StatusRequestEntityTooLarge)
 		a.logger.Debug("Got request with large Content-Length specified",
 			zap.String("remote", req.RemoteAddr),
 			zap.Int64("content-length", req.ContentLength),
 			zap.Int64("max-content-length", maxContentLength))
+		return
+	}
+
+	payloadSigHeader := req.Header.Get(signatureHeaderName)
+	if payloadSigHeader == "" {
+		rw.WriteHeader(http.StatusBadRequest)
+		a.logger.Debug("Got payload with no HMAC signature, dropping...")
 		return
 	}
 
@@ -160,13 +167,6 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		a.logger.Debug("Failed to read alerts payload", zap.Error(err), zap.String("remote", req.RemoteAddr))
-		return
-	}
-
-	payloadSigHeader := req.Header.Get(signatureHeaderName)
-	if payloadSigHeader == "" {
-		rw.WriteHeader(http.StatusBadRequest)
-		a.logger.Debug("Got payload with no HMAC signature, dropping...")
 		return
 	}
 
@@ -293,14 +293,14 @@ func timestampFromAlert(a model.Alert) pcommon.Timestamp {
 		return pcommon.NewTimestampFromTime(time)
 	}
 
-	if time, err := time.Parse(time.RFC3339, a.Created); err == nil {
-		return pcommon.NewTimestampFromTime(time)
-	}
-
 	return pcommon.Timestamp(0)
 }
 
+// severityFromAlert maps the alert to a severity number.
+// Currently, it just maps "OPEN" alerts to WARN, and everything else to INFO.
 func severityFromAlert(a model.Alert) plog.SeverityNumber {
+	// Status is defined here: https://www.mongodb.com/docs/atlas/reference/api/alerts-get-alert/#response-elements
+	// It may also be "INFORMATIONAL" for single-fire alerts (events)
 	switch a.Status {
 	case "OPEN":
 		return plog.SeverityNumberWARN

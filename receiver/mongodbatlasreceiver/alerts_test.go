@@ -279,7 +279,7 @@ func TestHandleRequest(t *testing.T) {
 			},
 			logExpected:        false,
 			consumerFailure:    false,
-			expectedStatusCode: http.StatusBadRequest,
+			expectedStatusCode: http.StatusLengthRequired,
 		},
 		{
 			name: "ContentLength too large",
@@ -294,7 +294,7 @@ func TestHandleRequest(t *testing.T) {
 			},
 			logExpected:        false,
 			consumerFailure:    false,
-			expectedStatusCode: http.StatusBadRequest,
+			expectedStatusCode: http.StatusRequestEntityTooLarge,
 		},
 		{
 			name: "ContentLength is incorrect for payload",

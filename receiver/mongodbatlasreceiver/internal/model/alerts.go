@@ -14,6 +14,8 @@
 
 package model
 
+// Alert represents an alert. It uses the format defined by mongodb atlas.
+// See: https://www.mongodb.com/docs/atlas/reference/api/alerts-get-alert/#response-elements
 type Alert struct {
 	Created                 string  `json:"created"`
 	AlertConfigID           string  `json:"alertConfigId"`
