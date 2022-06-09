@@ -1,10 +1,10 @@
 # Dynatrace Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                  |
+| ------------------------ |------------------|
+| Stability                | [beta]           |
+| Supported pipeline types | metrics          |
+| Distributions            | [contrib], [AWS] |
 
 The [Dynatrace](https://dynatrace.com) metrics exporter exports metrics to the [metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
 using the [metrics ingestion protocol](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/metric-ingestion-protocol/).
@@ -281,3 +281,4 @@ by configuring the OpenTelemetry SDK to export DELTA values.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[AWS]:https://aws-otel.github.io/docs/partners/dynatrace
