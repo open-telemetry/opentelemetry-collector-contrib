@@ -5,12 +5,12 @@ go 1.17
 
 require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.53.0
 	github.com/prometheus/common v0.34.0
 	github.com/prometheus/prometheus v0.36.0
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -67,7 +67,7 @@ require (
 	github.com/grafana/regexp v0.0.0-20220304095617-2e8d9baf4ac2 // indirect
 	github.com/hashicorp/consul/api v1.12.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-hclog v1.2.0 // indirect
+	github.com/hashicorp/go-hclog v1.2.1 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
@@ -110,7 +110,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vultr/govultr/v2 v2.17.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc // indirect
+	go.opentelemetry.io/collector/semconv v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect

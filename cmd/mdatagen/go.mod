@@ -7,8 +7,8 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
 )
 
 require (

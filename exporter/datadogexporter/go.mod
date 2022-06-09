@@ -11,14 +11,14 @@ require (
 	github.com/aws/aws-sdk-go v1.44.28
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.53.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
+	go.opentelemetry.io/collector/semconv v0.53.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.38.1
@@ -69,7 +69,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
 	google.golang.org/genproto v0.0.0-20220421151946-72621c1f0bd3 // indirect

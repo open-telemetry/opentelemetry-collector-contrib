@@ -2,28 +2,44 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.53.0
+
 ### 🛑 Breaking changes 🛑
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
-
-### 🚩 Deprecations 🚩
-
+- `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
 
 ### 🚀 New components 🚀
 
 - `flinkmetricsreceiver`: Add implementation of Flink Metric Receiver (#10121)
 - `windowseventlogreceiver` Added implementation of Windows Event Log Receiver (#9228)
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
+- `googlecloudpubsubreceiver` Activate the Google Cloud Pubsub receiver. (#10580)
+- `googlecloudpubsubexporter` Activate the Google Cloud Pubsub exporter. (#10580)
 
 ### 💡 Enhancements 💡
 
 - `awsemfexporter`: Add min and max support for histograms (#10577)
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
+- `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
+- `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
+- `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
 
 ### 🧰 Bug fixes 🧰
 
@@ -37,6 +53,7 @@
 - `sigv4authextension`: Fix signing of empty request bodies. (#10578)
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
+- `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
 
 ## v0.52.0
 
@@ -115,6 +132,7 @@
 - `transformprocessor`: Add new `limit` function to allow limiting the number of items in a map, such as the number of attributes in `attributes` or `resource.attributes` (#9552)
 - `processor/attributes`: Support attributes set by server authenticator (#9420)
 - `datadogexporter`: Experimental support for Exponential Histograms with delta aggregation temporality (#8350)
+- `prometheusreceiver`: Support OpenMetrics Info and Stateset metrics (#9378)
 
 ### 🧰 Bug fixes 🧰
 

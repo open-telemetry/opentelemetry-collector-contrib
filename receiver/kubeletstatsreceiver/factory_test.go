@@ -209,14 +209,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockUnmarshallFailure {
 				// some arbitrary failure.
-				tt.args.componentParser.Set(metricGroupsConfig, map[string]string{"foo": "bar"})
+				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(map[string]interface{}{metricGroupsConfig: map[string]string{"foo": "bar"}}))
+				require.NoError(t, err)
 			}
 
 			// Mock some config overrides.
 			if tt.configOverride != nil {
-				for k, v := range tt.configOverride {
-					tt.args.componentParser.Set(k, v)
-				}
+				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(tt.configOverride))
+				require.NoError(t, err)
 			}
 
 			if err := tt.args.intoCfg.Unmarshal(tt.args.componentParser); (err != nil) != tt.wantErr {

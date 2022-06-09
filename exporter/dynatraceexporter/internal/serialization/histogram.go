@@ -63,6 +63,11 @@ func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 	bounds := dp.MExplicitBounds()
 	counts := dp.MBucketCounts()
 
+	// shortcut in the case both max and min are provided
+	if dp.HasMin() && dp.HasMax() {
+		return dp.Min(), dp.Max()
+	}
+
 	// Because we do not know the actual min and max, we estimate them based on the min and max non-empty bucket
 	minIdx, maxIdx := -1, -1
 	for y := 0; y < len(counts); y++ {
@@ -80,18 +85,26 @@ func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 
 	var min, max float64
 
-	// Use lower bound for min unless it is the first bucket which has no lower bound, then use upper
-	if minIdx == 0 {
-		min = bounds[minIdx]
+	if dp.HasMin() {
+		min = dp.Min()
 	} else {
-		min = bounds[minIdx-1]
+		// Use lower bound for min unless it is the first bucket which has no lower bound, then use upper
+		if minIdx == 0 {
+			min = bounds[minIdx]
+		} else {
+			min = bounds[minIdx-1]
+		}
 	}
 
-	// Use upper bound for max unless it is the last bucket which has no upper bound, then use lower
-	if maxIdx == len(counts)-1 {
-		max = bounds[maxIdx-1]
+	if dp.HasMax() {
+		max = dp.Max()
 	} else {
-		max = bounds[maxIdx]
+		// Use upper bound for max unless it is the last bucket which has no upper bound, then use lower
+		if maxIdx == len(counts)-1 {
+			max = bounds[maxIdx-1]
+		} else {
+			max = bounds[maxIdx]
+		}
 	}
 
 	// Set min to average when higher than average. This can happen when most values are lower than first boundary (falling in first bucket).

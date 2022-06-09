@@ -4,13 +4,13 @@ go 1.17
 
 require (
 	github.com/SAP/go-hdb v0.105.5
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.53.0
 	go.uber.org/zap v1.21.0 // indirect
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.52.0
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
 )
 
 require (
