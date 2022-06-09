@@ -12,6 +12,7 @@
 
 ### 💡 Enhancements 💡
 
+- `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 
 ### 🧰 Bug fixes 🧰
