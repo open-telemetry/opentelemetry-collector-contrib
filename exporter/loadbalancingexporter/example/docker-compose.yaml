@@ -12,7 +12,7 @@ services:
       - "8889"   # Prometheus exporter metrics
       - "13133" # health_check extension
       - "4317"        # OTLP gRPC receiver
-      - "55670" # zpages extension
+      - "55679" # zpages extension
 
   otel-collector-2:
     image: otelcontribcol:latest
@@ -25,7 +25,7 @@ services:
       - "8889"   # Prometheus exporter metrics
       - "13133" # health_check extension
       - "4317"        # OTLP gRPC receiver
-      - "55670" # zpages extension
+      - "55679" # zpages extension
 
   otel-collector-3:
     image: otelcontribcol:latest
@@ -38,7 +38,7 @@ services:
       - "8889"   # Prometheus exporter metrics
       - "13133" # health_check extension
       - "4317"        # OTLP gRPC receiver
-      - "55670" # zpages extension
+      - "55679" # zpages extension
 
   # Otel agent (running loadbalacing exporter)
   otel-agent:
@@ -52,7 +52,7 @@ services:
       - "8889"   # Prometheus exporter metrics
       - "13133" # health_check extension
       - "4317"        # OTLP gRPC receiver
-      - "55670" # zpages extension
+      - "55679" # zpages extension
       - "24224:24224" # fluentforwarder
       - "24224:24224/udp" # fluentforwarder
     depends_on:
