@@ -1,10 +1,24 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package mongodbatlasreceiver
 
 import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- SHA1 is the algorithm mongodbatlas uses, it must be used to calculate the HMAC signature
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
@@ -17,13 +31,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 // maxContentLength is the maximum payload size we will accept from incoming requests.
@@ -155,7 +170,7 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	if err := verifyHMACSignature(a.secret, payload, payloadSigHeader); err != nil {
+	if err = verifyHMACSignature(a.secret, payload, payloadSigHeader); err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		a.logger.Debug("Got payload with invalid HMAC signature, dropping...", zap.Error(err), zap.String("remote", req.RemoteAddr))
 		return
@@ -168,7 +183,6 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// TODO: Does this need a goroutine?
 	if err := a.consumer.ConsumeLogs(req.Context(), *logs); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		a.logger.Error("Failed to consumer alert as log", zap.Error(err))

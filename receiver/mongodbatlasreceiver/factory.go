@@ -79,9 +79,7 @@ func createDefaultConfig() config.Receiver {
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 		Metrics:                   metadata.DefaultMetricsSettings(),
 		Alerts: AlertConfig{
-			Enabled:  false,
-			Endpoint: "",
-			Secret:   "",
+			Enabled: defaultAlertsEnabled,
 		},
 	}
 }
