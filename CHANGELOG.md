@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+
 ### 🧰 Bug fixes 🧰
 
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
