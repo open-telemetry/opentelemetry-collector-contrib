@@ -42,7 +42,6 @@ type alertsReceiver struct {
 	consumer    consumer.Logs
 	wg          *sync.WaitGroup
 	logger      *zap.Logger
-	now         func() time.Time
 }
 
 func newAlertsReceiver(logger *zap.Logger, cfg AlertConfig, consumer consumer.Logs) (*alertsReceiver, error) {
@@ -64,7 +63,6 @@ func newAlertsReceiver(logger *zap.Logger, cfg AlertConfig, consumer consumer.Lo
 		consumer:    consumer,
 		wg:          &sync.WaitGroup{},
 		logger:      logger,
-		now:         time.Now,
 	}
 
 	s := &http.Server{
@@ -163,7 +161,7 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	logs, err := payloadToLogs(a.now(), payload)
+	logs, err := payloadToLogs(time.Now(), payload)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		a.logger.Error("Failed to convert log payload to log record", zap.Error(err))
