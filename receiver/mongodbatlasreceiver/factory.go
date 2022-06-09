@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	typeStr            = "mongodbatlas"
-	defaultGranularity = "PT1M"          // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
-	defaultEndpoint    = "0.0.0.0:10744" // Default endpoint for alerts, completely arbitrary
+	typeStr              = "mongodbatlas"
+	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
+	defaultAlertsEnabled = false
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
@@ -79,8 +79,8 @@ func createDefaultConfig() config.Receiver {
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 		Metrics:                   metadata.DefaultMetricsSettings(),
 		Alerts: AlertConfig{
-			Enabled:  true,
-			Endpoint: defaultEndpoint,
+			Enabled:  false,
+			Endpoint: "",
 			Secret:   "",
 		},
 	}
