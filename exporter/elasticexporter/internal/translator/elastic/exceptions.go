@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package elastic // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 
 import (
@@ -73,8 +72,7 @@ func encodeExceptionSpanEvent(
 }
 
 func setExceptionStacktrace(s, language string, out *model.Exception) error {
-	switch language {
-	case "java":
+	if language == "java" {
 		return setJavaExceptionStacktrace(s, out)
 	}
 	return fmt.Errorf("parsing %q stacktraces not implemented", language)
