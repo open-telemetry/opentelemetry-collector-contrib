@@ -50,10 +50,7 @@ var (
 )
 
 var (
-	// Specifies regular histogram
-	regularHistogram histogramSpecification = regularHistogramSpecification{}
-
-	// Specifies exponential histograms
+	regularHistogram     histogramSpecification = regularHistogramSpecification{}
 	exponentialHistogram histogramSpecification = exponentialHistogramSpecification{}
 )
 
