@@ -16,11 +16,9 @@ package testutil
 
 import (
 	"net"
-	"os"
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,34 +72,4 @@ Start Port    End Port
 
 	emptyExclusions := createExclusionsList(emptyExclusionsText, t)
 	require.Equal(t, len(emptyExclusions), 0)
-}
-
-func TestTemporaryFile(t *testing.T) {
-	var filename string
-
-	t.Run("scoped lifetime", func(t *testing.T) {
-		f := NewTemporaryFile(t)
-		filename = f.Name()
-
-		_, err := os.Stat(filename)
-		assert.ErrorIs(t, err, nil)
-	})
-
-	_, err := os.Stat(filename)
-	assert.ErrorIs(t, err, os.ErrNotExist)
-}
-
-func TestTemporaryDirectory(t *testing.T) {
-	var tmp string
-
-	t.Run("scoped lifetime", func(t *testing.T) {
-		tmp = NewTemporaryDirectory(t)
-
-		stat, err := os.Stat(tmp)
-		assert.NoError(t, err)
-		assert.True(t, stat.IsDir(), "Must have the directory permissions set")
-	})
-
-	_, err := os.Stat(tmp)
-	assert.ErrorIs(t, err, os.ErrNotExist)
 }
