@@ -14,6 +14,7 @@
 
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
 
 ### 🧰 Bug fixes 🧰
 
@@ -26,7 +27,6 @@
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
-- `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
 
 ### 🚩 Deprecations 🚩
 

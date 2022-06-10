@@ -73,17 +73,17 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 	}
 }
 
-func newTraceWithMultipleSpans(NumberSpans []int32) *TraceData {
+func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
 	var traceBatches []ptrace.Traces
 
 	// For each trace, going to create the number of spans defined in the array
-	for i := range NumberSpans {
-		//Creates trace
+	for i := range numberSpans {
+		// Creates trace
 		traces := ptrace.NewTraces()
 		rs := traces.ResourceSpans().AppendEmpty()
 		ils := rs.ScopeSpans().AppendEmpty()
 
-		for r := 0; r < int(NumberSpans[i]); r++ {
+		for r := 0; r < int(numberSpans[i]); r++ {
 			span := ils.Spans().AppendEmpty()
 			span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 			span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
