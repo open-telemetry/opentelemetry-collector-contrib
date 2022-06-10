@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -58,7 +58,10 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 }
 
 func ParsePath(val *common.Path) (common.GetSetter, error) {
-	return newPathGetSetter(val.Fields)
+	if val != nil && len(val.Fields) > 0 {
+		return newPathGetSetter(val.Fields)
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }
 
 func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
@@ -313,10 +316,9 @@ func accessTraceID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [16]byte
-				copy(idArr[:16], id)
-				ctx.GetItem().(plog.LogRecord).SetTraceID(pcommon.NewTraceID(idArr))
+				if traceID, err := common.ParseTraceID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
+				}
 			}
 		},
 	}
@@ -329,10 +331,9 @@ func accessSpanID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [8]byte
-				copy(idArr[:8], id)
-				ctx.GetItem().(plog.LogRecord).SetSpanID(pcommon.NewSpanID(idArr))
+				if spanID, err := common.ParseSpanID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
+				}
 			}
 		},
 	}
