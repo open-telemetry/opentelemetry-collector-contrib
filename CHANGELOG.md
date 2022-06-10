@@ -16,6 +16,7 @@
 
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 
 ### 🧰 Bug fixes 🧰
 
@@ -199,7 +200,6 @@
 - `transformprocessor`: Add transformation of logs (#9368)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 - `prometheusreceiver`: Add resource attributes for kubernetes resource discovery labels (#9416)
-- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 
 ### 🧰 Bug fixes 🧰
 
