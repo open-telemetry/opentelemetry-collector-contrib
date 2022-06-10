@@ -8,6 +8,7 @@
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
+- `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
 
 ### 🚩 Deprecations 🚩
 
