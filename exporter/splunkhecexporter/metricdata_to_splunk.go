@@ -112,8 +112,8 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		var splunkMetrics []*splunk.Event
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
-			bounds := dataPt.ExplicitBounds()
-			counts := dataPt.BucketCounts()
+			bounds := dataPt.MExplicitBounds()
+			counts := dataPt.MBucketCounts()
 			// first, add one event for sum, and one for count
 			{
 				fields := cloneMap(commonFields)

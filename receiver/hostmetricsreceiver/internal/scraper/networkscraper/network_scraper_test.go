@@ -109,7 +109,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNetworkScraper(context.Background(), &test.config)
+			scraper, err := newNetworkScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)
@@ -178,13 +178,16 @@ func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedNam
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.Transmit))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pcommon.NewValueString(metadata.AttributeDirection.Receive))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
+		pcommon.NewValueString(metadata.AttributeDirectionTransmit.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction",
+		pcommon.NewValueString(metadata.AttributeDirectionReceive.String()))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.Equal(t, metric.Name(), "system.network.connections")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pcommon.NewValueString(metadata.AttributeProtocol.Tcp))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
+		pcommon.NewValueString(metadata.AttributeProtocolTcp.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

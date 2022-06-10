@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package k8sattributesprocessor
 
 import (
@@ -264,8 +265,7 @@ func generateLogs(resourceFunc ...generateResourceFunc) plog.Logs {
 		res := ls.Resource()
 		resFun(res)
 	}
-	log := ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("foobar")
+	ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	return l
 }
 

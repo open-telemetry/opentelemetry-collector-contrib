@@ -9,6 +9,7 @@ on:
 jobs:
   setup-environment:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
@@ -18,35 +19,22 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
-      - name: Install dependencies
-        if: steps.module-cache.outputs.hit != 'true'
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install Dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.tool-cache.outputs.cache-hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - run: make otelcontribcol
+      - run: make otelcontribcol-testbed
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:
@@ -65,20 +53,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - run: sudo chmod 0777 -R /opt
       - name: Fluentbit Cache
         id: fluentbit-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-fluentbit
         with:
           path: /opt/td-agent-bit
           key: fluentbit-cache-1.5.3
@@ -92,20 +70,21 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install Dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Collector Binaries
         uses: actions/download-artifact@v3
@@ -114,7 +93,7 @@ jobs:
           path: bin/
       - run: chmod +x bin/*
       - name: Loadtest
-        run: make -C testbed run-tests 
+        run: make -C testbed run-tests
         env:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
@@ -131,5 +110,5 @@ jobs:
         with:
           path: ./*.tar
       - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'ref/head/main' }}
+        if: ${{ failure() && github.ref == 'refs/heads/main' }}
         run: issuegenerator $TEST_RESULTS

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package resourcedetectionprocessor
 
 import (
@@ -37,7 +38,7 @@ import (
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
 type MockDetector struct {
@@ -310,7 +311,7 @@ func BenchmarkConsumeTracesDefault(b *testing.B) {
 }
 
 func BenchmarkConsumeTracesAll(b *testing.B) {
-	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gce.TypeStr}}
+	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
 	benchmarkConsumeTraces(b, cfg)
 }
 
@@ -332,7 +333,7 @@ func BenchmarkConsumeMetricsDefault(b *testing.B) {
 }
 
 func BenchmarkConsumeMetricsAll(b *testing.B) {
-	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gce.TypeStr}}
+	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
 	benchmarkConsumeMetrics(b, cfg)
 }
 
@@ -354,6 +355,6 @@ func BenchmarkConsumeLogsDefault(b *testing.B) {
 }
 
 func BenchmarkConsumeLogsAll(b *testing.B) {
-	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gce.TypeStr}}
+	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
 	benchmarkConsumeLogs(b, cfg)
 }

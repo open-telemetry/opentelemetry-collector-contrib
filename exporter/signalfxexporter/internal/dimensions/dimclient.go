@@ -26,7 +26,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -61,19 +60,9 @@ type DimensionClient struct {
 	// For easier unit testing
 	now func() time.Time
 
-	// TODO: Look into collecting these metrics and other traces via obsreport
-	DimensionsCurrentlyDelayed int64
-	TotalDimensionsDropped     int64
-	// The number of dimension updates that happened to the same dimension
-	// within sendDelay.
-	TotalFlappyUpdates           int64
-	TotalClientError4xxResponses int64
-	TotalRetriedUpdates          int64
-	TotalInvalidDimensions       int64
-	TotalSuccessfulUpdates       int64
-	logUpdates                   bool
-	logger                       *zap.Logger
-	metricsConverter             translation.MetricsConverter
+	logUpdates       bool
+	logger           *zap.Logger
+	metricsConverter translation.MetricsConverter
 }
 
 type queuedDimension struct {
@@ -139,15 +128,11 @@ func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
 
 	if delayedDimUpdate := dc.delayedSet[dimUpdate.Key()]; delayedDimUpdate != nil {
 		if !reflect.DeepEqual(delayedDimUpdate, dimUpdate) {
-			dc.TotalFlappyUpdates++
-
 			// Merge the latest updates into existing one.
 			delayedDimUpdate.Properties = mergeProperties(delayedDimUpdate.Properties, dimUpdate.Properties)
 			delayedDimUpdate.Tags = mergeTags(delayedDimUpdate.Tags, dimUpdate.Tags)
 		}
 	} else {
-		atomic.AddInt64(&dc.DimensionsCurrentlyDelayed, int64(1))
-
 		dc.delayedSet[dimUpdate.Key()] = dimUpdate
 		select {
 		case dc.delayedQueue <- &queuedDimension{
@@ -156,8 +141,6 @@ func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
 		}:
 			break
 		default:
-			dc.TotalDimensionsDropped++
-			atomic.AddInt64(&dc.DimensionsCurrentlyDelayed, int64(-1))
 			return errors.New("dropped dimension update, propertiesMaxBuffered exceeded")
 		}
 	}
@@ -204,8 +187,6 @@ func (dc *DimensionClient) processQueue() {
 				time.Sleep(delayedDimUpdate.TimeToSend.Sub(now))
 			}
 
-			atomic.AddInt64(&dc.DimensionsCurrentlyDelayed, int64(-1))
-
 			dc.Lock()
 			delete(dc.delayedSet, delayedDimUpdate.Key())
 			dc.Unlock()
@@ -237,7 +218,6 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 	req = req.WithContext(
 		context.WithValue(req.Context(), RequestFailedCallbackKey, RequestFailedCallback(func(statusCode int, err error) {
 			if statusCode >= 400 && statusCode < 500 && statusCode != 404 {
-				atomic.AddInt64(&dc.TotalClientError4xxResponses, int64(1))
 				dc.logger.Error(
 					"Unable to update dimension, not retrying",
 					zap.Error(err),
@@ -261,7 +241,6 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 				zap.String("dimensionUpdate", dimUpdate.String()),
 				zap.Int("statusCode", statusCode),
 			)
-			atomic.AddInt64(&dc.TotalRetriedUpdates, int64(1))
 			// The retry is meant to provide some measure of robustness against
 			// temporary API failures.  If the API is down for significant
 			// periods of time, dimension updates will probably eventually back

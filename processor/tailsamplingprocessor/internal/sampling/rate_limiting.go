@@ -47,7 +47,7 @@ func (r *rateLimiting) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, 
 		r.spansInCurrentSecond = 0
 	}
 
-	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount
+	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount.Load()
 	if spansInSecondIfSampled < r.spansPerSecond {
 		r.spansInCurrentSecond = spansInSecondIfSampled
 		return Sampled, nil

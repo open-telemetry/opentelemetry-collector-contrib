@@ -23,8 +23,11 @@ import (
 	"go.uber.org/multierr"
 )
 
+// ToTranslator converts from SignalFx proto data model to pdata.
+type ToTranslator struct{}
+
 // ToMetrics converts SignalFx proto data points to pmetric.Metrics.
-func ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {
+func (tt *ToTranslator) ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {
 	// TODO: not optimized at all, basically regenerating everything for each
 	// 	data point.
 	md := pmetric.NewMetrics()

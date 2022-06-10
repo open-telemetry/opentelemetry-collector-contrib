@@ -65,6 +65,18 @@ func TestProcess(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Status().SetCode(ptrace.StatusCodeOk)
 			},
 		},
+		{
+			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x01000000000000000000000000000000)`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0100000000000000)`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -196,6 +208,8 @@ func constructTracesNum(num int) ptrace.Traces {
 
 func fillSpanOne(span ptrace.Span) {
 	span.SetName("operationA")
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0}))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)

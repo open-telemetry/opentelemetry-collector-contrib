@@ -51,7 +51,6 @@ func getResourceForNamespace(ns *corev1.Namespace) *resourcepb.Resource {
 		Labels: map[string]string{
 			k8sKeyNamespaceUID:                    string(ns.UID),
 			conventions.AttributeK8SNamespaceName: ns.Namespace,
-			conventions.AttributeK8SClusterName:   ns.ClusterName,
 		},
 	}
 }

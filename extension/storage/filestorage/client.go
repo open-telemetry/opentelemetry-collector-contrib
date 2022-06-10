@@ -52,6 +52,7 @@ func newClient(filePath string, timeout time.Duration) (*fileStorageClient, erro
 		return err
 	}
 	if err := db.Update(initBucket); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 
@@ -120,6 +121,10 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory string, timeout time.Duration, maxTransactionSize int64) (*fileStorageClient, error) {
 	// create temporary file in compactionDirectory
 	file, err := ioutil.TempFile(compactionDirectory, "tempdb")
+	if err != nil {
+		return nil, err
+	}
+	err = file.Close()
 	if err != nil {
 		return nil, err
 	}

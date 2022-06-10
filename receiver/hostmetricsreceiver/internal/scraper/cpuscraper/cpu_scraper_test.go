@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package cpuscraper
 
 import (
@@ -85,7 +86,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newCPUScraper(context.Background(), &Config{Metrics: test.metricsConfig})
+			scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: test.metricsConfig})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -187,7 +188,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				}
 			}
 
-			scraper := newCPUScraper(context.Background(), &Config{Metrics: settings})
+			scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: settings})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
@@ -224,7 +225,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 //Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(context.Background(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+	scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
 	//mock times function to force an error in next scrape
 	scraper.times = func(bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
@@ -294,7 +295,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	cpuScraper := newCPUScraper(context.Background(), &Config{Metrics: metricSettings})
+	cpuScraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricSettings})
 	for _, scrapeData := range scrapesData {
 		//mock TimeStats and Now
 		cpuScraper.times = func(_ bool) ([]cpu.TimesStat, error) {
@@ -359,18 +360,26 @@ func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertSumMetricHasAttribute(t, metric, 0, metadata.Attributes.Cpu)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.User))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.System))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Idle))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Interrupt))
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "cpu")
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
+		pcommon.NewValueString(metadata.AttributeStateUser.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
+		pcommon.NewValueString(metadata.AttributeStateSystem.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state",
+		pcommon.NewValueString(metadata.AttributeStateIdle.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 3, "state",
+		pcommon.NewValueString(metadata.AttributeStateInterrupt.String()))
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Nice))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Softirq))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Steal))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Wait))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 4, "state",
+		pcommon.NewValueString(metadata.AttributeStateNice.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 5, "state",
+		pcommon.NewValueString(metadata.AttributeStateSoftirq.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 6, "state",
+		pcommon.NewValueString(metadata.AttributeStateSteal.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 7, "state",
+		pcommon.NewValueString(metadata.AttributeStateWait.String()))
 }
 
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
@@ -383,16 +392,24 @@ func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startT
 	if startTime != 0 {
 		internal.AssertGaugeMetricStartTimeEquals(t, metric, startTime)
 	}
-	internal.AssertGaugeMetricHasAttribute(t, metric, 0, metadata.Attributes.Cpu)
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.User))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.System))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Idle))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Interrupt))
+	internal.AssertGaugeMetricHasAttribute(t, metric, 0, "cpu")
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
+		pcommon.NewValueString(metadata.AttributeStateUser.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
+		pcommon.NewValueString(metadata.AttributeStateSystem.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, "state",
+		pcommon.NewValueString(metadata.AttributeStateIdle.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, "state",
+		pcommon.NewValueString(metadata.AttributeStateInterrupt.String()))
 }
 
 func assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Nice))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Softirq))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 6, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Steal))
-	internal.AssertGaugeMetricHasAttributeValue(t, metric, 7, metadata.Attributes.State, pcommon.NewValueString(metadata.AttributeState.Wait))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, "state",
+		pcommon.NewValueString(metadata.AttributeStateNice.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, "state",
+		pcommon.NewValueString(metadata.AttributeStateSoftirq.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 6, "state",
+		pcommon.NewValueString(metadata.AttributeStateSteal.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 7, "state",
+		pcommon.NewValueString(metadata.AttributeStateWait.String()))
 }

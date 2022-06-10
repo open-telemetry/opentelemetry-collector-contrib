@@ -39,6 +39,7 @@ const (
 
 // scraper for Process Metrics
 type scraper struct {
+	settings  component.ReceiverCreateSettings
 	config    *Config
 	mb        *metadata.MetricsBuilder
 	includeFS filterset.FilterSet
@@ -50,8 +51,8 @@ type scraper struct {
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, getProcessHandles: getProcessHandlesInternal}
+func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, getProcessHandles: getProcessHandlesInternal}
 
 	var err error
 
@@ -78,7 +79,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -198,7 +199,7 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 		return err
 	}
 
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirection.Read)
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirection.Write)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
 	return nil
 }

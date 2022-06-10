@@ -15,24 +15,24 @@
 package syslogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/syslog"
-	syslogparser "github.com/open-telemetry/opentelemetry-log-collection/operator/parser/syslog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
+	syslogparser "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 )
 
 const typeStr = "syslog"
 
 // NewFactory creates a factory for syslog receiver
 func NewFactory() component.ReceiverFactory {
-	return stanza.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{})
 }
 
-// ReceiverType implements stanza.LogReceiverType
+// ReceiverType implements adapter.LogReceiverType
 // to create a syslog receiver
 type ReceiverType struct{}
 
@@ -44,31 +44,31 @@ func (f ReceiverType) Type() config.Type {
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{},
+		Input: adapter.InputConfig{},
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 	return cfg.(*SysLogConfig).BaseConfig
 }
 
 // SysLogConfig defines configuration for the syslog receiver
 type SysLogConfig struct {
-	stanza.BaseConfig `mapstructure:",squash"`
-	Input             stanza.InputConfig `mapstructure:",remain"`
+	adapter.BaseConfig `mapstructure:",squash"`
+	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*SysLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := syslog.NewSyslogInputConfig("syslog_input")
-	inputCfg.SyslogBaseConfig = syslogparser.NewSyslogParserConfig("syslog_parser").SyslogBaseConfig
+	inputCfg := syslog.NewConfig("syslog_input")
+	inputCfg.BaseConfig = syslogparser.NewConfig("syslog_parser").BaseConfig
 
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err

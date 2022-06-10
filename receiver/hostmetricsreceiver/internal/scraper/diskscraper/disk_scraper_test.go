@@ -98,7 +98,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), &test.config)
+			scraper, err := newDiskScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)
@@ -170,8 +170,10 @@ func assertInt64DiskMetricValid(t *testing.T, metric pmetric.Metric, startTime p
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pcommon.NewValueString(metadata.AttributeDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
+		pcommon.NewValueString(metadata.AttributeDirectionRead.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction",
+		pcommon.NewValueString(metadata.AttributeDirectionWrite.String()))
 }
 
 func assertDoubleDiskMetricValid(t *testing.T, metric pmetric.Metric, expectDirectionLabels bool, startTime pcommon.Timestamp) {
@@ -187,8 +189,10 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pmetric.Metric, expectDire
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pcommon.NewValueString(metadata.AttributeDirection.Read))
-		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pcommon.NewValueString(metadata.AttributeDirection.Write))
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
+			pcommon.NewValueString(metadata.AttributeDirectionRead.String()))
+		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction",
+			pcommon.NewValueString(metadata.AttributeDirectionWrite.String()))
 	}
 }
 

@@ -53,8 +53,7 @@ func CreateLogExport() []byte {
 	resource := resources.AppendEmpty()
 	libs := resource.ScopeLogs()
 	logs := libs.AppendEmpty()
-	log := logs.LogRecords().AppendEmpty()
-	log.SetName("test")
+	logs.LogRecords().AppendEmpty()
 	data, _ := plog.NewProtoMarshaler().MarshalLogs(out)
 	return data
 }

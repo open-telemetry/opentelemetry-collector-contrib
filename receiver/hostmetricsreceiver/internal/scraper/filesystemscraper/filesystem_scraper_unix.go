@@ -31,17 +31,17 @@ func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsage
 			now, int64(deviceUsage.usage.Used),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts), deviceUsage.partition.Mountpoint,
 			deviceUsage.partition.Fstype,
-			metadata.AttributeState.Used)
+			metadata.AttributeStateUsed)
 		s.mb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
-			metadata.AttributeState.Free)
+			metadata.AttributeStateFree)
 		s.mb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
-			metadata.AttributeState.Reserved)
+			metadata.AttributeStateReserved)
 		s.mb.RecordSystemFilesystemUtilizationDataPoint(
 			now, deviceUsage.usage.UsedPercent/100.0,
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
@@ -56,10 +56,10 @@ func (s *scraper) recordSystemSpecificMetrics(now pcommon.Timestamp, deviceUsage
 		s.mb.RecordSystemFilesystemInodesUsageDataPoint(
 			now, int64(deviceUsage.usage.InodesUsed), deviceUsage.partition.Device,
 			getMountMode(deviceUsage.partition.Opts), deviceUsage.partition.Mountpoint,
-			deviceUsage.partition.Fstype, metadata.AttributeState.Used)
+			deviceUsage.partition.Fstype, metadata.AttributeStateUsed)
 		s.mb.RecordSystemFilesystemInodesUsageDataPoint(
 			now, int64(deviceUsage.usage.InodesFree), deviceUsage.partition.Device,
 			getMountMode(deviceUsage.partition.Opts), deviceUsage.partition.Mountpoint,
-			deviceUsage.partition.Fstype, metadata.AttributeState.Free)
+			deviceUsage.partition.Fstype, metadata.AttributeStateFree)
 	}
 }

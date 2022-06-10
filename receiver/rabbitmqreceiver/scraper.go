@@ -56,12 +56,12 @@ type rabbitmqScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySettings) *rabbitmqScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCreateSettings) *rabbitmqScraper {
 	return &rabbitmqScraper{
 		logger:   logger,
 		cfg:      cfg,
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -98,8 +98,8 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 // collectQueue collects metrics
 func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestamp) {
 	r.mb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
-	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageState.Unacknowledged)
-	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageState.Ready)
+	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageStateUnacknowledged)
+	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageStateReady)
 
 	for _, messageStatMetric := range messageStatMetrics {
 		// Get metric value

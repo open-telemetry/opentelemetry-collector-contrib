@@ -53,11 +53,11 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	r0 := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	assert.Equal(t, sanitize(r0), sanitize(factory.CreateDefaultConfig().(*Config)))
 
 	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1,
+	assert.Equal(t, sanitize(r1),
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -97,4 +97,10 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize:    10,
 			},
 		})
+}
+
+func sanitize(cfg *Config) *Config {
+	cfg.Config.MetricConfig.MapMonitoredResource = nil
+	cfg.Config.MetricConfig.GetMetricName = nil
+	return cfg
 }

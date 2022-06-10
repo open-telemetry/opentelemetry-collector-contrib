@@ -14,6 +14,7 @@
 
 // Package googlecloudexporter contains the wrapper for OpenTelemetry-GoogleCloud
 // exporter to be used in opentelemetry-collector.
+// nolint:errcheck
 package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (

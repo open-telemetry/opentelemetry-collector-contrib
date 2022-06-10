@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -28,25 +29,25 @@ func TestRateLimiter(t *testing.T) {
 	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
 
 	// Trace span count greater than spans per second
-	trace.SpanCount = 10
+	trace.SpanCount = atomic.NewInt64(10)
 	decision, err := rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 
 	// Trace span count equal to spans per second
-	trace.SpanCount = 3
+	trace.SpanCount = atomic.NewInt64(3)
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 
 	// Trace span count less than spans per second
-	trace.SpanCount = 2
+	trace.SpanCount = atomic.NewInt64(2)
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 
 	// Trace span count less than spans per second
-	trace.SpanCount = 0
+	trace.SpanCount = atomic.NewInt64(0)
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)

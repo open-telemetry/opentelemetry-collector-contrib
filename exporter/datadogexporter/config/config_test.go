@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestHostTags(t *testing.T) {
@@ -151,7 +151,7 @@ func TestValidate(t *testing.T) {
 				API: APIConfig{Key: "notnull"},
 				Metrics: MetricsConfig{
 					HistConfig: HistogramConfig{
-						Mode:         histogramModeNoBuckets,
+						Mode:         HistogramModeNoBuckets,
 						SendCountSum: false,
 					},
 				},
@@ -185,13 +185,13 @@ func TestValidate(t *testing.T) {
 func TestUnmarshal(t *testing.T) {
 	tests := []struct {
 		name      string
-		configMap *config.Map
-		cfg       *Config
+		configMap *confmap.Conf
+		cfg       Config
 		err       string
 	}{
 		{
 			name: "invalid cumulative monotonic mode",
-			configMap: config.NewMapFromStringMap(map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"sums": map[string]interface{}{
 						"cumulative_monotonic_mode": "invalid_mode",
@@ -202,7 +202,7 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "invalid host metadata hostname source",
-			configMap: config.NewMapFromStringMap(map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
 				"host_metadata": map[string]interface{}{
 					"hostname_source": "invalid_source",
 				},
@@ -211,7 +211,7 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "invalid summary mode",
-			configMap: config.NewMapFromStringMap(map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
 				"metrics": map[string]interface{}{
 					"summaries": map[string]interface{}{
 						"mode": "invalid_mode",

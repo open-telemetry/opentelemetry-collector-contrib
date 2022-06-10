@@ -17,7 +17,7 @@ package components
 import (
 	"context"
 	"errors"
-	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -25,13 +25,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -56,6 +54,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a running windows service
 		},
 		{
+			receiver: "apache",
+		},
+		{
 			receiver: "awscontainerinsightreceiver",
 			// TODO: skipped since it will only function in a container environment with procfs in expected location.
 			skipLifecyle: true,
@@ -70,6 +71,9 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "awsxray",
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
+		},
+		{
+			receiver: "bigip",
 		},
 		{
 			receiver: "carbon",
@@ -88,6 +92,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "collectd",
 		},
 		{
+			receiver: "couchdb",
+		},
+		{
 			receiver:     "docker_stats",
 			skipLifecyle: true,
 		},
@@ -96,22 +103,35 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a running .NET process to examine
 		},
 		{
+			receiver: "elasticsearch",
+		},
+		{
+			receiver: "expvar",
+		},
+		{
 			receiver: "filelog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"include": []string{
-						path.Join(testutil.NewTemporaryDirectory(t), "*"),
+						filepath.Join(t.TempDir(), "*"),
 					},
 				}
 				return cfg
 			},
 		},
 		{
+			receiver: "flinkmetrics",
+		},
+		{
 			receiver: "fluentforward",
 		},
 		{
 			receiver: "googlecloudspanner",
+		},
+		{
+			receiver:     "googlecloudpubsub",
+			skipLifecyle: true, // Requires a pubsub subscription
 		},
 		{
 			receiver: "hostmetrics",
@@ -157,10 +177,19 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "memcached",
 		},
 		{
+			receiver: "mongodb",
+		},
+		{
 			receiver: "mongodbatlas",
 		},
 		{
 			receiver: "mysql",
+		},
+		{
+			receiver: "nginx",
+		},
+		{
+			receiver: "nsxt",
 		},
 		{
 			receiver:     "opencensus",
@@ -193,6 +222,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
 		},
 		{
+			receiver: "rabbitmq",
+		},
+		{
 			receiver: "receiver_creator",
 		},
 		{
@@ -203,6 +235,9 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "sapm",
+		},
+		{
+			receiver: "saphana",
 		},
 		{
 			receiver: "signalfx",
@@ -228,6 +263,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Depends on carbon receiver to be running correctly
 		},
 		{
+			receiver:     "windowseventlog",
+			skipLifecyle: true, // Requires a running windows process
+		},
+		{
 			receiver:     "windowsperfcounters",
 			skipLifecyle: true, // Requires a running windows process
 		},
@@ -241,7 +280,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "syslog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"tcp": map[string]interface{}{
 						"listen_address": "0.0.0.0:0",
 					},
@@ -254,7 +293,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "tcplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"listen_address": "0.0.0.0:0",
 				}
 				return cfg
@@ -264,11 +303,14 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "udplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["udplog"].CreateDefaultConfig().(*udplogreceiver.UDPLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"listen_address": "0.0.0.0:0",
 				}
 				return cfg
 			},
+		},
+		{
+			receiver: "vcenter",
 		},
 	}
 
@@ -315,7 +357,7 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 
 	for _, createFn := range createFns {
 		firstRcvr, err := createFn(ctx, receiverCreateSet, getConfigFn())
-		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

@@ -31,12 +31,12 @@ func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsage
 			now, int64(deviceUsage.usage.Used),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
-			metadata.AttributeState.Used)
+			metadata.AttributeStateUsed)
 		s.mb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
-			metadata.AttributeState.Free)
+			metadata.AttributeStateFree)
 		s.mb.RecordSystemFilesystemUtilizationDataPoint(
 			now, deviceUsage.usage.UsedPercent/100.0,
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),

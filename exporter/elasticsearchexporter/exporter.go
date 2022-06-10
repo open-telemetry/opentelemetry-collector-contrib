@@ -14,6 +14,7 @@
 
 // Package elasticsearchexporter contains an opentelemetry-collector exporter
 // for Elasticsearch.
+// nolint:errcheck
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (

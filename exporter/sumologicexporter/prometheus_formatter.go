@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
@@ -280,7 +281,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 
-		explicitBounds := dp.ExplicitBounds()
+		explicitBounds := dp.MExplicitBounds()
 		if len(explicitBounds) == 0 {
 			continue
 		}
@@ -289,7 +290,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 		additionalAttributes := pcommon.NewMap()
 
 		for i, bound := range explicitBounds {
-			cumulative += dp.BucketCounts()[i]
+			cumulative += dp.MBucketCounts()[i]
 			additionalAttributes.UpsertDouble(prometheusLeTag, bound)
 
 			line := f.uintValueLine(
@@ -301,7 +302,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 			lines = append(lines, line)
 		}
 
-		cumulative += dp.BucketCounts()[len(explicitBounds)]
+		cumulative += dp.MBucketCounts()[len(explicitBounds)]
 		additionalAttributes.UpsertString(prometheusLeTag, prometheusInfValue)
 		line := f.uintValueLine(
 			record.metric.Name(),

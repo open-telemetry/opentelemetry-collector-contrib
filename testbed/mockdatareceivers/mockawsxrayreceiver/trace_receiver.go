@@ -26,7 +26,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -50,7 +49,7 @@ func New(
 	params component.ReceiverCreateSettings,
 	config *Config) (*MockAwsXrayReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	ar := &MockAwsXrayReceiver{
@@ -107,7 +106,9 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 
 	var result map[string]interface{}
 
-	json.Unmarshal(body, &result)
+	if err = json.Unmarshal(body, &result); err != nil {
+		log.Fatalln(err)
+	}
 
 	traces, _ := ToTraces(body)
 	sc := traces.SpanCount()

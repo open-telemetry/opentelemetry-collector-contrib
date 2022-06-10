@@ -177,7 +177,7 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 
 func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
 	attrsForRemoval.Range(func(key string, _ pcommon.Value) bool {
-		targetAttrs.Delete(key)
+		targetAttrs.Remove(key)
 		return true
 	})
 }
@@ -221,6 +221,21 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	metric.SetDescription(searchedMetric.Description())
 	metric.SetName(searchedMetric.Name())
 	metric.SetUnit(searchedMetric.Unit())
+
+	// Move other special type specific values
+	switch metric.DataType() {
+
+	case pmetric.MetricDataTypeHistogram:
+		metric.Histogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
+
+	case pmetric.MetricDataTypeExponentialHistogram:
+		metric.ExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
+
+	case pmetric.MetricDataTypeSum:
+		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
+		metric.Sum().SetIsMonotonic(searchedMetric.Sum().IsMonotonic())
+
+	}
 
 	return metric
 }

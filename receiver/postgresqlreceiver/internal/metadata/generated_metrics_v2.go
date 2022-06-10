@@ -5,6 +5,7 @@ package metadata
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -51,6 +52,116 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationIns
+	AttributeOperationUpd
+	AttributeOperationDel
+	AttributeOperationHotUpd
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationIns:
+		return "ins"
+	case AttributeOperationUpd:
+		return "upd"
+	case AttributeOperationDel:
+		return "del"
+	case AttributeOperationHotUpd:
+		return "hot_upd"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"ins":     AttributeOperationIns,
+	"upd":     AttributeOperationUpd,
+	"del":     AttributeOperationDel,
+	"hot_upd": AttributeOperationHotUpd,
+}
+
+// AttributeSource specifies the a value source attribute.
+type AttributeSource int
+
+const (
+	_ AttributeSource = iota
+	AttributeSourceHeapRead
+	AttributeSourceHeapHit
+	AttributeSourceIdxRead
+	AttributeSourceIdxHit
+	AttributeSourceToastRead
+	AttributeSourceToastHit
+	AttributeSourceTidxRead
+	AttributeSourceTidxHit
+)
+
+// String returns the string representation of the AttributeSource.
+func (av AttributeSource) String() string {
+	switch av {
+	case AttributeSourceHeapRead:
+		return "heap_read"
+	case AttributeSourceHeapHit:
+		return "heap_hit"
+	case AttributeSourceIdxRead:
+		return "idx_read"
+	case AttributeSourceIdxHit:
+		return "idx_hit"
+	case AttributeSourceToastRead:
+		return "toast_read"
+	case AttributeSourceToastHit:
+		return "toast_hit"
+	case AttributeSourceTidxRead:
+		return "tidx_read"
+	case AttributeSourceTidxHit:
+		return "tidx_hit"
+	}
+	return ""
+}
+
+// MapAttributeSource is a helper map of string to AttributeSource attribute value.
+var MapAttributeSource = map[string]AttributeSource{
+	"heap_read":  AttributeSourceHeapRead,
+	"heap_hit":   AttributeSourceHeapHit,
+	"idx_read":   AttributeSourceIdxRead,
+	"idx_hit":    AttributeSourceIdxHit,
+	"toast_read": AttributeSourceToastRead,
+	"toast_hit":  AttributeSourceToastHit,
+	"tidx_read":  AttributeSourceTidxRead,
+	"tidx_hit":   AttributeSourceTidxHit,
+}
+
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateDead
+	AttributeStateLive
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateDead:
+		return "dead"
+	case AttributeStateLive:
+		return "live"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"dead": AttributeStateDead,
+	"live": AttributeStateLive,
+}
+
 type metricPostgresqlBackends struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -76,7 +187,7 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -129,9 +240,9 @@ func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Source, pcommon.NewValueString(sourceAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert("source", pcommon.NewValueString(sourceAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -184,7 +295,7 @@ func (m *metricPostgresqlCommits) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -237,7 +348,7 @@ func (m *metricPostgresqlDbSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -290,9 +401,9 @@ func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Operation, pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -345,7 +456,7 @@ func (m *metricPostgresqlRollbacks) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -398,9 +509,9 @@ func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.State, pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -431,10 +542,11 @@ func newMetricPostgresqlRows(settings MetricSettings) metricPostgresqlRows {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                  pcommon.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity            int               // maximum observed number of metrics per resource.
-	resourceCapacity           int               // maximum observed number of resource attributes.
-	metricsBuffer              pmetric.Metrics   // accumulates metrics data before emitting.
+	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity            int                 // maximum observed number of metrics per resource.
+	resourceCapacity           int                 // maximum observed number of resource attributes.
+	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                  component.BuildInfo // contains version information
 	metricPostgresqlBackends   metricPostgresqlBackends
 	metricPostgresqlBlocksRead metricPostgresqlBlocksRead
 	metricPostgresqlCommits    metricPostgresqlCommits
@@ -454,10 +566,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
+		buildInfo:                  buildInfo,
 		metricPostgresqlBackends:   newMetricPostgresqlBackends(settings.PostgresqlBackends),
 		metricPostgresqlBlocksRead: newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
 		metricPostgresqlCommits:    newMetricPostgresqlCommits(settings.PostgresqlCommits),
@@ -482,21 +595,40 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/postgresqlreceiver")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricPostgresqlBackends.emit(ils.Metrics())
 	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
@@ -505,6 +637,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -514,8 +649,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -527,8 +662,8 @@ func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
-	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue AttributeSource) {
+	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue.String())
 }
 
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
@@ -542,8 +677,8 @@ func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
-func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) {
-	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue AttributeOperation) {
+	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue.String())
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.
@@ -552,8 +687,8 @@ func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestam
 }
 
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
-func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
-	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -563,70 +698,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Database (The name of the database.)
-	Database string
-	// Operation (The database operation.)
-	Operation string
-	// Source (The block read source type.)
-	Source string
-	// State (The tuple (row) state.)
-	State string
-	// Table (The schema name followed by the table name.)
-	Table string
-}{
-	"database",
-	"operation",
-	"source",
-	"state",
-	"table",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Ins    string
-	Upd    string
-	Del    string
-	HotUpd string
-}{
-	"ins",
-	"upd",
-	"del",
-	"hot_upd",
-}
-
-// AttributeSource are the possible values that the attribute "source" can have.
-var AttributeSource = struct {
-	HeapRead  string
-	HeapHit   string
-	IdxRead   string
-	IdxHit    string
-	ToastRead string
-	ToastHit  string
-	TidxRead  string
-	TidxHit   string
-}{
-	"heap_read",
-	"heap_hit",
-	"idx_read",
-	"idx_hit",
-	"toast_read",
-	"toast_hit",
-	"tidx_read",
-	"tidx_hit",
-}
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Dead string
-	Live string
-}{
-	"dead",
-	"live",
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck,gocritic
 package awscontainerinsightreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 
 import (
@@ -20,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -55,7 +55,7 @@ func newAWSContainerInsightReceiver(
 	config *Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &awsContainerInsightReceiver{

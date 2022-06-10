@@ -26,7 +26,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
@@ -44,7 +43,7 @@ func TestNewExporter(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: config.HistogramConfig{
-				Mode:         string(translator.HistogramModeDistributions),
+				Mode:         config.HistogramModeDistributions,
 				SendCountSum: false,
 			},
 			SumConfig: config.SumConfig{

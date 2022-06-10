@@ -36,7 +36,7 @@ func init() {
 	featuregate.GetRegistry().MustRegister(featuregate.Gate{
 		ID:          pdataExporterFeatureGate,
 		Description: "When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.",
-		Enabled:     false,
+		Enabled:     true,
 	})
 }
 
@@ -47,6 +47,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTracesExporter),
 		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter),
 	)
 }
 
@@ -68,6 +69,32 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		Config:           collector.DefaultConfig(),
 	}
+}
+
+func createLogsExporter(
+	ctx context.Context,
+	params component.ExporterCreateSettings,
+	cfg config.Exporter) (component.LogsExporter, error) {
+	var eCfg *Config
+	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
+		eCfg = toNewConfig(cfg.(*LegacyConfig))
+	} else {
+		eCfg = cfg.(*Config)
+	}
+	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewLogsExporter(
+		cfg,
+		params,
+		logsExporter.PushLogs,
+		exporterhelper.WithShutdown(logsExporter.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithRetry(eCfg.RetrySettings))
 }
 
 // createTracesExporter creates a trace exporter based on this config.

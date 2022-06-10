@@ -5,6 +5,7 @@ package metadata
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -45,6 +46,32 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+// AttributeMessageState specifies the a value message.state attribute.
+type AttributeMessageState int
+
+const (
+	_ AttributeMessageState = iota
+	AttributeMessageStateReady
+	AttributeMessageStateUnacknowledged
+)
+
+// String returns the string representation of the AttributeMessageState.
+func (av AttributeMessageState) String() string {
+	switch av {
+	case AttributeMessageStateReady:
+		return "ready"
+	case AttributeMessageStateUnacknowledged:
+		return "unacknowledged"
+	}
+	return ""
+}
+
+// MapAttributeMessageState is a helper map of string to AttributeMessageState attribute value.
+var MapAttributeMessageState = map[string]AttributeMessageState{
+	"ready":          AttributeMessageStateReady,
+	"unacknowledged": AttributeMessageStateUnacknowledged,
 }
 
 type metricRabbitmqConsumerCount struct {
@@ -174,7 +201,7 @@ func (m *metricRabbitmqMessageCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MessageState, pcommon.NewValueString(messageStateAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(messageStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -358,10 +385,11 @@ func newMetricRabbitmqMessagePublished(settings MetricSettings) metricRabbitmqMe
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                         pcommon.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity                   int               // maximum observed number of metrics per resource.
-	resourceCapacity                  int               // maximum observed number of resource attributes.
-	metricsBuffer                     pmetric.Metrics   // accumulates metrics data before emitting.
+	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                   int                 // maximum observed number of metrics per resource.
+	resourceCapacity                  int                 // maximum observed number of resource attributes.
+	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                         component.BuildInfo // contains version information
 	metricRabbitmqConsumerCount       metricRabbitmqConsumerCount
 	metricRabbitmqMessageAcknowledged metricRabbitmqMessageAcknowledged
 	metricRabbitmqMessageCurrent      metricRabbitmqMessageCurrent
@@ -380,10 +408,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
+		buildInfo:                         buildInfo,
 		metricRabbitmqConsumerCount:       newMetricRabbitmqConsumerCount(settings.RabbitmqConsumerCount),
 		metricRabbitmqMessageAcknowledged: newMetricRabbitmqMessageAcknowledged(settings.RabbitmqMessageAcknowledged),
 		metricRabbitmqMessageCurrent:      newMetricRabbitmqMessageCurrent(settings.RabbitmqMessageCurrent),
@@ -407,42 +436,61 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	}
 }
 
-// ResourceOption applies changes to provided resource.
-type ResourceOption func(pcommon.Resource)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithRabbitmqNodeName sets provided value as "rabbitmq.node.name" attribute for current resource.
-func WithRabbitmqNodeName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("rabbitmq.node.name", val)
+func WithRabbitmqNodeName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("rabbitmq.node.name", val)
 	}
 }
 
 // WithRabbitmqQueueName sets provided value as "rabbitmq.queue.name" attribute for current resource.
-func WithRabbitmqQueueName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("rabbitmq.queue.name", val)
+func WithRabbitmqQueueName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("rabbitmq.queue.name", val)
 	}
 }
 
 // WithRabbitmqVhostName sets provided value as "rabbitmq.vhost.name" attribute for current resource.
-func WithRabbitmqVhostName(val string) ResourceOption {
-	return func(r pcommon.Resource) {
-		r.Attributes().UpsertString("rabbitmq.vhost.name", val)
+func WithRabbitmqVhostName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("rabbitmq.vhost.name", val)
+	}
+}
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
 	}
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
-func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
-	for _, op := range ro {
-		op(rm.Resource())
-	}
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/rabbitmqreceiver")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricRabbitmqConsumerCount.emit(ils.Metrics())
 	mb.metricRabbitmqMessageAcknowledged.emit(ils.Metrics())
@@ -450,6 +498,9 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	mb.metricRabbitmqMessageDelivered.emit(ils.Metrics())
 	mb.metricRabbitmqMessageDropped.emit(ils.Metrics())
 	mb.metricRabbitmqMessagePublished.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -459,8 +510,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pmetric.Metrics {
-	mb.EmitForResource(ro...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
@@ -477,8 +528,8 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageAcknowledgedDataPoint(ts pcommon.
 }
 
 // RecordRabbitmqMessageCurrentDataPoint adds a data point to rabbitmq.message.current metric.
-func (mb *MetricsBuilder) RecordRabbitmqMessageCurrentDataPoint(ts pcommon.Timestamp, val int64, messageStateAttributeValue string) {
-	mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, val, messageStateAttributeValue)
+func (mb *MetricsBuilder) RecordRabbitmqMessageCurrentDataPoint(ts pcommon.Timestamp, val int64, messageStateAttributeValue AttributeMessageState) {
+	mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, val, messageStateAttributeValue.String())
 }
 
 // RecordRabbitmqMessageDeliveredDataPoint adds a data point to rabbitmq.message.delivered metric.
@@ -503,24 +554,4 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// MessageState (The state of messages in a queue.)
-	MessageState string
-}{
-	"state",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeMessageState are the possible values that the attribute "message.state" can have.
-var AttributeMessageState = struct {
-	Ready          string
-	Unacknowledged string
-}{
-	"ready",
-	"unacknowledged",
 }

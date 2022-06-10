@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
 import (
@@ -140,7 +141,7 @@ func TestScaperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
+			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopReceiverCreateSettings())
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())

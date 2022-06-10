@@ -18,58 +18,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func TestConfigRequiresNonEmptyEndpoint(t *testing.T) {
-	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
-		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-		},
-		Metrics: MetricsConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2878"},
-		},
-	}
-
-	assert.Error(t, c.Validate())
-}
-
 func TestConfigRequiresValidEndpointUrl(t *testing.T) {
 	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http#$%^&#$%&#"},
 		},
-		Metrics: MetricsConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2878"},
-		},
 	}
-
-	assert.Error(t, c.Validate())
-}
-
-func TestMetricsConfigRequiresNonEmptyEndpoint(t *testing.T) {
-	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
-		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
-		},
-		Metrics: MetricsConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-		},
-	}
-
 	assert.Error(t, c.Validate())
 }
 
 func TestMetricsConfigRequiresValidEndpointUrl(t *testing.T) {
 	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
-		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
-		},
 		Metrics: MetricsConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http#$%^&#$%&#"},
 		},
@@ -80,7 +42,6 @@ func TestMetricsConfigRequiresValidEndpointUrl(t *testing.T) {
 
 func TestDifferentHostNames(t *testing.T) {
 	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
 		},
@@ -93,7 +54,6 @@ func TestDifferentHostNames(t *testing.T) {
 
 func TestConfigNormal(t *testing.T) {
 	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
 		},

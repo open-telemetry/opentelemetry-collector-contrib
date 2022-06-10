@@ -375,7 +375,11 @@ func TestFilterLogProcessor(t *testing.T) {
 				gotLogs := rLogs.At(i).ScopeLogs().At(0).LogRecords()
 				assert.Equal(t, len(wantOut), gotLogs.Len())
 				for idx := range wantOut {
-					assert.Equal(t, wantOut[idx], gotLogs.At(idx).Name())
+					val, ok := gotLogs.At(idx).Attributes().Get("name")
+					if !ok {
+						continue
+					}
+					assert.Equal(t, wantOut[idx], val.AsString())
 				}
 			}
 			assert.NoError(t, flp.Shutdown(ctx))
@@ -394,8 +398,7 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
-			l.SetName(name)
-
+			l.Attributes().InsertString("name", name)
 			// Add record level attribtues
 			for k := 0; k < ls.Len(); k++ {
 				pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())

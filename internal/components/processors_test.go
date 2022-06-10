@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -128,6 +127,9 @@ func TestDefaultProcessors(t *testing.T) {
 		{
 			processor: "tail_sampling",
 		},
+		{
+			processor: "transform",
+		},
 	}
 
 	assert.Len(t, tests, len(procFactories), "All processors MUST be added to lifecycle tests")
@@ -172,7 +174,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, processorCreationSet, getConfigFn())
-		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

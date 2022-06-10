@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package zookeeperreceiver
 
 import (
@@ -22,10 +23,12 @@ import (
 	"io/ioutil"
 	"net"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -43,6 +46,10 @@ type logMsg struct {
 }
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10171")
+	}
+
 	tests := []struct {
 		name                         string
 		expectedMetricsFilename      string
@@ -221,7 +228,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			z, err := newZookeeperMetricsScraper(zap.New(core), cfg)
+			settings := componenttest.NewNopReceiverCreateSettings()
+			settings.Logger = zap.New(core)
+			z, err := newZookeeperMetricsScraper(settings, cfg)
 			require.NoError(t, err)
 			require.Equal(t, "zookeeper", z.Name())
 
@@ -269,7 +278,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	z, err := newZookeeperMetricsScraper(zap.NewNop(), cfg)
+	z, err := newZookeeperMetricsScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, z.shutdown(context.Background()))
 }

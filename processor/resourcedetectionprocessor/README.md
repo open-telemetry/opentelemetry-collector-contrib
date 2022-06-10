@@ -26,6 +26,8 @@ processors:
 
 ### System metadata
 
+Note: use the Docker detector (see below) if running the Collector as a Docker container.
+
 Queries the host machine to retrieve the following resource attributes:
 
     * host.name
@@ -47,8 +49,30 @@ processors:
 * all valid options for `hostname_sources`:
     * "dns"
     * "os"
+    * "cname"
+    * "lookup"
 
-Note: use the Docker detector (see below) if running the Collector as a Docker container.
+#### Hostname Sources
+
+##### dns
+
+The "dns" hostname source uses multiple sources to get the fully qualified domain name. First, it looks up the
+host name in the local machine's `hosts` file. If that fails, it looks up the CNAME. Lastly, if that fails,
+it does a reverse DNS query. Note: this hostname source may produce unreliable results on Windows. To produce
+a FQDN, Windows hosts might have better results using the "lookup" hostname source, which is mentioned below.
+
+##### os
+
+The "os" hostname source provides the hostname provided by the local machine's kernel.
+
+##### cname
+
+The "cname" hostname source provides the canonical name, as provided by net.LookupCNAME in the Go standard library.
+Note: this hostname source may produce unreliable results on Windows.
+
+##### lookup
+
+The "lookup" hostname source does a reverse DNS lookup of the current host's IP address.
 
 ### Docker metadata
 

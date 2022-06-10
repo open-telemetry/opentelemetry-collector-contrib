@@ -97,7 +97,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return consumererror.NewPermanent(err)
 		}
 
-		io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 
 		if resp.StatusCode >= http.StatusBadRequest {

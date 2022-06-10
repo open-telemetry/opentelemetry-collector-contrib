@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -58,7 +58,10 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 }
 
 func ParsePath(val *common.Path) (common.GetSetter, error) {
-	return newPathGetSetter(val.Fields)
+	if val != nil && len(val.Fields) > 0 {
+		return newPathGetSetter(val.Fields)
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }
 
 func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
@@ -313,10 +316,9 @@ func accessTraceID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [16]byte
-				copy(idArr[:16], id)
-				ctx.GetItem().(plog.LogRecord).SetTraceID(pcommon.NewTraceID(idArr))
+				if traceID, err := common.ParseTraceID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
+				}
 			}
 		},
 	}
@@ -329,10 +331,9 @@ func accessSpanID() pathGetSetter {
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [8]byte
-				copy(idArr[:8], id)
-				ctx.GetItem().(plog.LogRecord).SetSpanID(pcommon.NewSpanID(idArr))
+				if spanID, err := common.ParseSpanID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
+				}
 			}
 		},
 	}
@@ -361,7 +362,7 @@ func getValue(val pcommon.Value) interface{} {
 	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
 	case pcommon.ValueTypeBytes:
-		return val.BytesVal()
+		return val.MBytesVal()
 	}
 	return nil
 }
@@ -377,7 +378,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case float64:
 		attrs.UpsertDouble(mapKey, v)
 	case []byte:
-		attrs.UpsertBytes(mapKey, v)
+		attrs.UpsertMBytes(mapKey, v)
 	case []string:
 		arr := pcommon.NewValueSlice()
 		for _, str := range v {
@@ -405,7 +406,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case [][]byte:
 		arr := pcommon.NewValueSlice()
 		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBytesVal(b)
+			arr.SliceVal().AppendEmpty().SetMBytesVal(b)
 		}
 		attrs.Upsert(mapKey, arr)
 	default:
@@ -424,7 +425,7 @@ func setValue(value pcommon.Value, val interface{}) {
 	case float64:
 		value.SetDoubleVal(v)
 	case []byte:
-		value.SetBytesVal(v)
+		value.SetMBytesVal(v)
 	case []string:
 		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
 			return true
@@ -458,7 +459,7 @@ func setValue(value pcommon.Value, val interface{}) {
 			return true
 		})
 		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBytesVal(b)
+			value.SliceVal().AppendEmpty().SetMBytesVal(b)
 		}
 	default:
 		// TODO(anuraaga): Support set of map type.

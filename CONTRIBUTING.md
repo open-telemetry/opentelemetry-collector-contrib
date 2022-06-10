@@ -65,7 +65,6 @@ and the rest of contributors.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@dashpole](https://github.com/dashpole)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
@@ -74,6 +73,8 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
+* [@dashpole](https://github.com/dashpole)
+* [@TylerHelmuth](https://github.com/TylerHelmuth)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 ## General Recommendations
@@ -86,4 +87,4 @@ in general try to follow them.
   package](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper). This will
   ensure that the exporter provides [zPages](https://opencensus.io/zpages/) and a standard set of metrics.
 - `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
-  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink). 
+  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).

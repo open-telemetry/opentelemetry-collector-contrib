@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package signalfxexporter
 
 import (
@@ -518,8 +519,8 @@ func TestConsumeEventData(t *testing.T) {
 			resourceLogs: func() plog.Logs {
 				out := makeSampleResourceLogs()
 				attrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-				attrs.Delete("com.splunk.signalfx.event_category")
-				attrs.Delete("com.splunk.signalfx.event_type")
+				attrs.Remove("com.splunk.signalfx.event_category")
+				attrs.Remove("com.splunk.signalfx.event_type")
 				return out
 			}(),
 			reqTestFunc:          nil,

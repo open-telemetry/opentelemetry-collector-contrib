@@ -16,18 +16,17 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addFilesystemMetrics(dest pmetric.MetricSlice, prefix string, s *stats.FsStats, currentTime pcommon.Timestamp) {
+func addFilesystemMetrics(mb *metadata.MetricsBuilder, filesystemMetrics metadata.FilesystemMetrics, s *stats.FsStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	addIntGauge(dest, prefix, metadata.M.FilesystemAvailable, s.AvailableBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.FilesystemCapacity, s.CapacityBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.FilesystemUsage, s.UsedBytes, currentTime)
+	recordIntDataPoint(mb, filesystemMetrics.Available, s.AvailableBytes, currentTime)
+	recordIntDataPoint(mb, filesystemMetrics.Capacity, s.CapacityBytes, currentTime)
+	recordIntDataPoint(mb, filesystemMetrics.Usage, s.UsedBytes, currentTime)
 }

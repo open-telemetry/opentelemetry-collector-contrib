@@ -55,7 +55,6 @@ func NewTestLogs(logCount int) plog.Logs {
 
 	for i := 0; i < logCount; i++ {
 		log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-		log.SetName("foo")
 		log.SetSeverityText("bar")
 	}
 

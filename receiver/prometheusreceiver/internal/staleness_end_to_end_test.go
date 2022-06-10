@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -34,10 +33,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -57,10 +57,10 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
-	var n uint64
+	n := atomic.NewUint64(0)
 	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Increment the scrape count atomically per scrape.
-		i := atomic.AddUint64(&n, 1)
+		i := n.Add(1)
 
 		select {
 		case <-ctx.Done():
@@ -159,11 +159,11 @@ service:
 		Processors: processors,
 	}
 
-	fmp := filemapprovider.New()
+	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
 			Locations:    []string{confFile.Name()},
-			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
+			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
 		})
 	require.NoError(t, err)
 

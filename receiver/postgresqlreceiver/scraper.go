@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -51,15 +52,15 @@ func (d *defaultClientFactory) getClient(c *Config, database string) (client, er
 }
 
 func newPostgreSQLScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
 	return &postgreSQLScraper{
-		logger:        logger,
+		logger:        settings.Logger,
 		config:        config,
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(config.Metrics),
+		mb:            metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -123,13 +124,18 @@ func (p *postgreSQLScraper) collectBlockReads(
 		return
 	}
 	for _, table := range blocksReadByTableMetrics {
-		for k, v := range table.stats {
-			i, err := p.parseInt(k, v)
+		for sourceKey, source := range metadata.MapAttributeSource {
+			value, ok := table.stats[sourceKey]
+			if !ok {
+				// Data isn't present, error was already logged at a lower level
+				continue
+			}
+			i, err := p.parseInt(sourceKey, value)
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, k)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, source)
 		}
 	}
 }
@@ -151,32 +157,32 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 		return
 	}
 	for _, table := range databaseTableMetrics {
-		for _, key := range []string{"live", "dead"} {
-			value, ok := table.stats[key]
+		for stateKey, state := range metadata.MapAttributeState {
+			value, ok := table.stats[stateKey]
 			if !ok {
 				// Data isn't present, error was already logged at a lower level
 				continue
 			}
-			i, err := p.parseInt(key, value)
+			i, err := p.parseInt(stateKey, value)
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, key)
+			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, state)
 		}
 
-		for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
-			value, ok := table.stats[key]
+		for opKey, op := range metadata.MapAttributeOperation {
+			value, ok := table.stats[opKey]
 			if !ok {
 				// Data isn't present, error was already logged at a lower level
 				continue
 			}
-			i, err := p.parseInt(key, value)
+			i, err := p.parseInt(opKey, value)
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, key)
+			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, op)
 		}
 	}
 }

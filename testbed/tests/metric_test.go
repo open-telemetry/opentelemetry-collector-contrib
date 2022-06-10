@@ -36,48 +36,50 @@ func TestMetric10kDPS(t *testing.T) {
 		sender       testbed.DataSender
 		receiver     testbed.DataReceiver
 		resourceSpec testbed.ResourceSpec
+		skipMessage  string
 	}{
 		{
-			"Carbon",
-			datasenders.NewCarbonDataSender(testbed.GetAvailablePort(t)),
-			datareceivers.NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
+			name:     "Carbon",
+			sender:   datasenders.NewCarbonDataSender(testbed.GetAvailablePort(t)),
+			receiver: datareceivers.NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 237,
 				ExpectedMaxRAM: 100,
 			},
+			skipMessage: "Flaky test, https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9729",
 		},
 		{
-			"OpenCensus",
-			datasenders.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
+			name:     "OpenCensus",
+			sender:   datasenders.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			receiver: datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 85,
 				ExpectedMaxRAM: 100,
 			},
 		},
 		{
-			"OTLP",
-			testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
+			name:     "OTLP",
+			sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 105,
 			},
 		},
 		{
-			"OTLP-HTTP",
-			testbed.NewOTLPHTTPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
+			name:     "OTLP-HTTP",
+			sender:   testbed.NewOTLPHTTPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			receiver: testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 100,
 			},
 		},
 		{
-			"SignalFx",
-			datasenders.NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
-			datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
+			name:     "SignalFx",
+			sender:   datasenders.NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
+			receiver: datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 120,
 				ExpectedMaxRAM: 98,
 			},
@@ -86,6 +88,9 @@ func TestMetric10kDPS(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.skipMessage != "" {
+				t.Skip(test.skipMessage)
+			}
 			Scenario10kItemsPerSecond(
 				t,
 				test.sender,

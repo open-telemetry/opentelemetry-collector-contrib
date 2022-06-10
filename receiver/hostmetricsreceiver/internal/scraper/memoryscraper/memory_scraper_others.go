@@ -25,13 +25,13 @@ import (
 )
 
 func (s *scraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Used), metadata.AttributeState.Used)
-	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Free), metadata.AttributeState.Free)
-	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Inactive), metadata.AttributeState.Inactive)
+	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Used), metadata.AttributeStateUsed)
+	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Free), metadata.AttributeStateFree)
+	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Inactive), metadata.AttributeStateInactive)
 }
 
 func (s *scraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Used)/float64(memInfo.Total), metadata.AttributeState.Used)
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Free)/float64(memInfo.Total), metadata.AttributeState.Free)
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Inactive)/float64(memInfo.Total), metadata.AttributeState.Inactive)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Used)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Free)/float64(memInfo.Total), metadata.AttributeStateFree)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Inactive)/float64(memInfo.Total), metadata.AttributeStateInactive)
 }

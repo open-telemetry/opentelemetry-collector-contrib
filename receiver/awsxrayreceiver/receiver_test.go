@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package awsxrayreceiver
 
 import (
@@ -29,7 +30,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -70,7 +70,7 @@ func TestConsumerCantBeNil(t *testing.T) {
 		nil,
 		componenttest.NewNopReceiverCreateSettings(),
 	)
-	assert.True(t, errors.Is(err, componenterror.ErrNilNextConsumer), "consumer is nil should be detected")
+	assert.True(t, errors.Is(err, component.ErrNilNextConsumer), "consumer is nil should be detected")
 }
 
 func TestProxyCreationFailed(t *testing.T) {
@@ -117,6 +117,8 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("skipping test on darwin")
 	}
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10596")
+
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
@@ -165,7 +167,6 @@ func TestTranslatorErrorsOut(t *testing.T) {
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
-		fmt.Println(logs)
 		return len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message,
 			"X-Ray segment to OT traces conversion failed")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")

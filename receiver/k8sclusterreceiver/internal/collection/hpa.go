@@ -95,7 +95,6 @@ func getResourceForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) *resourc
 			k8sKeyHPAUID:                          string(hpa.UID),
 			k8sKeyHPAName:                         hpa.Name,
 			conventions.AttributeK8SNamespaceName: hpa.Namespace,
-			conventions.AttributeK8SClusterName:   hpa.ClusterName,
 		},
 	}
 }

@@ -282,7 +282,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := CreateNodeAndResourcePdata(tt.job, tt.instance, tt.sdLabels)
+			got := CreateNodeAndResource(tt.job, tt.instance, tt.sdLabels)
 			got.Attributes().Sort()
 			tt.want.Attributes().Sort()
 			require.Equal(t, got, tt.want)

@@ -881,6 +881,20 @@ func sha1Hash(b []byte) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
+type mockInfoAuth map[string]interface{}
+
+func (a mockInfoAuth) GetAttribute(name string) interface{} {
+	return a[name]
+}
+
+func (a mockInfoAuth) GetAttributeNames() []string {
+	names := make([]string, 0, len(a))
+	for name := range a {
+		names = append(names, name)
+	}
+	return names
+}
+
 func TestFromContext(t *testing.T) {
 
 	mdCtx := client.NewContext(context.TODO(), client.Info{
@@ -888,6 +902,9 @@ func TestFromContext(t *testing.T) {
 			"source_single_val":   {"single_val"},
 			"source_multiple_val": {"first_val", "second_val"},
 		}),
+		Auth: mockInfoAuth{
+			"source_auth_val": "auth_val",
+		},
 	})
 
 	testCases := []struct {
@@ -919,6 +936,24 @@ func TestFromContext(t *testing.T) {
 			ctx:                mdCtx,
 			expectedAttributes: map[string]interface{}{"dest": "first_val;second_val"},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source_multiple_val", Action: INSERT},
+		},
+		{
+			name:               "with_metadata_prefix_single_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]interface{}{"dest": "single_val"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "metadata.source_single_val", Action: INSERT},
+		},
+		{
+			name:               "with_auth_prefix_single_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]interface{}{"dest": "auth_val"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_val", Action: INSERT},
+		},
+		{
+			name:               "with_auth_prefix_no_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]interface{}{},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.unknown_val", Action: INSERT},
 		},
 	}
 

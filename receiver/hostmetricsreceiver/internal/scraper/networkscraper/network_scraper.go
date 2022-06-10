@@ -37,6 +37,7 @@ const (
 
 // scraper for Network Metrics
 type scraper struct {
+	settings  component.ReceiverCreateSettings
 	config    *Config
 	mb        *metadata.MetricsBuilder
 	startTime pcommon.Timestamp
@@ -50,8 +51,8 @@ type scraper struct {
 }
 
 // newNetworkScraper creates a set of Network related metrics
-func newNetworkScraper(_ context.Context, cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
+func newNetworkScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
 
 	var err error
 
@@ -79,7 +80,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	}
 
 	s.startTime = pcommon.Timestamp(bootTime * 1e9)
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -123,29 +124,29 @@ func (s *scraper) recordNetworkCounterMetrics() error {
 
 func (s *scraper) recordNetworkPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name, metadata.AttributeDirection.Transmit)
-		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name, metadata.AttributeDirection.Receive)
+		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
 func (s *scraper) recordNetworkDroppedPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name, metadata.AttributeDirection.Transmit)
-		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name, metadata.AttributeDirection.Receive)
+		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
 func (s *scraper) recordNetworkErrorPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errout), ioCounters.Name, metadata.AttributeDirection.Transmit)
-		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errin), ioCounters.Name, metadata.AttributeDirection.Receive)
+		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errout), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errin), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
 func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name, metadata.AttributeDirection.Transmit)
-		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name, metadata.AttributeDirection.Receive)
+		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
@@ -177,7 +178,7 @@ func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]i
 
 func (s *scraper) recordNetworkConnectionsMetric(now pcommon.Timestamp, connectionStateCounts map[string]int64) {
 	for connectionState, count := range connectionStateCounts {
-		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocol.Tcp, connectionState)
+		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocolTcp, connectionState)
 	}
 }
 

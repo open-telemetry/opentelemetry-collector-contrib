@@ -1,0 +1,8 @@
+type: json_parser
+severity:
+  parse_from: body.severity_field
+  mapping:
+    critical: 5xx
+    error: 4xx
+    info: 3xx
+    debug: 2xx

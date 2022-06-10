@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package protocol
 
 import (
@@ -588,7 +589,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				testDescription("statsdTestMetric1", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(611, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(611, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(711, 0)),
 			},
 			expectedTimer: []pmetric.ScopeMetrics{},
 		},
@@ -613,7 +614,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				testDescription("statsdTestMetric1", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(611, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(611, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(711, 0)),
 			},
 			expectedTimer: []pmetric.ScopeMetrics{},
 		},
@@ -641,7 +642,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				testDescription("statsdTestMetric1", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", 215, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(611, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 75, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(611, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 75, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(711, 0)),
 			},
 			expectedTimer: []pmetric.ScopeMetrics{},
 		},
@@ -728,7 +729,7 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 				testDescription("statsdTestMetric1", "c",
 					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), false, time.Unix(711, 0), time.Unix(611, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), false, time.Unix(711, 0), time.Unix(611, 0)),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), false, time.Unix(711, 0), time.Unix(711, 0)),
 			},
 		},
 	}
@@ -776,7 +777,7 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 				testDescription("statsdTestMetric1", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", 7000, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), true, time.Unix(711, 0), time.Unix(611, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), true, time.Unix(711, 0), time.Unix(611, 0)),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), true, time.Unix(711, 0), time.Unix(711, 0)),
 			},
 		},
 	}

@@ -38,13 +38,13 @@ type nginxScraper struct {
 }
 
 func newNginxScraper(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *nginxScraper {
 	return &nginxScraper{
-		settings: settings,
+		settings: settings.TelemetrySettings,
 		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -80,10 +80,10 @@ func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	r.mb.RecordNginxRequestsDataPoint(now, stats.Requests)
 	r.mb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
 	r.mb.RecordNginxConnectionsHandledDataPoint(now, stats.Connections.Handled)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeState.Active)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeState.Reading)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeState.Writing)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeState.Waiting)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeStateActive)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeStateReading)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeStateWriting)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeStateWaiting)
 
 	return r.mb.Emit(), nil
 }
