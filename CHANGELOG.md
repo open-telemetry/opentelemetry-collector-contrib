@@ -19,6 +19,7 @@
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#10882)
 ### 🧰 Bug fixes 🧰
 
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
