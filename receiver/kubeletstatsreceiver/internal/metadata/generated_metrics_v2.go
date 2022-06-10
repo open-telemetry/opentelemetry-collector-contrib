@@ -2445,13 +2445,6 @@ func WithContainerID(val string) ResourceMetricsOption {
 	}
 }
 
-// WithContainerName sets provided value as "container.name" attribute for current resource.
-func WithContainerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.name", val)
-	}
-}
-
 // WithFsType sets provided value as "fs.type" attribute for current resource.
 func WithFsType(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
@@ -2477,6 +2470,13 @@ func WithGlusterfsEndpointsName(val string) ResourceMetricsOption {
 func WithGlusterfsPath(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().UpsertString("glusterfs.path", val)
+	}
+}
+
+// WithK8sContainerName sets provided value as "k8s.container.name" attribute for current resource.
+func WithK8sContainerName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("k8s.container.name", val)
 	}
 }
 

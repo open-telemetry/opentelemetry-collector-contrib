@@ -56,7 +56,7 @@ func getClusterName(attrs pcommon.Map) (string, bool) {
 //   6. the host.name attribute.
 //
 //  It returns a boolean value indicated if any name was found
-func HostnameFromAttributes(attrs pcommon.Map) (string, bool) {
+func HostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
 	// Check if the host is localhost or 0.0.0.0, if so discard it.
 	// We don't do the more strict validation done for metadata,
 	// to avoid breaking users existing invalid-but-accepted hostnames.
@@ -69,14 +69,14 @@ func HostnameFromAttributes(attrs pcommon.Map) (string, bool) {
 		"ip6-localhost":           {},
 	}
 
-	candidateHost, ok := unsanitizedHostnameFromAttributes(attrs)
+	candidateHost, ok := unsanitizedHostnameFromAttributes(attrs, usePreviewRules)
 	if _, invalid := invalidHosts[candidateHost]; invalid {
 		return "", false
 	}
 	return candidateHost, ok
 }
 
-func unsanitizedHostnameFromAttributes(attrs pcommon.Map) (string, bool) {
+func unsanitizedHostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
 	// Custom hostname: useful for overriding in k8s/cloud envs
 	if customHostname, ok := attrs.Get(AttributeDatadogHostname); ok {
 		return customHostname.StringVal(), true
@@ -97,11 +97,11 @@ func unsanitizedHostnameFromAttributes(attrs pcommon.Map) (string, bool) {
 
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
-		return ec2.HostnameFromAttributes(attrs)
+		return ec2.HostnameFromAttributes(attrs, usePreviewRules)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
-		return gcp.HostnameFromAttributes(attrs)
+		return gcp.HostnameFromAttributes(attrs, usePreviewRules)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
-		return azure.HostnameFromAttributes(attrs)
+		return azure.HostnameFromAttributes(attrs, usePreviewRules)
 	}
 
 	// host id from cloud provider
@@ -114,9 +114,11 @@ func unsanitizedHostnameFromAttributes(attrs pcommon.Map) (string, bool) {
 		return hostName.StringVal(), true
 	}
 
-	// container id (e.g. from Docker)
-	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
-		return containerID.StringVal(), true
+	if !usePreviewRules {
+		// container id (e.g. from Docker)
+		if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
+			return containerID.StringVal(), true
+		}
 	}
 
 	return "", false

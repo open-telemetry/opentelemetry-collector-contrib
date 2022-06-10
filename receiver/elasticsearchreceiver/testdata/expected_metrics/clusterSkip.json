@@ -4,7 +4,7 @@
          "scopeMetrics": [
             {
                "scope": {
-                  "name": "otelcol/elasticsearch",
+                  "name": "otelcol/elasticsearchreceiver",
                   "version": "latest"
                },
                "metrics": [

@@ -14,6 +14,10 @@
 
 package testhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
 func Strp(s string) *string {
 	return &s
 }
@@ -28,4 +32,20 @@ func Intp(i int64) *int64 {
 
 func Boolp(b bool) *bool {
 	return &b
+}
+
+type TestTransformContext struct {
+	Item interface{}
+}
+
+func (ctx TestTransformContext) GetItem() interface{} {
+	return ctx.Item
+}
+
+func (ctx TestTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return pcommon.InstrumentationScope{}
+}
+
+func (ctx TestTransformContext) GetResource() pcommon.Resource {
+	return pcommon.Resource{}
 }
