@@ -436,7 +436,7 @@ type Config struct {
 }
 
 // Sanitize tries to sanitize a given configuration
-// Deprecated: [v0.50.0] Will be unexported in a future minor version.
+// Deprecated: [v0.54.0] Will be unexported in a future minor version.
 func (c *Config) Sanitize(logger *zap.Logger) error {
 	for _, err := range c.warnings {
 		logger.Warn(fmt.Sprintf("Deprecated: %v", err))
