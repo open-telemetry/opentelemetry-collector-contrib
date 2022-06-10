@@ -19,8 +19,9 @@ providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
   the code and become a code owner for the component. For vendor-specific components, it's good to have a volunteer
-  sponsor. If you can't find one, we'll assign one in a round-robin fashion. For non-vendor specific components, having
-  a sponsor means that your use case has been validated.
+  sponsor. If you can't find one, we'll assign one in a round-robin fashion. A vendor-specific component directly interfaces
+  with a vendor-specific API and is expected to be maintained by a representative of the same vendor. For non-vendor specific
+  components, having a sponsor means that your use case has been validated.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
 * The configuration options your component will accept. This will help us understand what it does and have an idea of
