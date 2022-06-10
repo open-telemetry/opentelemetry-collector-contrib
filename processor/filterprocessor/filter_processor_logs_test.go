@@ -398,11 +398,11 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
-			l.Attributes().InsertString("name", name)
-			// Add record level attribtues
+			// Add record level attributes
 			for k := 0; k < ls.Len(); k++ {
 				pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
 			}
+			l.Attributes().InsertString("name", name)
 		}
 	}
 	return ld
