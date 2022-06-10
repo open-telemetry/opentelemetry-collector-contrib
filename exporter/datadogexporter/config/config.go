@@ -18,6 +18,7 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -435,11 +436,16 @@ type Config struct {
 }
 
 // Sanitize tries to sanitize a given configuration
+// Deprecated: [v0.54.0] Will be unexported in a future minor version.
 func (c *Config) Sanitize(logger *zap.Logger) error {
-	if c.TagsConfig.Env == "" {
-		c.TagsConfig.Env = "none"
+	for _, err := range c.warnings {
+		logger.Warn(fmt.Sprintf("Deprecated: %v", err))
 	}
 
+	return nil
+}
+
+func (c *Config) Validate() error {
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
 	}
@@ -452,30 +458,6 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 		return errUnsetAPIKey
 	}
 
-	c.API.Key = strings.TrimSpace(c.API.Key)
-
-	// Set default site
-	if c.API.Site == "" {
-		c.API.Site = "datadoghq.com"
-	}
-
-	// Set the endpoint based on the Site
-	if c.Metrics.TCPAddr.Endpoint == "" {
-		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
-	}
-
-	if c.Traces.TCPAddr.Endpoint == "" {
-		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
-	}
-
-	for _, err := range c.warnings {
-		logger.Warn(fmt.Sprintf("Deprecated: %v", err))
-	}
-
-	return nil
-}
-
-func (c *Config) Validate() error {
 	if c.Traces.IgnoreResources != nil {
 		for _, entry := range c.Traces.IgnoreResources {
 			_, err := regexp.Compile(entry)
@@ -514,6 +496,18 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 
+	c.API.Key = strings.TrimSpace(c.API.Key)
+
+	// If an endpoint is not explicitly set, override it based on the site.
+	// TODO (#8396) Remove DD_URL check.
+	if !configMap.IsSet("metrics::endpoint") && os.Getenv("DD_URL") == "" {
+		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
+	}
+	// TODO (#8396) Remove DD_APM_URL check.
+	if !configMap.IsSet("traces::endpoint") && os.Getenv("DD_APM_URL") == "" {
+		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+	}
+
 	// Add deprecation warnings for deprecated settings.
 	renamingWarnings, err := handleRenamedSettings(configMap, c)
 	if err != nil {
@@ -531,7 +525,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if c.Version != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
 	}
-	if c.Env != "" {
+	if configMap.IsSet("env") {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
 	}
 	if c.Traces.SampleRate != 0 {
