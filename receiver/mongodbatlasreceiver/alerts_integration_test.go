@@ -33,12 +33,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 var testPayloads = []string{
@@ -47,13 +48,13 @@ var testPayloads = []string{
 }
 
 const (
-	testPort   = 14732
 	testSecret = "some_secret"
 )
 
 func TestAlertsReceiver(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
+			testPort := testutil.GetAvailablePort(t)
 			sink := &consumertest.LogsSink{}
 			fact := NewFactory()
 
@@ -64,21 +65,18 @@ func TestAlertsReceiver(t *testing.T) {
 					Alerts: AlertConfig{
 						Enabled:  true,
 						Secret:   testSecret,
-						Endpoint: fmt.Sprintf("127.0.0.1:%d", testPort),
+						Endpoint: fmt.Sprintf("localhost:%d", testPort),
 					},
 				},
 				sink,
 			)
-
-			require.NoError(t, err)
-
 			require.NoError(t, err)
 
 			err = recv.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				assert.NoError(t, recv.Shutdown(context.Background()))
+				require.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
 			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
@@ -88,7 +86,7 @@ func TestAlertsReceiver(t *testing.T) {
 			payload, err := io.ReadAll(payloadFile)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%d", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)
@@ -105,7 +103,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
-			}, 10*time.Second, 10*time.Millisecond)
+			}, 2*time.Second, 10*time.Millisecond)
 
 			logs := sink.AllLogs()[0]
 
@@ -120,6 +118,7 @@ func TestAlertsReceiver(t *testing.T) {
 func TestAlertsReceiverTLS(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
+			testPort := testutil.GetAvailablePort(t)
 			sink := &consumertest.LogsSink{}
 			fact := NewFactory()
 
@@ -130,11 +129,11 @@ func TestAlertsReceiverTLS(t *testing.T) {
 					Alerts: AlertConfig{
 						Enabled:  true,
 						Secret:   testSecret,
-						Endpoint: fmt.Sprintf("127.0.0.1:%d", testPort),
+						Endpoint: fmt.Sprintf("localhost:%d", testPort),
 						TLS: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
-								CertFile: filepath.Join("testdata", "alerts", "cert", "cert.pem"),
-								KeyFile:  filepath.Join("testdata", "alerts", "cert", "key.pem"),
+								CertFile: filepath.Join("testdata", "alerts", "cert", "server.crt"),
+								KeyFile:  filepath.Join("testdata", "alerts", "cert", "server.key"),
 							},
 						},
 					},
@@ -147,7 +146,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			require.NoError(t, err)
 
 			defer func() {
-				assert.NoError(t, recv.Shutdown(context.Background()))
+				require.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
 			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
@@ -157,7 +156,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			payload, err := io.ReadAll(payloadFile)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("https://127.0.0.1:%d", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%d", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)
@@ -165,7 +164,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			req.Header.Add(signatureHeaderName, b64HMAC)
 
-			client, err := clientWithCert(filepath.Join("testdata", "alerts", "cert", "cert.pem"))
+			client, err := clientWithCert(filepath.Join("testdata", "alerts", "cert", "ca.crt"))
 			require.NoError(t, err)
 
 			resp, err := client.Do(req)
@@ -177,7 +176,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
-			}, 10*time.Second, 10*time.Millisecond)
+			}, 2*time.Second, 10*time.Millisecond)
 
 			logs := sink.AllLogs()[0]
 

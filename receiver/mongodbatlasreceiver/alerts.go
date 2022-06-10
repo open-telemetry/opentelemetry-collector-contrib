@@ -247,6 +247,7 @@ func payloadToLogs(now time.Time, payload []byte) (*plog.Logs, error) {
 
 	attrs := logRecord.Attributes()
 	// These attributes are always present
+	attrs.InsertString("event.domain", "mongodbatlas")
 	attrs.InsertString("event.name", alert.EventType)
 	attrs.InsertString("message", alert.HumanReadable)
 	attrs.InsertString("status", alert.Status)

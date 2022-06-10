@@ -73,12 +73,13 @@ func TestPayloadToLogRecord(t *testing.T) {
 
 				pcommon.NewMapFromRaw(
 					map[string]interface{}{
-						"created":    "2022-06-03T22:30:31Z",
-						"message":    "Some event happened",
-						"event.name": "EVENT",
-						"updated":    "2022-06-03T22:30:31Z",
-						"status":     "STATUS",
-						"id":         "some-id",
+						"created":      "2022-06-03T22:30:31Z",
+						"message":      "Some event happened",
+						"event.domain": "mongodbatlas",
+						"event.name":   "EVENT",
+						"updated":      "2022-06-03T22:30:31Z",
+						"status":       "STATUS",
+						"id":           "some-id",
 					},
 				).CopyTo(lr.Attributes())
 
@@ -140,6 +141,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 						"acknowledgement.username": "devops",
 						"created":                  "2022-06-03T22:30:31Z",
 						"event.name":               "EVENT",
+						"event.domain":             "mongodbatlas",
 						"id":                       "some-id",
 						"last_notified":            "2022-06-03T22:30:33Z",
 						"message":                  "Some event happened",
