@@ -6,6 +6,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+
 ### 🚀 New components 🚀
 
 - `expvarreceiver`: Include `expvarreceiver` in components (#10847)
@@ -14,6 +16,7 @@
 
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 
 ### 🧰 Bug fixes 🧰
 
