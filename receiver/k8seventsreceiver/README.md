@@ -2,7 +2,7 @@
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [beta]    |
+| Stability                | [alpha]   |
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
@@ -222,5 +222,5 @@ spec:
 EOF
 ```
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
