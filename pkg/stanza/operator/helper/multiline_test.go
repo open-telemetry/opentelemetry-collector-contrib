@@ -441,7 +441,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				"LOGPART log1\nLOGEND",
 			},
 			Flusher: &Flusher{
-				forcePeriod: forcePeriod,
+				forcePeriod: 16*forcePeriod,
 			},
 			AdditionalIterations: 1,
 			Sleep:                forcePeriod / 4,
