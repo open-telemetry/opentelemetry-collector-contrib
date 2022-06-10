@@ -16,7 +16,6 @@
 package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -219,13 +218,11 @@ func accessInstrumentationScopeVersion() pathGetSetter {
 func accessTraceID() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceID().HexString()
+			return ctx.GetItem().(ptrace.Span).TraceID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				if traceID, err := common.ParseTraceID(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
-				}
+			if newTraceID, ok := val.(pcommon.TraceID); ok {
+				ctx.GetItem().(ptrace.Span).SetTraceID(newTraceID)
 			}
 		},
 	}
@@ -234,13 +231,11 @@ func accessTraceID() pathGetSetter {
 func accessSpanID() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).SpanID().HexString()
+			return ctx.GetItem().(ptrace.Span).SpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				if spanID, err := common.ParseSpanID(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
-				}
+			if newSpanId, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanId)
 			}
 		},
 	}
@@ -249,7 +244,7 @@ func accessSpanID() pathGetSetter {
 func accessTraceState() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceState()
+			return (string)(ctx.GetItem().(ptrace.Span).TraceState())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
@@ -265,11 +260,8 @@ func accessParentSpanID() pathGetSetter {
 			return ctx.GetItem().(ptrace.Span).ParentSpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [8]byte
-				copy(idArr[:8], id)
-				ctx.GetItem().(ptrace.Span).SetParentSpanID(pcommon.NewSpanID(idArr))
+			if newParentSpanID, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(ptrace.Span).SetParentSpanID(newParentSpanID)
 			}
 		},
 	}

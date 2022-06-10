@@ -15,7 +15,6 @@
 package traces
 
 import (
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -78,8 +77,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig: pcommon.NewTraceID(traceID).HexString(),
-			new:  hex.EncodeToString(traceID2[:]),
+			orig: pcommon.NewTraceID(traceID),
+			new:  pcommon.NewTraceID(traceID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
@@ -91,8 +90,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig: pcommon.NewSpanID(spanID).HexString(),
-			new:  hex.EncodeToString(spanID2[:]),
+			orig: pcommon.NewSpanID(spanID),
+			new:  pcommon.NewSpanID(spanID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
@@ -104,7 +103,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_state",
 				},
 			},
-			orig: ptrace.TraceState("state"),
+			orig: "state",
 			new:  "newstate",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceState("newstate")
@@ -118,7 +117,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewSpanID(spanID2),
-			new:  hex.EncodeToString(spanID[:]),
+			new:  pcommon.NewSpanID(spanID),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetParentSpanID(pcommon.NewSpanID(spanID))
 			},
