@@ -1,13 +1,16 @@
 # Kubernetes Events Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 The kubernetes Events receiver collects events from the Kubernetes
 API server. It collects all the new or updated events that come in.
 
 Currently this receiver supports authentication via service accounts only.
 See [example](#example) for more information.
-
-> :construction: This receiver is in **BETA**. Configuration fields and
-log data model are subject to change.
 
 ## Configuration
 
@@ -215,3 +218,6 @@ spec:
             name: otelcontribcol
 EOF
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
