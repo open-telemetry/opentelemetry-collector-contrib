@@ -12,9 +12,6 @@ API server. It collects all the new or updated events that come in.
 Currently this receiver supports authentication via service accounts only.
 See [example](#example) for more information.
 
-> :construction: This receiver is in **BETA**. Configuration fields and
-log data model are subject to change.
-
 ## Configuration
 
 The following settings are optional:
