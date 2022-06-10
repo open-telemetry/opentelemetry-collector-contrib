@@ -15,7 +15,6 @@
 package file
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -143,10 +142,9 @@ func BenchmarkFileInput(b *testing.B) {
 
 	for _, bench := range cases {
 		b.Run(bench.name, func(b *testing.B) {
-			rootDir, err := ioutil.TempDir("", "")
-			require.NoError(b, err)
+			rootDir := b.TempDir()
 
-			files := []*benchFile{}
+			var files []*benchFile
 			for _, path := range bench.paths {
 				file := openFile(b, filepath.Join(rootDir, path))
 				files = append(files, simpleTextFile(b, file))

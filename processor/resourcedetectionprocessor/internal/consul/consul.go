@@ -24,6 +24,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -36,7 +37,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider consulMetadataCollector
+	provider consul.Provider
 	logger   *zap.Logger
 }
 
@@ -66,7 +67,7 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 		return nil, fmt.Errorf("failed creating consul client: %w", err)
 	}
 
-	provider := newConsulMetadata(client, userCfg.MetaLabels)
+	provider := consul.NewProvider(client, userCfg.MetaLabels)
 	return &Detector{provider: provider, logger: p.Logger}, nil
 }
 
@@ -80,11 +81,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, "", fmt.Errorf("failed to get consul metadata: %w", err)
 	}
 
-	attrs.InsertString(conventions.AttributeHostName, metadata.hostName)
-	attrs.InsertString(conventions.AttributeCloudRegion, metadata.datacenter)
-	attrs.InsertString(conventions.AttributeHostID, metadata.nodeID)
+	attrs.InsertString(conventions.AttributeHostName, metadata.Hostname)
+	attrs.InsertString(conventions.AttributeCloudRegion, metadata.Datacenter)
+	attrs.InsertString(conventions.AttributeHostID, metadata.NodeID)
 
-	for key, element := range metadata.hostMetadata {
+	for key, element := range metadata.HostMetadata {
 		attrs.InsertString(key, element)
 	}
 
