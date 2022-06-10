@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-- `observer`: Document available observers (#10889)
-
 ## 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
