@@ -15,7 +15,6 @@
 package logs
 
 import (
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -148,7 +147,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewTraceID(traceID),
-			new:  hex.EncodeToString(traceID2[:]),
+			new:  pcommon.NewTraceID(traceID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
@@ -161,7 +160,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewSpanID(spanID),
-			new:  hex.EncodeToString(spanID2[:]),
+			new:  pcommon.NewSpanID(spanID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetSpanID(pcommon.NewSpanID(spanID2))
 			},

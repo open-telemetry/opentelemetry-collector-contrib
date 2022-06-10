@@ -77,6 +77,18 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
 			},
 		},
+		{
+			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0102030405060708)`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -112,6 +124,8 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetFlags(1)
+	log.SetTraceID(pcommon.NewTraceID(traceID))
+	log.SetSpanID(pcommon.NewSpanID(spanID))
 	log.Attributes().InsertString("http.method", "get")
 	log.Attributes().InsertString("http.path", "/health")
 	log.Attributes().InsertString("http.url", "http://localhost/health")

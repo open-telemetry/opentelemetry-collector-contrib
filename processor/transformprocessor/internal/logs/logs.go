@@ -315,10 +315,8 @@ func accessTraceID() pathGetSetter {
 			return ctx.GetItem().(plog.LogRecord).TraceID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				if traceID, err := common.ParseTraceID(str); err == nil {
-					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
-				}
+			if newTraceID, ok := val.(pcommon.TraceID); ok {
+				ctx.GetItem().(plog.LogRecord).SetTraceID(newTraceID)
 			}
 		},
 	}
@@ -330,10 +328,8 @@ func accessSpanID() pathGetSetter {
 			return ctx.GetItem().(plog.LogRecord).SpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				if spanID, err := common.ParseSpanID(str); err == nil {
-					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
-				}
+			if newSpanID, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(plog.LogRecord).SetSpanID(newSpanID)
 			}
 		},
 	}
