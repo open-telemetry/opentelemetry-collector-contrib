@@ -47,12 +47,7 @@ import (
 
 var jaegerAgent = config.NewComponentIDWithName(typeStr, "agent_test")
 
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10368")
 	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
@@ -76,7 +71,6 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10369")
 	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
@@ -86,7 +80,6 @@ func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10370")
 	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
 	port := testutil.GetAvailablePort(t)
 

@@ -397,7 +397,7 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 		// Fetch tags from attributes.
 		attributeTags := attributes.TagsFromAttributes(rm.Resource().Attributes())
 
-		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes(), t.cfg.previewHostnameFromAttributes)
 		if !ok {
 			var err error
 			host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())

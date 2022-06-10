@@ -227,7 +227,9 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		responseBody := metricsResponse{}
 		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.ByteString("body", bodyBytes))
+			bodyStr := string(bodyBytes)
+			bodyStr = truncateString(bodyStr, 1000)
+			e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
 			return nil
 		}
 
@@ -277,6 +279,17 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	e.client = client
 
 	return nil
+}
+
+func truncateString(str string, num int) string {
+	truncated := str
+	if len(str) > num {
+		if num > 3 {
+			num -= 3
+		}
+		truncated = str[0:num] + "..."
+	}
+	return truncated
 }
 
 // Response from Dynatrace is expected to be in JSON format
