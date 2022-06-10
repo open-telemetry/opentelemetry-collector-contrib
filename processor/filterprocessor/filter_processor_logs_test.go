@@ -393,7 +393,7 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 	for i, lwr := range lwrs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
-		// Add resource level attribtues
+		// Add resource level attributes
 		pcommon.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
