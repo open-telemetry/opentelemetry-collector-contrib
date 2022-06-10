@@ -234,8 +234,8 @@ func accessSpanID() pathGetSetter {
 			return ctx.GetItem().(ptrace.Span).SpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newSpanId, ok := val.(pcommon.SpanID); ok {
-				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanId)
+			if newSpanID, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanID)
 			}
 		},
 	}
