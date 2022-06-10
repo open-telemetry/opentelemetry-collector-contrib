@@ -30,6 +30,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 	functions["testing_string"] = functionWithString
+	functions["testing_byte_slice"] = functionWithByteSlice
 
 	tests := []struct {
 		name string
@@ -98,6 +99,23 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "not matching arg type when byte slice",
+			inv: Invocation{
+				Function: "testing_byte_slice",
+				Arguments: []Value{
+					{
+						String: testhelper.Strp("test"),
+					},
+					{
+						String: testhelper.Strp("test"),
+					},
+					{
+						String: testhelper.Strp("test"),
+					},
+				},
+			},
+		},
+		{
 			name: "function call returns error",
 			inv: Invocation{
 				Function: "testing_error",
@@ -117,6 +135,7 @@ func Test_NewFunctionCall(t *testing.T) {
 	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_float_slice"] = functionWithFloatSlice
 	functions["testing_int_slice"] = functionWithIntSlice
+	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
@@ -277,6 +296,17 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 		},
 		{
+			name: "bytes arg",
+			inv: Invocation{
+				Function: "testing_byte_slice",
+				Arguments: []Value{
+					{
+						Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+					},
+				},
+			},
+		},
+		{
 			name: "multiple args",
 			inv: Invocation{
 				Function: "testing_multiple_args",
@@ -330,6 +360,12 @@ func functionWithFloatSlice(_ []float64) (ExprFunc, error) {
 }
 
 func functionWithIntSlice(_ []int64) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
+func functionWithByteSlice(_ []byte) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil

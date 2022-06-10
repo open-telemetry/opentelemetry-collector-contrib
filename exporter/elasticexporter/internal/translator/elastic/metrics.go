@@ -14,7 +14,6 @@
 
 // Package elastic contains an opentelemetry-collector exporter
 // for Elastic APM.
-// nolint:gocritic
 package elastic // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 
 import (
@@ -128,7 +127,8 @@ func (ms *metricsets) upsert(m model.Metrics) {
 	} else {
 		head := (*ms)[:i]
 		tail := append([]model.Metrics{m}, (*ms)[i:]...)
-		*ms = append(head, tail...)
+		head = append(head, tail...)
+		*ms = head
 	}
 }
 

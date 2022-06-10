@@ -313,6 +313,30 @@ func Test_parse(t *testing.T) {
 				Condition: nil,
 			},
 		},
+		{
+			query: `set(attributes["bytes"], 0x0102030405060708)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("bytes"),
+									},
+								},
+							},
+						},
+						{
+							Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -331,6 +355,12 @@ func Test_parse_failure(t *testing.T) {
 		`set(name.)`,
 		`("foo")`,
 		`set("foo") where name =||= "fido"`,
+		`set(span_id, SpanIDWrapper{not a hex string})`,
+		`set(span_id, SpanIDWrapper{01})`,
+		`set(span_id, SpanIDWrapper{010203040506070809})`,
+		`set(trace_id, TraceIDWrapper{not a hex string})`,
+		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
+		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {

@@ -37,7 +37,7 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	current := time.Now().UnixNano() / 1e6
 	collection := map[string]interface{}{}
 
-	emfPusher, _ := newMockPusherWithEventCheck(t, func(msg string) {
+	emfPusher := newMockPusherWithEventCheck(func(msg string) {
 		if _, ok := collection[msg]; ok {
 			t.Errorf("Sending duplicated event message %s", msg)
 		} else {
@@ -63,9 +63,7 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	maxEventPayloadBytes = defaultMaxEventPayloadBytes
 }
 
-func newMockPusherWithEventCheck(t *testing.T, check func(msg string)) (Pusher, string) {
-	logger := zap.NewNop()
-	tmpfolder := t.TempDir()
+func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {
 		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
 		for _, event := range input.LogEvents {
@@ -73,8 +71,8 @@ func newMockPusherWithEventCheck(t *testing.T, check func(msg string)) (Pusher, 
 			check(eventMsg)
 		}
 	})
-	p := newLogPusher(&logGroup, &logStreamName, *svc, logger)
-	return p, tmpfolder
+	p := newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
+	return p
 }
 
 //
@@ -89,10 +87,9 @@ func TestLogEvent_eventPayloadBytes(t *testing.T) {
 func TestValidateLogEventWithMutating(t *testing.T) {
 	maxEventPayloadBytes = 64
 
-	logger := zap.NewNop()
 	logEvent := NewEvent(0, "abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
 	logEvent.GeneratedTime = time.Now()
-	err := logEvent.Validate(logger)
+	err := logEvent.Validate(zap.NewNop())
 	assert.Nil(t, err)
 	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
 	assert.Equal(t, 64-perEventHeaderBytes, len(*logEvent.InputLogEvent.Message))
@@ -174,9 +171,8 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 
 // Need to remove the tmp state folder after testing.
 func newMockPusher() *logPusher {
-	logger := zap.NewNop()
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
-	return newLogPusher(&logGroup, &logStreamName, *svc, logger)
+	return newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
 }
 
 //

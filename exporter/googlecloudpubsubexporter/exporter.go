@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package googlecloudpubsubexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 
 import (
@@ -148,8 +147,7 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 		attributes["ce-type"] = "org.opentelemetry.otlp.logs.v1"
 		attributes["content-type"] = "application/protobuf"
 	}
-	switch ex.ceCompression {
-	case gZip:
+	if ex.ceCompression == gZip {
 		attributes["content-encoding"] = "gzip"
 		data, err = ex.compress(data)
 		if err != nil {
@@ -169,8 +167,7 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 }
 
 func (ex *pubsubExporter) compress(payload []byte) ([]byte, error) {
-	switch ex.ceCompression {
-	case gZip:
+	if ex.ceCompression == gZip {
 		var buf bytes.Buffer
 		writer := gzip.NewWriter(&buf)
 		_, err := writer.Write(payload)

@@ -8,9 +8,16 @@
 
 ### 🚀 New components 🚀
 
+- `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+
 ### 💡 Enhancements 💡
-- `prometheusexporter`: Use `confighttp.HTTPServerSettings` to allow tls and auth.
+- `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `prometheusexporter`: Use `confighttp.HTTPServerSettings` to allow tls and auth.(#10858)
+
 ### 🧰 Bug fixes 🧰
+
+- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
 
 ## v0.53.0
 
@@ -54,6 +61,7 @@
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 - `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
+- `apachereceiver`: Update units to follow semconv (#10587)
 
 ## v0.52.0
 
