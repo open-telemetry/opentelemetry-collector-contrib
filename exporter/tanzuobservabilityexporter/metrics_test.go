@@ -17,6 +17,8 @@ package tanzuobservabilityexporter
 import (
 	"context"
 	"errors"
+	"math"
+	"strconv"
 	"testing"
 	"time"
 
@@ -1090,13 +1092,13 @@ func TestExponentialHistogramConsumerSpec(t *testing.T) {
 	assert.Len(t, points, 3)
 
 	// 4 + 4 + 2
-	assert.Len(t, points[0].BucketCounts, 10)
+	assert.Len(t, points[0].AsCumulative(), 10)
 
 	// 7 + 7 + 2
-	assert.Len(t, points[1].BucketCounts, 16)
+	assert.Len(t, points[1].AsCumulative(), 16)
 
 	// 11 + 11 + 2
-	assert.Len(t, points[2].BucketCounts, 24)
+	assert.Len(t, points[2].AsCumulative(), 24)
 }
 
 func TestExponentialHistogramDataPoint(t *testing.T) {
@@ -1111,12 +1113,33 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 	dataPoint.Attributes().UpsertString("baz", "7")
 	setDataPointTimestamp(1640198765, dataPoint)
 	point := fromOtelExponentialHistogramDataPoint(dataPoint)
-	assert.Equal(t, []uint64{17, 16, 15, 2, 5, 6, 7, 8, 0}, point.BucketCounts)
-	assert.InDeltaSlice(
+	assertBuckets(
 		t,
-		[]float64{-16.0, -11.3137, -8.0, 2.8284, 4.0, 5.6569, 8.0, 11.3137},
-		point.ExplicitBounds,
-		0.0001)
+		[]cumulativeBucket{
+			{Tag: "-16", Count: 17},
+			{Tag: "-11.3137", Count: 33},
+			{Tag: "-8", Count: 48},
+			{Tag: "2.8284", Count: 50},
+			{Tag: "4", Count: 55},
+			{Tag: "5.6569", Count: 61},
+			{Tag: "8", Count: 68},
+			{Tag: "11.3137", Count: 76},
+			{Tag: "+Inf", Count: 76},
+		},
+		point.AsCumulative())
+	assertCentroids(
+		t,
+		[]histogram.Centroid{
+			{Value: -19.3137, Count: 17},
+			{Value: -13.6569, Count: 16},
+			{Value: -9.6569, Count: 15},
+			{Value: -2.5858, Count: 2},
+			{Value: 3.4142, Count: 5},
+			{Value: 4.8284, Count: 6},
+			{Value: 6.8284, Count: 7},
+			{Value: 9.6569, Count: 8},
+		},
+		point.AsDelta())
 	assert.Equal(t, map[string]string{"foo": "bar", "baz": "7"}, attributesToTags(point.Attributes))
 	assert.Equal(t, int64(1640198765), point.SecondsSinceEpoch)
 }
@@ -1128,8 +1151,19 @@ func TestExponentialHistogramDataPoint_ZeroOnly(t *testing.T) {
 	dataPoint.Positive().SetOffset(1)
 	dataPoint.SetZeroCount(5)
 	point := fromOtelExponentialHistogramDataPoint(dataPoint)
-	assert.Equal(t, []uint64{5, 0}, point.BucketCounts)
-	assert.InDeltaSlice(t, []float64{2.0}, point.ExplicitBounds, 0.0001)
+	assertBuckets(
+		t,
+		[]cumulativeBucket{
+			{Tag: "2.0", Count: 5},
+			{Tag: "+Inf", Count: 5},
+		},
+		point.AsCumulative())
+	assertCentroids(
+		t,
+		[]histogram.Centroid{
+			{Value: -1.0, Count: 5},
+		},
+		point.AsDelta())
 }
 
 func TestAttributesToTagsForMetrics(t *testing.T) {
@@ -1175,6 +1209,7 @@ func newHistogramMetricWithDataPoints(
 	for _, count := range numBucketCountsForEachDataPoint {
 		point := aHistogram.DataPoints().AppendEmpty()
 		point.SetMBucketCounts(make([]uint64, count))
+		point.SetMExplicitBounds(make([]float64, count-1))
 	}
 	return result
 }
@@ -1437,7 +1472,7 @@ type mockHistogramDataPointConsumer struct {
 func (m *mockHistogramDataPointConsumer) Consume(
 	mi metricInfo, point bucketHistogramDataPoint, errs *[]error, reporting *histogramReporting) {
 	m.names = append(m.names, mi.Name())
-	m.counts = append(m.counts, len(point.BucketCounts))
+	m.counts = append(m.counts, len(point.AsCumulative()))
 }
 
 func copyTags(tags map[string]string) map[string]string {
@@ -1507,4 +1542,44 @@ func copyGranularity(
 		result[k] = v
 	}
 	return result
+}
+
+func assertBuckets(t *testing.T, expected, actual []cumulativeBucket) {
+	msgString := "Expected: %+v; Actual: %+v"
+	if len(expected) != len(actual) {
+		assert.Fail(t, "", msgString, expected, actual)
+		return
+	}
+	for i := range expected {
+		if expected[i].Count != actual[i].Count || !tagsEqual(expected[i].Tag, actual[i].Tag) {
+			assert.Fail(t, "", msgString, expected, actual)
+			return
+		}
+	}
+}
+
+func tagsEqual(expected, actual string) bool {
+	if expected == actual {
+		return true
+	}
+	expectedF, errE := strconv.ParseFloat(expected, 64)
+	actualF, errF := strconv.ParseFloat(actual, 64)
+	if errE != nil || errF != nil {
+		return false
+	}
+	return math.Abs(expectedF-actualF) < 0.0001
+}
+
+func assertCentroids(t *testing.T, expected, actual []histogram.Centroid) {
+	msgString := "Expected: %+v; Actual: %+v"
+	if len(expected) != len(actual) {
+		assert.Fail(t, "", msgString, expected, actual)
+		return
+	}
+	for i := range expected {
+		if expected[i].Count != actual[i].Count || math.Abs(expected[i].Value-actual[i].Value) > 0.0001 {
+			assert.Fail(t, "", msgString, expected, actual)
+			return
+		}
+	}
 }

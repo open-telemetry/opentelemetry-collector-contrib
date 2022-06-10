@@ -39,6 +39,10 @@ const (
 	noAggregationTemporalityMetricName = "~sdk.otel.collector.no_aggregation_temporality"
 )
 
+const (
+	histogramDataPointInvalid = "Histogram data point invalid"
+)
+
 var (
 	typeIsGaugeTags     = map[string]string{"type": "gauge"}
 	typeIsSumTags       = map[string]string{"type": "sum"}
@@ -465,32 +469,24 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	errs *[]error,
 	reporting *histogramReporting,
 ) {
-	name := mi.Name()
-	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
-	if len(point.BucketCounts) != len(point.ExplicitBounds)+1 {
+	if !point.Valid() {
 		reporting.LogMalformed(mi.Metric)
 		return
 	}
+	name := mi.Name()
+	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
 	if leTag, ok := tags["le"]; ok {
 		tags["_le"] = leTag
 	}
-	var leCount uint64
-	for i := range point.BucketCounts {
-		tags["le"] = leTagValue(point.ExplicitBounds, i)
-		leCount += point.BucketCounts[i]
+	buckets := point.AsCumulative()
+	for _, bucket := range buckets {
+		tags["le"] = bucket.Tag
 		err := c.sender.SendMetric(
-			name, float64(leCount), point.SecondsSinceEpoch, mi.Source, tags)
+			name, float64(bucket.Count), point.SecondsSinceEpoch, mi.Source, tags)
 		if err != nil {
 			*errs = append(*errs, err)
 		}
 	}
-}
-
-func leTagValue(explicitBounds []float64, bucketIndex int) string {
-	if bucketIndex == len(explicitBounds) {
-		return "+Inf"
-	}
-	return strconv.FormatFloat(explicitBounds[bucketIndex], 'f', -1, 64)
 }
 
 type deltaHistogramDataPointConsumer struct {
@@ -509,37 +505,17 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	point bucketHistogramDataPoint,
 	errs *[]error,
 	reporting *histogramReporting) {
-	name := mi.Name()
-	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
-	if len(point.BucketCounts) != len(point.ExplicitBounds)+1 {
+	if !point.Valid() {
 		reporting.LogMalformed(mi.Metric)
 		return
 	}
-	centroids := make([]histogram.Centroid, len(point.BucketCounts))
-	for i := range point.BucketCounts {
-		centroids[i] = histogram.Centroid{
-			Value: centroidValue(point.ExplicitBounds, i), Count: int(point.BucketCounts[i])}
-	}
+	name := mi.Name()
+	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
 	err := d.sender.SendDistribution(
-		name, centroids, allGranularity, point.SecondsSinceEpoch, mi.Source, tags)
+		name, point.AsDelta(), allGranularity, point.SecondsSinceEpoch, mi.Source, tags)
 	if err != nil {
 		*errs = append(*errs, err)
 	}
-}
-
-func centroidValue(explicitBounds []float64, index int) float64 {
-	length := len(explicitBounds)
-	if length == 0 {
-		// This is the best we can do.
-		return 0.0
-	}
-	if index == 0 {
-		return explicitBounds[0]
-	}
-	if index == length {
-		return explicitBounds[length-1]
-	}
-	return (explicitBounds[index-1] + explicitBounds[index]) / 2.0
 }
 
 type summaryConsumer struct {
@@ -619,11 +595,109 @@ func quantileTagValue(quantile float64) string {
 	return strconv.FormatFloat(quantile, 'f', -1, 64)
 }
 
+// cumulativeBucket represents a cumulative histogram bucket
+type cumulativeBucket struct {
+
+	// The value of the "le" tag
+	Tag string
+
+	// The count of values less than or equal to the "le" tag
+	Count uint64
+}
+
+// bucketHistogramDataPoint represents a single histogram data point
 type bucketHistogramDataPoint struct {
-	BucketCounts      []uint64
-	ExplicitBounds    []float64
 	Attributes        pcommon.Map
 	SecondsSinceEpoch int64
+
+	// The bucket counts. For exponential histograms, the first and last element of bucketCounts
+	// are always 0.
+	bucketCounts []uint64
+
+	// The explicit bounds len(explicitBounds) + 1 == len(bucketCounts)
+	// If explicitBounds = {10, 20} and bucketCounts = {1, 2, 3} it means that 1 value is <= 10;
+	// 2 values are between 10 and 20; and 3 values are > 20
+	explicitBounds []float64
+
+	// true if data point came from an exponential histogram.
+	exponential bool
+}
+
+// Valid returns true if this is a valid data point.
+func (b *bucketHistogramDataPoint) Valid() bool {
+	return len(b.bucketCounts) == len(b.explicitBounds)+1
+}
+
+// AsCumulative returns the buckets for a cumulative histogram
+func (b *bucketHistogramDataPoint) AsCumulative() []cumulativeBucket {
+	if !b.Valid() {
+		panic(histogramDataPointInvalid)
+	}
+
+	// For exponential histograms, we ignore the first bucket which always has count 0
+	// but include the last bucket for +Inf.
+	if b.exponential {
+		return b.asCumulative(1, len(b.bucketCounts))
+	}
+	return b.asCumulative(0, len(b.bucketCounts))
+}
+
+// AsDelta returns the centroids for a delta histogram
+func (b *bucketHistogramDataPoint) AsDelta() []histogram.Centroid {
+	if !b.Valid() {
+		panic(histogramDataPointInvalid)
+	}
+
+	// For exponential histograms, we ignore the first and last centroids which always have a
+	// count of 0.
+	if b.exponential {
+		return b.asDelta(1, len(b.bucketCounts)-1)
+	}
+	return b.asDelta(0, len(b.bucketCounts))
+}
+
+func (b *bucketHistogramDataPoint) asCumulative(
+	startBucketIndex, endBucketIndex int) []cumulativeBucket {
+	result := make([]cumulativeBucket, 0, endBucketIndex-startBucketIndex)
+	var leCount uint64
+	for i := startBucketIndex; i < endBucketIndex; i++ {
+		leCount += b.bucketCounts[i]
+		result = append(result, cumulativeBucket{Tag: b.leTagValue(i), Count: leCount})
+	}
+	return result
+}
+
+func (b *bucketHistogramDataPoint) asDelta(
+	startBucketIndex, endBucketIndex int) []histogram.Centroid {
+	result := make([]histogram.Centroid, 0, endBucketIndex-startBucketIndex)
+	for i := startBucketIndex; i < endBucketIndex; i++ {
+		result = append(
+			result,
+			histogram.Centroid{Value: b.centroidValue(i), Count: int(b.bucketCounts[i])})
+	}
+	return result
+}
+
+func (b *bucketHistogramDataPoint) leTagValue(bucketIndex int) string {
+	if bucketIndex == len(b.explicitBounds) {
+		return "+Inf"
+	}
+	return strconv.FormatFloat(b.explicitBounds[bucketIndex], 'f', -1, 64)
+}
+
+func (b *bucketHistogramDataPoint) centroidValue(index int) float64 {
+	length := len(b.explicitBounds)
+	if length == 0 {
+		// This is the best we can do.
+		return 0.0
+	}
+	if index == 0 {
+		return b.explicitBounds[0]
+	}
+	if index == length {
+		return b.explicitBounds[length-1]
+	}
+	return (b.explicitBounds[index-1] + b.explicitBounds[index]) / 2.0
 }
 
 type histogramSpecification interface {
@@ -665,6 +739,7 @@ func (exponentialHistogramSpecification) DataPoints(
 	return fromOtelExponentialHistogram(metric.ExponentialHistogram().DataPoints())
 }
 
+// fromOtelHistogram converts a regular histogram metric into a slice of data points.
 func fromOtelHistogram(points pmetric.HistogramDataPointSlice) []bucketHistogramDataPoint {
 	result := make([]bucketHistogramDataPoint, points.Len())
 	for i := 0; i < points.Len(); i++ {
@@ -673,6 +748,7 @@ func fromOtelHistogram(points pmetric.HistogramDataPointSlice) []bucketHistogram
 	return result
 }
 
+// fromOtelExponentialHistogram converts an exponential histogram into a slice of data points.
 func fromOtelExponentialHistogram(
 	points pmetric.ExponentialHistogramDataPointSlice) []bucketHistogramDataPoint {
 	result := make([]bucketHistogramDataPoint, points.Len())
@@ -684,10 +760,10 @@ func fromOtelExponentialHistogram(
 
 func fromOtelHistogramDataPoint(point pmetric.HistogramDataPoint) bucketHistogramDataPoint {
 	return bucketHistogramDataPoint{
-		BucketCounts:      point.MBucketCounts(),
-		ExplicitBounds:    point.MExplicitBounds(),
 		Attributes:        point.Attributes(),
 		SecondsSinceEpoch: point.Timestamp().AsTime().Unix(),
+		bucketCounts:      point.MBucketCounts(),
+		explicitBounds:    point.MExplicitBounds(),
 	}
 }
 
@@ -706,9 +782,9 @@ func fromOtelExponentialHistogramDataPoint(
 	positiveBucketCounts := point.Positive().BucketCounts().AsRaw()
 
 	// The total number of buckets is the number of negative buckets + the number of positive
-	// buckets + 1 for the zero bucket + 1 bucket for the largest positive explicit bound up to
-	// positive infinity.
-	numBucketCounts := len(negativeBucketCounts) + 1 + len(positiveBucketCounts) + 1
+	// buckets + 1 for the zero bucket + 1 bucket for negative infinity up to the smallest negative explicit bound
+	// + 1 bucket for the largest positive explicit bound up to positive infinity.
+	numBucketCounts := 1 + len(negativeBucketCounts) + 1 + len(positiveBucketCounts) + 1
 
 	// We pre-allocate the slice setting its length to 0 so that GO doesn't have to keep
 	// re-allocating the slice as it grows.
@@ -727,10 +803,11 @@ func fromOtelExponentialHistogramDataPoint(
 	appendPositiveBucketsAndExplicitBounds(
 		point.Positive().Offset(), base, positiveBucketCounts, &bucketCounts, &explicitBounds)
 	return bucketHistogramDataPoint{
-		BucketCounts:      bucketCounts,
-		ExplicitBounds:    explicitBounds,
 		Attributes:        point.Attributes(),
 		SecondsSinceEpoch: point.Timestamp().AsTime().Unix(),
+		bucketCounts:      bucketCounts,
+		explicitBounds:    explicitBounds,
+		exponential:       true,
 	}
 }
 
@@ -744,8 +821,12 @@ func appendNegativeBucketsAndExplicitBounds(
 	bucketCounts *[]uint64,
 	explicitBounds *[]float64,
 ) {
+	// The count in the first bucket which includes negative infinity is always 0.
+	*bucketCounts = append(*bucketCounts, 0)
+
 	// The smallest negative explicit bound.
 	le := -math.Pow(base, float64(negativeOffset)+float64(len(negativeBucketCounts)))
+	*explicitBounds = append(*explicitBounds, le)
 
 	// The first negativeBucketCount has a negative explicit bound with the smallest magnitude;
 	// the last negativeBucketCount has a negative explicit bound with the largest magnitude.
