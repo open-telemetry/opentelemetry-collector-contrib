@@ -1,0 +1,70 @@
+name: rabbitmqreceiver
+
+resource_attributes:
+  rabbitmq.queue.name:
+    description: The name of the RabbitMQ queue.
+    type: string
+  rabbitmq.node.name:
+    description: The name of the RabbitMQ node.
+    type: string
+  rabbitmq.vhost.name:
+    description: The name of the RabbitMQ vHost.
+    type: string
+
+attributes:
+  message.state:
+    value: state
+    description: The state of messages in a queue.
+    enum:
+      - ready
+      - unacknowledged
+metrics:
+  rabbitmq.consumer.count:
+    description: The number of consumers currently reading from the queue.
+    unit: "{consumers}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.message.delivered:
+    description: The number of messages delivered to consumers.
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.message.published:
+    description: The number of messages published to a queue.
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.message.acknowledged:
+    description: The number of messages acknowledged by consumers.
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.message.dropped:
+    description: The number of messages dropped as unroutable.
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.message.current:
+    description: The total number of messages currently in the queue.
+    unit: "{messages}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [message.state]
+    enabled: true

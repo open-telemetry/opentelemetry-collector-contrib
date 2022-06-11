@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package components
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -28,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -36,8 +40,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestDefaultExtensions(t *testing.T) {
@@ -69,10 +75,32 @@ func TestDefaultExtensions(t *testing.T) {
 			},
 		},
 		{
+			extension: "sigv4auth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["sigv4auth"].CreateDefaultConfig().(*sigv4authextension.Config)
+				return cfg
+			},
+		},
+		{
 			extension: "zpages",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "basicauth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
+				// No need to clean up, t.TempDir will be deleted entirely.
+				fileName := filepath.Join(t.TempDir(), "random.file")
+				require.NoError(t, os.WriteFile(fileName, []byte("username:password"), 0600))
+
+				cfg.Htpasswd = &basicauthextension.HtpasswdSettings{
+					File:   fileName,
+					Inline: "username:password",
+				}
 				return cfg
 			},
 		},
@@ -153,10 +181,19 @@ func TestDefaultExtensions(t *testing.T) {
 			skipLifecycle: true, // Requires a running OIDC server in order to complete life cycle testing
 		},
 		{
+			extension: "db_storage",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["db_storage"].CreateDefaultConfig().(*dbstorage.Config)
+				cfg.DriverName = "sqlite3"
+				cfg.DataSource = filepath.Join(t.TempDir(), "foo.db")
+				return cfg
+			},
+		},
+		{
 			extension: "file_storage",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["file_storage"].CreateDefaultConfig().(*filestorage.Config)
-				cfg.Directory = testutil.NewTemporaryDirectory(t)
+				cfg.Directory = t.TempDir()
 				return cfg
 			},
 		},

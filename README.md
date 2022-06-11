@@ -11,11 +11,11 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml?query=branch%3Amain">
+    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/open-telemetry/opentelemetry-collector-contrib/build-and-test/main?style=for-the-badge">
+  </a>
   <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector-contrib">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
-  </a>
-  <a href="https://circleci.com/gh/open-telemetry/opentelemetry-collector-contrib">
-    <img alt="Build Status" src="https://img.shields.io/circleci/build/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
   </a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
@@ -46,14 +46,27 @@
 
 # OpenTelemetry Collector Contrib
 
-This is a repository for OpenTelemetry Collector contributions that are not
-part of the [core
-distribution](https://github.com/open-telemetry/opentelemetry-collector) of the
-Collector. Typically, these contributions are vendor specific
-receivers/exporters and/or components that are only useful to a relatively
-small number of users.
+This is a repository for OpenTelemetry Collector components that are not suitable for the  [core repository](https://github.com/open-telemetry/opentelemetry-collector) of the collector. 
 
-> Please note that this repository and its releases are a superset of the core repository.
+The official distributions, core and contrib, are available as part of the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository. Some of the components in this repository are part of the "core" distribution, such as the Jaeger and Prometheus components, but most of the components here are only available as part of the "contrib" distribution. Users of the OpenTelemetry Collector are also encouraged to build their own custom distributions with the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder), using the components they need from the core repository, the contrib repository, and possibly third-party or internal repositories.
+
+Each component has its own support levels, as defined in the following sections. For each signal that a component supports, there's a stability level, setting the right expectations. It is possible then that a component will be **Stable** for traces but **Alpha** for metrics and **In Development** for logs.
+
+## Stability levels
+
+Stability level for components in this repository follow the [definitions](https://github.com/open-telemetry/opentelemetry-collector#stability-levels) from the OpenTelemetry Collector repository.
+
+## Gated features
+
+Some features are hidden behind feature gates before they are part of the main code path for the component. Note that the feature gates themselves might be at different [lifecycle stages](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.49.0/service/featuregate/README.md#feature-lifecycle).
+
+## Support
+
+Each component is supported either by the community of OpenTelemetry Collector Contrib maintainers, as defined by the GitHub group [@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer), or by specific vendors. See the individual README files for information about the specific components.
+
+The OpenTelemetry Collector Contrib maintainers may at any time downgrade specific components, including vendor-specific ones, if they are deemed unmaintained or if they pose a risk to the repository and/or binary distribution.
+
+Even though the OpenTelemetry Collector Contrib maintainers are ultimately responsible for the components hosted here, actual support will likely be provided by individual contributors, typically a code owner for the specific component.
 
 ## Contributing
 
@@ -67,17 +80,20 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
-- [Anuraag Agrawal](https://github.com/anuraaga), AWS
-- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [David Ashpole](https://github.com/dashpole), Google
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
+- [Przemek Maciolek](https://github.com/pmm-sumo), Sumo Logic
+- [Tyler Helmuth](https://github.com/TylerHelmuth), New Relic
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
+- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Alex Boten](https://github.com/codeboten), Lightstep
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
+
+Emeritus Maintainers
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).

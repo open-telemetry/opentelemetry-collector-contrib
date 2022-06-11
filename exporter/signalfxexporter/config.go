@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -185,7 +186,7 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Map) (err error) {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil
@@ -201,5 +202,14 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+// Validate checks if the exporter configuration is valid.
+// TODO: Move other validations here.
+func (cfg *Config) Validate() error {
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+	}
 	return nil
 }

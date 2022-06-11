@@ -178,6 +178,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 				httpConfig: httpConfig{
 					TLSEnabled: true,
 				},
+				Labels: map[string]string{
+					"key": "value",
+				},
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &config.Config{
@@ -193,7 +196,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 								&discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue("localhost:1234")},
+											{
+												model.AddressLabel:     model.LabelValue("localhost:1234"),
+												model.LabelName("key"): model.LabelValue("value")},
 										},
 									},
 								},

@@ -17,8 +17,9 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -34,11 +35,11 @@ var (
 // Encoder transforms the internal pipeline format into a configurable
 // format that is then used to export to kinesis.
 type Encoder interface {
-	Metrics(md pdata.Metrics) (*Batch, error)
+	Metrics(md pmetric.Metrics) (*Batch, error)
 
-	Traces(td pdata.Traces) (*Batch, error)
+	Traces(td ptrace.Traces) (*Batch, error)
 
-	Logs(ld pdata.Logs) (*Batch, error)
+	Logs(ld plog.Logs) (*Batch, error)
 }
 
 func NewEncoder(named string, batchOptions ...Option) (Encoder, error) {
@@ -55,16 +56,16 @@ func NewEncoder(named string, batchOptions ...Option) (Encoder, error) {
 	case "zipkin_json":
 		bm.tracesMarshaller = zipkinv2.NewJSONTracesMarshaler()
 	case "otlp", "otlp_proto":
-		bm.logsMarshaller = otlp.NewProtobufLogsMarshaler()
-		bm.metricsMarshaller = otlp.NewProtobufMetricsMarshaler()
-		bm.tracesMarshaller = otlp.NewProtobufTracesMarshaler()
+		bm.logsMarshaller = plog.NewProtoMarshaler()
+		bm.metricsMarshaller = pmetric.NewProtoMarshaler()
+		bm.tracesMarshaller = ptrace.NewProtoMarshaler()
 	case "otlp_json":
-		bm.logsMarshaller = otlp.NewJSONLogsMarshaler()
-		bm.metricsMarshaller = otlp.NewJSONMetricsMarshaler()
-		bm.tracesMarshaller = otlp.NewJSONTracesMarshaler()
+		bm.logsMarshaller = plog.NewJSONMarshaler()
+		bm.metricsMarshaller = pmetric.NewJSONMarshaler()
+		bm.tracesMarshaller = ptrace.NewJSONMarshaler()
 	case "jaeger_proto":
 		// Jaeger encoding is a special case
-		// since the internal libraries offer no means of pdata.TraceMarshaller.
+		// since the internal libraries offer no means of ptrace.TraceMarshaller.
 		// In order to preserve historical behavior, a custom type
 		// is used until it can be replaced.
 		return &jaegerEncoder{

@@ -15,7 +15,8 @@
 package oauth2clientauthextension
 
 import (
-	"path"
+	"net/url"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -50,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			ClientSecret:      "someclientsecret",
 			ClientID:          "someclientid",
+			EndpointParams:    url.Values{"audience": []string{"someaudience"}},
 			Scopes:            []string{"api.metrics"},
 			TokenURL:          "https://example.com/oauth2/default/v1/token",
 			Timeout:           time.Second,
@@ -66,7 +68,7 @@ func TestConfigTLSSettings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -110,7 +112,7 @@ func TestLoadConfigError(t *testing.T) {
 	for _, tt := range tests {
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
-		cfg, _ := servicetest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		cfg, _ := servicetest.LoadConfig(filepath.Join("testdata", "config_bad.yaml"), factories)
 		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
 		verr := extension.Validate()
 		require.ErrorIs(t, verr, tt.expectedErr)

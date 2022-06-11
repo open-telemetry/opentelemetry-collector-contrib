@@ -42,6 +42,8 @@ const (
 	RateLimiting PolicyType = "rate_limiting"
 	// Composite allows defining a composite policy, combining the other policies in one
 	Composite PolicyType = "composite"
+	// And allows defining a And policy, combining the other policies in one
+	And PolicyType = "and"
 )
 
 // SubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -50,8 +52,31 @@ type SubPolicyCfg struct {
 	Name string `mapstructure:"name"`
 	// Type of the policy this will be used to match the proper configuration of the policy.
 	Type PolicyType `mapstructure:"type"`
+	// Configs for latency filter sampling policy evaluator.
+	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for numeric attribute filter sampling policy evaluator.
 	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
+	// Configs for probabilistic sampling policy evaluator.
+	ProbabilisticCfg ProbabilisticCfg `mapstructure:"probabilistic"`
+	// Configs for status code filter sampling policy evaluator.
+	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
+	// Configs for string attribute filter sampling policy evaluator.
+	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
+	// Configs for rate limiting filter sampling policy evaluator.
+	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// Configs for and policy evaluator.
+	AndCfg AndCfg `mapstructure:"and"`
+}
+
+type AndSubPolicyCfg struct {
+	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
+	Name string `mapstructure:"name"`
+	// Type of the policy this will be used to match the proper configuration of the policy.
+	Type PolicyType `mapstructure:"type"`
+	// Configs for numeric attribute filter sampling policy evaluator.
+	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
+	// Configs for probabilistic sampling policy evaluator.
+	ProbabilisticCfg ProbabilisticCfg `mapstructure:"probabilistic"`
 	// Configs for string attribute filter sampling policy evaluator.
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
@@ -60,6 +85,10 @@ type SubPolicyCfg struct {
 	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
+}
+
+type AndCfg struct {
+	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"and_sub_policy"`
 }
 
 // CompositeCfg holds the configurable settings to create a composite
@@ -97,6 +126,8 @@ type PolicyCfg struct {
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
 	// Configs for defining composite policy
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
+	// Configs for defining and policy
+	AndCfg AndCfg `mapstructure:"and"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy

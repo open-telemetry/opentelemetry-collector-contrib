@@ -15,20 +15,42 @@
 package scrapertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func cloneMetricSlice(metricSlice pdata.MetricSlice) pdata.MetricSlice {
-	clone := pdata.NewMetricSlice()
-	metricSlice.CopyTo(clone)
-	return clone
-}
-
-func metricsByName(metricSlice pdata.MetricSlice) map[string]pdata.Metric {
-	byName := make(map[string]pdata.Metric, metricSlice.Len())
+func metricsByName(metricSlice pmetric.MetricSlice) map[string]pmetric.Metric {
+	byName := make(map[string]pmetric.Metric, metricSlice.Len())
 	for i := 0; i < metricSlice.Len(); i++ {
 		a := metricSlice.At(i)
 		byName[a.Name()] = a
 	}
 	return byName
+}
+
+func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
+	var dataPointSlice pmetric.NumberDataPointSlice
+	switch metric.DataType() {
+	case pmetric.MetricDataTypeGauge:
+		dataPointSlice = metric.Gauge().DataPoints()
+	case pmetric.MetricDataTypeSum:
+		dataPointSlice = metric.Sum().DataPoints()
+	default:
+		panic(fmt.Sprintf("data type not supported: %s", metric.DataType()))
+	}
+	return dataPointSlice
+}
+
+func sortInstrumentationLibrary(a, b pmetric.ScopeMetrics) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	if a.Scope().Name() < b.Scope().Name() {
+		return true
+	}
+	if a.Scope().Version() < b.Scope().Version() {
+		return true
+	}
+	return false
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -22,12 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestNewLoadBalancerNoResolver(t *testing.T) {
@@ -211,9 +210,9 @@ func TestRemoveExtraExporters(t *testing.T) {
 func TestAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	exporterFactory := exporterhelper.NewFactory("otlp", func() config.Exporter {
+	exporterFactory := component.NewExporterFactory("otlp", func() config.Exporter {
 		return &otlpexporter.Config{}
-	}, exporterhelper.WithTraces(func(
+	}, component.WithTracesExporter(func(
 		_ context.Context,
 		_ component.ExporterCreateSettings,
 		_ config.Exporter,
@@ -245,9 +244,9 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
 	expectedErr := errors.New("some expected error")
-	exporterFactory := exporterhelper.NewFactory("otlp", func() config.Exporter {
+	exporterFactory := component.NewExporterFactory("otlp", func() config.Exporter {
 		return &otlpexporter.Config{}
-	}, exporterhelper.WithTraces(func(
+	}, component.WithTracesExporter(func(
 		_ context.Context,
 		_ component.ExporterCreateSettings,
 		_ config.Exporter,
@@ -343,12 +342,12 @@ func TestFailedExporterInRing(t *testing.T) {
 
 	// test
 	// this trace ID will reach the endpoint-2 -- see the consistent hashing tests for more info
-	_, err = p.Exporter(p.Endpoint(pdata.NewTraceID([16]byte{128, 128, 0, 0})))
+	_, err = p.Exporter(p.Endpoint(pcommon.NewTraceID([16]byte{128, 128, 0, 0})))
 
 	// verify
 	assert.Error(t, err)
 }
 
 func newNopMockExporter() component.Exporter {
-	return componenthelper.New()
+	return mockComponent{}
 }

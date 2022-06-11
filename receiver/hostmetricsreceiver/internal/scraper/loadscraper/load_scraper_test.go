@@ -17,43 +17,78 @@ package loadscraper
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
+const (
+	testStandard = "Standard"
+	testAverage  = "PerCPUEnabled"
+	bootTime     = 100
+)
+
+// Skips test without applying unused rule
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 func TestScrape(t *testing.T) {
+	skip(t, "Flaky test. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10030")
 	type testCase struct {
-		name        string
-		loadFunc    func() (*load.AvgStat, error)
-		expectedErr string
+		name         string
+		bootTimeFunc func() (uint64, error)
+		loadFunc     func() (*load.AvgStat, error)
+		expectedErr  string
+		saveMetrics  bool
+		config       *Config
 	}
 
 	testCases := []testCase{
 		{
-			name: "Standard",
+			name:        testStandard,
+			saveMetrics: true,
+			config: &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 		},
 		{
-			name:        "Load Error",
-			loadFunc:    func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			name:        testAverage,
+			saveMetrics: true,
+			config: &Config{
+				Metrics:    metadata.DefaultMetricsSettings(),
+				CPUAverage: true,
+			},
+			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
+		},
+		{
+			name:     "Load Error",
+			loadFunc: func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			config: &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 			expectedErr: "err1",
 		},
 	}
+	results := make(map[string]pmetric.MetricSlice)
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), zap.NewNop(), &Config{})
+			scraper := newLoadScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), test.config)
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
+			}
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
 			}
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -74,21 +109,49 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
+			if test.bootTimeFunc != nil {
+				actualBootTime, err := scraper.bootTime()
+				assert.Nil(t, err)
+				assert.Equal(t, uint64(bootTime), actualBootTime)
+			}
 			// expect 3 metrics
 			assert.Equal(t, 3, md.MetricCount())
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			// expect a single datapoint for 1m, 5m & 15m load metrics
-			assertMetricHasSingleDatapoint(t, metrics.At(0), metadata.Metrics.SystemCPULoadAverage1m.New())
-			assertMetricHasSingleDatapoint(t, metrics.At(1), metadata.Metrics.SystemCPULoadAverage5m.New())
-			assertMetricHasSingleDatapoint(t, metrics.At(2), metadata.Metrics.SystemCPULoadAverage15m.New())
+			assertMetricHasSingleDatapoint(t, metrics.At(0), "system.cpu.load_average.15m")
+			assertMetricHasSingleDatapoint(t, metrics.At(1), "system.cpu.load_average.1m")
+			assertMetricHasSingleDatapoint(t, metrics.At(2), "system.cpu.load_average.5m")
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
+
+			// save metrics for additional tests if flag is enabled
+			if test.saveMetrics {
+				results[test.name] = metrics
+			}
 		})
+	}
+
+	// Additional test for average per CPU
+	numCPU := runtime.NumCPU()
+	for i := 0; i < results[testStandard].Len(); i++ {
+		assertCompareAveragePerCPU(t, results[testAverage].At(i), results[testStandard].At(i), numCPU)
 	}
 }
 
-func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
+func assertMetricHasSingleDatapoint(t *testing.T, metric pmetric.Metric, expectedName string) {
+	assert.Equal(t, expectedName, metric.Name())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
+}
+
+func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard pmetric.Metric, numCPU int) {
+	valAverage := average.Gauge().DataPoints().At(0).DoubleVal()
+	valStandard := standard.Gauge().DataPoints().At(0).DoubleVal()
+	if numCPU == 1 {
+		// For hardware with only 1 cpu, results must be very close
+		assert.InDelta(t, valAverage, valStandard, 0.1)
+	} else {
+		// For hardward with multiple CPU, average per cpu is fatally less than standard
+		assert.Less(t, valAverage, valStandard)
+	}
 }

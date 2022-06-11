@@ -23,7 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -37,7 +39,7 @@ func TestFileTracesExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := otlp.NewJSONTracesUnmarshaler()
+	unmarshaler := ptrace.NewJSONUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalTraces(buf)
@@ -65,7 +67,7 @@ func TestFileMetricsExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := otlp.NewJSONMetricsUnmarshaler()
+	unmarshaler := pmetric.NewJSONUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalMetrics(buf)
@@ -93,7 +95,7 @@ func TestFileLogsExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := otlp.NewJSONLogsUnmarshaler()
+	unmarshaler := plog.NewJSONUnmarshaler()
 	buf, err := ioutil.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalLogs(buf)

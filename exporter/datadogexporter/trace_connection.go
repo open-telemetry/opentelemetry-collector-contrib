@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -50,14 +51,14 @@ const (
 )
 
 // createTraceEdgeConnection returns a new traceEdgeConnection
-func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo, settings exporterhelper.TimeoutSettings) traceEdgeConnection {
+func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo, settings exporterhelper.TimeoutSettings, httpClientSettings config.LimitedHTTPClientSettings) traceEdgeConnection {
 
 	return &traceEdgeConnectionImpl{
 		traceURL:  rootURL + "/api/v0.2/traces",
 		statsURL:  rootURL + "/api/v0.2/stats",
 		buildInfo: buildInfo,
 		apiKey:    apiKey,
-		client:    utils.NewHTTPClient(settings),
+		client:    utils.NewHTTPClient(settings, httpClientSettings.TLSSetting.InsecureSkipVerify),
 	}
 }
 

@@ -19,6 +19,7 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -86,7 +87,7 @@ type Config struct {
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Map) error {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

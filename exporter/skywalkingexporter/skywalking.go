@@ -20,7 +20,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
@@ -122,7 +123,7 @@ func newMetricsExporter(ctx context.Context, cfg *Config, settings component.Tel
 	return oce
 }
 
-func (oce *swExporter) pushLogs(_ context.Context, td pdata.Logs) error {
+func (oce *swExporter) pushLogs(_ context.Context, td plog.Logs) error {
 	// Get first available log Client.
 	tClient, ok := <-oce.logsClients
 	if !ok {
@@ -154,7 +155,7 @@ func (oce *swExporter) pushLogs(_ context.Context, td pdata.Logs) error {
 	return nil
 }
 
-func (oce *swExporter) pushMetrics(_ context.Context, td pdata.Metrics) error {
+func (oce *swExporter) pushMetrics(_ context.Context, td pmetric.Metrics) error {
 	// Get first available metric Client.
 	tClient, ok := <-oce.metricsClients
 	if !ok {

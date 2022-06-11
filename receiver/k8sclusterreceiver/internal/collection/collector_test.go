@@ -25,7 +25,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
@@ -37,7 +37,7 @@ var commonPodMetadata = map[string]string{
 }
 
 var allPodMetadata = func(metadata map[string]string) map[string]string {
-	out := util.MergeStringMaps(metadata, commonPodMetadata)
+	out := maps.MergeStringMaps(metadata, commonPodMetadata)
 	return out
 }
 
@@ -252,10 +252,9 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			metadataStore: &metadataStore{},
 			resource: &corev1.ReplicationController{
 				ObjectMeta: v1.ObjectMeta{
-					Name:        "test-replicationcontroller-1",
-					Namespace:   "test-namespace",
-					UID:         types.UID("test-replicationcontroller-1-uid"),
-					ClusterName: "test-cluster",
+					Name:      "test-replicationcontroller-1",
+					Namespace: "test-namespace",
+					UID:       types.UID("test-replicationcontroller-1-uid"),
 				},
 			},
 			want: map[metadata.ResourceID]*KubernetesMetadata{

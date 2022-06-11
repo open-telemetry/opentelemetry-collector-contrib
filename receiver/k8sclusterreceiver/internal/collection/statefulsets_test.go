@@ -40,20 +40,19 @@ func TestStatefulsettMetrics(t *testing.T) {
 			"k8s.statefulset.uid":  "test-statefulset-1-uid",
 			"k8s.statefulset.name": "test-statefulset-1",
 			"k8s.namespace.name":   "test-namespace",
-			"k8s.cluster.name":     "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.metrics[0], "k8s.statefulset.desired_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.statefulset.desired_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, rm.metrics[1], "k8s.statefulset.ready_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.statefulset.ready_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 7)
 
-	testutils.AssertMetrics(t, rm.metrics[2], "k8s.statefulset.current_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[2], "k8s.statefulset.current_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, rm.metrics[3], "k8s.statefulset.updated_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[3], "k8s.statefulset.updated_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 
@@ -86,10 +85,9 @@ func newStatefulset(id string) *appsv1.StatefulSet {
 	desired := int32(10)
 	return &appsv1.StatefulSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-statefulset-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-statefulset-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-statefulset-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-statefulset-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

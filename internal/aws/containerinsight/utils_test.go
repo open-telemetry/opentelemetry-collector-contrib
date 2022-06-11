@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// nolint:gocritic
 package containerinsight
 
 import (
@@ -21,7 +22,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -141,7 +143,7 @@ func convertToFloat64(value interface{}) float64 {
 	return -1.0
 }
 
-func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]interface{}, tags map[string]string,
+func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string]interface{}, tags map[string]string,
 	expectedUnits map[string]string) {
 
 	rms := md.ResourceMetrics()
@@ -164,7 +166,7 @@ func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]i
 	}
 
 	//check the metrics are expected
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		ms := ilm.Metrics()
@@ -175,17 +177,17 @@ func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]i
 			assert.Equal(t, expectedUnits[metricName], m.Unit(), "Wrong unit for metric: "+metricName)
 			switch m.DataType() {
 			//we only need to worry about gauge types for container insights metrics
-			case pdata.MetricDataTypeGauge:
+			case pmetric.MetricDataTypeGauge:
 				dps := m.Gauge().DataPoints()
 				assert.Equal(t, 1, dps.Len())
 				dp := dps.At(0)
-				switch dp.Type() {
-				case pdata.MetricValueTypeDouble:
+				switch dp.ValueType() {
+				case pmetric.NumberDataPointValueTypeDouble:
 					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleVal())
-				case pdata.MetricValueTypeInt:
+				case pmetric.NumberDataPointValueTypeInt:
 					assert.Equal(t, convertToInt64(fields[metricName]), dp.IntVal())
 				}
-				assert.Equal(t, pdata.Timestamp(timeUnixNano), dp.Timestamp())
+				assert.Equal(t, pcommon.Timestamp(timeUnixNano), dp.Timestamp())
 			}
 		}
 	}
@@ -194,7 +196,7 @@ func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]i
 func TestConvertToOTLPMetricsForInvalidMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -215,7 +217,7 @@ func TestConvertToOTLPMetricsForInvalidMetrics(t *testing.T) {
 	}
 	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
 	rm := md.ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	assert.Equal(t, 0, ilms.Len())
 }
 
@@ -223,7 +225,7 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -283,7 +285,7 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -386,7 +388,7 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -481,7 +483,7 @@ func TestConvertToOTLPMetricsForNodeDiskIOMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -530,7 +532,7 @@ func TestConvertToOTLPMetricsForNodeFSMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -572,7 +574,7 @@ func TestConvertToOTLPMetricsForNodeNetMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -618,7 +620,7 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
@@ -719,7 +721,7 @@ func TestConvertToOTLPMetricsForPodNetMetrics(t *testing.T) {
 	var fields map[string]interface{}
 	var expectedUnits map[string]string
 	var tags map[string]string
-	var md pdata.Metrics
+	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 

@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package humioexporter
 
 import (
 	"net/url"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -27,11 +28,12 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 // Helper method to handle boilerplate of loading configuration from file
-func loadConfig(t *testing.T, file string) (*config.Config, error) {
+func loadConfig(t *testing.T, file string) (*service.Config, error) {
 	// Initialize exporter factory
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -40,7 +42,7 @@ func loadConfig(t *testing.T, file string) (*config.Config, error) {
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	return servicetest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
+	return servicetest.LoadConfigAndValidate(filepath.Join("testdata", file), factories)
 }
 
 // Helper method to handle boilerplate of loading exporter configuration from file
@@ -53,7 +55,7 @@ func loadExporterConfig(t *testing.T, file string, id config.ComponentID) (confi
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", file), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	actual := cfg.Exporters[id]

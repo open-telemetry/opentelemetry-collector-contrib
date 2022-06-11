@@ -32,6 +32,27 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateExporter(t *testing.T) {
+	defer setPdataFeatureGateForTest(true)()
+	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		t.Skip("Default credentials not set, skip creating Google Cloud exporter")
+	}
+	ctx := context.Background()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	eCfg := cfg.(*Config)
+	eCfg.ProjectID = "test"
+
+	te, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+
+	me, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, me, "failed to create metrics exporter")
+}
+
+func TestCreateLegacyExporter(t *testing.T) {
+	defer setPdataFeatureGateForTest(false)()
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
 		t.Skip("Default credentials not set, skip creating Google Cloud exporter")
 	}

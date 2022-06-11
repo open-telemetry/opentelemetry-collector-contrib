@@ -25,7 +25,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type metricName string
@@ -48,9 +49,59 @@ func (mn attributeName) RenderUnexported() (string, error) {
 	return formatIdentifier(string(mn), false)
 }
 
+// ValueType defines an attribute value type.
+type ValueType struct {
+	// ValueType is type of the metric number, options are "double", "int".
+	ValueType pcommon.ValueType
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (mvt *ValueType) UnmarshalText(text []byte) error {
+	switch vtStr := string(text); vtStr {
+	case "":
+		mvt.ValueType = pcommon.ValueTypeEmpty
+	case "string":
+		mvt.ValueType = pcommon.ValueTypeString
+	case "int":
+		mvt.ValueType = pcommon.ValueTypeInt
+	case "double":
+		mvt.ValueType = pcommon.ValueTypeDouble
+	case "bool":
+		mvt.ValueType = pcommon.ValueTypeDouble
+	case "bytes":
+		mvt.ValueType = pcommon.ValueTypeDouble
+	default:
+		return fmt.Errorf("invalid type: %q", vtStr)
+	}
+	return nil
+}
+
+// String returns capitalized name of the ValueType.
+func (mvt ValueType) String() string {
+	return strings.Title(strings.ToLower(mvt.ValueType.String())) // nolint SA1019
+}
+
+// Primitive returns name of primitive type for the ValueType.
+func (mvt ValueType) Primitive() string {
+	switch mvt.ValueType {
+	case pcommon.ValueTypeString:
+		return "string"
+	case pcommon.ValueTypeInt:
+		return "int64"
+	case pcommon.ValueTypeDouble:
+		return "float64"
+	case pcommon.ValueTypeBool:
+		return "bool"
+	case pcommon.ValueTypeBytes:
+		return "[]byte"
+	default:
+		return ""
+	}
+}
+
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `yaml:"enabled" validate:"required"`
+	Enabled *bool `yaml:"enabled" validate:"required"`
 
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
@@ -66,8 +117,6 @@ type metric struct {
 	Sum *sum `yaml:"sum"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `yaml:"gauge"`
-	// Histogram stores metadata for histogram metric type
-	Histogram *histogram `yaml:"histogram"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName
@@ -80,10 +129,11 @@ func (m metric) Data() MetricData {
 	if m.Gauge != nil {
 		return m.Gauge
 	}
-	if m.Histogram != nil {
-		return m.Histogram
-	}
 	return nil
+}
+
+func (m metric) IsEnabled() bool {
+	return *m.Enabled
 }
 
 type attribute struct {
@@ -95,11 +145,17 @@ type attribute struct {
 	Value string
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
+	// Type is an attribute type.
+	Type ValueType `mapstructure:"type"`
 }
 
 type metadata struct {
 	// Name of the component.
 	Name string `validate:"notblank"`
+	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
+	SemConvVersion string `mapstructure:"sem_conv_version"`
+	// ResourceAttributes that can be emitted by the component.
+	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes" validate:"dive"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[attributeName]attribute `validate:"dive"`
 	// Metrics that can be emitted by the component.
@@ -110,22 +166,24 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
-	// ExpFileNote contains a note about experimental metrics builder.
-	ExpFileNote string
+	// ExpGen identifies whether the experimental metrics generator is used.
+	// TODO: Remove once the old mdata generator is gone.
+	ExpGen bool
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := configmapprovider.NewFile(filePath).Retrieve(context.Background(), nil)
+	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
-	mdMap, err := cp.Get(context.Background())
+
+	m, err := cp.AsConf()
 	if err != nil {
 		return metadata{}, err
 	}
 
 	var md metadata
-	if err := mdMap.UnmarshalExact(&md); err != nil {
+	if err := m.UnmarshalExact(&md); err != nil {
 		return metadata{}, err
 	}
 
@@ -188,16 +246,13 @@ func validateMetadata(out metadata) error {
 		if v.Gauge != nil {
 			dataTypesSet++
 		}
-		if v.Histogram != nil {
-			dataTypesSet++
-		}
 		if dataTypesSet == 0 {
 			return fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge, histogram", k)
+				"one of the following has to be specified: sum, gauge", k)
 		}
 		if dataTypesSet > 1 {
 			return fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge, histogram", k)
+				"only one of the following has to be specified: sum, gauge", k)
 		}
 	}
 

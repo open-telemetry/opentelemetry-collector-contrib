@@ -15,7 +15,8 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -34,27 +35,18 @@ func NewLatency(logger *zap.Logger, thresholdMs int64) PolicyEvaluator {
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (l *latency) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	l.logger.Debug("Triggering action for late arriving spans in latency filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, error) {
+func (l *latency) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	l.logger.Debug("Evaluating spans in latency filter")
 
 	traceData.Lock()
 	batches := traceData.ReceivedBatches
 	traceData.Unlock()
 
-	var minTime pdata.Timestamp
-	var maxTime pdata.Timestamp
+	var minTime pcommon.Timestamp
+	var maxTime pcommon.Timestamp
 
-	return hasSpanWithCondition(batches, func(span pdata.Span) bool {
+	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
 		if minTime == 0 || span.StartTimestamp() < minTime {
 			minTime = span.StartTimestamp()
 		}

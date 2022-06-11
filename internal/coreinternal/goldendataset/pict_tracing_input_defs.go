@@ -59,9 +59,9 @@ const (
 type PICTTracingInputs struct {
 	// Specifies the category of attributes to populate the Resource field with
 	Resource PICTInputResource
-	// Specifies the number and library categories to populte the InstrumentationLibrarySpans field with
+	// Specifies the number and library categories to populte the ScopeSpans field with
 	InstrumentationLibrary PICTInputInstrumentationLibrary
-	// Specifies the relative number of spans to populate the InstrumentationLibrarySpans' Spans field with
+	// Specifies the relative number of spans to populate the ScopeSpans' Spans field with
 	Spans PICTInputSpans
 }
 

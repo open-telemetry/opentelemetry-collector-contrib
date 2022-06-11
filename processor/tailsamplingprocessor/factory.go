@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -41,10 +40,10 @@ func NewFactory() component.ProcessorFactory {
 		_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
 	})
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor))
+		component.WithTracesProcessor(createTracesProcessor))
 }
 
 func createDefaultConfig() config.Processor {

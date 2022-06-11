@@ -65,6 +65,11 @@ func main() {
 		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
 	}
 
+	if len(cfg.Headers) > 0 {
+		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithHeaders(cfg.Headers))
+		httpExpOpt = append(httpExpOpt, otlptracehttp.WithHeaders(cfg.Headers))
+	}
+
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
@@ -87,7 +92,13 @@ func main() {
 	}()
 
 	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	defer ssp.Shutdown(context.Background())
+	defer func() {
+		logger.Info("stop the batch span processor")
+		if err := ssp.Shutdown(context.Background()); err != nil {
+			logger.Error("failed to stop the batch span processor", zap.Error(err))
+			return
+		}
+	}()
 
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String(cfg.ServiceName))),

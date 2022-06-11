@@ -171,6 +171,8 @@ type Container struct {
 	Name string
 	// Image is the name of the container image
 	Image string
+	// Tag is the container image tag, e.g. '0.1'
+	Tag string
 	// Port is the exposed port of container
 	Port uint16
 	// AlternatePort is the exposed port accessed through some kind of redirection,
@@ -192,6 +194,7 @@ func (c *Container) Env() EndpointEnv {
 	return map[string]interface{}{
 		"name":           c.Name,
 		"image":          c.Image,
+		"tag":            c.Tag,
 		"port":           c.Port,
 		"alternate_port": c.AlternatePort,
 		"command":        c.Command,

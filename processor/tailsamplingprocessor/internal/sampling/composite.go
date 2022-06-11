@@ -15,7 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -84,17 +84,8 @@ func NewComposite(
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (c *Composite) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	c.logger.Debug("Spans are arriving late, decision is already made!!!")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *Composite) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
+func (c *Composite) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// Rate limiting works by counting spans that are sampled during each 1 second
 	// time period. Until the total number of spans during a particular second
 	// exceeds the allocated number of spans-per-second the traces are sampled,
@@ -118,11 +109,11 @@ func (c *Composite) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision,
 			return Unspecified, err
 		}
 
-		if decision == Sampled {
+		if decision == Sampled || decision == InvertSampled {
 			// The subpolicy made a decision to Sample. Now we need to make our decision.
 
 			// Calculate resulting SPS counter if we decide to sample this trace
-			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount
+			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount.Load()
 
 			// Check if the rate will be within the allocated bandwidth.
 			if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {
@@ -145,7 +136,7 @@ func (c *Composite) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision,
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (c *Composite) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
+func (c *Composite) OnDroppedSpans(pcommon.TraceID, *TraceData) (Decision, error) {
 	// Here we have a number of possible solutions:
 	// 1. Random sample traces based on maxTotalSPS.
 	// 2. Perform full composite sampling logic by calling Composite.Evaluate(), essentially

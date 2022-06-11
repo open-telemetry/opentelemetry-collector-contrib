@@ -1,29 +1,42 @@
 name: zookeeperreceiver
 
-attributes:
+resource_attributes:
   server.state:
     description: State of the Zookeeper server (leader, standalone or follower).
+    type: string
   zk.version:
     description: Zookeeper version of the instance.
+    type: string
+
+attributes:
+  state:
+    description: State of followers
+    enum:
+      - synced
+      - unsynced
+  direction:
+    description: State of a packet based on io direction.
+    enum:
+      - received
+      - sent
 
 metrics:
-  zookeeper.followers:
+  zookeeper.follower.count:
     enabled: true
-    description: The number of followers in sync with the leader. Only exposed by the leader.
-    unit: 1
-    gauge:
+    description: The number of followers. Only exposed by the leader.
+    unit: "{followers}"
+    attributes: [state]
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.synced_followers:
-    enabled: true
-    description: The number of followers in sync with the leader. Only exposed by the leader.
-    unit: 1
-    gauge:
-      value_type: int
-  zookeeper.pending_syncs:
+  zookeeper.sync.pending:
     enabled: true
     description: The number of pending syncs from the followers. Only exposed by the leader.
-    unit: 1
-    gauge:
+    unit: "{syncs}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
   zookeeper.latency.avg:
     enabled: true
@@ -40,77 +53,84 @@ metrics:
   zookeeper.latency.min:
     enabled: true
     description: Minimum time in milliseconds for requests to be processed.
-    unit: 1
+    unit: ms
     gauge:
       value_type: int
-  zookeeper.connections_alive:
+  zookeeper.connection.active:
     enabled: true
     description: Number of active clients connected to a ZooKeeper server.
-    unit: 1
-    gauge:
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.outstanding_requests:
+  zookeeper.request.active:
     enabled: true
     description: Number of currently executing requests.
-    unit: 1
-    gauge:
+    unit: "{requests}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.znodes:
+  zookeeper.znode.count:
     enabled: true
     description: Number of z-nodes that a ZooKeeper server has in its data tree.
-    unit: 1
-    gauge:
+    unit: "{znodes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.watches:
+  zookeeper.watch.count:
     enabled: true
     description: Number of watches placed on Z-Nodes on a ZooKeeper server.
-    unit: 1
-    gauge:
+    unit: "{watches}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.ephemeral_nodes:
+  zookeeper.data_tree.ephemeral_node.count:
     enabled: true
     description: Number of ephemeral nodes that a ZooKeeper server has in its data tree.
-    unit: 1
-    gauge:
+    unit: "{nodes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.approximate_date_size:
+  zookeeper.data_tree.size:
     enabled: true
     description: Size of data in bytes that a ZooKeeper server has in its data tree.
     unit: By
-    gauge:
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.open_file_descriptors:
+  zookeeper.file_descriptor.open:
     enabled: true
     description: Number of file descriptors that a ZooKeeper server has open.
-    unit: 1
-    gauge:
+    unit: "{file_descriptors}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
-  zookeeper.max_file_descriptors:
+  zookeeper.file_descriptor.limit:
     enabled: true
     description: Maximum number of file descriptors that a ZooKeeper server can open.
-    unit: 1
+    unit: "{file_descriptors}"
     gauge:
       value_type: int
-  zookeeper.packets.received:
+  zookeeper.packet.count:
     enabled: true
-    description: Number of ZooKeeper packets received by a server.
-    unit: 1
+    description: The number of ZooKeeper packets received or sent by a server.
+    unit: "{packets}"
+    attributes: [direction]
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
-  zookeeper.packets.sent:
-    enabled: true
-    description: Number of ZooKeeper packets sent by a server.
-    unit: 1
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation: cumulative
-  zookeeper.fsync_threshold_exceeds:
+  zookeeper.fsync.exceeded_threshold.count:
     enabled: true
     description: Number of times fsync duration has exceeded warning threshold.
-    unit: 1
+    unit: "{events}"
     sum:
       value_type: int
       monotonic: true

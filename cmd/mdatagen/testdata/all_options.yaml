@@ -1,4 +1,5 @@
 name: metricreceiver
+sem_conv_version: 1.9.0
 attributes:
   freeFormAttribute:
     description: Attribute that can take on any value.
@@ -12,6 +13,7 @@ attributes:
     enum: [red, green, blue]
 
 metrics:
+  # A metric enabled by default.
   system.cpu.time:
     enabled: true
     description: Total CPU seconds broken down by different states.
@@ -22,3 +24,12 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [freeFormAttribute, freeFormAttributeWithValue, enumAttribute]
+
+  # An optional metric.
+  system.cpu.utilization:
+    enabled: false
+    description: Percentage of CPU time broken down by different states.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [enumAttribute]

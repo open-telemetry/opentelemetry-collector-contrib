@@ -14,8 +14,6 @@
 
 package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"errors"
@@ -25,8 +23,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
 const (
@@ -37,10 +36,10 @@ const (
 
 // NewFactory creates a factory for elasticsearch receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver))
 }
 
 // createDefaultConfig creates the default elasticsearchreceiver config.
@@ -54,6 +53,8 @@ func createDefaultConfig() config.Receiver {
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultHTTPClientTimeout,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
+		Nodes:   []string{"_all"},
 	}
 }
 
@@ -66,10 +67,20 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	_, ok := rConf.(*Config)
+	c, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotES
 	}
+	es := newElasticSearchScraper(params, c)
+	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	return scraperhelper.NewScraperControllerReceiver(
+		&c.ScraperControllerSettings,
+		params,
+		consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }

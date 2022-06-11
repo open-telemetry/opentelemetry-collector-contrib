@@ -21,13 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 )
 
 type testProvider string
@@ -47,20 +48,20 @@ func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
 }
 
 func TestRunningMetrics(t *testing.T) {
-	ms := pdata.NewMetrics()
+	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
 
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-1"))
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-1"))
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-2"))
 
 	rms.AppendEmpty()
 
@@ -69,7 +70,7 @@ func TestRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningHostnames := []string{}
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
@@ -86,7 +87,7 @@ func TestRunningMetrics(t *testing.T) {
 }
 
 func TestTagsMetrics(t *testing.T) {
-	ms := pdata.NewMetrics()
+	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
 
 	rm := rms.AppendEmpty()
@@ -113,7 +114,7 @@ func TestTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
 	runningTags := []string{}

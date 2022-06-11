@@ -4,7 +4,7 @@ run:
   concurrency: 4
 
   # timeout for analysis, e.g. 30s, 5m, default is 1m
-  timeout: 10m
+  timeout: 20m
 
   # exit code when at least one issue was found, default is 1
   issues-exit-code: 1
@@ -73,13 +73,16 @@ linters-settings:
   revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
+
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
+
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
     local-prefixes: github.com/open-telemetry/opentelemetry-collector-contrib
+
   misspell:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
@@ -93,9 +96,14 @@ linters-settings:
       - kilometre
       - kilometres
 
+  depguard:
+    list-type: denylist
+    include-go-root: true
+    packages-with-error-message:
+      # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
+      - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
+
 linters:
-  disable:
-    - errcheck
   enable:
     - exportloopref
     - gofmt
@@ -107,6 +115,8 @@ linters:
     - staticcheck
     - unconvert
     - unparam
+    - errcheck
+    - gocritic
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

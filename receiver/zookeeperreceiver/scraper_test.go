@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package zookeeperreceiver
 
 import (
@@ -21,18 +22,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"path"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -44,6 +46,10 @@ type logMsg struct {
 }
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10171")
+	}
+
 	tests := []struct {
 		name                         string
 		expectedMetricsFilename      string
@@ -65,6 +71,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+			},
+			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
 			},
 			expectedNumResourceMetrics: 1,
 		},
@@ -97,6 +109,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					msg:   "unexpected line in response",
 					level: zapcore.WarnLevel,
 				},
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
 			},
 			expectedNumResourceMetrics: 0,
 		},
@@ -106,6 +122,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedLogs: []logMsg{
 				{
 					msg:   "non-integer value from mntr",
+					level: zapcore.DebugLevel,
+				},
+				{
+					msg:   "metric computation failed",
 					level: zapcore.DebugLevel,
 				},
 			},
@@ -118,6 +138,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				{
 					msg:   "failed to set deadline on connection",
 					level: zapcore.WarnLevel,
+				},
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
 				},
 			},
 			expectedMetricsFilename: "error-setting-connection-deadline",
@@ -134,6 +158,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			name:                         "Error closing connection",
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
 			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
 				{
 					msg:   "failed to shutdown connection",
 					level: zapcore.WarnLevel,
@@ -166,7 +194,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			name: "Disable zookeeper.watches metric",
 			metricsSettings: func() metadata.MetricsSettings {
 				ms := metadata.DefaultMetricsSettings()
-				ms.ZookeeperWatches.Enabled = false
+				ms.ZookeeperWatchCount.Enabled = false
 				return ms
 			},
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
@@ -174,6 +202,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+			},
+			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
 			},
 			expectedNumResourceMetrics: 1,
 		},
@@ -194,7 +228,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			z, err := newZookeeperMetricsScraper(zap.New(core), cfg)
+			settings := componenttest.NewNopReceiverCreateSettings()
+			settings.Logger = zap.New(core)
+			z, err := newZookeeperMetricsScraper(settings, cfg)
 			require.NoError(t, err)
 			require.Equal(t, "zookeeper", z.Name())
 
@@ -212,7 +248,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				z.sendCmd = tt.sendCmd
 			}
 
-			got, err := z.scrape(ctx)
+			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
@@ -224,7 +260,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.expectedNumResourceMetrics == 0 {
 				if tt.wantErr {
 					require.Error(t, err)
-					require.Equal(t, pdata.NewMetrics(), got)
+					require.Equal(t, pmetric.NewMetrics(), actualMetrics)
 				}
 
 				require.NoError(t, z.shutdown(ctx))
@@ -234,17 +270,15 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.json", tt.expectedMetricsFilename))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			aMetricSlice := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-			require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
 }
 
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	z, err := newZookeeperMetricsScraper(zap.NewNop(), cfg)
+	z, err := newZookeeperMetricsScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, z.shutdown(context.Background()))
 }
@@ -264,7 +298,7 @@ func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, filename str
 	require.NoError(t, err)
 
 	for {
-		out, err := ioutil.ReadFile(path.Join(".", "testdata", filename))
+		out, err := ioutil.ReadFile(filepath.Join("testdata", filename))
 		require.NoError(t, err)
 
 		conn.Write(out)

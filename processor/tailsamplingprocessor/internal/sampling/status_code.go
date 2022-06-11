@@ -18,13 +18,14 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
 type statusCodeFilter struct {
 	logger      *zap.Logger
-	statusCodes []pdata.StatusCode
+	statusCodes []ptrace.StatusCode
 }
 
 var _ PolicyEvaluator = (*statusCodeFilter)(nil)
@@ -36,16 +37,16 @@ func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyE
 		return nil, errors.New("expected at least one status code to filter on")
 	}
 
-	statusCodes := make([]pdata.StatusCode, len(statusCodeString))
+	statusCodes := make([]ptrace.StatusCode, len(statusCodeString))
 
 	for i := range statusCodeString {
 		switch statusCodeString[i] {
 		case "OK":
-			statusCodes[i] = pdata.StatusCodeOk
+			statusCodes[i] = ptrace.StatusCodeOk
 		case "ERROR":
-			statusCodes[i] = pdata.StatusCodeError
+			statusCodes[i] = ptrace.StatusCodeError
 		case "UNSET":
-			statusCodes[i] = pdata.StatusCodeUnset
+			statusCodes[i] = ptrace.StatusCodeUnset
 		default:
 			return nil, fmt.Errorf("unknown status code %q, supported: OK, ERROR, UNSET", statusCodeString[i])
 		}
@@ -57,24 +58,15 @@ func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyE
 	}, nil
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (r *statusCodeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	r.logger.Debug("Triggering action for late arriving spans in status code filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (r *statusCodeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+func (r *statusCodeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	r.logger.Debug("Evaluating spans in status code filter")
 
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
 
-	return hasSpanWithCondition(batches, func(span pdata.Span) bool {
+	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
 		for _, statusCode := range r.statusCodes {
 			if span.Status().Code() == statusCode {
 				return true

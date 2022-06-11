@@ -26,17 +26,19 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 )
 
-var testTimestamp = pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano())
+var testTimestamp = pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano())
 
 func Test_exporter_PushMetricsData(t *testing.T) {
 	sent := "not sent"
@@ -49,15 +51,15 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 			Invalid: 0,
 		}
 		body, _ := json.Marshal(response)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer ts.Close()
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 
@@ -70,7 +72,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	noneMetric.SetName("none")
 
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
+	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
@@ -79,7 +81,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	intSumMetric := metrics.AppendEmpty()
-	intSumMetric.SetDataType(pdata.MetricDataTypeSum)
+	intSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	intSumMetric.SetName("int_sum")
 	intSum := intSumMetric.Sum()
 	intSumDataPoints := intSum.DataPoints()
@@ -88,7 +90,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleGaugeMetric := metrics.AppendEmpty()
-	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
+	doubleGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	doubleGaugeMetric.SetName("double_gauge")
 	doubleGauge := doubleGaugeMetric.Gauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
@@ -97,7 +99,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	doubleSumMetric := metrics.AppendEmpty()
-	doubleSumMetric.SetDataType(pdata.MetricDataTypeSum)
+	doubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	doubleSumMetric.SetName("double_sum")
 	doubleSum := doubleSumMetric.Sum()
 	doubleSumDataPoints := doubleSum.DataPoints()
@@ -106,26 +108,26 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleHistogramMetric := metrics.AppendEmpty()
-	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
+	doubleHistogramMetric.SetDataType(pmetric.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_histogram")
 	doubleHistogram := doubleHistogramMetric.Histogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetExplicitBounds([]float64{0, 2, 4, 8})
-	doubleHistogramDataPoint.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
+	doubleHistogramDataPoint.SetMExplicitBounds([]float64{0, 2, 4, 8})
+	doubleHistogramDataPoint.SetMBucketCounts([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
-	doubleHistogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	doubleHistogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 
 	type fields struct {
-		logger *zap.Logger
-		cfg    *config.Config
-		client *http.Client
+		settings component.TelemetrySettings
+		cfg      *config.Config
+		client   *http.Client
 	}
 	type args struct {
 		ctx context.Context
-		md  pdata.Metrics
+		md  pmetric.Metrics
 	}
 	test := struct {
 		name    string
@@ -135,7 +137,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	}{
 		name: "Send metric data",
 		fields: fields{
-			logger: zap.NewNop(),
+			settings: componenttest.NewNopTelemetrySettings(),
 			cfg: &config.Config{
 				APIToken:           "token",
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -153,9 +155,9 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 
 	t.Run(test.name, func(t *testing.T) {
 		e := &exporter{
-			logger: test.fields.logger,
-			cfg:    test.fields.cfg,
-			client: test.fields.client,
+			settings: test.fields.settings,
+			cfg:      test.fields.cfg,
+			client:   test.fields.client,
 		}
 		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {
@@ -175,11 +177,11 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 
@@ -188,7 +190,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	noneMetric.SetName("none")
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -207,17 +209,17 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	metric := metrics.AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("int_gauge")
 	intGauge := metric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
@@ -226,7 +228,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -247,12 +249,12 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 			Ok:      0,
 			Invalid: 10,
 		})
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -272,12 +274,12 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 func Test_exporter_send_Unauthorized(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 	}))
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -297,12 +299,12 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 func Test_exporter_send_TooLarge(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 	}))
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -322,12 +324,12 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 func Test_exporter_send_NotFound(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 	}))
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			APIToken:           "token",
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -341,8 +343,8 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
 	}
-	if !e.isDisabled {
-		t.Error("Expected exporter to be disabled")
+	if e.isDisabled {
+		t.Error("Expected exporter to not be disabled")
 		return
 	}
 }
@@ -356,13 +358,13 @@ func Test_exporter_send_chunking(t *testing.T) {
 			Ok:      0,
 			Invalid: 1,
 		})
-		w.Write(body)
+		_, _ = w.Write(body)
 		sentChunks++
 	}))
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -395,17 +397,17 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	}))
 	ts.Close()
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
+	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
@@ -420,7 +422,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		md  pdata.Metrics
+		md  pmetric.Metrics
 	}
 	test := struct {
 		name    string
@@ -448,9 +450,9 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 
 	t.Run(test.name, func(t *testing.T) {
 		e := &exporter{
-			logger: test.fields.logger,
-			cfg:    test.fields.cfg,
-			client: test.fields.client,
+			settings: componenttest.NewNopTelemetrySettings(),
+			cfg:      test.fields.cfg,
+			client:   test.fields.client,
 		}
 		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {

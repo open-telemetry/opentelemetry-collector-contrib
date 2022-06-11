@@ -33,20 +33,20 @@ type EnvelopeStreamFactory struct {
 }
 
 func newEnvelopeStreamFactory(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	authTokenProvider *UAATokenProvider,
 	httpConfig confighttp.HTTPClientSettings,
 	host component.Host) (*EnvelopeStreamFactory, error) {
 
-	httpClient, err := httpConfig.ToClient(host.GetExtensions())
+	httpClient, err := httpConfig.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %v", err)
 	}
 
 	gatewayClient := loggregator.NewRLPGatewayClient(httpConfig.Endpoint,
-		loggregator.WithRLPGatewayClientLogger(zap.NewStdLog(logger)),
+		loggregator.WithRLPGatewayClientLogger(zap.NewStdLog(settings.Logger)),
 		loggregator.WithRLPGatewayHTTPClient(&authorizationProvider{
-			logger:            logger,
+			logger:            settings.Logger,
 			authTokenProvider: authTokenProvider,
 			client:            httpClient,
 		}),

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package main
 
 import (
@@ -26,16 +27,15 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
 )
 
-func initMeter() {
+func initMeter() metric.Meter {
 	config := prometheus.Config{}
 	c := controller.New(
 		processor.NewFactory(
@@ -55,24 +55,25 @@ func initMeter() {
 	go func() {
 		_ = http.ListenAndServe(":8080", nil)
 	}()
+	return exporter.MeterProvider().Meter("federation/prom-counter")
 }
 
 func main() {
 	// set up prometheus
-	initMeter()
+	meter := initMeter()
 	// logging
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	logger.Info("Start Prometheus metrics app")
-	meter := global.Meter("federation/prom-counter")
-	valueRecorder := metric.Must(meter).NewInt64Histogram("prom_counter")
+	valueRecorder, err := meter.SyncInt64().Histogram("prom_counter")
+	if err != nil {
+		log.Panicf("failed to initialize histogram %v", err)
+	}
 	ctx := context.Background()
-	valueRecorder.Measurement(0)
+	valueRecorder.Record(ctx, 0)
 	commonLabels := []attribute.KeyValue{attribute.String("A", "1"), attribute.String("B", "2"), attribute.String("C", "3")}
 	counter := int64(0)
-	meter.RecordBatch(ctx,
-		commonLabels,
-		valueRecorder.Measurement(counter))
+	valueRecorder.Record(ctx, counter, commonLabels...)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	ticker := time.NewTicker(1 * time.Second)
@@ -81,9 +82,7 @@ func main() {
 		case <-ticker.C:
 			time.Sleep(1 * time.Second)
 			counter++
-			meter.RecordBatch(ctx,
-				commonLabels,
-				valueRecorder.Measurement(counter))
+			valueRecorder.Record(ctx, counter, commonLabels...)
 			break
 		case <-c:
 			ticker.Stop()

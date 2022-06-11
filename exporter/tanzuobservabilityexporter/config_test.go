@@ -18,28 +18,48 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func TestConfigRequiresNonEmptyEndpoint(t *testing.T) {
+func TestConfigRequiresValidEndpointUrl(t *testing.T) {
 	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http#$%^&#$%&#"},
+		},
+	}
+	assert.Error(t, c.Validate())
+}
+
+func TestMetricsConfigRequiresValidEndpointUrl(t *testing.T) {
+	c := &Config{
+		Metrics: MetricsConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http#$%^&#$%&#"},
 		},
 	}
 
 	assert.Error(t, c.Validate())
 }
 
-func TestConfigRequiresValidEndpointUrl(t *testing.T) {
+func TestDifferentHostNames(t *testing.T) {
 	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http#$%^&#$%&#"},
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
+		},
+		Metrics: MetricsConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://foo.com:2878"},
 		},
 	}
-
 	assert.Error(t, c.Validate())
+}
+
+func TestConfigNormal(t *testing.T) {
+	c := &Config{
+		Traces: TracesConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
+		},
+		Metrics: MetricsConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
+		},
+	}
+	assert.NoError(t, c.Validate())
 }

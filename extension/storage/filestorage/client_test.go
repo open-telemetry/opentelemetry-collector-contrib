@@ -17,8 +17,6 @@ package filestorage
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -29,11 +27,13 @@ import (
 )
 
 func TestClientOperations(t *testing.T) {
-	tempDir := newTempDir(t)
-	dbFile := filepath.Join(tempDir, "my_db")
+	dbFile := filepath.Join(t.TempDir(), "my_db")
 
 	client, err := newClient(dbFile, time.Second)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 	testKey := "testKey"
@@ -64,11 +64,14 @@ func TestClientOperations(t *testing.T) {
 }
 
 func TestClientBatchOperations(t *testing.T) {
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(context.TODO()))
+	})
 
 	ctx := context.Background()
 	testSetEntries := []storage.Operation{
@@ -182,17 +185,19 @@ func TestNewClientTransactionErrors(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			tempDir := newTempDir(t)
+			tempDir := t.TempDir()
 			dbFile := filepath.Join(tempDir, "my_db")
 
 			client, err := newClient(dbFile, timeout)
 			require.NoError(t, err)
 
 			// Create a problem
-			client.db.Update(tc.setup)
+			require.NoError(t, client.db.Update(tc.setup))
 
 			// Validate expected behavior
 			tc.validate(t, client)
+
+			require.NoError(t, client.db.Close())
 		})
 	}
 }
@@ -201,7 +206,7 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 	temp := defaultBucket
 	defaultBucket = nil
 
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -212,7 +217,7 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 }
 
 func BenchmarkClientGet(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -223,12 +228,13 @@ func BenchmarkClientGet(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Get(ctx, testKey)
+		_, err = client.Get(ctx, testKey)
+		require.NoError(b, err)
 	}
 }
 
 func BenchmarkClientGet100(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -243,12 +249,12 @@ func BenchmarkClientGet100(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Batch(ctx, testEntries...)
+		require.NoError(b, client.Batch(ctx, testEntries...))
 	}
 }
 
 func BenchmarkClientSet(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -260,12 +266,12 @@ func BenchmarkClientSet(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Set(ctx, testKey, testValue)
+		require.NoError(b, client.Set(ctx, testKey, testValue))
 	}
 }
 
 func BenchmarkClientSet100(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -280,12 +286,12 @@ func BenchmarkClientSet100(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Batch(ctx, testEntries...)
+		require.NoError(b, client.Batch(ctx, testEntries...))
 	}
 }
 
 func BenchmarkClientDelete(b *testing.B) {
-	tempDir := newTempDir(b)
+	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	client, err := newClient(dbFile, time.Second)
@@ -296,13 +302,76 @@ func BenchmarkClientDelete(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		client.Delete(ctx, testKey)
+		require.NoError(b, client.Delete(ctx, testKey))
 	}
 }
 
-func newTempDir(tb testing.TB) string {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(tb, err)
-	tb.Cleanup(func() { os.RemoveAll(tempDir) })
-	return tempDir
+// check the performance impact of the max lifetime DB size
+// bolt doesn't compact the freelist automatically, so there's a cost even if the data is deleted
+func BenchmarkClientSetLargeDB(b *testing.B) {
+	entrySizeInBytes := 1024 * 1024
+	entryCount := 2000
+	entry := make([]byte, entrySizeInBytes)
+	var testKey string
+
+	tempDir := b.TempDir()
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	for n := 0; n < entryCount; n++ {
+		testKey = fmt.Sprintf("testKey-%d", n)
+		require.NoError(b, client.Set(ctx, testKey, entry))
+	}
+
+	for n := 0; n < entryCount; n++ {
+		testKey = fmt.Sprintf("testKey-%d", n)
+		require.NoError(b, client.Delete(ctx, testKey))
+	}
+
+	testKey = "testKey"
+	testValue := []byte("testValue")
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		require.NoError(b, client.Set(ctx, testKey, testValue))
+	}
+}
+
+// check the cost of opening an existing DB with data
+// this can change depending on freelist type and whether it's synced to disk
+func BenchmarkClientInitLargeDB(b *testing.B) {
+	entrySizeInBytes := 1024 * 1024
+	entry := make([]byte, entrySizeInBytes)
+	entryCount := 2000
+	var testKey string
+
+	tempDir := b.TempDir()
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	for n := 0; n < entryCount; n++ {
+		testKey = fmt.Sprintf("testKey-%d", n)
+		require.NoError(b, client.Set(ctx, testKey, entry))
+	}
+
+	err = client.Close(ctx)
+	require.NoError(b, err)
+
+	var tempClient *fileStorageClient
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		tempClient, err = newClient(dbFile, time.Second)
+		require.NoError(b, err)
+		b.StopTimer()
+		err = tempClient.Close(ctx)
+		require.NoError(b, err)
+		b.StartTimer()
+	}
 }

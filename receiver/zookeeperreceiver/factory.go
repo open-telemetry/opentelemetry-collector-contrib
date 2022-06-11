@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -36,10 +35,10 @@ const (
 )
 
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver),
+		component.WithMetricsReceiver(createMetricsReceiver),
 	)
 }
 
@@ -65,7 +64,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rConfig := config.(*Config)
-	zms, err := newZookeeperMetricsScraper(params.Logger, rConfig)
+	zms, err := newZookeeperMetricsScraper(params, rConfig)
 	if err != nil {
 		return nil, err
 	}

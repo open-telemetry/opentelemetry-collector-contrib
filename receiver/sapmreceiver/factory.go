@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -39,10 +38,10 @@ const (
 
 // NewFactory creates a factory for SAPM receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTracesReceiver))
+		component.WithTracesReceiver(createTracesReceiver))
 }
 
 func createDefaultConfig() config.Receiver {

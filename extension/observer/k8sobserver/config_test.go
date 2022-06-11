@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package k8sobserver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -72,7 +73,7 @@ func TestInvalidAuth(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata/invalid_auth.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata/invalid_auth.yaml"), factories)
 	require.NotNil(t, cfg)
 	require.EqualError(t, err, `extension "k8s_observer" has invalid configuration: invalid authType for kubernetes: not a real auth type`)
 }
@@ -83,7 +84,7 @@ func TestInvalidNoObserving(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata/invalid_no_observing.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata/invalid_no_observing.yaml"), factories)
 	require.NotNil(t, cfg)
 	require.EqualError(t, err, `extension "k8s_observer" has invalid configuration: one of observe_pods and observe_nodes must be true`)
 }

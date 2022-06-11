@@ -56,7 +56,7 @@ func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc
 		return err
 	}
 
-	return sr.receiver.Start(context.Background(), sr)
+	return sr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // Stop the receiver.

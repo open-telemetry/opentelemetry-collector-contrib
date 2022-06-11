@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package sapmreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 
 import (
@@ -69,7 +70,10 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 
 	ctx := sr.obsrecv.StartTracesOp(req.Context())
 
-	td := jaeger.ProtoBatchesToInternalTraces(sapm.Batches)
+	td, err := jaeger.ProtoToTraces(sapm.Batches)
+	if err != nil {
+		return err
+	}
 
 	if sr.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {

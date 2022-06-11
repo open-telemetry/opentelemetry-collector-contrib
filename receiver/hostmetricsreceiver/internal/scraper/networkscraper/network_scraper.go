@@ -22,7 +22,8 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/net"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -36,8 +37,10 @@ const (
 
 // scraper for Network Metrics
 type scraper struct {
+	settings  component.ReceiverCreateSettings
 	config    *Config
-	startTime pdata.Timestamp
+	mb        *metadata.MetricsBuilder
+	startTime pcommon.Timestamp
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -48,8 +51,8 @@ type scraper struct {
 }
 
 // newNetworkScraper creates a set of Network related metrics
-func newNetworkScraper(_ context.Context, cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
+func newNetworkScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
 
 	var err error
 
@@ -76,118 +79,88 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.Timestamp(bootTime * 1e9)
+	s.startTime = pcommon.Timestamp(bootTime * 1e9)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errors scrapererror.ScrapeErrors
 
-	err := s.scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
+	err := s.recordNetworkCounterMetrics()
 	if err != nil {
 		errors.AddPartial(networkMetricsLen, err)
 	}
 
-	err = s.scrapeAndAppendNetworkConnectionsMetric(metrics)
+	err = s.recordNetworkConnectionsMetrics()
 	if err != nil {
 		errors.AddPartial(connectionsMetricsLen, err)
 	}
 
-	return md, errors.Combine()
+	return s.mb.Emit(), errors.Combine()
 }
 
-func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp) error {
-	now := pdata.NewTimestampFromTime(time.Now())
+func (s *scraper) recordNetworkCounterMetrics() error {
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read network IO stats: %w", err)
 	}
 
 	// filter network interfaces by name
 	ioCounters = s.filterByInterface(ioCounters)
 
 	if len(ioCounters) > 0 {
-		startIdx := metrics.Len()
-		metrics.EnsureCapacity(startIdx + networkMetricsLen)
-		initializeNetworkPacketsMetric(metrics.AppendEmpty(), metadata.Metrics.SystemNetworkPackets, startTime, now, ioCounters)
-		initializeNetworkDroppedPacketsMetric(metrics.AppendEmpty(), metadata.Metrics.SystemNetworkDropped, startTime, now, ioCounters)
-		initializeNetworkErrorsMetric(metrics.AppendEmpty(), metadata.Metrics.SystemNetworkErrors, startTime, now, ioCounters)
-		initializeNetworkIOMetric(metrics.AppendEmpty(), metadata.Metrics.SystemNetworkIo, startTime, now, ioCounters)
+		s.recordNetworkPacketsMetric(now, ioCounters)
+		s.recordNetworkDroppedPacketsMetric(now, ioCounters)
+		s.recordNetworkErrorPacketsMetric(now, ioCounters)
+		s.recordNetworkIOMetric(now, ioCounters)
 	}
 
 	return nil
 }
 
-func initializeNetworkPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
-	metricIntf.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(2 * len(ioCountersSlice))
+func (s *scraper) recordNetworkPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.PacketsSent))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.PacketsRecv))
+		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
-func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
-	metricIntf.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(2 * len(ioCountersSlice))
+func (s *scraper) recordNetworkDroppedPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.Dropout))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.Dropin))
+		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
-func initializeNetworkErrorsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
-	metricIntf.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(2 * len(ioCountersSlice))
+func (s *scraper) recordNetworkErrorPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.Errout))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.Errin))
+		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errout), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errin), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
-func initializeNetworkIOMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
-	metricIntf.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(2 * len(ioCountersSlice))
+func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Transmit, int64(ioCounters.BytesSent))
-		initializeNetworkDataPoint(idps.AppendEmpty(), startTime, now, ioCounters.Name, metadata.AttributeDirection.Receive, int64(ioCounters.BytesRecv))
+		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
+		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
 	}
 }
 
-func initializeNetworkDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, deviceLabel, directionLabel string, value int64) {
-	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Attributes.Device, deviceLabel)
-	attributes.InsertString(metadata.Attributes.Direction, directionLabel)
-	dataPoint.SetStartTimestamp(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
-}
-
-func (s *scraper) scrapeAndAppendNetworkConnectionsMetric(metrics pdata.MetricSlice) error {
-	now := pdata.NewTimestampFromTime(time.Now())
+func (s *scraper) recordNetworkConnectionsMetrics() error {
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	connections, err := s.connections("tcp")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read TCP connections: %w", err)
 	}
 
 	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
 
-	startIdx := metrics.Len()
-	metrics.EnsureCapacity(startIdx + connectionsMetricsLen)
-	initializeNetworkConnectionsMetric(metrics.AppendEmpty(), now, tcpConnectionStatusCounts)
+	s.recordNetworkConnectionsMetric(now, tcpConnectionStatusCounts)
 	return nil
 }
 
@@ -203,23 +176,10 @@ func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]i
 	return tcpStatuses
 }
 
-func initializeNetworkConnectionsMetric(metric pdata.Metric, now pdata.Timestamp, connectionStateCounts map[string]int64) {
-	metadata.Metrics.SystemNetworkConnections.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(len(connectionStateCounts))
-
+func (s *scraper) recordNetworkConnectionsMetric(now pcommon.Timestamp, connectionStateCounts map[string]int64) {
 	for connectionState, count := range connectionStateCounts {
-		initializeNetworkConnectionsDataPoint(idps.AppendEmpty(), now, metadata.AttributeProtocol.Tcp, connectionState, count)
+		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocolTcp, connectionState)
 	}
-}
-
-func initializeNetworkConnectionsDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, protocolLabel, stateLabel string, value int64) {
-	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Attributes.Protocol, protocolLabel)
-	attributes.InsertString(metadata.Attributes.State, stateLabel)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
 }
 
 func (s *scraper) filterByInterface(ioCounters []net.IOCountersStat) []net.IOCountersStat {

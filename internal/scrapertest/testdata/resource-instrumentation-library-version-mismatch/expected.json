@@ -1,0 +1,14 @@
+{
+   "resourceMetrics": [
+      {
+         "scopeMetrics": [
+            {
+               "scope": {
+                  "name": "one",
+                  "version": "1.0"
+               }
+            }
+         ]
+      }
+   ]
+}

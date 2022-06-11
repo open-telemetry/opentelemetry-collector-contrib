@@ -15,7 +15,8 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -38,22 +39,13 @@ func NewNumericAttributeFilter(logger *zap.Logger, key string, minValue, maxValu
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	naf.logger.Debug("Triggering action for late arriving spans in numeric-attribute filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
 
-	return hasSpanWithCondition(batches, func(span pdata.Span) bool {
+	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
 		if v, ok := span.Attributes().Get(naf.key); ok {
 			value := v.IntVal()
 			if value >= naf.minValue && value <= naf.maxValue {

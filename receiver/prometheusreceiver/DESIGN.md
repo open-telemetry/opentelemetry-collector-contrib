@@ -91,9 +91,9 @@ metric endpoints, it is also the component which Prometheus receiver is based
 on. It's important to understand how it works in order to implement the
 receiver properly.
 
-### Major components of Prometheus Scape package
+### Major components of Prometheus Scrape package
 
-- **[ScapeManager](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/manager.go):**
+- **[ScrapeManager](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/manager.go):**
 the component which loads the scrape_config, and manages the scraping tasks
 
 - **[ScrapePool](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L154-L439):**

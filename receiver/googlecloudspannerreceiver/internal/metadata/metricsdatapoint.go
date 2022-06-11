@@ -19,7 +19,8 @@ import (
 	"time"
 
 	"github.com/mitchellh/hashstructure"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
@@ -57,8 +58,8 @@ type label struct {
 	Value interface{}
 }
 
-func (mdp *MetricsDataPoint) CopyTo(dataPoint pdata.NumberDataPoint) {
-	dataPoint.SetTimestamp(pdata.NewTimestampFromTime(mdp.timestamp))
+func (mdp *MetricsDataPoint) CopyTo(dataPoint pmetric.NumberDataPoint) {
+	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(mdp.timestamp))
 
 	mdp.metricValue.SetValueTo(dataPoint)
 

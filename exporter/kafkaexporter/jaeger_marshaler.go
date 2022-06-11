@@ -20,10 +20,10 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 type jaegerMarshaler struct {
@@ -32,8 +32,8 @@ type jaegerMarshaler struct {
 
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
-func (j jaegerMarshaler) Marshal(traces pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	batches, err := jaegertranslator.InternalTracesToJaegerProto(traces)
+func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+	batches, err := jaeger.ProtoFromTraces(traces)
 	if err != nil {
 		return nil, err
 	}

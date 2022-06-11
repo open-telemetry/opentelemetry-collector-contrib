@@ -14,9 +14,7 @@
 
 package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
 // dataPointRecorders is called once at startup. Returns recorders for all metrics (except keyspace)
 // we want to extract from Redis INFO.
@@ -53,14 +51,14 @@ func (rs *redisScraper) dataPointRecorders() map[string]interface{} {
 	}
 }
 
-func (rs *redisScraper) recordUsedCPUSys(now pdata.Timestamp, val float64) {
+func (rs *redisScraper) recordUsedCPUSys(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "sys")
 }
 
-func (rs *redisScraper) recordUsedCPUSysChildren(now pdata.Timestamp, val float64) {
+func (rs *redisScraper) recordUsedCPUSysChildren(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "children")
 }
 
-func (rs *redisScraper) recordUsedCPUSysUser(now pdata.Timestamp, val float64) {
+func (rs *redisScraper) recordUsedCPUSysUser(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "user")
 }

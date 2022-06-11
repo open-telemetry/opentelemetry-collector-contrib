@@ -15,7 +15,7 @@
 package observiqexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -94,7 +94,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
-			err := testCase.input.validateConfig()
+			err := testCase.input.Validate()
 			if testCase.shouldError {
 				require.Error(t, err)
 			} else {
@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 

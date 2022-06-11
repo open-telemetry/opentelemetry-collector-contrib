@@ -19,21 +19,22 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // splunkHecToMetricsData converts Splunk HEC metric points to
-// pdata.Metrics. Returning the converted data and the number of
+// pmetric.Metrics. Returning the converted data and the number of
 // dropped time series.
-func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config *Config) (pdata.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
 	numDroppedTimeSeries := 0
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 
 	for _, event := range events {
-		resourceMetrics := pdata.NewResourceMetrics()
+		resourceMetrics := pmetric.NewResourceMetrics()
 		if resourceCustomizer != nil {
 			resourceCustomizer(resourceMetrics.Resource())
 		}
@@ -55,10 +56,10 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 		labels := buildAttributes(event.Fields)
 
-		metrics := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+		metrics := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics()
 		for metricName, metricValue := range values {
 			pointTimestamp := convertTimestamp(event.Time)
-			metric := pdata.NewMetric()
+			metric := pmetric.NewMetric()
 			metric.SetName(metricName)
 
 			switch v := metricValue.(type) {
@@ -91,7 +92,7 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 	return md, numDroppedTimeSeries
 }
 
-func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.MetricSlice, metricName string, pointTimestamp pdata.Timestamp, s string, attributes pdata.AttributeMap) {
+func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pmetric.MetricSlice, metricName string, pointTimestamp pcommon.Timestamp, s string, attributes pcommon.Map) {
 	// best effort, cast to string and turn into a number
 	dbl, err := strconv.ParseFloat(s, 64)
 	if err != nil {
@@ -103,37 +104,37 @@ func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.
 	}
 }
 
-func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts pdata.Timestamp, attributes pdata.AttributeMap) {
+func addIntGauge(metrics pmetric.MetricSlice, metricName string, value int64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	intPt := metric.Gauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
 	intPt.SetIntVal(value)
 	attributes.CopyTo(intPt.Attributes())
 }
 
-func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64, ts pdata.Timestamp, attributes pdata.AttributeMap) {
+func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	doublePt := metric.Gauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetDoubleVal(value)
 	attributes.CopyTo(doublePt.Attributes())
 }
 
-func convertTimestamp(sec *float64) pdata.Timestamp {
+func convertTimestamp(sec *float64) pcommon.Timestamp {
 	if sec == nil {
 		return 0
 	}
 
-	return pdata.Timestamp(*sec * 1e9)
+	return pcommon.Timestamp(*sec * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point attributes.
-func buildAttributes(dimensions map[string]interface{}) pdata.AttributeMap {
-	attributes := pdata.NewAttributeMap()
+func buildAttributes(dimensions map[string]interface{}) pcommon.Map {
+	attributes := pcommon.NewMap()
 	attributes.EnsureCapacity(len(dimensions))
 	for key, val := range dimensions {
 

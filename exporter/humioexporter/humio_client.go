@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/zap"
 )
 
 // HumioUnstructuredEvents represents a payload of multiple unstructured events (strings) to send to Humio
@@ -103,12 +102,12 @@ type humioClient struct {
 	cfg      *Config
 	client   *http.Client
 	gzipPool *sync.Pool
-	logger   *zap.Logger
+	settings component.TelemetrySettings
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
-func newHumioClient(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
-	client, err := cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+func newHumioClient(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
+	client, err := cfg.HTTPClientSettings.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +118,7 @@ func newHumioClient(cfg *Config, logger *zap.Logger, host component.Host) (expor
 		gzipPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		logger: logger,
+		settings: settings,
 	}, nil
 }
 
@@ -162,7 +161,10 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 	}
 	// Response body needs to both be read to EOF and closed to avoid leaks
 	defer res.Body.Close()
-	io.Copy(ioutil.Discard, res.Body)
+	_, err = io.Copy(ioutil.Discard, res.Body)
+	if err != nil {
+		return err
+	}
 
 	// If an error has occurred, determine if it would make sense to retry
 	// This check is not exhaustive, but should cover the most common cases

@@ -1,0 +1,16 @@
+receivers:
+  expvar:
+    endpoint: "localhost:8000/custom/path"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [expvar]
+      processors: [nop]
+      exporters: [nop]

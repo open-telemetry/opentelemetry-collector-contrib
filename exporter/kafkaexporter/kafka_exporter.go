@@ -21,7 +21,9 @@ import (
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -44,7 +46,7 @@ func (ke kafkaErrors) Error() string {
 	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
 }
 
-func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) error {
+func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
 	messages, err := e.marshaler.Marshal(td, e.topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -73,7 +75,7 @@ type kafkaMetricsProducer struct {
 	logger    *zap.Logger
 }
 
-func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) error {
+func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
 	messages, err := e.marshaler.Marshal(md, e.topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -102,7 +104,7 @@ type kafkaLogsProducer struct {
 	logger    *zap.Logger
 }
 
-func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) error {
+func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
 	messages, err := e.marshaler.Marshal(ld, e.topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -135,6 +137,8 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
+	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
+
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -142,9 +146,17 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		}
 		c.Version = version
 	}
+
 	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
+
+	compression, err := saramaProducerCompressionCodec(config.Producer.Compression)
+	if err != nil {
+		return nil, err
+	}
+	c.Producer.Compression = compression
+
 	producer, err := sarama.NewSyncProducer(config.Brokers, c)
 	if err != nil {
 		return nil, err

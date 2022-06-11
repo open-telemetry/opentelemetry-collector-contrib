@@ -21,15 +21,15 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
 	slsLogTimeUnixNano   = "timeUnixNano"
 	slsLogSeverityNumber = "severityNumber"
 	slsLogSeverityText   = "severityText"
-	slsLogName           = "name"
 	slsLogContent        = "content"
 	slsLogAttribute      = "attribute"
 	slsLogFlags          = "flags"
@@ -41,18 +41,18 @@ const (
 	slsLogInstrumentationVersion = "otlp.version"
 )
 
-func logDataToLogService(ld pdata.Logs) []*sls.Log {
+func logDataToLogService(ld plog.Logs) []*sls.Log {
 	slsLogs := make([]*sls.Log, 0)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		ills := rl.InstrumentationLibraryLogs()
+		sl := rl.ScopeLogs()
 		resource := rl.Resource()
 		resourceContents := resourceToLogContents(resource)
-		for j := 0; j < ills.Len(); j++ {
-			ils := ills.At(j)
-			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
-			logs := ils.Logs()
+		for j := 0; j < sl.Len(); j++ {
+			ils := sl.At(j)
+			instrumentationLibraryContents := instrumentationScopeToLogContents(ils.Scope())
+			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
 				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if slsLog != nil {
@@ -65,7 +65,7 @@ func logDataToLogService(ld pdata.Logs) []*sls.Log {
 	return slsLogs
 }
 
-func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
+func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 	logContents := make([]*sls.LogContent, 3)
 	attrs := resource.Attributes()
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
@@ -93,7 +93,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
@@ -109,23 +109,23 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	return logContents
 }
 
-func instrumentationLibraryToLogContents(instrumentationLibrary pdata.InstrumentationLibrary) []*sls.LogContent {
+func instrumentationScopeToLogContents(instrumentationScope pcommon.InstrumentationScope) []*sls.LogContent {
 	logContents := make([]*sls.LogContent, 2)
 	logContents[0] = &sls.LogContent{
 		Key:   proto.String(slsLogInstrumentationName),
-		Value: proto.String(instrumentationLibrary.Name()),
+		Value: proto.String(instrumentationScope.Name()),
 	}
 	logContents[1] = &sls.LogContent{
 		Key:   proto.String(slsLogInstrumentationVersion),
-		Value: proto.String(instrumentationLibrary.Version()),
+		Value: proto.String(instrumentationScope.Version()),
 	}
 	return logContents
 }
 
-func mapLogRecordToLogService(lr pdata.LogRecord,
+func mapLogRecordToLogService(lr plog.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
+	if lr.Body().Type() == pcommon.ValueTypeEmpty {
 		return nil
 	}
 	var slsLog sls.Log
@@ -153,13 +153,8 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 		Value: proto.String(lr.SeverityText()),
 	})
 
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogName),
-		Value: proto.String(lr.Name()),
-	})
-
 	fields := map[string]interface{}{}
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})

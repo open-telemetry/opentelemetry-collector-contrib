@@ -28,7 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -63,8 +64,8 @@ func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 	assert.Nil(t, te)
 }
 
-func buildTestTraces(setTokenLabel bool) (traces pdata.Traces) {
-	traces = pdata.NewTraces()
+func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {
+	traces = ptrace.NewTraces()
 	rss := traces.ResourceSpans()
 	rss.EnsureCapacity(20)
 
@@ -82,11 +83,11 @@ func buildTestTraces(setTokenLabel bool) (traces pdata.Traces) {
 			resource.Attributes().InsertString("key2", "value2")
 		}
 
-		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		name := fmt.Sprintf("Span%d", i)
 		span.SetName(name)
-		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
-		span.SetSpanID(pdata.NewSpanID([8]byte{1}))
+		span.SetTraceID(pcommon.NewTraceID([16]byte{1}))
+		span.SetSpanID(pcommon.NewSpanID([8]byte{1}))
 	}
 
 	return traces
@@ -109,7 +110,7 @@ func TestFilterToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			traces := buildTestTraces(tt.useToken)
-			batches, err := jaeger.InternalTracesToJaegerProto(traces)
+			batches, err := jaeger.ProtoFromTraces(traces)
 			require.NoError(t, err)
 			assert.Equal(t, tt.useToken, hasToken(batches))
 			filterToken(batches)
@@ -133,14 +134,14 @@ func hasToken(batches []*model.Batch) bool {
 	return false
 }
 
-func buildTestTrace(setIds bool) pdata.Traces {
-	trace := pdata.NewTraces()
+func buildTestTrace() ptrace.Traces {
+	trace := ptrace.NewTraces()
 	trace.ResourceSpans().EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
 		rs := trace.ResourceSpans().AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
-		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("MySpan")
 
 		rand.Seed(time.Now().Unix())
@@ -148,10 +149,8 @@ func buildTestTrace(setIds bool) pdata.Traces {
 		var spanIDBytes [8]byte
 		rand.Read(traceIDBytes[:])
 		rand.Read(spanIDBytes[:])
-		if setIds {
-			span.SetTraceID(pdata.NewTraceID(traceIDBytes))
-			span.SetSpanID(pdata.NewSpanID(spanIDBytes))
-		}
+		span.SetTraceID(pcommon.NewTraceID(traceIDBytes))
+		span.SetSpanID(pcommon.NewSpanID(spanIDBytes))
 	}
 	return trace
 }
@@ -160,31 +159,26 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 	tests := []struct {
 		name                   string
 		accessTokenPassthrough bool
-		translateError         bool
 		sendError              bool
 	}{
 		{
 			name:                   "no error without passthrough",
 			accessTokenPassthrough: false,
-			translateError:         false,
 			sendError:              false,
 		},
 		{
 			name:                   "no error with passthrough",
 			accessTokenPassthrough: true,
-			translateError:         false,
 			sendError:              false,
 		},
 		{
-			name:                   "translate error",
-			accessTokenPassthrough: true,
-			translateError:         true,
-			sendError:              false,
+			name:                   "error without passthrough",
+			accessTokenPassthrough: false,
+			sendError:              true,
 		},
 		{
-			name:                   "sendError",
+			name:                   "error with passthrough",
 			accessTokenPassthrough: true,
-			translateError:         false,
 			sendError:              true,
 		},
 	}
@@ -205,11 +199,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 				tracesReceived = true
 			}))
 			defer func() {
-				if !tt.translateError {
-					assert.True(t, tracesReceived, "Test server never received traces.")
-				} else {
-					assert.False(t, tracesReceived, "Test server received traces when none expected.")
-				}
+				assert.True(t, tracesReceived, "Test server never received traces.")
 			}()
 			defer server.Close()
 
@@ -226,10 +216,10 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 
-			trace := buildTestTrace(!tt.translateError)
+			trace := buildTestTrace()
 			err = se.pushTraceData(context.Background(), trace)
 
-			if tt.sendError || tt.translateError {
+			if tt.sendError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)

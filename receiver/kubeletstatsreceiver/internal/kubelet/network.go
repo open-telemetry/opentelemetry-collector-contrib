@@ -15,54 +15,26 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addNetworkMetrics(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
-	addNetworkIOMetric(dest, prefix, s, startTime, currentTime)
-	addNetworkErrorsMetric(dest, prefix, s, startTime, currentTime)
+
+	recordNetworkDataPoint(mb, networkMetrics.IO, s, currentTime)
+	recordNetworkDataPoint(mb, networkMetrics.Errors, s, currentTime)
 }
 
-func addNetworkIOMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
+func recordNetworkDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s.RxBytes == nil && s.TxBytes == nil {
 		return
 	}
 
-	m := dest.AppendEmpty()
-	metadata.M.NetworkIo.Init(m)
-	m.SetName(prefix + m.Name())
-
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Receive, s.RxBytes, startTime, currentTime)
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxBytes, startTime, currentTime)
-}
-
-func addNetworkErrorsMetric(dest pdata.MetricSlice, prefix string, s *stats.NetworkStats, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
-	if s.RxBytes == nil && s.TxBytes == nil {
-		return
-	}
-
-	m := dest.AppendEmpty()
-	metadata.M.NetworkErrors.Init(m)
-	m.SetName(prefix + m.Name())
-
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Receive, s.RxErrors, startTime, currentTime)
-	fillNetworkDataPoint(m.Sum().DataPoints(), s.Name, metadata.AttributeDirection.Transmit, s.TxErrors, startTime, currentTime)
-}
-
-func fillNetworkDataPoint(dps pdata.NumberDataPointSlice, interfaceName string, direction string, value *uint64, startTime pdata.Timestamp, currentTime pdata.Timestamp) {
-	if value == nil {
-		return
-	}
-	dp := dps.AppendEmpty()
-	dp.Attributes().UpsertString(metadata.A.Interface, interfaceName)
-	dp.Attributes().UpsertString(metadata.A.Direction, direction)
-	dp.SetIntVal(int64(*value))
-	dp.SetStartTimestamp(startTime)
-	dp.SetTimestamp(currentTime)
+	recordDataPoint(mb, currentTime, int64(*s.RxBytes), s.Name, metadata.AttributeDirectionReceive)
+	recordDataPoint(mb, currentTime, int64(*s.TxBytes), s.Name, metadata.AttributeDirectionTransmit)
 }

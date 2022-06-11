@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
 const runningStatus = "RUNNING"
@@ -75,13 +76,19 @@ func (e *ecsTaskObserver) endpointsFromTaskMetadata(taskMetadata *ecsutil.TaskMe
 			target = fmt.Sprintf("%s:%d", target, port)
 		}
 
+		imageRef, err := dcommon.ParseImageName(container.Image)
+		if err != nil {
+			e.telemetry.Logger.Error("could not parse container image name", zap.Error(err))
+		}
+
 		endpoint := observer.Endpoint{
 			ID:     observer.EndpointID(fmt.Sprintf("%s-%s", container.ContainerName, container.DockerID)),
 			Target: target,
 			Details: &observer.Container{
 				ContainerID: container.DockerID,
 				Host:        host,
-				Image:       container.Image,
+				Image:       imageRef.Repository,
+				Tag:         imageRef.Tag,
 				Labels:      container.Labels,
 				Name:        container.ContainerName,
 				Port:        port,

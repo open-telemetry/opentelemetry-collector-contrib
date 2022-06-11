@@ -12,72 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// ReadMetrics reads a pdata.Metrics from the specified file
-func ReadMetrics(filePath string) (pdata.Metrics, error) {
+// ReadMetrics reads a pmetric.Metrics from the specified file
+func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 	expectedFileBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
-	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
+	unmarshaller := pmetric.NewJSONUnmarshaler()
 	return unmarshaller.UnmarshalMetrics(expectedFileBytes)
 }
 
-// WriteMetrics writes a pdata.Metrics to the specified file
-func WriteMetrics(filePath string, metrics pdata.Metrics) error {
-	bytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(metrics)
+// WriteMetrics writes a pmetric.Metrics to the specified file
+func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
+	fileBytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(metrics)
 	if err != nil {
 		return err
 	}
 	var jsonVal map[string]interface{}
-	json.Unmarshal(bytes, &jsonVal)
+	json.Unmarshal(fileBytes, &jsonVal)
 	b, err := json.MarshalIndent(jsonVal, "", "   ")
 	if err != nil {
 		return err
 	}
 	b = append(b, []byte("\n")...)
 	return ioutil.WriteFile(filePath, b, 0600)
-}
-
-// ReadMetricSlice reads a file that contains a pdata.Metrics and returns
-// the MetricSlice found within the first Resource and InstrumentationLibrary
-func ReadMetricSlice(filePath string) (pdata.MetricSlice, error) {
-	metrics, err := ReadMetrics(filePath)
-	if err != nil {
-		return pdata.NewMetricSlice(), err
-	}
-
-	rms := metrics.ResourceMetrics()
-	if rms.Len() == 0 {
-		return pdata.NewMetricSlice(), fmt.Errorf("no resource found")
-	}
-
-	ilms := rms.At(0).InstrumentationLibraryMetrics()
-	if ilms.Len() == 0 {
-		return pdata.NewMetricSlice(), fmt.Errorf("no instrumentation library found")
-	}
-
-	return ilms.At(0).Metrics(), nil
-}
-
-// WriteMetricSlice wraps a pdata.MetricSlice in a pdata.Metrics and writes it
-// to the specified file
-func WriteMetricSlice(filePath string, metricSlice pdata.MetricSlice) error {
-	metrics := pdata.NewMetrics()
-	metricSlice.CopyTo(
-		metrics.ResourceMetrics().AppendEmpty().
-			InstrumentationLibraryMetrics().AppendEmpty().
-			Metrics(),
-	)
-	return WriteMetrics(filePath, metrics)
 }

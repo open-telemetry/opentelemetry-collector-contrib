@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var (
@@ -28,15 +28,15 @@ var (
 	labelKeyReplacer         = strings.NewReplacer(`.`, `_`, `*`, `_`, `"`, `_`)
 )
 
-func ifaceAttributeValue(v pdata.AttributeValue) interface{} {
+func ifaceAttributeValue(v pcommon.Value) interface{} {
 	switch v.Type() {
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		return truncate(v.StringVal())
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return v.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return v.DoubleVal()
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return v.BoolVal()
 	}
 	return nil

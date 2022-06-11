@@ -5,7 +5,9 @@ package metadata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -54,8 +56,106 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// AttributeHTTPMethod specifies the a value http.method attribute.
+type AttributeHTTPMethod int
+
+const (
+	_ AttributeHTTPMethod = iota
+	AttributeHTTPMethodCOPY
+	AttributeHTTPMethodDELETE
+	AttributeHTTPMethodGET
+	AttributeHTTPMethodHEAD
+	AttributeHTTPMethodOPTIONS
+	AttributeHTTPMethodPOST
+	AttributeHTTPMethodPUT
+)
+
+// String returns the string representation of the AttributeHTTPMethod.
+func (av AttributeHTTPMethod) String() string {
+	switch av {
+	case AttributeHTTPMethodCOPY:
+		return "COPY"
+	case AttributeHTTPMethodDELETE:
+		return "DELETE"
+	case AttributeHTTPMethodGET:
+		return "GET"
+	case AttributeHTTPMethodHEAD:
+		return "HEAD"
+	case AttributeHTTPMethodOPTIONS:
+		return "OPTIONS"
+	case AttributeHTTPMethodPOST:
+		return "POST"
+	case AttributeHTTPMethodPUT:
+		return "PUT"
+	}
+	return ""
+}
+
+// MapAttributeHTTPMethod is a helper map of string to AttributeHTTPMethod attribute value.
+var MapAttributeHTTPMethod = map[string]AttributeHTTPMethod{
+	"COPY":    AttributeHTTPMethodCOPY,
+	"DELETE":  AttributeHTTPMethodDELETE,
+	"GET":     AttributeHTTPMethodGET,
+	"HEAD":    AttributeHTTPMethodHEAD,
+	"OPTIONS": AttributeHTTPMethodOPTIONS,
+	"POST":    AttributeHTTPMethodPOST,
+	"PUT":     AttributeHTTPMethodPUT,
+}
+
+// AttributeOperation specifies the a value operation attribute.
+type AttributeOperation int
+
+const (
+	_ AttributeOperation = iota
+	AttributeOperationWrites
+	AttributeOperationReads
+)
+
+// String returns the string representation of the AttributeOperation.
+func (av AttributeOperation) String() string {
+	switch av {
+	case AttributeOperationWrites:
+		return "writes"
+	case AttributeOperationReads:
+		return "reads"
+	}
+	return ""
+}
+
+// MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
+var MapAttributeOperation = map[string]AttributeOperation{
+	"writes": AttributeOperationWrites,
+	"reads":  AttributeOperationReads,
+}
+
+// AttributeView specifies the a value view attribute.
+type AttributeView int
+
+const (
+	_ AttributeView = iota
+	AttributeViewTemporaryViewReads
+	AttributeViewViewReads
+)
+
+// String returns the string representation of the AttributeView.
+func (av AttributeView) String() string {
+	switch av {
+	case AttributeViewTemporaryViewReads:
+		return "temporary_view_reads"
+	case AttributeViewViewReads:
+		return "view_reads"
+	}
+	return ""
+}
+
+// MapAttributeView is a helper map of string to AttributeView attribute value.
+var MapAttributeView = map[string]AttributeView{
+	"temporary_view_reads": AttributeViewTemporaryViewReads,
+	"view_reads":           AttributeViewViewReads,
+}
+
 type metricCouchdbAverageRequestTime struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -65,10 +165,10 @@ func (m *metricCouchdbAverageRequestTime) init() {
 	m.data.SetName("couchdb.average_request_time")
 	m.data.SetDescription("The average duration of a served request.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
-func (m *metricCouchdbAverageRequestTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64) {
+func (m *metricCouchdbAverageRequestTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -86,7 +186,7 @@ func (m *metricCouchdbAverageRequestTime) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbAverageRequestTime) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbAverageRequestTime) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -97,14 +197,14 @@ func (m *metricCouchdbAverageRequestTime) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbAverageRequestTime(settings MetricSettings) metricCouchdbAverageRequestTime {
 	m := metricCouchdbAverageRequestTime{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricCouchdbDatabaseOpen struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -114,12 +214,12 @@ func (m *metricCouchdbDatabaseOpen) init() {
 	m.data.SetName("couchdb.database.open")
 	m.data.SetDescription("The number of open databases.")
 	m.data.SetUnit("{databases}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricCouchdbDatabaseOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricCouchdbDatabaseOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -137,7 +237,7 @@ func (m *metricCouchdbDatabaseOpen) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbDatabaseOpen) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbDatabaseOpen) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -148,14 +248,14 @@ func (m *metricCouchdbDatabaseOpen) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbDatabaseOpen(settings MetricSettings) metricCouchdbDatabaseOpen {
 	m := metricCouchdbDatabaseOpen{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricCouchdbDatabaseOperations struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -165,13 +265,13 @@ func (m *metricCouchdbDatabaseOperations) init() {
 	m.data.SetName("couchdb.database.operations")
 	m.data.SetDescription("The number of database operations.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, operationAttributeValue string) {
+func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -179,7 +279,7 @@ func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pdata.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -190,7 +290,7 @@ func (m *metricCouchdbDatabaseOperations) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbDatabaseOperations) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbDatabaseOperations) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -201,14 +301,14 @@ func (m *metricCouchdbDatabaseOperations) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbDatabaseOperations(settings MetricSettings) metricCouchdbDatabaseOperations {
 	m := metricCouchdbDatabaseOperations{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricCouchdbFileDescriptorOpen struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -218,12 +318,12 @@ func (m *metricCouchdbFileDescriptorOpen) init() {
 	m.data.SetName("couchdb.file_descriptor.open")
 	m.data.SetDescription("The number of open file descriptors.")
 	m.data.SetUnit("{files}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricCouchdbFileDescriptorOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricCouchdbFileDescriptorOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -241,7 +341,7 @@ func (m *metricCouchdbFileDescriptorOpen) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbFileDescriptorOpen) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbFileDescriptorOpen) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -252,14 +352,14 @@ func (m *metricCouchdbFileDescriptorOpen) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbFileDescriptorOpen(settings MetricSettings) metricCouchdbFileDescriptorOpen {
 	m := metricCouchdbFileDescriptorOpen{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricCouchdbHttpdBulkRequests struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -269,12 +369,12 @@ func (m *metricCouchdbHttpdBulkRequests) init() {
 	m.data.SetName("couchdb.httpd.bulk_requests")
 	m.data.SetDescription("The number of bulk requests.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricCouchdbHttpdBulkRequests) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricCouchdbHttpdBulkRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -292,7 +392,7 @@ func (m *metricCouchdbHttpdBulkRequests) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbHttpdBulkRequests) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbHttpdBulkRequests) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -303,14 +403,14 @@ func (m *metricCouchdbHttpdBulkRequests) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbHttpdBulkRequests(settings MetricSettings) metricCouchdbHttpdBulkRequests {
 	m := metricCouchdbHttpdBulkRequests{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricCouchdbHttpdRequests struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -320,13 +420,13 @@ func (m *metricCouchdbHttpdRequests) init() {
 	m.data.SetName("couchdb.httpd.requests")
 	m.data.SetDescription("The number of HTTP requests by method.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCouchdbHttpdRequests) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, httpMethodAttributeValue string) {
+func (m *metricCouchdbHttpdRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpMethodAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -334,7 +434,7 @@ func (m *metricCouchdbHttpdRequests) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HTTPMethod, pdata.NewAttributeValueString(httpMethodAttributeValue))
+	dp.Attributes().Insert("http.method", pcommon.NewValueString(httpMethodAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -345,7 +445,7 @@ func (m *metricCouchdbHttpdRequests) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbHttpdRequests) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbHttpdRequests) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -356,14 +456,14 @@ func (m *metricCouchdbHttpdRequests) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbHttpdRequests(settings MetricSettings) metricCouchdbHttpdRequests {
 	m := metricCouchdbHttpdRequests{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricCouchdbHttpdResponses struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -373,13 +473,13 @@ func (m *metricCouchdbHttpdResponses) init() {
 	m.data.SetName("couchdb.httpd.responses")
 	m.data.SetDescription("The number of each HTTP status code.")
 	m.data.SetUnit("{responses}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCouchdbHttpdResponses) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, httpStatusCodeAttributeValue string) {
+func (m *metricCouchdbHttpdResponses) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpStatusCodeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -387,7 +487,7 @@ func (m *metricCouchdbHttpdResponses) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HTTPStatusCode, pdata.NewAttributeValueString(httpStatusCodeAttributeValue))
+	dp.Attributes().Insert("http.status_code", pcommon.NewValueString(httpStatusCodeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -398,7 +498,7 @@ func (m *metricCouchdbHttpdResponses) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbHttpdResponses) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbHttpdResponses) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -409,14 +509,14 @@ func (m *metricCouchdbHttpdResponses) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbHttpdResponses(settings MetricSettings) metricCouchdbHttpdResponses {
 	m := metricCouchdbHttpdResponses{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
 type metricCouchdbHttpdViews struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -426,13 +526,13 @@ func (m *metricCouchdbHttpdViews) init() {
 	m.data.SetName("couchdb.httpd.views")
 	m.data.SetDescription("The number of views read.")
 	m.data.SetUnit("{views}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCouchdbHttpdViews) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, viewAttributeValue string) {
+func (m *metricCouchdbHttpdViews) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, viewAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -440,7 +540,7 @@ func (m *metricCouchdbHttpdViews) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.View, pdata.NewAttributeValueString(viewAttributeValue))
+	dp.Attributes().Insert("view", pcommon.NewValueString(viewAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -451,7 +551,7 @@ func (m *metricCouchdbHttpdViews) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbHttpdViews) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbHttpdViews) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -462,7 +562,7 @@ func (m *metricCouchdbHttpdViews) emit(metrics pdata.MetricSlice) {
 func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews {
 	m := metricCouchdbHttpdViews{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
@@ -471,7 +571,11 @@ func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                       pdata.Timestamp
+	startTime                       pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                 int                 // maximum observed number of metrics per resource.
+	resourceCapacity                int                 // maximum observed number of resource attributes.
+	metricsBuffer                   pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                       component.BuildInfo // contains version information
 	metricCouchdbAverageRequestTime metricCouchdbAverageRequestTime
 	metricCouchdbDatabaseOpen       metricCouchdbDatabaseOpen
 	metricCouchdbDatabaseOperations metricCouchdbDatabaseOperations
@@ -486,15 +590,17 @@ type MetricsBuilder struct {
 type metricBuilderOption func(*MetricsBuilder)
 
 // WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
+func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                       pdata.NewTimestampFromTime(time.Now()),
+		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                   pmetric.NewMetrics(),
+		buildInfo:                       buildInfo,
 		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(settings.CouchdbAverageRequestTime),
 		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(settings.CouchdbDatabaseOpen),
 		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(settings.CouchdbDatabaseOperations),
@@ -510,125 +616,130 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricCouchdbAverageRequestTime.emit(metrics)
-	mb.metricCouchdbDatabaseOpen.emit(metrics)
-	mb.metricCouchdbDatabaseOperations.emit(metrics)
-	mb.metricCouchdbFileDescriptorOpen.emit(metrics)
-	mb.metricCouchdbHttpdBulkRequests.emit(metrics)
-	mb.metricCouchdbHttpdRequests.emit(metrics)
-	mb.metricCouchdbHttpdResponses.emit(metrics)
-	mb.metricCouchdbHttpdViews.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithCouchdbNodeName sets provided value as "couchdb.node.name" attribute for current resource.
+func WithCouchdbNodeName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("couchdb.node.name", val)
+	}
+}
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
+	rm := pmetric.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/couchdbreceiver")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricCouchdbAverageRequestTime.emit(ils.Metrics())
+	mb.metricCouchdbDatabaseOpen.emit(ils.Metrics())
+	mb.metricCouchdbDatabaseOperations.emit(ils.Metrics())
+	mb.metricCouchdbFileDescriptorOpen.emit(ils.Metrics())
+	mb.metricCouchdbHttpdBulkRequests.emit(ils.Metrics())
+	mb.metricCouchdbHttpdRequests.emit(ils.Metrics())
+	mb.metricCouchdbHttpdResponses.emit(ils.Metrics())
+	mb.metricCouchdbHttpdViews.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
+	metrics := pmetric.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordCouchdbAverageRequestTimeDataPoint adds a data point to couchdb.average_request_time metric.
-func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbDatabaseOpenDataPoint adds a data point to couchdb.database.open metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbDatabaseOperationsDataPoint adds a data point to couchdb.database.operations metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordCouchdbFileDescriptorOpenDataPoint adds a data point to couchdb.file_descriptor.open metric.
-func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbHttpdBulkRequestsDataPoint adds a data point to couchdb.httpd.bulk_requests metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pdata.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricCouchdbHttpdBulkRequests.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbHttpdRequestsDataPoint adds a data point to couchdb.httpd.requests metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val int64, httpMethodAttributeValue string) {
-	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pcommon.Timestamp, val int64, httpMethodAttributeValue AttributeHTTPMethod) {
+	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue.String())
 }
 
 // RecordCouchdbHttpdResponsesDataPoint adds a data point to couchdb.httpd.responses metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pdata.Timestamp, val int64, httpStatusCodeAttributeValue string) {
+func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pcommon.Timestamp, val int64, httpStatusCodeAttributeValue string) {
 	mb.metricCouchdbHttpdResponses.recordDataPoint(mb.startTime, ts, val, httpStatusCodeAttributeValue)
 }
 
 // RecordCouchdbHttpdViewsDataPoint adds a data point to couchdb.httpd.views metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val int64, viewAttributeValue string) {
-	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue)
+func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pcommon.Timestamp, val int64, viewAttributeValue AttributeView) {
+	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
 func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pdata.NewTimestampFromTime(time.Now())
+	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// CouchdbNodeName (The name of the node.)
-	CouchdbNodeName string
-	// HTTPMethod (An HTTP request method.)
-	HTTPMethod string
-	// HTTPStatusCode (An HTTP status code.)
-	HTTPStatusCode string
-	// Operation (The operation type.)
-	Operation string
-	// View (The view type.)
-	View string
-}{
-	"couchdb.node.name",
-	"http.method",
-	"http.status_code",
-	"operation",
-	"view",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeHTTPMethod are the possible values that the attribute "http.method" can have.
-var AttributeHTTPMethod = struct {
-	COPY    string
-	DELETE  string
-	GET     string
-	HEAD    string
-	OPTIONS string
-	POST    string
-	PUT     string
-}{
-	"COPY",
-	"DELETE",
-	"GET",
-	"HEAD",
-	"OPTIONS",
-	"POST",
-	"PUT",
-}
-
-// AttributeOperation are the possible values that the attribute "operation" can have.
-var AttributeOperation = struct {
-	Writes string
-	Reads  string
-}{
-	"writes",
-	"reads",
-}
-
-// AttributeView are the possible values that the attribute "view" can have.
-var AttributeView = struct {
-	TemporaryViewReads string
-	ViewReads          string
-}{
-	"temporary_view_reads",
-	"view_reads",
 }

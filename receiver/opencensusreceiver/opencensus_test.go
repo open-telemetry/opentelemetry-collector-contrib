@@ -14,6 +14,7 @@
 
 //lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
 
+// nolint:errcheck
 package opencensusreceiver
 
 import (
@@ -44,8 +45,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -53,7 +55,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
@@ -662,7 +664,7 @@ func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeTraces stores traces to this sink.
-func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 
@@ -674,7 +676,7 @@ func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces
 }
 
 // ConsumeMetrics stores metrics to this sink.
-func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 

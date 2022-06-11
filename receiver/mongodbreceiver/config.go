@@ -17,22 +17,28 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Hosts                                   []confignet.NetAddr `mapstructure:"hosts"`
-	Username                                string              `mapstructure:"username"`
-	Password                                string              `mapstructure:"password"`
-	ReplicaSet                              string              `mapstructure:"replica_set,omitempty"`
-	Timeout                                 time.Duration       `mapstructure:"timeout"`
+	// Metrics defines which metrics to enable for the scraper
+	Metrics    metadata.MetricsSettings `mapstructure:"metrics"`
+	Hosts      []confignet.NetAddr      `mapstructure:"hosts"`
+	Username   string                   `mapstructure:"username"`
+	Password   string                   `mapstructure:"password"`
+	ReplicaSet string                   `mapstructure:"replica_set,omitempty"`
+	Timeout    time.Duration            `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {
@@ -58,4 +64,40 @@ func (c *Config) Validate() error {
 	}
 
 	return err
+}
+
+func (c *Config) ClientOptions() *options.ClientOptions {
+	clientOptions := options.Client()
+	connString := fmt.Sprintf("mongodb://%s", strings.Join(c.hostlist(), ","))
+	clientOptions.ApplyURI(connString)
+
+	if c.Timeout > 0 {
+		clientOptions.SetConnectTimeout(c.Timeout)
+	}
+
+	tlsConfig, err := c.LoadTLSConfig()
+	if err != nil && tlsConfig != nil {
+		clientOptions.SetTLSConfig(tlsConfig)
+	}
+
+	if c.ReplicaSet != "" {
+		clientOptions.SetReplicaSet(c.ReplicaSet)
+	}
+
+	if c.Username != "" && c.Password != "" {
+		clientOptions.SetAuth(options.Credential{
+			Username: c.Username,
+			Password: c.Password,
+		})
+	}
+
+	return clientOptions
+}
+
+func (c *Config) hostlist() []string {
+	hosts := []string{}
+	for _, ep := range c.Hosts {
+		hosts = append(hosts, ep.Endpoint)
+	}
+	return hosts
 }

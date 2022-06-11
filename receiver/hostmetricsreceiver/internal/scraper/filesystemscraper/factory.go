@@ -17,10 +17,11 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
 // This file implements Factory for FileSystem scraper.
@@ -41,20 +42,23 @@ func (f *Factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
-	return &Config{}
+	return &Config{
+		Metrics: metadata.DefaultMetricsSettings(),
+	}
 }
 
 // CreateMetricsScraper creates a scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
-	_ *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config internal.Config,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
-	s, err := newFileSystemScraper(ctx, cfg)
+	s, err := newFileSystemScraper(ctx, settings, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(TypeStr, s.Scrape)
+	return scraperhelper.NewScraper(
+		TypeStr, s.scrape, scraperhelper.WithStart(s.start))
 }

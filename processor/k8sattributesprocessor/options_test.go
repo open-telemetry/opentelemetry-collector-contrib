@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package k8sattributesprocessor
 
 import (
@@ -21,44 +22,44 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 func TestWithAPIConfig(t *testing.T) {
 	p := &kubernetesprocessor{}
 	apiConfig := k8sconfig.APIConfig{AuthType: "test-auth-type"}
-	err := WithAPIConfig(apiConfig)(p)
+	err := withAPIConfig(apiConfig)(p)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "invalid authType for kubernetes: test-auth-type")
 
 	apiConfig = k8sconfig.APIConfig{AuthType: "kubeConfig"}
-	err = WithAPIConfig(apiConfig)(p)
+	err = withAPIConfig(apiConfig)(p)
 	assert.NoError(t, err)
 	assert.Equal(t, apiConfig, p.apiConfig)
 }
 
 func TestWithFilterNamespace(t *testing.T) {
 	p := &kubernetesprocessor{}
-	assert.NoError(t, WithFilterNamespace("testns")(p))
+	assert.NoError(t, withFilterNamespace("testns")(p))
 	assert.Equal(t, p.filters.Namespace, "testns")
 }
 
 func TestWithFilterNode(t *testing.T) {
 	p := &kubernetesprocessor{}
-	assert.NoError(t, WithFilterNode("testnode", "")(p))
+	assert.NoError(t, withFilterNode("testnode", "")(p))
 	assert.Equal(t, p.filters.Node, "testnode")
 
 	p = &kubernetesprocessor{}
-	assert.NoError(t, WithFilterNode("testnode", "NODE_NAME")(p))
+	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
 	assert.Equal(t, p.filters.Node, "")
 
 	os.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}
-	assert.NoError(t, WithFilterNode("testnode", "NODE_NAME")(p))
+	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
 	assert.Equal(t, p.filters.Node, "nodefromenv")
 
 	os.Unsetenv("NODE_NAME")
@@ -66,7 +67,7 @@ func TestWithFilterNode(t *testing.T) {
 
 func TestWithPassthrough(t *testing.T) {
 	p := &kubernetesprocessor{}
-	assert.NoError(t, WithPassthrough()(p))
+	assert.NoError(t, withPassthrough()(p))
 	assert.True(t, p.passthroughMode)
 }
 
@@ -174,8 +175,8 @@ func TestWithExtractAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := WithExtractAnnotations(tt.args...)
-			err := option(p)
+			opt := withExtractAnnotations(tt.args...)
+			err := opt(p)
 			if tt.wantError == "" {
 				assert.NoError(t, err)
 			} else {
@@ -293,8 +294,8 @@ func TestWithExtractLabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := WithExtractLabels(tt.args...)
-			err := option(p)
+			opt := withExtractLabels(tt.args...)
+			err := opt(p)
 			if tt.wantError == "" {
 				assert.NoError(t, err)
 			} else {
@@ -312,24 +313,22 @@ func TestWithExtractLabels(t *testing.T) {
 
 func TestWithExtractMetadata(t *testing.T) {
 	p := &kubernetesprocessor{}
-	assert.NoError(t, WithExtractMetadata()(p))
+	assert.NoError(t, withExtractMetadata()(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.True(t, p.rules.StartTime)
 	assert.True(t, p.rules.Deployment)
-	assert.True(t, p.rules.Cluster)
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
-	err := WithExtractMetadata("randomfield")(p)
+	err := withExtractMetadata("randomfield")(p)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
 
 	p = &kubernetesprocessor{}
-	assert.NoError(t, WithExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
+	assert.NoError(t, withExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
 	assert.True(t, p.rules.Namespace)
-	assert.False(t, p.rules.Cluster)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.False(t, p.rules.StartTime)
@@ -451,8 +450,8 @@ func TestWithFilterLabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := WithFilterLabels(tt.args...)
-			err := option(p)
+			opt := withFilterLabels(tt.args...)
+			err := opt(p)
 			if tt.error == "" {
 				assert.NoError(t, err)
 			} else {
@@ -583,8 +582,8 @@ func TestWithFilterFields(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := WithFilterFields(tt.args...)
-			err := option(p)
+			opt := withFilterFields(tt.args...)
+			err := opt(p)
 			if tt.error == "" {
 				assert.NoError(t, err)
 			} else {
@@ -673,19 +672,20 @@ func Test_extractFieldRules(t *testing.T) {
 			true,
 		},
 		{
-			"match-keyregex",
+			"keyregex-capture-group",
 			args{"labels", []FieldExtractConfig{
 				{
-					TagName:  "name",
-					KeyRegex: "key*",
+					TagName:  "$0-$1-$2",
+					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "name",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromPod,
+					Name:                 "$0-$1-$2",
+					KeyRegex:             regexp.MustCompile("(key)(.*)"),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
 				},
 			},
 			false,
@@ -735,8 +735,8 @@ func TestWithExtractPodAssociation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := WithExtractPodAssociations(tt.args...)
-			option(p)
+			opt := withExtractPodAssociations(tt.args...)
+			opt(p)
 			assert.Equal(t, tt.want, p.podAssociations)
 		})
 	}
@@ -777,8 +777,8 @@ func TestWithExcludes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := WithExcludes(tt.args)
-			option(p)
+			opt := withExcludes(tt.args)
+			opt(p)
 			assert.Equal(t, tt.want, p.podIgnore)
 		})
 	}

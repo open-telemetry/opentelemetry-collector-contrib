@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package stores // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 
 import (
@@ -109,9 +110,10 @@ type PodStore struct {
 	prefFullPodName  bool
 	logger           *zap.Logger
 	sync.Mutex
+	addFullPodNameMetricLabel bool
 }
 
-func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodStore, error) {
+func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*PodStore, error) {
 	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
 	if err != nil {
 		return nil, err
@@ -128,13 +130,14 @@ func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodS
 	}
 
 	podStore := &PodStore{
-		cache:            newMapWithExpiry(podsExpiry),
-		prevMeasurements: make(map[string]*mapWithExpiry),
-		podClient:        podClient,
-		nodeInfo:         newNodeInfo(logger),
-		prefFullPodName:  prefFullPodName,
-		k8sClient:        k8sClient,
-		logger:           logger,
+		cache:                     newMapWithExpiry(podsExpiry),
+		prevMeasurements:          make(map[string]*mapWithExpiry),
+		podClient:                 podClient,
+		nodeInfo:                  newNodeInfo(logger),
+		prefFullPodName:           prefFullPodName,
+		k8sClient:                 k8sClient,
+		logger:                    logger,
+		addFullPodNameMetricLabel: addFullPodNameMetricLabel,
 	}
 
 	return podStore, nil
@@ -614,6 +617,9 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 	}
 
 	metric.AddTag(ci.PodNameKey, podName)
+	if p.addFullPodNameMetricLabel {
+		metric.AddTag(ci.FullPodNameKey, pod.Name)
+	}
 }
 
 func addContainerCount(metric CIMetric, pod *corev1.Pod) {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package translator
 
 import (
@@ -20,8 +21,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +37,7 @@ func TestWriterPoolBasic(t *testing.T) {
 	assert.NotNil(t, w.encoder)
 	assert.Equal(t, size, w.buffer.Cap())
 	assert.Equal(t, 0, w.buffer.Len())
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
 	if err := w.Encode(*segment); err != nil {
 		assert.Fail(t, "invalid json")
@@ -53,7 +55,7 @@ func BenchmarkWithoutPool(b *testing.B) {
 		b.StartTimer()
 		buffer := bytes.NewBuffer(make([]byte, 0, 2048))
 		encoder := json.NewEncoder(buffer)
-		segment, _ := MakeSegment(span, pdata.NewResource(), nil, false)
+		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false)
 		encoder.Encode(*segment)
 		logger.Info(buffer.String())
 	}
@@ -67,13 +69,13 @@ func BenchmarkWithPool(b *testing.B) {
 		span := constructWriterPoolSpan()
 		b.StartTimer()
 		w := wp.borrow()
-		segment, _ := MakeSegment(span, pdata.NewResource(), nil, false)
+		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false)
 		w.Encode(*segment)
 		logger.Info(w.String())
 	}
 }
 
-func constructWriterPoolSpan() pdata.Span {
+func constructWriterPoolSpan() ptrace.Span {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"

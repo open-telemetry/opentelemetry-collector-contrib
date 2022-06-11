@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestUdp(t *testing.T) {
@@ -61,7 +61,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
-	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 	require.Equal(t, logs.Len(), numLogs)
 
 	expectedLogs := make([]string, numLogs)
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -91,11 +91,11 @@ func TestLoadConfig(t *testing.T) {
 
 func testdataConfigYamlAsMap() *UDPLogConfig {
 	return &UDPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"listen_address": "0.0.0.0:29018",
 		},
 	}
@@ -105,11 +105,11 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &UDPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"max_buffer_size": "0.1.0.1-",
 		},
 	}

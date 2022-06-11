@@ -15,6 +15,11 @@ below both values are being pulled from the environment.
 - `public_key`
 - `private_key`
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
+- `retry_on_failure`
+  - `enabled` (default true)
+  - `initial_interval` (default 5s)
+  - `max_interval` (default 30s)
+  - `max_elapsed_time` (default 5m)
 
 Examples:
 

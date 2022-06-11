@@ -21,9 +21,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // HumioLink represents a relation between two spans
@@ -50,20 +50,20 @@ type HumioSpan struct {
 }
 
 type humioTracesExporter struct {
-	cfg    *Config
-	logger *zap.Logger
-	client exporterClient
-	wg     sync.WaitGroup
+	cfg      *Config
+	settings component.TelemetrySettings
+	client   exporterClient
+	wg       sync.WaitGroup
 
 	// Needed to enable current unit tests with the latest changes from core collector.
 	getClient clientGetter
 }
 
-type clientGetter func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error)
+type clientGetter func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error)
 
-func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
-	gc := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
-		client, err := newHumioClient(cfg, logger, host)
+func newTracesExporter(cfg *Config, settings component.TelemetrySettings) *humioTracesExporter {
+	gc := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
+		client, err := newHumioClient(cfg, settings, host)
 		if err != nil {
 			return nil, err
 		}
@@ -73,20 +73,20 @@ func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
 
 	return &humioTracesExporter{
 		cfg:       cfg,
-		logger:    logger,
+		settings:  settings,
 		getClient: gc,
 	}
 }
 
-func newTracesExporterWithClientGetter(cfg *Config, logger *zap.Logger, cg clientGetter) *humioTracesExporter {
+func newTracesExporterWithClientGetter(cfg *Config, settings component.TelemetrySettings, cg clientGetter) *humioTracesExporter {
 	return &humioTracesExporter{
 		cfg:       cfg,
-		logger:    logger,
+		settings:  settings,
 		getClient: cg,
 	}
 }
 
-func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *humioTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	e.wg.Add(1)
 	defer e.wg.Done()
 
@@ -115,9 +115,9 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 	return conversionErr
 }
 
-func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStructuredEvents, error) {
+func (e *humioTracesExporter) tracesToHumioEvents(td ptrace.Traces) ([]*HumioStructuredEvents, error) {
 	organizer := newTagOrganizer(e.cfg.Tag, tagFromSpan)
-	var droppedTraces []pdata.ResourceSpans
+	var droppedTraces []ptrace.ResourceSpans
 
 	resSpans := td.ResourceSpans()
 	for i := 0; i < resSpans.Len(); i++ {
@@ -126,14 +126,14 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 
 		if _, ok := r.Attributes().Get(conventions.AttributeServiceName); !ok {
 			droppedTraces = append(droppedTraces, resSpan)
-			e.logger.Error("skipping export of spans for resource with missing service name, which is required for the Humio exporter")
+			e.settings.Logger.Error("skipping export of spans for resource with missing service name, which is required for the Humio exporter")
 			continue
 		}
 
-		instSpans := resSpan.InstrumentationLibrarySpans()
+		instSpans := resSpan.ScopeSpans()
 		for j := 0; j < instSpans.Len(); j++ {
 			instSpan := instSpans.At(j)
-			lib := instSpan.InstrumentationLibrary()
+			lib := instSpan.Scope()
 
 			otelSpans := instSpan.Spans()
 			for k := 0; k < otelSpans.Len(); k++ {
@@ -146,7 +146,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	results := organizer.asEvents()
 
 	if len(droppedTraces) > 0 {
-		dropped := pdata.NewTraces()
+		dropped := ptrace.NewTraces()
 		for _, t := range droppedTraces {
 			tgt := dropped.ResourceSpans().AppendEmpty()
 			t.CopyTo(tgt)
@@ -161,13 +161,13 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	return results, nil
 }
 
-func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.InstrumentationLibrary, res pdata.Resource) *HumioStructuredEvent {
+func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.InstrumentationScope, res pcommon.Resource) *HumioStructuredEvent {
 	attr := toHumioAttributes(span.Attributes(), res.Attributes())
 	if instName := inst.Name(); instName != "" {
-		attr[conventions.InstrumentationLibraryName] = instName
+		attr[conventions.OtelLibraryName] = instName
 	}
 	if instVer := inst.Version(); instVer != "" {
-		attr[conventions.InstrumentationLibraryVersion] = instVer
+		attr[conventions.OtelLibraryVersion] = instVer
 	}
 
 	serviceName := ""
@@ -197,7 +197,7 @@ func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.Instr
 	}
 }
 
-func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
+func toHumioLinks(pLinks ptrace.SpanLinkSlice) []*HumioLink {
 	links := make([]*HumioLink, 0, pLinks.Len())
 	for i := 0; i < pLinks.Len(); i++ {
 		link := pLinks.At(i)
@@ -210,10 +210,10 @@ func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
 	return links
 }
 
-func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
+func toHumioAttributes(attrMaps ...pcommon.Map) map[string]interface{} {
 	attr := make(map[string]interface{})
 	for _, attrMap := range attrMaps {
-		attrMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attrMap.Range(func(k string, v pcommon.Value) bool {
 			attr[k] = toHumioAttributeValue(v)
 			return true
 		})
@@ -221,19 +221,19 @@ func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
 	return attr
 }
 
-func toHumioAttributeValue(rawVal pdata.AttributeValue) interface{} {
+func toHumioAttributeValue(rawVal pcommon.Value) interface{} {
 	switch rawVal.Type() {
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		return rawVal.StringVal()
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return rawVal.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return rawVal.DoubleVal()
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return rawVal.BoolVal()
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
-	case pdata.AttributeValueTypeArray:
+	case pcommon.ValueTypeSlice:
 		arrVal := rawVal.SliceVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
@@ -261,7 +261,7 @@ func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
 
 // start starts the exporter
 func (e *humioTracesExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.getClient(e.cfg, e.logger, host)
+	client, err := e.getClient(e.cfg, e.settings, host)
 	if err != nil {
 		return err
 	}

@@ -20,23 +20,25 @@ import (
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
 	tests := []struct {
 		name string
-		td   pdata.Traces
+		td   ptrace.Traces
 		zs   []*zipkinmodel.SpanModel
 		err  error
 	}{
 		{
 			name: "empty",
-			td:   pdata.NewTraces(),
+			td:   ptrace.NewTraces(),
 			err:  nil,
 		},
 		{
@@ -58,15 +60,27 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			err:  nil,
 		},
 		{
-			name: "oneSpanNoResrouce",
+			name: "oneSpanNoResource",
 			td:   testdata.GenerateTracesOneSpanNoResource(),
 			zs:   make([]*zipkinmodel.SpanModel, 0),
 			err:  errors.New("TraceID is invalid"),
 		},
 		{
-			name: "oneSpan",
-			td:   generateTraceOneSpanOneTraceID(),
-			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan()},
+			name: "oneSpanOk",
+			td:   generateTraceOneSpanOneTraceID(ptrace.StatusCodeOk),
+			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan(ptrace.StatusCodeOk)},
+			err:  nil,
+		},
+		{
+			name: "oneSpanError",
+			td:   generateTraceOneSpanOneTraceID(ptrace.StatusCodeError),
+			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan(ptrace.StatusCodeError)},
+			err:  nil,
+		},
+		{
+			name: "oneSpanUnset",
+			td:   generateTraceOneSpanOneTraceID(ptrace.StatusCodeUnset),
+			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan(ptrace.StatusCodeUnset)},
 			err:  nil,
 		},
 	}
@@ -100,7 +114,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 
 		// check that all timestamps converted back and forth without change
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
-			instSpans := td.ResourceSpans().At(i).InstrumentationLibrarySpans()
+			instSpans := td.ResourceSpans().At(i).ScopeSpans()
 			for j := 0; j < instSpans.Len(); j++ {
 				spans := instSpans.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -117,9 +131,9 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	}
 }
 
-func findSpanByID(rs pdata.ResourceSpansSlice, spanID pdata.SpanID) *pdata.Span {
+func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) *ptrace.Span {
 	for i := 0; i < rs.Len(); i++ {
-		instSpans := rs.At(i).InstrumentationLibrarySpans()
+		instSpans := rs.At(i).ScopeSpans()
 		for j := 0; j < instSpans.Len(); j++ {
 			spans := instSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -133,17 +147,44 @@ func findSpanByID(rs pdata.ResourceSpansSlice, spanID pdata.SpanID) *pdata.Span 
 	return nil
 }
 
-func generateTraceOneSpanOneTraceID() pdata.Traces {
+func generateTraceOneSpanOneTraceID(status ptrace.StatusCode) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpan()
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
-	span.SetTraceID(pdata.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	span.SetTraceID(pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
+	switch status {
+	case ptrace.StatusCodeError:
+		span.Status().SetCode(ptrace.StatusCodeError)
+		span.Status().SetMessage("error message")
+	case ptrace.StatusCodeOk:
+		span.Status().SetCode(ptrace.StatusCodeOk)
+		span.Status().SetMessage("")
+	default:
+		span.Status().SetCode(ptrace.StatusCodeUnset)
+		span.Status().SetMessage("")
+	}
 	return td
 }
 
-func zipkinOneSpan() *zipkinmodel.SpanModel {
+func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 	trueBool := true
+
+	var spanErr error
+	spanTags := map[string]string{
+		"resource-attr": "resource-attr-val-1",
+	}
+
+	switch status {
+	case ptrace.StatusCodeOk:
+		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_OK"
+	case ptrace.StatusCodeError:
+		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_ERROR"
+		spanTags[conventions.OtelStatusDescription] = "error message"
+		spanTags[tracetranslator.TagError] = "true"
+		spanErr = errors.New("error message")
+	}
+
 	return &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
 			TraceID:  zipkinmodel.TraceID{High: 72623859790382856, Low: 651345242494996240},
@@ -151,7 +192,7 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 			ParentID: nil,
 			Debug:    false,
 			Sampled:  &trueBool,
-			Err:      errors.New("status-cancelled"),
+			Err:      spanErr,
 		},
 		LocalEndpoint: &zipkinmodel.Endpoint{
 			ServiceName: "OTLPResourceNoServiceName",
@@ -167,11 +208,7 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 				Value:     "event|{}|2",
 			},
 		},
-		Tags: map[string]string{
-			"resource-attr":                   "resource-attr-val-1",
-			conventions.OtelStatusCode:        "STATUS_CODE_ERROR",
-			conventions.OtelStatusDescription: "status-cancelled",
-		},
+		Tags:      spanTags,
 		Name:      "operationA",
 		Timestamp: testdata.TestSpanStartTime,
 		Duration:  1000000468,

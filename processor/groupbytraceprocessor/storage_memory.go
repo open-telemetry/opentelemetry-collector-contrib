@@ -20,12 +20,13 @@ import (
 	"time"
 
 	"go.opencensus.io/stats"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type memoryStorage struct {
 	sync.RWMutex
-	content                   map[pdata.TraceID][]pdata.ResourceSpans
+	content                   map[pcommon.TraceID][]ptrace.ResourceSpans
 	stopped                   bool
 	stoppedLock               sync.RWMutex
 	metricsCollectionInterval time.Duration
@@ -35,19 +36,19 @@ var _ storage = (*memoryStorage)(nil)
 
 func newMemoryStorage() *memoryStorage {
 	return &memoryStorage{
-		content:                   make(map[pdata.TraceID][]pdata.ResourceSpans),
+		content:                   make(map[pcommon.TraceID][]ptrace.ResourceSpans),
 		metricsCollectionInterval: time.Second,
 	}
 }
 
-func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, td pdata.Traces) error {
+func (st *memoryStorage) createOrAppend(traceID pcommon.TraceID, td ptrace.Traces) error {
 	st.Lock()
 	defer st.Unlock()
 
 	// getting zero value is fine
 	content := st.content[traceID]
 
-	newRss := pdata.NewResourceSpansSlice()
+	newRss := ptrace.NewResourceSpansSlice()
 	td.ResourceSpans().CopyTo(newRss)
 	for i := 0; i < newRss.Len(); i++ {
 		content = append(content, newRss.At(i))
@@ -56,7 +57,7 @@ func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, td pdata.Traces) 
 
 	return nil
 }
-func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
+func (st *memoryStorage) get(traceID pcommon.TraceID) ([]ptrace.ResourceSpans, error) {
 	st.RLock()
 	rss, ok := st.content[traceID]
 	st.RUnlock()
@@ -64,9 +65,9 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 		return nil, nil
 	}
 
-	var result []pdata.ResourceSpans
+	var result []ptrace.ResourceSpans
 	for _, rs := range rss {
-		newRS := pdata.NewResourceSpans()
+		newRS := ptrace.NewResourceSpans()
 		rs.CopyTo(newRS)
 		result = append(result, newRS)
 	}
@@ -76,7 +77,7 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 
 // delete will return a reference to a ResourceSpans. Changes to the returned object may not be applied
 // to the version in the storage.
-func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
+func (st *memoryStorage) delete(traceID pcommon.TraceID) ([]ptrace.ResourceSpans, error) {
 	st.Lock()
 	defer st.Unlock()
 

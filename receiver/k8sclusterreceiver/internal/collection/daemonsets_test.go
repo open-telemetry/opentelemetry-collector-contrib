@@ -40,30 +40,28 @@ func TestDaemonsetMetrics(t *testing.T) {
 			"k8s.daemonset.uid":  "test-daemonset-1-uid",
 			"k8s.daemonset.name": "test-daemonset-1",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.metrics[0], "k8s.daemonset.current_scheduled_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.daemonset.current_scheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, rm.metrics[1], "k8s.daemonset.desired_scheduled_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.daemonset.desired_scheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, rm.metrics[2], "k8s.daemonset.misscheduled_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[2], "k8s.daemonset.misscheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, rm.metrics[3], "k8s.daemonset.ready_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[3], "k8s.daemonset.ready_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
 func newDaemonset(id string) *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-daemonset-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-daemonset-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-daemonset-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-daemonset-" + id + "-uid"),
 		},
 		Status: appsv1.DaemonSetStatus{
 			CurrentNumberScheduled: 3,

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
@@ -31,8 +32,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -250,16 +252,16 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	sc := bufio.NewScanner(bodyReader)
 
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	resourceCustomizer := r.createResourceCustomizer(req)
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
 	}
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
 
 	for sc.Scan() {
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		logLine := sc.Text()
 		logRecord.Body().SetStringVal(logLine)
 	}
@@ -268,10 +270,10 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ill.Logs().Len(), consumerErr)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, sl.LogRecords().Len(), consumerErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
-		r.obsrecv.EndLogsOp(ctx, typeStr, ill.Logs().Len(), nil)
+		r.obsrecv.EndLogsOp(ctx, typeStr, sl.LogRecords().Len(), nil)
 	}
 }
 
@@ -374,12 +376,12 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 	}
 }
 
-func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pdata.Resource) {
+func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
 	if r.config.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
-			return func(resource pdata.Resource) {
+			return func(resource pcommon.Resource) {
 				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}

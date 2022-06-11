@@ -15,7 +15,7 @@
 package elasticsearchreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -151,7 +151,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -166,6 +166,9 @@ func TestLoadConfig(t *testing.T) {
 	advancedRecv := cfg.Receivers[config.NewComponentID(typeStr)]
 	expectedAdvancedRecv := factory.CreateDefaultConfig().(*Config)
 
+	expectedAdvancedRecv.Metrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
+	expectedAdvancedRecv.Nodes = []string{"_local"}
+	expectedAdvancedRecv.SkipClusterMetrics = true
 	expectedAdvancedRecv.Username = "otel"
 	expectedAdvancedRecv.Password = "password"
 	expectedAdvancedRecv.Endpoint = "http://example.com:9200"

@@ -21,3 +21,11 @@ func String(v string) *string {
 	}
 	return &v
 }
+
+// StringOrEmpty returns empty string if the input is nil, otherwise returns the string itself.
+func StringOrEmpty(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}

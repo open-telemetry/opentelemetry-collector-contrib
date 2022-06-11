@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -112,7 +113,7 @@ func TestCantResolve(t *testing.T) {
 	err = res.start(context.Background())
 
 	// verify
-	assert.Equal(t, expectedErr, err)
+	assert.NoError(t, err)
 }
 
 func TestOnChange(t *testing.T) {

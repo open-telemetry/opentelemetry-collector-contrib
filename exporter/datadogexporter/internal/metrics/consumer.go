@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 )
 
 var _ translator.Consumer = (*Consumer)(nil)
@@ -88,32 +88,28 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo) ([]datad
 // ConsumeTimeSeries implements the translator.Consumer interface.
 func (c *Consumer) ConsumeTimeSeries(
 	_ context.Context,
-	name string,
+	dims *translator.Dimensions,
 	typ translator.MetricDataType,
 	timestamp uint64,
 	value float64,
-	tags []string,
-	host string,
 ) {
 	dt := c.toDataType(typ)
-	met := NewMetric(name, dt, timestamp, value, tags)
-	met.SetHost(host)
+	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
+	met.SetHost(dims.Host())
 	c.ms = append(c.ms, met)
 }
 
 // ConsumeSketch implements the translator.Consumer interface.
 func (c *Consumer) ConsumeSketch(
 	_ context.Context,
-	name string,
+	dims *translator.Dimensions,
 	timestamp uint64,
 	sketch *quantile.Sketch,
-	tags []string,
-	host string,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{
-		Name:     name,
-		Tags:     tags,
-		Host:     host,
+		Name:     dims.Name(),
+		Tags:     dims.Tags(),
+		Host:     dims.Host(),
 		Interval: 1,
 		Points: []sketches.SketchPoint{{
 			Ts:     int64(timestamp / 1e9),

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -30,19 +30,17 @@ import (
 func TestScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	scraper := newMemcachedScraper(zap.NewNop(), cfg)
+	scraper := newMemcachedScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	scraper.newClient = func(endpoint string, timeout time.Duration) (client, error) {
 		return &fakeClient{}, nil
 	}
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "expected_metrics", "test_scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }

@@ -22,7 +22,9 @@ import (
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type tracesExporter struct {
@@ -30,6 +32,7 @@ type tracesExporter struct {
 	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelTracesToLineProtocol
+	settings  component.TelemetrySettings
 }
 
 func newTracesExporter(config *Config, params component.ExporterCreateSettings) *tracesExporter {
@@ -40,10 +43,11 @@ func newTracesExporter(config *Config, params component.ExporterCreateSettings) 
 		logger:    logger,
 		cfg:       config,
 		converter: converter,
+		settings:  params.TelemetrySettings,
 	}
 }
 
-func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	batch := e.writer.newBatch()
 
 	err := e.converter.WriteTraces(ctx, td, batch)
@@ -56,7 +60,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 // start starts the traces exporter
 func (e *tracesExporter) start(_ context.Context, host component.Host) (err error) {
 
-	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -70,6 +74,7 @@ type metricsExporter struct {
 	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelMetricsToLineProtocol
+	settings  component.TelemetrySettings
 }
 
 var metricsSchemata = map[string]common.MetricsSchema{
@@ -93,10 +98,11 @@ func newMetricsExporter(config *Config, params component.ExporterCreateSettings)
 		logger:    logger,
 		cfg:       config,
 		converter: converter,
+		settings:  params.TelemetrySettings,
 	}, nil
 }
 
-func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	batch := e.writer.newBatch()
 
 	err := e.converter.WriteMetrics(ctx, md, batch)
@@ -109,7 +115,7 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 // start starts the metrics exporter
 func (e *metricsExporter) start(_ context.Context, host component.Host) (err error) {
 
-	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -123,6 +129,7 @@ type logsExporter struct {
 	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelLogsToLineProtocol
+	settings  component.TelemetrySettings
 }
 
 func newLogsExporter(config *Config, params component.ExporterCreateSettings) *logsExporter {
@@ -133,10 +140,11 @@ func newLogsExporter(config *Config, params component.ExporterCreateSettings) *l
 		logger:    logger,
 		converter: converter,
 		cfg:       config,
+		settings:  params.TelemetrySettings,
 	}
 }
 
-func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	batch := e.writer.newBatch()
 
 	err := e.converter.WriteLogs(ctx, ld, batch)
@@ -148,7 +156,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 
 // start starts the logs exporter
 func (e *logsExporter) start(_ context.Context, host component.Host) (err error) {
-	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host, e.settings)
 	if err != nil {
 		return err
 	}

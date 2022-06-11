@@ -28,12 +28,11 @@ import (
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
@@ -60,7 +59,7 @@ func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Con
 	prevPts.Start()
 
 	return &exporter{
-		logger:            params.Logger,
+		settings:          params.TelemetrySettings,
 		cfg:               cfg,
 		defaultDimensions: defaultDimensions,
 		staticDimensions:  staticDimensions,
@@ -70,7 +69,7 @@ func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Con
 
 // exporter forwards metrics to a Dynatrace agent
 type exporter struct {
-	logger     *zap.Logger
+	settings   component.TelemetrySettings
 	cfg        *config.Config
 	client     *http.Client
 	isDisabled bool
@@ -93,16 +92,16 @@ func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
 	return dimensions.NewNormalizedDimensionList(dims...)
 }
 
-func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (e *exporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	if e.isDisabled {
 		return nil
 	}
 
 	lines := e.serializeMetrics(md)
-	ce := e.logger.Check(zapcore.DebugLevel, "Serialization complete")
-	if ce != nil {
-		ce.Write(zap.Int("DataPoints", md.DataPointCount()), zap.Int("Lines", len(lines)))
-	}
+	e.settings.Logger.Sugar().Debugw("Serialization complete",
+		"DataPoints", md.DataPointCount(),
+		"lines", len(lines),
+	)
 
 	// If request is empty string, there are no serializable metrics in the batch.
 	// This can happen if all metric names are invalid
@@ -119,30 +118,38 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	return nil
 }
 
-func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
+func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 	lines := make([]string, 0)
 
 	resourceMetrics := md.ResourceMetrics()
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
-		libraryMetrics := resourceMetric.InstrumentationLibraryMetrics()
+		libraryMetrics := resourceMetric.ScopeMetrics()
 		for j := 0; j < libraryMetrics.Len(); j++ {
 			libraryMetric := libraryMetrics.At(j)
 			metrics := libraryMetric.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 
-				metricLines, err := serialization.SerializeMetric(e.logger, e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
+				metricLines, err := serialization.SerializeMetric(e.settings.Logger, e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
 
 				if err != nil {
-					e.logger.Sugar().Errorf("failed to serialize %s %s: %s", metric.DataType().String(), metric.Name(), err.Error())
+					e.settings.Logger.Sugar().Warnw("failed to serialize",
+						"datatype", metric.DataType().String(),
+						"name", metric.Name(),
+						"error", err,
+					)
 				}
 
 				if len(metricLines) > 0 {
 					lines = append(lines, metricLines...)
 				}
-				e.logger.Debug(fmt.Sprintf("Serialized %s %s - %d lines", metric.DataType().String(), metric.Name(), len(metricLines)))
+				e.settings.Logger.Sugar().Debugw("Serialized metric data",
+					"metric-type", metric.DataType().String(),
+					"metric-name", metric.Name(),
+					"data-len", len(metricLines),
+				)
 			}
 		}
 	}
@@ -155,10 +162,10 @@ var lastLog int64
 // send sends a serialized metric batch to Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) error {
-	e.logger.Sugar().Debugf("Exporting %d lines", len(lines))
+	e.settings.Logger.Debug("Exporting", zap.Int("lines", len(lines)))
 
 	if now := time.Now().Unix(); len(lines) > apiconstants.GetPayloadLinesLimit() && now-lastLog > 60 {
-		e.logger.Warn(fmt.Sprintf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", apiconstants.GetPayloadLinesLimit()))
+		e.settings.Logger.Sugar().Warnf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", apiconstants.GetPayloadLinesLimit())
 		lastLog = time.Now().Unix()
 	}
 
@@ -182,7 +189,10 @@ func (e *exporter) send(ctx context.Context, lines []string) error {
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	message := strings.Join(lines, "\n")
-	e.logger.Debug("SendBatch", zap.Int("lines", len(lines)), zap.String("endpoint", e.cfg.Endpoint))
+	e.settings.Logger.Sugar().Debugw("SendBatch",
+		"lines", len(lines),
+		"endpoint", e.cfg.Endpoint,
+	)
 
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 
@@ -190,11 +200,12 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	e.logger.Debug("Sending request")
+	e.settings.Logger.Debug("Sending request")
 	resp, err := e.client.Do(req)
 
 	if err != nil {
-		return err
+		e.settings.Logger.Error("failed to send request", zap.Error(err))
+		return fmt.Errorf("sendBatch: %w", err)
 	}
 
 	defer resp.Body.Close()
@@ -209,43 +220,48 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.logger.Error(fmt.Sprintf("failed to read response: %s", err.Error()))
+			e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
 			return nil
 		}
 
 		responseBody := metricsResponse{}
 		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.logger.Error("failed to unmarshal response", zap.Error(err), zap.ByteString("body", bodyBytes))
+			bodyStr := string(bodyBytes)
+			bodyStr = truncateString(bodyStr, 1000)
+			e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
 			return nil
 		}
 
-		e.logger.Debug(fmt.Sprintf("Accepted %d lines", responseBody.Ok))
-		e.logger.Error(fmt.Sprintf("Rejected %d lines", responseBody.Invalid))
-
-		if responseBody.Error.Message != "" {
-			e.logger.Error(fmt.Sprintf("Error from Dynatrace: %s", responseBody.Error.Message))
-		}
+		e.settings.Logger.Sugar().Warnw("Response from Dynatrace",
+			"accepted-lines", responseBody.Ok,
+			"rejected-lines", responseBody.Invalid,
+			"error-message", responseBody.Error.Message,
+			"status", resp.Status,
+		)
 
 		for _, line := range responseBody.Error.InvalidLines {
 			// Enabled debug logging to see which lines were dropped
 			if line.Line >= 0 && line.Line < len(lines) {
-				e.logger.Debug(fmt.Sprintf("rejected line %3d: [%s] %s", line.Line, line.Error, lines[line.Line]))
+				e.settings.Logger.Sugar().Debugf("rejected line %3d: [%s] %s", line.Line, line.Error, lines[line.Line])
 			}
 		}
 
 		return nil
 	}
 
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		// Unauthorized and Unauthenticated errors are permanent
+	if resp.StatusCode == http.StatusUnauthorized {
+		// token is missing or wrong format
 		e.isDisabled = true
-		return consumererror.NewPermanent(fmt.Errorf(resp.Status))
+		return consumererror.NewPermanent(fmt.Errorf("API token missing or invalid"))
+	}
+
+	if resp.StatusCode == http.StatusForbidden {
+		return consumererror.NewPermanent(fmt.Errorf("API token missing the required scope (metrics.ingest)"))
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		e.isDisabled = true
-		return consumererror.NewPermanent(fmt.Errorf("dynatrace metrics ingest module is disabled"))
+		return consumererror.NewPermanent(fmt.Errorf("metrics ingest v2 module not found - ensure module is enabled and endpoint is correct"))
 	}
 
 	// No known errors
@@ -254,14 +270,26 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 // start starts the exporter
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
 	if err != nil {
-		return err
+		e.settings.Logger.Error("Failed to construct HTTP client", zap.Error(err))
+		return fmt.Errorf("start: %w", err)
 	}
 
 	e.client = client
 
 	return nil
+}
+
+func truncateString(str string, num int) string {
+	truncated := str
+	if len(str) > num {
+		if num > 3 {
+			num -= 3
+		}
+		truncated = str[0:num] + "..."
+	}
+	return truncated
 }
 
 // Response from Dynatrace is expected to be in JSON format

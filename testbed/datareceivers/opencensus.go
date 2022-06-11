@@ -52,10 +52,10 @@ func (or *ocDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consu
 	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc); err != nil {
 		return err
 	}
-	if err = or.traceReceiver.Start(context.Background(), or); err != nil {
+	if err = or.traceReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
-	return or.metricsReceiver.Start(context.Background(), or)
+	return or.metricsReceiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (or *ocDataReceiver) Stop() error {

@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// nolint:gocritic
 package containerinsight // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 
 //define constants that are used for EKS Container Insights only
@@ -25,6 +26,7 @@ const (
 	K8sNamespace     = "Namespace"
 	PodIDKey         = "PodId"
 	PodNameKey       = "PodName"
+	FullPodNameKey   = "FullPodName"
 	K8sPodNameKey    = "K8sPodName"
 	ContainerNamekey = "ContainerName"
 	ContainerIDkey   = "ContainerId"

@@ -16,7 +16,8 @@ package filestorage
 
 import (
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -55,7 +56,12 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			Directory:         ".",
-			Timeout:           2 * time.Second,
+			Compaction: &CompactionConfig{
+				Directory:          ".",
+				OnStart:            true,
+				MaxTransactionSize: 2048,
+			},
+			Timeout: 2 * time.Second,
 		},
 		ext1)
 }
@@ -67,7 +73,7 @@ func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
 
 	err := cfg.Validate()
 	require.Error(t, err)
-	require.EqualError(t, err, "directory must exist: stat /not/a/dir: no such file or directory")
+	require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
 }
 
 func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
@@ -77,6 +83,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	file, err := os.CreateTemp("", "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
+		require.NoError(t, file.Close())
 		require.NoError(t, os.Remove(file.Name()))
 	})
 

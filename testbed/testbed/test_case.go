@@ -139,22 +139,20 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 func (tc *TestCase) StartAgent(args ...string) {
 	logFileName := tc.composeTestResultFileName("agent.log")
 
-	err := tc.agentProc.Start(StartParams{
+	startParams := StartParams{
 		Name:         "Agent",
 		LogFilePath:  logFileName,
 		CmdArgs:      args,
 		resourceSpec: &tc.resourceSpec,
-	})
-
-	if err != nil {
+	}
+	if err := tc.agentProc.Start(startParams); err != nil {
 		tc.indicateError(err)
 		return
 	}
 
 	// Start watching resource consumption.
 	go func() {
-		err := tc.agentProc.WatchResourceConsumption()
-		if err != nil {
+		if err := tc.agentProc.WatchResourceConsumption(); err != nil {
 			tc.indicateError(err)
 		}
 	}()
@@ -221,13 +219,13 @@ func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
 
 // Stop stops the load generator, the agent and the backend.
 func (tc *TestCase) Stop() {
+	// Stop monitoring the agent
+	close(tc.doneSignal)
+
 	// Stop all components
 	tc.StopLoad()
 	tc.StopAgent()
 	tc.StopBackend()
-
-	// Stop logging
-	close(tc.doneSignal)
 
 	if tc.skipResults {
 		return

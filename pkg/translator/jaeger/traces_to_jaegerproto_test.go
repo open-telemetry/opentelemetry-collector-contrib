@@ -20,8 +20,9 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -30,12 +31,12 @@ import (
 func TestGetTagFromStatusCode(t *testing.T) {
 	tests := []struct {
 		name string
-		code pdata.StatusCode
+		code ptrace.StatusCode
 		tag  model.KeyValue
 	}{
 		{
 			name: "ok",
-			code: pdata.StatusCodeOk,
+			code: ptrace.StatusCodeOk,
 			tag: model.KeyValue{
 				Key:   conventions.OtelStatusCode,
 				VType: model.ValueType_STRING,
@@ -45,7 +46,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 
 		{
 			name: "error",
-			code: pdata.StatusCodeError,
+			code: ptrace.StatusCodeError,
 			tag: model.KeyValue{
 				Key:   conventions.OtelStatusCode,
 				VType: model.ValueType_STRING,
@@ -70,13 +71,13 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 		VType: model.ValueType_BOOL,
 	}
 
-	_, ok := getErrorTagFromStatusCode(pdata.StatusCodeUnset)
+	_, ok := getErrorTagFromStatusCode(ptrace.StatusCodeUnset)
 	assert.False(t, ok)
 
-	_, ok = getErrorTagFromStatusCode(pdata.StatusCodeOk)
+	_, ok = getErrorTagFromStatusCode(ptrace.StatusCodeOk)
 	assert.False(t, ok)
 
-	got, ok := getErrorTagFromStatusCode(pdata.StatusCodeError)
+	got, ok := getErrorTagFromStatusCode(ptrace.StatusCodeError)
 	assert.True(t, ok)
 	assert.EqualValues(t, errTag, got)
 }
@@ -97,20 +98,20 @@ func TestGetTagFromStatusMsg(t *testing.T) {
 func TestGetTagFromSpanKind(t *testing.T) {
 	tests := []struct {
 		name string
-		kind pdata.SpanKind
+		kind ptrace.SpanKind
 		tag  model.KeyValue
 		ok   bool
 	}{
 		{
 			name: "unspecified",
-			kind: pdata.SpanKindUnspecified,
+			kind: ptrace.SpanKindUnspecified,
 			tag:  model.KeyValue{},
 			ok:   false,
 		},
 
 		{
 			name: "client",
-			kind: pdata.SpanKindClient,
+			kind: ptrace.SpanKindClient,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -121,7 +122,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "server",
-			kind: pdata.SpanKindServer,
+			kind: ptrace.SpanKindServer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -132,7 +133,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "producer",
-			kind: pdata.SpanKindProducer,
+			kind: ptrace.SpanKindProducer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -143,7 +144,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "consumer",
-			kind: pdata.SpanKindConsumer,
+			kind: ptrace.SpanKindConsumer,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -154,7 +155,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 		{
 			name: "internal",
-			kind: pdata.SpanKindInternal,
+			kind: ptrace.SpanKindInternal,
 			tag: model.KeyValue{
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
@@ -175,7 +176,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 func TestAttributesToJaegerProtoTags(t *testing.T) {
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pcommon.NewMap()
 	attributes.InsertBool("bool-val", true)
 	attributes.InsertInt("int-val", 123)
 	attributes.InsertString("string-val", "abc")
@@ -222,13 +223,13 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 	tests := []struct {
 		name string
-		td   pdata.Traces
+		td   ptrace.Traces
 		jb   *model.Batch
 		err  error
 	}{
 		{
 			name: "empty",
-			td:   pdata.NewTraces(),
+			td:   ptrace.NewTraces(),
 			err:  nil,
 		},
 
@@ -302,11 +303,25 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			},
 			err: nil,
 		},
+
+		{
+			name: "span-with-span-event-attribute",
+			td:   generateTracesOneSpanNoResourceWithEventAttribute(),
+			jb: &model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoServiceName,
+				},
+				Spans: []*model.Span{
+					generateJProtoSpanWithEventAttribute(),
+				},
+			},
+			err: nil,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			jbs, err := InternalTracesToJaegerProto(test.td)
+			jbs, err := ProtoFromTraces(test.td)
 			assert.EqualValues(t, test.err, err)
 			if test.jb == nil {
 				assert.Len(t, jbs, 0)
@@ -324,12 +339,37 @@ func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
 	for _, td := range tds {
-		protoBatches, err := InternalTracesToJaegerProto(td)
+		protoBatches, err := ProtoFromTraces(td)
 		assert.NoError(t, err)
-		tdFromPB := ProtoBatchesToInternalTraces(protoBatches)
-		assert.NotNil(t, tdFromPB)
+		tdFromPB, err := ProtoToTraces(protoBatches)
+		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), tdFromPB.SpanCount())
 	}
+}
+
+func generateTracesOneSpanNoResourceWithEventAttribute() ptrace.Traces {
+	td := generateTracesOneSpanNoResource()
+	event := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0)
+	event.SetName("must-be-ignorred")
+	event.Attributes().InsertString("event", "must-be-used-instead-of-event-name")
+	return td
+}
+
+func generateJProtoSpanWithEventAttribute() *model.Span {
+	span := generateProtoSpan()
+	span.Logs[0].Fields = []model.KeyValue{
+		{
+			Key:   "span-event-attr",
+			VType: model.ValueType_STRING,
+			VStr:  "span-event-attr-val",
+		},
+		{
+			Key:   eventNameAttr,
+			VType: model.ValueType_STRING,
+			VStr:  "must-be-used-instead-of-event-name",
+		},
+	}
+	return span
 }
 
 // generateProtoChildSpanWithErrorTags generates a jaeger span to be used in
@@ -358,6 +398,7 @@ func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		InternalTracesToJaegerProto(td) // nolint:errcheck
+		_, err := ProtoFromTraces(td)
+		assert.NoError(b, err)
 	}
 }

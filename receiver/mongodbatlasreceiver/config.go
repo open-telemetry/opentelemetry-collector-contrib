@@ -16,14 +16,20 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	PublicKey                               string `mapstructure:"public_key"`
-	PrivateKey                              string `mapstructure:"private_key"`
-	Granularity                             string `mapstructure:"granularity"`
+	PublicKey                               string                   `mapstructure:"public_key"`
+	PrivateKey                              string                   `mapstructure:"private_key"`
+	Granularity                             string                   `mapstructure:"granularity"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+
+	RetrySettings exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 }

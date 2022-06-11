@@ -17,7 +17,7 @@ package filterprocessor
 import (
 	"context"
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,7 +79,7 @@ func TestCreateProcessors(t *testing.T) {
 
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
-		cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
+		cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
 		assert.Nil(t, err)
 
 		for name, cfg := range cfg.Processors {

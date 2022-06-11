@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package sumologicexporter
 
 import (
@@ -21,14 +22,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/atomic"
 )
 
 type senderTest struct {
@@ -38,16 +40,16 @@ type senderTest struct {
 }
 
 func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.Request)) *senderTest {
-	var reqCounter int32
+	reqCounter := atomic.NewInt32(0)
 	// generate a test server so we can capture and inspect the request
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if len(cb) == 0 {
 			return
 		}
 
-		if c := int(atomic.LoadInt32(&reqCounter)); assert.Greater(t, len(cb), c) {
+		if c := int(reqCounter.Load()); assert.Greater(t, len(cb), c) {
 			cb[c](w, req)
-			atomic.AddInt32(&reqCounter, 1)
+			reqCounter.Inc()
 		}
 	}))
 
@@ -61,7 +63,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 		Client:             "otelcol",
 		MaxRequestBodySize: 20_971_520,
 	}
-	exp, err := initExporter(cfg)
+	exp, err := initExporter(cfg, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	f, err := newFilter([]string{})
@@ -107,21 +109,21 @@ func extractBody(t *testing.T, req *http.Request) string {
 	return buf.String()
 }
 
-func exampleLog() []pdata.LogRecord {
-	buffer := make([]pdata.LogRecord, 1)
-	buffer[0] = pdata.NewLogRecord()
+func exampleLog() []plog.LogRecord {
+	buffer := make([]plog.LogRecord, 1)
+	buffer[0] = plog.NewLogRecord()
 	buffer[0].Body().SetStringVal("Example log")
 
 	return buffer
 }
 
-func exampleTwoLogs() []pdata.LogRecord {
-	buffer := make([]pdata.LogRecord, 2)
-	buffer[0] = pdata.NewLogRecord()
+func exampleTwoLogs() []plog.LogRecord {
+	buffer := make([]plog.LogRecord, 2)
+	buffer[0] = plog.NewLogRecord()
 	buffer[0].Body().SetStringVal("Example log")
 	buffer[0].Attributes().InsertString("key1", "value1")
 	buffer[0].Attributes().InsertString("key2", "value2")
-	buffer[1] = pdata.NewLogRecord()
+	buffer[1] = plog.NewLogRecord()
 	buffer[1].Body().SetStringVal("Another example log")
 	buffer[1].Attributes().InsertString("key1", "value1")
 	buffer[1].Attributes().InsertString("key2", "value2")
@@ -129,13 +131,13 @@ func exampleTwoLogs() []pdata.LogRecord {
 	return buffer
 }
 
-func exampleTwoDifferentLogs() []pdata.LogRecord {
-	buffer := make([]pdata.LogRecord, 2)
-	buffer[0] = pdata.NewLogRecord()
+func exampleTwoDifferentLogs() []plog.LogRecord {
+	buffer := make([]plog.LogRecord, 2)
+	buffer[0] = plog.NewLogRecord()
 	buffer[0].Body().SetStringVal("Example log")
 	buffer[0].Attributes().InsertString("key1", "value1")
 	buffer[0].Attributes().InsertString("key2", "value2")
-	buffer[1] = pdata.NewLogRecord()
+	buffer[1] = plog.NewLogRecord()
 	buffer[1].Body().SetStringVal("Another example log")
 	buffer[1].Attributes().InsertString("key3", "value3")
 	buffer[1].Attributes().InsertString("key4", "value4")
@@ -143,27 +145,27 @@ func exampleTwoDifferentLogs() []pdata.LogRecord {
 	return buffer
 }
 
-func exampleMultitypeLogs() []pdata.LogRecord {
-	buffer := make([]pdata.LogRecord, 2)
+func exampleMultitypeLogs() []plog.LogRecord {
+	buffer := make([]plog.LogRecord, 2)
 
-	attVal := pdata.NewAttributeValueMap()
+	attVal := pcommon.NewValueMap()
 	attMap := attVal.MapVal()
 	attMap.InsertString("lk1", "lv1")
 	attMap.InsertInt("lk2", 13)
 
-	buffer[0] = pdata.NewLogRecord()
+	buffer[0] = plog.NewLogRecord()
 	attVal.CopyTo(buffer[0].Body())
 
 	buffer[0].Attributes().InsertString("key1", "value1")
 	buffer[0].Attributes().InsertString("key2", "value2")
 
-	buffer[1] = pdata.NewLogRecord()
+	buffer[1] = plog.NewLogRecord()
 
-	attVal = pdata.NewAttributeValueArray()
+	attVal = pcommon.NewValueSlice()
 	attArr := attVal.SliceVal()
-	strVal := pdata.NewAttributeValueEmpty()
+	strVal := pcommon.NewValueEmpty()
 	strVal.SetStringVal("lv2")
-	intVal := pdata.NewAttributeValueEmpty()
+	intVal := pcommon.NewValueEmpty()
 	intVal.SetIntVal(13)
 
 	strTgt := attArr.AppendEmpty()
@@ -231,7 +233,7 @@ func TestSendLogsSplit(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.NoError(t, err)
 }
 func TestSendLogsSplitFailedOne(t *testing.T) {
@@ -252,7 +254,7 @@ func TestSendLogsSplitFailedOne(t *testing.T) {
 	test.s.config.LogFormat = TextFormat
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
@@ -277,7 +279,7 @@ func TestSendLogsSplitFailedAll(t *testing.T) {
 	test.s.config.LogFormat = TextFormat
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(
 		t,
 		err,
@@ -342,7 +344,7 @@ func TestSendLogsJsonSplit(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.NoError(t, err)
 }
 
@@ -364,7 +366,7 @@ func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
@@ -389,7 +391,7 @@ func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(
 		t,
 		err,
@@ -408,7 +410,7 @@ func TestSendLogsUnexpectedFormat(t *testing.T) {
 	logs := exampleTwoLogs()
 	test.s.logBuffer = logs
 
-	dropped, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.Error(t, err)
 	assert.Equal(t, logs, dropped)
 }
@@ -465,13 +467,13 @@ func TestLogsBuffer(t *testing.T) {
 	assert.Equal(t, test.s.countLogs(), 0)
 	logs := exampleTwoLogs()
 
-	droppedLogs, err := test.s.batchLog(context.Background(), logs[0], newFields(pdata.NewAttributeMap()))
+	droppedLogs, err := test.s.batchLog(context.Background(), logs[0], newFields(pcommon.NewMap()))
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
 	assert.Equal(t, 1, test.s.countLogs())
-	assert.Equal(t, []pdata.LogRecord{logs[0]}, test.s.logBuffer)
+	assert.Equal(t, []plog.LogRecord{logs[0]}, test.s.logBuffer)
 
-	droppedLogs, err = test.s.batchLog(context.Background(), logs[1], newFields(pdata.NewAttributeMap()))
+	droppedLogs, err = test.s.batchLog(context.Background(), logs[1], newFields(pcommon.NewMap()))
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
 	assert.Equal(t, 2, test.s.countLogs())
@@ -479,7 +481,7 @@ func TestLogsBuffer(t *testing.T) {
 
 	test.s.cleanLogsBuffer()
 	assert.Equal(t, 0, test.s.countLogs())
-	assert.Equal(t, []pdata.LogRecord{}, test.s.logBuffer)
+	assert.Equal(t, []plog.LogRecord{}, test.s.logBuffer)
 }
 
 func TestInvalidEndpoint(t *testing.T) {
@@ -489,7 +491,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test.s.config.HTTPClientSettings.Endpoint = ":"
 	test.s.logBuffer = exampleLog()
 
-	_, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 }
 
@@ -500,7 +502,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test.s.config.HTTPClientSettings.Endpoint = ""
 	test.s.logBuffer = exampleLog()
 
-	_, err := test.s.sendLogs(context.Background(), newFields(pdata.NewAttributeMap()))
+	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, `Post "": unsupported protocol scheme ""`)
 }
 
@@ -510,7 +512,7 @@ func TestLogsBufferOverflow(t *testing.T) {
 
 	test.s.config.HTTPClientSettings.Endpoint = ":"
 	log := exampleLog()
-	flds := newFields(pdata.NewAttributeMap())
+	flds := newFields(pcommon.NewMap())
 
 	for test.s.countLogs() < maxBufferSize-1 {
 		_, err := test.s.batchLog(context.Background(), log[0], flds)
@@ -528,7 +530,7 @@ func TestInvalidMetricFormat(t *testing.T) {
 
 	test.s.config.MetricFormat = "invalid"
 
-	err := test.s.send(context.Background(), MetricsPipeline, strings.NewReader(""), newFields(pdata.NewAttributeMap()))
+	err := test.s.send(context.Background(), MetricsPipeline, strings.NewReader(""), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, `unsupported metrics format: invalid`)
 }
 
@@ -536,7 +538,7 @@ func TestInvalidPipeline(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	err := test.s.send(context.Background(), "invalidPipeline", strings.NewReader(""), newFields(pdata.NewAttributeMap()))
+	err := test.s.send(context.Background(), "invalidPipeline", strings.NewReader(""), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, `unexpected pipeline`)
 }
 
@@ -560,7 +562,7 @@ func TestSendCompressGzip(t *testing.T) {
 	test.s.compressor = c
 	reader := strings.NewReader("Some example log")
 
-	err = test.s.send(context.Background(), LogsPipeline, reader, newFields(pdata.NewAttributeMap()))
+	err = test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	require.NoError(t, err)
 }
 
@@ -584,7 +586,7 @@ func TestSendCompressDeflate(t *testing.T) {
 	test.s.compressor = c
 	reader := strings.NewReader("Some example log")
 
-	err = test.s.send(context.Background(), LogsPipeline, reader, newFields(pdata.NewAttributeMap()))
+	err = test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	require.NoError(t, err)
 }
 
@@ -595,7 +597,7 @@ func TestCompressionError(t *testing.T) {
 	test.s.compressor = getTestCompressor(errors.New("read error"), nil)
 	reader := strings.NewReader("Some example log")
 
-	err := test.s.send(context.Background(), LogsPipeline, reader, newFields(pdata.NewAttributeMap()))
+	err := test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "read error")
 }
 
@@ -606,7 +608,7 @@ func TestInvalidContentEncoding(t *testing.T) {
 	test.s.config.CompressEncoding = "test"
 	reader := strings.NewReader("Some example log")
 
-	err := test.s.send(context.Background(), LogsPipeline, reader, newFields(pdata.NewAttributeMap()))
+	err := test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "invalid content encoding: test")
 }
 
@@ -659,7 +661,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	}
 
-	_, err := test.s.sendMetrics(context.Background(), newFields(pdata.NewAttributeMap()))
+	_, err := test.s.sendMetrics(context.Background(), newFields(pcommon.NewMap()))
 	assert.NoError(t, err)
 }
 
@@ -687,7 +689,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	}
 
-	dropped, err := test.s.sendMetrics(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendMetrics(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.metricBuffer[0:1], dropped)
 }
@@ -718,7 +720,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	}
 
-	dropped, err := test.s.sendMetrics(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendMetrics(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(
 		t,
 		err,
@@ -739,7 +741,7 @@ func TestSendMetricsUnexpectedFormat(t *testing.T) {
 	}
 	test.s.metricBuffer = metrics
 
-	dropped, err := test.s.sendMetrics(context.Background(), newFields(pdata.NewAttributeMap()))
+	dropped, err := test.s.sendMetrics(context.Background(), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "unexpected metric format: invalid")
 	assert.Equal(t, dropped, metrics)
 }
@@ -754,13 +756,13 @@ func TestMetricsBuffer(t *testing.T) {
 		exampleIntGaugeMetric(),
 	}
 
-	droppedMetrics, err := test.s.batchMetric(context.Background(), metrics[0], newFields(pdata.NewAttributeMap()))
+	droppedMetrics, err := test.s.batchMetric(context.Background(), metrics[0], newFields(pcommon.NewMap()))
 	require.NoError(t, err)
 	assert.Nil(t, droppedMetrics)
 	assert.Equal(t, 1, test.s.countMetrics())
 	assert.Equal(t, metrics[0:1], test.s.metricBuffer)
 
-	droppedMetrics, err = test.s.batchMetric(context.Background(), metrics[1], newFields(pdata.NewAttributeMap()))
+	droppedMetrics, err = test.s.batchMetric(context.Background(), metrics[1], newFields(pcommon.NewMap()))
 	require.NoError(t, err)
 	assert.Nil(t, droppedMetrics)
 	assert.Equal(t, 2, test.s.countMetrics())
@@ -780,7 +782,7 @@ func TestMetricsBufferOverflow(t *testing.T) {
 	test.s.config.MetricFormat = PrometheusFormat
 	test.s.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
 	metric := exampleIntMetric()
-	flds := newFields(pdata.NewAttributeMap())
+	flds := newFields(pcommon.NewMap())
 
 	for test.s.countMetrics() < maxBufferSize-1 {
 		_, err := test.s.batchMetric(context.Background(), metric, flds)

@@ -25,7 +25,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
@@ -115,7 +117,7 @@ func (e Exporter) Shutdown(context.Context) error {
 }
 
 // ConsumeTraces receives a span batch and exports it to AWS Kinesis
-func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e Exporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	bt, err := e.batcher.Traces(td)
 	if err != nil {
 		return err
@@ -123,7 +125,7 @@ func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return e.producer.Put(ctx, bt)
 }
 
-func (e Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (e Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	bt, err := e.batcher.Metrics(md)
 	if err != nil {
 		return err
@@ -131,7 +133,7 @@ func (e Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	return e.producer.Put(ctx, bt)
 }
 
-func (e Exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e Exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	bt, err := e.batcher.Logs(ld)
 	if err != nil {
 		return err

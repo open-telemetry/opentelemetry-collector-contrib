@@ -15,7 +15,7 @@
 package awskinesisexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -36,7 +36,7 @@ func TestDefaultConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "default.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -45,9 +45,9 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 			Encoding: Encoding{
 				Name:        "otlp",
 				Compression: "none",
@@ -67,7 +67,7 @@ func TestConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -83,8 +83,8 @@ func TestConfig(t *testing.T) {
 				InitialInterval: 5 * time.Second,
 				MaxElapsedTime:  300 * time.Second,
 			},
-			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-			QueueSettings:   exporterhelper.DefaultQueueSettings(),
+			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+			QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 			Encoding: Encoding{
 				Name:        "otlp-proto",
 				Compression: "none",

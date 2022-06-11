@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
 import (
@@ -21,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -64,10 +65,10 @@ type TimerHistogramMapping struct {
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	gauges                 map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
-	counters               map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
+	gauges                 map[statsDMetricDescription]pmetric.ScopeMetrics
+	counters               map[statsDMetricDescription]pmetric.ScopeMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
-	timersAndDistributions []pdata.InstrumentationLibraryMetrics
+	timersAndDistributions []pmetric.ScopeMetrics
 	enableMetricType       bool
 	isMonotonicCounter     bool
 	observeTimer           ObserverType
@@ -115,9 +116,9 @@ func (t MetricType) FullName() TypeName {
 
 func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
+	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
+	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
+	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 
 	p.observeHistogram = DefaultObserverType
@@ -137,20 +138,20 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 }
 
 // GetMetrics gets the metrics preparing for flushing and reset the state.
-func (p *StatsDParser) GetMetrics() pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func (p *StatsDParser) GetMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 
 	for _, metric := range p.gauges {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.counters {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.timersAndDistributions {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for desc, summaryMetric := range p.summaries {
@@ -160,14 +161,13 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 			p.lastIntervalTime,
 			timeNowFunc(),
 			statsDDefaultPercentiles,
-			rm.InstrumentationLibraryMetrics().AppendEmpty(),
+			rm.ScopeMetrics().AppendEmpty(),
 		)
 	}
 
-	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
+	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
+	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
+	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 	return metrics
 }
@@ -209,7 +209,9 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case CounterType:
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc(), p.lastIntervalTime)
+			timeNow := timeNowFunc()
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNow, p.lastIntervalTime)
+			p.lastIntervalTime = timeNow
 		} else {
 			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
 			point.SetIntVal(point.IntVal() + parsedMetric.counterValue())

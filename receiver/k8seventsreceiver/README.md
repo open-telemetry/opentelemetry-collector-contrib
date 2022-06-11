@@ -1,14 +1,16 @@
 # Kubernetes Events Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 The kubernetes Events receiver collects events from the Kubernetes
-API server. It collects all the events that K8s has that are still
-persisted and then send any new events that come in.
+API server. It collects all the new or updated events that come in.
 
 Currently this receiver supports authentication via service accounts only.
 See [example](#example) for more information.
-
-> :construction: This receiver is in **BETA**. Configuration fields and
-log data model are subject to change.
 
 ## Configuration
 
@@ -89,7 +91,7 @@ EOF
 
 ### RBAC
 
-Use the below commands to create a `ClusterRole` with required permissions and a 
+Use the below commands to create a `ClusterRole` with required permissions and a
 `ClusterRoleBinding` to grant the role to the service account created above.
 
 ```bash
@@ -216,3 +218,6 @@ spec:
             name: otelcontribcol
 EOF
 ```
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -15,7 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -32,17 +32,8 @@ func NewAlwaysSample(logger *zap.Logger) PolicyEvaluator {
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (as *alwaysSample) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	as.logger.Debug("Triggering action for late arriving spans in always-sample filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (as *alwaysSample) Evaluate(pdata.TraceID, *TraceData) (Decision, error) {
+func (as *alwaysSample) Evaluate(pcommon.TraceID, *TraceData) (Decision, error) {
 	as.logger.Debug("Evaluating spans in always-sample filter")
 	return Sampled, nil
 }

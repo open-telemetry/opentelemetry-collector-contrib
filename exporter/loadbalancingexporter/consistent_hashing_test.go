@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestNewHashRing(t *testing.T) {
@@ -39,12 +39,12 @@ func TestEndpointFor(t *testing.T) {
 	ring := newHashRing(endpoints)
 
 	for _, tt := range []struct {
-		traceID  pdata.TraceID
+		traceID  pcommon.TraceID
 		expected string
 	}{
 		// check that we are indeed alternating endpoints for different inputs
-		{pdata.NewTraceID([16]byte{1, 2, 0, 0}), "endpoint-1"},
-		{pdata.NewTraceID([16]byte{128, 128, 0, 0}), "endpoint-2"},
+		{pcommon.NewTraceID([16]byte{1, 2, 0, 0}), "endpoint-1"},
+		{pcommon.NewTraceID([16]byte{128, 128, 0, 0}), "endpoint-2"},
 	} {
 		t.Run(fmt.Sprintf("Endpoint for traceID %s", tt.traceID.HexString()), func(t *testing.T) {
 			// test

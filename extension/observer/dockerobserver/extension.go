@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
 import (
@@ -29,6 +30,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	docker "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
@@ -308,9 +310,15 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 		id = observer.EndpointID(fmt.Sprintf("%s:%d", c.ID, port))
 	}
 
+	imageRef, err := dcommon.ParseImageName(c.Config.Image)
+	if err != nil {
+		d.logger.Error("could not parse container image name", zap.Error(err))
+	}
+
 	details := &observer.Container{
 		Name:        strings.TrimPrefix(c.Name, "/"),
-		Image:       c.Config.Image,
+		Image:       imageRef.Repository,
+		Tag:         imageRef.Tag,
 		Command:     strings.Join(c.Config.Cmd, " "),
 		ContainerID: c.ID,
 		Transport:   portProtoToTransport(proto),

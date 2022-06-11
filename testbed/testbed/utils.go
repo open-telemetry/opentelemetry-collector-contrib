@@ -17,7 +17,7 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func GetAvailablePort(t *testing.T) int {

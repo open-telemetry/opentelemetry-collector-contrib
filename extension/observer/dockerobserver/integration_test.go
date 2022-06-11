@@ -19,6 +19,7 @@ package dockerobserver
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 )
 
 type testHost struct {
@@ -55,9 +56,10 @@ func paramsAndContext(t *testing.T) (component.ExtensionCreateSettings, context.
 }
 
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
-	c := container.New(t)
-	image := "docker.io/library/nginx:1.17"
-	cntr := c.StartImage(image, container.WithPortReady(80))
+	c := containertest.New(t)
+	image := "docker.io/library/nginx"
+	tag := "1.17"
+	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.CacheSyncInterval = 1 * time.Second
 	config.UseHostBindings = true
@@ -72,13 +74,15 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 		require.Equal(t, uint16(80), e.Details.Env()["alternate_port"])
 		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
+		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 }
 
 func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
-	c := container.New(t)
-	image := "docker.io/library/nginx:1.17"
-	cntr := c.StartImage(image, container.WithPortReady(80))
+	c := containertest.New(t)
+	image := "docker.io/library/nginx"
+	tag := "1.17"
+	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	defer stopObserver(t, obvs)
@@ -89,6 +93,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
 		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
+		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 
 	c.RenameContainer(cntr, "nginx-updated")
@@ -101,13 +106,15 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
 		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
+		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 }
 
 func TestObserverRemovesEndpointsIntegration(t *testing.T) {
-	d := container.New(t)
-	image := "docker.io/library/nginx:1.17"
-	tmpCntr := d.StartImage(image, container.WithPortReady(80))
+	c := containertest.New(t)
+	image := "docker.io/library/nginx"
+	tag := "1.17"
+	tmpCntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	defer stopObserver(t, obvs)
@@ -118,15 +125,16 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
 		require.Equal(t, string(tmpCntr.ID), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
+		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
-	d.RemoveContainer(tmpCntr)
+	c.RemoveContainer(tmpCntr)
 	require.Eventually(t, func() bool { return mn.RemoveCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 	require.Empty(t, mn.EndpointsMap())
 }
 
 func TestObserverExcludesImagesIntegration(t *testing.T) {
-	c := container.New(t)
-	c.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	c := containertest.New(t)
+	c.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
 
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.ExcludedImages = []string{"*nginx*"}

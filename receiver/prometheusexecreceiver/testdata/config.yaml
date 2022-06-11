@@ -10,9 +10,9 @@ receivers:
     scrape_timeout: 10s
   prometheus_exec/end_to_end_test/1:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
-    scrape_interval: 1s
     port: 9999
-    scrape_timeout: 10s
+    scrape_interval: 1s
+    scrape_timeout: 1s
     env: 
       - name: "DATA_SOURCE_NAME"
         value: user:password@(hostname:port)/dbname
@@ -21,7 +21,7 @@ receivers:
   prometheus_exec/end_to_end_test/2:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
     scrape_interval: 1s
-    scrape_timeout: 10s
+    scrape_timeout: 1s
 
 processors:
   nop:

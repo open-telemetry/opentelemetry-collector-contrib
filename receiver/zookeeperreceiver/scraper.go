@@ -24,7 +24,9 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -52,7 +54,7 @@ func (z *zookeeperMetricsScraper) Name() string {
 	return typeStr
 }
 
-func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperMetricsScraper, error) {
+func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	if err != nil {
 		return nil, err
@@ -63,9 +65,9 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 	}
 
 	return &zookeeperMetricsScraper{
-		logger:                logger,
+		logger:                settings.Logger,
 		config:                config,
-		mb:                    metadata.NewMetricsBuilder(config.Metrics),
+		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,
@@ -80,7 +82,7 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 
@@ -90,7 +92,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, er
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
@@ -108,26 +110,19 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, er
 	return z.getResourceMetrics(conn)
 }
 
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metrics, error) {
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pmetric.Metrics, error) {
 	scanner, err := z.sendCmd(conn, mntrCommand)
 	if err != nil {
 		z.logger.Error("failed to send command",
 			zap.Error(err),
 			zap.String("command", mntrCommand),
 		)
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 
-	md := pdata.NewMetrics()
-	z.appendMetrics(scanner, md.ResourceMetrics())
-	return md, nil
-}
-
-func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
-	now := pdata.NewTimestampFromTime(time.Now())
-	rm := pdata.NewResourceMetrics()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
+	creator := newMetricCreator(z.mb)
+	now := pcommon.NewTimestampFromTime(time.Now())
+	resourceOpts := make([]metadata.ResourceMetricsOption, 0, 2)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -143,14 +138,14 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithZkVersion(metricValue))
 			continue
 		case serverStateKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithServerState(metricValue))
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			recordDataPoints := recordDataPointsFunc(z.mb, metricKey)
+			recordDataPoints := creator.recordDataPointsFunc(metricKey)
 			if recordDataPoints == nil {
 				// Unexported metric, just move to the next line.
 				continue
@@ -166,10 +161,11 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 			recordDataPoints(now, int64Val)
 		}
 	}
-	z.mb.Emit(ilm.Metrics())
-	if ilm.Metrics().Len() > 0 {
-		rm.CopyTo(rms.AppendEmpty())
-	}
+
+	// Generate computed metrics
+	creator.generateComputedMetrics(z.logger, now)
+
+	return z.mb.Emit(resourceOpts...), nil
 }
 
 func closeConnection(conn net.Conn) error {

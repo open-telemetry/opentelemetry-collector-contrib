@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	instrumentationLibName = "otelcol/kafkametrics"
+	instrumentationLibName = "otelcol/kafkametricsreceiver"
 	brokersScraperName     = "brokers"
 	topicsScraperName      = "topics"
 	consumersScraperName   = "consumers"

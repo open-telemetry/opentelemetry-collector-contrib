@@ -17,7 +17,8 @@ package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetr
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -25,20 +26,20 @@ import (
 
 // metricDataAccumulator defines the accumulator
 type metricDataAccumulator struct {
-	mds []pdata.Metrics
+	mds []pmetric.Metrics
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
 func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata ecsutil.TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
-	timestamp := pdata.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
 
 		containerResource := containerResource(containerMetadata, logger)
-		taskResource.Attributes().Range(func(k string, av pdata.AttributeValue) bool {
+		taskResource.Attributes().Range(func(k string, av pcommon.Value) bool {
 			containerResource.Attributes().Upsert(k, av)
 			return true
 		})
@@ -67,7 +68,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp))
 }
 
-func (acc *metricDataAccumulator) accumulate(md pdata.Metrics) {
+func (acc *metricDataAccumulator) accumulate(md pmetric.Metrics) {
 	acc.mds = append(acc.mds, md)
 }
 
@@ -97,11 +98,9 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata ecsutil.TaskMe
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
 	}
 
-	taskMetrics.CPUReserved = taskMetrics.CPUReserved / cpusInVCpu
-
 	// Overwrite CPU limit with task level limit
 	if metadata.Limits.CPU != nil {
-		taskMetrics.CPUReserved = *metadata.Limits.CPU
+		taskMetrics.CPUReserved = *metadata.Limits.CPU * cpusInVCpu
 	}
 
 	// taskMetrics.CPUReserved cannot be zero. In ECS, user needs to set CPU limit
@@ -109,7 +108,7 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata ecsutil.TaskMe
 	// task level CPULimit is not present, we calculate it from the summation of
 	// all container CPU limits.
 	if taskMetrics.CPUReserved > 0 {
-		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
+		taskMetrics.CPUUtilized = taskMetrics.CPUUsageInVCPU * cpusInVCpu
 	}
 }
 

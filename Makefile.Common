@@ -1,26 +1,16 @@
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
-ALL_SRC := $(shell find . -name '*.go' \
-                                -not -path '*/third_party/*' \
-                                -type f | sort)
-
-# All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
-                                -type f | sort)
-
-# ALL_PKGS is used with 'go cover'
-ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
-
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
 GOTEST_OPT?= -race -v -timeout 300s --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 120s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
-GOTEST=go test
-GOOS=$(shell go env GOOS)
-GOARCH=$(shell go env GOARCH)
+GOCMD?= go
+GOTEST=$(GOCMD) test
+GOOS=$(shell $(GOCMD) env GOOS)
+GOARCH=$(shell $(GOCMD) env GOARCH)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
@@ -29,16 +19,36 @@ IMPI=impi
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
+ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sort)
+
+ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
+                                -not -path '*/third_party/*' \
+                                -type f | sort)
+
+# All source code and documents. Used in spell check.
+ALL_SRC_AND_DOC := $(shell find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" \
+                                -not -path '*/third_party/*' \
+                                -type f | sort)
+
+# ALL_PKGS is used with 'go cover'
+ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
+
+pwd:
+	@pwd
+
 all-pkgs:
 	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
 
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
+all-pkg-dirs:
+	@echo $(ALL_PKG_DIRS) | tr ' ' '\n' | sort
+
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense checkdoc impi lint misspell
+common: checklicense impi lint misspell
 
 .PHONY: test
 test:
@@ -46,16 +56,16 @@ test:
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
-	@echo "running go unit test ./... + coverage in `pwd`"
+	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
 	@$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
-	go tool cover -html=coverage.txt -o coverage.html
+	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover:
-	@echo "running go integration test ./... + coverage in `pwd`"
+	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
 	@$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
 	@if [ -e integration-coverage.txt ]; then \
-  		go tool cover -html=integration-coverage.txt -o integration-coverage.html; \
+  		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
 
 .PHONY: benchmark
@@ -91,16 +101,18 @@ fmt:
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint:
+lint: checklicense impi misspell
 	$(LINT) run --allow-parallel-runners
 
-.PHONY: porto
-porto:
-	porto -w --include-internal --skip-dirs "^cmd$$" ./
+.PHONY: tidy
+tidy:
+	rm -fr go.sum
+	$(GOCMD) mod tidy -compat=1.17
 
 .PHONY: misspell
 misspell:
-	$(MISSPELL) $(ALL_SRC_AND_DOC)
+	@echo "running $(MISSPELL)"
+	@$(MISSPELL) $(ALL_SRC_AND_DOC)
 
 .PHONY: misspell-correction
 misspell-correction:
@@ -108,8 +120,13 @@ misspell-correction:
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
+	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal $(ALL_PKGS)
 
-.PHONY: dep
-dep:
-	go mod download
+.PHONY: moddownload
+moddownload:
+	$(GOCMD) mod download
+
+.PHONY: updatedep
+updatedep:
+	$(PWD)/internal/buildscripts/update-dep
+	@$(MAKE) tidy

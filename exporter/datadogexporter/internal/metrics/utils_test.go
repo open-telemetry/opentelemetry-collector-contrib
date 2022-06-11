@@ -19,10 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
@@ -82,15 +80,6 @@ func TestProcessMetrics(t *testing.T) {
 	// Reset hostname cache
 	cache.Cache.Flush()
 
-	cfg := &config.Config{
-		// Global tags should be ignored and sent as metadata
-		TagsConfig: config.TagsConfig{
-			Env:  "test_env",
-			Tags: []string{"key:val"},
-		},
-	}
-	cfg.Sanitize(zap.NewNop())
-
 	ms := []datadog.Metric{
 		NewGauge(
 			"metric_name",
@@ -106,7 +95,7 @@ func TestProcessMetrics(t *testing.T) {
 		),
 	}
 
-	ProcessMetrics(ms, cfg)
+	ProcessMetrics(ms)
 
 	assert.Equal(t, "metric_name", *ms[0].Metric)
 	assert.ElementsMatch(t,

@@ -18,7 +18,8 @@ import (
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -96,19 +97,10 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	saf.logger.Debug("Triggering action for late arriving spans in string-tag filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 // The SamplingDecision is made by comparing the attribute values with the matching values,
 // which might be static strings or regular expressions.
-func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
@@ -118,7 +110,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 		// Invert Match returns true by default, except when key and value are matched
 		return invertHasResourceOrSpanWithCondition(
 			batches,
-			func(resource pdata.Resource) bool {
+			func(resource pcommon.Resource) bool {
 				if v, ok := resource.Attributes().Get(saf.key); ok {
 					if ok := saf.matcher(v.StringVal()); ok {
 						return false
@@ -126,7 +118,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 				}
 				return true
 			},
-			func(span pdata.Span) bool {
+			func(span ptrace.Span) bool {
 				if v, ok := span.Attributes().Get(saf.key); ok {
 					truncableStr := v.StringVal()
 					if len(truncableStr) > 0 {
@@ -142,7 +134,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 
 	return hasResourceOrSpanWithCondition(
 		batches,
-		func(resource pdata.Resource) bool {
+		func(resource pcommon.Resource) bool {
 			if v, ok := resource.Attributes().Get(saf.key); ok {
 				if ok := saf.matcher(v.StringVal()); ok {
 					return true
@@ -150,7 +142,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 			}
 			return false
 		},
-		func(span pdata.Span) bool {
+		func(span ptrace.Span) bool {
 			if v, ok := span.Attributes().Get(saf.key); ok {
 				truncableStr := v.StringVal()
 				if len(truncableStr) > 0 {

@@ -8,36 +8,48 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| mysql.buffer_pool_operations | The number of operations on the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_operations</li> </ul> |
-| mysql.buffer_pool_pages | The number of pages in the InnoDB buffer pool. | 1 | Sum(Double) | <ul> <li>buffer_pool_pages</li> </ul> |
-| mysql.buffer_pool_size | The number of bytes in the InnoDB buffer pool. | By | Sum(Double) | <ul> <li>buffer_pool_size</li> </ul> |
-| mysql.commands | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
-| mysql.double_writes | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
-| mysql.handlers | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
-| mysql.locks | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
-| mysql.log_operations | The number of InndoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
-| mysql.operations | The number of InndoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
-| mysql.page_operations | The number of InndoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
-| mysql.row_locks | The number of InndoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
-| mysql.row_operations | The number of InndoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
-| mysql.sorts | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
-| mysql.threads | The state of MySQL threads. | 1 | Sum(Double) | <ul> <li>threads</li> </ul> |
+| **mysql.buffer_pool.data_pages** | The number of data pages in the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_data</li> </ul> |
+| **mysql.buffer_pool.limit** | The configured size of the InnoDB buffer pool. | By | Sum(Int) | <ul> </ul> |
+| **mysql.buffer_pool.operations** | The number of operations on the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_operations</li> </ul> |
+| **mysql.buffer_pool.page_flushes** | The number of requests to flush pages from the InnoDB buffer pool. | 1 | Sum(Int) | <ul> </ul> |
+| **mysql.buffer_pool.pages** | The number of pages in the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_pages</li> </ul> |
+| **mysql.buffer_pool.usage** | The number of bytes in the InnoDB buffer pool. | By | Sum(Int) | <ul> <li>buffer_pool_data</li> </ul> |
+| **mysql.commands** | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
+| **mysql.double_writes** | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
+| **mysql.handlers** | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
+| **mysql.locks** | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
+| **mysql.log_operations** | The number of InnoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| **mysql.operations** | The number of InnoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
+| **mysql.page_operations** | The number of InnoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
+| **mysql.row_locks** | The number of InnoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
+| **mysql.row_operations** | The number of InnoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
+| **mysql.sorts** | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
+| **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
 
-## Attributes
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
 
-| Name | Description |
-| ---- | ----------- |
-| buffer_pool_operations | The buffer pool operations types. |
-| buffer_pool_pages | The buffer pool pages types. |
-| buffer_pool_size | The buffer pool size types. |
-| command | The command types. |
-| double_writes | The doublewrite types. |
-| handler | The handler types. |
-| locks | The table locks type. |
-| log_operations | The log operation types. |
-| operations | The operation types. |
-| page_operations | The page operation types. |
-| row_locks | The row lock type. |
-| row_operations | The row operation type. |
-| sorts | The sort count type. |
-| threads | The thread count type. |
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
+
+## Metric attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| buffer_pool_data (status) | The status of buffer pool data. | dirty, clean |
+| buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
+| buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
+| command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
+| double_writes (kind) | The doublewrite types. | pages_written, writes |
+| handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |
+| locks (kind) | The table locks type. | immediate, waited |
+| log_operations (operation) | The log operation types. | waits, write_requests, writes |
+| operations (operation) | The operation types. | fsyncs, reads, writes |
+| page_operations (operation) | The page operation types. | created, read, written |
+| row_locks (kind) | The row lock type. | waits, time |
+| row_operations (operation) | The row operation type. | deleted, inserted, read, updated |
+| sorts (kind) | The sort count type. | merge_passes, range, rows, scan |
+| threads (kind) | The thread count type. | cached, connected, created, running |

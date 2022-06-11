@@ -15,16 +15,25 @@
 package tanzuobservabilityexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 type TracesConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+}
+
+type MetricsConfig struct {
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	ResourceAttributes            resourcetotelemetry.Settings `mapstructure:"resource_attributes"`
 }
 
 // Config defines configuration options for the exporter.
@@ -34,15 +43,59 @@ type Config struct {
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
 	// Traces defines the Traces exporter specific configuration
-	Traces TracesConfig `mapstructure:"traces"`
+	Traces  TracesConfig  `mapstructure:"traces"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
+}
+
+func (c *Config) hasMetricsEndpoint() bool {
+	return c.Metrics.Endpoint != ""
+}
+
+func (c *Config) hasTracesEndpoint() bool {
+	return c.Traces.Endpoint != ""
+}
+
+func (c *Config) parseMetricsEndpoint() (hostName string, port int, err error) {
+	return parseEndpoint(c.Metrics.Endpoint)
+}
+
+func (c *Config) parseTracesEndpoint() (hostName string, port int, err error) {
+	return parseEndpoint(c.Traces.Endpoint)
 }
 
 func (c *Config) Validate() error {
-	if c.Traces.Endpoint == "" {
-		return fmt.Errorf("A non-empty traces.endpoint is required")
+	var tracesHostName, metricsHostName string
+	var err error
+	if c.hasTracesEndpoint() {
+		tracesHostName, _, err = c.parseTracesEndpoint()
+		if err != nil {
+			return fmt.Errorf("Failed to parse traces.endpoint: %v", err)
+		}
 	}
-	if _, err := url.Parse(c.Traces.Endpoint); err != nil {
-		return fmt.Errorf("invalid traces.endpoint %s", err)
+	if c.hasMetricsEndpoint() {
+		metricsHostName, _, err = c.parseMetricsEndpoint()
+		if err != nil {
+			return fmt.Errorf("Failed to parse metrics.endpoint: %v", err)
+		}
+	}
+	if c.hasTracesEndpoint() && c.hasMetricsEndpoint() && tracesHostName != metricsHostName {
+		return errors.New("host for metrics and traces must be the same")
 	}
 	return nil
+}
+
+func parseEndpoint(endpoint string) (hostName string, port int, err error) {
+	if endpoint == "" {
+		return "", 0, errors.New("a non-empty endpoint is required")
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", 0, err
+	}
+	port, err = strconv.Atoi(u.Port())
+	if err != nil {
+		return "", 0, errors.New("valid port required")
+	}
+	hostName = u.Hostname()
+	return hostName, port, nil
 }

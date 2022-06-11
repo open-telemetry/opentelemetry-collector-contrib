@@ -28,24 +28,27 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
 
 func TestScrape_Errors(t *testing.T) {
 	type testCase struct {
-		name              string
-		pageSize          uint64
-		getPageFileStats  func() ([]*pageFileStats, error)
-		scrapeErr         error
-		getObjectErr      error
-		getValuesErr      error
-		expectedErr       string
-		expectedErrCount  int
-		expectedUsedValue int64
-		expectedFreeValue int64
+		name                         string
+		pageSize                     uint64
+		getPageFileStats             func() ([]*pageFileStats, error)
+		scrapeErr                    error
+		getObjectErr                 error
+		getValuesErr                 error
+		expectedErr                  string
+		expectedErrCount             int
+		expectedUsedValue            int64
+		expectedFreeValue            int64
+		expectedUtilizationFreeValue float64
+		expectedUtilizationUsedValue float64
 	}
 
 	testPageSize := uint64(4096)
-	testPageFileData := &pageFileStats{usedBytes: 100, freeBytes: 200}
+	testPageFileData := &pageFileStats{usedBytes: 200, freeBytes: 800, totalBytes: 1000}
 
 	testCases := []testCase{
 		{
@@ -54,13 +57,15 @@ func TestScrape_Errors(t *testing.T) {
 			getPageFileStats: func() ([]*pageFileStats, error) {
 				return []*pageFileStats{testPageFileData}, nil
 			},
-			expectedUsedValue: int64(testPageFileData.usedBytes),
-			expectedFreeValue: int64(testPageFileData.freeBytes),
+			expectedUsedValue:            int64(testPageFileData.usedBytes),
+			expectedFreeValue:            int64(testPageFileData.freeBytes),
+			expectedUtilizationFreeValue: 0.8,
+			expectedUtilizationUsedValue: 0.2,
 		},
 		{
 			name:             "pageFileError",
 			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
-			expectedErr:      "err1",
+			expectedErr:      "failed to read page file stats: err1",
 			expectedErrCount: pagingUsageMetricsLen,
 		},
 		{
@@ -85,14 +90,17 @@ func TestScrape_Errors(t *testing.T) {
 			name:             "multipleErrors",
 			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			getObjectErr:     errors.New("err2"),
-			expectedErr:      "[err1; err2]",
+			expectedErr:      "failed to read page file stats: err1; err2",
 			expectedErrCount: pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), &Config{})
+			metricsConfig := metadata.DefaultMetricsSettings()
+			metricsConfig.SystemPagingUtilization.Enabled = true
+
+			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -126,10 +134,14 @@ func TestScrape_Errors(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			pagingUsageMetric := metrics.At(0)
 			assert.Equal(t, test.expectedUsedValue, pagingUsageMetric.Sum().DataPoints().At(0).IntVal())
 			assert.Equal(t, test.expectedFreeValue, pagingUsageMetric.Sum().DataPoints().At(1).IntVal())
+
+			pagingUtilizationMetric := metrics.At(1)
+			assert.Equal(t, test.expectedUtilizationUsedValue, pagingUtilizationMetric.Gauge().DataPoints().At(0).DoubleVal())
+			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Gauge().DataPoints().At(1).DoubleVal())
 		})
 	}
 }

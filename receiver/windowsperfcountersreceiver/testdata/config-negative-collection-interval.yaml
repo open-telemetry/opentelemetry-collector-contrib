@@ -1,10 +1,16 @@
 receivers:
   windowsperfcounters:
+    metrics:
+      metric: 
+        description: desc
+        unit: "1"
+        gauge:
     collection_interval: -1m
     perfcounters:
       - object: "object"
         counters:
-          - "counter"
+          - name: counter1
+            metric: metric
 
 processors:
   nop:

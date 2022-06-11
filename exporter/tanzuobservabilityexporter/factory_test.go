@@ -16,7 +16,7 @@ package tanzuobservabilityexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -37,16 +39,17 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	actual, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config: %#v", cfg)
-	assert.Equal(t, "http://localhost:30001", actual.Traces.Endpoint)
+	assert.False(t, actual.hasMetricsEndpoint())
+	assert.False(t, actual.hasTracesEndpoint())
 }
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[exporterType] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -57,6 +60,10 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID("tanzuobservability")),
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
+		},
+		Metrics: MetricsConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
+			ResourceAttributes: resourcetotelemetry.Settings{Enabled: true},
 		},
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,
@@ -77,15 +84,31 @@ func TestCreateExporter(t *testing.T) {
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
-
+	cfg.Traces.Endpoint = "http://localhost:30001"
 	te, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 }
 
+func TestCreateMetricsExporter(t *testing.T) {
+	defaultConfig := createDefaultConfig()
+	cfg := defaultConfig.(*Config)
+	params := componenttest.NewNopExporterCreateSettings()
+	cfg.Metrics.Endpoint = "http://localhost:2878"
+	te, err := createMetricsExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create metrics exporter")
+}
+
 func TestCreateTraceExporterNilConfigError(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, nil)
+	assert.Error(t, err)
+}
+
+func TestCreateMetricsExporterNilConfigError(t *testing.T) {
+	params := componenttest.NewNopExporterCreateSettings()
+	_, err := createMetricsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
@@ -98,6 +121,15 @@ func TestCreateTraceExporterInvalidEndpointError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateMetricsExporterInvalidEndpointError(t *testing.T) {
+	params := componenttest.NewNopExporterCreateSettings()
+	defaultConfig := createDefaultConfig()
+	cfg := defaultConfig.(*Config)
+	cfg.Metrics.Endpoint = "http:#$%^&#$%&#"
+	_, err := createMetricsExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}
+
 func TestCreateTraceExporterMissingPortError(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
@@ -107,11 +139,29 @@ func TestCreateTraceExporterMissingPortError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateMetricsExporterMissingPortError(t *testing.T) {
+	params := componenttest.NewNopExporterCreateSettings()
+	defaultConfig := createDefaultConfig()
+	cfg := defaultConfig.(*Config)
+	cfg.Metrics.Endpoint = "http://localhost"
+	_, err := createMetricsExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}
+
 func TestCreateTraceExporterInvalidPortError(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	defaultConfig := createDefaultConfig()
 	cfg := defaultConfig.(*Config)
 	cfg.Traces.Endpoint = "http://localhost:c42a"
 	_, err := createTracesExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}
+
+func TestCreateMetricsExporterInvalidPortError(t *testing.T) {
+	params := componenttest.NewNopExporterCreateSettings()
+	defaultConfig := createDefaultConfig()
+	cfg := defaultConfig.(*Config)
+	cfg.Metrics.Endpoint = "http://localhost:c42a"
+	_, err := createMetricsExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }

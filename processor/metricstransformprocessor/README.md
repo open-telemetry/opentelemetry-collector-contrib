@@ -227,7 +227,7 @@ operations:
 # deletes all data points with the label value 'idle' of the label 'state'
 include: system.cpu.usage
 action: update
-operation:
+operations:
   - action: delete_label_value
     label: state
     label_value: idle
@@ -238,7 +238,7 @@ operation:
 # toggle the datatype of cpu usage from int (the default) to double
 include: system.cpu.usage
 action: update
-operation:
+operations:
   - action: toggle_scalar_data_type
 ```
 
@@ -247,7 +247,7 @@ operation:
 # experimental_scale CPU usage from seconds to milliseconds
 include: system.cpu.usage
 action: update
-operation:
+operations:
   - action: experimental_scale_value
     experimental_scale: 1000
 ```
@@ -311,3 +311,29 @@ operations:
   action: group
   group_resource_labels: {"resouce.type": "container", "source": "kubelet"}
 ```
+
+### Metric Transform Processor vs. [Attributes Processor for Metrics](../attributesprocessor)
+
+Regarding metric support, these two processors have overlapping functionality. They can both do simple modifications
+of metric attribute key-value pairs. As a general rule the attributes processor has more attribute related
+functionality, while the metrics transform processor can do much more data manipulation. The attributes processor
+is preferred when the only needed functionality is overlapping, as it natively uses the official OpenTelemetry
+data model. However, if the metric transform processor is already in use or its extra functionality is necessary,
+there's no need to migrate away from it.
+
+Shared functionality
+* Add attributes
+* Update values of attributes
+
+Attribute processor specific functionality
+* delete
+* hash
+* extract
+
+Metric transform processor specific functionality
+* Rename metrics
+* Delete data points
+* Toggle data type
+* Scale value
+* Aggregate across label sets
+* Aggregate across label values

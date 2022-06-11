@@ -1,10 +1,12 @@
 # Splunk HTTP Event Collector (HEC) Exporter
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
+
 How to send metrics to a Splunk HEC endpoint.
-
-Supported pipeline types: logs, metrics, traces
-
-> :construction: This receiver is in beta and configuration fields are subject to change.
 
 ## Configuration
 
@@ -26,8 +28,13 @@ The following configuration options can also be configured:
 - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required.
 - `key_file` (no default) Path to the TLS key to use for TLS required connections.
 - `max_content_length_logs` (default: 2097152): Maximum log data size in bytes per HTTP post limited to 2097152 bytes (2 MiB).
+- `max_content_length_metrics` (default: 2097152): Maximum metric data size in bytes per HTTP post limited to 2097152 bytes (2 MiB).
 - `splunk_app_name` (default: "OpenTelemetry Collector Contrib") App name is used to track telemetry information for Splunk App's using HEC by App name.
-- `splunk_app_version` (default: Current OpenTelemetry Collector Contrib Build Version): App version is used to track telemetry information for Splunk App's using HEC by App version.
+- `splunk_app_version` (default: Current OpenTelemetry Collector Contrib Build Version): App version is used to track telemetry information for Splunk App's using HEC by App version. 
+- `log_data_enabled` (default: true): Specifies whether the log data is exported. Set it to `false` if you want the log 
+  data to be dropped instead. Applicable in the `logs` pipeline only.
+- `profiling_data_enabled` (default: true): Specifies whether the profiling data is exported. Set it to `false` if 
+  you want the profiling data to be dropped instead. Applicable in the `logs` pipeline only.
 - `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
 - `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
 - `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
@@ -100,3 +107,6 @@ with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

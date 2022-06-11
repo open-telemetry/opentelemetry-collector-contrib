@@ -1,4 +1,6 @@
-name: disk
+name: hostmetricsreceiver/disk
+
+sem_conv_version: 1.9.0
 
 attributes:
   device:

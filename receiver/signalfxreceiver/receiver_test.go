@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package signalfxreceiver
 
 import (
@@ -27,6 +28,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -34,17 +36,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func Test_signalfxeceiver_New(t *testing.T) {
@@ -63,7 +65,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantStartErr: componenterror.ErrNilNextConsumer,
+			wantStartErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "default_endpoint",
@@ -97,8 +99,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	port := testutil.GetAvailablePort(t)
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
@@ -111,18 +112,18 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
+	ts := pcommon.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
 	const doubleVal = 1234.5678
 	const int64Val = int64(123)
 
-	want := pdata.NewMetrics()
-	ilm := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	want := pmetric.NewMetrics()
+	ilm := want.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		doublePt := m.Gauge().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
 		doublePt.SetDoubleVal(doubleVal)
@@ -130,7 +131,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		int64Pt := m.Gauge().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
 		int64Pt.SetIntVal(int64Val)
@@ -138,8 +139,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
-		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		m.SetDataType(pmetric.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		doublePt := m.Sum().DataPoints().AppendEmpty()
 		doublePt.SetTimestamp(ts)
@@ -148,8 +149,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	{
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
-		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		m.SetDataType(pmetric.MetricDataTypeSum)
+		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		int64Pt := m.Sum().DataPoints().AppendEmpty()
 		int64Pt.SetTimestamp(ts)
@@ -169,7 +170,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		conn, err := net.Dial("tcp", addr)
 		if err == nil && conn != nil {
 			conn.Close()
 			return true
@@ -560,14 +561,14 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	msec := time.Now().Unix() * 1e3
 
-	want := pdata.NewMetrics()
-	m := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	want := pmetric.NewMetrics()
+	m := want.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 
-	m.SetDataType(pdata.MetricDataTypeGauge)
+	m.SetDataType(pmetric.MetricDataTypeGauge)
 	m.SetName("single")
 	dps := m.Gauge().DataPoints()
 	dp := dps.AppendEmpty()
-	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
+	dp.SetTimestamp(pcommon.Timestamp(msec * 1e6))
 	dp.SetIntVal(13)
 
 	dp.Attributes().InsertString("k0", "v0")
@@ -834,4 +835,33 @@ func newAssertNoErrorHost(t *testing.T) component.Host {
 
 func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 	assert.NoError(aneh, err)
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
+}
+
+func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
+	return &t
+}
+
+func sfxCategoryPtr(t sfxpb.EventCategory) *sfxpb.EventCategory {
+	return &t
+}
+
+func buildNDimensions(n uint) []*sfxpb.Dimension {
+	d := make([]*sfxpb.Dimension, 0, n)
+	for i := uint(0); i < n; i++ {
+		idx := int(i)
+		suffix := strconv.Itoa(idx)
+		d = append(d, &sfxpb.Dimension{
+			Key:   "k" + suffix,
+			Value: "v" + suffix,
+		})
+	}
+	return d
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -27,7 +28,7 @@ import (
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// The address on which the Prometheus scrape handler will be run on.
+	// Endpoint is the address on which the Prometheus scrape handler will be run on.
 	Endpoint string `mapstructure:"endpoint"`
 
 	// Namespace if set, exports metrics under the provided value.
@@ -44,9 +45,18 @@ type Config struct {
 
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+
+	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
+	skipSanitizeLabel bool
 }
 
 var _ config.Exporter = (*Config)(nil)
+
+var dropSanitizationGate = featuregate.Gate{
+	ID:          "exporter.prometheus.PermissiveLabelSanitization",
+	Enabled:     false,
+	Description: "Controls whether to change labels starting with '_' to 'key_'",
+}
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

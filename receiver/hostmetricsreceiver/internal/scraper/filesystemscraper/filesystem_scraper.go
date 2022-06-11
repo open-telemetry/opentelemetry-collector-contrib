@@ -16,10 +16,14 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
-	"go.opentelemetry.io/collector/model/pdata"
+	"github.com/shirou/gopsutil/v3/host"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
@@ -32,10 +36,13 @@ const (
 
 // scraper for FileSystem Metrics
 type scraper struct {
+	settings component.ReceiverCreateSettings
 	config   *Config
+	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
 
 	// for mocking gopsutil disk.Partitions & disk.Usage
+	bootTime   func() (uint64, error)
 	partitions func(bool) ([]disk.PartitionStat, error)
 	usage      func(string) (*disk.UsageStat, error)
 }
@@ -46,26 +53,33 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
 	}
 
-	scraper := &scraper{config: cfg, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
 	return scraper, nil
 }
 
-func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+func (s *scraper) start(context.Context, component.Host) error {
+	bootTime, err := s.bootTime()
+	if err != nil {
+		return err
+	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	return nil
+}
+
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	var errors scrapererror.ScrapeErrors
@@ -76,7 +90,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
 		}
 		usage, usageErr := s.usage(partition.Mountpoint)
 		if usageErr != nil {
-			errors.AddPartial(0, usageErr)
+			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", partition.Mountpoint, usageErr))
 			continue
 		}
 
@@ -84,9 +98,8 @@ func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
 	}
 
 	if len(usages) > 0 {
-		metrics.EnsureCapacity(metricsLen)
-		initializeFileSystemUsageMetric(metrics.AppendEmpty(), now, usages)
-		appendSystemSpecificMetrics(metrics, now, usages)
+		s.recordFileSystemUsageMetric(now, usages)
+		s.recordSystemSpecificMetrics(now, usages)
 	}
 
 	err = errors.Combine()
@@ -94,28 +107,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
 		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	return md, err
-}
-
-func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, deviceUsages []*deviceUsage) {
-	metadata.Metrics.SystemFilesystemUsage.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(fileSystemStatesLen * len(deviceUsages))
-	for _, deviceUsage := range deviceUsages {
-		appendFileSystemUsageStateDataPoints(idps, now, deviceUsage)
-	}
-}
-
-func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
-	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Attributes.Device, partition.Device)
-	attributes.InsertString(metadata.Attributes.Type, partition.Fstype)
-	attributes.InsertString(metadata.Attributes.Mode, getMountMode(partition.Opts))
-	attributes.InsertString(metadata.Attributes.Mountpoint, partition.Mountpoint)
-	attributes.InsertString(metadata.Attributes.State, stateLabel)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
+	return s.mb.Emit(), err
 }
 
 func getMountMode(opts []string) string {
