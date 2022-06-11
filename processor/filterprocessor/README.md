@@ -206,11 +206,10 @@ processors:
 In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.
 
 ### Filter Spans from Traces
-```diff
-- This pipeline is able to drop spans and whole traces, that means your traces will be incomplete in your visualizaiton tool.  Why would wont want this you may ask? 
-Auto instrument 600 java-redis-clients and tell me how quickly your tracing platform goes to tis knees.  
-Also, DO NOT TRLY ON THIS PLUGIN FOR PCI/Sox/HIPPA etc.  If the data has already gotten this far in the pipeline you have a larger root problem.
-```
+
+* This pipeline is able to drop spans and whole traces 
+* Note: If this drops a parent span, it does not search out it's children leading to a missing Span in your trace vizualization
+
 See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
 
 For spans, one of Services, SpanNames, Attributes, Resources or Libraries must be specified with a
