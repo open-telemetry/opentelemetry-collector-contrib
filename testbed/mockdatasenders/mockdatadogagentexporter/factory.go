@@ -32,10 +32,9 @@ const (
 )
 
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typeStr,
+	return component.NewExporterFactory(typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(CreateTracesExporter))
+		component.WithTracesExporter(CreateTracesExporter))
 }
 
 // CreateDefaultConfig creates the default configuration for DDAPM Exporter

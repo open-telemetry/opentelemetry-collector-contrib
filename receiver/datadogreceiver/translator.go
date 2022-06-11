@@ -23,35 +23,36 @@ import (
 
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/model/pdata"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
-func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
-	dest := pdata.NewTraces()
+func toTraces(traces datadogpb.Traces, req *http.Request) ptrace.Traces {
+	dest := ptrace.NewTraces()
 	resSpans := dest.ResourceSpans().AppendEmpty()
 	resSpans.SetSchemaUrl(semconv.SchemaURL)
 
 	for _, trace := range traces {
-		ils := resSpans.InstrumentationLibrarySpans().AppendEmpty()
-		ils.InstrumentationLibrary().SetName("Datadog-" + req.Header.Get("Datadog-Meta-Lang"))
-		ils.InstrumentationLibrary().SetVersion(req.Header.Get("Datadog-Meta-Tracer-Version"))
-		spans := pdata.NewSpanSlice()
+		ils := resSpans.ScopeSpans().AppendEmpty()
+		ils.Scope().SetName("Datadog-" + req.Header.Get("Datadog-Meta-Lang"))
+		ils.Scope().SetVersion(req.Header.Get("Datadog-Meta-Tracer-Version"))
+		spans := ptrace.NewSpanSlice()
 		spans.EnsureCapacity(len(trace))
 		for _, span := range trace {
 			newSpan := spans.AppendEmpty()
 
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))
-			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
-			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
+			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
+			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
-			newSpan.SetName(span.Name)
+			newSpan.SetName(span.Resource)
 
 			if span.Error > 0 {
-				newSpan.Status().SetCode(pdata.StatusCodeError)
+				newSpan.Status().SetCode(ptrace.StatusCodeError)
 			} else {
-				newSpan.Status().SetCode(pdata.StatusCodeOk)
+				newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			}
 
 			attrs := newSpan.Attributes()
@@ -66,11 +67,11 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 
 			switch span.Type {
 			case "web":
-				newSpan.SetKind(pdata.SpanKindServer)
+				newSpan.SetKind(ptrace.SpanKindServer)
 			case "custom":
-				newSpan.SetKind(pdata.SpanKindUnspecified)
+				newSpan.SetKind(ptrace.SpanKindUnspecified)
 			default:
-				newSpan.SetKind(pdata.SpanKindClient)
+				newSpan.SetKind(ptrace.SpanKindClient)
 			}
 		}
 		spans.MoveAndAppendTo(ils.Spans())
@@ -131,15 +132,15 @@ func getMediaType(req *http.Request) string {
 	return mt
 }
 
-func uInt64ToTraceID(high, low uint64) pdata.TraceID {
+func uInt64ToTraceID(high, low uint64) pcommon.TraceID {
 	traceID := [16]byte{}
 	binary.BigEndian.PutUint64(traceID[:8], high)
 	binary.BigEndian.PutUint64(traceID[8:], low)
-	return pdata.NewTraceID(traceID)
+	return pcommon.NewTraceID(traceID)
 }
 
-func uInt64ToSpanID(id uint64) pdata.SpanID {
+func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return pdata.NewSpanID(spanID)
+	return pcommon.NewSpanID(spanID)
 }

@@ -23,7 +23,6 @@ import (
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -42,7 +41,7 @@ type datadogReceiver struct {
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params component.ReceiverCreateSettings) (component.TracesReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	return &datadogReceiver{

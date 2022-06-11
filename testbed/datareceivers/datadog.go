@@ -50,7 +50,7 @@ func (dd *datadogDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ c
 		return err
 	}
 
-	return dd.receiver.Start(context.Background(), dd)
+	return dd.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (dd *datadogDataReceiver) Stop() error {

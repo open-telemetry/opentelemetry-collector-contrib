@@ -19,6 +19,9 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"net/http"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
@@ -26,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type ddExporter struct {
@@ -47,18 +49,18 @@ func createExporter(cfg *Config) *ddExporter {
 
 // start creates the http client
 func (dd *ddExporter) start(_ context.Context, host component.Host) (err error) {
-	dd.client, err = dd.clientSettings.ToClient(host.GetExtensions())
+	dd.client, err = dd.clientSettings.ToClient(host.GetExtensions(), componenttest.NewNopTelemetrySettings())
 	return
 }
 
-func (dd *ddExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	var traces pb.Traces
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resSpans := td.ResourceSpans().At(i)
 		var trace pb.Trace
-		for l := 0; l < resSpans.InstrumentationLibrarySpans().Len(); l++ {
-			ils := resSpans.InstrumentationLibrarySpans().At(i)
+		for l := 0; l < resSpans.ScopeSpans().Len(); l++ {
+			ils := resSpans.ScopeSpans().At(i)
 			for s := 0; s < ils.Spans().Len(); s++ {
 				span := ils.Spans().At(s)
 				var newSpan = pb.Span{
@@ -72,7 +74,7 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 					Meta:     map[string]string{},
 					Type:     "custom",
 				}
-				span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+				span.Attributes().Range(func(k string, v pcommon.Value) bool {
 					newSpan.GetMeta()[k] = v.AsString()
 					return true
 				})

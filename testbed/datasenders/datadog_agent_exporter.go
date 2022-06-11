@@ -56,7 +56,7 @@ func (dd *datadogDataSender) Start() error {
 	}
 
 	dd.Traces = exp
-	return exp.Start(context.Background(), dd)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (dd *datadogDataSender) GenConfigYAMLStr() string {

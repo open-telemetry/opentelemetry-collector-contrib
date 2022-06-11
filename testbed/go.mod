@@ -15,6 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.53.0
@@ -23,6 +24,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.53.0
 	github.com/prometheus/common v0.34.0
 	github.com/prometheus/prometheus v0.36.0
 	github.com/shirou/gopsutil/v3 v3.22.5
@@ -92,9 +94,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -184,7 +183,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.11.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/tinylib/msgp v1.1.0 // indirect
+	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
