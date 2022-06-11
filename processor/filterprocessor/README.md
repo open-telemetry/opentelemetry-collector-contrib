@@ -208,7 +208,7 @@ In case the no metric names are provided, `matric_names` being empty, the filter
 ### Filter Spans from Traces
 
 * This pipeline is able to drop spans and whole traces 
-* Note: If this drops a parent span, it does not search out it's children leading to a missing Span in your trace vizualization
+* Note: If this drops a parent span, it does not search out it's children leading to a missing Span in your trace visualization
 
 See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
 
