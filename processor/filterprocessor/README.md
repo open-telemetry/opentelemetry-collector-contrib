@@ -42,7 +42,7 @@ This processor uses [re2 regex][re2_regex] for regex syntax.
 
 [re2_regex]: https://github.com/google/re2/wiki/Syntax
 
-More details can found at [include/exclude metrics](../README.md#includeexclude-metrics).
+More details can found at [include/exclude metrics](../attributesprocessor/README.md#includeexclude-filtering).
 
 Examples:
 
