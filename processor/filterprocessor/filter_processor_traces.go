@@ -16,8 +16,9 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 
@@ -41,7 +42,7 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 		return nil, err
 	}
 
-	includeMatchTypem, excludeMatchType := "[None]"
+	includeMatchType, excludeMatchType := "[None]", "[None]"
 	if cfg.Spans.Include != nil {
 		includeMatchType = string(cfg.Spans.Include.MatchType)
 	}
@@ -85,23 +86,23 @@ func createSpanMatcher(cfg *Config) (filterspan.Matcher, filterspan.Matcher, err
 }
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
-func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Traces) (pdata.Traces, error) {
+func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < pdt.ResourceSpans().Len(); i++ {
 		resSpan := pdt.ResourceSpans().At(i)
-		for x := 0; x < resSpan.InstrumentationLibrarySpans().Len(); x++ {
-			ils := resSpan.InstrumentationLibrarySpans().At(x)
-			ils.Spans().RemoveIf(func(span pdata.Span) bool {
-				return fsp.shouldRemoveSpan(span, resSpan.Resource(), ils.InstrumentationLibrary())
+		for x := 0; x < resSpan.ScopeSpans().Len(); x++ {
+			ils := resSpan.ScopeSpans().At(x)
+			ils.Spans().RemoveIf(func(span ptrace.Span) bool {
+				return fsp.shouldRemoveSpan(span, resSpan.Resource(), ils.Scope())
 			})
 		}
 		// Remove empty elements, that way if we delete everything we can tell
 		// the pipeline to stop processing completely (ErrSkipProcessingData)
-		resSpan.InstrumentationLibrarySpans().RemoveIf(func(ilsSpans pdata.InstrumentationLibrarySpans) bool {
+		resSpan.ScopeSpans().RemoveIf(func(ilsSpans ptrace.ScopeSpans) bool {
 			return ilsSpans.Spans().Len() == 0
 		})
 	}
-	pdt.ResourceSpans().RemoveIf(func(res pdata.ResourceSpans) bool {
-		return res.InstrumentationLibrarySpans().Len() == 0
+	pdt.ResourceSpans().RemoveIf(func(res ptrace.ResourceSpans) bool {
+		return res.ScopeSpans().Len() == 0
 	})
 	if pdt.ResourceSpans().Len() == 0 {
 		return pdt, processorhelper.ErrSkipProcessingData
@@ -109,7 +110,7 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 	return pdt, nil
 }
 
-func (fsp *filterSpanProcessor) shouldRemoveSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func (fsp *filterSpanProcessor) shouldRemoveSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
 	if fsp.include != nil {
 		if !fsp.include.MatchSpan(span, resource, library) {
 			return true

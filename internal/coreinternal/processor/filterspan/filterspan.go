@@ -113,9 +113,9 @@ func (mp *propertiesMatcher) MatchSpan(span ptrace.Span, resource pcommon.Resour
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
 		// Check resource and spans for service.name
-		serviceName, found := serviceNameForResource(resource)
-		if !found {
-			serviceName, _ = serviceNameForSpan(span)
+		serviceName := serviceNameForResource(resource)
+		if serviceName == "<nil-service-name>" {
+			serviceName = serviceNameForSpan(span)
 		}
 		if !mp.serviceFilters.Matches(serviceName) {
 			return false
@@ -139,7 +139,7 @@ func serviceNameForResource(resource pcommon.Resource) string {
 }
 
 // serviceNameForSpan gets the service name for a span
-func serviceNameForSpan(span pdata.Span) (string, bool) {
+func serviceNameForSpan(span ptrace.Span) string {
 	service, found := span.Attributes().Get(conventions.AttributeServiceName)
 	if !found {
 		return "<nil-service-name>"

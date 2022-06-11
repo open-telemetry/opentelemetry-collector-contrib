@@ -15,6 +15,7 @@
 package filterprocessor
 
 import (
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -278,7 +279,7 @@ func TestLoadingSpans(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_traces.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_traces.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 

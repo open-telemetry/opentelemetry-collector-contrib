@@ -16,14 +16,14 @@ package filterprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -34,8 +34,8 @@ type testTrace struct {
 	spanName           string
 	libraryName        string
 	libraryVersion     string
-	resourceAttributes map[string]pdata.AttributeValue
-	tags               map[string]pdata.AttributeValue
+	resourceAttributes map[string]interface{}
+	tags               map[string]interface{}
 }
 
 // All the data we need to define a test
@@ -43,7 +43,7 @@ type traceTest struct {
 	name              string
 	inc               *filterconfig.MatchProperties
 	exc               *filterconfig.MatchProperties
-	inTraces          pdata.Traces
+	inTraces          ptrace.Traces
 	allTracesFiltered bool
 	spanCountExpected int // The number of spans that should be left after all filtering
 }
@@ -54,11 +54,11 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"service.name": pdata.NewAttributeValueString("test_service"),
+			resourceAttributes: map[string]interface{}{
+				"service.name": "test_service",
 			},
-			tags: map[string]pdata.AttributeValue{
-				"db.type": pdata.NewAttributeValueString("redis"),
+			tags: map[string]interface{}{
+				"db.type": "redis",
 			},
 		},
 	}
@@ -68,24 +68,24 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"service.name": pdata.NewAttributeValueString("keep"),
+			resourceAttributes: map[string]interface{}{
+				"service.name": "keep",
 			},
 		},
 		{
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"service.name": pdata.NewAttributeValueString("dont_keep"),
+			resourceAttributes: map[string]interface{}{
+				"service.name": "dont_keep",
 			},
 		},
 		{
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"service.name": pdata.NewAttributeValueString("keep"),
+			resourceAttributes: map[string]interface{}{
+				"service.name": "keep",
 			},
 		},
 	}
@@ -96,6 +96,7 @@ var (
 	}
 
 	redisMatchProperties = &filterconfig.MatchProperties{
+		Config: filterset.Config{MatchType: filterset.Strict},
 		Attributes: []filterconfig.Attribute{
 			{Key: "db.type", Value: "redis"},
 		},
@@ -164,17 +165,17 @@ func TestFilterTraceProcessor(t *testing.T) {
 		})
 	}
 }
-func generateTraces(traces []testTrace) pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraces(traces []testTrace) ptrace.Traces {
+	td := ptrace.NewTraces()
 
 	for _, trace := range traces {
 		rs := td.ResourceSpans().AppendEmpty()
-		pdata.NewAttributeMapFromMap(trace.resourceAttributes).CopyTo(rs.Resource().Attributes())
-		ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-		ils.InstrumentationLibrary().SetName(trace.libraryName)
-		ils.InstrumentationLibrary().SetVersion(trace.libraryVersion)
+		pcommon.NewMapFromRaw(trace.resourceAttributes).CopyTo(rs.Resource().Attributes())
+		ils := rs.ScopeSpans().AppendEmpty()
+		ils.Scope().SetName(trace.libraryName)
+		ils.Scope().SetVersion(trace.libraryVersion)
 		span := ils.Spans().AppendEmpty()
-		pdata.NewAttributeMapFromMap(trace.tags).CopyTo(span.Attributes())
+		pcommon.NewMapFromRaw(trace.tags).CopyTo(span.Attributes())
 		span.SetName(trace.spanName)
 	}
 	return td
