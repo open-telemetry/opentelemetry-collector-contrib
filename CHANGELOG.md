@@ -1,7 +1,8 @@
 # Changelog
 
 ## Unreleased
-
+- `filterprocessor`: Ability to filter `Spans` (#6341)
+- 
 ## 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
