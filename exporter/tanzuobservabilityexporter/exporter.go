@@ -18,25 +18,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
 const (
-	defaultApplicationName = "defaultApp"
-	defaultServiceName     = "defaultService"
-	labelApplication       = "application"
-	labelError             = "error"
-	labelEventName         = "name"
-	labelService           = "service"
-	labelSpanKind          = "span.kind"
+	defaultApplicationName  = "defaultApp"
+	defaultServiceName      = "defaultService"
+	defaultMetricsPort      = 2878
+	labelApplication        = "application"
+	labelError              = "error"
+	labelEventName          = "name"
+	labelService            = "service"
+	labelSpanKind           = "span.kind"
+	labelSource             = "source"
+	labelDroppedEventsCount = "otel.dropped_events_count"
+	labelDroppedLinksCount  = "otel.dropped_links_count"
+	labelDroppedAttrsCount  = "otel.dropped_attributes_count"
+	labelOtelScopeName      = "otel.scope.name"
+	labelOtelScopeVersion   = "otel.scope.version"
 )
 
 // spanSender Interface for sending tracing spans to Tanzu Observability
@@ -56,29 +62,34 @@ type tracesExporter struct {
 	logger *zap.Logger
 }
 
-func newTracesExporter(l *zap.Logger, c config.Exporter) (*tracesExporter, error) {
+func newTracesExporter(settings component.ExporterCreateSettings, c config.Exporter) (*tracesExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
 	}
-
-	endpoint, err := url.Parse(cfg.Traces.Endpoint)
+	if !cfg.hasTracesEndpoint() {
+		return nil, fmt.Errorf("traces.endpoint required")
+	}
+	tracingHost, tracingPort, err := cfg.parseTracesEndpoint()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse traces.endpoint: %v", err)
 	}
-	tracingPort, err := strconv.Atoi(endpoint.Port())
-	if err != nil {
-		// the port is empty, otherwise url.Parse would have failed above
-		return nil, fmt.Errorf("traces.endpoint requires a port")
+	metricsPort := defaultMetricsPort
+	if cfg.hasMetricsEndpoint() {
+		_, metricsPort, err = cfg.parseMetricsEndpoint()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse metrics.endpoint: %v", err)
+		}
 	}
 
 	// we specify a MetricsPort so the SDK can report its internal metrics
 	// but don't currently export any metrics from the pipeline
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
-		Host:                 endpoint.Hostname(),
-		MetricsPort:          2878,
+		Host:                 tracingHost,
+		MetricsPort:          metricsPort,
 		TracingPort:          tracingPort,
 		FlushIntervalSeconds: 1,
+		SDKMetricsTags:       map[string]string{"otel.traces.collector_version": settings.BuildInfo.Version},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
@@ -87,19 +98,23 @@ func newTracesExporter(l *zap.Logger, c config.Exporter) (*tracesExporter, error
 	return &tracesExporter{
 		cfg:    cfg,
 		sender: s,
-		logger: l,
+		logger: settings.Logger,
 	}, nil
 }
 
-func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			ispans := rspans.InstrumentationLibrarySpans().At(j)
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			ispans := rspans.ScopeSpans().At(j)
 			transform := newTraceTransformer(resource)
+
+			libraryName := ispans.Scope().Name()
+			libraryVersion := ispans.Scope().Version()
+
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {
 				case <-ctx.Done():
@@ -109,6 +124,14 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 					if err != nil {
 						errs = multierr.Append(errs, err)
 						continue
+					}
+
+					if libraryName != "" {
+						transformedSpan.Tags[labelOtelScopeName] = libraryName
+					}
+
+					if libraryVersion != "" {
+						transformedSpan.Tags[labelOtelScopeVersion] = libraryVersion
 					}
 
 					if err := e.recordSpan(transformedSpan); err != nil {
@@ -134,7 +157,7 @@ func (e *tracesExporter) recordSpan(span span) error {
 		span.Name,
 		span.StartMillis,
 		span.DurationMillis,
-		"",
+		span.Source,
 		span.TraceID.String(),
 		span.SpanID.String(),
 		parents,

@@ -17,7 +17,7 @@ package docsgen
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,7 +35,7 @@ func TestTableTemplate(t *testing.T) {
 }
 
 func testDataField(t *testing.T) *configschema.Field {
-	jsonBytes, err := ioutil.ReadFile(path.Join("testdata", "otlp-receiver.json"))
+	jsonBytes, err := ioutil.ReadFile(filepath.Join("testdata", "otlp-receiver.json"))
 	require.NoError(t, err)
 	field := configschema.Field{}
 	err = json.Unmarshal(jsonBytes, &field)

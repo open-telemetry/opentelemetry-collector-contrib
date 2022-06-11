@@ -15,7 +15,7 @@
 package attributesprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,7 +35,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -197,6 +197,16 @@ func TestLoadingConfig(t *testing.T) {
 			Actions: []attraction.ActionKeyValue{
 				{Key: "password", Action: attraction.UPDATE, Value: "obfuscated"},
 				{Key: "token", Action: attraction.DELETE},
+			},
+		},
+	})
+
+	p11 := cfg.Processors[config.NewComponentIDWithName(typeStr, "convert")]
+	assert.Equal(t, p11, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "convert")),
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "http.status_code", Action: attraction.CONVERT, ConvertedType: "int"},
 			},
 		},
 	})

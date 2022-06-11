@@ -1,12 +1,17 @@
 name: rabbitmqreceiver
 
-attributes:
+resource_attributes:
   rabbitmq.queue.name:
     description: The name of the RabbitMQ queue.
+    type: string
   rabbitmq.node.name:
     description: The name of the RabbitMQ node.
+    type: string
   rabbitmq.vhost.name:
     description: The name of the RabbitMQ vHost.
+    type: string
+
+attributes:
   message.state:
     value: state
     description: The state of messages in a queue.

@@ -22,6 +22,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 const (
@@ -93,7 +95,7 @@ func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLab
 
 			metric, err := r.newMetric(metricName, dsType, val, labels)
 			if err != nil {
-				return metrics, fmt.Errorf("error processing metric %s: %v", metricName, err)
+				return metrics, fmt.Errorf("error processing metric %s: %v", sanitize.String(metricName), err)
 			}
 			metrics = append(metrics, metric)
 

@@ -12,25 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package tanzuobservabilityexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 type traceTransformer struct {
-	resAttrs pdata.AttributeMap
+	resAttrs pcommon.Map
 }
 
-func newTraceTransformer(resource pdata.Resource) *traceTransformer {
+func newTraceTransformer(resource pcommon.Resource) *traceTransformer {
 	t := &traceTransformer{
 		resAttrs: resource.Attributes(),
 	}
@@ -51,9 +54,10 @@ type span struct {
 	StartMillis    int64
 	DurationMillis int64
 	SpanLogs       []senders.SpanLog
+	Source         string
 }
 
-func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
+func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 	traceID, err := traceIDtoUUID(orig.TraceID())
 	if err != nil {
 		return span{}, errInvalidTraceID
@@ -66,10 +70,24 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 
 	startMillis, durationMillis := calculateTimes(orig)
 
-	tags := attributesToTags(t.resAttrs, orig.Attributes())
+	source, attributesWithoutSource := getSourceAndResourceTags(t.resAttrs)
+	tags := attributesToTagsReplaceSource(
+		newMap(attributesWithoutSource), orig.Attributes())
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
+
+	if droppedEventsCount := orig.DroppedEventsCount(); droppedEventsCount > 0 {
+		tags[labelDroppedEventsCount] = strconv.FormatUint(uint64(droppedEventsCount), 10)
+	}
+
+	if droppedLinksCount := orig.DroppedLinksCount(); droppedLinksCount > 0 {
+		tags[labelDroppedLinksCount] = strconv.FormatUint(uint64(droppedLinksCount), 10)
+	}
+
+	if droppedAttrsCount := orig.DroppedAttributesCount(); droppedAttrsCount > 0 {
+		tags[labelDroppedAttrsCount] = strconv.FormatUint(uint64(droppedAttrsCount), 10)
+	}
 
 	errorTags := errorTagsFromStatus(orig.Status())
 	for k, v := range errorTags {
@@ -86,25 +104,59 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 		SpanID:         spanID,
 		ParentSpanID:   parentSpanIDtoUUID(orig.ParentSpanID()),
 		Tags:           tags,
+		Source:         source,
 		StartMillis:    startMillis,
 		DurationMillis: durationMillis,
 		SpanLogs:       eventsToLogs(orig.Events()),
 	}, nil
 }
 
-func spanKind(span pdata.Span) string {
+func getSourceAndResourceTagsAndSourceKey(attributes pcommon.Map) (
+	string, map[string]string, string) {
+	attributesWithoutSource := map[string]string{}
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		attributesWithoutSource[k] = v.AsString()
+		return true
+	})
+	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
+	var source string
+	var sourceKey string
+	for _, key := range candidateKeys {
+		if value, isFound := attributesWithoutSource[key]; isFound {
+			source = value
+			sourceKey = key
+			delete(attributesWithoutSource, key)
+			break
+		}
+	}
+
+	//returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
+	return source, attributesWithoutSource, sourceKey
+}
+
+func getSourceAndResourceTags(attributes pcommon.Map) (string, map[string]string) {
+	source, attributesWithoutSource, _ := getSourceAndResourceTagsAndSourceKey(attributes)
+	return source, attributesWithoutSource
+}
+
+func getSourceAndKey(attributes pcommon.Map) (string, string) {
+	source, _, sourceKey := getSourceAndResourceTagsAndSourceKey(attributes)
+	return source, sourceKey
+}
+
+func spanKind(span ptrace.Span) string {
 	switch span.Kind() {
-	case pdata.SpanKindClient:
+	case ptrace.SpanKindClient:
 		return "client"
-	case pdata.SpanKindServer:
+	case ptrace.SpanKindServer:
 		return "server"
-	case pdata.SpanKindProducer:
+	case ptrace.SpanKindProducer:
 		return "producer"
-	case pdata.SpanKindConsumer:
+	case ptrace.SpanKindConsumer:
 		return "consumer"
-	case pdata.SpanKindInternal:
+	case ptrace.SpanKindInternal:
 		return "internal"
-	case pdata.SpanKindUnspecified:
+	case ptrace.SpanKindUnspecified:
 		return "unspecified"
 	default:
 		return "unknown"
@@ -125,11 +177,11 @@ func (t *traceTransformer) setRequiredTags(tags map[string]string) {
 	}
 }
 
-func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
+func eventsToLogs(events ptrace.SpanEventSlice) []senders.SpanLog {
 	var result []senders.SpanLog
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
-		fields := attributesToTags(e.Attributes())
+		fields := attributesToTagsReplaceSource(e.Attributes())
 		fields[labelEventName] = e.Name()
 		result = append(result, senders.SpanLog{
 			Timestamp: int64(e.Timestamp()) / time.Microsecond.Nanoseconds(), // Timestamp is in microseconds
@@ -140,7 +192,7 @@ func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
 	return result
 }
 
-func calculateTimes(span pdata.Span) (int64, int64) {
+func calculateTimes(span ptrace.Span) (int64, int64) {
 	startMillis := int64(span.StartTimestamp()) / time.Millisecond.Nanoseconds()
 	endMillis := int64(span.EndTimestamp()) / time.Millisecond.Nanoseconds()
 	durationMillis := endMillis - startMillis
@@ -151,26 +203,42 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
+func attributesToTags(attributes ...pcommon.Map) map[string]string {
 	tags := map[string]string{}
-
-	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = v.AsString()
-		return true
-	}
-
-	// Since AttributeMaps are processed in the order received, later values overwrite earlier ones
 	for _, att := range attributes {
-		att.Range(extractTag)
+		att.Range(func(k string, v pcommon.Value) bool {
+			tags[k] = v.AsString()
+			return true
+		})
 	}
-
 	return tags
 }
 
-func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
+func replaceSource(tags map[string]string) {
+	if value, isFound := tags[labelSource]; isFound {
+		delete(tags, labelSource)
+		tags["_source"] = value
+	}
+}
+
+func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string {
+	tags := attributesToTags(attributes...)
+	replaceSource(tags)
+	return tags
+}
+
+func newMap(tags map[string]string) pcommon.Map {
+	valueMap := make(map[string]interface{}, len(tags))
+	for key, value := range tags {
+		valueMap[key] = value
+	}
+	return pcommon.NewMapFromRaw(valueMap)
+}
+
+func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {
 	tags := make(map[string]string)
 
-	if status.Code() != pdata.StatusCodeError {
+	if status.Code() != ptrace.StatusCodeError {
 		return tags
 	}
 
@@ -187,7 +255,7 @@ func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
 	return tags
 }
 
-func traceIDtoUUID(id pdata.TraceID) (uuid.UUID, error) {
+func traceIDtoUUID(id pcommon.TraceID) (uuid.UUID, error) {
 	formatted, err := uuid.Parse(id.HexString())
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidTraceID
@@ -195,7 +263,7 @@ func traceIDtoUUID(id pdata.TraceID) (uuid.UUID, error) {
 	return formatted, nil
 }
 
-func spanIDtoUUID(id pdata.SpanID) (uuid.UUID, error) {
+func spanIDtoUUID(id pcommon.SpanID) (uuid.UUID, error) {
 	formatted, err := uuid.FromBytes(padTo16Bytes(id.Bytes()))
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidSpanID
@@ -203,7 +271,7 @@ func spanIDtoUUID(id pdata.SpanID) (uuid.UUID, error) {
 	return formatted, nil
 }
 
-func parentSpanIDtoUUID(id pdata.SpanID) uuid.UUID {
+func parentSpanIDtoUUID(id pcommon.SpanID) uuid.UUID {
 	if id.IsEmpty() {
 		return uuid.Nil
 	}

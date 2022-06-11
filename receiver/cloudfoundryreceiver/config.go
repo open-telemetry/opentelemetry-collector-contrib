@@ -37,7 +37,7 @@ type LimitedTLSClientSetting struct {
 // configuration is used with not taking a preconfigured http.Client as input, but only taking these specific options
 type LimitedHTTPClientSettings struct {
 	Endpoint   string                  `mapstructure:"endpoint"`
-	TLSSetting LimitedTLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting LimitedTLSClientSetting `mapstructure:"tls"`
 }
 
 type UAAConfig struct {

@@ -106,9 +106,9 @@ func (t *tcpServer) ListenAndServe(
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - Accept (temporary=%v) net.Error: %v",
 				t.ln.Addr().String(),
-				netErr.Temporary(),
+				netErr.Temporary(), // nolint SA1019
 				netErr)
-			if netErr.Temporary() {
+			if netErr.Temporary() { // nolint SA1019
 				continue
 			}
 		}

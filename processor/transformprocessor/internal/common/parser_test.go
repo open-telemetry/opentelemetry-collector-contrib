@@ -15,24 +15,27 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_parse(t *testing.T) {
 	tests := []struct {
 		query    string
-		expected Query
+		expected *ParsedQuery
 	}{
 		{
 			query: `set("foo")`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: strp("foo"),
+							String: testhelper.Strp("foo"),
 						},
 					},
 				},
@@ -41,12 +44,12 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `met(1.2)`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "met",
 					Arguments: []Value{
 						{
-							Float: floatp(1.2),
+							Float: testhelper.Floatp(1.2),
 						},
 					},
 				},
@@ -55,12 +58,12 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `fff(12)`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "fff",
 					Arguments: []Value{
 						{
-							Int: intp(12),
+							Int: testhelper.Intp(12),
 						},
 					},
 				},
@@ -69,12 +72,12 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set("foo", get(bear.honey))`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: strp("foo"),
+							String: testhelper.Strp("foo"),
 						},
 						{
 							Invocation: &Invocation{
@@ -102,7 +105,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set(foo.attributes["bar"].cat, "dog")`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -114,7 +117,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -123,7 +126,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -132,7 +135,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -144,7 +147,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -153,7 +156,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -169,14 +172,14 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "==",
 					Right: Value{
-						String: strp("fido"),
+						String: testhelper.Strp("fido"),
 					},
 				},
 			},
 		},
 		{
 			query: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -188,7 +191,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -197,7 +200,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -213,14 +216,14 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "!=",
 					Right: Value{
-						String: strp("fido"),
+						String: testhelper.Strp("fido"),
 					},
 				},
 			},
 		},
 		{
 			query: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -232,7 +235,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: strp("bar"),
+										MapKey: testhelper.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -241,7 +244,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: strp("dog"),
+							String: testhelper.Strp("dog"),
 						},
 					},
 				},
@@ -257,19 +260,77 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "==",
 					Right: Value{
-						String: strp("fido"),
+						String: testhelper.Strp("fido"),
 					},
 				},
 			},
 		},
 		{
 			query: `set("fo\"o")`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: strp("fo\"o"),
+							String: testhelper.Strp("fo\"o"),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
+		{
+			query: `convert_gauge_to_sum("cumulative", false)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "convert_gauge_to_sum",
+					Arguments: []Value{
+						{
+							String: testhelper.Strp("cumulative"),
+						},
+						{
+							Bool: (*Boolean)(testhelper.Boolp(false)),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
+		{
+			query: `convert_gauge_to_sum("cumulative", true)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "convert_gauge_to_sum",
+					Arguments: []Value{
+						{
+							String: testhelper.Strp("cumulative"),
+						},
+						{
+							Bool: (*Boolean)(testhelper.Boolp(true)),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
+		{
+			query: `set(attributes["bytes"], 0x0102030405060708)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("bytes"),
+									},
+								},
+							},
+						},
+						{
+							Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 						},
 					},
 				},
@@ -280,10 +341,9 @@ func Test_parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
-			parsed, err := Parse([]string{tt.query})
+			parsed, err := parseQuery(tt.query)
 			assert.NoError(t, err)
-			assert.Len(t, parsed, 1)
-			assert.Equal(t, tt.expected, parsed[0])
+			assert.Equal(t, tt.expected, parsed)
 		})
 	}
 }
@@ -295,23 +355,31 @@ func Test_parse_failure(t *testing.T) {
 		`set(name.)`,
 		`("foo")`,
 		`set("foo") where name =||= "fido"`,
+		`set(span_id, SpanIDWrapper{not a hex string})`,
+		`set(span_id, SpanIDWrapper{01})`,
+		`set(span_id, SpanIDWrapper{010203040506070809})`,
+		`set(trace_id, TraceIDWrapper{not a hex string})`,
+		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
+		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
-			_, err := Parse([]string{tt})
+			_, err := parseQuery(tt)
 			assert.Error(t, err)
 		})
 	}
 }
 
-func strp(s string) *string {
-	return &s
-}
-
-func floatp(f float64) *float64 {
-	return &f
-}
-
-func intp(i int64) *int64 {
-	return &i
+func testParsePath(val *Path) (GetSetter, error) {
+	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
+		return &testGetSetter{
+			getter: func(ctx TransformContext) interface{} {
+				return ctx.GetItem()
+			},
+			setter: func(ctx TransformContext, val interface{}) {
+				ctx.GetItem()
+			},
+		}, nil
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }

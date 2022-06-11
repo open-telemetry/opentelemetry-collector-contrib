@@ -1,6 +1,6 @@
 # Azure Monitor Exporter
 
-This exporter sends trace data to [Azure Monitor](https://docs.microsoft.com/en-us/azure/azure-monitor/).
+This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 
 ## Configuration
 
@@ -24,7 +24,9 @@ exporters:
 
 ## Attribute mapping
 
-This exporter maps OpenTelemetry trace data to [Application Insights data model](https://docs.microsoft.com/en-us/azure/azure-monitor/app/data-model-dependency-telemetry) using the following schema.
+### Traces
+
+This exporter maps OpenTelemetry trace data to [Application Insights data model](https://docs.microsoft.com/azure/azure-monitor/app/data-model-dependency-telemetry) using the following schema.
 
 The OpenTelemetry SpanKind determines the Application Insights telemetry type.
 
@@ -52,3 +54,7 @@ The exporter follows the semantic conventions to fill the Application Insights s
 The exact mapping can be found [here](trace_to_envelope.go).
 
 All attributes are also mapped to custom properties if they are booleans or strings and to custom measurements if they are ints or doubles.
+
+### Logs
+This exporter saves log records to Application Insights `traces` table.
+[TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.

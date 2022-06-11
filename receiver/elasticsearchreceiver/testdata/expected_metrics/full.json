@@ -1,10 +1,11 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/elasticsearch"
+               "scope": {
+                  "name": "otelcol/elasticsearchreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {
@@ -945,10 +946,11 @@
          }
       },
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/elasticsearch"
+               "scope": {
+                  "name": "otelcol/elasticsearchreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {

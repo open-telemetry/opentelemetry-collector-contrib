@@ -18,7 +18,7 @@
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
@@ -62,6 +62,6 @@ func New(containerOrchestrator string, hostInfo HostInfo, logger *zap.Logger, op
 }
 
 // GetMetrics is a dummy function that always returns empty metrics for windows
-func (c *Cadvisor) GetMetrics() []pdata.Metrics {
-	return []pdata.Metrics{}
+func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
+	return []pmetric.Metrics{}
 }

@@ -30,6 +30,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	errNoStatsFound = fmt.Errorf("No stats found")
+)
+
 type containerStats struct {
 	AvgCPU        float64
 	ContainerID   string
@@ -52,20 +56,30 @@ type containerStats struct {
 	Duration      uint64
 }
 
+type containerStatsReportError struct {
+	Cause    string
+	Message  string
+	Response int64
+}
+
 type containerStatsReport struct {
-	Error string
+	Error containerStatsReportError
 	Stats []containerStats
 }
 
 type clientFactory func(logger *zap.Logger, cfg *Config) (client, error)
 
 type client interface {
-	stats() ([]containerStats, error)
+	ping(context.Context) error
+	stats(context.Context) ([]containerStats, error)
 }
 
 type podmanClient struct {
 	conn     *http.Client
 	endpoint string
+
+	// The maximum amount of time to wait for Podman API responses
+	timeout time.Duration
 }
 
 func newPodmanClient(logger *zap.Logger, cfg *Config) (client, error) {
@@ -76,10 +90,7 @@ func newPodmanClient(logger *zap.Logger, cfg *Config) (client, error) {
 	c := &podmanClient{
 		conn:     connection,
 		endpoint: fmt.Sprintf("http://d/v%s/libpod", cfg.APIVersion),
-	}
-	err = c.ping()
-	if err != nil {
-		return nil, err
+		timeout:  cfg.Timeout,
 	}
 	return c, nil
 }
@@ -96,11 +107,13 @@ func (c *podmanClient) request(ctx context.Context, path string, params url.Valu
 	return c.conn.Do(req)
 }
 
-func (c *podmanClient) stats() ([]containerStats, error) {
+func (c *podmanClient) stats(ctx context.Context) ([]containerStats, error) {
 	params := url.Values{}
 	params.Add("stream", "false")
 
-	resp, err := c.request(context.Background(), "/containers/stats", params)
+	statsCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	resp, err := c.request(statsCtx, "/containers/stats", params)
 	if err != nil {
 		return nil, err
 	}
@@ -116,14 +129,19 @@ func (c *podmanClient) stats() ([]containerStats, error) {
 	if err != nil {
 		return nil, err
 	}
-	if report.Error != "" {
-		return nil, errors.New(report.Error)
+	if report.Error.Message != "" {
+		return nil, errors.New(report.Error.Message)
+	} else if report.Stats == nil {
+		return nil, errNoStatsFound
 	}
+
 	return report.Stats, nil
 }
 
-func (c *podmanClient) ping() error {
-	resp, err := c.request(context.Background(), "/_ping", nil)
+func (c *podmanClient) ping(ctx context.Context) error {
+	pingCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	resp, err := c.request(pingCtx, "/_ping", nil)
 	if err != nil {
 		return err
 	}

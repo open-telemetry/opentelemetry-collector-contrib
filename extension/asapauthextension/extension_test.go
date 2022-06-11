@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/stretchr/testify/assert"
@@ -49,7 +50,7 @@ var _ asap.KeyFetcher = (*mockKeyFetcher)(nil)
 func TestRoundTripper(t *testing.T) {
 	cfg := &Config{
 		PrivateKey: privateKey,
-		TTL:        60,
+		TTL:        60 * time.Second,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
 		KeyID:      "test_issuer/test_kid",
@@ -76,7 +77,7 @@ func TestRoundTripper(t *testing.T) {
 func TestRPCAuth(t *testing.T) {
 	cfg := &Config{
 		PrivateKey: privateKey,
-		TTL:        60,
+		TTL:        60 * time.Second,
 		Audience:   []string{"test"},
 		Issuer:     "test_issuer",
 		KeyID:      "test_issuer/test_kid",

@@ -228,10 +228,10 @@ Handler_write	227
 Innodb_buffer_pool_dump_status	Dumping of buffer pool not started
 Innodb_buffer_pool_load_status	Buffer pool(s) load completed at 210702 12:58:45
 Innodb_buffer_pool_resize_status	
-Innodb_buffer_pool_pages_data	228
-Innodb_buffer_pool_bytes_data	229
-Innodb_buffer_pool_pages_dirty	230
-Innodb_buffer_pool_bytes_dirty	231
+Innodb_buffer_pool_pages_data	230
+Innodb_buffer_pool_bytes_data	231
+Innodb_buffer_pool_pages_dirty	228
+Innodb_buffer_pool_bytes_dirty	229
 Innodb_buffer_pool_pages_flushed	232
 Innodb_buffer_pool_pages_free	233
 Innodb_buffer_pool_pages_misc	234

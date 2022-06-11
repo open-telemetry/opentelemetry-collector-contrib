@@ -18,42 +18,43 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
 	attributeNamePrefix = "org.cloudfoundry."
 )
 
-func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pdata.MetricSlice, startTime time.Time) {
+func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pmetric.MetricSlice, startTime time.Time) {
 	namePrefix := envelope.Tags["origin"] + "."
 
 	switch message := envelope.Message.(type) {
 	case *loggregator_v2.Envelope_Log:
 	case *loggregator_v2.Envelope_Counter:
 		metric := metricSlice.AppendEmpty()
-		metric.SetDataType(pdata.MetricDataTypeSum)
+		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName(namePrefix + message.Counter.GetName())
 		dataPoint := metric.Sum().DataPoints().AppendEmpty()
 		dataPoint.SetDoubleVal(float64(message.Counter.GetTotal()))
-		dataPoint.SetTimestamp(pdata.Timestamp(envelope.GetTimestamp()))
-		dataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+		dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
+		dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
 	case *loggregator_v2.Envelope_Gauge:
 		for name, value := range message.Gauge.GetMetrics() {
 			metric := metricSlice.AppendEmpty()
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 			metric.SetName(namePrefix + name)
 			dataPoint := metric.Gauge().DataPoints().AppendEmpty()
 			dataPoint.SetDoubleVal(value.Value)
-			dataPoint.SetTimestamp(pdata.Timestamp(envelope.GetTimestamp()))
-			dataPoint.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
+			dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
+			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 			copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
 		}
 	}
 }
 
-func copyEnvelopeAttributes(attributes pdata.AttributeMap, envelope *loggregator_v2.Envelope) {
+func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Envelope) {
 	for key, value := range envelope.Tags {
 		attributes.InsertString(attributeNamePrefix+key, value)
 	}

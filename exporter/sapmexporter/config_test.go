@@ -15,7 +15,7 @@
 package sapmexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	facotries.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), facotries)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), facotries)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -89,4 +89,13 @@ func TestInvalidConfig(t *testing.T) {
 	}
 	invalidURLErr := invalid.validate()
 	require.Error(t, invalidURLErr)
+
+	invalid = Config{
+		Endpoint: "abcd1234",
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:   true,
+			QueueSize: -1,
+		},
+	}
+	require.Error(t, invalid.Validate())
 }

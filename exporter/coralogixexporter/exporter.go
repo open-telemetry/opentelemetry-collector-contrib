@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +38,6 @@ func newCoralogixExporter(cfg *Config, params component.ExporterCreateSettings) 
 	}
 }
 
-func (cx *coralogixExporter) tracesPusher(ctx context.Context, td pdata.Traces) error {
+func (cx *coralogixExporter) tracesPusher(ctx context.Context, td ptrace.Traces) error {
 	return cx.client.newPost(ctx, td)
 }

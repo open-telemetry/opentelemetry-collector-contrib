@@ -16,15 +16,21 @@ package routingprocessor
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
+	"go.uber.org/zap"
 )
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
@@ -136,6 +142,56 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
+func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
+	// prepare
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	processorFactory := NewFactory()
+	factories.Processors[typeStr] = processorFactory
+
+	otlpExporterFactory := otlpexporter.NewFactory()
+	factories.Exporters["otlp"] = otlpExporterFactory
+
+	otlpConfig := &otlpexporter.Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "example.com:1234",
+		},
+	}
+
+	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	require.NoError(t, err)
+
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	require.NoError(t, err)
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.TracesDataType: {
+					config.NewComponentID("otlp/traces"): otlpTracesExporter,
+				},
+				config.MetricsDataType: {
+					config.NewComponentID("otlp/metrics"): otlpMetricsExporter,
+				},
+			}
+		},
+	}
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_multipipelines.yaml"), factories)
+	assert.NoError(t, err)
+
+	for _, cfg := range cfg.Processors {
+		exp := newProcessor(zap.NewNop(), cfg)
+		err = exp.Start(context.Background(), host)
+		// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
+		assert.NoError(t, err)
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}
+}
+
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
@@ -165,6 +221,6 @@ func TestShutdown(t *testing.T) {
 
 type mockProcessor struct{}
 
-func (mp *mockProcessor) processTraces(context.Context, pdata.Traces) (pdata.Traces, error) {
-	return pdata.NewTraces(), nil
+func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.Traces, error) {
+	return ptrace.NewTraces(), nil
 }

@@ -1,5 +1,11 @@
 # Dynatrace Exporter
 
+| Status                   |                  |
+| ------------------------ |------------------|
+| Stability                | [beta]           |
+| Supported pipeline types | metrics          |
+| Distributions            | [contrib], [AWS] |
+
 The [Dynatrace](https://dynatrace.com) metrics exporter exports metrics to the [metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
 using the [metrics ingestion protocol](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/metric-ingestion-protocol/).
 This enables Dynatrace to receive metrics collected by the OpenTelemetry Collector.
@@ -23,6 +29,10 @@ You will either need a Dynatrace OneAgent (version 1.201 or higher) installed on
 The Dynatrace exporter is enabled by adding a `dynatrace` entry to the `exporters` section of your config file.
 All configurations are optional, but if an `endpoint` other than the OneAgent metric ingestion endpoint is specified then an `api_token` is required.
 To see all available options, see [Advanced Configuration](#advanced-configuration) below.
+
+> When using this exporter, it is strongly RECOMMENDED to configure the OpenTelemetry SDKs to export metrics 
+> with DELTA temporality. If you are exporting Sum or Histogram metrics with CUMULATIVE temporality, read
+> about possible limitations of this exporter [below](#considerations-when-exporting-cumulative-data-points).
 
 ### Running alongside Dynatrace OneAgent (preferred)
 
@@ -137,7 +147,8 @@ exporters:
     read_buffer_size: 4000
     write_buffer_size: 4000
     timeout: 30s
-    insecure_skip_verify: false
+    tls:
+      insecure_skip_verify: false # (default=false)
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -194,9 +205,12 @@ https://golang.org/pkg/net/http/#Client
 
 Default: `0`
 
-### insecure_skip_verify (Optional)
+### tls.insecure_skip_verify (Optional)
 
-Additionally you can configure TLS to be enabled but skip verifying the server's certificate chain. This cannot be combined with insecure since insecure won't use TLS at all.
+Additionally you can configure TLS to be enabled but skip verifying the server's certificate chain.
+This cannot be combined with `insecure` since `insecure` won't use TLS at all.
+More details can be found in the collector readme for
+[TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 
 Default: `false`
 
@@ -245,3 +259,26 @@ Default: `5000`
 ### tags (Deprecated, Optional)
 
 **Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**
+
+# Considerations when exporting Cumulative Data Points
+
+When receiving Sum or Histogram metrics with CUMULATIVE temporality, this exporter
+performs CUMULATIVE to DELTA conversion. This conversion can lead to missing
+or inconsistent data, as described below:
+
+## First Data Points are dropped
+
+Due to the conversion, the exporter will drop the first received data point,
+as there is no previous data point to compare it to. This can be circumvented
+by configuring the OpenTelemetry SDK to export DELTA values.
+
+## Multi-instance collector deployment
+
+In a multiple-instance deployment of the OpenTelemetry Collector, the conversion 
+can produce inconsistent data unless it can be guaranteed that metrics from the 
+same source are processed by the same collector instance. This can be circumvented 
+by configuring the OpenTelemetry SDK to export DELTA values.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[AWS]:https://aws-otel.github.io/docs/partners/dynatrace

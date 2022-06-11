@@ -17,13 +17,14 @@ package tanzuobservabilityexporter
 import (
 	"context"
 	"errors"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestPushMetricsData(t *testing.T) {
@@ -35,7 +36,7 @@ func TestPushMetricsDataErrorOnSend(t *testing.T) {
 }
 
 func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
-	metric := newMetric("test.metric", pdata.MetricDataTypeGauge)
+	metric := newMetric("test.metric", pmetric.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
 	dataPoints.EnsureCapacity(1)
 	addDataPoint(
@@ -59,8 +60,10 @@ func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
 func createMockMetricsExporter(
 	sender *mockMetricSender) (component.MetricsExporter, error) {
 	cfg := createDefaultConfig()
+	ourConfig := cfg.(*Config)
+	ourConfig.Metrics.Endpoint = "http://localhost:2878"
 	creator := func(
-		hostName string, port int, settings component.TelemetrySettings) (*metricsConsumer, error) {
+		hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 		return newMetricsConsumer(
 			[]typedMetricConsumer{
 				newGaugeConsumer(sender, settings),
@@ -69,7 +72,8 @@ func createMockMetricsExporter(
 			false,
 		), nil
 	}
-	exp, err := newMetricsExporter(componenttest.NewNopTelemetrySettings(), cfg, creator)
+
+	exp, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg, creator)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +85,17 @@ func createMockMetricsExporter(
 	)
 }
 
-func consumeMetrics(metrics pdata.Metrics, sender *mockMetricSender) error {
+func consumeMetrics(metrics pmetric.Metrics, sender *mockMetricSender) error {
 	ctx := context.Background()
 	mockOTelMetricsExporter, err := createMockMetricsExporter(sender)
 	if err != nil {
 		return err
 	}
-	defer mockOTelMetricsExporter.Shutdown(ctx)
+	defer func() {
+		if err := mockOTelMetricsExporter.Shutdown(ctx); err != nil {
+			log.Fatalln(err)
+		}
+	}()
 	return mockOTelMetricsExporter.ConsumeMetrics(ctx, metrics)
 }
 

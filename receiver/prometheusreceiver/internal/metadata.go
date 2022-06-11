@@ -15,11 +15,11 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"context"
 	"errors"
-	"sync"
 
-	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
 )
 
@@ -33,52 +33,90 @@ type ScrapeManager interface {
 	TargetsAll() map[string][]*scrape.Target
 }
 
-type metadataService struct {
-	sync.Mutex
-	stopped bool
-	sm      ScrapeManager
+type dataPoint struct {
+	value    float64
+	boundary float64
 }
 
-func (s *metadataService) Close() {
-	s.Lock()
-	s.stopped = true
-	s.Unlock()
+// internalMetricMetadata allows looking up metadata for internal scrape metrics
+var internalMetricMetadata = map[string]*scrape.MetricMetadata{
+	scrapeUpMetricName: {
+		Metric: scrapeUpMetricName,
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The scraping was successful",
+	},
+	"scrape_duration_seconds": {
+		Metric: "scrape_duration_seconds",
+		Unit:   "seconds",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "Duration of the scrape",
+	},
+	"scrape_samples_scraped": {
+		Metric: "scrape_samples_scraped",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The number of samples the target exposed",
+	},
+	"scrape_series_added": {
+		Metric: "scrape_series_added",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The approximate number of new series in this scrape",
+	},
+	"scrape_samples_post_metric_relabeling": {
+		Metric: "scrape_samples_post_metric_relabeling",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The number of samples remaining after metric relabeling was applied",
+	},
 }
 
-func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
-	s.Lock()
-	defer s.Unlock()
-
-	// If we're already stopped return early so that we don't call scrapeManager.TargetsAll()
-	// which will result in deadlock if scrapeManager is being stopped.
-	if s.stopped {
-		return nil, errAlreadyStopped
+func metadataForMetric(metricName string, mc MetadataCache) (*scrape.MetricMetadata, string) {
+	if metadata, ok := internalMetricMetadata[metricName]; ok {
+		return metadata, metricName
 	}
-
-	targetGroup, ok := s.sm.TargetsAll()[job]
-	if !ok {
-		return nil, errors.New("unable to find a target group with job=" + job)
+	if metadata, ok := mc.Metadata(metricName); ok {
+		return &metadata, metricName
 	}
-
-	// from the same targetGroup, instance is not going to be duplicated
-	for _, target := range targetGroup {
-		if target.Labels().Get(model.InstanceLabel) == instance {
-			return &mCache{target}, nil
+	// If we didn't find metadata with the original name,
+	// try with suffixes trimmed, in-case it is a "merged" metric type.
+	normalizedName := normalizeMetricName(metricName)
+	if metadata, ok := mc.Metadata(normalizedName); ok {
+		if metadata.Type == textparse.MetricTypeCounter {
+			return &metadata, metricName
 		}
+		return &metadata, normalizedName
+	}
+	// Otherwise, the metric is unknown
+	return &scrape.MetricMetadata{
+		Metric: metricName,
+		Type:   textparse.MetricTypeUnknown,
+	}, metricName
+}
+
+func getMetadataCache(ctx context.Context) (MetadataCache, error) {
+	target, ok := scrape.TargetFromContext(ctx)
+	if !ok {
+		return nil, errors.New("unable to find target in context")
+	}
+	metaStore, ok := scrape.MetricMetadataStoreFromContext(ctx)
+	if !ok {
+		return nil, errors.New("unable to find MetricMetadataStore in context")
 	}
 
-	return nil, errors.New("unable to find a target with job=" + job + ", and instance=" + instance)
+	return &mCache{
+		target:   target,
+		metadata: metaStore,
+	}, nil
 }
 
 // adapter to get metadata from scrape.Target
 type mCache struct {
-	t *scrape.Target
+	target   *scrape.Target
+	metadata scrape.MetricMetadataStore
 }
 
 func (m *mCache) Metadata(metricName string) (scrape.MetricMetadata, bool) {
-	return m.t.Metadata(metricName)
+	return m.metadata.GetMetadata(metricName)
 }
 
 func (m *mCache) SharedLabels() labels.Labels {
-	return m.t.DiscoveredLabels()
+	return m.target.DiscoveredLabels()
 }

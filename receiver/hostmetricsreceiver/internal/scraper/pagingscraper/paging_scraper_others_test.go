@@ -42,27 +42,27 @@ func TestScrape_Errors(t *testing.T) {
 		{
 			name:              "virtualMemoryError",
 			virtualMemoryFunc: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
-			expectedError:     "err1",
+			expectedError:     "failed to read page file stats: err1",
 			expectedErrCount:  pagingUsageMetricsLen,
 		},
 		{
 			name:             "swapMemoryError",
 			swapMemoryFunc:   func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
-			expectedError:    "err2",
+			expectedError:    "failed to read swap info: err2",
 			expectedErrCount: pagingMetricsLen,
 		},
 		{
 			name:              "multipleErrors",
 			virtualMemoryFunc: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
-			expectedError:     "err1; err2",
+			expectedError:     "failed to read page file stats: err1; failed to read swap info: err2",
 			expectedErrCount:  pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{})
 			if test.virtualMemoryFunc != nil {
 				scraper.getPageFileStats = test.virtualMemoryFunc
 			}

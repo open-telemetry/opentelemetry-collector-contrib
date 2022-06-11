@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -127,7 +127,7 @@ type customMarshaler struct {
 
 var _ TracesMarshaler = (*customMarshaler)(nil)
 
-func (c customMarshaler) Marshal(_ pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+func (c customMarshaler) Marshal(_ ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
 	panic("implement me")
 }
 

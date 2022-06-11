@@ -26,10 +26,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +49,7 @@ func New(
 	params component.ReceiverCreateSettings,
 	config *Config) (*MockAwsXrayReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	ar := &MockAwsXrayReceiver{
@@ -107,7 +106,9 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 
 	var result map[string]interface{}
 
-	json.Unmarshal(body, &result)
+	if err = json.Unmarshal(body, &result); err != nil {
+		log.Fatalln(err)
+	}
 
 	traces, _ := ToTraces(body)
 	sc := traces.SpanCount()
@@ -134,7 +135,7 @@ func (ar *MockAwsXrayReceiver) Shutdown(context.Context) error {
 	return ar.server.Close()
 }
 
-func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
+func ToTraces(rawSeg []byte) (*ptrace.Traces, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal(rawSeg, &result)
 	if err != nil {
@@ -146,9 +147,9 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
 		panic("Not a slice")
 	}
 
-	traceData := pdata.NewTraces()
+	traceData := ptrace.NewTraces()
 	rspan := traceData.ResourceSpans().AppendEmpty()
-	ils := rspan.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rspan.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(len(records))
 
 	for i := 0; i < len(records); i++ {

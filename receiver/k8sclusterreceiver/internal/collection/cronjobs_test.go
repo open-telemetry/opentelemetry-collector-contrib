@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,11 +40,10 @@ func TestCronJobMetrics(t *testing.T) {
 			"k8s.cronjob.uid":    "test-cronjob-1-uid",
 			"k8s.cronjob.name":   "test-cronjob-1",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.cronjob.active_jobs",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.cronjob.active_jobs",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
@@ -74,23 +73,22 @@ func TestCronJobMetadata(t *testing.T) {
 	)
 }
 
-func newCronJob(id string) *batchv1beta1.CronJob {
-	return &batchv1beta1.CronJob{
+func newCronJob(id string) *batchv1.CronJob {
+	return &batchv1.CronJob{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-cronjob-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-cronjob-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-cronjob-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-cronjob-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",
 			},
 		},
-		Spec: batchv1beta1.CronJobSpec{
+		Spec: batchv1.CronJobSpec{
 			Schedule:          "schedule",
 			ConcurrencyPolicy: "concurrency_policy",
 		},
-		Status: batchv1beta1.CronJobStatus{
+		Status: batchv1.CronJobStatus{
 			Active: []corev1.ObjectReference{{}, {}},
 		},
 	}

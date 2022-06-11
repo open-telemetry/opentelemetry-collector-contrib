@@ -16,12 +16,17 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 const (
@@ -31,34 +36,89 @@ const (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
+		component.WithLogsProcessor(createLogsProcessor),
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithMetricsProcessor(createMetricsProcessor),
 	)
 }
 
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: TracesConfig{
+		Logs: SignalConfig{
 			Queries: []string{},
+
+			functions: logs.DefaultFunctions(),
+		},
+		Traces: SignalConfig{
+			Queries: []string{},
+
+			functions: traces.DefaultFunctions(),
+		},
+		Metrics: SignalConfig{
+			Queries: []string{},
+
+			functions: metrics.DefaultFunctions(),
 		},
 	}
 }
 
+func createLogsProcessor(
+	_ context.Context,
+	settings component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
+) (component.LogsProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := logs.NewProcessor(oCfg.Logs.Queries, oCfg.Logs.functions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return processorhelper.NewLogsProcessor(
+		cfg,
+		nextConsumer,
+		proc.ProcessLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
 func createTracesProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	settings component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := traces.NewProcessor(oCfg.Traces.Queries, oCfg.Traces.functions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		// TODO(anuraaga): Replace with business logic.
-		func(ctx context.Context, p pdata.Traces) (pdata.Traces, error) {
-			return p, nil
-		},
+		proc.ProcessTraces,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createMetricsProcessor(
+	_ context.Context,
+	settings component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
+) (component.MetricsProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := metrics.NewProcessor(oCfg.Metrics.Queries, oCfg.Metrics.functions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		proc.ProcessMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

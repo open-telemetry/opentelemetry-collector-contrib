@@ -18,5 +18,6 @@ type pageFileStats struct {
 	deviceName  string // Optional
 	usedBytes   uint64
 	freeBytes   uint64
+	totalBytes  uint64
 	cachedBytes *uint64 // Optional
 }

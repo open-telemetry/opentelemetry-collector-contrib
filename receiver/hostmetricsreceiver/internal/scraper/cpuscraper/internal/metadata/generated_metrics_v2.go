@@ -5,7 +5,10 @@ package metadata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -13,9 +16,10 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for cpu metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/cpu metrics.
 type MetricsSettings struct {
-	SystemCPUTime MetricSettings `mapstructure:"system.cpu.time"`
+	SystemCPUTime        MetricSettings `mapstructure:"system.cpu.time"`
+	SystemCPUUtilization MetricSettings `mapstructure:"system.cpu.utilization"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -23,11 +27,64 @@ func DefaultMetricsSettings() MetricsSettings {
 		SystemCPUTime: MetricSettings{
 			Enabled: true,
 		},
+		SystemCPUUtilization: MetricSettings{
+			Enabled: false,
+		},
 	}
 }
 
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateIdle
+	AttributeStateInterrupt
+	AttributeStateNice
+	AttributeStateSoftirq
+	AttributeStateSteal
+	AttributeStateSystem
+	AttributeStateUser
+	AttributeStateWait
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateIdle:
+		return "idle"
+	case AttributeStateInterrupt:
+		return "interrupt"
+	case AttributeStateNice:
+		return "nice"
+	case AttributeStateSoftirq:
+		return "softirq"
+	case AttributeStateSteal:
+		return "steal"
+	case AttributeStateSystem:
+		return "system"
+	case AttributeStateUser:
+		return "user"
+	case AttributeStateWait:
+		return "wait"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"idle":      AttributeStateIdle,
+	"interrupt": AttributeStateInterrupt,
+	"nice":      AttributeStateNice,
+	"softirq":   AttributeStateSoftirq,
+	"steal":     AttributeStateSteal,
+	"system":    AttributeStateSystem,
+	"user":      AttributeStateUser,
+	"wait":      AttributeStateWait,
+}
+
 type metricSystemCPUTime struct {
-	data     pdata.Metric   // data buffer for generated metric.
+	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
@@ -37,13 +94,13 @@ func (m *metricSystemCPUTime) init() {
 	m.data.SetName("system.cpu.time")
 	m.data.SetDescription("Total CPU seconds broken down by different states.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemCPUTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -51,8 +108,8 @@ func (m *metricSystemCPUTime) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Cpu, pdata.NewAttributeValueString(cpuAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert("cpu", pcommon.NewValueString(cpuAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -63,7 +120,7 @@ func (m *metricSystemCPUTime) updateCapacity() {
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemCPUTime) emit(metrics pdata.MetricSlice) {
+func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -74,7 +131,59 @@ func (m *metricSystemCPUTime) emit(metrics pdata.MetricSlice) {
 func newMetricSystemCPUTime(settings MetricSettings) metricSystemCPUTime {
 	m := metricSystemCPUTime{settings: settings}
 	if settings.Enabled {
-		m.data = pdata.NewMetric()
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemCPUUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.utilization metric with initial data.
+func (m *metricSystemCPUUtilization) init() {
+	m.data.SetName("system.cpu.utilization")
+	m.data.SetDescription("Percentage of CPU time broken down by different states.")
+	m.data.SetUnit("1")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().Insert("cpu", pcommon.NewValueString(cpuAttributeValue))
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUUtilization(settings MetricSettings) metricSystemCPUUtilization {
+	m := metricSystemCPUUtilization{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
@@ -83,24 +192,32 @@ func newMetricSystemCPUTime(settings MetricSettings) metricSystemCPUTime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime           pdata.Timestamp
-	metricSystemCPUTime metricSystemCPUTime
+	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity            int                 // maximum observed number of metrics per resource.
+	resourceCapacity           int                 // maximum observed number of resource attributes.
+	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                  component.BuildInfo // contains version information
+	metricSystemCPUTime        metricSystemCPUTime
+	metricSystemCPUUtilization metricSystemCPUUtilization
 }
 
 // metricBuilderOption applies changes to default metrics builder.
 type metricBuilderOption func(*MetricsBuilder)
 
 // WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
+func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:           pdata.NewTimestampFromTime(time.Now()),
-		metricSystemCPUTime: newMetricSystemCPUTime(settings.SystemCPUTime),
+		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:              pmetric.NewMetrics(),
+		buildInfo:                  buildInfo,
+		metricSystemCPUTime:        newMetricSystemCPUTime(settings.SystemCPUTime),
+		metricSystemCPUUtilization: newMetricSystemCPUUtilization(settings.SystemCPUUtilization),
 	}
 	for _, op := range options {
 		op(mb)
@@ -108,58 +225,88 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricSystemCPUTime.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
+	rm := pmetric.NewResourceMetrics()
+	rm.SetSchemaUrl(conventions.SchemaURL)
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/hostmetricsreceiver/cpu")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemCPUTime.emit(ils.Metrics())
+	mb.metricSystemCPUUtilization.emit(ils.Metrics())
+	for _, op := range rmo {
+		op(rm)
+	}
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
+	metrics := pmetric.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
-func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pdata.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
+}
+
+// RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
 func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pdata.NewTimestampFromTime(time.Now())
+	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-	// Cpu (CPU number starting at 0.)
-	Cpu string
-	// State (Breakdown of CPU usage by type.)
-	State string
-}{
-	"cpu",
-	"state",
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-// AttributeState are the possible values that the attribute "state" can have.
-var AttributeState = struct {
-	Idle      string
-	Interrupt string
-	Nice      string
-	Softirq   string
-	Steal     string
-	System    string
-	User      string
-	Wait      string
-}{
-	"idle",
-	"interrupt",
-	"nice",
-	"softirq",
-	"steal",
-	"system",
-	"user",
-	"wait",
 }

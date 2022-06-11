@@ -20,20 +20,22 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
+	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
-func runBuilderStartTimeTestsPdata(t *testing.T, tests []buildTestDataPdata,
+func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 	startTimeMetricRegex string, expectedBuilderStartTime float64) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for _, page := range tt.inputs {
-				b := newMetricBuilderPdata(mc, true, startTimeMetricRegex, zap.NewNop(), 0)
+				b := newMetricBuilder(mc, true, startTimeMetricRegex, zap.NewNop(), 0)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -51,7 +53,7 @@ func runBuilderStartTimeTestsPdata(t *testing.T, tests []buildTestDataPdata,
 
 func Test_startTimeMetricMatch_pdata(t *testing.T) {
 	matchBuilderStartTime := 123.456
-	matchTests := []buildTestDataPdata{
+	matchTests := []buildTestData{
 		{
 			name: "prefix_match",
 			inputs: []*testScrapedPage{
@@ -75,7 +77,7 @@ func Test_startTimeMetricMatch_pdata(t *testing.T) {
 			},
 		},
 	}
-	nomatchTests := []buildTestDataPdata{
+	nomatchTests := []buildTestData{
 		{
 			name: "nomatch1",
 			inputs: []*testScrapedPage{
@@ -100,21 +102,21 @@ func Test_startTimeMetricMatch_pdata(t *testing.T) {
 		},
 	}
 
-	runBuilderStartTimeTestsPdata(t, matchTests, "^(.+_)*process_start_time_seconds$", matchBuilderStartTime)
-	runBuilderStartTimeTestsPdata(t, nomatchTests, "^(.+_)*process_start_time_seconds$", defaultBuilderStartTime)
+	runBuilderStartTimeTests(t, matchTests, "^(.+_)*process_start_time_seconds$", matchBuilderStartTime)
+	runBuilderStartTimeTests(t, nomatchTests, "^(.+_)*process_start_time_seconds$", defaultBuilderStartTime)
 }
 
-func TestGetBoundaryPdata(t *testing.T) {
+func TestGetBoundary(t *testing.T) {
 	tests := []struct {
 		name      string
-		mtype     pdata.MetricDataType
+		mtype     pmetric.MetricDataType
 		labels    labels.Labels
 		wantValue float64
 		wantErr   string
 	}{
 		{
 			name:  "cumulative histogram with bucket label",
-			mtype: pdata.MetricDataTypeHistogram,
+			mtype: pmetric.MetricDataTypeHistogram,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "0.256"},
 			},
@@ -122,7 +124,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 		},
 		{
 			name:  "gauge histogram with bucket label",
-			mtype: pdata.MetricDataTypeHistogram,
+			mtype: pmetric.MetricDataTypeHistogram,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -130,7 +132,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 		},
 		{
 			name:  "summary with bucket label",
-			mtype: pdata.MetricDataTypeSummary,
+			mtype: pmetric.MetricDataTypeSummary,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -138,7 +140,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 		},
 		{
 			name:  "summary with quantile label",
-			mtype: pdata.MetricDataTypeSummary,
+			mtype: pmetric.MetricDataTypeSummary,
 			labels: labels.Labels{
 				{Name: model.QuantileLabel, Value: "92.88"},
 			},
@@ -146,7 +148,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 		},
 		{
 			name:  "gauge histogram mismatched with bucket label",
-			mtype: pdata.MetricDataTypeSummary,
+			mtype: pmetric.MetricDataTypeSummary,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -154,7 +156,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 		},
 		{
 			name:  "other data types without matches",
-			mtype: pdata.MetricDataTypeGauge,
+			mtype: pmetric.MetricDataTypeGauge,
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
@@ -165,7 +167,7 @@ func TestGetBoundaryPdata(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := getBoundaryPdata(tt.mtype, tt.labels)
+			value, err := getBoundary(tt.mtype, tt.labels)
 			if tt.wantErr != "" {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.wantErr)
@@ -178,62 +180,77 @@ func TestGetBoundaryPdata(t *testing.T) {
 	}
 }
 
-func TestConvToPdataMetricType(t *testing.T) {
+func TestConvToMetricType(t *testing.T) {
 	tests := []struct {
-		name  string
-		mtype textparse.MetricType
-		want  pdata.MetricDataType
+		name          string
+		mtype         textparse.MetricType
+		want          pmetric.MetricDataType
+		wantMonotonic bool
 	}{
 		{
-			name:  "textparse.counter",
-			mtype: textparse.MetricTypeCounter,
-			want:  pdata.MetricDataTypeSum,
+			name:          "textparse.counter",
+			mtype:         textparse.MetricTypeCounter,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: true,
 		},
 		{
-			name:  "textparse.gauge",
-			mtype: textparse.MetricTypeGauge,
-			want:  pdata.MetricDataTypeGauge,
+			name:          "textparse.gauge",
+			mtype:         textparse.MetricTypeGauge,
+			want:          pmetric.MetricDataTypeGauge,
+			wantMonotonic: false,
 		},
 		{
-			name:  "textparse.unknown",
-			mtype: textparse.MetricTypeUnknown,
-			want:  pdata.MetricDataTypeGauge,
+			name:          "textparse.unknown",
+			mtype:         textparse.MetricTypeUnknown,
+			want:          pmetric.MetricDataTypeGauge,
+			wantMonotonic: false,
 		},
 		{
-			name:  "textparse.histogram",
-			mtype: textparse.MetricTypeHistogram,
-			want:  pdata.MetricDataTypeHistogram,
+			name:          "textparse.histogram",
+			mtype:         textparse.MetricTypeHistogram,
+			want:          pmetric.MetricDataTypeHistogram,
+			wantMonotonic: true,
 		},
 		{
-			name:  "textparse.summary",
-			mtype: textparse.MetricTypeSummary,
-			want:  pdata.MetricDataTypeSummary,
+			name:          "textparse.summary",
+			mtype:         textparse.MetricTypeSummary,
+			want:          pmetric.MetricDataTypeSummary,
+			wantMonotonic: true,
 		},
 		{
-			name:  "textparse.metric_type_info",
-			mtype: textparse.MetricTypeInfo,
-			want:  pdata.MetricDataTypeNone,
+			name:          "textparse.metric_type_info",
+			mtype:         textparse.MetricTypeInfo,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: false,
 		},
 		{
-			name:  "textparse.metric_state_set",
-			mtype: textparse.MetricTypeStateset,
-			want:  pdata.MetricDataTypeNone,
+			name:          "textparse.metric_state_set",
+			mtype:         textparse.MetricTypeStateset,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.metric_gauge_hostogram",
+			mtype:         textparse.MetricTypeGaugeHistogram,
+			want:          pmetric.MetricDataTypeNone,
+			wantMonotonic: false,
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := convToPdataMetricType(tt.mtype)
+			got, monotonic := convToMetricType(tt.mtype)
 			require.Equal(t, got.String(), tt.want.String())
+			require.Equal(t, monotonic, tt.wantMonotonic)
 		})
 	}
 }
 
-func TestIsUsefulLabelPdata(t *testing.T) {
+func TestIsUsefulLabel(t *testing.T) {
 	tests := []struct {
 		name      string
-		mtypes    []pdata.MetricDataType
+		mtypes    []pmetric.MetricDataType
 		labelKeys []string
 		want      bool
 	}{
@@ -242,36 +259,36 @@ func TestIsUsefulLabelPdata(t *testing.T) {
 			labelKeys: []string{
 				model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel,
 			},
-			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeHistogram,
-				pdata.MetricDataTypeSummary,
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeSum,
+			mtypes: []pmetric.MetricDataType{
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeHistogram,
+				pmetric.MetricDataTypeSummary,
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeNone,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeSum,
 			},
 			want: false,
 		},
 		{
 			name: `bucket label with non "int_histogram", "histogram":: useful`,
-			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeSummary,
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeSum,
+			mtypes: []pmetric.MetricDataType{
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeSummary,
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeNone,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeSum,
 			},
 			labelKeys: []string{model.BucketLabel},
 			want:      true,
 		},
 		{
 			name: `quantile label with "summary": non-useful`,
-			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeSummary,
+			mtypes: []pmetric.MetricDataType{
+				pmetric.MetricDataTypeSummary,
 			},
 			labelKeys: []string{model.QuantileLabel},
 			want:      false,
@@ -279,29 +296,29 @@ func TestIsUsefulLabelPdata(t *testing.T) {
 		{
 			name:      `quantile label with non-"summary": useful`,
 			labelKeys: []string{model.QuantileLabel},
-			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeHistogram,
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeSum,
+			mtypes: []pmetric.MetricDataType{
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeHistogram,
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeNone,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeSum,
 			},
 			want: true,
 		},
 		{
 			name:      `any other label with any type:: useful`,
 			labelKeys: []string{"any_label", "foo.bar"},
-			mtypes: []pdata.MetricDataType{
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeHistogram,
-				pdata.MetricDataTypeSummary,
-				pdata.MetricDataTypeSum,
-				pdata.MetricDataTypeNone,
-				pdata.MetricDataTypeGauge,
-				pdata.MetricDataTypeSum,
+			mtypes: []pmetric.MetricDataType{
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeHistogram,
+				pmetric.MetricDataTypeSummary,
+				pmetric.MetricDataTypeSum,
+				pmetric.MetricDataTypeNone,
+				pmetric.MetricDataTypeGauge,
+				pmetric.MetricDataTypeSum,
 			},
 			want: true,
 		},
@@ -312,7 +329,7 @@ func TestIsUsefulLabelPdata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, mtype := range tt.mtypes {
 				for _, labelKey := range tt.labelKeys {
-					got := isUsefulLabelPdata(mtype, labelKey)
+					got := isUsefulLabel(mtype, labelKey)
 					assert.Equal(t, got, tt.want)
 				}
 			}
@@ -320,14 +337,14 @@ func TestIsUsefulLabelPdata(t *testing.T) {
 	}
 }
 
-type buildTestDataPdata struct {
+type buildTestData struct {
 	name   string
 	inputs []*testScrapedPage
-	wants  func() []*pdata.MetricSlice
+	wants  func() []*pmetric.MetricSlice
 }
 
 func Test_OTLPMetricBuilder_counters(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "single-item",
 			inputs: []*testScrapedPage{
@@ -337,13 +354,13 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
 				m0.SetName("counter_test")
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				sum := m0.Sum()
-				sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
@@ -351,7 +368,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt0.SetTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL}
+				return []*pmetric.MetricSlice{&mL}
 			},
 		},
 		{
@@ -364,13 +381,13 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
 				m0.SetName("counter_test")
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				sum := m0.Sum()
-				sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(150.0)
@@ -384,7 +401,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt1.SetTimestamp(startTsNanos)
 				pt1.Attributes().InsertString("foo", "other")
 
-				return []*pdata.MetricSlice{&mL}
+				return []*pmetric.MetricSlice{&mL}
 			},
 		},
 		{
@@ -398,13 +415,13 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("counter_test")
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				sum0 := m0.Sum()
-				sum0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				sum0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum0.SetIsMonotonic(true)
 				pt0 := sum0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(150.0)
@@ -420,9 +437,9 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("counter_test2")
-				m1.SetDataType(pdata.MetricDataTypeSum)
+				m1.SetDataType(pmetric.MetricDataTypeSum)
 				sum1 := m1.Sum()
-				sum1.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				sum1.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum1.SetIsMonotonic(true)
 				pt2 := sum1.DataPoints().AppendEmpty()
 				pt2.SetDoubleVal(100.0)
@@ -430,7 +447,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt2.SetTimestamp(startTsNanos)
 				pt2.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -442,13 +459,13 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL := pmetric.NewMetricSlice()
 				m0 := mL.AppendEmpty()
 				m0.SetName("poor_name_count")
-				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetDataType(pmetric.MetricDataTypeSum)
 				sum := m0.Sum()
-				sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
@@ -456,15 +473,15 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt0.SetTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL}
+				return []*pmetric.MetricSlice{&mL}
 			},
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
-func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
+func runBuilderTests(t *testing.T, tests []buildTestData) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wants := tt.wants()
@@ -472,7 +489,7 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), startTs)
+				b := newMetricBuilder(mc, true, "", zap.NewNop(), startTs)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				b.intervalStartTimeMs = startTs
 				for _, pt := range page.pts {
@@ -482,19 +499,19 @@ func runBuilderTestsPdata(t *testing.T, tests []buildTestDataPdata) {
 				}
 				metrics, _, _, err := b.Build()
 				assert.NoError(t, err)
-				assertEquivalentMetricsPdata(t, wants[i], metrics)
+				assertEquivalentMetrics(t, wants[i], metrics)
 				st += interval
 			}
 		})
 	}
 }
 
-func assertEquivalentMetricsPdata(t *testing.T, want, got *pdata.MetricSlice) {
+func assertEquivalentMetrics(t *testing.T, want, got *pmetric.MetricSlice) {
 	if !assert.Equal(t, want.Len(), got.Len()) {
 		return
 	}
-	wmap := map[string]pdata.Metric{}
-	gmap := map[string]pdata.Metric{}
+	wmap := map[string]pmetric.Metric{}
+	gmap := map[string]pmetric.Metric{}
 
 	for i := 0; i < want.Len(); i++ {
 		wi := want.At(i)
@@ -507,12 +524,12 @@ func assertEquivalentMetricsPdata(t *testing.T, want, got *pdata.MetricSlice) {
 }
 
 var (
-	startTsNanos             = pdata.Timestamp(startTs * 1e6)
-	startTsPlusIntervalNanos = pdata.Timestamp((startTs + interval) * 1e6)
+	startTsNanos             = pcommon.Timestamp(startTs * 1e6)
+	startTsPlusIntervalNanos = pcommon.Timestamp((startTs + interval) * 1e6)
 )
 
 func Test_OTLPMetricBuilder_gauges(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "one-gauge",
 			inputs: []*testScrapedPage{
@@ -527,11 +544,11 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("gauge_test")
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge0 := m0.Gauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
@@ -539,10 +556,10 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt0.SetTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				mL1 := pdata.NewMetricSlice()
+				mL1 := pmetric.NewMetricSlice()
 				m1 := mL1.AppendEmpty()
 				m1.SetName("gauge_test")
-				m1.SetDataType(pdata.MetricDataTypeGauge)
+				m1.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge1 := m1.Gauge()
 				pt1 := gauge1.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(90.0)
@@ -550,7 +567,7 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt1.SetTimestamp(startTsPlusIntervalNanos)
 				pt1.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0, &mL1}
+				return []*pmetric.MetricSlice{&mL0, &mL1}
 			},
 		},
 		{
@@ -563,11 +580,11 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("gauge_test")
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge0 := m0.Gauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
@@ -581,7 +598,7 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt1.SetTimestamp(startTsNanos)
 				pt1.Attributes().InsertString("bar", "foo")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -601,11 +618,11 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("gauge_test")
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge0 := m0.Gauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
@@ -619,10 +636,10 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt1.SetTimestamp(startTsNanos)
 				pt1.Attributes().InsertString("bar", "foo")
 
-				mL1 := pdata.NewMetricSlice()
+				mL1 := pmetric.NewMetricSlice()
 				m1 := mL1.AppendEmpty()
 				m1.SetName("gauge_test")
-				m1.SetDataType(pdata.MetricDataTypeGauge)
+				m1.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge1 := m1.Gauge()
 				pt2 := gauge1.DataPoints().AppendEmpty()
 				pt2.SetDoubleVal(20.0)
@@ -630,16 +647,16 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt2.SetTimestamp(startTsPlusIntervalNanos)
 				pt2.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0, &mL1}
+				return []*pmetric.MetricSlice{&mL0, &mL1}
 			},
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 func Test_OTLPMetricBuilder_untype(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "one-unknown",
 			inputs: []*testScrapedPage{
@@ -649,11 +666,11 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("unknown_test")
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge0 := m0.Gauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
@@ -661,7 +678,7 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 				pt0.SetTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -675,11 +692,11 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("something_not_exists")
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge0 := m0.Gauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
@@ -688,7 +705,7 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("theother_not_exists")
-				m1.SetDataType(pdata.MetricDataTypeGauge)
+				m1.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge1 := m1.Gauge()
 				pt1 := gauge1.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(200.0)
@@ -700,7 +717,7 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 				pt2.SetTimestamp(startTsNanos)
 				pt2.Attributes().InsertString("bar", "foo")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -712,27 +729,27 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("some_count")
-				m0.SetDataType(pdata.MetricDataTypeGauge)
+				m0.SetDataType(pmetric.MetricDataTypeGauge)
 				gauge0 := m0.Gauge()
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
 				pt0.SetTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 func Test_OTLPMetricBuilder_histogram(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "single item",
 			inputs: []*testScrapedPage{
@@ -746,23 +763,23 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("hist_test")
-				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
-				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetExplicitBounds([]float64{10, 20})
-				pt0.SetBucketCounts([]uint64{1, 1, 8})
+				pt0.SetMExplicitBounds([]float64{10, 20})
+				pt0.SetMBucketCounts([]uint64{1, 1, 8})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -783,18 +800,18 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("hist_test")
-				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
-				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetExplicitBounds([]float64{10, 20})
-				pt0.SetBucketCounts([]uint64{1, 1, 8})
+				pt0.SetMExplicitBounds([]float64{10, 20})
+				pt0.SetMBucketCounts([]uint64{1, 1, 8})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
@@ -802,13 +819,13 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
 				pt1.SetSum(50)
-				pt1.SetExplicitBounds([]float64{10, 20})
-				pt1.SetBucketCounts([]uint64{1, 1, 1})
+				pt1.SetMExplicitBounds([]float64{10, 20})
+				pt1.SetMBucketCounts([]uint64{1, 1, 1})
 				pt1.SetTimestamp(startTsNanos)
 				pt1.SetStartTimestamp(startTsNanos)
 				pt1.Attributes().InsertString("key2", "v2")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -834,18 +851,18 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("hist_test")
-				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
-				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetExplicitBounds([]float64{10, 20})
-				pt0.SetBucketCounts([]uint64{1, 1, 8})
+				pt0.SetMExplicitBounds([]float64{10, 20})
+				pt0.SetMBucketCounts([]uint64{1, 1, 8})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
@@ -853,26 +870,26 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
 				pt1.SetSum(50)
-				pt1.SetExplicitBounds([]float64{10, 20})
-				pt1.SetBucketCounts([]uint64{1, 1, 1})
+				pt1.SetMExplicitBounds([]float64{10, 20})
+				pt1.SetMBucketCounts([]uint64{1, 1, 1})
 				pt1.SetTimestamp(startTsNanos)
 				pt1.SetStartTimestamp(startTsNanos)
 				pt1.Attributes().InsertString("key2", "v2")
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("hist_test2")
-				m1.SetDataType(pdata.MetricDataTypeHistogram)
+				m1.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist1 := m1.Histogram()
-				hist1.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist1.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt2 := hist1.DataPoints().AppendEmpty()
 				pt2.SetCount(3)
 				pt2.SetSum(50)
-				pt2.SetExplicitBounds([]float64{10, 20})
-				pt2.SetBucketCounts([]uint64{1, 1, 1})
+				pt2.SetMExplicitBounds([]float64{10, 20})
+				pt2.SetMBucketCounts([]uint64{1, 1, 1})
 				pt2.SetTimestamp(startTsNanos)
 				pt2.SetStartTimestamp(startTsNanos)
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -888,23 +905,23 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("hist_test")
-				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
-				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetExplicitBounds([]float64{10, 20})
-				pt0.SetBucketCounts([]uint64{1, 1, 8})
+				pt0.SetMExplicitBounds([]float64{10, 20})
+				pt0.SetMBucketCounts([]uint64{1, 1, 8})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -919,22 +936,22 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("hist_test")
-				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
-				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(100)
-				pt0.SetExplicitBounds([]float64{})
-				pt0.SetBucketCounts([]uint64{3})
+				pt0.SetMBucketCounts([]uint64{3})
+				pt0.SetMExplicitBounds([]float64{})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -949,22 +966,22 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("hist_test")
-				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
-				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(100)
-				pt0.SetExplicitBounds([]float64{})
-				pt0.SetBucketCounts([]uint64{3})
+				pt0.SetMBucketCounts([]uint64{3})
+				pt0.SetMExplicitBounds([]float64{})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -979,23 +996,23 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("hist_test")
-				m0.SetDataType(pdata.MetricDataTypeHistogram)
+				m0.SetDataType(pmetric.MetricDataTypeHistogram)
 				hist0 := m0.Histogram()
-				hist0.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(0)
-				pt0.SetExplicitBounds([]float64{10, 20})
-				pt0.SetBucketCounts([]uint64{1, 1, 1})
+				pt0.SetMExplicitBounds([]float64{10, 20})
+				pt0.SetMBucketCounts([]uint64{1, 1, 1})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -1008,9 +1025,9 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
-				return []*pdata.MetricSlice{&mL0}
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -1025,18 +1042,18 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
-				return []*pdata.MetricSlice{&mL0}
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 func Test_OTLPMetricBuilder_summary(t *testing.T) {
-	tests := []buildTestDataPdata{
+	tests := []buildTestData{
 		{
 			name: "no-sum-and-count",
 			inputs: []*testScrapedPage{
@@ -1046,9 +1063,9 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
-				return []*pdata.MetricSlice{&mL0}
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -1063,9 +1080,9 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
-				return []*pdata.MetricSlice{&mL0}
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -1080,11 +1097,11 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("summary_test")
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				sum0 := m0.Summary()
 				pt0 := sum0.DataPoints().AppendEmpty()
 				pt0.SetTimestamp(startTsNanos)
@@ -1103,7 +1120,7 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 				q100.SetQuantile(1)
 				q100.SetValue(5.0)
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -1116,11 +1133,11 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("summary_test")
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				sum0 := m0.Summary()
 				pt0 := sum0.DataPoints().AppendEmpty()
 				pt0.SetStartTimestamp(startTsNanos)
@@ -1129,7 +1146,7 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 				pt0.SetSum(100.0)
 				pt0.Attributes().InsertString("foo", "bar")
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 		{
@@ -1145,11 +1162,11 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 					},
 				},
 			},
-			wants: func() []*pdata.MetricSlice {
-				mL0 := pdata.NewMetricSlice()
+			wants: func() []*pmetric.MetricSlice {
+				mL0 := pmetric.NewMetricSlice()
 				m0 := mL0.AppendEmpty()
 				m0.SetName("summary_test")
-				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetDataType(pmetric.MetricDataTypeSummary)
 				sum0 := m0.Summary()
 				pt0 := sum0.DataPoints().AppendEmpty()
 				pt0.SetStartTimestamp(startTsNanos)
@@ -1168,18 +1185,18 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 				q100.SetQuantile(1)
 				q100.SetValue(5.0)
 
-				return []*pdata.MetricSlice{&mL0}
+				return []*pmetric.MetricSlice{&mL0}
 			},
 		},
 	}
 
-	runBuilderTestsPdata(t, tests)
+	runBuilderTests(t, tests)
 }
 
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 	mc := newMockMetadataCache(testMetadata)
-	mb := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+	mb := newMetricBuilder(mc, true, "", zap.NewNop(), 0)
 
 	dupLabels := labels.Labels{
 		{Name: "__name__", Value: "test"},
@@ -1198,8 +1215,7 @@ func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 
 func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
-		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1212,8 +1228,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	})
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
-		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1221,11 +1236,27 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	})
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
-		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilderPdata(mc, true, "", zap.NewNop(), 0)
+		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})
+}
+
+func newMockMetadataCache(data map[string]scrape.MetricMetadata) *mockMetadataCache {
+	return &mockMetadataCache{data: data}
+}
+
+type mockMetadataCache struct {
+	data map[string]scrape.MetricMetadata
+}
+
+func (m *mockMetadataCache) Metadata(metricName string) (scrape.MetricMetadata, bool) {
+	mm, ok := m.data[metricName]
+	return mm, ok
+}
+
+func (m *mockMetadataCache) SharedLabels() labels.Labels {
+	return labels.FromStrings("__scheme__", "http")
 }

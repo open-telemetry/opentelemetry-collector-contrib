@@ -16,7 +16,7 @@ package docsgen
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"text/template"
@@ -39,7 +39,7 @@ import (
 
 func TestWriteConfigDoc(t *testing.T) {
 	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
-	root := path.Join("..", "..", "..", "..")
+	root := filepath.Join("..", "..", "..", "..")
 	dr := configschema.NewDirResolver(root, configschema.DefaultModule)
 	outputFilename := ""
 	tmpl := testTemplate(t)
@@ -51,7 +51,7 @@ func TestWriteConfigDoc(t *testing.T) {
 		outputFilename = dir
 		return nil
 	})
-	expectedPath := "receiver/otlpreceiver/config.md"
+	expectedPath := filepath.Join("receiver", "otlpreceiver", "config.md")
 	assert.True(t, strings.HasSuffix(outputFilename, expectedPath))
 }
 
@@ -100,7 +100,7 @@ func TestHandleCLI_All(t *testing.T) {
 func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWriter, args []string) {
 	stdoutWriter := &fakeIOWriter{}
 	tmpl := testTemplate(t)
-	dr := configschema.NewDirResolver(path.Join("..", "..", "..", ".."), configschema.DefaultModule)
+	dr := configschema.NewDirResolver(filepath.Join("..", "..", "..", ".."), configschema.DefaultModule)
 	handleCLI(cs, dr, tmpl, wr.writeFile, stdoutWriter, args...)
 }
 

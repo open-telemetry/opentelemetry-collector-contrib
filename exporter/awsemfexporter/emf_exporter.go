@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck,gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -29,7 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -117,14 +119,14 @@ func newEmfExporter(
 	return resourcetotelemetry.WrapMetricsExporter(config.(*Config).ResourceToTelemetrySettings, exporter), nil
 }
 
-func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
+func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
 	rms := md.ResourceMetrics()
 	labels := map[string]string{}
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
-			am.Range(func(k string, v pdata.AttributeValue) bool {
+			am.Range(func(k string, v pcommon.Value) bool {
 				labels[k] = v.StringVal()
 				return true
 			})
@@ -219,7 +221,7 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	return pushers
 }
 
-func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return emf.pushMetricsData(ctx, md)
 }
 

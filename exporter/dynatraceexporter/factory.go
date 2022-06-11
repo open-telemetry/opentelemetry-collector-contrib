@@ -33,10 +33,10 @@ const (
 
 // NewFactory creates a Dynatrace exporter factory
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter),
+		component.WithMetricsExporter(createMetricsExporter),
 	)
 }
 
@@ -44,8 +44,8 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &dtconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},
@@ -66,10 +66,6 @@ func createMetricsExporter(
 ) (component.MetricsExporter, error) {
 
 	cfg := c.(*dtconfig.Config)
-
-	if err := cfg.ValidateAndConfigureHTTPClientSettings(); err != nil {
-		return nil, err
-	}
 
 	exp := newMetricsExporter(set, cfg)
 

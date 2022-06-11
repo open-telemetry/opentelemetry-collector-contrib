@@ -49,7 +49,7 @@ type Config struct {
 	DialerTimeout time.Duration `mapstructure:"dialer_timeout"`
 }
 
-func (c *Config) validateConfig() error {
+func (c *Config) Validate() error {
 	if c.APIKey == "" && c.SecretKey == "" {
 		return errors.New("api_key or secret_key must be specified")
 	}

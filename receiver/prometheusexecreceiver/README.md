@@ -1,4 +1,7 @@
-# prometheus_exec Receiver
+# Deprecated prometheus_exec Receiver
+
+This receiver has been deprecated due to security concerns around the ability to specify the execution of
+any arbitrary processes via its configuration. See [#6722](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6722) for additional details.
 
 This receiver makes it easy for a user to collect metrics from third-party
 services **via Prometheus exporters**. It's meant for people who want a

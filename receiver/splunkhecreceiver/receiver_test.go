@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package splunkhecreceiver
 
 import (
@@ -37,10 +38,11 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -393,16 +395,15 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	<-time.After(500 * time.Millisecond)
 	t.Log("Event Reception Started")
 
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ill.Logs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
 
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
-	lr.SetTimestamp(pdata.Timestamp(int64(sec * 1e9)))
-	lr.SetName("custom:sourcetype")
+	lr.SetTimestamp(pcommon.Timestamp(int64(sec * 1e9)))
 
 	lr.Body().SetStringVal("foo")
 	lr.Attributes().InsertString("com.splunk.sourcetype", "custom:sourcetype")

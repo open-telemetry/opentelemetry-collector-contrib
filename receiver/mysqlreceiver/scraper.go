@@ -21,7 +21,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
@@ -31,15 +33,17 @@ type mySQLScraper struct {
 	sqlclient client
 	logger    *zap.Logger
 	config    *Config
+	mb        *metadata.MetricsBuilder
 }
 
 func newMySQLScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 ) *mySQLScraper {
 	return &mySQLScraper{
-		logger: logger,
+		logger: settings.Logger,
 		config: config,
+		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -64,475 +68,251 @@ func (m *mySQLScraper) shutdown(context.Context) error {
 	return m.sqlclient.Close()
 }
 
-// initMetric initializes a metric with a metadata label.
-func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
-	m := ms.AppendEmpty()
-	mi.Init(m)
-	return m
-}
-
-// addToDoubleMetric adds and labels a double gauge datapoint to a metricslice.
-func addToDoubleMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap, value float64, ts pdata.Timestamp) {
-	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(ts)
-	dataPoint.SetDoubleVal(value)
-	if labels.Len() > 0 {
-		labels.CopyTo(dataPoint.Attributes())
-	}
-}
-
-// addToIntMetric adds and labels a int sum datapoint to metricslice.
-func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap, value int64, ts pdata.Timestamp) {
-	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(ts)
-	dataPoint.SetIntVal(value)
-	if labels.Len() > 0 {
-		labels.CopyTo(dataPoint.Attributes())
-	}
-}
-
 // scrape scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
-func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if m.sqlclient == nil {
-		return pdata.Metrics{}, errors.New("failed to connect to http client")
+		return pmetric.Metrics{}, errors.New("failed to connect to http client")
 	}
 
-	// metric initialization
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/mysql")
-	now := pdata.NewTimestampFromTime(time.Now())
-
-	bufferPoolPages := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolPages).Sum().DataPoints()
-	bufferPoolOperations := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolOperations).Sum().DataPoints()
-	bufferPoolSize := initMetric(ilm.Metrics(), metadata.M.MysqlBufferPoolSize).Sum().DataPoints()
-	commands := initMetric(ilm.Metrics(), metadata.M.MysqlCommands).Sum().DataPoints()
-	handlers := initMetric(ilm.Metrics(), metadata.M.MysqlHandlers).Sum().DataPoints()
-	doubleWrites := initMetric(ilm.Metrics(), metadata.M.MysqlDoubleWrites).Sum().DataPoints()
-	logOperations := initMetric(ilm.Metrics(), metadata.M.MysqlLogOperations).Sum().DataPoints()
-	operations := initMetric(ilm.Metrics(), metadata.M.MysqlOperations).Sum().DataPoints()
-	pageOperations := initMetric(ilm.Metrics(), metadata.M.MysqlPageOperations).Sum().DataPoints()
-	rowLocks := initMetric(ilm.Metrics(), metadata.M.MysqlRowLocks).Sum().DataPoints()
-	rowOperations := initMetric(ilm.Metrics(), metadata.M.MysqlRowOperations).Sum().DataPoints()
-	locks := initMetric(ilm.Metrics(), metadata.M.MysqlLocks).Sum().DataPoints()
-	sorts := initMetric(ilm.Metrics(), metadata.M.MysqlSorts).Sum().DataPoints()
-	threads := initMetric(ilm.Metrics(), metadata.M.MysqlThreads).Sum().DataPoints()
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// collect innodb metrics.
-	innodbStats, err := m.sqlclient.getInnodbStats()
-	if err != nil {
-		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(err))
+	innodbStats, innoErr := m.sqlclient.getInnodbStats()
+	if innoErr != nil {
+		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
 	}
 
+	var errors scrapererror.ScrapeErrors
 	for k, v := range innodbStats {
 		if k != "buffer_pool_size" {
 			continue
 		}
-		labels := pdata.NewAttributeMap()
-		if f, ok := m.parseFloat(k, v); ok {
-			labels.Insert(metadata.A.BufferPoolSize, pdata.NewAttributeValueString("total"))
-			addToDoubleMetric(bufferPoolSize, labels, f, now)
-		}
+		addPartialIfError(errors, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
 
 	// collect global status metrics.
 	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
+	m.recordDataPages(now, globalStats, errors)
+	m.recordDataUsage(now, globalStats, errors)
+
 	for k, v := range globalStats {
-		labels := pdata.NewAttributeMap()
 		switch k {
 
-		// buffer_pool_pages
+		// buffer_pool.pages
 		case "Innodb_buffer_pool_pages_data":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("data"))
-				addToDoubleMetric(bufferPoolPages, labels, f, now)
-			}
-		case "Innodb_buffer_pool_pages_dirty":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("dirty"))
-				addToDoubleMetric(bufferPoolPages, labels, f, now)
-			}
-		case "Innodb_buffer_pool_pages_flushed":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("flushed"))
-				addToDoubleMetric(bufferPoolPages, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesData))
 		case "Innodb_buffer_pool_pages_free":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("free"))
-				addToDoubleMetric(bufferPoolPages, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesFree))
 		case "Innodb_buffer_pool_pages_misc":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("misc"))
-				addToDoubleMetric(bufferPoolPages, labels, f, now)
-			}
-		case "Innodb_buffer_pool_pages_total":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolPages, pdata.NewAttributeValueString("total"))
-				addToDoubleMetric(bufferPoolPages, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesMisc))
 
-		// buffer_pool_operations
+		// buffer_pool.page_flushes
+		case "Innodb_buffer_pool_pages_flushed":
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolPageFlushesDataPoint(now, v))
+
+		// buffer_pool.operations
 		case "Innodb_buffer_pool_read_ahead_rnd":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead_rnd"))
-				addToIntMetric(bufferPoolOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAheadRnd))
 		case "Innodb_buffer_pool_read_ahead":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead"))
-				addToIntMetric(bufferPoolOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAhead))
 		case "Innodb_buffer_pool_read_ahead_evicted":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_ahead_evicted"))
-				addToIntMetric(bufferPoolOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadAheadEvicted))
 		case "Innodb_buffer_pool_read_requests":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("read_requests"))
-				addToIntMetric(bufferPoolOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReadRequests))
 		case "Innodb_buffer_pool_reads":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("reads"))
-				addToIntMetric(bufferPoolOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsReads))
 		case "Innodb_buffer_pool_wait_free":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("wait_free"))
-				addToIntMetric(bufferPoolOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsWaitFree))
 		case "Innodb_buffer_pool_write_requests":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolOperations, pdata.NewAttributeValueString("write_requests"))
-				addToIntMetric(bufferPoolOperations, labels, i, now)
-			}
-
-		// buffer_pool_size
-		case "Innodb_buffer_pool_bytes_data":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolSize, pdata.NewAttributeValueString("data"))
-				addToDoubleMetric(bufferPoolSize, labels, f, now)
-			}
-		case "Innodb_buffer_pool_bytes_dirty":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.BufferPoolSize, pdata.NewAttributeValueString("dirty"))
-				addToDoubleMetric(bufferPoolSize, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, v,
+				metadata.AttributeBufferPoolOperationsWriteRequests))
 
 		// commands
 		case "Com_stmt_execute":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("execute"))
-				addToIntMetric(commands, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandExecute))
 		case "Com_stmt_close":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("close"))
-				addToIntMetric(commands, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandClose))
 		case "Com_stmt_fetch":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("fetch"))
-				addToIntMetric(commands, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandFetch))
 		case "Com_stmt_prepare":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("prepare"))
-				addToIntMetric(commands, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandPrepare))
 		case "Com_stmt_reset":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("reset"))
-				addToIntMetric(commands, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandReset))
 		case "Com_stmt_send_long_data":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Command, pdata.NewAttributeValueString("send_long_data"))
-				addToIntMetric(commands, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSendLongData))
 
 		// handlers
 		case "Handler_commit":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("commit"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerCommit))
 		case "Handler_delete":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("delete"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerDelete))
 		case "Handler_discover":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("discover"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerDiscover))
 		case "Handler_external_lock":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("lock"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerExternalLock))
 		case "Handler_mrr_init":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("mrr_init"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerMrrInit))
 		case "Handler_prepare":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("prepare"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerPrepare))
 		case "Handler_read_first":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_first"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadFirst))
 		case "Handler_read_key":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_key"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadKey))
 		case "Handler_read_last":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_last"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadLast))
 		case "Handler_read_next":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_next"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadNext))
 		case "Handler_read_prev":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_prev"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadPrev))
 		case "Handler_read_rnd":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_rnd"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadRnd))
 		case "Handler_read_rnd_next":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("read_rnd_next"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerReadRndNext))
 		case "Handler_rollback":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("rollback"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerRollback))
 		case "Handler_savepoint":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("savepoint"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerSavepoint))
 		case "Handler_savepoint_rollback":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("savepoint_rollback"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerSavepointRollback))
 		case "Handler_update":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("update"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerUpdate))
 		case "Handler_write":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Handler, pdata.NewAttributeValueString("write"))
-				addToIntMetric(handlers, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlHandlersDataPoint(now, v, metadata.AttributeHandlerWrite))
 
 		// double_writes
 		case "Innodb_dblwr_pages_written":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.DoubleWrites, pdata.NewAttributeValueString("written"))
-				addToIntMetric(doubleWrites, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, metadata.AttributeDoubleWritesPagesWritten))
 		case "Innodb_dblwr_writes":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.DoubleWrites, pdata.NewAttributeValueString("writes"))
-				addToIntMetric(doubleWrites, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlDoubleWritesDataPoint(now, v, metadata.AttributeDoubleWritesWrites))
 
 		// log_operations
 		case "Innodb_log_waits":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.LogOperations, pdata.NewAttributeValueString("waits"))
-				addToIntMetric(logOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWaits))
 		case "Innodb_log_write_requests":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.LogOperations, pdata.NewAttributeValueString("requests"))
-				addToIntMetric(logOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWriteRequests))
 		case "Innodb_log_writes":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.LogOperations, pdata.NewAttributeValueString("writes"))
-				addToIntMetric(logOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWrites))
 
 		// operations
 		case "Innodb_data_fsyncs":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Operations, pdata.NewAttributeValueString("fsyncs"))
-				addToIntMetric(operations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsFsyncs))
 		case "Innodb_data_reads":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Operations, pdata.NewAttributeValueString("reads"))
-				addToIntMetric(operations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsReads))
 		case "Innodb_data_writes":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Operations, pdata.NewAttributeValueString("writes"))
-				addToIntMetric(operations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlOperationsDataPoint(now, v, metadata.AttributeOperationsWrites))
 
 		// page_operations
 		case "Innodb_pages_created":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.PageOperations, pdata.NewAttributeValueString("created"))
-				addToIntMetric(pageOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v, metadata.AttributePageOperationsCreated))
 		case "Innodb_pages_read":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.PageOperations, pdata.NewAttributeValueString("read"))
-				addToIntMetric(pageOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v,
+				metadata.AttributePageOperationsRead))
 		case "Innodb_pages_written":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.PageOperations, pdata.NewAttributeValueString("written"))
-				addToIntMetric(pageOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlPageOperationsDataPoint(now, v,
+				metadata.AttributePageOperationsWritten))
 
 		// row_locks
 		case "Innodb_row_lock_waits":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.RowLocks, pdata.NewAttributeValueString("waits"))
-				addToIntMetric(rowLocks, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlRowLocksDataPoint(now, v, metadata.AttributeRowLocksWaits))
 		case "Innodb_row_lock_time":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.RowLocks, pdata.NewAttributeValueString("time"))
-				addToIntMetric(rowLocks, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlRowLocksDataPoint(now, v, metadata.AttributeRowLocksTime))
 
 		// row_operations
 		case "Innodb_rows_deleted":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("deleted"))
-				addToIntMetric(rowOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, metadata.AttributeRowOperationsDeleted))
 		case "Innodb_rows_inserted":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("inserted"))
-				addToIntMetric(rowOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v, metadata.AttributeRowOperationsInserted))
 		case "Innodb_rows_read":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("read"))
-				addToIntMetric(rowOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v,
+				metadata.AttributeRowOperationsRead))
 		case "Innodb_rows_updated":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.RowOperations, pdata.NewAttributeValueString("updated"))
-				addToIntMetric(rowOperations, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlRowOperationsDataPoint(now, v,
+				metadata.AttributeRowOperationsUpdated))
 
 		// locks
 		case "Table_locks_immediate":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Locks, pdata.NewAttributeValueString("immediate"))
-				addToIntMetric(locks, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksImmediate))
 		case "Table_locks_waited":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Locks, pdata.NewAttributeValueString("waited"))
-				addToIntMetric(locks, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
 
 		// sorts
 		case "Sort_merge_passes":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("merge_passes"))
-				addToIntMetric(sorts, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsMergePasses))
 		case "Sort_range":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("range"))
-				addToIntMetric(sorts, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsRange))
 		case "Sort_rows":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("rows"))
-				addToIntMetric(sorts, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsRows))
 		case "Sort_scan":
-			if i, ok := m.parseInt(k, v); ok {
-				labels.Insert(metadata.A.Sorts, pdata.NewAttributeValueString("scan"))
-				addToIntMetric(sorts, labels, i, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlSortsDataPoint(now, v, metadata.AttributeSortsScan))
 
 		// threads
 		case "Threads_cached":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("cached"))
-				addToDoubleMetric(threads, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCached))
 		case "Threads_connected":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("connected"))
-				addToDoubleMetric(threads, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsConnected))
 		case "Threads_created":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("created"))
-				addToDoubleMetric(threads, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsCreated))
 		case "Threads_running":
-			if f, ok := m.parseFloat(k, v); ok {
-				labels.Insert(metadata.A.Threads, pdata.NewAttributeValueString("running"))
-				addToDoubleMetric(threads, labels, f, now)
-			}
+			addPartialIfError(errors, m.mb.RecordMysqlThreadsDataPoint(now, v, metadata.AttributeThreadsRunning))
 		}
 	}
-	return md, nil
+
+	return m.mb.Emit(), errors.Combine()
 }
 
-// parseFloat converts string to float64.
-func (m *mySQLScraper) parseFloat(key, value string) (float64, bool) {
-	f, err := strconv.ParseFloat(value, 64)
+func addPartialIfError(errors scrapererror.ScrapeErrors, err error) {
 	if err != nil {
-		m.logInvalid("float", key, value)
-		return 0, false
+		errors.AddPartial(1, err)
 	}
-	return f, true
+}
+
+func (m *mySQLScraper) recordDataPages(now pcommon.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+	dirty, err := parseInt(globalStats["Innodb_buffer_pool_pages_dirty"])
+	if err != nil {
+		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
+		return
+	}
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, dirty, metadata.AttributeBufferPoolDataDirty)
+
+	data, err := parseInt(globalStats["Innodb_buffer_pool_pages_data"])
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, data-dirty, metadata.AttributeBufferPoolDataClean)
+}
+
+func (m *mySQLScraper) recordDataUsage(now pcommon.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+	dirty, err := parseInt(globalStats["Innodb_buffer_pool_bytes_dirty"])
+	if err != nil {
+		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
+		return
+	}
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, dirty, metadata.AttributeBufferPoolDataDirty)
+
+	data, err := parseInt(globalStats["Innodb_buffer_pool_bytes_data"])
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, data-dirty, metadata.AttributeBufferPoolDataClean)
 }
 
 // parseInt converts string to int64.
-func (m *mySQLScraper) parseInt(key, value string) (int64, bool) {
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		m.logInvalid("int", key, value)
-		return 0, false
-	}
-	return i, true
-}
-
-func (m *mySQLScraper) logInvalid(expectedType, key, value string) {
-	m.logger.Info(
-		"invalid value",
-		zap.String("expectedType", expectedType),
-		zap.String("key", key),
-		zap.String("value", value),
-	)
+func parseInt(value string) (int64, error) {
+	return strconv.ParseInt(value, 10, 64)
 }

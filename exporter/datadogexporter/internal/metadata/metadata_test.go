@@ -27,11 +27,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
@@ -55,6 +54,11 @@ var (
 		Command: "otelcontribcol",
 		Version: "1.0",
 	}
+
+	mockExporterCreateSettings = component.ExporterCreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         mockBuildInfo,
+	}
 )
 
 func TestFillHostMetadata(t *testing.T) {
@@ -62,14 +66,16 @@ func TestFillHostMetadata(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
-	cfg := &config.Config{TagsConfig: config.TagsConfig{
-		Hostname: "hostname",
-		Env:      "prod",
-		Tags:     []string{"key1:tag1", "key2:tag2"},
-	}}
+	pcfg := PusherConfig{
+		ConfigHostname: "hostname",
+		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
+	}
+
+	hostProvider, err := GetHostnameProvider(componenttest.NewNopTelemetrySettings(), "hostname")
+	require.NoError(t, err)
 
 	metadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
-	fillHostMetadata(params, cfg, metadata)
+	fillHostMetadata(params, pcfg, hostProvider, metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
 	assert.Equal(t, metadata.Flavor, "otelcontribcol")
@@ -83,7 +89,7 @@ func TestFillHostMetadata(t *testing.T) {
 		Tags:             &HostTags{},
 	}
 
-	fillHostMetadata(params, cfg, metadataWithVals)
+	fillHostMetadata(params, pcfg, hostProvider, metadataWithVals)
 	assert.Equal(t, metadataWithVals.InternalHostname, "my-custom-hostname")
 	assert.Equal(t, metadataWithVals.Flavor, "otelcontribcol")
 	assert.Equal(t, metadataWithVals.Version, "1.0")
@@ -114,6 +120,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 	attrsGCP := testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 		conventions.AttributeHostID:                "host-id",
+		conventions.AttributeCloudAccountID:        "project-id",
 		conventions.AttributeHostName:              "host-name",
 		conventions.AttributeHostType:              "host-type",
 		conventions.AttributeCloudAvailabilityZone: "cloud-zone",
@@ -121,9 +128,9 @@ func TestMetadataFromAttributes(t *testing.T) {
 	metadataGCP := metadataFromAttributes(attrsGCP)
 	assert.Equal(t, metadataGCP.InternalHostname, "host-name")
 	assert.Equal(t, metadataGCP.Meta.Hostname, "host-name")
-	assert.ElementsMatch(t, metadataGCP.Meta.HostAliases, []string{"host-id"})
+	assert.ElementsMatch(t, metadataGCP.Meta.HostAliases, []string{"host-name.project-id"})
 	assert.ElementsMatch(t, metadataGCP.Tags.GCP,
-		[]string{"instance-id:host-id", "zone:cloud-zone", "instance-type:host-type"})
+		[]string{"instance-id:host-id", "project:project-id", "zone:cloud-zone", "instance-type:host-type"})
 
 	// Azure
 	attrsAzure := testutils.NewAttributeMap(map[string]string{
@@ -151,7 +158,9 @@ func TestMetadataFromAttributes(t *testing.T) {
 }
 
 func TestPushMetadata(t *testing.T) {
-	cfg := &config.Config{API: config.APIConfig{Key: "apikey"}}
+	pcfg := PusherConfig{
+		APIKey: "apikey",
+	}
 
 	handler := http.NewServeMux()
 	handler.HandleFunc("/intake", func(w http.ResponseWriter, r *http.Request) {
@@ -169,33 +178,37 @@ func TestPushMetadata(t *testing.T) {
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
-	cfg.Metrics.Endpoint = ts.URL
+	pcfg.MetricsEndpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
+	err := pushMetadata(pcfg, mockExporterCreateSettings, &mockMetadata)
 	require.NoError(t, err)
 }
 
 func TestFailPushMetadata(t *testing.T) {
-	cfg := &config.Config{API: config.APIConfig{Key: "apikey"}}
-
+	pcfg := PusherConfig{
+		APIKey: "apikey",
+	}
 	handler := http.NewServeMux()
 	handler.Handle("/intake", http.NotFoundHandler())
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
-	cfg.Metrics.Endpoint = ts.URL
+	pcfg.MetricsEndpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
+	err := pushMetadata(pcfg, mockExporterCreateSettings, &mockMetadata)
 	require.Error(t, err)
 }
 
 func TestPusher(t *testing.T) {
-	cfg := &config.Config{
-		API:                 config.APIConfig{Key: "apikey"},
+	pcfg := PusherConfig{
+		APIKey:              "apikey",
 		UseResourceMetadata: true,
 	}
 	params := componenttest.NewNopExporterCreateSettings()
 	params.BuildInfo = mockBuildInfo
+
+	hostProvider, err := GetHostnameProvider(componenttest.NewNopTelemetrySettings(), "")
+	require.NoError(t, err)
 
 	attrs := testutils.NewAttributeMap(map[string]string{
 		attributes.AttributeDatadogHostname: "datadog-hostname",
@@ -205,13 +218,13 @@ func TestPusher(t *testing.T) {
 
 	server := testutils.DatadogServerMock()
 	defer server.Close()
-	cfg.Metrics.Endpoint = server.URL
+	pcfg.MetricsEndpoint = server.URL
 
-	go Pusher(ctx, params, cfg, attrs)
+	go Pusher(ctx, params, pcfg, hostProvider, attrs)
 
 	body := <-server.MetadataChan
 	var recvMetadata HostMetadata
-	err := json.Unmarshal(body, &recvMetadata)
+	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
 	assert.Equal(t, recvMetadata.Version, mockBuildInfo.Version)

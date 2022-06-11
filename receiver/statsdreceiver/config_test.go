@@ -16,7 +16,7 @@ package statsdreceiver
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)

@@ -29,8 +29,10 @@ import (
 
 const (
 	// hecPath is the default HEC path on the Splunk instance.
-	hecPath                   = "services/collector"
-	maxContentLengthLogsLimit = 2 * 1024 * 1024
+	hecPath                      = "services/collector"
+	maxContentLengthLogsLimit    = 2 * 1024 * 1024
+	maxContentLengthMetricsLimit = 2 * 1024 * 1024
+	maxContentLengthTracesLimit  = 2 * 1024 * 1024
 )
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
@@ -49,6 +51,12 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+
+	// LogDataEnabled can be used to disable sending logs by the exporter.
+	LogDataEnabled bool `mapstructure:"log_data_enabled"`
+
+	// ProfilingDataEnabled can be used to disable sending profiling data by the exporter.
+	ProfilingDataEnabled bool `mapstructure:"profiling_data_enabled"`
 
 	// HEC Token is the authentication token provided by Splunk: https://docs.splunk.com/Documentation/Splunk/latest/Data/UsetheHTTPEventCollector.
 	Token string `mapstructure:"token"`
@@ -74,6 +82,12 @@ type Config struct {
 
 	// Maximum log data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
 	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
+
+	// Maximum metric data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	MaxContentLengthMetrics uint `mapstructure:"max_content_length_metrics"`
+
+	// Maximum trace data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	MaxContentLengthTraces uint `mapstructure:"max_content_length_traces"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
@@ -118,6 +132,14 @@ func (cfg *Config) validateConfig() error {
 		return fmt.Errorf(`requires "max_content_length_logs" <= %d`, maxContentLengthLogsLimit)
 	}
 
+	if cfg.MaxContentLengthMetrics > maxContentLengthMetricsLimit {
+		return fmt.Errorf(`requires "max_content_length_metrics" <= %d`, maxContentLengthMetricsLimit)
+	}
+
+	if cfg.MaxContentLengthTraces > maxContentLengthTracesLimit {
+		return fmt.Errorf(`requires "max_content_length_traces <= #{maxContentLengthTracesLimit}`)
+	}
+
 	return nil
 }
 
@@ -132,4 +154,15 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 	}
 
 	return
+}
+
+// Validate checks if the exporter configuration is valid.
+func (cfg *Config) Validate() error {
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+	}
+	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
+		return errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
+	}
+	return nil
 }

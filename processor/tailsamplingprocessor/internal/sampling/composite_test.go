@@ -19,7 +19,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -31,30 +33,30 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 	return f.second
 }
 
-var traceID = pdata.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
+var traceID = pcommon.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *TraceData {
-	trace := &TraceData{SpanCount: 1}
+	trace := &TraceData{SpanCount: atomic.NewInt64(1)}
 	return trace
 }
 
-func newTraceID() pdata.TraceID {
+func newTraceID() pcommon.TraceID {
 	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pdata.NewTraceID(r)
+	return pcommon.NewTraceID(r)
 }
 
-func newTraceWithKV(traceID pdata.TraceID, key string, val int64) *TraceData {
-	var traceBatches []pdata.Traces
-	traces := pdata.NewTraces()
+func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
+	var traceBatches []ptrace.Traces
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
 	span.Attributes().InsertInt(key, val)
@@ -62,7 +64,7 @@ func newTraceWithKV(traceID pdata.TraceID, key string, val int64) *TraceData {
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{
 		ReceivedBatches: traceBatches,
-		SpanCount:       1,
+		SpanCount:       atomic.NewInt64(1),
 	}
 }
 
@@ -159,6 +161,25 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	}
 }
 
+func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
+
+	// The first policy does not match, the second matches through invert
+	n1 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, false)
+	n2 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, true)
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
+
+	for i := 1; i <= 10; i++ {
+		trace := createTrace()
+
+		decision, err := c.Evaluate(traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+		// The second policy is AlwaysSample, so the decision should be Sampled.
+		expected := Sampled
+		assert.Equal(t, decision, expected)
+	}
+}
+
 func TestCompositeEvaluatorThrottling(t *testing.T) {
 
 	// Create only one subpolicy, with 100% Sampled policy.
@@ -198,16 +219,6 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 		expected := Sampled
 		assert.Equal(t, decision, expected)
 	}
-}
-
-func TestOnLateArrivingSpans_Composite(t *testing.T) {
-	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
-	n2 := NewAlwaysSample(zap.NewNop())
-	timeProvider := &FakeTimeProvider{second: 0}
-	const totalSPS = 10
-	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS / 2}, {n2, totalSPS / 2}}, timeProvider)
-	e := c.OnLateArrivingSpans(Sampled, nil)
-	assert.NoError(t, e)
 }
 
 func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {

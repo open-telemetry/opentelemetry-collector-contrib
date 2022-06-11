@@ -81,7 +81,7 @@ func (ote *ocTracesDataSender) Start() error {
 	}
 
 	ote.Traces = exp
-	return exp.Start(context.Background(), ote)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // ocMetricsDataSender implements MetricDataSender for OpenCensus metrics exporter.
@@ -115,5 +115,5 @@ func (ome *ocMetricsDataSender) Start() error {
 	}
 
 	ome.Metrics = exp
-	return exp.Start(context.Background(), ome)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }

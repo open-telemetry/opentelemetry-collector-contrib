@@ -15,707 +15,856 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 
 import (
-	"fmt"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type metricMappingData struct {
-	metricName string
-	attributes map[string]pdata.AttributeValue
-}
+// metricRecordFunc records the data point to the metric builder at the supplied timestamp
+type metricRecordFunc func(*MetricsBuilder, *mongodbatlas.DataPoints, pcommon.Timestamp)
 
-var metricNameMapping = map[string]metricMappingData{
+// getRecordFunc returns the metricRecordFunc that matches the metric name. Nil if none is found.
+func getRecordFunc(metricName string) metricRecordFunc {
+	switch metricName {
 	// MongoDB CPU usage. For hosts with more than one CPU core, these values can exceed 100%.
 
-	"PROCESS_CPU_USER": {"mongodbatlas.process.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "PROCESS_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
-	"MAX_PROCESS_CPU_USER": {"mongodbatlas.process.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "MAX_PROCESS_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
-	"PROCESS_CPU_KERNEL": {"mongodbatlas.process.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "PROCESS_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
-	"MAX_PROCESS_CPU_KERNEL": {"mongodbatlas.process.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "MAX_PROCESS_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
-	"PROCESS_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "PROCESS_CPU_CHILDREN_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
-	"MAX_PROCESS_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "MAX_PROCESS_CPU_CHILDREN_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
-	"PROCESS_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "PROCESS_CPU_CHILDREN_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
-	"MAX_PROCESS_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "MAX_PROCESS_CPU_CHILDREN_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
 	// MongoDB CPU usage scaled to a range of 0% to 100%. Atlas computes this value by dividing by the number of CPU cores.
 
-	"PROCESS_NORMALIZED_CPU_USER": {"mongodbatlas.process.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "PROCESS_NORMALIZED_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
-	"MAX_PROCESS_NORMALIZED_CPU_USER": {"mongodbatlas.process.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "MAX_PROCESS_NORMALIZED_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
-	"PROCESS_NORMALIZED_CPU_KERNEL": {"mongodbatlas.process.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "PROCESS_NORMALIZED_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
-	"MAX_PROCESS_NORMALIZED_CPU_KERNEL": {"mongodbatlas.process.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "MAX_PROCESS_NORMALIZED_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
-	"PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "PROCESS_NORMALIZED_CPU_CHILDREN_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
 	// Context: Process
-	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER": {"mongodbatlas.process.cpu.children.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
+	case "MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
 
-	"PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
-	"MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL": {"mongodbatlas.process.cpu.children.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
 	// Rate of asserts for a MongoDB process found in the asserts document that the serverStatus command generates.
 
-	"ASSERT_REGULAR": {"mongodbatlas.process.asserts", map[string]pdata.AttributeValue{
-		"assert_type": pdata.NewAttributeValueString("regular"),
-	}},
+	case "ASSERT_REGULAR":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, float64(*dp.Value), AttributeAssertTypeRegular)
+		}
 
-	"ASSERT_WARNING": {"mongodbatlas.process.asserts", map[string]pdata.AttributeValue{
-		"assert_type": pdata.NewAttributeValueString("warning"),
-	}},
+	case "ASSERT_WARNING":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, float64(*dp.Value), AttributeAssertTypeWarning)
+		}
 
-	"ASSERT_MSG": {"mongodbatlas.process.asserts", map[string]pdata.AttributeValue{
-		"assert_type": pdata.NewAttributeValueString("msg"),
-	}},
+	case "ASSERT_MSG":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, float64(*dp.Value), AttributeAssertTypeMsg)
+		}
 
-	"ASSERT_USER": {"mongodbatlas.process.asserts", map[string]pdata.AttributeValue{
-		"assert_type": pdata.NewAttributeValueString("user"),
-	}},
+	case "ASSERT_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, float64(*dp.Value), AttributeAssertTypeUser)
+		}
 
 	// Amount of data flushed in the background.
 
-	"BACKGROUND_FLUSH_AVG": {"mongodbatlas.process.background_flush", map[string]pdata.AttributeValue{}},
+	case "BACKGROUND_FLUSH_AVG":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Amount of bytes in the WiredTiger storage engine cache and tickets found in the wiredTiger.cache and wiredTiger.concurrentTransactions documents that the serverStatus command generates.
 
-	"CACHE_BYTES_READ_INTO": {"mongodbatlas.process.cache.io", map[string]pdata.AttributeValue{
-		"cache_direction": pdata.NewAttributeValueString("read_into"),
-	}},
+	case "CACHE_BYTES_READ_INTO":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, float64(*dp.Value), AttributeCacheDirectionReadInto)
+		}
 
-	"CACHE_BYTES_WRITTEN_FROM": {"mongodbatlas.process.cache.io", map[string]pdata.AttributeValue{
-		"cache_direction": pdata.NewAttributeValueString("written_from"),
-	}},
+	case "CACHE_BYTES_WRITTEN_FROM":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, float64(*dp.Value), AttributeCacheDirectionWrittenFrom)
+		}
 
-	"CACHE_DIRTY_BYTES": {"mongodbatlas.process.cache.size", map[string]pdata.AttributeValue{
-		"cache_status": pdata.NewAttributeValueString("dirty"),
-	}},
+	case "CACHE_DIRTY_BYTES":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, float64(*dp.Value), AttributeCacheStatusDirty)
+		}
 
-	"CACHE_USED_BYTES": {"mongodbatlas.process.cache.size", map[string]pdata.AttributeValue{
-		"cache_status": pdata.NewAttributeValueString("used"),
-	}},
+	case "CACHE_USED_BYTES":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, float64(*dp.Value), AttributeCacheStatusUsed)
+		}
 
-	"TICKETS_AVAILABLE_READS": {"mongodbatlas.process.tickets", map[string]pdata.AttributeValue{
-		"ticket_type": pdata.NewAttributeValueString("available_reads"),
-	}},
+	case "TICKETS_AVAILABLE_READS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, float64(*dp.Value), AttributeTicketTypeAvailableReads)
+		}
 
-	"TICKETS_AVAILABLE_WRITE": {"mongodbatlas.process.tickets", map[string]pdata.AttributeValue{
-		"ticket_type": pdata.NewAttributeValueString("available_writes"),
-	}},
+	case "TICKETS_AVAILABLE_WRITE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, float64(*dp.Value), AttributeTicketTypeAvailableWrites)
+		}
 
 	// Number of connections to a MongoDB process found in the connections document that the serverStatus command generates.
-	"CONNECTIONS": {"mongodbatlas.process.connections", map[string]pdata.AttributeValue{}},
+	case "CONNECTIONS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessConnectionsDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Number of cursors for a MongoDB process found in the metrics.cursor document that the serverStatus command generates.
-	"CURSORS_TOTAL_OPEN": {"mongodbatlas.process.cursors", map[string]pdata.AttributeValue{
-		"cursor_state": pdata.NewAttributeValueString("open"),
-	}},
+	case "CURSORS_TOTAL_OPEN":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCursorsDataPoint(ts, float64(*dp.Value), AttributeCursorStateOpen)
+		}
 
-	"CURSORS_TOTAL_TIMED_OUT": {"mongodbatlas.process.cursors", map[string]pdata.AttributeValue{
-		"cursor_state": pdata.NewAttributeValueString("timed_out"),
-	}},
+	case "CURSORS_TOTAL_TIMED_OUT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCursorsDataPoint(ts, float64(*dp.Value), AttributeCursorStateTimedOut)
+		}
 
 	// Numbers of Memory Issues and Page Faults for a MongoDB process.
-	"EXTRA_INFO_PAGE_FAULTS": {"mongodbatlas.process.page_faults", map[string]pdata.AttributeValue{
-		"memory_issue_type": pdata.NewAttributeValueString("extra_info"),
-	}},
+	case "EXTRA_INFO_PAGE_FAULTS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, float64(*dp.Value), AttributeMemoryIssueTypeExtraInfo)
+		}
 
-	"GLOBAL_ACCESSES_NOT_IN_MEMORY": {"mongodbatlas.process.page_faults", map[string]pdata.AttributeValue{
-		"memory_issue_type": pdata.NewAttributeValueString("global_accesses_not_in_memory"),
-	}},
-	"GLOBAL_PAGE_FAULT_EXCEPTIONS_THROWN": {"mongodbatlas.process.page_faults", map[string]pdata.AttributeValue{
-		"memory_issue_type": pdata.NewAttributeValueString("exceptions_thrown"),
-	}},
+	case "GLOBAL_ACCESSES_NOT_IN_MEMORY":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, float64(*dp.Value), AttributeMemoryIssueTypeGlobalAccessesNotInMemory)
+		}
+	case "GLOBAL_PAGE_FAULT_EXCEPTIONS_THROWN":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, float64(*dp.Value), AttributeMemoryIssueTypeExceptionsThrown)
+		}
 
 	// Number of operations waiting on locks for the MongoDB process that the serverStatus command generates. Cloud Manager computes these values based on the type of storage engine.
-	"GLOBAL_LOCK_CURRENT_QUEUE_TOTAL": {"mongodbatlas.process.global_lock", map[string]pdata.AttributeValue{
-		"global_lock_state": pdata.NewAttributeValueString("current_queue_total"),
-	}},
-	"GLOBAL_LOCK_CURRENT_QUEUE_READERS": {"mongodbatlas.process.global_lock", map[string]pdata.AttributeValue{
-		"global_lock_state": pdata.NewAttributeValueString("current_queue_readers"),
-	}},
-	"GLOBAL_LOCK_CURRENT_QUEUE_WRITERS": {"mongodbatlas.process.global_lock", map[string]pdata.AttributeValue{
-		"global_lock_state": pdata.NewAttributeValueString("current_queue_writers"),
-	}},
+	case "GLOBAL_LOCK_CURRENT_QUEUE_TOTAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, float64(*dp.Value), AttributeGlobalLockStateCurrentQueueTotal)
+		}
+	case "GLOBAL_LOCK_CURRENT_QUEUE_READERS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, float64(*dp.Value), AttributeGlobalLockStateCurrentQueueReaders)
+		}
+	case "GLOBAL_LOCK_CURRENT_QUEUE_WRITERS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, float64(*dp.Value), AttributeGlobalLockStateCurrentQueueWriters)
+		}
 
 	// Number of index btree operations.
-	"INDEX_COUNTERS_BTREE_ACCESSES": {"mongodbatlas.process.index.counters", map[string]pdata.AttributeValue{
-		"btree_counter_type": pdata.NewAttributeValueString("accesses"),
-	}},
-	"INDEX_COUNTERS_BTREE_HITS": {"mongodbatlas.process.index.counters", map[string]pdata.AttributeValue{
-		"btree_counter_type": pdata.NewAttributeValueString("hits"),
-	}},
-	"INDEX_COUNTERS_BTREE_MISSES": {"mongodbatlas.process.index.counters", map[string]pdata.AttributeValue{
-		"btree_counter_type": pdata.NewAttributeValueString("misses"),
-	}},
-	"INDEX_COUNTERS_BTREE_MISS_RATIO": {"mongodbatlas.process.index.btree_miss_ratio", map[string]pdata.AttributeValue{}},
+	case "INDEX_COUNTERS_BTREE_ACCESSES":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, float64(*dp.Value), AttributeBtreeCounterTypeAccesses)
+		}
+	case "INDEX_COUNTERS_BTREE_HITS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, float64(*dp.Value), AttributeBtreeCounterTypeHits)
+		}
+	case "INDEX_COUNTERS_BTREE_MISSES":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, float64(*dp.Value), AttributeBtreeCounterTypeMisses)
+		}
+	case "INDEX_COUNTERS_BTREE_MISS_RATIO":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Number of journaling operations.
-	"JOURNALING_COMMITS_IN_WRITE_LOCK": {"mongodbatlas.process.journaling.commits", map[string]pdata.AttributeValue{}},
-	"JOURNALING_MB":                    {"mongodbatlas.process.journaling.written", map[string]pdata.AttributeValue{}},
-	"JOURNALING_WRITE_DATA_FILES_MB":   {"mongodbatlas.process.journaling.data_files", map[string]pdata.AttributeValue{}},
+	case "JOURNALING_COMMITS_IN_WRITE_LOCK":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, float64(*dp.Value))
+		}
+	case "JOURNALING_MB":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, float64(*dp.Value))
+		}
+	case "JOURNALING_WRITE_DATA_FILES_MB":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Amount of memory for a MongoDB process found in the mem document that the serverStatus command collects.
-	"MEMORY_RESIDENT": {"mongodbatlas.process.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("resident"),
-	}},
-	"MEMORY_VIRTUAL": {"mongodbatlas.process.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("virtual"),
-	}},
+	case "MEMORY_RESIDENT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateResident)
+		}
+	case "MEMORY_VIRTUAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateVirtual)
+		}
 
-	"MEMORY_MAPPED": {"mongodbatlas.process.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("mapped"),
-	}},
-	"COMPUTED_MEMORY": {"mongodbatlas.process.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("computed"),
-	}},
+	case "MEMORY_MAPPED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateMapped)
+		}
+	case "COMPUTED_MEMORY":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateComputed)
+		}
 
 	// Amount of throughput for MongoDB process found in the network document that the serverStatus command collects.
 
-	"NETWORK_BYTES_IN": {"mongodbatlas.process.network.io", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("receive"),
-	}},
-	"NETWORK_BYTES_OUT": {"mongodbatlas.process.network.io", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("transmit"),
-	}},
-	"NETWORK_NUM_REQUESTS": {"mongodbatlas.process.network.requests", map[string]pdata.AttributeValue{}},
+	case "NETWORK_BYTES_IN":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, float64(*dp.Value), AttributeDirectionReceive)
+		}
+	case "NETWORK_BYTES_OUT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, float64(*dp.Value), AttributeDirectionTransmit)
+		}
+	case "NETWORK_NUM_REQUESTS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Durations and throughput of the MongoDB process' oplog.
-	"OPLOG_SLAVE_LAG_MASTER_TIME": {"mongodbatlas.process.oplog.time", map[string]pdata.AttributeValue{
-		"oplog_type": pdata.NewAttributeValueString("slave_lag_master_time"),
-	}},
-	"OPLOG_MASTER_TIME": {"mongodbatlas.process.oplog.time", map[string]pdata.AttributeValue{
-		"oplog_type": pdata.NewAttributeValueString("master_time"),
-	}},
-	"OPLOG_MASTER_LAG_TIME_DIFF": {"mongodbatlas.process.oplog.time", map[string]pdata.AttributeValue{
-		"oplog_type": pdata.NewAttributeValueString("master_lag_time_diff"),
-	}},
-	"OPLOG_RATE_GB_PER_HOUR": {"mongodbatlas.process.oplog.rate", map[string]pdata.AttributeValue{}},
+	case "OPLOG_SLAVE_LAG_MASTER_TIME":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, float64(*dp.Value), AttributeOplogTypeSlaveLagMasterTime)
+		}
+	case "OPLOG_MASTER_TIME":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, float64(*dp.Value), AttributeOplogTypeMasterTime)
+		}
+	case "OPLOG_MASTER_LAG_TIME_DIFF":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, float64(*dp.Value), AttributeOplogTypeMasterLagTimeDiff)
+		}
+	case "OPLOG_RATE_GB_PER_HOUR":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessOplogRateDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Number of database operations on a MongoDB process since the process last started.
 
-	"DB_STORAGE_TOTAL": {"mongodbatlas.process.db.storage", map[string]pdata.AttributeValue{
-		"storage_status": pdata.NewAttributeValueString("total"),
-	}},
+	case "DB_STORAGE_TOTAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, float64(*dp.Value), AttributeStorageStatusTotal)
+		}
 
-	"DB_DATA_SIZE_TOTAL": {"mongodbatlas.process.db.storage", map[string]pdata.AttributeValue{
-		"storage_status": pdata.NewAttributeValueString("data_size"),
-	}},
-	"DB_INDEX_SIZE_TOTAL": {"mongodbatlas.process.db.storage", map[string]pdata.AttributeValue{
-		"storage_status": pdata.NewAttributeValueString("index_size"),
-	}},
-	"DB_DATA_SIZE_TOTAL_WO_SYSTEM": {"mongodbatlas.process.db.storage", map[string]pdata.AttributeValue{
-		"storage_status": pdata.NewAttributeValueString("data_size_wo_system"),
-	}},
+	case "DB_DATA_SIZE_TOTAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, float64(*dp.Value), AttributeStorageStatusDataSize)
+		}
+	case "DB_INDEX_SIZE_TOTAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, float64(*dp.Value), AttributeStorageStatusIndexSize)
+		}
+	case "DB_DATA_SIZE_TOTAL_WO_SYSTEM":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, float64(*dp.Value), AttributeStorageStatusDataSizeWoSystem)
+		}
 
 	// Rate of database operations on a MongoDB process since the process last started found in the opcounters document that the serverStatus command collects.
-	"OPCOUNTER_CMD": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("cmd"),
-		"role":      pdata.NewAttributeValueString("primary"),
-	}},
-	"OPCOUNTER_QUERY": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("query"),
-		"role":      pdata.NewAttributeValueString("primary"),
-	}},
-	"OPCOUNTER_UPDATE": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("update"),
-		"role":      pdata.NewAttributeValueString("primary"),
-	}},
-	"OPCOUNTER_DELETE": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("delete"),
-		"role":      pdata.NewAttributeValueString("primary"),
-	}},
-	"OPCOUNTER_GETMORE": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("getmore"),
-		"role":      pdata.NewAttributeValueString("primary"),
-	}},
-	"OPCOUNTER_INSERT": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("insert"),
-		"role":      pdata.NewAttributeValueString("primary"),
-	}},
+	case "OPCOUNTER_CMD":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationCmd, AttributeClusterRolePrimary)
+		}
+	case "OPCOUNTER_QUERY":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationQuery, AttributeClusterRolePrimary)
+		}
+	case "OPCOUNTER_UPDATE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationUpdate, AttributeClusterRolePrimary)
+		}
+	case "OPCOUNTER_DELETE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationDelete, AttributeClusterRolePrimary)
+		}
+	case "OPCOUNTER_GETMORE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationGetmore, AttributeClusterRolePrimary)
+		}
+	case "OPCOUNTER_INSERT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationInsert, AttributeClusterRolePrimary)
+		}
 
 	// Rate of database operations on MongoDB secondaries found in the opcountersRepl document that the serverStatus command collects.
-	"OPCOUNTER_REPL_CMD": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("cmd"),
-		"role":      pdata.NewAttributeValueString("replica"),
-	}},
-	"OPCOUNTER_REPL_UPDATE": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("update"),
-		"role":      pdata.NewAttributeValueString("replica"),
-	}},
-	"OPCOUNTER_REPL_DELETE": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("delete"),
-		"role":      pdata.NewAttributeValueString("replica"),
-	}},
-	"OPCOUNTER_REPL_INSERT": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("insert"),
-		"role":      pdata.NewAttributeValueString("replica"),
-	}},
+	case "OPCOUNTER_REPL_CMD":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationCmd, AttributeClusterRoleReplica)
+		}
+	case "OPCOUNTER_REPL_UPDATE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationUpdate, AttributeClusterRoleReplica)
+		}
+	case "OPCOUNTER_REPL_DELETE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationDelete, AttributeClusterRoleReplica)
+		}
+	case "OPCOUNTER_REPL_INSERT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationInsert, AttributeClusterRoleReplica)
+		}
 
 	// Average rate of documents returned, inserted, updated, or deleted per second during a selected time period.
-	"DOCUMENT_METRICS_RETURNED": {"mongodbatlas.process.db.document.rate", map[string]pdata.AttributeValue{
-		"document_status": pdata.NewAttributeValueString("returned"),
-	}},
-	"DOCUMENT_METRICS_INSERTED": {"mongodbatlas.process.db.document.rate", map[string]pdata.AttributeValue{
-		"document_status": pdata.NewAttributeValueString("inserted"),
-	}},
-	"DOCUMENT_METRICS_UPDATED": {"mongodbatlas.process.db.document.rate", map[string]pdata.AttributeValue{
-		"document_status": pdata.NewAttributeValueString("updated"),
-	}},
-	"DOCUMENT_METRICS_DELETED": {"mongodbatlas.process.db.document.rate", map[string]pdata.AttributeValue{
-		"document_status": pdata.NewAttributeValueString("deleted"),
-	}},
+	case "DOCUMENT_METRICS_RETURNED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, float64(*dp.Value), AttributeDocumentStatusReturned)
+		}
+	case "DOCUMENT_METRICS_INSERTED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, float64(*dp.Value), AttributeDocumentStatusInserted)
+		}
+	case "DOCUMENT_METRICS_UPDATED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, float64(*dp.Value), AttributeDocumentStatusUpdated)
+		}
+	case "DOCUMENT_METRICS_DELETED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, float64(*dp.Value), AttributeDocumentStatusDeleted)
+		}
 
 	// Average rate for operations per second during a selected time period that perform a sort but cannot perform the sort using an index.
-	"OPERATIONS_SCAN_AND_ORDER": {"mongodbatlas.process.db.operations.rate", map[string]pdata.AttributeValue{
-		"operation": pdata.NewAttributeValueString("scan_and_order"),
-	}},
+	case "OPERATIONS_SCAN_AND_ORDER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationScanAndOrder, AttributeClusterRolePrimary)
+		}
 
 	// Average execution time in milliseconds per read, write, or command operation during a selected time period.
-	"OP_EXECUTION_TIME_READS": {"mongodbatlas.process.db.operations.time", map[string]pdata.AttributeValue{
-		"execution_type": pdata.NewAttributeValueString("reads"),
-	}},
-	"OP_EXECUTION_TIME_WRITES": {"mongodbatlas.process.db.operations.time", map[string]pdata.AttributeValue{
-		"execution_type": pdata.NewAttributeValueString("writes"),
-	}},
-	"OP_EXECUTION_TIME_COMMANDS": {"mongodbatlas.process.db.operations.time", map[string]pdata.AttributeValue{
-		"execution_type": pdata.NewAttributeValueString("commands"),
-	}},
+	case "OP_EXECUTION_TIME_READS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, float64(*dp.Value), AttributeExecutionTypeReads)
+		}
+	case "OP_EXECUTION_TIME_WRITES":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, float64(*dp.Value), AttributeExecutionTypeWrites)
+		}
+	case "OP_EXECUTION_TIME_COMMANDS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, float64(*dp.Value), AttributeExecutionTypeCommands)
+		}
 
 	// Number of times the host restarted within the previous hour.
-	"RESTARTS_IN_LAST_HOUR": {"mongodbatlas.process.restarts", map[string]pdata.AttributeValue{}},
+	case "RESTARTS_IN_LAST_HOUR":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessRestartsDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Average rate per second to scan index items during queries and query-plan evaluations found in the value of totalKeysExamined from the explain command.
-	"QUERY_EXECUTOR_SCANNED": {"mongodbatlas.process.db.query_executor.scanned", map[string]pdata.AttributeValue{
-		"scanned_type": pdata.NewAttributeValueString("index_items"),
-	}},
+	case "QUERY_EXECUTOR_SCANNED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, float64(*dp.Value), AttributeScannedTypeIndexItems)
+		}
 
 	// Average rate of documents scanned per second during queries and query-plan evaluations found in the value of totalDocsExamined from the explain command.
-	"QUERY_EXECUTOR_SCANNED_OBJECTS": {"mongodbatlas.process.db.query_executor.scanned", map[string]pdata.AttributeValue{
-		"scanned_type": pdata.NewAttributeValueString("objects"),
-	}},
+	case "QUERY_EXECUTOR_SCANNED_OBJECTS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, float64(*dp.Value), AttributeScannedTypeObjects)
+		}
 
 	// Ratio of the number of index items scanned to the number of documents returned.
-	"QUERY_TARGETING_SCANNED_PER_RETURNED": {"mongodbatlas.process.db.query_targeting.scanned_per_returned", map[string]pdata.AttributeValue{
-		"scanned_type": pdata.NewAttributeValueString("index_items"),
-	}},
+	case "QUERY_TARGETING_SCANNED_PER_RETURNED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, float64(*dp.Value), AttributeScannedTypeIndexItems)
+		}
 
 	// Ratio of the number of documents scanned to the number of documents returned.
-	"QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED": {"mongodbatlas.process.db.query_targeting.scanned_per_returned", map[string]pdata.AttributeValue{
-		"scanned_type": pdata.NewAttributeValueString("objects"),
-	}},
+	case "QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, float64(*dp.Value), AttributeScannedTypeObjects)
+		}
 
 	// CPU usage of processes on the host. For hosts with more than one CPU core, this value can exceed 100%.
-	"SYSTEM_CPU_USER": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
-	"MAX_SYSTEM_CPU_USER": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
-	"SYSTEM_CPU_KERNEL": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
-	"MAX_SYSTEM_CPU_KERNEL": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
-	"SYSTEM_CPU_NICE": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("nice"),
-	}},
-	"MAX_SYSTEM_CPU_NICE": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("nice"),
-	}},
-	"SYSTEM_CPU_IOWAIT": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("iowait"),
-	}},
-	"MAX_SYSTEM_CPU_IOWAIT": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("iowait"),
-	}},
-	"SYSTEM_CPU_IRQ": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("irq"),
-	}},
-	"MAX_SYSTEM_CPU_IRQ": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("irq"),
-	}},
-	"SYSTEM_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("softirq"),
-	}},
-	"MAX_SYSTEM_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("softirq"),
-	}},
-	"SYSTEM_CPU_GUEST": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("guest"),
-	}},
-	"MAX_SYSTEM_CPU_GUEST": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("guest"),
-	}},
-	"SYSTEM_CPU_STEAL": {"mongodbatlas.system.cpu.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("steal"),
-	}},
-	"MAX_SYSTEM_CPU_STEAL": {"mongodbatlas.system.cpu.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("steal"),
-	}},
+	case "SYSTEM_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
+	case "MAX_SYSTEM_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
+	case "SYSTEM_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
+	case "MAX_SYSTEM_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
+	case "SYSTEM_CPU_NICE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateNice)
+		}
+	case "MAX_SYSTEM_CPU_NICE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateNice)
+		}
+	case "SYSTEM_CPU_IOWAIT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateIowait)
+		}
+	case "MAX_SYSTEM_CPU_IOWAIT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateIowait)
+		}
+	case "SYSTEM_CPU_IRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateIrq)
+		}
+	case "MAX_SYSTEM_CPU_IRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateIrq)
+		}
+	case "SYSTEM_CPU_SOFTIRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateSoftirq)
+		}
+	case "MAX_SYSTEM_CPU_SOFTIRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateSoftirq)
+		}
+	case "SYSTEM_CPU_GUEST":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateGuest)
+		}
+	case "MAX_SYSTEM_CPU_GUEST":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateGuest)
+		}
+	case "SYSTEM_CPU_STEAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateSteal)
+		}
+	case "MAX_SYSTEM_CPU_STEAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateSteal)
+		}
 
 	// CPU usage of processes on the host scaled to a range of 0 to 100% by dividing by the number of CPU cores.
-	"SYSTEM_NORMALIZED_CPU_USER": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_USER": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_NICE": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("nice"),
-	}},
-	"SYSTEM_NORMALIZED_CPU_KERNEL": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_KERNEL": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
-	"SYSTEM_NORMALIZED_CPU_NICE": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("nice"),
-	}},
-	"SYSTEM_NORMALIZED_CPU_IOWAIT": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("iowait"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_IOWAIT": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("iowait"),
-	}},
-	"SYSTEM_NORMALIZED_CPU_IRQ": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("irq"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_IRQ": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("irq"),
-	}},
-	"SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("softirq"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("softirq"),
-	}},
-	"SYSTEM_NORMALIZED_CPU_GUEST": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("guest"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_GUEST": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("guest"),
-	}},
-	"SYSTEM_NORMALIZED_CPU_STEAL": {"mongodbatlas.system.cpu.normalized.usage.average", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("steal"),
-	}},
-	"MAX_SYSTEM_NORMALIZED_CPU_STEAL": {"mongodbatlas.system.cpu.normalized.usage.max", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("steal"),
-	}},
+	case "SYSTEM_NORMALIZED_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_NICE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateNice)
+		}
+	case "SYSTEM_NORMALIZED_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
+	case "SYSTEM_NORMALIZED_CPU_NICE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateNice)
+		}
+	case "SYSTEM_NORMALIZED_CPU_IOWAIT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateIowait)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_IOWAIT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateIowait)
+		}
+	case "SYSTEM_NORMALIZED_CPU_IRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateIrq)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_IRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateIrq)
+		}
+	case "SYSTEM_NORMALIZED_CPU_SOFTIRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateSoftirq)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateSoftirq)
+		}
+	case "SYSTEM_NORMALIZED_CPU_GUEST":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateGuest)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_GUEST":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateGuest)
+		}
+	case "SYSTEM_NORMALIZED_CPU_STEAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, float64(*dp.Value), AttributeCPUStateSteal)
+		}
+	case "MAX_SYSTEM_NORMALIZED_CPU_STEAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, float64(*dp.Value), AttributeCPUStateSteal)
+		}
 	// Physical memory usage, in bytes, that the host uses.
-	"SYSTEM_MEMORY_AVAILABLE": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("available"),
-	}},
-	"MAX_SYSTEM_MEMORY_AVAILABLE": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("available"),
-	}},
-	"SYSTEM_MEMORY_BUFFERS": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("buffers"),
-	}},
-	"MAX_SYSTEM_MEMORY_BUFFERS": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("buffers"),
-	}},
-	"SYSTEM_MEMORY_CACHED": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("cached"),
-	}},
-	"MAX_SYSTEM_MEMORY_CACHED": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("cached"),
-	}},
-	"SYSTEM_MEMORY_FREE": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("free"),
-	}},
-	"MAX_SYSTEM_MEMORY_FREE": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("free"),
-	}},
-	"SYSTEM_MEMORY_SHARED": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("shared"),
-	}},
-	"MAX_SYSTEM_MEMORY_SHARED": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("shared"),
-	}},
-	"SYSTEM_MEMORY_USED": {"mongodbatlas.system.memory.usage.average", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("used"),
-	}},
-	"MAX_SYSTEM_MEMORY_USED": {"mongodbatlas.system.memory.usage.max", map[string]pdata.AttributeValue{
-		"memory_status": pdata.NewAttributeValueString("used"),
-	}},
+	case "SYSTEM_MEMORY_AVAILABLE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusAvailable)
+		}
+	case "MAX_SYSTEM_MEMORY_AVAILABLE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusAvailable)
+		}
+	case "SYSTEM_MEMORY_BUFFERS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusBuffers)
+		}
+	case "MAX_SYSTEM_MEMORY_BUFFERS":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusBuffers)
+		}
+	case "SYSTEM_MEMORY_CACHED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusCached)
+		}
+	case "MAX_SYSTEM_MEMORY_CACHED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusCached)
+		}
+	case "SYSTEM_MEMORY_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusFree)
+		}
+	case "MAX_SYSTEM_MEMORY_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusFree)
+		}
+	case "SYSTEM_MEMORY_SHARED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusShared)
+		}
+	case "MAX_SYSTEM_MEMORY_SHARED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusShared)
+		}
+	case "SYSTEM_MEMORY_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusUsed)
+		}
+	case "MAX_SYSTEM_MEMORY_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusUsed)
+		}
 
 	// Average rate of physical bytes per second that the eth0 network interface received and transmitted.
-	"SYSTEM_NETWORK_IN": {"mongodbatlas.system.network.io.average", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("receive"),
-	}},
-	"MAX_SYSTEM_NETWORK_IN": {"mongodbatlas.system.network.io.max", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("receive"),
-	}},
-	"SYSTEM_NETWORK_OUT": {"mongodbatlas.system.network.io.average", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("transmit"),
-	}},
-	"MAX_SYSTEM_NETWORK_OUT": {"mongodbatlas.system.network.io.max", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("transmit"),
-	}},
+	case "SYSTEM_NETWORK_IN":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, float64(*dp.Value), AttributeDirectionReceive)
+		}
+	case "MAX_SYSTEM_NETWORK_IN":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, float64(*dp.Value), AttributeDirectionReceive)
+		}
+	case "SYSTEM_NETWORK_OUT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, float64(*dp.Value), AttributeDirectionTransmit)
+		}
+	case "MAX_SYSTEM_NETWORK_OUT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, float64(*dp.Value), AttributeDirectionTransmit)
+		}
 
 	// Total amount of memory that swap uses.
-	"SWAP_USAGE_USED": {"mongodbatlas.system.paging.usage.average", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
-	}},
-	"MAX_SWAP_USAGE_USED": {"mongodbatlas.system.paging.usage.max", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
-	}},
-	"SWAP_USAGE_FREE": {"mongodbatlas.system.paging.usage.average", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
-	}},
-	"MAX_SWAP_USAGE_FREE": {"mongodbatlas.system.paging.usage.max", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
-	}},
+	case "SWAP_USAGE_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateUsed)
+		}
+	case "MAX_SWAP_USAGE_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStateUsed)
+		}
+	case "SWAP_USAGE_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateFree)
+		}
+	case "MAX_SWAP_USAGE_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStateFree)
+		}
 
 	// Total amount of memory written and read from swap.
-	"SWAP_IO_IN": {"mongodbatlas.system.paging.io.average", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("in"),
-	}},
-	"MAX_SWAP_IO_IN": {"mongodbatlas.system.paging.io.max", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("in"),
-	}},
-	"SWAP_IO_OUT": {"mongodbatlas.system.paging.io.average", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("out"),
-	}},
-	"MAX_SWAP_IO_OUT": {"mongodbatlas.system.paging.io.max", map[string]pdata.AttributeValue{
-		"direction": pdata.NewAttributeValueString("out"),
-	}},
+	case "SWAP_IO_IN":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, float64(*dp.Value), AttributeDirectionReceive)
+		}
+	case "MAX_SWAP_IO_IN":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, float64(*dp.Value), AttributeDirectionReceive)
+		}
+	case "SWAP_IO_OUT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, float64(*dp.Value), AttributeDirectionTransmit)
+		}
+	case "MAX_SWAP_IO_OUT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, float64(*dp.Value), AttributeDirectionTransmit)
+		}
 
 	// Memory usage, in bytes, that Atlas Search processes use.
-	"FTS_PROCESS_RESIDENT_MEMORY": {"mongodbatlas.system.fts.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("resident"),
-	}},
-	"FTS_PROCESS_VIRTUAL_MEMORY": {"mongodbatlas.system.fts.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("virtual"),
-	}},
-	"FTS_PROCESS_SHARED_MEMORY": {"mongodbatlas.system.fts.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("shared"),
-	}},
-	"FTS_MEMORY_MAPPED": {"mongodbatlas.system.fts.memory.usage", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("mapped"),
-	}},
+	case "FTS_PROCESS_RESIDENT_MEMORY":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateResident)
+		}
+	case "FTS_PROCESS_VIRTUAL_MEMORY":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateVirtual)
+		}
+	case "FTS_PROCESS_SHARED_MEMORY":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateShared)
+		}
+	case "FTS_MEMORY_MAPPED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, float64(*dp.Value), AttributeMemoryStateMapped)
+		}
 
 	// Disk space, in bytes, that Atlas Search indexes use.
-	"FTS_DISK_USAGE": {"mongodbatlas.system.fts.disk.used", map[string]pdata.AttributeValue{}},
+	case "FTS_DISK_USAGE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, float64(*dp.Value))
+		}
 
 	// Percentage of CPU that Atlas Search processes use.
-	"FTS_PROCESS_CPU_USER": {"mongodbatlas.system.fts.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
-	"FTS_PROCESS_CPU_KERNEL": {"mongodbatlas.system.fts.cpu.usage", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
-	"FTS_PROCESS_NORMALIZED_CPU_USER": {"mongodbatlas.system.fts.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("user"),
-	}},
-	"FTS_PROCESS_NORMALIZED_CPU_KERNEL": {"mongodbatlas.system.fts.cpu.normalized.usage", map[string]pdata.AttributeValue{
-		"cpu_state": pdata.NewAttributeValueString("kernel"),
-	}},
+	case "FTS_PROCESS_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
+	case "FTS_PROCESS_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
+	case "FTS_PROCESS_NORMALIZED_CPU_USER":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, float64(*dp.Value), AttributeCPUStateUser)
+		}
+	case "FTS_PROCESS_NORMALIZED_CPU_KERNEL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, float64(*dp.Value), AttributeCPUStateKernel)
+		}
 
 	// Process Disk Measurements (https://docs.atlas.mongodb.com/reference/api/process-disks-measurements/)
 
 	// Measures throughput of I/O operations for the disk partition used for MongoDB.
-	"DISK_PARTITION_IOPS_READ": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("read"),
-	}},
+	case "DISK_PARTITION_IOPS_READ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionRead)
+		}
 
-	"MAX_DISK_PARTITION_IOPS_READ": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("read"),
-	}},
+	case "MAX_DISK_PARTITION_IOPS_READ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionRead)
+		}
 
-	"DISK_PARTITION_IOPS_WRITE": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("write"),
-	}},
+	case "DISK_PARTITION_IOPS_WRITE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionWrite)
+		}
 
-	"MAX_DISK_PARTITION_IOPS_WRITE": {"mongodbatlas.disk.partition.iops.max", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("write"),
-	}},
+	case "MAX_DISK_PARTITION_IOPS_WRITE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionWrite)
+		}
 
-	"DISK_PARTITION_IOPS_TOTAL": {"mongodbatlas.disk.partition.iops.average", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("total"),
-	}},
+	case "DISK_PARTITION_IOPS_TOTAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionTotal)
+		}
 
-	"MAX_DISK_PARTITION_IOPS_TOTAL": {"mongodbatlas.disk.partition.iops.max", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("total"),
-	}},
-
-	"DISK_PARTITION_UTILIZATION": {"mongodbatlas.disk.partition.utilization.average", map[string]pdata.AttributeValue{}},
-
-	"MAX_DISK_PARTITION_UTILIZATION": {"mongodbatlas.disk.partition.utilization.max", map[string]pdata.AttributeValue{}},
+	case "MAX_DISK_PARTITION_IOPS_TOTAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionTotal)
+		}
 
 	// The percentage of time during which requests are being issued to and serviced by the partition.
 	// This includes requests from any process, not just MongoDB processes.
-	"DISK_PARTITION_LATENCY_READ": {"mongodbatlas.disk.partition.latency.average", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("read"),
-	}},
+	case "DISK_PARTITION_LATENCY_READ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionRead)
+		}
 
-	"MAX_DISK_PARTITION_LATENCY_READ": {"mongodbatlas.disk.partition.latency.max", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("read"),
-	}},
+	case "MAX_DISK_PARTITION_LATENCY_READ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionRead)
+		}
 
-	"DISK_PARTITION_LATENCY_WRITE": {"mongodbatlas.disk.partition.latency.average", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("write"),
-	}},
+	case "DISK_PARTITION_LATENCY_WRITE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionWrite)
+		}
 
-	"MAX_DISK_PARTITION_LATENCY_WRITE": {"mongodbatlas.disk.partition.latency.max", map[string]pdata.AttributeValue{
-		"disk_direction": pdata.NewAttributeValueString("write"),
-	}},
+	case "MAX_DISK_PARTITION_LATENCY_WRITE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionWrite)
+		}
 
 	// Measures latency per operation type of the disk partition used by MongoDB.
-	"DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space.average", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
-	}},
+	case "DISK_PARTITION_SPACE_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
+		}
 
-	"MAX_DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space.max", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
-	}},
+	case "MAX_DISK_PARTITION_SPACE_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
+		}
 
-	"DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space.average", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
-	}},
+	case "DISK_PARTITION_SPACE_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
+		}
 
-	"MAX_DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space.max", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
-	}},
+	case "MAX_DISK_PARTITION_SPACE_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
+		}
 
-	"DISK_PARTITION_SPACE_PERCENT_FREE": {"mongodbatlas.disk.partition.utilization.average", map[string]pdata.AttributeValue{
-		"disk_status": pdata.NewAttributeValueString("free"),
-	}},
-	"MAX_DISK_PARTITION_SPACE_PERCENT_FREE": {"mongodbatlas.disk.partition.utilization.max", map[string]pdata.AttributeValue{
-		"disk_status": pdata.NewAttributeValueString("free"),
-	}},
-	"DISK_PARTITION_SPACE_PERCENT_USED": {"mongodbatlas.disk.partition.utilization.average", map[string]pdata.AttributeValue{
-		"disk_status": pdata.NewAttributeValueString("used"),
-	}},
-	"MAX_DISK_PARTITION_SPACE_PERCENT_USED": {"mongodbatlas.disk.partition.utilization.max", map[string]pdata.AttributeValue{
-		"disk_status": pdata.NewAttributeValueString("used"),
-	}},
+	case "DISK_PARTITION_SPACE_PERCENT_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
+		}
+	case "MAX_DISK_PARTITION_SPACE_PERCENT_FREE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
+		}
+	case "DISK_PARTITION_SPACE_PERCENT_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
+		}
+	case "MAX_DISK_PARTITION_SPACE_PERCENT_USED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
+		}
 
 	// Process Database Measurements (https://docs.atlas.mongodb.com/reference/api/process-disks-measurements/)
-	"DATABASE_COLLECTION_COUNT": {"mongodbatlas.db.counts", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("collection"),
-	}},
-	"DATABASE_INDEX_COUNT": {"mongodbatlas.db.counts", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("index"),
-	}},
-	"DATABASE_EXTENT_COUNT": {"mongodbatlas.db.counts", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("extent"),
-	}},
-	"DATABASE_OBJECT_COUNT": {"mongodbatlas.db.counts", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("object"),
-	}},
-	"DATABASE_VIEW_COUNT": {"mongodbatlas.db.counts", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("view"),
-	}},
-	"DATABASE_AVERAGE_OBJECT_SIZE": {"mongodbatlas.db.size", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("object"),
-	}},
-	"DATABASE_STORAGE_SIZE": {"mongodbatlas.db.size", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("storage"),
-	}},
-	"DATABASE_INDEX_SIZE": {"mongodbatlas.db.size", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("index"),
-	}},
-	"DATABASE_DATA_SIZE": {"mongodbatlas.db.size", map[string]pdata.AttributeValue{
-		"object_type": pdata.NewAttributeValueString("data"),
-	}},
-}
-
-func mappedMetricByName(name string) (MetricIntf, map[string]pdata.AttributeValue) {
-	info, found := metricNameMapping[name]
-	if !found {
-		return nil, nil
-	}
-
-	metricinf := Metrics.ByName(info.metricName)
-	return metricinf, info.attributes
-}
-
-func MeasurementsToMetric(meas *mongodbatlas.Measurements, buildUnrecognized bool) (*pdata.Metric, error) {
-	intf, attrs := mappedMetricByName(meas.Name)
-	if intf == nil {
-		return nil, nil // Not an error- simply skipping undocumented metrics
-	}
-	m := pdata.NewMetric()
-	intf.Init(m)
-	switch m.DataType() {
-	case pdata.MetricDataTypeGauge:
-		datapoints := m.Gauge().DataPoints()
-		err := addDataPoints(datapoints, meas, attrs)
-		if err != nil {
-			return nil, err
+	case "DATABASE_COLLECTION_COUNT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbCountsDataPoint(ts, float64(*dp.Value), AttributeObjectTypeCollection)
 		}
-	case pdata.MetricDataTypeSum:
-		datapoints := m.Sum().DataPoints()
-		err := addDataPoints(datapoints, meas, attrs)
-		if err != nil {
-			return nil, err
+	case "DATABASE_INDEX_COUNT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbCountsDataPoint(ts, float64(*dp.Value), AttributeObjectTypeIndex)
 		}
+	case "DATABASE_EXTENT_COUNT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbCountsDataPoint(ts, float64(*dp.Value), AttributeObjectTypeExtent)
+		}
+	case "DATABASE_OBJECT_COUNT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbCountsDataPoint(ts, float64(*dp.Value), AttributeObjectTypeObject)
+		}
+	case "DATABASE_VIEW_COUNT":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbCountsDataPoint(ts, float64(*dp.Value), AttributeObjectTypeView)
+		}
+	case "DATABASE_AVERAGE_OBJECT_SIZE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbSizeDataPoint(ts, float64(*dp.Value), AttributeObjectTypeObject)
+		}
+	case "DATABASE_STORAGE_SIZE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbSizeDataPoint(ts, float64(*dp.Value), AttributeObjectTypeStorage)
+		}
+	case "DATABASE_INDEX_SIZE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbSizeDataPoint(ts, float64(*dp.Value), AttributeObjectTypeIndex)
+		}
+	case "DATABASE_DATA_SIZE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDbSizeDataPoint(ts, float64(*dp.Value), AttributeObjectTypeData)
+		}
+
 	default:
-		return nil, fmt.Errorf("unrecognized data type for metric '%s'", meas.Name)
+		return nil
 	}
-
-	return &m, nil
 }
 
-func addDataPoints(datapoints pdata.NumberDataPointSlice, meas *mongodbatlas.Measurements, attrs map[string]pdata.AttributeValue) error {
+func MeasurementsToMetric(mb *MetricsBuilder, meas *mongodbatlas.Measurements, buildUnrecognized bool) error {
+	recordFunc := getRecordFunc(meas.Name)
+	if recordFunc == nil {
+		return nil
+	}
+
+	return addDataPoint(mb, meas, recordFunc)
+}
+
+func addDataPoint(mb *MetricsBuilder, meas *mongodbatlas.Measurements, recordFunc metricRecordFunc) error {
 	for _, point := range meas.DataPoints {
 		if point.Value != nil {
-			dp := datapoints.AppendEmpty()
 			curTime, err := time.Parse(time.RFC3339, point.Timestamp)
 			if err != nil {
 				return err
 			}
-			for k, v := range attrs {
-				dp.Attributes().Upsert(k, v)
-			}
-			dp.SetTimestamp(pdata.NewTimestampFromTime(curTime))
-			dp.SetDoubleVal(float64(*point.Value))
+			recordFunc(mb, point, pcommon.NewTimestampFromTime(curTime))
 		}
 	}
 	return nil

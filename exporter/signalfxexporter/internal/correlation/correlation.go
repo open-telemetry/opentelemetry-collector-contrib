@@ -23,9 +23,10 @@ import (
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -36,6 +37,7 @@ type Tracker struct {
 	cfg          *Config
 	params       component.ExporterCreateSettings
 	traceTracker *tracetracker.ActiveServiceTracker
+	pTicker      timeutils.TTicker
 	correlation  *correlationContext
 	accessToken  string
 }
@@ -89,7 +91,7 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 
 // AddSpans processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
+func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return nil
 	}
@@ -118,6 +120,9 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 			nil,
 			cor.cfg.SyncAttributes)
 
+		cor.pTicker = &timeutils.PolicyTicker{OnTickFunc: cor.traceTracker.Purge}
+		cor.pTicker.Start(cor.cfg.StaleServiceTimeout)
+
 		cor.correlation.Start()
 	})
 
@@ -140,8 +145,14 @@ func (cor *Tracker) Start(_ context.Context, host component.Host) (err error) {
 
 // Shutdown correlation tracking.
 func (cor *Tracker) Shutdown(_ context.Context) error {
-	if cor != nil && cor.correlation != nil {
-		cor.correlation.cancel()
+	if cor != nil {
+		if cor.correlation != nil {
+			cor.correlation.cancel()
+		}
+
+		if cor.pTicker != nil {
+			cor.pTicker.Stop()
+		}
 	}
 	return nil
 }

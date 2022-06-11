@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
 const defaultEndpoint = "http://localhost:5984"
@@ -39,8 +41,9 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	Username                                string `mapstructure:"username"`
-	Password                                string `mapstructure:"password"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	Username                                string                   `mapstructure:"username"`
+	Password                                string                   `mapstructure:"password"`
 }
 
 // Validate validates missing and invalid configuration fields.

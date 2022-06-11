@@ -21,11 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -38,7 +38,7 @@ func TestNewTracesProcessor(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"foo"}
 	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
-	require.Error(t, componenterror.ErrNilNextConsumer, err)
+	require.Error(t, component.ErrNilNextConsumer, err)
 	require.Nil(t, tp)
 
 	tp, err = factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
@@ -50,9 +50,9 @@ func TestNewTracesProcessor(t *testing.T) {
 type testCase struct {
 	serviceName      string
 	inputName        string
-	inputAttributes  map[string]pdata.AttributeValue
+	inputAttributes  map[string]interface{}
 	outputName       string
-	outputAttributes map[string]pdata.AttributeValue
+	outputAttributes map[string]interface{}
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -66,7 +66,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 		for i := 0; i < rss.Len(); i++ {
 			rs := rss.At(i)
 			rs.Resource().Attributes().Sort()
-			ilss := rs.InstrumentationLibrarySpans()
+			ilss := rs.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -78,15 +78,15 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 	})
 }
 
-func generateTraceData(serviceName, inputName string, attrs map[string]pdata.AttributeValue) pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraceData(serviceName, inputName string, attrs map[string]interface{}) ptrace.Traces {
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(inputName)
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(span.Attributes())
+	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 	span.Attributes().Sort()
 	return td
 }
@@ -95,15 +95,15 @@ func generateTraceData(serviceName, inputName string, attrs map[string]pdata.Att
 func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  pdata.Traces
-		output pdata.Traces
+		input  ptrace.Traces
+		output ptrace.Traces
 	}
 	// TODO: Add test for "nil" Span. This needs support from data slices to allow to construct that.
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
-			input:  pdata.NewTraces(),
-			output: pdata.NewTraces(),
+			input:  ptrace.NewTraces(),
+			output: ptrace.NewTraces(),
 		},
 		{
 			name:   "one-empty-resource-spans",
@@ -160,48 +160,48 @@ func TestSpanProcessor_Values(t *testing.T) {
 		},
 		{
 			inputName:        "empty-attributes",
-			inputAttributes:  map[string]pdata.AttributeValue{},
+			inputAttributes:  map[string]interface{}{},
 			outputName:       "empty-attributes",
-			outputAttributes: map[string]pdata.AttributeValue{},
+			outputAttributes: map[string]interface{}{},
 		},
 		{
 			inputName: "string-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
+			inputAttributes: map[string]interface{}{
+				"key1": "bob",
 			},
 			outputName: "bob",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
+			outputAttributes: map[string]interface{}{
+				"key1": "bob",
 			},
 		},
 		{
 			inputName: "int-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]interface{}{
+				"key1": 123,
 			},
 			outputName: "123",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueInt(123),
+			outputAttributes: map[string]interface{}{
+				"key1": 123,
 			},
 		},
 		{
 			inputName: "double-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueDouble(234.129312),
+			inputAttributes: map[string]interface{}{
+				"key1": 234.129312,
 			},
 			outputName: "234.129312",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueDouble(234.129312),
+			outputAttributes: map[string]interface{}{
+				"key1": 234.129312,
 			},
 		},
 		{
 			inputName: "bool-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"key1": true,
 			},
 			outputName: "true",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]interface{}{
+				"key1": true,
 			},
 		},
 		// TODO: What do we do when AttributeMap contains a nil entry? Is that possible?
@@ -247,60 +247,60 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	testCases := []testCase{
 		{
 			inputName: "first-keys-missing",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"key2": 123,
+				"key3": 234.129312,
+				"key4": true,
 			},
 			outputName: "first-keys-missing",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]interface{}{
+				"key2": 123,
+				"key3": 234.129312,
+				"key4": true,
 			},
 		},
 		{
 			inputName: "middle-key-missing",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key4": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"key1": "bob",
+				"key2": 123,
+				"key4": true,
 			},
 			outputName: "middle-key-missing",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key4": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]interface{}{
+				"key1": "bob",
+				"key2": 123,
+				"key4": true,
 			},
 		},
 		{
 			inputName: "last-key-missing",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
+			inputAttributes: map[string]interface{}{
+				"key1": "bob",
+				"key2": 123,
+				"key3": 234.129312,
 			},
 			outputName: "last-key-missing",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
+			outputAttributes: map[string]interface{}{
+				"key1": "bob",
+				"key2": 123,
+				"key3": 234.129312,
 			},
 		},
 		{
 			inputName: "all-keys-exists",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]interface{}{
+				"key1": "bob",
+				"key2": 123,
+				"key3": 234.129312,
+				"key4": true,
 			},
 			outputName: "bob::123::234.129312::true",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]interface{}{
+				"key1": "bob",
+				"key2": 123,
+				"key3": 234.129312,
+				"key4": true,
 			},
 		},
 	}
@@ -335,16 +335,16 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"ensure no separator in the rename with one key",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]interface{}{
+			"key1": "bob",
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]interface{}{
+			"key1": "bob",
 		}), traceData)
 }
 
@@ -363,18 +363,18 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 
 	traceData := generateTraceData(
 		"",
-		"ensure no separator in the rename with two keys", map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
+		"ensure no separator in the rename with two keys", map[string]interface{}{
+			"key1": "bob",
+			"key2": 123,
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob123",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
+		map[string]interface{}{
+			"key1": "bob",
+			"key2": 123,
 		}), traceData)
 }
 
@@ -394,22 +394,22 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"rename with separators and multiple keys",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
-			"key3": pdata.NewAttributeValueDouble(234.129312),
-			"key4": pdata.NewAttributeValueBool(true),
+		map[string]interface{}{
+			"key1": "bob",
+			"key2": 123,
+			"key3": 234.129312,
+			"key4": true,
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob::123::234.129312::true",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
-			"key3": pdata.NewAttributeValueDouble(234.129312),
-			"key4": pdata.NewAttributeValueBool(true),
+		map[string]interface{}{
+			"key1": "bob",
+			"key2": 123,
+			"key3": 234.129312,
+			"key4": true,
 		}), traceData)
 }
 
@@ -429,16 +429,16 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]interface{}{
+			"key1": "bob",
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]interface{}{
+			"key1": "bob",
 		}), traceData)
 }
 
@@ -454,10 +454,10 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/1$`},
 			testCase: testCase{
 				inputName:       "/api/v1/document/321083210/update/1",
-				inputAttributes: map[string]pdata.AttributeValue{},
+				inputAttributes: map[string]interface{}{},
 				outputName:      "/api/v1/document/{documentId}/update/1",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
+				outputAttributes: map[string]interface{}{
+					"documentId": "321083210",
 				},
 			},
 		},
@@ -467,9 +467,9 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/2",
 				outputName: "/api/{version}/document/{documentId}/update/2",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
-					"version":    pdata.NewAttributeValueString("v1"),
+				outputAttributes: map[string]interface{}{
+					"documentId": "321083210",
+					"version":    "v1",
 				},
 			},
 		},
@@ -480,9 +480,9 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/3",
 				outputName: "/api/{version}/document/{documentId}/update/3",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
-					"version":    pdata.NewAttributeValueString("v1"),
+				outputAttributes: map[string]interface{}{
+					"documentId": "321083210",
+					"version":    "v1",
 				},
 			},
 			breakAfterMatch: false,
@@ -494,8 +494,8 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/4",
 				outputName: "/api/v1/document/{documentId}/update/4",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
+				outputAttributes: map[string]interface{}{
+					"documentId": "321083210",
 				},
 			},
 			breakAfterMatch: true,
@@ -543,30 +543,30 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 			serviceName: "banks",
 			inputName:   "www.test.com/code",
 			outputName:  "{operation_website}",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			outputAttributes: map[string]interface{}{
+				"operation_website": "www.test.com/code",
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			inputAttributes: map[string]interface{}{
+				"operation_website": "www.test.com/code",
 			},
 			outputName: "{operation_website}",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("donot/"),
+			outputAttributes: map[string]interface{}{
+				"operation_website": "donot/",
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/change",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			inputAttributes: map[string]interface{}{
+				"operation_website": "www.test.com/code",
 			},
 			outputName: "donot/change",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			outputAttributes: map[string]interface{}{
+				"operation_website": "www.test.com/code",
 			},
 		},
 	}
@@ -595,13 +595,13 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	}
 }
 
-func generateTraceDataSetStatus(code pdata.StatusCode, description string, attrs map[string]pdata.AttributeValue) pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attrs map[string]interface{}) ptrace.Traces {
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.Status().SetCode(code)
 	span.Status().SetMessage(description)
-	pdata.NewAttributeMapFromMap(attrs).Sort().CopyTo(span.Attributes())
+	pcommon.NewMapFromRaw(attrs).Sort().CopyTo(span.Attributes())
 	return td
 }
 
@@ -617,12 +617,11 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	td := generateTraceDataSetStatus(pdata.StatusCodeUnset, "foobar", nil)
-	td.InternalRep()
+	td := generateTraceDataSetStatus(ptrace.StatusCodeUnset, "foobar", nil)
 
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
-	assert.EqualValues(t, generateTraceDataSetStatus(pdata.StatusCodeError, "Set custom error message", nil), td)
+	assert.EqualValues(t, generateTraceDataSetStatus(ptrace.StatusCodeError, "Set custom error message", nil), td)
 }
 
 func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
@@ -635,6 +634,9 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	}
 	// This test numer two include rule for applying rule only for status code 400
 	oCfg.Include = &filterconfig.MatchProperties{
+		Config: filterset.Config{
+			MatchType: filterset.Strict,
+		},
 		Attributes: []filterconfig.Attribute{
 			{Key: "http.status_code", Value: 400},
 		},
@@ -644,22 +646,22 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	require.NotNil(t, tp)
 
 	testCases := []struct {
-		inputAttributes         map[string]pdata.AttributeValue
-		inputStatusCode         pdata.StatusCode
-		outputStatusCode        pdata.StatusCode
+		inputAttributes         map[string]interface{}
+		inputStatusCode         ptrace.StatusCode
+		outputStatusCode        ptrace.StatusCode
 		outputStatusDescription string
 	}{
 		{
 			// without attribiutes - should not apply rule and leave status code as it is
-			inputStatusCode:  pdata.StatusCodeOk,
-			outputStatusCode: pdata.StatusCodeOk,
+			inputStatusCode:  ptrace.StatusCodeOk,
+			outputStatusCode: ptrace.StatusCodeOk,
 		},
 		{
-			inputAttributes: map[string]pdata.AttributeValue{
-				"http.status_code": pdata.NewAttributeValueInt(400),
+			inputAttributes: map[string]interface{}{
+				"http.status_code": 400,
 			},
-			inputStatusCode:         pdata.StatusCodeOk,
-			outputStatusCode:        pdata.StatusCodeError,
+			inputStatusCode:         ptrace.StatusCodeOk,
+			outputStatusCode:        ptrace.StatusCodeError,
 			outputStatusDescription: "custom error message",
 		},
 	}
@@ -667,7 +669,6 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run("set-status-test", func(t *testing.T) {
 			td := generateTraceDataSetStatus(tc.inputStatusCode, "", tc.inputAttributes)
-			td.InternalRep()
 
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 

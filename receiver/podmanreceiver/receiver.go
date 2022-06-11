@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
@@ -72,16 +72,16 @@ func (r *receiver) start(context.Context, component.Host) error {
 	return err
 }
 
-func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
+func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var err error
 
-	stats, err := r.client.stats()
+	stats, err := r.client.stats(ctx)
 	if err != nil {
 		r.set.Logger.Error("error fetching stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	for i := range stats {
 		translateStatsToMetrics(&stats[i], time.Now(), md.ResourceMetrics().AppendEmpty())
 	}

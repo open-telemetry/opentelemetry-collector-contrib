@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package skywalkingexporter
 
 import (
@@ -80,7 +81,7 @@ func TestSwExporter(t *testing.T) {
 		go func() {
 			defer w1.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
-			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(0)
+			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetIntVal(0)
 			e := got.ConsumeLogs(context.Background(), l)
 			assert.NoError(t, e)
 		}()
@@ -101,7 +102,7 @@ func TestSwExporter(t *testing.T) {
 		go func() {
 			defer w2.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
-			l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(0)
+			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetIntVal(0)
 			e := got.ConsumeLogs(context.Background(), l)
 			if e != nil {
 				return

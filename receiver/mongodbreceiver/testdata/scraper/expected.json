@@ -2,10 +2,11 @@
     "resourceMetrics": [
         {
             "resource": {},
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
-                        "name": "otelcol/mongodb"
+                    "scope": {
+                        "name": "otelcol/mongodb",
+                        "version": "latest"
                     },
                     "metrics": [
                         {
@@ -165,10 +166,11 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
-                        "name": "otelcol/mongodb"
+                    "scope": {
+                        "name": "otelcol/mongodb",
+                        "version": "latest"
                     },
                     "metrics": [
                         {

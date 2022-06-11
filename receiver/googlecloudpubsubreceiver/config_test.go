@@ -15,7 +15,7 @@
 package googlecloudpubsubreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -29,16 +29,16 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := servicetest.LoadConfig(
-		path.Join(".", "testdata", "config.yaml"), factories,
+		filepath.Join("testdata", "config.yaml"), factories,
 	)
 
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
@@ -50,8 +50,6 @@ func TestLoadConfig(t *testing.T) {
 
 	customConfig.ProjectID = "my-project"
 	customConfig.UserAgent = "opentelemetry-collector-contrib {{version}}"
-	customConfig.Endpoint = "test-endpoint"
-	customConfig.Insecure = true
 	customConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
 		Timeout: 20 * time.Second,
 	}
@@ -61,71 +59,71 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfigValidation(t *testing.T) {
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	assert.Error(t, config.validateForTrace())
-	assert.Error(t, config.validateForLog())
-	assert.Error(t, config.validateForMetric())
-	config.Subscription = "projects/000project/subscriptions/my-subscription"
-	assert.Error(t, config.validate())
-	config.Subscription = "projects/my-project/topics/my-topic"
-	assert.Error(t, config.validate())
-	config.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, config.validate())
+	c := factory.CreateDefaultConfig().(*Config)
+	assert.Error(t, c.validateForTrace())
+	assert.Error(t, c.validateForLog())
+	assert.Error(t, c.validateForMetric())
+	c.Subscription = "projects/000project/subscriptions/my-subscription"
+	assert.Error(t, c.validate())
+	c.Subscription = "projects/my-project/topics/my-topic"
+	assert.Error(t, c.validate())
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validate())
 }
 
 func TestTraceConfigValidation(t *testing.T) {
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, config.validateForTrace())
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validateForTrace())
 
-	config.Encoding = "otlp_proto_metric"
-	assert.Error(t, config.validateForTrace())
-	config.Encoding = "otlp_proto_log"
-	assert.Error(t, config.validateForTrace())
-	config.Encoding = "raw_text"
-	assert.Error(t, config.validateForTrace())
-	config.Encoding = "raw_json"
-	assert.Error(t, config.validateForTrace())
+	c.Encoding = "otlp_proto_metric"
+	assert.Error(t, c.validateForTrace())
+	c.Encoding = "otlp_proto_log"
+	assert.Error(t, c.validateForTrace())
+	c.Encoding = "raw_text"
+	assert.Error(t, c.validateForTrace())
+	c.Encoding = "raw_json"
+	assert.Error(t, c.validateForTrace())
 
-	config.Encoding = "otlp_proto_trace"
-	assert.NoError(t, config.validateForTrace())
+	c.Encoding = "otlp_proto_trace"
+	assert.NoError(t, c.validateForTrace())
 }
 
 func TestMetricConfigValidation(t *testing.T) {
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, config.validateForMetric())
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validateForMetric())
 
-	config.Encoding = "otlp_proto_trace"
-	assert.Error(t, config.validateForMetric())
-	config.Encoding = "otlp_proto_log"
-	assert.Error(t, config.validateForMetric())
-	config.Encoding = "raw_text"
-	assert.Error(t, config.validateForMetric())
-	config.Encoding = "raw_json"
-	assert.Error(t, config.validateForMetric())
+	c.Encoding = "otlp_proto_trace"
+	assert.Error(t, c.validateForMetric())
+	c.Encoding = "otlp_proto_log"
+	assert.Error(t, c.validateForMetric())
+	c.Encoding = "raw_text"
+	assert.Error(t, c.validateForMetric())
+	c.Encoding = "raw_json"
+	assert.Error(t, c.validateForMetric())
 
-	config.Encoding = "otlp_proto_metric"
-	assert.NoError(t, config.validateForMetric())
+	c.Encoding = "otlp_proto_metric"
+	assert.NoError(t, c.validateForMetric())
 }
 
 func TestLogConfigValidation(t *testing.T) {
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, config.validateForLog())
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validateForLog())
 
-	config.Encoding = "otlp_proto_trace"
-	assert.Error(t, config.validateForLog())
-	config.Encoding = "otlp_proto_metric"
-	assert.Error(t, config.validateForLog())
+	c.Encoding = "otlp_proto_trace"
+	assert.Error(t, c.validateForLog())
+	c.Encoding = "otlp_proto_metric"
+	assert.Error(t, c.validateForLog())
 
-	config.Encoding = "raw_text"
-	assert.NoError(t, config.validateForLog())
-	config.Encoding = "raw_json"
-	assert.NoError(t, config.validateForLog())
-	config.Encoding = "otlp_proto_log"
-	assert.NoError(t, config.validateForLog())
+	c.Encoding = "raw_text"
+	assert.NoError(t, c.validateForLog())
+	c.Encoding = "raw_json"
+	assert.NoError(t, c.validateForLog())
+	c.Encoding = "otlp_proto_log"
+	assert.NoError(t, c.validateForLog())
 }

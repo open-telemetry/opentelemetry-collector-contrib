@@ -1,15 +1,15 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
+               "scope": {
                   "name": "one",
                   "version": "1.0"
                }
             },
             {
-               "instrumentationLibrary": {
+               "scope": {
                   "name": "two",
                   "version": "2.0"
                }

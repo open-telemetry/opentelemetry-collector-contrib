@@ -15,7 +15,8 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -25,7 +26,7 @@ import (
 type hecEvent struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	Name       string                 `json:"name"`
-	Timestamp  pdata.Timestamp        `json:"timestamp"`
+	Timestamp  pcommon.Timestamp      `json:"timestamp"`
 }
 
 // hecLink is a data structure holding a span link to export explicitly to Splunk HEC.
@@ -33,7 +34,7 @@ type hecLink struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	TraceID    string                 `json:"trace_id"`
 	SpanID     string                 `json:"span_id"`
-	TraceState pdata.TraceState       `json:"trace_state"`
+	TraceState ptrace.TraceState      `json:"trace_state"`
 }
 
 // hecSpanStatus is a data structure holding the status of a span to export explicitly to Splunk HEC.
@@ -49,73 +50,59 @@ type hecSpan struct {
 	ParentSpan string                 `json:"parent_span_id"`
 	Name       string                 `json:"name"`
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
-	EndTime    pdata.Timestamp        `json:"end_time"`
+	EndTime    pcommon.Timestamp      `json:"end_time"`
 	Kind       string                 `json:"kind"`
 	Status     hecSpanStatus          `json:"status,omitempty"`
-	StartTime  pdata.Timestamp        `json:"start_time"`
+	StartTime  pcommon.Timestamp      `json:"start_time"`
 	Events     []hecEvent             `json:"events,omitempty"`
 	Links      []hecLink              `json:"links,omitempty"`
 }
 
-func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
+func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *Config, logger *zap.Logger) *splunk.Event {
 	sourceKey := config.HecToOtelAttrs.Source
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
 	hostKey := config.HecToOtelAttrs.Host
 
-	numDroppedSpans := 0
-	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
-	rss := data.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		rs := rss.At(i)
-		host := unknownHostName
-		source := config.Source
-		sourceType := config.SourceType
-		index := config.Index
-		commonFields := map[string]interface{}{}
-		rs.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			switch k {
-			case hostKey:
-				host = v.StringVal()
-			case sourceKey:
-				source = v.StringVal()
-			case sourceTypeKey:
-				sourceType = v.StringVal()
-			case indexKey:
-				index = v.StringVal()
-			case splunk.HecTokenLabel:
-				// ignore
-			default:
-				commonFields[k] = v.AsString()
-			}
-			return true
-		})
-		ilss := rs.InstrumentationLibrarySpans()
-		for sils := 0; sils < ilss.Len(); sils++ {
-			ils := ilss.At(sils)
-			spans := ils.Spans()
-			for si := 0; si < spans.Len(); si++ {
-				span := spans.At(si)
-				se := &splunk.Event{
-					Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),
-					Host:       host,
-					Source:     source,
-					SourceType: sourceType,
-					Index:      index,
-					Event:      toHecSpan(logger, span),
-					Fields:     commonFields,
-				}
-				splunkEvents = append(splunkEvents, se)
-			}
+	host := unknownHostName
+	source := config.Source
+	sourceType := config.SourceType
+	index := config.Index
+	commonFields := map[string]interface{}{}
+	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+		switch k {
+		case hostKey:
+			host = v.StringVal()
+		case sourceKey:
+			source = v.StringVal()
+		case sourceTypeKey:
+			sourceType = v.StringVal()
+		case indexKey:
+			index = v.StringVal()
+		case splunk.HecTokenLabel:
+			// ignore
+		default:
+			commonFields[k] = v.AsString()
 		}
+		return true
+	})
+
+	se := &splunk.Event{
+		Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),
+		Host:       host,
+		Source:     source,
+		SourceType: sourceType,
+		Index:      index,
+		Event:      toHecSpan(logger, span),
+		Fields:     commonFields,
 	}
 
-	return splunkEvents, numDroppedSpans
+	return se
 }
 
-func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {
+func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 	attributes := map[string]interface{}{}
-	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	span.Attributes().Range(func(k string, v pcommon.Value) bool {
 		attributes[k] = convertAttributeValue(v, logger)
 		return true
 	})
@@ -124,7 +111,7 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {
 	for i := 0; i < span.Links().Len(); i++ {
 		link := span.Links().At(i)
 		linkAttributes := map[string]interface{}{}
-		link.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		link.Attributes().Range(func(k string, v pcommon.Value) bool {
 			linkAttributes[k] = convertAttributeValue(v, logger)
 			return true
 		})
@@ -139,7 +126,7 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
 		eventAttributes := map[string]interface{}{}
-		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		event.Attributes().Range(func(k string, v pcommon.Value) bool {
 			eventAttributes[k] = convertAttributeValue(v, logger)
 			return true
 		})

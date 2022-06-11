@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"golang.org/x/oauth2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestFactory_TestType(t *testing.T) {

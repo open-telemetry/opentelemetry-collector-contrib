@@ -1,0 +1,2 @@
+type: key_value_parser
+on_error: drop

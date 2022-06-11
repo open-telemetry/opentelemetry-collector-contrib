@@ -17,6 +17,7 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -24,10 +25,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -40,7 +42,7 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	metadataProvider metadataProvider
+	metadataProvider ec2provider.Provider
 	tagKeyRegexes    []*regexp.Regexp
 	logger           *zap.Logger
 }
@@ -56,25 +58,25 @@ func NewDetector(set component.ProcessorCreateSettings, dcfg internal.DetectorCo
 		return nil, err
 	}
 	return &Detector{
-		metadataProvider: newMetadataClient(sess),
+		metadataProvider: ec2provider.NewProvider(sess),
 		tagKeyRegexes:    tagKeyRegexes,
 		logger:           set.Logger,
 	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
-	if _, err = d.metadataProvider.instanceID(ctx); err != nil {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
+	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
 		return res, "", nil
 	}
 
-	meta, err := d.metadataProvider.get(ctx)
+	meta, err := d.metadataProvider.Get(ctx)
 	if err != nil {
 		return res, "", fmt.Errorf("failed getting identity document: %w", err)
 	}
 
-	hostname, err := d.metadataProvider.hostname(ctx)
+	hostname, err := d.metadataProvider.Hostname(ctx)
 	if err != nil {
 		return res, "", fmt.Errorf("failed getting hostname: %w", err)
 	}
@@ -91,7 +93,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 	attr.InsertString(conventions.AttributeHostName, hostname)
 
 	if len(d.tagKeyRegexes) != 0 {
-		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
+		client := getHTTPClientSettings(ctx, d.logger)
+		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
 		if err != nil {
 			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
@@ -103,9 +106,19 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 	return res, conventions.SchemaURL, nil
 }
 
-func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+func getHTTPClientSettings(ctx context.Context, logger *zap.Logger) *http.Client {
+	client, err := internal.ClientFromContext(ctx)
+	if err != nil {
+		client = http.DefaultClient
+		logger.Debug("Error retrieving client from context thus creating default", zap.Error(err))
+	}
+	return client
+}
+
+func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp, client *http.Client) (map[string]string, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
+		Region:     aws.String(region),
+		HTTPClient: client},
 	)
 	if err != nil {
 		return nil, err

@@ -49,11 +49,9 @@
 //   - k8s.pod.uid
 //   - k8s.pod.start_time
 //   - k8s.deployment.name
-//   - k8s.cluster.name
 //   - k8s.node.name
-// Not all the attributes are guaranteed to be added. For example `k8s.cluster.name` usually is not provided by k8s API,
-// so likely it won't be set as an attribute.
-
+// Not all the attributes are guaranteed to be added.
+//
 // The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
 //      as a resource attribute (similar to all other attributes, pod has to be identified as well):
@@ -62,7 +60,7 @@
 //   2. Container status attributes - in addition to pod identifier and `k8s.container.name` attribute, these attributes
 //     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
 //     - container.id
-
+//
 //The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
 //The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
 //This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
@@ -87,14 +85,64 @@
 //	  key: label2
 //	  regex: field=(?P<value>.+)
 //	  from: pod
-
+//
 // RBAC
 //
-// TODO: mention the required RBAC rules.
+// The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters.
+// Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
+//
+//      apiVersion: v1
+//      kind: ServiceAccount
+//      metadata:
+//        name: collector
+//        namespace: <OTEL_COL_NAMESPACE>
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRole
+//      metadata:
+//        name: otel-collector
+//      rules:
+//      - apiGroups: [""]
+//        resources: ["pods", "namespaces"]
+//        verbs: ["get", "watch", "list"]
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRoleBinding
+//      metadata:
+//        name: otel-collector
+//      subjects:
+//      - kind: ServiceAccount
+//        name: collector
+//        namespace: <OTEL_COL_NAMESPACE>
+//      roleRef:
+//        kind: ClusterRole
+//        name: otel-collector
+//        apiGroup: rbac.authorization.k8s.io
 //
 // Config
 //
-// TODO: example config.
+//      k8sattributes:
+//      k8sattributes/2:
+//        auth_type: "serviceAccount"
+//        passthrough: false
+//        filter:
+//          node_from_env_var: KUBE_NODE_NAME
+//
+//        extract:
+//          metadata:
+//            - k8s.pod.name
+//            - k8s.pod.uid
+//            - k8s.deployment.name
+//            - k8s.namespace.name
+//            - k8s.node.name
+//            - k8s.pod.start_time
+//
+//        pod_association:
+//         - from: resource_attribute
+//           name: k8s.pod.ip
+//         - from: resource_attribute
+//           name: k8s.pod.uid
+//         - from: connection
 //
 // Deployment scenarios
 //
@@ -117,12 +165,14 @@
 // 1. Use the downward API to inject the node name as an environment variable.
 // Add the following snippet under the pod env section of the OpenTelemetry container.
 //
-//    env:
-//    - name: KUBE_NODE_NAME
-//      valueFrom:
-//  	  fieldRef:
-//  	    apiVersion: v1
-//  	    fieldPath: spec.nodeName
+//    spec:
+//      containers:
+//      - env:
+//        - name: KUBE_NODE_NAME
+//          valueFrom:
+//            fieldRef:
+//              apiVersion: v1
+//              fieldPath: spec.nodeName
 //
 // This will inject a new environment variable to the OpenTelemetry container with the value as the
 // name of the node the pod was scheduled to run on.
@@ -180,4 +230,5 @@
 // as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 // downward API to inject environment variables into the pods and directly use their values
 // as tags.
+// nolint:gocritic
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"

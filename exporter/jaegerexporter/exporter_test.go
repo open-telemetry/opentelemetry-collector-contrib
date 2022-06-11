@@ -17,7 +17,7 @@ package jaegerexporter
 import (
 	"context"
 	"net"
-	"path"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -30,7 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -181,11 +182,11 @@ func TestNew(t *testing.T) {
 // openssl rsa -in server.key -out temp.key && rm server.key && mv temp.key server.key
 // openssl rsa -in client.key -out temp.key && rm client.key && mv temp.key client.key
 func TestMutualTLS(t *testing.T) {
-	caPath := path.Join(".", "testdata", "ca.crt")
-	serverCertPath := path.Join(".", "testdata", "server.crt")
-	serverKeyPath := path.Join(".", "testdata", "server.key")
-	clientCertPath := path.Join(".", "testdata", "client.crt")
-	clientKeyPath := path.Join(".", "testdata", "client.key")
+	caPath := filepath.Join("testdata", "ca.crt")
+	serverCertPath := filepath.Join("testdata", "server.crt")
+	serverKeyPath := filepath.Join("testdata", "server.key")
+	clientCertPath := filepath.Join("testdata", "client.crt")
+	clientKeyPath := filepath.Join("testdata", "client.key")
 
 	// start gRPC Jaeger server
 	tlsCfgOpts := configtls.TLSServerSetting{
@@ -227,11 +228,11 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
-	traceID := pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	traceID := pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 
-	td := pdata.NewTraces()
-	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 

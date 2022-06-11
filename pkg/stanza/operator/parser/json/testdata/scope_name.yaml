@@ -1,0 +1,3 @@
+type: json_parser
+scope_name:
+  parse_from: body.logger_name_field

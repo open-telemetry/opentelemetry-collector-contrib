@@ -8,11 +8,13 @@ exporters:
   googlecloudpubsub:
   googlecloudpubsub/customname:
     project: my-project
-    endpoint: test-endpoint
     user_agent: opentelemetry-collector-contrib {{version}}
-    insecure: true
     timeout: 20s
     topic: projects/my-project/topics/otlp-topic
+    compression: gzip
+    watermark:
+      behavior: earliest
+      allowed_drift: 1h
 
 service:
   pipelines:

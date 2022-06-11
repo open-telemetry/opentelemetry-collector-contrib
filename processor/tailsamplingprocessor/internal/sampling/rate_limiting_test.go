@@ -18,44 +18,37 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
 func TestRateLimiter(t *testing.T) {
-	var empty = map[string]pdata.AttributeValue{}
-
-	trace := newTraceStringAttrs(empty, "example", "value")
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	trace := newTraceStringAttrs(pcommon.NewMap(), "example", "value")
+	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
 
 	// Trace span count greater than spans per second
-	trace.SpanCount = 10
+	trace.SpanCount = atomic.NewInt64(10)
 	decision, err := rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 
 	// Trace span count equal to spans per second
-	trace.SpanCount = 3
+	trace.SpanCount = atomic.NewInt64(3)
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 
 	// Trace span count less than spans per second
-	trace.SpanCount = 2
+	trace.SpanCount = atomic.NewInt64(2)
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 
 	// Trace span count less than spans per second
-	trace.SpanCount = 0
+	trace.SpanCount = atomic.NewInt64(0)
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
-}
-
-func TestOnLateArrivingSpans_RateLimiter(t *testing.T) {
-	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
-	err := rateLimiter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
 }

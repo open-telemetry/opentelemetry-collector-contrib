@@ -18,10 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	colconfig "go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestHostTags(t *testing.T) {
@@ -40,7 +37,7 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 
 	tc = TagsConfig{
@@ -59,7 +56,7 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 
 	tc = TagsConfig{
@@ -77,144 +74,162 @@ func TestHostTags(t *testing.T) {
 			"key3:val3",
 			"key4:val4",
 		},
-		tc.GetHostTags(),
+		tc.getHostTags(),
 	)
 }
 
-// TestOverrideMetricsURL tests that the metrics URL is overridden
-// correctly when set manually.
-func TestOverrideMetricsURL(t *testing.T) {
-
-	const DebugEndpoint string = "http://localhost:8080"
-
-	cfg := Config{
-		API: APIConfig{Key: "notnull", Site: DefaultSite},
-		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: DebugEndpoint,
-			},
-		},
-	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
-}
-
-// TestDefaultSite tests that the Site option is set to the
-// default value when no value was set prior to running Sanitize
-func TestDefaultSite(t *testing.T) {
-	cfg := Config{
-		API: APIConfig{Key: "notnull"},
-	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, cfg.API.Site, DefaultSite)
-}
-
-func TestAPIKeyUnset(t *testing.T) {
-	cfg := Config{}
-	err := cfg.Sanitize(zap.NewNop())
-	assert.Equal(t, err, errUnsetAPIKey)
-}
-
-func TestNoMetadata(t *testing.T) {
-	cfg := Config{
-		OnlyMetadata: true,
-		SendMetadata: false,
-	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	assert.Equal(t, err, errNoMetadata)
-}
-
-func TestInvalidHostname(t *testing.T) {
-	cfg := Config{TagsConfig: TagsConfig{Hostname: "invalid_host"}}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.Error(t, err)
-}
-
-func TestCensorAPIKey(t *testing.T) {
-	cfg := APIConfig{
-		Key: "ddog_32_characters_long_api_key1",
-	}
-
-	assert.Equal(
-		t,
-		"***************************_key1",
-		cfg.GetCensoredKey(),
-	)
-}
-
-func TestIgnoreResourcesValidation(t *testing.T) {
-	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
-	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
-
-	noErr := validCfg.Validate()
-	err := invalidCfg.Validate()
-	require.NoError(t, noErr)
-	require.Error(t, err)
-}
-
-func TestSpanNameRemappingsValidation(t *testing.T) {
-	validCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}}
-	invalidCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}}
-	noErr := validCfg.Validate()
-	err := invalidCfg.Validate()
-	require.NoError(t, noErr)
-	require.Error(t, err)
-}
-
-func TestErrorReportBuckets(t *testing.T) {
+func TestValidate(t *testing.T) {
 
 	tests := []struct {
-		name          string
-		stringMap     map[string]interface{}
-		expectedError error
+		name string
+		cfg  *Config
+		err  string
 	}{
 		{
-			name: "report buckets false",
-			stringMap: map[string]interface{}{
-				"api": map[string]interface{}{"key": "aaa"},
-				"metrics": map[string]interface{}{
-					"report_buckets": false,
-				},
-			},
-			expectedError: errBuckets,
+			name: "no api::key",
+			cfg:  &Config{},
+			err:  errUnsetAPIKey.Error(),
 		},
 		{
-			name: "report buckets true",
-			stringMap: map[string]interface{}{
-				"api": map[string]interface{}{"key": "aaa"},
-				"metrics": map[string]interface{}{
-					"report_buckets": true,
-				},
+			name: "invalid hostname",
+			cfg: &Config{
+				API:        APIConfig{Key: "notnull"},
+				TagsConfig: TagsConfig{Hostname: "invalid_host"},
 			},
-			expectedError: errBuckets,
+			err: "hostname field is invalid: 'invalid_host' is not RFC1123 compliant",
 		},
 		{
-			name: "no report buckets",
-			stringMap: map[string]interface{}{
-				"api": map[string]interface{}{"key": "aaa"},
+			name: "no metadata",
+			cfg: &Config{
+				API:          APIConfig{Key: "notnull"},
+				OnlyMetadata: true,
+				SendMetadata: false,
 			},
-			expectedError: nil,
+			err: errNoMetadata.Error(),
+		},
+		{
+			name: "span name remapping valid",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}},
+			},
+		},
+		{
+			name: "span name remapping empty val",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}},
+			},
+			err: "'' is not valid value for span name remapping",
+		},
+		{
+			name: "span name remapping empty key",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}},
+			},
+			err: "'' is not valid key for span name remapping",
+		},
+		{
+			name: "ignore resources valid",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{IgnoreResources: []string{"[123]"}},
+			},
+		},
+		{
+			name: "ignore resources missing bracket",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{IgnoreResources: []string{"[123"}},
+			},
+			err: "'[123' is not valid resource filter regular expression",
+		},
+		{
+			name: "invalid histogram settings",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				Metrics: MetricsConfig{
+					HistConfig: HistogramConfig{
+						Mode:         HistogramModeNoBuckets,
+						SendCountSum: false,
+					},
+				},
+			},
+			err: "'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics",
+		},
+		{
+			name: "TLS settings are valid",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+					TLSSetting: LimitedTLSClientSettings{
+						InsecureSkipVerify: true,
+					},
+				},
+			},
+		},
+	}
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			err := testInstance.cfg.Validate()
+			if testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestUnmarshal(t *testing.T) {
+	tests := []struct {
+		name      string
+		configMap *confmap.Conf
+		cfg       Config
+		err       string
+	}{
+		{
+			name: "invalid cumulative monotonic mode",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"cumulative_monotonic_mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"",
+		},
+		{
+			name: "invalid host metadata hostname source",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"host_metadata": map[string]interface{}{
+					"hostname_source": "invalid_source",
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'host_metadata.hostname_source': invalid host metadata hostname source \"invalid_source\"",
+		},
+		{
+			name: "invalid summary mode",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"summaries": map[string]interface{}{
+						"mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
 		},
 	}
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			// default config for buckets
-			config := Config{Metrics: MetricsConfig{HistConfig: HistogramConfig{Mode: histogramModeDistributions}}}
-			configMap := colconfig.NewMapFromStringMap(testInstance.stringMap)
-			err := config.Unmarshal(configMap)
-
-			if testInstance.expectedError != nil {
-				require.Error(t, err)
-				require.ErrorIs(t, testInstance.expectedError, err)
+			cfg := futureDefaultConfig()
+			err := cfg.Unmarshal(testInstance.configMap)
+			if err != nil || testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
 			} else {
-				require.NoError(t, err)
+				assert.Equal(t, testInstance.cfg, cfg)
 			}
 		})
 	}

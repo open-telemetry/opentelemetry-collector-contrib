@@ -16,12 +16,13 @@ package prometheusexecreceiver // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
@@ -32,14 +33,23 @@ const (
 	typeStr = "prometheus_exec"
 
 	defaultCollectionInterval = 60 * time.Second
+	defaultTimeoutInterval    = 10 * time.Second
 )
+
+var once sync.Once
 
 // NewFactory creates a factory for the prometheusexec receiver
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver))
+}
+
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("prometheus_exec receiver is deprecated and will be removed in future versions.")
+	})
 }
 
 // createDefaultConfig returns a default config
@@ -47,6 +57,7 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		ScrapeInterval:   defaultCollectionInterval,
+		ScrapeTimeout:    defaultTimeoutInterval,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Env: []subprocessmanager.EnvConfig{},
 		},
@@ -60,6 +71,7 @@ func createMetricsReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
+	logDeprecation(params.Logger)
 	rCfg := cfg.(*Config)
 	return newPromExecReceiver(params, rCfg, nextConsumer)
 }

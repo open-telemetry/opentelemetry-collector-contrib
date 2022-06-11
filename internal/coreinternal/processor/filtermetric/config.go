@@ -20,15 +20,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 )
 
-// MatchType specifies the strategy for matching against `pdata.Metric`s. This
+// MatchType specifies the strategy for matching against `pmetric.Metric`s. This
 // is distinct from filterset.MatchType which matches against metric (and
 // tracing) names only. To support matching against metric names and
-// `pdata.Metric`s, filtermetric.MatchType is effectively a superset of
+// `pmetric.Metric`s, filtermetric.MatchType is effectively a superset of
 // filterset.MatchType.
 type MatchType string
 
 // These are the MatchTypes that users can specify for filtering
-// `pdata.Metric`s.
+// `pmetric.Metric`s.
 const (
 	Regexp           = MatchType(filterset.Regexp)
 	Strict           = MatchType(filterset.Strict)
@@ -56,7 +56,20 @@ type MatchProperties struct {
 	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
 }
 
-// ChecksMetrics returns whether or not the check should iterate through all the metrics
+func CreateMatchPropertiesFromDefault(properties *filterconfig.MatchProperties) *MatchProperties {
+	if properties == nil {
+		return nil
+	}
+
+	return &MatchProperties{
+		MatchType:          MatchType(properties.Config.MatchType),
+		RegexpConfig:       properties.Config.RegexpConfig,
+		MetricNames:        properties.MetricNames,
+		ResourceAttributes: properties.Resources,
+	}
+}
+
+// ChecksMetrics returns whether the check should iterate through all the metrics
 func (mp *MatchProperties) ChecksMetrics() bool {
 	if mp == nil {
 		return false

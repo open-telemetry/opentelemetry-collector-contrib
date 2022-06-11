@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -97,7 +97,8 @@ func Run(c *Config, logger *zap.Logger) error {
 	}
 
 	wg := sync.WaitGroup{}
-	var running uint32 = 1
+	running := atomic.NewBool(true)
+
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
@@ -105,7 +106,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			propagateContext: c.PropagateContext,
 			limitPerSecond:   limit,
 			totalDuration:    c.TotalDuration,
-			running:          &running,
+			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
 		}
@@ -114,7 +115,7 @@ func Run(c *Config, logger *zap.Logger) error {
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
-		atomic.StoreUint32(&running, 0)
+		running.Store(false)
 	}
 	wg.Wait()
 	return nil

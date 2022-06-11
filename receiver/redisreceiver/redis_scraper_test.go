@@ -32,7 +32,7 @@ func TestRedisRunnable(t *testing.T) {
 	settings := componenttest.NewNopReceiverCreateSettings()
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
-	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.Metrics)}
+	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo)}
 	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())
@@ -40,9 +40,9 @@ func TestRedisRunnable(t *testing.T) {
 	// + 6 because there are two keyspace entries each of which has three metrics
 	assert.Equal(t, len(rs.dataPointRecorders())+6, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
-	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	il := ilm.InstrumentationLibrary()
-	assert.Equal(t, "otelcol/redis", il.Name())
+	ilm := rm.ScopeMetrics().At(0)
+	il := ilm.Scope()
+	assert.Equal(t, "otelcol/redisreceiver", il.Name())
 }
 
 func TestNewReceiver_invalid_auth_error(t *testing.T) {

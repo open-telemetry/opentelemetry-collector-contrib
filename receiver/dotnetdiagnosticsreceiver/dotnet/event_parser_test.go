@@ -15,7 +15,7 @@
 package dotnet
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +25,7 @@ import (
 )
 
 func TestEventParser(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 4)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 4)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
 	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
@@ -64,7 +64,7 @@ func testCPUUsage(t *testing.T, m Metric) {
 }
 
 func TestEventParserErrors(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 4)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 4)
 	require.NoError(t, err)
 	for i := 0; i < 57; i++ {
 		testEventParserError(t, data, i)

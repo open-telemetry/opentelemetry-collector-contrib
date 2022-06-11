@@ -17,12 +17,12 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"encoding/json"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addMetadata(meta map[string]map[string]interface{}, attrs *pdata.AttributeMap) error {
+func addMetadata(meta map[string]map[string]interface{}, attrs *pcommon.Map) error {
 	for k, v := range meta {
 		val, err := json.Marshal(v)
 		if err != nil {

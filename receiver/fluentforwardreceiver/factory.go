@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -30,10 +29,10 @@ const (
 
 // NewFactory return a new component.ReceiverFactory for fluentd forwarder.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithLogs(createLogsReceiver))
+		component.WithLogsReceiver(createLogsReceiver))
 }
 
 func createDefaultConfig() config.Receiver {

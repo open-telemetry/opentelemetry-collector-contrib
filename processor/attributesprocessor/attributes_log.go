@@ -17,13 +17,16 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
 )
 
 type logAttributesProcessor struct {
+	logger   *zap.Logger
 	attrProc *attraction.AttrProc
 	include  filterlog.Matcher
 	exclude  filterlog.Matcher
@@ -32,31 +35,32 @@ type logAttributesProcessor struct {
 // newLogAttributesProcessor returns a processor that modifies attributes of a
 // log record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newLogAttributesProcessor(attrProc *attraction.AttrProc, include, exclude filterlog.Matcher) *logAttributesProcessor {
+func newLogAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filterlog.Matcher) *logAttributesProcessor {
 	return &logAttributesProcessor{
+		logger:   logger,
 		attrProc: attrProc,
 		include:  include,
 		exclude:  exclude,
 	}
 }
 
-func (a *logAttributesProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (a *logAttributesProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rs := rls.At(i)
-		ilss := rs.InstrumentationLibraryLogs()
+		ilss := rs.ScopeLogs()
 		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			logs := ils.Logs()
-			library := ils.InstrumentationLibrary()
+			logs := ils.LogRecords()
+			library := ils.Scope()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
 				if a.skipLog(lr, resource, library) {
 					continue
 				}
 
-				a.attrProc.Process(ctx, lr.Attributes())
+				a.attrProc.Process(ctx, a.logger, lr.Attributes())
 			}
 		}
 	}
@@ -69,7 +73,7 @@ func (a *logAttributesProcessor) processLogs(ctx context.Context, ld pdata.Logs)
 // The logic determining if a log should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func (a *logAttributesProcessor) skipLog(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func (a *logAttributesProcessor) skipLog(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
 	if a.include != nil {
 		// A false returned in this case means the log should not be processed.
 		if include := a.include.MatchLogRecord(lr, resource, library); !include {

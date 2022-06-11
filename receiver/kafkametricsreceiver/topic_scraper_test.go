@@ -71,7 +71,7 @@ func TestTopicScraper_createsScraper(t *testing.T) {
 	assert.NotNil(t, ms)
 }
 
-func TestTopicScraper_startScraperHandlesError(t *testing.T) {
+func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("no scraper here")
 	}
@@ -79,8 +79,20 @@ func TestTopicScraper_startScraperHandlesError(t *testing.T) {
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, zap.NewNop())
 	assert.NotNil(t, ms)
 	assert.Nil(t, err)
-	err = ms.Start(context.Background(), nil)
+	_, err = ms.Scrape(context.Background())
 	assert.Error(t, err)
+}
+
+func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
+	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+		return nil, fmt.Errorf("no scraper here")
+	}
+	sc := sarama.NewConfig()
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.NotNil(t, ms)
+	assert.Nil(t, err)
+	err = ms.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
 
 func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
@@ -117,8 +129,8 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	md, err := scraper.scrape(context.Background())
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
-	require.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
-	ms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
 		dp := m.Gauge().DataPoints().At(0)

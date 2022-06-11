@@ -1,10 +1,14 @@
 name: zookeeperreceiver
 
-attributes:
+resource_attributes:
   server.state:
     description: State of the Zookeeper server (leader, standalone or follower).
+    type: string
   zk.version:
     description: Zookeeper version of the instance.
+    type: string
+
+attributes:
   state:
     description: State of followers
     enum:

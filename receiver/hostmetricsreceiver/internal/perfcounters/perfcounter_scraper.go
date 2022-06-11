@@ -73,7 +73,7 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 func (p *PerfLibScraper) Scrape() (PerfDataCollection, error) {
 	objects, err := perflib.QueryPerformanceData(p.objectIndices)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query performance data: %w", err)
 	}
 
 	indexed := make(map[string]*perflib.PerfObject)

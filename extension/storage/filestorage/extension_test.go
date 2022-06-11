@@ -16,8 +16,10 @@ package filestorage
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -53,6 +55,10 @@ func TestExtensionIntegrity(t *testing.T) {
 	for _, c := range components {
 		client, err := se.GetClient(ctx, c.kind, c.name, "")
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, client.Close(ctx))
+		})
+
 		clients[c.name] = client
 	}
 
@@ -114,6 +120,9 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 
 	myBytes := []byte("value")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
 
 	// Set the data
 	err = client.Set(ctx, "key", myBytes)
@@ -154,6 +163,9 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 		"foo",
 	)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client1.Close(ctx))
+	})
 
 	client2, err := se.GetClient(
 		ctx,
@@ -162,6 +174,9 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 		"bar",
 	)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client2.Close(ctx))
+	})
 
 	myBytes1 := []byte("value1")
 	myBytes2 := []byte("value2")
@@ -186,8 +201,7 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	ctx := context.Background()
 
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -215,12 +229,9 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 }
 
 func newTestExtension(t *testing.T) storage.Extension {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Directory = tempDir
+	cfg.Directory = t.TempDir()
 
 	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
@@ -233,4 +244,154 @@ func newTestExtension(t *testing.T) storage.Extension {
 
 func newTestEntity(name string) config.ComponentID {
 	return config.NewComponentIDWithName("nop", name)
+}
+
+func TestCompaction(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
+
+	files, err := ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+
+	file := files[0]
+	path := filepath.Join(tempDir, file.Name())
+	stats, err := os.Stat(path)
+	require.NoError(t, err)
+
+	var key string
+	i := 0
+
+	// magic numbers giving enough data to force bbolt to allocate a new page
+	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/9004 for some discussion
+	numEntries := 50
+	entrySize := 512
+	entry := make([]byte, entrySize)
+
+	// add the data to the db
+	for i = 0; i < numEntries; i++ {
+		key = fmt.Sprintf("key_%d", i)
+		err = client.Set(ctx, key, entry)
+		require.NoError(t, err)
+	}
+
+	// compact the db
+	c, ok := client.(*fileStorageClient)
+	require.True(t, ok)
+	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient1.Close(ctx))
+	})
+
+	// check size after compaction
+	newStats, err := os.Stat(path)
+	require.NoError(t, err)
+	require.Less(t, stats.Size(), newStats.Size())
+
+	// remove data from database
+	for i = 0; i < numEntries; i++ {
+		key = fmt.Sprintf("key_%d", i)
+		err = fsClient1.Delete(ctx, key)
+		require.NoError(t, err)
+	}
+
+	// compact after data removal
+	fsClient2, err := fsClient1.Compact(ctx, tempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient2.Close(ctx))
+	})
+
+	// check size
+	stats = newStats
+	newStats, err = os.Stat(path)
+	require.NoError(t, err)
+	require.Less(t, newStats.Size(), stats.Size())
+}
+
+// TestCompactionRemoveTemp validates if temporary db used for compaction is removed afterwards
+// test is performed for both: the same and different than storage directories
+func TestCompactionRemoveTemp(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
+
+	// check if only db exists in tempDir
+	files, err := ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+	fileName := files[0].Name()
+
+	// perform compaction in the same directory
+	c, ok := client.(*fileStorageClient)
+	require.True(t, ok)
+	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient1.Close(ctx))
+	})
+
+	// check if only db exists in tempDir
+	files, err = ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+	require.Equal(t, fileName, files[0].Name())
+
+	// perform compaction in different directory
+	emptyTempDir := t.TempDir()
+
+	fsClient2, err := fsClient1.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, fsClient2.Close(ctx))
+	})
+
+	// check if emptyTempDir is empty after compaction
+	files, err = ioutil.ReadDir(emptyTempDir)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(files))
 }

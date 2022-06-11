@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 )
 
 type testHost struct {
@@ -44,8 +44,8 @@ func (h *testHost) ReportFatalError(err error) {
 var _ component.Host = (*testHost)(nil)
 
 func TestIntegration(t *testing.T) {
-	d := container.New(t)
-	c := d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
+	d := containertest.New(t)
+	c := d.StartImage("docker.io/library/redis:6.0.3", containertest.WithPortReady(6379))
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)

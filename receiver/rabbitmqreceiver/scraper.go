@@ -20,14 +20,13 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
-
-const instrumentationLibraryName = "otelcol/rabbitmq"
 
 var errClientNotInit = errors.New("client not initialized")
 
@@ -49,20 +48,20 @@ var messageStatMetrics = []string{
 
 // rabbitmqScraper handles scraping of RabbitMQ metrics
 type rabbitmqScraper struct {
-	client         client
-	logger         *zap.Logger
-	cfg            *Config
-	settings       component.TelemetrySettings
-	metricsBuilder *metadata.MetricsBuilder
+	client   client
+	logger   *zap.Logger
+	cfg      *Config
+	settings component.TelemetrySettings
+	mb       *metadata.MetricsBuilder
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySettings) *rabbitmqScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCreateSettings) *rabbitmqScraper {
 	return &rabbitmqScraper{
-		logger:         logger,
-		cfg:            cfg,
-		settings:       settings,
-		metricsBuilder: metadata.NewMetricsBuilder(cfg.Metrics),
+		logger:   logger,
+		cfg:      cfg,
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -73,45 +72,34 @@ func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) (err e
 }
 
 // scrape collects metrics from the RabbitMQ API
-func (r *rabbitmqScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	metrics := pdata.NewMetrics()
-	now := pdata.NewTimestampFromTime(time.Now())
-	rms := metrics.ResourceMetrics()
+func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// Validate we don't attempt to scrape without initializing the client
 	if r.client == nil {
-		return metrics, errClientNotInit
+		return pmetric.NewMetrics(), errClientNotInit
 	}
 
 	// Get queues for processing
 	queues, err := r.client.GetQueues(ctx)
 	if err != nil {
-		return metrics, err
+		return pmetric.NewMetrics(), err
 	}
 
 	// Collect metrics for each queue
 	for _, queue := range queues {
 
-		r.collectQueue(queue, now, rms)
+		r.collectQueue(queue, now)
 	}
 
-	return metrics, nil
+	return r.mb.Emit(), nil
 }
 
 // collectQueue collects metrics
-func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pdata.Timestamp, rms pdata.ResourceMetricsSlice) {
-	resourceMetric := rms.AppendEmpty()
-	resourceAttrs := resourceMetric.Resource().Attributes()
-	resourceAttrs.InsertString(metadata.A.RabbitmqQueueName, queue.Name)
-	resourceAttrs.InsertString(metadata.A.RabbitmqNodeName, queue.Node)
-	resourceAttrs.InsertString(metadata.A.RabbitmqVhostName, queue.VHost)
-
-	ilms := resourceMetric.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
-
-	r.metricsBuilder.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
-	r.metricsBuilder.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageState.Unacknowledged)
-	r.metricsBuilder.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageState.Ready)
+func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestamp) {
+	r.mb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
+	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageStateUnacknowledged)
+	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageStateReady)
 
 	for _, messageStatMetric := range messageStatMetrics {
 		// Get metric value
@@ -132,17 +120,20 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pdata.Timestamp,
 
 		switch messageStatMetric {
 		case deliverStat:
-			r.metricsBuilder.RecordRabbitmqMessageDeliveredDataPoint(now, val64)
+			r.mb.RecordRabbitmqMessageDeliveredDataPoint(now, val64)
 		case publishStat:
-			r.metricsBuilder.RecordRabbitmqMessagePublishedDataPoint(now, val64)
+			r.mb.RecordRabbitmqMessagePublishedDataPoint(now, val64)
 		case ackStat:
-			r.metricsBuilder.RecordRabbitmqMessageAcknowledgedDataPoint(now, val64)
+			r.mb.RecordRabbitmqMessageAcknowledgedDataPoint(now, val64)
 		case dropUnroutableStat:
-			r.metricsBuilder.RecordRabbitmqMessageDroppedDataPoint(now, val64)
-
+			r.mb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
 		}
 	}
-	r.metricsBuilder.Emit(ilms.Metrics())
+	r.mb.EmitForResource(
+		metadata.WithRabbitmqQueueName(queue.Name),
+		metadata.WithRabbitmqNodeName(queue.Node),
+		metadata.WithRabbitmqVhostName(queue.VHost),
+	)
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.

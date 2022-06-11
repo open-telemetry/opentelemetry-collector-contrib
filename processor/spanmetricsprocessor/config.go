@@ -18,7 +18,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 const (
@@ -58,13 +59,22 @@ type Config struct {
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
+
+	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
+	skipSanitizeLabel bool
+}
+
+var dropSanitizationGate = featuregate.Gate{
+	ID:          "processor.spanmetrics.PermissiveLabelSanitization",
+	Enabled:     false,
+	Description: "Controls whether to change labels starting with '_' to 'key_'",
 }
 
 // GetAggregationTemporality converts the string value given in the config into a MetricAggregationTemporality.
 // Returns cumulative, unless delta is correctly specified.
-func (c Config) GetAggregationTemporality() pdata.MetricAggregationTemporality {
+func (c Config) GetAggregationTemporality() pmetric.MetricAggregationTemporality {
 	if c.AggregationTemporality == delta {
-		return pdata.MetricAggregationTemporalityDelta
+		return pmetric.MetricAggregationTemporalityDelta
 	}
-	return pdata.MetricAggregationTemporalityCumulative
+	return pmetric.MetricAggregationTemporalityCumulative
 }

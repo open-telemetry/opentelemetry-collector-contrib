@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -105,7 +105,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	os.Clearenv()
 	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
 
-	want := pdata.NewResource()
+	want := pcommon.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.platform", "aws_ecs")
@@ -122,10 +122,10 @@ func Test_ecsDetectV4(t *testing.T) {
 	attribVals := []string{"group", "arn:aws:logs:us-east-1:123456789123:log-group:group", "stream", "arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream"}
 
 	for i, field := range attribFields {
-		ava := pdata.NewAttributeValueArray()
+		ava := pcommon.NewValueSlice()
 		av := ava.SliceVal()
 		avs := av.AppendEmpty()
-		pdata.NewAttributeValueString(attribVals[i]).CopyTo(avs)
+		pcommon.NewValueString(attribVals[i]).CopyTo(avs)
 		attr.Insert(field, ava)
 	}
 
@@ -141,7 +141,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	os.Clearenv()
 	os.Setenv(endpoints.TaskMetadataEndpointV3EnvVar, "endpoint")
 
-	want := pdata.NewResource()
+	want := pcommon.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.platform", "aws_ecs")

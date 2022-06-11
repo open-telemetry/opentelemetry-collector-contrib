@@ -21,13 +21,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 const (
@@ -43,14 +43,14 @@ var defaultMetricGroups = []kubelet.MetricGroup{
 
 // NewFactory creates a factory for kubeletstats receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver))
 }
 
 func createDefaultConfig() config.Receiver {
-	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
+	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 
 	return &Config{
@@ -60,6 +60,7 @@ func createDefaultConfig() config.Receiver {
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
@@ -79,7 +80,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions)
+	scrp, err := newKubletScraper(rest, set, rOptions, cfg.Metrics)
 	if err != nil {
 		return nil, err
 	}

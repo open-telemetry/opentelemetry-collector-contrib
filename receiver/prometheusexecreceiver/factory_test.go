@@ -16,16 +16,14 @@ package prometheusexecreceiver
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
@@ -46,7 +44,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
@@ -57,7 +55,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiver, nil)
 
 	assert.Equal(t, nil, traceReceiver)
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 
 	// Test CreateMetricsReceiver error because of lack of command
 	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiver, nil)
@@ -77,8 +75,8 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{
-						ScrapeInterval:  model.Duration(60 * time.Second),
-						ScrapeTimeout:   model.Duration(10 * time.Second),
+						ScrapeInterval:  model.Duration(defaultCollectionInterval),
+						ScrapeTimeout:   model.Duration(defaultTimeoutInterval),
 						Scheme:          "http",
 						MetricsPath:     "/metrics",
 						JobName:         "test",

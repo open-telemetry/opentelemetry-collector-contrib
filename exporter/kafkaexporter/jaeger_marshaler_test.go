@@ -22,20 +22,21 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 func TestJaegerMarshaler(t *testing.T) {
-	td := pdata.NewTraces()
-	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
-	span.SetStartTimestamp(pdata.Timestamp(10))
-	span.SetEndTimestamp(pdata.Timestamp(20))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+	span.SetStartTimestamp(pcommon.Timestamp(10))
+	span.SetEndTimestamp(pcommon.Timestamp(20))
+	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	batches, err := jaeger.ProtoFromTraces(td)
 	require.NoError(t, err)
 
 	batches[0].Spans[0].Process = batches[0].Process
@@ -78,16 +79,4 @@ func TestJaegerMarshaler(t *testing.T) {
 			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
-}
-
-func TestJaegerMarshaler_error_covert_traceID(t *testing.T) {
-	marshaler := jaegerMarshaler{
-		marshaler: jaegerProtoSpanMarshaler{},
-	}
-	td := pdata.NewTraces()
-	td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
-	// fails in zero traceID
-	messages, err := marshaler.Marshal(td, "topic")
-	require.Error(t, err)
-	assert.Nil(t, messages)
 }

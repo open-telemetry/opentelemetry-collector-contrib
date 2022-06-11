@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
@@ -35,7 +35,7 @@ func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
 	exporter := getExporter(defaultConfig, mockTransportChannel)
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 
 	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
 
@@ -49,15 +49,15 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 
 	// re-use some test generation method(s) from trace_to_envelope_test
 	resource := getResource()
-	instrumentationLibrary := getInstrumentationLibrary()
+	scope := getScope()
 	span := getDefaultHTTPServerSpan()
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	r := rs.Resource()
 	resource.CopyTo(r)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
 	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
@@ -72,19 +72,19 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 
 	// re-use some test generation method(s) from trace_to_envelope_test
 	resource := getResource()
-	instrumentationLibrary := getInstrumentationLibrary()
+	scope := getScope()
 	span := getDefaultInternalSpan()
 
 	// Make this a FaaS span, which will trigger an error, because conversion
 	// of them is currently not supported.
 	span.Attributes().InsertString(conventions.AttributeFaaSTrigger, "http")
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	r := rs.Resource()
 	resource.CopyTo(r)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
 	err := exporter.onTraceData(context.Background(), traces)

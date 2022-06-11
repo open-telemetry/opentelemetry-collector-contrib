@@ -16,7 +16,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -34,18 +34,21 @@ func TestLoadConfig(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
 	factories.Exporters[typestr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "example", "config.yaml"), factories)
+	// t.Log("new exporter " + typestr)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
 	require.NoError(t, err)
 	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
 	err = apiConfig.Validate()
 	require.NoError(t, err)
 	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID("coralogix")),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		AppName:          "APP_NAME",
-		SubSystem:        "SUBSYSTEM_NAME",
+		// Deprecated: [v0.47.0] SubSystem will remove in the next version
+		SubSystem:       "SUBSYSTEM_NAME",
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
@@ -58,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			WaitForReady:    false,
-			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME", "subsystemName": "SUBSYSTEM_NAME"},
+			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME"},
 			BalancerName:    "",
 		},
 	})
@@ -68,13 +71,12 @@ func TestExporter(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
 	factories.Exporters[typestr] = factory
-	cfg, _ := servicetest.LoadConfigAndValidate(path.Join(".", "example", "config.yaml"), factories)
+	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
 	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
 	te := newCoralogixExporter(apiConfig, params)
-	te.client.startConnection(context.Background(), componenttest.NewNopHost())
 	assert.NotNil(t, te, "failed to create trace exporter")
-	td := pdata.NewTraces()
-	err := te.tracesPusher(context.Background(), td)
-	assert.Nil(t, err)
+	assert.NoError(t, te.client.startConnection(context.Background(), componenttest.NewNopHost()))
+	td := ptrace.NewTraces()
+	assert.NoError(t, te.tracesPusher(context.Background(), td))
 }

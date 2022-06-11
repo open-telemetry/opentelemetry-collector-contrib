@@ -3,6 +3,7 @@ receivers:
   podman_stats/all:
     endpoint: http://example.com/
     collection_interval: 2s
+    timeout: 20s
 
 processors:
   nop:

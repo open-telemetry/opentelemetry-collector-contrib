@@ -18,7 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
@@ -33,33 +34,33 @@ type lokiEntry struct {
 	Resources  map[string]interface{} `json:"resources,omitempty"`
 }
 
-func serializeBody(body pdata.AttributeValue) ([]byte, error) {
+func serializeBody(body pcommon.Value) ([]byte, error) {
 	var str []byte
 	var err error
 	switch body.Type() {
-	case pdata.AttributeValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		// no body
 
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		str, err = json.Marshal(body.StringVal())
 
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		str, err = json.Marshal(body.IntVal())
 
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		str, err = json.Marshal(body.DoubleVal())
 
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		str, err = json.Marshal(body.BoolVal())
 
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeMap:
 		str, err = json.Marshal(body.MapVal().AsRaw())
 
-	case pdata.AttributeValueTypeArray:
-		str, err = json.Marshal(attributeValueSliceAsRaw(body.SliceVal()))
+	case pcommon.ValueTypeSlice:
+		str, err = json.Marshal(body.SliceVal().AsRaw())
 
-	case pdata.AttributeValueTypeBytes:
-		str, err = json.Marshal(body.BytesVal())
+	case pcommon.ValueTypeBytes:
+		str, err = json.Marshal(body.MBytesVal())
 
 	default:
 		err = fmt.Errorf("unsuported body type to serialize")
@@ -67,7 +68,7 @@ func serializeBody(body pdata.AttributeValue) ([]byte, error) {
 	return str, err
 }
 
-func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
+func encodeJSON(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
 	var err error
@@ -78,7 +79,6 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 		return "", err
 	}
 	logRecord = lokiEntry{
-		Name:       lr.Name(),
 		Body:       body,
 		TraceID:    lr.TraceID().HexString(),
 		SpanID:     lr.SpanID().HexString(),
@@ -93,29 +93,4 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 		return "", err
 	}
 	return string(jsonRecord), nil
-}
-
-// Copied from pdata (es AttributeValueSlice) asRaw() since its not exported
-func attributeValueSliceAsRaw(es pdata.AttributeValueSlice) []interface{} {
-	rawSlice := make([]interface{}, 0, es.Len())
-	for i := 0; i < es.Len(); i++ {
-		v := es.At(i)
-		switch v.Type() {
-		case pdata.AttributeValueTypeString:
-			rawSlice = append(rawSlice, v.StringVal())
-		case pdata.AttributeValueTypeInt:
-			rawSlice = append(rawSlice, v.IntVal())
-		case pdata.AttributeValueTypeDouble:
-			rawSlice = append(rawSlice, v.DoubleVal())
-		case pdata.AttributeValueTypeBool:
-			rawSlice = append(rawSlice, v.BoolVal())
-		case pdata.AttributeValueTypeBytes:
-			rawSlice = append(rawSlice, v.BytesVal())
-		case pdata.AttributeValueTypeEmpty:
-			rawSlice = append(rawSlice, nil)
-		default:
-			rawSlice = append(rawSlice, "<Invalid array value>")
-		}
-	}
-	return rawSlice
 }

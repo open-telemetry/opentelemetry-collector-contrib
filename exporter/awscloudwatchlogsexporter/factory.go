@@ -30,19 +30,19 @@ import (
 const typeStr = "awscloudwatchlogs"
 
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter))
+		component.WithLogsExporter(createLogsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
 }

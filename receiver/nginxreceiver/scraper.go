@@ -21,7 +21,8 @@ import (
 
 	"github.com/nginxinc/nginx-prometheus-exporter/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
@@ -33,15 +34,17 @@ type nginxScraper struct {
 
 	settings component.TelemetrySettings
 	cfg      *Config
+	mb       *metadata.MetricsBuilder
 }
 
 func newNginxScraper(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *nginxScraper {
 	return &nginxScraper{
-		settings: settings,
+		settings: settings.TelemetrySettings,
 		cfg:      cfg,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -55,55 +58,32 @@ func (r *nginxScraper) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
-	// Init client in scrape method in case there are transient errors in the
-	// constructor.
+func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	// Init client in scrape method in case there are transient errors in the constructor.
 	if r.client == nil {
 		var err error
 		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
 		if err != nil {
 			r.client = nil
-			return pdata.Metrics{}, err
+			return pmetric.Metrics{}, err
 		}
 	}
 
 	stats, err := r.client.GetStubStats()
 	if err != nil {
 		r.settings.Logger.Error("Failed to fetch nginx stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
+	now := pcommon.NewTimestampFromTime(time.Now())
 
-	addIntSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
-	addIntSum(ilm.Metrics(), metadata.M.NginxConnectionsAccepted.Init, now, stats.Connections.Accepted)
-	addIntSum(ilm.Metrics(), metadata.M.NginxConnectionsHandled.Init, now, stats.Connections.Handled)
+	r.mb.RecordNginxRequestsDataPoint(now, stats.Requests)
+	r.mb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
+	r.mb.RecordNginxConnectionsHandledDataPoint(now, stats.Connections.Handled)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeStateActive)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeStateReading)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeStateWriting)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeStateWaiting)
 
-	currConnMetric := ilm.Metrics().AppendEmpty()
-	metadata.M.NginxConnectionsCurrent.Init(currConnMetric)
-	dps := currConnMetric.Gauge().DataPoints()
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Active, now, stats.Connections.Active)
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Reading, now, stats.Connections.Reading)
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Writing, now, stats.Connections.Writing)
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Waiting, now, stats.Connections.Waiting)
-
-	return md, nil
-}
-
-func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
-	metric := metrics.AppendEmpty()
-	initFunc(metric)
-	dp := metric.Sum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetIntVal(value)
-}
-
-func addCurrentConnectionDataPoint(dps pdata.NumberDataPointSlice, stateValue string, now pdata.Timestamp, value int64) {
-	dp := dps.AppendEmpty()
-	dp.Attributes().UpsertString(metadata.A.State, stateValue)
-	dp.SetTimestamp(now)
-	dp.SetIntVal(value)
+	return r.mb.Emit(), nil
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 import (
@@ -27,7 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -95,7 +97,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 
 }
 
-func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
@@ -137,7 +139,7 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
+func logsToCWLogs(logger *zap.Logger, ld plog.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
 	n := ld.ResourceLogs().Len()
 	if n == 0 {
 		return []*cloudwatchlogs.InputLogEvent{}, 0
@@ -151,10 +153,10 @@ func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLog
 		rl := rls.At(i)
 		resourceAttrs := attrsValue(rl.Resource().Attributes())
 
-		ills := rl.InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			ils := ills.At(j)
-			logs := ils.Logs()
+		sls := rl.ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			sl := sls.At(j)
+			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				event, err := logToCWLog(resourceAttrs, log)
@@ -171,7 +173,6 @@ func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLog
 }
 
 type cwLogBody struct {
-	Name                   string                 `json:"name,omitempty"`
 	Body                   interface{}            `json:"body,omitempty"`
 	SeverityNumber         int32                  `json:"severity_number,omitempty"`
 	SeverityText           string                 `json:"severity_text,omitempty"`
@@ -183,11 +184,10 @@ type cwLogBody struct {
 	Resource               map[string]interface{} `json:"resource,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
+func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	body := cwLogBody{
-		Name:                   log.Name(),
 		Body:                   attrValue(log.Body()),
 		SeverityNumber:         int32(log.SeverityNumber()),
 		SeverityText:           log.SeverityText(),
@@ -213,43 +213,43 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 	}, nil
 }
 
-func attrsValue(attrs pdata.AttributeMap) map[string]interface{} {
+func attrsValue(attrs pcommon.Map) map[string]interface{} {
 	if attrs.Len() == 0 {
 		return nil
 	}
 	out := make(map[string]interface{}, attrs.Len())
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		out[k] = attrValue(v)
 		return true
 	})
 	return out
 }
 
-func attrValue(value pdata.AttributeValue) interface{} {
+func attrValue(value pcommon.Value) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return value.BoolVal()
-	case pdata.AttributeValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueTypeMap:
+	case pcommon.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
+		value.MapVal().Range(func(k string, v pcommon.Value) bool {
 			values[k] = attrValue(v)
 			return true
 		})
 		return values
-	case pdata.AttributeValueTypeArray:
+	case pcommon.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))
 		}
 		return values
-	case pdata.AttributeValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		return nil
 	default:
 		return nil

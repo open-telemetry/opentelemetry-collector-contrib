@@ -33,10 +33,10 @@ const (
 
 // NewFactory creates a factory for observIQ exporter
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter),
+		component.WithLogsExporter(createLogsExporter),
 	)
 }
 
@@ -47,8 +47,8 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		AgentID:       defaultAgentID(),
 		AgentName:     defaultAgentName(),
 		DialerTimeout: defaultDialerTimeout,

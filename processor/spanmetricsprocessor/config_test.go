@@ -15,7 +15,7 @@
 package spanmetricsprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/servicetest"
@@ -93,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 			factories.Exporters["jaeger"] = jaegerexporter.NewFactory()
 
 			// Test
-			cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", tc.configFile), factories)
+			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
 
 			// Verify
 			require.NoError(t, err)
@@ -115,11 +115,11 @@ func TestLoadConfig(t *testing.T) {
 
 func TestGetAggregationTemporality(t *testing.T) {
 	cfg := &Config{AggregationTemporality: delta}
-	assert.Equal(t, pdata.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
 
 	cfg = &Config{AggregationTemporality: cumulative}
-	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 
 	cfg = &Config{}
-	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }

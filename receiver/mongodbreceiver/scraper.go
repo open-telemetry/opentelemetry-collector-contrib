@@ -23,14 +23,13 @@ import (
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
-
-const instrumentationLibraryName = "otelcol/mongodb"
 
 type mongodbScraper struct {
 	logger       *zap.Logger
@@ -40,11 +39,11 @@ type mongodbScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
-func newMongodbScraper(logger *zap.Logger, config *Config) *mongodbScraper {
+func newMongodbScraper(settings component.ReceiverCreateSettings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
-		logger: logger,
+		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics),
+		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -54,15 +53,6 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("create mongo client: %w", err)
 	}
 	s.client = c
-
-	version, err := s.client.GetVersion(ctx)
-	if err != nil {
-		s.logger.Error("failed to get version at start", zap.Error(err))
-		// component should not fail to start if it cannot get the version
-		return nil
-	}
-	s.logger.Debug(fmt.Sprintf("detected mongo server to be running version: %s", version.String()))
-	s.mongoVersion = version
 	return nil
 }
 
@@ -73,50 +63,40 @@ func (s *mongodbScraper) shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (s *mongodbScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	metrics := pdata.NewMetrics()
-	rms := metrics.ResourceMetrics()
-
+func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.client == nil {
-		return metrics, errors.New("no client was initialized before calling scrape")
+		return pmetric.NewMetrics(), errors.New("no client was initialized before calling scrape")
 	}
 
 	if s.mongoVersion == nil {
 		version, err := s.client.GetVersion(ctx)
 		if err != nil {
-			return pdata.NewMetrics(), fmt.Errorf("unable to determine version of mongo scraping against: %w", err)
+			return pmetric.NewMetrics(), fmt.Errorf("unable to determine version of mongo scraping against: %w", err)
 		}
 		s.mongoVersion = version
 	}
 
 	var errors scrapererror.ScrapeErrors
-	s.collectMetrics(ctx, rms, errors)
-	return metrics, errors.Combine()
+	s.collectMetrics(ctx, errors)
+	return s.mb.Emit(), errors.Combine()
 }
 
-func (s *mongodbScraper) collectMetrics(ctx context.Context, rms pdata.ResourceMetricsSlice, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror.ScrapeErrors) {
 	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
 		s.logger.Error("Failed to fetch database names", zap.Error(err))
 		return
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
-	s.collectAdminDatabase(ctx, rms, now, errors)
+	s.collectAdminDatabase(ctx, now, errors)
 	for _, dbName := range dbNames {
-		s.collectDatabase(ctx, rms, now, dbName, errors)
+		s.collectDatabase(ctx, now, dbName, errors)
 	}
 }
 
-func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.ResourceMetricsSlice, now pdata.Timestamp, databaseName string, errors scrapererror.ScrapeErrors) {
-	rm := rms.AppendEmpty()
-	resourceAttrs := rm.Resource().Attributes()
-	resourceAttrs.InsertString(metadata.A.Database, databaseName)
-
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
-
+func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errors scrapererror.ScrapeErrors) {
 	dbStats, err := s.client.DBStats(ctx, databaseName)
 	if err != nil {
 		errors.AddPartial(1, err)
@@ -131,24 +111,20 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.Resource
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errors)
 
-	s.mb.EmitDatabase(ilms.Metrics())
+	s.mb.EmitForResource(metadata.WithDatabase(databaseName))
 }
 
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, rms pdata.ResourceMetricsSlice, now pdata.Timestamp, errors scrapererror.ScrapeErrors) {
-	rm := rms.AppendEmpty()
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
-
+func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
 	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {
 		errors.AddPartial(1, err)
 		return
 	}
 	s.recordAdminStats(now, serverStatus, errors)
-	s.mb.EmitAdmin(ilms.Metrics())
+	s.mb.EmitForResource()
 }
 
-func (s *mongodbScraper) recordDBStats(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	s.recordCollections(now, doc, dbName, errors)
 	s.recordDataSize(now, doc, dbName, errors)
 	s.recordExtentCount(now, doc, dbName, errors)
@@ -158,12 +134,12 @@ func (s *mongodbScraper) recordDBStats(now pdata.Timestamp, doc bson.M, dbName s
 	s.recordStorageSize(now, doc, dbName, errors)
 }
 
-func (s *mongodbScraper) recordNormalServerStats(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	s.recordConnections(now, doc, dbName, errors)
 	s.recordMemoryUsage(now, doc, dbName, errors)
 }
 
-func (s *mongodbScraper) recordAdminStats(now pdata.Timestamp, document bson.M, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errors scrapererror.ScrapeErrors) {
 	s.recordGlobalLockTime(now, document, errors)
 	s.recordCacheOperations(now, document, errors)
 	s.recordOperations(now, document, errors)

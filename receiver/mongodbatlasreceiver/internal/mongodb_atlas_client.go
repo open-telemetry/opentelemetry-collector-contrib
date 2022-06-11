@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
@@ -25,8 +26,9 @@ import (
 	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 type clientRoundTripper struct {
@@ -309,14 +311,14 @@ func (s *MongoDBAtlasClient) ProcessDatabases(
 // ProcessMetrics returns a set of metrics associated with the specified running process.
 func (s *MongoDBAtlasClient) ProcessMetrics(
 	ctx context.Context,
-	resource pdata.Resource,
+	mb *metadata.MetricsBuilder,
 	projectID string,
 	host string,
 	port int,
 	start string,
 	end string,
 	resolution string,
-) (pdata.Metrics, error) {
+) error {
 	allMeasurements := make([]*mongodbatlas.Measurements, 0)
 	pageNum := 1
 	for {
@@ -340,7 +342,7 @@ func (s *MongoDBAtlasClient) ProcessMetrics(
 			break
 		}
 	}
-	return processMeasurements(resource, allMeasurements)
+	return processMeasurements(mb, allMeasurements)
 }
 
 func (s *MongoDBAtlasClient) getProcessMeasurementsPage(
@@ -375,7 +377,7 @@ func (s *MongoDBAtlasClient) getProcessMeasurementsPage(
 // ProcessDatabaseMetrics returns metrics about a particular database running within a MongoDB Atlas process
 func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 	ctx context.Context,
-	resource pdata.Resource,
+	mb *metadata.MetricsBuilder,
 	projectID string,
 	host string,
 	port int,
@@ -383,7 +385,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 	start string,
 	end string,
 	resolution string,
-) (pdata.Metrics, error) {
+) error {
 	allMeasurements := make([]*mongodbatlas.Measurements, 0)
 	pageNum := 1
 	for {
@@ -399,7 +401,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 			resolution,
 		)
 		if err != nil {
-			return pdata.Metrics{}, err
+			return err
 		}
 		pageNum++
 		allMeasurements = append(allMeasurements, measurements...)
@@ -407,7 +409,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 			break
 		}
 	}
-	return processMeasurements(resource, allMeasurements)
+	return processMeasurements(mb, allMeasurements)
 }
 
 func (s *MongoDBAtlasClient) getProcessDatabaseMeasurementsPage(
@@ -489,7 +491,7 @@ func (s *MongoDBAtlasClient) getProcessDisksPage(
 // ProcessDiskMetrics returns metrics supplied for a particular disk partition used by a MongoDB Atlas process
 func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 	ctx context.Context,
-	resource pdata.Resource,
+	mb *metadata.MetricsBuilder,
 	projectID string,
 	host string,
 	port int,
@@ -497,7 +499,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 	start string,
 	end string,
 	resolution string,
-) (pdata.Metrics, error) {
+) error {
 	allMeasurements := make([]*mongodbatlas.Measurements, 0)
 	pageNum := 1
 	for {
@@ -513,7 +515,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 			resolution,
 		)
 		if err != nil {
-			return pdata.Metrics{}, err
+			return err
 		}
 		pageNum++
 		allMeasurements = append(allMeasurements, measurements...)
@@ -521,7 +523,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 			break
 		}
 	}
-	return processMeasurements(resource, allMeasurements)
+	return processMeasurements(mb, allMeasurements)
 }
 
 func (s *MongoDBAtlasClient) processDiskMeasurementsPage(

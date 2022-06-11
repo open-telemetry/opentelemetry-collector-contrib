@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 
 import (
@@ -23,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -119,8 +120,8 @@ func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ..
 }
 
 // GetMetrics returns an array of metrics
-func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
-	var result []pdata.Metrics
+func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
+	var result []pmetric.Metrics
 
 	// don't generate any metrics if the current collector is not the leader
 	k.mu.Lock()
@@ -230,7 +231,7 @@ func (k *K8sAPIServer) init() error {
 	}
 
 	lock, err := resourcelock.New(
-		resourcelock.ConfigMapsResourceLock,
+		resourcelock.ConfigMapsLeasesResourceLock,
 		lockNamespace, lockName,
 		clientSet.CoreV1(),
 		clientSet.CoordinationV1(),

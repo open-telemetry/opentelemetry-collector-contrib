@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
@@ -21,7 +22,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -31,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
@@ -118,7 +119,6 @@ func getResourceForPod(pod *corev1.Pod) *resourcepb.Resource {
 			conventions.AttributeK8SPodName:       pod.Name,
 			conventions.AttributeK8SNodeName:      pod.Spec.NodeName,
 			conventions.AttributeK8SNamespaceName: pod.Namespace,
-			conventions.AttributeK8SClusterName:   pod.ClusterName,
 		},
 	}
 }
@@ -142,7 +142,7 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 
 // getMetadataForPod returns all metadata associated with the pod.
 func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) map[metadataPkg.ResourceID]*KubernetesMetadata {
-	metadata := util.MergeStringMaps(map[string]string{}, pod.Labels)
+	metadata := maps.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	metadata[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 
@@ -160,19 +160,19 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) m
 	}
 
 	if mc.services != nil {
-		metadata = util.MergeStringMaps(metadata,
+		metadata = maps.MergeStringMaps(metadata,
 			getPodServiceTags(pod, mc.services),
 		)
 	}
 
 	if mc.jobs != nil {
-		metadata = util.MergeStringMaps(metadata,
+		metadata = maps.MergeStringMaps(metadata,
 			collectPodJobProperties(pod, mc.jobs, logger),
 		)
 	}
 
 	if mc.replicaSets != nil {
-		metadata = util.MergeStringMaps(metadata,
+		metadata = maps.MergeStringMaps(metadata,
 			collectPodReplicaSetProperties(pod, mc.replicaSets, logger),
 		)
 	}

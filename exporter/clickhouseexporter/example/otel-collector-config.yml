@@ -1,0 +1,39 @@
+receivers:
+  fluentforward:
+    endpoint: 0.0.0.0:24224
+
+processors:
+  batch:
+    send_batch_size: 100000
+    timeout: 2s
+  memory_limiter:
+    check_interval: 2s
+    limit_mib: 1800
+    spike_limit_mib: 500
+
+exporters:
+  clickhouse:
+    dsn: tcp://clickhouse:9000?database=default
+    ttl_days: 3
+    timeout: 5s
+    sending_queue:
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+extensions:
+  health_check:
+  pprof:
+  zpages:
+  memory_ballast:
+    size_mib: 1000
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    logs:
+      receivers: [ fluentforward ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ clickhouse ]

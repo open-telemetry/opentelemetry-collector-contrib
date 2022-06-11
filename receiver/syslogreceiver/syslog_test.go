@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestSyslogWithTcp(t *testing.T) {
@@ -71,15 +71,15 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
-	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 
 	for i := 0; i < numLogs; i++ {
 		log := logs.At(i)
 
-		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
-		msg, ok := log.Body().MapVal().Get("message")
+		require.Equal(t, log.Timestamp(), pcommon.Timestamp(1614470402003000000+i*60*1000*1000*1000))
+		msg, ok := log.Attributes().AsRaw()["message"]
 		require.True(t, ok)
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("test msg %d", i))
+		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
 	}
 }
 
@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -99,15 +99,15 @@ func TestLoadConfig(t *testing.T) {
 
 func testdataConfigYamlAsMap() *SysLogConfig {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
+			Operators:        adapter.OperatorConfigs{},
+			Converter: adapter.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 				WorkerCount:   1,
 			},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"tcp": map[string]interface{}{
 				"listen_address": "0.0.0.0:29018",
 			},
@@ -118,15 +118,15 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
+			Operators:        adapter.OperatorConfigs{},
+			Converter: adapter.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 				WorkerCount:   1,
 			},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"udp": map[string]interface{}{
 				"listen_address": "0.0.0.0:29018",
 			},
@@ -139,11 +139,11 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"tcp": map[string]interface{}{
 				"max_buffer_size": "0.1.0.1-",
 			},

@@ -19,7 +19,7 @@ import (
 	"math"
 	"math/big"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -50,17 +50,8 @@ func NewProbabilisticSampler(logger *zap.Logger, hashSalt string, samplingPercen
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (s *probabilisticSampler) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	s.logger.Debug("Triggering action for late arriving spans in probabilistic filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (s *probabilisticSampler) Evaluate(traceID pdata.TraceID, _ *TraceData) (Decision, error) {
+func (s *probabilisticSampler) Evaluate(traceID pcommon.TraceID, _ *TraceData) (Decision, error) {
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
 	traceIDBytes := traceID.Bytes()

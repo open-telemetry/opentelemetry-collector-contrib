@@ -8,18 +8,32 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| rabbitmq.consumer.count | The number of consumers currently reading from the queue. | {consumers} | Sum(Int) | <ul> </ul> |
-| rabbitmq.message.acknowledged | The number of messages acknowledged by consumers. | {messages} | Sum(Int) | <ul> </ul> |
-| rabbitmq.message.current | The total number of messages currently in the queue. | {messages} | Sum(Int) | <ul> <li>message.state</li> </ul> |
-| rabbitmq.message.delivered | The number of messages delivered to consumers. | {messages} | Sum(Int) | <ul> </ul> |
-| rabbitmq.message.dropped | The number of messages dropped as unroutable. | {messages} | Sum(Int) | <ul> </ul> |
-| rabbitmq.message.published | The number of messages published to a queue. | {messages} | Sum(Int) | <ul> </ul> |
+| **rabbitmq.consumer.count** | The number of consumers currently reading from the queue. | {consumers} | Sum(Int) | <ul> </ul> |
+| **rabbitmq.message.acknowledged** | The number of messages acknowledged by consumers. | {messages} | Sum(Int) | <ul> </ul> |
+| **rabbitmq.message.current** | The total number of messages currently in the queue. | {messages} | Sum(Int) | <ul> <li>message.state</li> </ul> |
+| **rabbitmq.message.delivered** | The number of messages delivered to consumers. | {messages} | Sum(Int) | <ul> </ul> |
+| **rabbitmq.message.dropped** | The number of messages dropped as unroutable. | {messages} | Sum(Int) | <ul> </ul> |
+| **rabbitmq.message.published** | The number of messages published to a queue. | {messages} | Sum(Int) | <ul> </ul> |
 
-## Attributes
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
 
-| Name | Description |
-| ---- | ----------- |
-| message.state | The state of messages in a queue. |
-| rabbitmq.node.name | The name of the RabbitMQ node. |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. |
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
+
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| rabbitmq.node.name | The name of the RabbitMQ node. | String |
+| rabbitmq.queue.name | The name of the RabbitMQ queue. | String |
+| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | String |
+
+## Metric attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| message.state (state) | The state of messages in a queue. | ready, unacknowledged |

@@ -17,6 +17,8 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"errors"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"go.etcd.io/bbolt"
@@ -29,11 +31,17 @@ type fileStorageClient struct {
 	db *bbolt.DB
 }
 
-func newClient(filePath string, timeout time.Duration) (*fileStorageClient, error) {
-	options := &bbolt.Options{
-		Timeout: timeout,
-		NoSync:  true,
+func bboltOptions(timeout time.Duration) *bbolt.Options {
+	return &bbolt.Options{
+		Timeout:        timeout,
+		NoSync:         true,
+		NoFreelistSync: true,
+		FreelistType:   bbolt.FreelistMapType,
 	}
+}
+
+func newClient(filePath string, timeout time.Duration) (*fileStorageClient, error) {
+	options := bboltOptions(timeout)
 	db, err := bbolt.Open(filePath, 0600, options)
 	if err != nil {
 		return nil, err
@@ -44,6 +52,7 @@ func newClient(filePath string, timeout time.Duration) (*fileStorageClient, erro
 		return err
 	}
 	if err := db.Update(initBucket); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 
@@ -106,4 +115,47 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 // Close will close the database
 func (c *fileStorageClient) Close(_ context.Context) error {
 	return c.db.Close()
+}
+
+// Compact database. Use temporary file as helper as we cannot replace database in-place
+func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory string, timeout time.Duration, maxTransactionSize int64) (*fileStorageClient, error) {
+	// create temporary file in compactionDirectory
+	file, err := ioutil.TempFile(compactionDirectory, "tempdb")
+	if err != nil {
+		return nil, err
+	}
+	err = file.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// use temporary file as compaction target
+	options := bboltOptions(timeout)
+
+	// cannot reuse newClient as db shouldn't contain any bucket
+	db, err := bbolt.Open(file.Name(), 0600, options)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := bbolt.Compact(db, c.db, maxTransactionSize); err != nil {
+		return nil, err
+	}
+
+	dbPath := c.db.Path()
+	tempDBPath := db.Path()
+
+	db.Close()
+	c.Close(ctx)
+
+	// replace current db file with compacted db file
+	if err := os.Remove(dbPath); err != nil {
+		return nil, err
+	}
+
+	if err := os.Rename(tempDBPath, dbPath); err != nil {
+		return nil, err
+	}
+
+	return newClient(dbPath, timeout)
 }
