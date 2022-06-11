@@ -52,7 +52,7 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 			ReadTimeout: config.ReadTimeout,
 			Addr:        config.HTTPServerSettings.Endpoint,
 		},
-		obs: obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: config.ID(), Transport: "http", ReceiverCreateSettings: params}),
+		obs: obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: config.ReceiverSettings.ID(), Transport: "http", ReceiverCreateSettings: params}),
 	}, nil
 }
 
