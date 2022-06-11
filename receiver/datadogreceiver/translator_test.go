@@ -84,7 +84,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	value, exists := span.Attributes().Get("service.name")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name tag value incorrect")
-	assert.Equal(t, span.Name(), "my-name")
+	assert.Equal(t, span.Name(), "my-resource")
 }
 
 func BenchmarkTranslator(b *testing.B) {
