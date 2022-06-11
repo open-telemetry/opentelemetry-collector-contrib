@@ -1,10 +1,12 @@
 ## Windows Log Event Receiver
 
+| Status                   |         |
+| ------------------------ |---------|
+| Stability                | [alpha] |
+| Supported pipeline types | logs    |
+| Distributions            | none    |
+
 Tails and parses logs from windows event log API using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
-
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
 
 ### Configuration Fields
 
@@ -71,3 +73,4 @@ Output entry sample:
     "task": ""
 }
 ```
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha

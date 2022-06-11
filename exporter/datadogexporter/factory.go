@@ -76,6 +76,26 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 // TODO (#8396): Remove `os.Getenv` everywhere.
 func (*factory) createDefaultConfig() config.Exporter {
+	env := os.Getenv("DD_ENV")
+	if env == "" {
+		env = "none"
+	}
+
+	site := os.Getenv("DD_SITE")
+	if site == "" {
+		site = "datadoghq.com"
+	}
+
+	metricsEndpoint := os.Getenv("DD_URL")
+	if metricsEndpoint == "" {
+		metricsEndpoint = fmt.Sprintf("https://api.%s", site)
+	}
+
+	tracesEndpoint := os.Getenv("DD_APM_URL")
+	if tracesEndpoint == "" {
+		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
+	}
+
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
@@ -84,12 +104,12 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		API: ddconfig.APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
-			Site: os.Getenv("DD_SITE"),    // If not provided, set during config sanitization
+			Site: site,
 		},
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   os.Getenv("DD_HOST"),
-			Env:        os.Getenv("DD_ENV"),
+			Env:        env,
 			Service:    os.Getenv("DD_SERVICE"),
 			Version:    os.Getenv("DD_VERSION"),
 			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set
@@ -97,7 +117,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		Metrics: ddconfig.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: os.Getenv("DD_URL"), // If not provided, set during config sanitization
+				Endpoint: metricsEndpoint,
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
@@ -120,7 +140,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		Traces: ddconfig.TracesConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
+				Endpoint: tracesEndpoint,
 			},
 			IgnoreResources: []string{},
 		},

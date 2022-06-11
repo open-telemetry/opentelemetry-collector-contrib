@@ -20,6 +20,8 @@ import (
 )
 
 var registry = map[string]interface{}{
+	"TraceID":             traceID,
+	"SpanID":              spanID,
 	"keep_keys":           keepKeys,
 	"set":                 set,
 	"truncate_all":        truncateAll,
@@ -109,6 +111,11 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 			arg = append(arg, *inv.Arguments[j].Int)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
+	case reflect.Uint8:
+		if inv.Arguments[startingIndex].Bytes == nil {
+			return fmt.Errorf("invalid argument for slice parameter at position %v, must be a byte slice literal", startingIndex)
+		}
+		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
 	default:
 		return fmt.Errorf("unsupported slice type for function %v", inv.Function)
 	}
