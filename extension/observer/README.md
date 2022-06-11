@@ -6,5 +6,8 @@ Currently the only component that uses observers is the [receiver_creator](../..
 
 ## Current Observers
 
-* [k8sobserver](k8sobserver/README.md)
-* [hostobserver](hostobserver/README.md)
+* [docker_observer](dockerobserver/README.md)
+* [ecs_observer](ecsobserver/README.md)
+* [ecs_task_observer](ecstaskobserver/README.md)
+* [host_observer](hostobserver/README.md)
+* [k8s_observer](k8sobserver/README.md)
