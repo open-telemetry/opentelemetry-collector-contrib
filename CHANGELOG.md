@@ -7,6 +7,7 @@
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+- `honeycombexporter`: Deprecate honeycomb exporter (#10318)
 
 ### 🚀 New components 🚀
 
