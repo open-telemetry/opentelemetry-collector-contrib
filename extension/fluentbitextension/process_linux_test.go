@@ -90,11 +90,9 @@ func TestProcessManager(t *testing.T) {
 	})
 	defer cleanup()
 
-	err := pm.Start(ctx, nil)
-	require.NoError(t, err)
+	require.NoError(t, pm.Start(ctx, nil))
 	defer func() {
-		err = pm.Shutdown(ctx)
-		require.NoError(t, err)
+		require.NoError(t, pm.Shutdown(ctx))
 	}()
 
 	require.Eventually(t, findSubproc, 12*time.Second, 100*time.Millisecond)
@@ -129,11 +127,9 @@ func TestProcessManagerArgs(t *testing.T) {
 	})
 	defer cleanup()
 
-	err := pm.Start(ctx, nil)
-	require.NoError(t, err)
+	require.NoError(t, pm.Start(ctx, nil))
 	defer func() {
-		err = pm.Shutdown(ctx)
-		require.NoError(t, err)
+		require.NoError(t, pm.Shutdown(ctx))
 	}()
 
 	require.Eventually(t, findSubproc, 12*time.Second, 100*time.Millisecond)
@@ -160,11 +156,9 @@ func TestProcessManagerBadExec(t *testing.T) {
 		Config:         "example config",
 	}, logger)
 
-	err := pm.Start(ctx, nil)
-	require.NoError(t, err)
+	require.NoError(t, pm.Start(ctx, nil))
 	defer func() {
-		err = pm.Shutdown(ctx)
-		require.NoError(t, err)
+		require.NoError(t, pm.Shutdown(ctx))
 	}()
 
 	time.Sleep(restartDelay + 2*time.Second)
@@ -181,11 +175,9 @@ func TestProcessManagerEmptyConfig(t *testing.T) {
 	})
 	defer cleanup()
 
-	err := pm.Start(ctx, nil)
-	require.NoError(t, err)
+	require.NoError(t, pm.Start(ctx, nil))
 	defer func() {
-		err = pm.Shutdown(ctx)
-		require.NoError(t, err)
+		require.NoError(t, pm.Shutdown(ctx))
 	}()
 
 	require.Eventually(t, findSubproc, 15*time.Second, 100*time.Millisecond)
