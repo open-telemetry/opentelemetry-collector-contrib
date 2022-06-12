@@ -43,6 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
@@ -282,6 +283,7 @@ func Components() (component.Factories, error) {
 		f5cloudexporter.NewFactory(),
 		fileexporter.NewFactory(),
 		googlecloudexporter.NewFactory(),
+		googlemanagedprometheusexporter.NewFactory(),
 		googlecloudpubsubexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		humioexporter.NewFactory(),

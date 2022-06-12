@@ -259,6 +259,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.53.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.53.0 // indirect
@@ -609,6 +610,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ../../exporter/fileexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter => ../../exporter/googlecloudexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ../../exporter/googlemanagedprometheusexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter => ../../exporter/googlecloudpubsubexporter
 
