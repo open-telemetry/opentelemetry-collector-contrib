@@ -95,7 +95,7 @@ func initializeAttributeMap(am pcommon.Map, s string) error {
 
 		var err error
 		if value, err = url.QueryUnescape(value); err != nil {
-			return fmt.Errorf("invalid resource format in attribute: %q, err: %s", s[match[0]:match[1]], err)
+			return fmt.Errorf("invalid resource format in attribute: %q, err: %w", s[match[0]:match[1]], err)
 		}
 		am.InsertString(key, value)
 

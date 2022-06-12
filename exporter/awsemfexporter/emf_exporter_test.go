@@ -622,10 +622,10 @@ func TestNewExporterWithoutSession(t *testing.T) {
 
 func TestWrapErrorIfBadRequest(t *testing.T) {
 	awsErr := awserr.NewRequestFailure(nil, 400, "").(error)
-	err := wrapErrorIfBadRequest(&awsErr)
+	err := wrapErrorIfBadRequest(awsErr)
 	assert.True(t, consumererror.IsPermanent(err))
 	awsErr = awserr.NewRequestFailure(nil, 500, "").(error)
-	err = wrapErrorIfBadRequest(&awsErr)
+	err = wrapErrorIfBadRequest(awsErr)
 	assert.False(t, consumererror.IsPermanent(err))
 }
 

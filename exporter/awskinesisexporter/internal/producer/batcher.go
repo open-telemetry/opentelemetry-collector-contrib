@@ -16,6 +16,7 @@ package producer // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -58,8 +59,9 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 		})
 
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
+			var awsErr awserr.Error
+			if errors.As(err, &awsErr) {
+				switch awsErr.Code() {
 				case kinesis.ErrCodeResourceNotFoundException, kinesis.ErrCodeInvalidArgumentException:
 					err = consumererror.NewPermanent(err)
 				}

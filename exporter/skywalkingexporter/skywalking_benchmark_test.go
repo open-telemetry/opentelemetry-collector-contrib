@@ -16,6 +16,7 @@ package skywalkingexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -194,7 +195,7 @@ type mockLogHandler2 struct {
 func (h *mockLogHandler2) Collect(stream logpb.LogReportService_CollectServer) error {
 	for {
 		_, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			h.stopChan <- -1
 			return stream.SendAndClose(&v3.Commands{})
 		}

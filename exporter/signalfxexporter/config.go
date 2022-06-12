@@ -119,12 +119,12 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	ingestURL, err := cfg.getIngestURL()
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"ingest_url\": %v", err)
+		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
 	}
 
 	apiURL, err := cfg.getAPIURL()
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"api_url\": %v", err)
+		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
 	}
 
 	if cfg.Timeout == 0 {
@@ -133,7 +133,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"%s\": %v", translationRulesConfigKey, err)
+		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
 	}
 
 	return &exporterOptions{

@@ -51,15 +51,13 @@ func (cfg *Config) Validate() error {
 		info, err := os.Stat(dir)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return fmt.Errorf("directory must exist: %v", err)
-			}
-			if fsErr, ok := err.(*fs.PathError); ok {
-				return fmt.Errorf(
-					"problem accessing configured directory: %s, err: %v",
-					dir, fsErr,
-				)
+				return fmt.Errorf("directory must exist: %w", err)
 			}
 
+			fsErr := &fs.PathError{}
+			if errors.As(err, &fsErr) {
+				return fmt.Errorf("problem accessing configured directory: %s, err: %w", dir, fsErr)
+			}
 		}
 		if !info.IsDir() {
 			return fmt.Errorf("%s is not a directory", dir)

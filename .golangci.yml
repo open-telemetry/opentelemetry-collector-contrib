@@ -105,6 +105,8 @@ linters-settings:
 
 linters:
   enable:
+    - errcheck
+    - errorlint
     - exportloopref
     - gofmt
     - goimports
@@ -115,7 +117,6 @@ linters:
     - staticcheck
     - unconvert
     - unparam
-    - errcheck
     - gocritic
 
 issues:

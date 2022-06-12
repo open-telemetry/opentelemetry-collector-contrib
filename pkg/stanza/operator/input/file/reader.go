@@ -17,6 +17,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,7 +27,7 @@ import (
 	"golang.org/x/text/transform"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -107,7 +108,7 @@ func (r *Reader) InitializeOffset(startAtBeginning bool) error {
 	if !startAtBeginning {
 		info, err := r.file.Stat()
 		if err != nil {
-			return fmt.Errorf("stat: %s", err)
+			return fmt.Errorf("stat: %w", err)
 		}
 		r.Offset = info.Size()
 	}
@@ -167,16 +168,16 @@ func (r *Reader) emit(ctx context.Context, msgBuf []byte) error {
 	if r.fileInput.encoding.Encoding == encoding.Nop {
 		e, err = r.fileInput.NewEntry(msgBuf)
 		if err != nil {
-			return fmt.Errorf("create entry: %s", err)
+			return fmt.Errorf("create entry: %w", err)
 		}
 	} else {
 		msg, err := r.decode(msgBuf)
 		if err != nil {
-			return fmt.Errorf("decode: %s", err)
+			return fmt.Errorf("decode: %w", err)
 		}
 		e, err = r.fileInput.NewEntry(msg)
 		if err != nil {
-			return fmt.Errorf("create entry: %s", err)
+			return fmt.Errorf("create entry: %w", err)
 		}
 	}
 
@@ -204,11 +205,11 @@ func (r *Reader) decode(msgBuf []byte) (string, error) {
 	for {
 		r.decoder.Reset()
 		nDst, _, err := r.decoder.Transform(r.decodeBuffer, msgBuf, true)
-		if err != nil && err == transform.ErrShortDst {
+		if errors.Is(err, transform.ErrShortDst) {
 			r.decodeBuffer = make([]byte, len(r.decodeBuffer)*2)
 			continue
 		} else if err != nil {
-			return "", fmt.Errorf("transform encoding: %s", err)
+			return "", fmt.Errorf("transform encoding: %w", err)
 		}
 		return string(r.decodeBuffer[:nDst]), nil
 	}
@@ -216,10 +217,10 @@ func (r *Reader) decode(msgBuf []byte) (string, error) {
 
 func getScannerError(scanner *PositionalScanner) error {
 	err := scanner.Err()
-	if err == bufio.ErrTooLong {
-		return errors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
+	if errors.Is(err, bufio.ErrTooLong) {
+		return stanzaerrors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
 	} else if err != nil {
-		return errors.Wrap(err, "scanner error")
+		return stanzaerrors.Wrap(err, "scanner error")
 	}
 	return nil
 }
