@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkam
 go 1.17
 
 require (
-	github.com/Shopify/sarama v1.34.0
+	github.com/Shopify/sarama v1.34.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.53.0
 	github.com/stretchr/testify v1.7.2
