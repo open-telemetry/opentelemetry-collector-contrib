@@ -113,7 +113,7 @@ func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ..
 	}
 
 	if err := k.init(); err != nil {
-		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %v", err)
+		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %w", err)
 	}
 
 	return k, nil
