@@ -143,7 +143,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.53.0
-	github.com/prometheus/prometheus v0.36.0
+	github.com/prometheus/prometheus v0.36.1
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.53.0
 	go.uber.org/multierr v1.8.0
