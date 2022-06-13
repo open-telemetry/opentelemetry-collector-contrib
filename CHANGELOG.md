@@ -10,6 +10,8 @@
 
 ### 💡 Enhancements 💡
 
+ * `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.53.0
