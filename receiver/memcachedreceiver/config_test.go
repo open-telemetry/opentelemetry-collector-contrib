@@ -27,8 +27,8 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	require.Equal(t, defaultEndpoint, cfg.Endpoint)
-	require.Equal(t, defaultEndpoint, cfg.Timeout)
-	require.Equal(t, defaultEndpoint, cfg.CollectionInterval)
+	require.Equal(t, defaultTimeout, cfg.Timeout)
+	require.Equal(t, defaultCollectionInterval, cfg.CollectionInterval)
 }
 
 func TestLoadConfig(t *testing.T) {
