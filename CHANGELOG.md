@@ -6,15 +6,20 @@
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+
 ### 🚀 New components 🚀
 
 - `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+- `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
 
 ### 💡 Enhancements 💡
 
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
+- `examples`: Add an example for scraping Couchbase metrics (#10894)
 
 ### 🧰 Bug fixes 🧰
 
