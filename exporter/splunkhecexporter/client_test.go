@@ -224,8 +224,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, t *testing.T) ([]rec
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		err = exporter.Shutdown(context.Background())
-		assert.NoError(t, err)
+		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 
 	err = exporter.ConsumeMetrics(context.Background(), metrics)
@@ -271,8 +270,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, t *testing.T) ([]r
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		err = exporter.Shutdown(context.Background())
-		assert.NoError(t, err)
+		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 
 	err = exporter.ConsumeTraces(context.Background(), traces)
@@ -326,8 +324,7 @@ func runLogExport(cfg *Config, ld plog.Logs, t *testing.T) ([]receivedRequest, e
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		err = exporter.Shutdown(context.Background())
-		assert.NoError(t, err)
+		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 
 	err = exporter.ConsumeLogs(context.Background(), ld)
@@ -763,8 +760,7 @@ func TestErrorReceived(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		err = exporter.Shutdown(context.Background())
-		assert.NoError(t, err)
+		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 
 	td := createTraceData(3)
@@ -806,8 +802,7 @@ func TestInvalidURL(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		err = exporter.Shutdown(context.Background())
-		assert.NoError(t, err)
+		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 	td := createTraceData(2)
 

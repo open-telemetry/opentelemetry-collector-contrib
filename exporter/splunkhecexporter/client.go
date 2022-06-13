@@ -367,7 +367,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		// Writing truncated bytes back to buffer.
 		if _, err = state.tmpBuf.WriteTo(state.buf); err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("write truncated bytes back to buffer failed, error: %v", err)))
+				fmt.Errorf("write truncated bytes back to buffer failed, error: %w", err)))
 		}
 
 		if state.buf.Len() > 0 {
@@ -437,7 +437,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		// Writing truncated bytes back to buffer.
 		if _, err := state.tmpBuf.WriteTo(state.buf); err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("write truncated bytes back to buffer failed, error: %v", err)))
+				fmt.Errorf("write truncated bytes back to buffer failed, error: %w", err)))
 		}
 
 		if state.buf.Len() > 0 {
@@ -505,7 +505,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		// Writing truncated bytes back to buffer.
 		if _, err = state.tmpBuf.WriteTo(state.buf); err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("write truncated bytes back to buffer failed, error: %v", err)))
+				fmt.Errorf("write truncated bytes back to buffer failed, error: %w", err)))
 		}
 
 		if state.buf.Len() > 0 {
