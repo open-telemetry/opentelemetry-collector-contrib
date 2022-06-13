@@ -29,6 +29,7 @@
 - `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
 - `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
+- `signalfxexporter`: Enable the exporting of seven Kubernetes metrics used in Splunk/SignalFx content by default (#11032)
 
 ### 🧰 Bug fixes 🧰
 
