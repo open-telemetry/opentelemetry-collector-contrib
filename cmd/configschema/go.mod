@@ -66,7 +66,7 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.44.32 // indirect
+	github.com/aws/aws-sdk-go v1.44.33 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.9.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.4.3 // indirect
@@ -108,7 +108,7 @@ require (
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.3.0 // indirect
+	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.4.0 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
