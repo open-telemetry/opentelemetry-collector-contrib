@@ -16,7 +16,6 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"fmt"
-
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -58,32 +57,68 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 		}
 	case pmetric.MetricDataTypeSum:
 		points = metric.Sum().DataPoints().Len()
-		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
-			dp := metric.Sum().DataPoints().At(i)
 
-			line, err := serializeSum(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				metric.Sum().AggregationTemporality(),
-				dp,
-				prev,
-			)
+		if metric.Sum().IsMonotonic() {
+			for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+				dp := metric.Sum().DataPoints().At(i)
 
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing sum data point",
-					"name", metric.Name(),
-					"value-type", dp.ValueType().String(),
-					"error", err,
+				line, err := serializeSum(
+					metric.Name(),
+					prefix,
+					makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+					metric.Sum().AggregationTemporality(),
+					dp,
+					prev,
 				)
-			}
 
-			if line != "" {
-				metricLines = append(metricLines, line)
+				if err != nil {
+					logger.Sugar().Warnw("Error serializing sum data point",
+						"name", metric.Name(),
+						"value-type", dp.ValueType().String(),
+						"error", err,
+					)
+				}
+
+				if line != "" {
+					metricLines = append(metricLines, line)
+				}
+			}
+		} else {
+			if metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+				logger.Sugar().Warnw(
+					"dropping delta non-monotonic sum",
+					"name", metric.Name(),
+				)
+				break
+			}
+			for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+				dp := metric.Sum().DataPoints().At(i)
+
+				line, err := serializeGauge(
+					metric.Name(),
+					prefix,
+					makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+					dp,
+				)
+
+				if err != nil {
+					logger.Sugar().Warnw("Error serializing non-monotonic Sum as gauge", "name", metric.Name(), "value-type", dp.ValueType().String(), "error", err)
+				}
+
+				if line != "" {
+					metricLines = append(metricLines, line)
+				}
 			}
 		}
 	case pmetric.MetricDataTypeHistogram:
 		points = metric.Histogram().DataPoints().Len()
+		if metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
+			logger.Sugar().Warnw(
+				"dropping cumulative histogram",
+				"name", metric.Name(),
+			)
+			break
+		}
 		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
 			dp := metric.Histogram().DataPoints().At(i)
 
