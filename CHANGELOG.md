@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
+
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
