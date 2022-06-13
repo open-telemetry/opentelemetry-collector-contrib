@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkae
 go 1.17
 
 require (
-	github.com/Shopify/sarama v1.34.0
+	github.com/Shopify/sarama v1.34.1
 	github.com/aws/aws-sdk-go v1.44.28
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.35.1
