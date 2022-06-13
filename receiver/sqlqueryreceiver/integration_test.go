@@ -60,16 +60,75 @@ func TestPostgresIntegration(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	config.Driver = "postgres"
 	config.DataSource = "host=localhost port=" + externalPort + " user=otel password=otel sslmode=disable"
-	config.Queries = []Query{{
-		SQL: "select count(*) as count, genre from movie group by genre order by genre",
-		Metrics: []MetricCfg{{
-			MetricName:       "movie.genres",
-			ValueColumn:      "count",
-			AttributeColumns: []string{"genre"},
-			ValueType:        MetricValueTypeInt,
-			DataType:         MetricDataTypeGauge,
-		}},
-	}}
+	config.Queries = []Query{
+		{
+			SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
+			Metrics: []MetricCfg{
+				{
+					MetricName:       "genre.count",
+					ValueColumn:      "count",
+					AttributeColumns: []string{"genre"},
+					ValueType:        MetricValueTypeInt,
+					DataType:         MetricDataTypeGauge,
+				},
+				{
+					MetricName:       "genre.imdb",
+					ValueColumn:      "avg",
+					AttributeColumns: []string{"genre"},
+					ValueType:        MetricValueTypeDouble,
+					DataType:         MetricDataTypeGauge,
+				},
+			},
+		},
+		{
+			SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
+				" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g",
+			Metrics: []MetricCfg{
+				{
+					MetricName:  "a",
+					ValueColumn: "a",
+					ValueType:   MetricValueTypeInt,
+					DataType:    MetricDataTypeGauge,
+				},
+				{
+					MetricName:  "b",
+					ValueColumn: "b",
+					ValueType:   MetricValueTypeInt,
+					DataType:    MetricDataTypeGauge,
+				},
+				{
+					MetricName:  "c",
+					ValueColumn: "c",
+					ValueType:   MetricValueTypeInt,
+					DataType:    MetricDataTypeGauge,
+				},
+				{
+					MetricName:  "d",
+					ValueColumn: "d",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricDataTypeGauge,
+				},
+				{
+					MetricName:  "e",
+					ValueColumn: "e",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricDataTypeGauge,
+				},
+				{
+					MetricName:  "f",
+					ValueColumn: "f",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricDataTypeGauge,
+				},
+				{
+					MetricName:  "g",
+					ValueColumn: "g",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricDataTypeGauge,
+				},
+			},
+		},
+	}
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
@@ -91,26 +150,83 @@ func TestPostgresIntegration(t *testing.T) {
 	)
 	metrics := consumer.AllMetrics()[0]
 	rms := metrics.ResourceMetrics()
-	assert.Equal(t, 1, rms.Len())
-	rm := rms.At(0)
+	testMovieMetrics(t, rms.At(0))
+	testPGTypeMetrics(t, rms.At(1))
+}
+
+func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 	sms := rm.ScopeMetrics()
 	assert.Equal(t, 1, sms.Len())
 	sm := sms.At(0)
 	ms := sm.Metrics()
-	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, 4, ms.Len())
 
-	countByGenre := map[string]int64{}
-	extractGenre(t, ms.At(0), countByGenre)
-	extractGenre(t, ms.At(1), countByGenre)
-	assert.Equal(t, map[string]int64{"Action": 2, "SciFi": 3}, countByGenre)
+	metricsByName := map[string][]pmetric.Metric{}
+	for i := 0; i < ms.Len(); i++ {
+		metric := ms.At(i)
+		name := metric.Name()
+		metricsByName[name] = append(metricsByName[name], metric)
+	}
+
+	for _, metric := range metricsByName["genre.count"] {
+		pt := metric.Gauge().DataPoints().At(0)
+		genre, _ := pt.Attributes().Get("genre")
+		genreStr := genre.AsString()
+		switch genreStr {
+		case "SciFi":
+			assert.EqualValues(t, 3, pt.IntVal())
+		case "Action":
+			assert.EqualValues(t, 2, pt.IntVal())
+		default:
+			assert.Failf(t, "unexpected genre: %s", genreStr)
+		}
+	}
+
+	for _, metric := range metricsByName["genre.imdb"] {
+		pt := metric.Gauge().DataPoints().At(0)
+		genre, _ := pt.Attributes().Get("genre")
+		genreStr := genre.AsString()
+		switch genreStr {
+		case "SciFi":
+			assert.InDelta(t, 8.2, pt.DoubleVal(), 0.1)
+		case "Action":
+			assert.InDelta(t, 7.65, pt.DoubleVal(), 0.1)
+		default:
+			assert.Failf(t, "unexpected genre: %s", genreStr)
+		}
+	}
 }
 
-func extractGenre(t *testing.T, metric pmetric.Metric, countByGenre map[string]int64) {
-	assert.Equal(t, "movie.genres", metric.Name())
-	pts := metric.Gauge().DataPoints()
-	assert.Equal(t, 1, pts.Len())
-	pt := pts.At(0)
-	attrs := pt.Attributes()
-	genre, _ := attrs.Get("genre")
-	countByGenre[genre.AsString()] = pt.IntVal()
+func testPGTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
+	sms := rm.ScopeMetrics()
+	assert.Equal(t, 1, sms.Len())
+	sm := sms.At(0)
+	ms := sm.Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		metric := ms.At(0)
+		switch metric.Name() {
+		case "a":
+			assertIntGaugeEquals(t, 1, metric)
+		case "b":
+			assertIntGaugeEquals(t, 2, metric)
+		case "c":
+			assertIntGaugeEquals(t, 3, metric)
+		case "d":
+			assertDoubleGaugeEquals(t, 4.1, metric)
+		case "e":
+			assertDoubleGaugeEquals(t, 4.2, metric)
+		case "f":
+			assertDoubleGaugeEquals(t, 4.3, metric)
+		case "g":
+			assertDoubleGaugeEquals(t, 4.4, metric)
+		}
+	}
+}
+
+func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) bool {
+	return assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
+}
+
+func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) bool {
+	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal(), 0.1)
 }

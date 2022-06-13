@@ -17,8 +17,8 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"database/sql"
-	"strconv"
-	"time"
+	"fmt"
+	"reflect"
 
 	// register db drivers
 	_ "github.com/SAP/go-hdb/driver"
@@ -62,31 +62,20 @@ func (cl dbSQLClient) metricRows(ctx context.Context) ([]metricRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, columnType := range types {
-		colName := columnType.Name()
-		switch columnType.ScanType().Name() {
-		case "int8", "int16", "int32", "int64":
-			var v int64
-			rr.attrs[colName] = func() string {
-				return strconv.FormatInt(v, 10)
+	for _, sqlType := range types {
+		colName := sqlType.Name()
+		var v interface{}
+		rr.attrs[colName] = func() string {
+			format := "%v"
+			if reflect.TypeOf(v).Kind() == reflect.Slice {
+				// The Postgres driver returns a []uint8 (a string) for decimal and numeric types,
+				// which we want to render as strings. e.g. "4.1" instead of "[52, 46, 49]".
+				// Other slice types get the same treatment.
+				format = "%s"
 			}
-			rr.scanDest = append(rr.scanDest, &v)
-		case "string":
-			var v string
-			rr.attrs[colName] = func() string {
-				return v
-			}
-			rr.scanDest = append(rr.scanDest, &v)
-		case "Time":
-			var v time.Time
-			rr.attrs[colName] = v.String
-			rr.scanDest = append(rr.scanDest, &v)
-		default:
-			cl.logger.Error(
-				"column type not supported",
-				zap.String("type", columnType.ScanType().Name()),
-			)
+			return fmt.Sprintf(format, v)
 		}
+		rr.scanDest = append(rr.scanDest, &v)
 	}
 	for sqlRows.Next() {
 		err = sqlRows.Scan(rr.scanDest...)

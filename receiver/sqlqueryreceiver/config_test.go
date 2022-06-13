@@ -15,7 +15,6 @@
 package sqlqueryreceiver
 
 import (
-	"fmt"
 	"path"
 	"testing"
 	"time"
@@ -74,7 +73,6 @@ func TestConfig_Validate_Invalid(t *testing.T) {
 			path.Join("testdata", cfgFile),
 			factories,
 		)
-		fmt.Printf("err: ->%v<-\n", err)
 		require.Error(t, err)
 	}
 }
