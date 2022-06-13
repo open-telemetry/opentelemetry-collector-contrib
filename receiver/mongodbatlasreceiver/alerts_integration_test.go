@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -54,9 +55,12 @@ const (
 func TestAlertsReceiver(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
-			testPort := testutil.GetAvailablePort(t)
+			testAddr := testutil.GetAvailableLocalAddress(t)
 			sink := &consumertest.LogsSink{}
 			fact := NewFactory()
+
+			_, testPort, err := net.SplitHostPort(testAddr)
+			require.NoError(t, err)
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
@@ -65,7 +69,7 @@ func TestAlertsReceiver(t *testing.T) {
 					Alerts: AlertConfig{
 						Enabled:  true,
 						Secret:   testSecret,
-						Endpoint: fmt.Sprintf("localhost:%d", testPort),
+						Endpoint: testAddr,
 					},
 				},
 				sink,
@@ -86,7 +90,7 @@ func TestAlertsReceiver(t *testing.T) {
 			payload, err := io.ReadAll(payloadFile)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)
@@ -118,9 +122,12 @@ func TestAlertsReceiver(t *testing.T) {
 func TestAlertsReceiverTLS(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
-			testPort := testutil.GetAvailablePort(t)
+			testAddr := testutil.GetAvailableLocalAddress(t)
 			sink := &consumertest.LogsSink{}
 			fact := NewFactory()
+
+			_, testPort, err := net.SplitHostPort(testAddr)
+			require.NoError(t, err)
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
@@ -129,7 +136,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 					Alerts: AlertConfig{
 						Enabled:  true,
 						Secret:   testSecret,
-						Endpoint: fmt.Sprintf("localhost:%d", testPort),
+						Endpoint: testAddr,
 						TLS: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
 								CertFile: filepath.Join("testdata", "alerts", "cert", "server.crt"),
@@ -156,7 +163,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			payload, err := io.ReadAll(payloadFile)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%d", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)
