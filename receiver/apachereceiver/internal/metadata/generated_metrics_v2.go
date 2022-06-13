@@ -152,7 +152,7 @@ type metricApacheCurrentConnections struct {
 func (m *metricApacheCurrentConnections) init() {
 	m.data.SetName("apache.current_connections")
 	m.data.SetDescription("The number of active connections currently attached to the HTTP server.")
-	m.data.SetUnit("connections")
+	m.data.SetUnit("{connections}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -205,7 +205,7 @@ type metricApacheRequests struct {
 func (m *metricApacheRequests) init() {
 	m.data.SetName("apache.requests")
 	m.data.SetDescription("The number of requests serviced by the HTTP server per second.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{requests}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -257,8 +257,8 @@ type metricApacheScoreboard struct {
 // init fills apache.scoreboard metric with initial data.
 func (m *metricApacheScoreboard) init() {
 	m.data.SetName("apache.scoreboard")
-	m.data.SetDescription("The number of connections in each state.")
-	m.data.SetUnit("scoreboard")
+	m.data.SetDescription("The number of workers in each state.")
+	m.data.SetUnit("{workers}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -418,7 +418,7 @@ type metricApacheWorkers struct {
 func (m *metricApacheWorkers) init() {
 	m.data.SetName("apache.workers")
 	m.data.SetDescription("The number of workers currently attached to the HTTP server.")
-	m.data.SetUnit("connections")
+	m.data.SetUnit("{workers}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)

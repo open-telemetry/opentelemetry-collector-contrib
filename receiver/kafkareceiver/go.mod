@@ -7,16 +7,16 @@ require (
 	github.com/apache/thrift v0.16.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.35.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.53.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.7.2
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/pdata v0.52.1-0.20220603175357-6fb884b2dbdc
-	go.opentelemetry.io/collector/semconv v0.52.1-0.20220603175357-6fb884b2dbdc
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
+	go.opentelemetry.io/collector/semconv v0.53.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -48,7 +48,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.52.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.53.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+
+### 🚀 New components 🚀
+
+- `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+- `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
+
+### 💡 Enhancements 💡
+
+- `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
+- `examples`: Add an example for scraping Couchbase metrics (#10894)
+### 🧰 Bug fixes 🧰
+
+- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
+
+## v0.53.0
+
 ### 🛑 Breaking changes 🛑
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
@@ -9,9 +33,6 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
-
-### 🚩 Deprecations 🚩
-
 
 ### 🚀 New components 🚀
 
@@ -28,7 +49,9 @@
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
+- `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
 
 ### 🧰 Bug fixes 🧰
 
@@ -43,7 +66,7 @@
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 - `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
-- `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
+- `apachereceiver`: Update units to follow semconv (#10587)
 
 ## v0.52.0
 
