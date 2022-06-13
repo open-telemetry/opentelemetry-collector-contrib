@@ -15,10 +15,12 @@
 
 ### 💡 Enhancements 💡
 
+- `cmd/mdatagen`: Allow attribute values of any types (#9245)
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
+
 ### 🧰 Bug fixes 🧰
 
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
