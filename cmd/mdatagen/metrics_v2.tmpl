@@ -97,7 +97,7 @@ func (m *metric{{ $name.Render }}) init() {
 }
 
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue string {{ end }}) {
+{{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Type.ValueType }} {{ (attributeInfo .).Type.Primitive }}{{ else }}string{{ end }}{{ end }}) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -106,7 +106,17 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
 	{{- range $metric.Attributes }}
+	{{- if eq (attributeInfo .).Type.Primitive "bool" }}
+	dp.Attributes().Insert("{{ attributeKey .}}", pcommon.NewValueBool({{ .RenderUnexported }}AttributeValue))
+	{{- else if eq (attributeInfo .).Type.Primitive "int64" }}
+	dp.Attributes().Insert("{{ attributeKey .}}", pcommon.NewValueInt({{ .RenderUnexported }}AttributeValue))
+	{{- else if eq (attributeInfo .).Type.Primitive "float64" }}
+	dp.Attributes().Insert("{{ attributeKey .}}", pcommon.NewValueDouble({{ .RenderUnexported }}AttributeValue))
+	{{- else if eq (attributeInfo .).Type.Primitive "[]byte" }}
+	dp.Attributes().Insert("{{ attributeKey .}}", pcommon.NewValueMBytes({{ .RenderUnexported }}AttributeValue))
+	{{- else }}
 	dp.Attributes().Insert("{{ attributeKey .}}", pcommon.NewValueString({{ .RenderUnexported }}AttributeValue))
+	{{- end }}
 	{{- end }}
 }
 
@@ -261,7 +271,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
 	{{- end }}
 	{{- range $metric.Attributes -}}
-	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}string{{ end }}
+	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ if (attributeInfo .).Type.ValueType }} {{ (attributeInfo .).Type.Primitive }}{{ else }}string{{ end }}{{ end }}
 	{{- end }})
 	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
 	{{- if $metric.Data.HasMetricInputType }}
