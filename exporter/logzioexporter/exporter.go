@@ -89,12 +89,14 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 	if err != nil {
 		return nil, err
 	}
+	config.CheckAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewTracesExporter(
 		config,
 		set,
 		exporter.pushTraceData,
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithTimeout(config.TimeoutSettings),
 		exporterhelper.WithRetry(config.RetrySettings),
 	)
 }
@@ -110,12 +112,14 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 	if err != nil {
 		return nil, err
 	}
+	config.CheckAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewLogsExporter(
 		config,
 		set,
 		exporter.pushLogData,
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithTimeout(config.TimeoutSettings),
 		exporterhelper.WithRetry(config.RetrySettings),
 	)
 }
@@ -128,6 +132,7 @@ func (exporter *logzioExporter) start(_ context.Context, host component.Host) er
 	exporter.client = client
 	return nil
 }
+
 func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	var dataBuffer bytes.Buffer
 	resourceLogs := ld.ResourceLogs()
