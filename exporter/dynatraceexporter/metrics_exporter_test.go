@@ -142,7 +142,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 				APIToken:           "token",
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 				Prefix:             "prefix",
-				Tags:               []string{},
+				DefaultDimensions:  map[string]string{},
 			},
 			client: ts.Client(),
 		},
@@ -334,7 +334,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 			APIToken:           "token",
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 			Prefix:             "prefix",
-			Tags:               []string{},
+			DefaultDimensions:  map[string]string{},
 		},
 		client: ts.Client(),
 	}
@@ -437,7 +437,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 				APIToken:           "token",
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 				Prefix:             "prefix",
-				Tags:               []string{},
+				DefaultDimensions:  map[string]string{},
 			},
 			client: ts.Client(),
 		},
@@ -463,7 +463,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 }
 
 func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
-	config := &config.Config{
+	cfg := &config.Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:9090",
 			TLSSetting: configtls.TLSClientSetting{
@@ -474,7 +474,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
 
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
@@ -484,32 +484,61 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 }
 
 func Test_exporter_new_with_tags(t *testing.T) {
-	config := &config.Config{
-		Tags: []string{"test_tag=value"},
+	cfg := &config.Config{
+		DefaultDimensions: map[string]string{"test_tag": "value"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_tag", "value")), exp.defaultDimensions)
 }
 
 func Test_exporter_new_with_default_dimensions(t *testing.T) {
-	config := &config.Config{
+	cfg := &config.Config{
 		DefaultDimensions: map[string]string{"test_dimension": "value"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_dimension", "value")), exp.defaultDimensions)
 }
 
 func Test_exporter_new_with_default_dimensions_override_tag(t *testing.T) {
-	config := &config.Config{
+	cfg := &config.Config{
 		Tags:              []string{"from=tag"},
 		DefaultDimensions: map[string]string{"from": "default_dimensions"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("from", "default_dimensions")), exp.defaultDimensions)
+}
+
+func Test_LineTooLong(t *testing.T) {
+	numDims := 50_000 / 9
+	dims := make(map[string]string, numDims)
+	for i := 0; i < numDims; i++ {
+		dims[fmt.Sprintf("dim%d", i)] = fmt.Sprintf("val%d", i)
+	}
+
+	md := pmetric.NewMetrics()
+	md.ResourceMetrics().EnsureCapacity(1)
+	rm := md.ResourceMetrics().AppendEmpty()
+
+	scms := rm.ScopeMetrics()
+	scms.EnsureCapacity(1)
+	scm := scms.AppendEmpty()
+
+	metrics := scm.Metrics()
+	intGaugeMetric := metrics.AppendEmpty()
+	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
+	intGaugeMetric.SetName("int_gauge")
+	intGauge := intGaugeMetric.Gauge()
+	intGaugeDataPoints := intGauge.DataPoints()
+	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
+	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetTimestamp(testTimestamp)
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &config.Config{DefaultDimensions: dims})
+
+	assert.Empty(t, exp.serializeMetrics(md))
 }
