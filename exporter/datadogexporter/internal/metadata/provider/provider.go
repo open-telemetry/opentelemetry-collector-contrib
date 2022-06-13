@@ -59,7 +59,7 @@ func Chain(logger *zap.Logger, providers map[string]HostnameProvider, priorityLi
 		}
 	}
 
-	return &chainProvider{logger: logger, providers: providers}, nil
+	return &chainProvider{logger: logger, providers: providers, priorityList: priorityList}, nil
 }
 
 var _ HostnameProvider = (*configProvider)(nil)
