@@ -8,6 +8,8 @@
 
 This exporter supports sending log data to [observIQ](https://observiq.com/)
 
+** NOTE: ** This exporter is deprecated and is scheduled to be removed in v0.56.0
+
 ## Configuration
 
 One of the following configuration options are required:
