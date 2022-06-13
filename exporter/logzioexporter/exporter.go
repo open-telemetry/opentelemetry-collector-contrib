@@ -89,7 +89,7 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 	if err != nil {
 		return nil, err
 	}
-	config.CheckAndWarnDeprecatedOptions(exporter.logger)
+	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewTracesExporter(
 		config,
 		set,
@@ -112,7 +112,7 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 	if err != nil {
 		return nil, err
 	}
-	config.CheckAndWarnDeprecatedOptions(exporter.logger)
+	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewLogsExporter(
 		config,
 		set,
