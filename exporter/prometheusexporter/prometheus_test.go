@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package prometheusexporter
 
 import (
@@ -274,7 +273,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err, "Failed to perform a scrape")
 	})
 
 	assert.NotNil(t, exp)

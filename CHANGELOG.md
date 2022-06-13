@@ -4,6 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
+
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
@@ -20,6 +22,7 @@
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
 
 ### 🧰 Bug fixes 🧰
 
