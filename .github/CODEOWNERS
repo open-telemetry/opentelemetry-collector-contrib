@@ -33,7 +33,8 @@ exporter/elasticexporter/                            @open-telemetry/collector-c
 exporter/elasticsearchexporter/                      @open-telemetry/collector-contrib-approvers @urso @faec @blakerouse
 exporter/f5cloudexporter/                            @open-telemetry/collector-contrib-approvers @gramidt
 exporter/fileexporter/                               @open-telemetry/collector-contrib-approvers @pmm-sumo
-exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
+exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25 @damemi
+exporter/googlemanagedprometheusexporter/            @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25 @damemi
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric

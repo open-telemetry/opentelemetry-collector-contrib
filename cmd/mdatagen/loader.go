@@ -67,9 +67,9 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 	case "double":
 		mvt.ValueType = pcommon.ValueTypeDouble
 	case "bool":
-		mvt.ValueType = pcommon.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeBool
 	case "bytes":
-		mvt.ValueType = pcommon.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeBytes
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}

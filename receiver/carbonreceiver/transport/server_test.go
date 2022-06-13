@@ -16,9 +16,7 @@
 package transport
 
 import (
-	"net"
 	"runtime"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -37,15 +35,15 @@ func Test_Server_ListenAndServe(t *testing.T) {
 	tests := []struct {
 		name          string
 		buildServerFn func(addr string) (Server, error)
-		buildClientFn func(host string, port int) (*client.Graphite, error)
+		buildClientFn func(addr string) (*client.Graphite, error)
 	}{
 		{
 			name: "tcp",
 			buildServerFn: func(addr string) (Server, error) {
 				return NewTCPServer(addr, 1*time.Second)
 			},
-			buildClientFn: func(host string, port int) (*client.Graphite, error) {
-				return client.NewGraphite(client.TCP, host, port)
+			buildClientFn: func(addr string) (*client.Graphite, error) {
+				return client.NewGraphite(client.TCP, addr)
 			},
 		},
 		{
@@ -53,8 +51,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			buildServerFn: func(addr string) (Server, error) {
 				return NewUDPServer(addr)
 			},
-			buildClientFn: func(host string, port int) (*client.Graphite, error) {
-				return client.NewGraphite(client.UDP, host, port)
+			buildClientFn: func(addr string) (*client.Graphite, error) {
+				return client.NewGraphite(client.UDP, addr)
 			},
 		},
 	}
@@ -64,11 +62,6 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			svr, err := tt.buildServerFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, svr)
-
-			host, portStr, err := net.SplitHostPort(addr)
-			require.NoError(t, err)
-			port, err := strconv.Atoi(portStr)
-			require.NoError(t, err)
 
 			mc := new(consumertest.MetricsSink)
 			p, err := (&protocol.PlaintextConfig{}).BuildParser()
@@ -84,7 +77,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			runtime.Gosched()
 
-			gc, err := tt.buildClientFn(host, port)
+			gc, err := tt.buildClientFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, gc)
 

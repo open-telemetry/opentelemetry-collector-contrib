@@ -4,15 +4,30 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
+
 ### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
 
 ### 🚀 New components 🚀
 
+- `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+- `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
+
 ### 💡 Enhancements 💡
 
- * `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+- `cmd/mdatagen`: Allow attribute values of any types (#9245)
+- `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
+- `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
 
 ### 🧰 Bug fixes 🧰
+
+- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
 
 ## v0.53.0
 
@@ -56,6 +71,7 @@
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 - `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
+- `apachereceiver`: Update units to follow semconv (#10587)
 
 ## v0.52.0
 
@@ -81,6 +97,7 @@
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 - `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 - `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
+- `pkg/stanza`: make multiline tests more like integration tests #10353 
 
 ### 🧰 Bug fixes 🧰
 

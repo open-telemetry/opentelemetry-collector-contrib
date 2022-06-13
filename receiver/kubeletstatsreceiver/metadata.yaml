@@ -13,7 +13,7 @@ resource_attributes:
   k8s.namespace.name:
     description: "The name of the namespace that the pod is running in"
     type: string
-  container.name:
+  k8s.container.name:
     description: "Container name used by container runtime"
     type: string
   container.id:

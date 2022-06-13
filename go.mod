@@ -21,6 +21,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.53.0
@@ -93,6 +94,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.53.0
@@ -452,7 +454,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.413 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.416 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/tidwall/gjson v1.12.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -605,6 +607,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ./exporter/fileexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter => ./exporter/googlecloudexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ./exporter/googlemanagedprometheusexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter => ./exporter/googlecloudpubsubexporter
 
@@ -779,6 +783,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/docke
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver => ./receiver/dotnetdiagnosticsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ./receiver/elasticsearchreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver => ./receiver/expvarreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ./receiver/filelogreceiver
 
