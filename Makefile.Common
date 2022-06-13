@@ -89,7 +89,7 @@ checklicense:
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
-			echo "Use 'make install-tools' to fix this."; \
+			echo "Use 'make addlicense' to fix this."; \
 			exit 1; \
 		else \
 			echo "Check License finished successfully"; \
