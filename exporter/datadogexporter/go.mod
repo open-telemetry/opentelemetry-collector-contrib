@@ -7,8 +7,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.36.0-rc.4.0.20220426134022-b55bccd5073f
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/DataDog/sketches-go v1.4.1
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.31.0
-	github.com/aws/aws-sdk-go v1.44.28
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.1
+	github.com/aws/aws-sdk-go v1.44.32
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
@@ -38,7 +38,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.16+incompatible // indirect
+	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect

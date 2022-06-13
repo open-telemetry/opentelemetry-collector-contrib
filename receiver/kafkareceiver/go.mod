@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkar
 go 1.17
 
 require (
-	github.com/Shopify/sarama v1.34.0
+	github.com/Shopify/sarama v1.34.1
 	github.com/apache/thrift v0.16.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.35.1
@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.44.28 // indirect
+	github.com/aws/aws-sdk-go v1.44.32 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
