@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package humioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 
 import (
@@ -162,7 +161,10 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 	}
 	// Response body needs to both be read to EOF and closed to avoid leaks
 	defer res.Body.Close()
-	io.Copy(ioutil.Discard, res.Body)
+	_, err = io.Copy(ioutil.Discard, res.Body)
+	if err != nil {
+		return err
+	}
 
 	// If an error has occurred, determine if it would make sense to retry
 	// This check is not exhaustive, but should cover the most common cases

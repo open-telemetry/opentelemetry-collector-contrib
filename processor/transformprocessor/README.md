@@ -17,11 +17,15 @@ in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
   - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
   - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
-- Literals: Strings, ints, and floats can be referenced as literal values
+- Literals: Strings, ints, and floats can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
 
 Supported functions:
+- `SpanID(bytes)` - `bytes` is a byte slice of exactly 8 bytes. The function returns a SpanID from `bytes`. e.g., `SpanID(0x0000000000000000)`
+
+- `TraceID(bytes)` - `bytes` is a byte slice of exactly 16 bytes. The function returns a TraceID from `bytes`. e.g., `TraceID(0x00000000000000000000000000000000)`
+
 - `set(target, value)` - `target` is a path expression to a telemetry field to set `value` into. `value` is any value type.
 e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`. If `value` resolves to `nil`, e.g.
 it references an unset map value, there will be no action.
@@ -36,6 +40,13 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 - `replace_match(target, pattern, replacement)` - `target` is a path expression to a telemetry field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. If `target` matches `pattern` it will get replaced with `replacement`. e.g., `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
 - `replace_all_matches(target, pattern, replacement)` - `target` is a path expression to a map type field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. Each string value in `target` that matches `pattern` will get replaced with `replacement`. e.g., `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
+
+Metric only functions:
+- `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
+**NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md#gauge). Use at your own risk.
+
+- `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". 
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md#sums). Use at your own risk.
 
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
@@ -70,6 +81,8 @@ processors:
         - limit(attributes, 100)
         - truncate_all(attributes, 4096)
         - truncate_all(resource.attributes, 4096)
+        - convert_sum_to_gauge() where metric.name == "system.processes.count"
+        - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
     logs:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
@@ -108,6 +121,8 @@ All metrics and their data points
 4) Limit all data point attributes such that each data point has no more than 100 attributes.
 6) Truncate all data point attributes such that no string value has more than 4096 characters.
 7) Truncate all resource attributes such that no string value has more than 4096 characters.
+8) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
+9) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
 
 All logs
 

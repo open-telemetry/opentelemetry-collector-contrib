@@ -1,5 +1,11 @@
 # Authenticator - Bearer
 
+| Status                   |                      |
+|--------------------------|----------------------|
+| Stability                | [beta]               |
+| Distributions            | [contrib]            |
+
+
 This extension implements `configauth.GRPCClientAuthenticator` and is to be used in gRPC receivers inside the `auth` settings as a means
 to embed a static token for every RPC call that will be made.
 
@@ -49,3 +55,7 @@ service:
       processors: []
       exporters: [otlp/withauth, otlphttp/withauth]
 ```
+
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

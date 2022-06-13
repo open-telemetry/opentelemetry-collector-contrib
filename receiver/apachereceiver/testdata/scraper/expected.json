@@ -35,7 +35,7 @@
             {
               "name": "apache.current_connections",
               "description": "The number of active connections currently attached to the HTTP server.",
-              "unit": "connections",
+              "unit": "{connections}",
               "sum": {
                 "dataPoints": [
                   {
@@ -58,7 +58,7 @@
             {
               "name": "apache.workers",
               "description": "The number of workers currently attached to the HTTP server.",
-              "unit": "connections",
+              "unit": "{workers}",
               "sum": {
                 "dataPoints": [
                   {
@@ -105,7 +105,7 @@
             {
               "name": "apache.requests",
               "description": "The number of requests serviced by the HTTP server per second.",
-              "unit": "1",
+              "unit": "{requests}",
               "sum": {
                 "dataPoints": [
                   {
@@ -150,8 +150,8 @@
             },
             {
               "name": "apache.scoreboard",
-              "description": "The number of connections in each state.",
-              "unit": "scoreboard",
+              "description": "The number of workers in each state.",
+              "unit": "{workers}",
               "sum": {
                 "dataPoints": [
                   {

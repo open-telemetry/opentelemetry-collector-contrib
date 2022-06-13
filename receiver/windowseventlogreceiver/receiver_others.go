@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -31,10 +31,10 @@ const typeStr = "windowseventlog"
 
 // NewFactory creates a factory for windowseventlog receiver
 func NewFactory() component.ReceiverFactory {
-	return stanza.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{})
 }
 
-// ReceiverType implements stanza.LogReceiverType
+// ReceiverType implements adapter.LogReceiverType
 // to create a file tailing receiver
 type ReceiverType struct{}
 
@@ -46,17 +46,17 @@ func (f ReceiverType) Type() config.Type {
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &WindowsLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter:        stanza.ConverterConfig{},
+			Operators:        adapter.OperatorConfigs{},
+			Converter:        adapter.ConverterConfig{},
 		},
-		Input: stanza.InputConfig{},
+		Input: adapter.InputConfig{},
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 	return cfg.(*WindowsLogConfig).BaseConfig
 }
 
@@ -67,6 +67,6 @@ func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, 
 
 // WindowsLogConfig defines configuration for the windowseventlog receiver
 type WindowsLogConfig struct {
-	stanza.BaseConfig `mapstructure:",squash"`
-	Input             stanza.InputConfig `mapstructure:",remain"`
+	adapter.BaseConfig `mapstructure:",squash"`
+	Input              adapter.InputConfig `mapstructure:",remain"`
 }

@@ -44,7 +44,11 @@ func TestHostnameFromAttributes(t *testing.T) {
 		conventions.AttributeHostID:        testInstanceID,
 		conventions.AttributeHostName:      testIP,
 	})
-	hostname, ok := HostnameFromAttributes(attrs)
+	hostname, ok := HostnameFromAttributes(attrs, false)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testInstanceID)
+
+	hostname, ok = HostnameFromAttributes(attrs, true)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testInstanceID)
 }

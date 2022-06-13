@@ -19,13 +19,13 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	stanza.BaseConfig        `mapstructure:",squash"`
+	adapter.BaseConfig       `mapstructure:",squash"`
 }
 
 var _ config.Processor = (*Config)(nil)
