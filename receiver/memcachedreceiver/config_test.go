@@ -24,6 +24,13 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
+func TestDefaultConfig(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	require.Equal(t, defaultEndpoint, cfg.Endpoint)
+	require.Equal(t, defaultEndpoint, cfg.Timeout)
+	require.Equal(t, defaultEndpoint, cfg.CollectionInterval)
+}
+
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
