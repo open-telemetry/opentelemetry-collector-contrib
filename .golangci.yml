@@ -105,6 +105,7 @@ linters-settings:
 
 linters:
   enable:
+    - depguard
     - errcheck
     - errorlint
     - exportloopref
