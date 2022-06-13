@@ -17,13 +17,11 @@ package observiqexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 )
 
 const (
@@ -32,8 +30,6 @@ const (
 	defaultEndpoint      = "https://nozzle.app.observiq.com/v1/add"
 	defaultDialerTimeout = 10 * time.Second
 )
-
-var logOnce sync.Once
 
 // NewFactory creates a factory for observIQ exporter
 func NewFactory() component.ExporterFactory {
@@ -64,16 +60,10 @@ func createLogsExporter(
 	params component.ExporterCreateSettings,
 	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
-	logDeprecation(params.Logger)
+	params.Logger.Warn("The observiq exporter is deprecated and will be removed in future versions.")
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
 	exporterConfig := config.(*Config)
 	return newObservIQLogExporter(exporterConfig, params)
-}
-
-func logDeprecation(logger *zap.Logger) {
-	logOnce.Do(func() {
-		logger.Warn("The observiq exporter is deprecated and will be removed in future versions.")
-	})
 }
