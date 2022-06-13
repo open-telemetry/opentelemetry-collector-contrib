@@ -176,11 +176,11 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 func checkPortFromEndpoint(endpoint string) error {
 	_, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return fmt.Errorf("endpoint is not formatted correctly: %s", err.Error())
+		return fmt.Errorf("endpoint is not formatted correctly: %w", err)
 	}
 	port, err := strconv.ParseInt(portStr, 10, 0)
 	if err != nil {
-		return fmt.Errorf("endpoint port is not a number: %s", err.Error())
+		return fmt.Errorf("endpoint port is not a number: %w", err)
 	}
 	if port < 1 || port > 65535 {
 		return fmt.Errorf("port number must be between 1 and 65535")

@@ -66,7 +66,7 @@ func (run *receiverRunner) start(
 	}
 
 	if err := recvr.Start(context.Background(), run.host); err != nil {
-		return nil, fmt.Errorf("failed starting receiver %v: %v", cfg.ID(), err)
+		return nil, fmt.Errorf("failed starting receiver %v: %w", cfg.ID(), err)
 	}
 
 	return recvr, nil
@@ -89,14 +89,14 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 
 	// Merge in discoveredConfig containing values discovered at runtime.
 	if err := mergedConfig.Merge(confmap.NewFromStringMap(discoveredConfig)); err != nil {
-		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
+		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %w", err)
 	}
 
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(receiver.id.Name())
 
 	if err := config.UnmarshalReceiver(mergedConfig, receiverCfg); err != nil {
-		return nil, fmt.Errorf("failed to load template config: %v", err)
+		return nil, fmt.Errorf("failed to load template config: %w", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).

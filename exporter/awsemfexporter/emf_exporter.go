@@ -164,7 +164,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
-					return wrapErrorIfBadRequest(&returnError)
+					return wrapErrorIfBadRequest(returnError)
 				}
 			}
 		}
@@ -175,7 +175,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 			returnError := emfPusher.ForceFlush()
 			if returnError != nil {
 				//TODO now we only have one logPusher, so it's ok to return after first error occurred
-				err := wrapErrorIfBadRequest(&returnError)
+				err := wrapErrorIfBadRequest(returnError)
 				if err != nil {
 					emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
 				}
@@ -230,7 +230,7 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {
-			err := wrapErrorIfBadRequest(&returnError)
+			err := wrapErrorIfBadRequest(returnError)
 			if err != nil {
 				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next logPusher.", zap.Error(err))
 			}
@@ -249,10 +249,10 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func wrapErrorIfBadRequest(err *error) error {
-	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
-		return consumererror.NewPermanent(*err)
+func wrapErrorIfBadRequest(err error) error {
+	var rfErr awserr.RequestFailure
+	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
+		return consumererror.NewPermanent(err)
 	}
-	return *err
+	return err
 }

@@ -54,12 +54,12 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	r.cancel = cancel
 	r.logger.Info("Starting stanza receiver")
 
-	if setErr := r.setStorageClient(ctx, host); setErr != nil {
-		return fmt.Errorf("storage client: %s", setErr)
+	if err := r.setStorageClient(ctx, host); err != nil {
+		return fmt.Errorf("storage client: %w", err)
 	}
 
-	if obsErr := r.pipe.Start(r.getPersister()); obsErr != nil {
-		return fmt.Errorf("start stanza: %s", obsErr)
+	if err := r.pipe.Start(r.getPersister()); err != nil {
+		return fmt.Errorf("start stanza: %w", err)
 	}
 
 	r.converter.Start()

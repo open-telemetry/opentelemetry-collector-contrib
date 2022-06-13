@@ -209,7 +209,7 @@ func TestPollerCloseError(t *testing.T) {
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
 	err = rcvr.Shutdown(context.Background())
-	assert.EqualError(t, err, mPoller.closeErr.Error(), "expected error")
+	assert.ErrorIs(t, err, mPoller.closeErr, "expected error")
 }
 
 func TestProxyCloseError(t *testing.T) {
@@ -224,7 +224,7 @@ func TestProxyCloseError(t *testing.T) {
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
 	err = rcvr.Shutdown(context.Background())
-	assert.EqualError(t, err, mProxy.closeErr.Error(), "expected error")
+	assert.ErrorIs(t, err, mProxy.closeErr, "expected error")
 }
 
 func TestBothPollerAndProxyCloseError(t *testing.T) {
@@ -240,10 +240,8 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = mProxy
 	err = rcvr.Shutdown(context.Background())
-	assert.EqualError(t, err,
-		fmt.Sprintf("failed to close proxy: %s: failed to close poller: %s",
-			mProxy.closeErr.Error(), mPoller.closeErr.Error()),
-		"expected error")
+	assert.ErrorIs(t, err, mPoller.closeErr, "expected error")
+	assert.ErrorIs(t, err, mProxy.closeErr, "expected error")
 }
 
 type mockPoller struct {
