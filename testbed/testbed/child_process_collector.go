@@ -321,6 +321,7 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 		}
 	}
 
+	remainingFailures := cp.resourceSpec.MaxConsecutiveFailures
 	for {
 		select {
 		case <-ticker.C:
@@ -328,11 +329,17 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 			cp.fetchCPUUsage()
 
 			if err := cp.checkAllowedResourceUsage(); err != nil {
+				remainingFailures--
+				if remainingFailures > 0 {
+					log.Printf("Resource utilization too high. Remaining attempts: %d", remainingFailures)
+					continue
+				}
 				if _, errStop := cp.Stop(); errStop != nil {
 					log.Printf("Failed to stop child process: %v", err)
 				}
 				return err
 			}
+			remainingFailures = cp.resourceSpec.MaxConsecutiveFailures
 
 		case <-cp.doneSignal:
 			log.Printf("Stopping process monitor.")
