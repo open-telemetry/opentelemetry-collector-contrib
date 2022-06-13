@@ -133,7 +133,7 @@ All logs
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.txt).
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
