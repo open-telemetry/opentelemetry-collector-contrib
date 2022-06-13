@@ -1,10 +1,14 @@
 # MongoDB Atlas Receiver
 
+| Status                   |               |
+|--------------------------|---------------|
+| Stability                | [beta]        |
+| Supported pipeline types | metrics, logs |
+| Distributions            | [contrib]     |
+
 Receives metrics from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 
 via their [monitoring APIs](https://docs.atlas.mongodb.com/reference/api/monitoring-and-logs/),
 as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/).
-
-Supported pipeline types: metrics, logs
 
 ## Getting Started
 
@@ -48,3 +52,6 @@ receivers:
       secret: "some_secret"
       endpoint: "0.0.0.0:7706"
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
