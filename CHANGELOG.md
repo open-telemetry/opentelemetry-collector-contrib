@@ -30,6 +30,7 @@
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
 - `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
+- `windowseventlogreceiver`: Fixed example config in readme (#10971)
 
 ## v0.53.0
 
