@@ -18,9 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -80,14 +82,24 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGaugeDataPoint.SetIntVal(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
-	intSumMetric := metrics.AppendEmpty()
-	intSumMetric.SetDataType(pmetric.MetricDataTypeSum)
-	intSumMetric.SetName("int_sum")
-	intSum := intSumMetric.Sum()
-	intSumDataPoints := intSum.DataPoints()
-	intSumDataPoint := intSumDataPoints.AppendEmpty()
-	intSumDataPoint.SetIntVal(10)
-	intSumDataPoint.SetTimestamp(testTimestamp)
+	nmIntSumMetric := metrics.AppendEmpty()
+	nmIntSumMetric.SetDataType(pmetric.MetricDataTypeSum)
+	nmIntSumMetric.SetName("nonmonotonic_int_sum")
+	nmIntSum := nmIntSumMetric.Sum()
+	nmIntSumDataPoints := nmIntSum.DataPoints()
+	nmIntSumDataPoint := nmIntSumDataPoints.AppendEmpty()
+	nmIntSumDataPoint.SetIntVal(10)
+	nmIntSumDataPoint.SetTimestamp(testTimestamp)
+
+	mIntSumMetric := metrics.AppendEmpty()
+	mIntSumMetric.SetDataType(pmetric.MetricDataTypeSum)
+	mIntSumMetric.SetName("monotonic_int_sum")
+	mIntSum := mIntSumMetric.Sum()
+	mIntSum.SetIsMonotonic(true)
+	mIntSumDataPoints := mIntSum.DataPoints()
+	mIntSumDataPoint := mIntSumDataPoints.AppendEmpty()
+	mIntSumDataPoint.SetIntVal(10)
+	mIntSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleGaugeMetric := metrics.AppendEmpty()
 	doubleGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
@@ -98,14 +110,24 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGaugeDataPoint.SetDoubleVal(10.1)
 	doubleGaugeDataPoint.SetTimestamp(testTimestamp)
 
-	doubleSumMetric := metrics.AppendEmpty()
-	doubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
-	doubleSumMetric.SetName("double_sum")
-	doubleSum := doubleSumMetric.Sum()
-	doubleSumDataPoints := doubleSum.DataPoints()
-	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
-	doubleSumDataPoint.SetDoubleVal(10.1)
-	doubleSumDataPoint.SetTimestamp(testTimestamp)
+	nmDoubleSumMetric := metrics.AppendEmpty()
+	nmDoubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
+	nmDoubleSumMetric.SetName("nonmonotonic_double_sum")
+	nmDoubleSum := nmDoubleSumMetric.Sum()
+	nmDoubleSumDataPoints := nmDoubleSum.DataPoints()
+	nmDoubleSumDataPoint := nmDoubleSumDataPoints.AppendEmpty()
+	nmDoubleSumDataPoint.SetDoubleVal(10.1)
+	nmDoubleSumDataPoint.SetTimestamp(testTimestamp)
+
+	mDoubleSumMetric := metrics.AppendEmpty()
+	mDoubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
+	mDoubleSumMetric.SetName("monotonic_double_sum")
+	mDoubleSum := mDoubleSumMetric.Sum()
+	mDoubleSum.SetIsMonotonic(true)
+	mDoubleSumDataPoints := mDoubleSum.DataPoints()
+	mDoubleSumDataPoint := mDoubleSumDataPoints.AppendEmpty()
+	mDoubleSumDataPoint.SetDoubleVal(10.1)
+	mDoubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleHistogramMetric := metrics.AppendEmpty()
 	doubleHistogramMetric.SetDataType(pmetric.MetricDataTypeHistogram)
@@ -166,8 +188,181 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		}
 	})
 
-	if wantBody := "prefix.int_gauge gauge,10 1626438600000\nprefix.int_sum count,delta=10 1626438600000\nprefix.double_gauge gauge,10.1 1626438600000\nprefix.double_sum count,delta=10.1 1626438600000\nprefix.double_histogram gauge,min=0,max=8,sum=10.1,count=2 1626438600000"; sent != wantBody {
-		t.Errorf("exporter.PushMetricsData():ResponseBody = %v, want %v", sent, wantBody)
+	wantLines := []string{
+		"prefix.int_gauge gauge,10 1626438600000",
+		"prefix.monotonic_int_sum count,delta=10 1626438600000",
+		"prefix.nonmonotonic_int_sum gauge,10 1626438600000",
+		"prefix.double_gauge gauge,10.1 1626438600000",
+		"prefix.monotonic_double_sum count,delta=10.1 1626438600000",
+		"prefix.nonmonotonic_double_sum gauge,10.1 1626438600000",
+		"prefix.double_histogram gauge,min=0,max=8,sum=10.1,count=2 1626438600000",
+	}
+
+	// only succeeds if the two lists contain the same elements, ignoring their order
+	assert.ElementsMatch(t, wantLines, strings.Split(sent, "\n"))
+}
+
+func Test_SumMetrics(t *testing.T) {
+	type args struct {
+		monotonic   bool
+		temporality pmetric.MetricAggregationTemporality
+		valueType   string // either 'double' or 'int'
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Monotonic Delta sum (int)",
+			args: args{
+				true,
+				pmetric.MetricAggregationTemporalityDelta,
+				"int",
+			},
+			want: []string{
+				"prefix.metric_name count,delta=10 1626438600000",
+				"prefix.metric_name count,delta=20 1626438600000",
+			},
+		},
+		{
+			name: "Non-monotonic Delta sum (int)",
+			args: args{
+				false,
+				pmetric.MetricAggregationTemporalityDelta,
+				"int",
+			},
+			want: []string{"nothing sent"},
+		},
+		{
+			name: "Monotonic Cumulative sum (int)",
+			args: args{
+				true,
+				pmetric.MetricAggregationTemporalityCumulative,
+				"int",
+			},
+			want: []string{"prefix.metric_name count,delta=10 1626438600000"},
+		},
+		{
+			name: "Non-monotonic Cumulative sum (int)",
+			args: args{
+				false,
+				pmetric.MetricAggregationTemporalityCumulative,
+				"int",
+			},
+			want: []string{
+				"prefix.metric_name gauge,10 1626438600000",
+				"prefix.metric_name gauge,20 1626438600000",
+			},
+		},
+		{
+			name: "Monotonic Delta sum (double)",
+			args: args{
+				true,
+				pmetric.MetricAggregationTemporalityDelta,
+				"double",
+			},
+			want: []string{
+				"prefix.metric_name count,delta=10.1 1626438600000",
+				"prefix.metric_name count,delta=20.2 1626438600000",
+			},
+		},
+		{
+			name: "Non-monotonic Delta sum (double)",
+			args: args{
+				false,
+				pmetric.MetricAggregationTemporalityDelta,
+				"double",
+			},
+			want: []string{"nothing sent"},
+		},
+		{
+			name: "Monotonic Cumulative sum (double)",
+			args: args{
+				true,
+				pmetric.MetricAggregationTemporalityCumulative,
+				"double",
+			},
+			want: []string{"prefix.metric_name count,delta=10.1 1626438600000"},
+		},
+		{
+			name: "Non-monotonic Cumulative sum (double)",
+			args: args{
+				false,
+				pmetric.MetricAggregationTemporalityCumulative,
+				"double",
+			},
+			want: []string{
+				"prefix.metric_name gauge,10.1 1626438600000",
+				"prefix.metric_name gauge,20.2 1626438600000",
+			},
+		},
+	}
+
+	// server setup:
+	sent := "nothing sent"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bodyBytes, _ := ioutil.ReadAll(r.Body)
+		sent = string(bodyBytes)
+
+		response := metricsResponse{
+			Ok:      0,
+			Invalid: 0,
+		}
+		body, _ := json.Marshal(response)
+		_, _ = w.Write(body)
+	}))
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// reset the export buffer for the HTTP client
+			sent = "nothing sent"
+
+			prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
+
+			// set up the exporter
+			exp := &exporter{
+				settings: componenttest.NewNopTelemetrySettings(),
+				cfg: &config.Config{
+					APIToken:           "token",
+					HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+					Prefix:             "prefix",
+				},
+				client:  ts.Client(),
+				prevPts: prevPts,
+			}
+
+			metrics := pmetric.NewMetrics()
+			resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+			scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+			metric := scopeMetric.Metrics().AppendEmpty()
+			metric.SetName("metric_name")
+			metric.SetDataType(pmetric.MetricDataTypeSum)
+			sum := metric.Sum()
+			sum.SetAggregationTemporality(tt.args.temporality)
+			sum.SetIsMonotonic(tt.args.monotonic)
+
+			dataPoint1 := sum.DataPoints().AppendEmpty()
+			dataPoint1.SetTimestamp(testTimestamp)
+
+			dataPoint2 := sum.DataPoints().AppendEmpty()
+			dataPoint2.SetTimestamp(testTimestamp)
+			if tt.args.valueType == "int" {
+				dataPoint1.SetIntVal(10)
+				dataPoint2.SetIntVal(20)
+			} else if tt.args.valueType == "double" {
+				dataPoint1.SetDoubleVal(10.1)
+				dataPoint2.SetDoubleVal(20.2)
+			} else {
+				t.Fatalf("valueType can only be 'int' or 'double' but was '%s'", tt.args.valueType)
+			}
+
+			err := exp.PushMetricsData(context.Background(), metrics)
+			assert.NoError(t, err)
+
+			assert.ElementsMatch(t, tt.want, strings.Split(sent, "\n"))
+		})
 	}
 }
 
