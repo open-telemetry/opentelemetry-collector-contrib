@@ -131,5 +131,9 @@ All logs
 3) Set `body` to the `http.route` attribute if it is set
 4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
