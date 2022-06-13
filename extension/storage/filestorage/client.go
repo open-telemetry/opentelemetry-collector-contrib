@@ -33,6 +33,8 @@ const (
 	elapsedKey       = "elapsed"
 	directoryKey     = "directory"
 	tempDirectoryKey = "tempDirectory"
+
+	oneMiB = 1048576
 )
 
 type fileStorageClient struct {
@@ -257,32 +259,29 @@ func (c *fileStorageClient) shouldCompact() bool {
 		return false
 	}
 
-	totalSize, dataSize, err := c.getDbSize()
+	totalSizeBytes, dataSizeBytes, err := c.getDbSize()
 	if err != nil {
 		c.logger.Error("failed to get db size", zap.Error(err))
 		return false
 	}
 
 	c.logger.Debug("shouldCompact check",
-		zap.Int64("totalSize", totalSize),
-		zap.Int64("dataSize", dataSize))
+		zap.Int64("totalSizeBytes", totalSizeBytes),
+		zap.Int64("dataSizeBytes", dataSizeBytes))
 
-	if dataSize > c.compactionCfg.ReboundNeededThresholdMiB*1048576 ||
-		totalSize < c.compactionCfg.ReboundTriggerThresholdMiB*1048576 {
+	if dataSizeBytes > c.compactionCfg.ReboundNeededThresholdMiB*oneMiB ||
+		totalSizeBytes < c.compactionCfg.ReboundTriggerThresholdMiB*oneMiB {
 		return false
 	}
 
 	c.logger.Debug("shouldCompact returns true",
-		zap.Int64("totalSize", totalSize),
-		zap.Int64("dataSize", dataSize))
+		zap.Int64("totalSizeBytes", totalSizeBytes),
+		zap.Int64("dataSizeBytes", dataSizeBytes))
 
 	return true
 }
 
 func (c *fileStorageClient) getDbSize() (totalSizeResult int64, dataSizeResult int64, errResult error) {
-	c.compactionMutex.Lock()
-	defer c.compactionMutex.Unlock()
-
 	var totalSize int64
 
 	err := c.db.View(func(tx *bbolt.Tx) error {

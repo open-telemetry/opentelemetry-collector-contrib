@@ -27,6 +27,7 @@ import (
 	"go.etcd.io/bbolt"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestClientOperations(t *testing.T) {
@@ -272,6 +273,11 @@ func TestClientReboundCompaction(t *testing.T) {
 
 	require.Eventually(t,
 		func() bool {
+			// The check is performed while the database might be compacted, hence we're reusing the mutex here
+			// (getDbSize is not called from outside the compaction loop otherwise)
+			client.compactionMutex.Lock()
+			defer client.compactionMutex.Unlock()
+
 			totalSize, realSize, dbErr := client.getDbSize()
 			require.NoError(t, dbErr)
 			return totalSize < entrySize && realSize < entrySize
@@ -281,12 +287,15 @@ func TestClientReboundCompaction(t *testing.T) {
 }
 
 func TestClientConcurrentCompaction(t *testing.T) {
+	logCore, logObserver := observer.New(zap.DebugLevel)
+	logger := zap.New(logCore)
+
 	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	checkInterval := time.Millisecond
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{
+	client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
 		OnRebound:                  true,
 		CheckInterval:              checkInterval,
 		ReboundNeededThresholdMiB:  1,
@@ -339,6 +348,9 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	// The actual number might vary a bit depending on the actual intervals
+	require.GreaterOrEqual(t, len(logObserver.FilterMessage("finished compaction").All()), 3)
 }
 
 func BenchmarkClientGet(b *testing.B) {
