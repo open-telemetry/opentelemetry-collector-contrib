@@ -226,11 +226,19 @@ func getScannerError(scanner *PositionalScanner) error {
 
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (int, error) {
-	if len(r.Fingerprint.FirstBytes) == r.fileInput.fingerprintSize {
+	// Skip if fingerprint is already built
+	// or if fingerprint is behind Offset
+	if len(r.Fingerprint.FirstBytes) == r.fileInput.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
 		return r.file.Read(dst)
 	}
 	n, err := r.file.Read(dst)
 	appendCount := min0(n, r.fileInput.fingerprintSize-int(r.Offset))
+	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
+	if appendCount == 0 {
+		return n, err
+	}
+
+	// for appendCount==0, the following code would add `0` to fingerprint
 	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	return n, err
 }
