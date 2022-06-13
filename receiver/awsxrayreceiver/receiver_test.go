@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -123,9 +122,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestSegmentsPassedToConsumer")
 
@@ -153,9 +150,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestTranslatorErrorsOut")
 
@@ -179,9 +174,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestSegmentsConsumerErrorsOut")
 
@@ -209,9 +202,7 @@ func TestPollerCloseError(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
@@ -226,9 +217,7 @@ func TestProxyCloseError(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
@@ -243,9 +232,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestBothPollerAndProxyCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
