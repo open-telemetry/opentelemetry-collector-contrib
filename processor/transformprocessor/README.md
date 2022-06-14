@@ -132,8 +132,8 @@ All logs
 4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
 ## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+ <!-- markdown-link-check-disable-next-line -->
+See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
