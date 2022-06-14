@@ -148,7 +148,7 @@ EVENT_LOOP:
 	}
 }
 
-// InspectAndPersistContainer queries inspect api and returns *ContainerStats and true when container should be queried for stats,
+// InspectAndPersistContainer queries inspect api and returns *Container and true when container should be queried for stats,
 // nil and false otherwise. Persists the container in the cache if container is
 // running and not excluded.
 func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid string) (*Container, bool) {
