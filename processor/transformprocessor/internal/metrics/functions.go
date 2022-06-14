@@ -24,8 +24,10 @@ import (
 
 // registry is a map of names to functions for metrics pipelines
 var registry = map[string]interface{}{
-	"convert_sum_to_gauge": convertSumToGauge,
-	"convert_gauge_to_sum": convertGaugeToSum,
+	"convert_sum_to_gauge":             convertSumToGauge,
+	"convert_gauge_to_sum":             convertGaugeToSum,
+	"convert_summary_sum_val_to_sum":   convertSummarySumValToSum,
+	"convert_summary_count_val_to_sum": convertSummaryCountValToSum,
 }
 
 func init() {
@@ -92,6 +94,86 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, e
 		// Setting the data type removed all the data points, so we must copy them back to the metric.
 		dps.CopyTo(metric.Sum().DataPoints())
 
+		return nil
+	}, nil
+}
+
+func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, error) {
+	var aggTemp pmetric.MetricAggregationTemporality
+	switch stringAggTemp {
+	case "delta":
+		aggTemp = pmetric.MetricAggregationTemporalityDelta
+	case "cumulative":
+		aggTemp = pmetric.MetricAggregationTemporalityCumulative
+	default:
+		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
+	}
+	return func(ctx common.TransformContext) interface{} {
+		mtc, ok := ctx.(metricTransformContext)
+		if !ok {
+			return nil
+		}
+
+		metric := mtc.GetMetric()
+		if metric.DataType() != pmetric.MetricDataTypeSummary {
+			return nil
+		}
+
+		sumMetric := mtc.GetMetrics().AppendEmpty()
+		sumMetric.SetDescription(metric.Description())
+		sumMetric.SetName(metric.Name() + "_sum")
+		sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+		sumMetric.Sum().SetAggregationTemporality(aggTemp)
+		sumMetric.Sum().SetIsMonotonic(monotonic)
+
+		sumDps := sumMetric.Sum().DataPoints()
+		dps := metric.Summary().DataPoints()
+		for i := 0; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			sumDp := sumDps.AppendEmpty()
+			dp.Attributes().CopyTo(sumDp.Attributes())
+			sumDp.SetDoubleVal(dp.Sum())
+		}
+		return nil
+	}, nil
+}
+
+func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, error) {
+	var aggTemp pmetric.MetricAggregationTemporality
+	switch stringAggTemp {
+	case "delta":
+		aggTemp = pmetric.MetricAggregationTemporalityDelta
+	case "cumulative":
+		aggTemp = pmetric.MetricAggregationTemporalityCumulative
+	default:
+		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
+	}
+	return func(ctx common.TransformContext) interface{} {
+		mtc, ok := ctx.(metricTransformContext)
+		if !ok {
+			return nil
+		}
+
+		metric := mtc.GetMetric()
+		if metric.DataType() != pmetric.MetricDataTypeSummary {
+			return nil
+		}
+
+		sumMetric := mtc.GetMetrics().AppendEmpty()
+		sumMetric.SetDescription(metric.Description())
+		sumMetric.SetName(metric.Name() + "_count")
+		sumMetric.SetDataType(pmetric.MetricDataTypeSum)
+		sumMetric.Sum().SetAggregationTemporality(aggTemp)
+		sumMetric.Sum().SetIsMonotonic(monotonic)
+
+		sumDps := sumMetric.Sum().DataPoints()
+		dps := metric.Summary().DataPoints()
+		for i := 0; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			sumDp := sumDps.AppendEmpty()
+			dp.Attributes().CopyTo(sumDp.Attributes())
+			sumDp.SetIntVal(int64(dp.Count()))
+		}
 		return nil
 	}, nil
 }
