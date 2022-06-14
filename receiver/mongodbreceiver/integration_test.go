@@ -46,9 +46,9 @@ var (
 	containerRequest5_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mongodb.4_0",
+			Dockerfile: "Dockerfile.mongodb.5_0",
 		},
-		ExposedPorts: []string{"27017:27017"},
+		ExposedPorts: []string{"27018:27017"},
 		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
 )
@@ -82,13 +82,13 @@ func TestMongodbIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMtrics := consumer.AllMetrics()[0]
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.4_0.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		err = scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues())
+		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 		require.NoError(t, err)
 	})
 	t.Run("Running mongodb 5.0", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestMongodbIntegration(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27017"),
+				Endpoint: net.JoinHostPort(hostname, "27018"),
 			},
 		}
 
