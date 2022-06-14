@@ -1,10 +1,12 @@
 # Syslog Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 Parses Syslogs received over TCP or UDP.
-
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
 
 ## Configuration
 
@@ -84,3 +86,5 @@ receivers:
     protocol: rfc3164
     location: UTC
 ```
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -17,7 +17,7 @@ package components
 import (
 	"context"
 	"errors"
-	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -107,12 +106,15 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "elasticsearch",
 		},
 		{
+			receiver: "expvar",
+		},
+		{
 			receiver: "filelog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
 				cfg.Input = adapter.InputConfig{
 					"include": []string{
-						path.Join(testutil.NewTemporaryDirectory(t), "*"),
+						filepath.Join(t.TempDir(), "*"),
 					},
 				}
 				return cfg

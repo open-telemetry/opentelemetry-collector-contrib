@@ -3,14 +3,38 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
+- `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
+
+- `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+- `observiqexporter`: Deprecate the observiq exporter (#10977)
+- `honeycombexporter`: Deprecate honeycomb exporter (#10318)
+
 ### 🚀 New components 🚀
+
+- `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+- `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
 
 ### 💡 Enhancements 💡
 
+- `cmd/mdatagen`: Allow attribute values of any types (#9245)
+- `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
+- `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `filestorageextension`: Add background compaction capability (#9327)
+- `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+
 ### 🧰 Bug fixes 🧰
+
+- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
+- `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
+- `windowseventlogreceiver`: Fixed example config in readme (#10971)
+- `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
 
 ## v0.53.0
 
@@ -37,6 +61,7 @@
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
 - `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
 
@@ -53,6 +78,7 @@
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 - `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
+- `apachereceiver`: Update units to follow semconv (#10587)
 
 ## v0.52.0
 
@@ -78,6 +104,7 @@
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 - `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 - `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
+- `pkg/stanza`: make multiline tests more like integration tests #10353 
 
 ### 🧰 Bug fixes 🧰
 

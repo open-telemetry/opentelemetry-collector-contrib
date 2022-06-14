@@ -20,25 +20,36 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
 
 // UsePreviewHostnameLogic decides whether to use the preview hostname logic or not.
 const UsePreviewHostnameLogic = false
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+	dockerProvider, err := docker.NewProvider()
+	if err != nil {
+		return nil, err
+	}
+
 	chain, err := provider.Chain(
 		set.Logger,
 		map[string]provider.HostnameProvider{
 			"config": provider.Config(configHostname),
+			"docker": dockerProvider,
+			"azure":  azure.NewProvider(),
 			"ec2":    ec2.NewProvider(set.Logger),
+			"gcp":    gcp.NewProvider(),
 			"system": system.NewProvider(set.Logger),
 		},
-		[]string{"config", "ec2", "system"},
+		[]string{"config", "docker", "azure", "ec2", "gcp", "system"},
 	)
 
 	if err != nil {

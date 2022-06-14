@@ -99,7 +99,7 @@ func (p *Transformer) Transform(e *entry.Entry) error {
 
 		result, err := vm.Run(p.program, env)
 		if err != nil {
-			return fmt.Errorf("evaluate value_expr: %s", err)
+			return fmt.Errorf("evaluate value_expr: %w", err)
 		}
 		return e.Set(p.Field, result)
 	}

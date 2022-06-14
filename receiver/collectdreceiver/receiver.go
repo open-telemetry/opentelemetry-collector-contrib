@@ -74,7 +74,7 @@ func newCollectdReceiver(
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		if err := cdr.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
+			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %w", err))
 		}
 	}()
 	return nil

@@ -1,3 +1,4 @@
+// Deprecated: honeycombexporter exporter is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter
 
 go 1.17

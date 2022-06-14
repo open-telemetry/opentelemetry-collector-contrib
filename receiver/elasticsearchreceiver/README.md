@@ -1,6 +1,5 @@
 # Elasticsearch Receiver
 
-
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [beta]    |
@@ -8,9 +7,6 @@
 | Distributions            | [contrib] |
 
 This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html) and [cluster health](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html) endpoints in order to scrape metrics from a running elasticsearch cluster.
-
-
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 
 ## Prerequisites
 

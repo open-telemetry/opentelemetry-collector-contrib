@@ -150,7 +150,7 @@ func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool) p
 		lines := make([][]string, 0, 1)
 		for {
 			line, err := reader.Read()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 
