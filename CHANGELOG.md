@@ -20,6 +20,7 @@
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
 
 ### 🧰 Bug fixes 🧰
 

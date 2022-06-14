@@ -81,10 +81,6 @@ func TestMongodbIntegration(t *testing.T) {
 
 		actualMtrics := consumer.AllMetrics()[0]
 
-		actualFile := filepath.Join("testdata", "integration", "actual.4_0.json")
-		err = golden.WriteMetrics(actualFile, actualMtrics)
-		require.NoError(t, err)
-
 		expectedFile := filepath.Join("testdata", "integration", "expected.4_0.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
@@ -121,10 +117,6 @@ func TestMongodbIntegration(t *testing.T) {
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
 		actualMtrics := consumer.AllMetrics()[0]
-
-		actualFile := filepath.Join("testdata", "integration", "actual.5_0.json")
-		err = golden.WriteMetrics(actualFile, actualMtrics)
-		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.5_0.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
