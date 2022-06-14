@@ -10,6 +10,7 @@
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+- `observiqexporter`: Deprecate the observiq exporter (#10977)
 
 ### 🚀 New components 🚀
 
@@ -23,6 +24,7 @@
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
 
 ### 🧰 Bug fixes 🧰
@@ -32,6 +34,7 @@
 - `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
 - `windowseventlogreceiver`: Fixed example config in readme (#10971)
+- `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
 
 ## v0.53.0
 

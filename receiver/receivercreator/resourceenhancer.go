@@ -46,7 +46,7 @@ func newResourceEnhancer(
 	for attr, expr := range resources[endpoint.Details.Type()] {
 		res, err := evalBackticksInConfigValue(expr, env)
 		if err != nil {
-			return nil, fmt.Errorf("failed processing resource attribute %q for endpoint %v: %v", attr, endpoint.ID, err)
+			return nil, fmt.Errorf("failed processing resource attribute %q for endpoint %v: %w", attr, endpoint.ID, err)
 		}
 
 		// If the attribute value is empty user has likely removed the default value so skip it.

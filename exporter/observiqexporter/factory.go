@@ -60,6 +60,7 @@ func createLogsExporter(
 	params component.ExporterCreateSettings,
 	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
+	params.Logger.Warn("The observiq exporter is deprecated and will be removed in v0.56.0.")
 	if config == nil {
 		return nil, errors.New("nil config")
 	}

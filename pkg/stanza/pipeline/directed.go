@@ -15,6 +15,7 @@
 package pipeline // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -25,14 +26,14 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 var _ Pipeline = (*DirectedPipeline)(nil)
 
-var alreadyStarted = errors.NewError("pipeline already started", "")
-var alreadyStopped = errors.NewError("pipeline already stopped", "")
+var alreadyStarted = stanzaerrors.NewError("pipeline already started", "")
+var alreadyStopped = stanzaerrors.NewError("pipeline already stopped", "")
 
 // DirectedPipeline is a pipeline backed by a directed graph
 type DirectedPipeline struct {
@@ -119,7 +120,7 @@ func addNodes(graph *simple.DirectedGraph, operators []operator.Operator) error 
 	for _, operator := range operators {
 		operatorNode := createOperatorNode(operator)
 		if graph.Node(operatorNode.ID()) != nil {
-			return errors.NewError(
+			return stanzaerrors.NewError(
 				fmt.Sprintf("operator with id '%s' already exists in pipeline", operatorNode.Operator().ID()),
 				"ensure that each operator has a unique `type` or `id`",
 			)
@@ -141,10 +142,12 @@ func connectNodes(graph *simple.DirectedGraph) error {
 	}
 
 	if _, err := topo.Sort(graph); err != nil {
-		return errors.NewError(
+		var topoErr topo.Unorderable
+		errors.As(err, &topoErr)
+		return stanzaerrors.NewError(
 			"pipeline has a circular dependency",
 			"ensure that all operators are connected in a straight, acyclic line",
-			"cycles", unorderableToCycles(err.(topo.Unorderable)),
+			"cycles", unorderableToCycles(topoErr),
 		)
 	}
 
@@ -155,7 +158,7 @@ func connectNodes(graph *simple.DirectedGraph) error {
 func connectNode(graph *simple.DirectedGraph, inputNode OperatorNode) error {
 	for outputOperatorID, outputNodeID := range inputNode.OutputIDs() {
 		if graph.Node(outputNodeID) == nil {
-			return errors.NewError(
+			return stanzaerrors.NewError(
 				"operators cannot be connected, because the output does not exist in the pipeline",
 				"ensure that the output operator is defined",
 				"input_operator", inputNode.Operator().ID(),
@@ -165,7 +168,7 @@ func connectNode(graph *simple.DirectedGraph, inputNode OperatorNode) error {
 
 		outputNode := graph.Node(outputNodeID).(OperatorNode)
 		if !outputNode.Operator().CanProcess() {
-			return errors.NewError(
+			return stanzaerrors.NewError(
 				"operators cannot be connected, because the output operator can not process logs",
 				"ensure that the output operator can process logs (like a parser or destination)",
 				"input_operator", inputNode.Operator().ID(),
@@ -174,7 +177,7 @@ func connectNode(graph *simple.DirectedGraph, inputNode OperatorNode) error {
 		}
 
 		if graph.HasEdgeFromTo(inputNode.ID(), outputNodeID) {
-			return errors.NewError(
+			return stanzaerrors.NewError(
 				"operators cannot be connected, because a connection already exists",
 				"ensure that only a single connection exists between the two operators",
 				"input_operator", inputNode.Operator().ID(),
@@ -197,7 +200,7 @@ func setOperatorOutputs(operators []operator.Operator) error {
 		}
 
 		if err := operator.SetOutputs(operators); err != nil {
-			return errors.WithDetails(err, "operator_id", operator.ID())
+			return stanzaerrors.WithDetails(err, "operator_id", operator.ID())
 		}
 	}
 	return nil

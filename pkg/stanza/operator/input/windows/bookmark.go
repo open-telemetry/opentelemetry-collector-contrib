@@ -35,12 +35,12 @@ func (b *Bookmark) Open(offsetXML string) error {
 
 	utf16, err := syscall.UTF16PtrFromString(offsetXML)
 	if err != nil {
-		return fmt.Errorf("failed to convert bookmark xml to utf16: %s", err)
+		return fmt.Errorf("failed to convert bookmark xml to utf16: %w", err)
 	}
 
 	handle, err := evtCreateBookmark(utf16)
 	if err != nil {
-		return fmt.Errorf("failed to create bookmark handle from xml: %s", err)
+		return fmt.Errorf("failed to create bookmark handle from xml: %w", err)
 	}
 
 	b.handle = handle
@@ -52,13 +52,13 @@ func (b *Bookmark) Update(event Event) error {
 	if b.handle == 0 {
 		handle, err := evtCreateBookmark(nil)
 		if err != nil {
-			return fmt.Errorf("syscall to `EvtCreateBookmark` failed: %s", err)
+			return fmt.Errorf("syscall to `EvtCreateBookmark` failed: %w", err)
 		}
 		b.handle = handle
 	}
 
 	if err := evtUpdateBookmark(b.handle, event.handle); err != nil {
-		return fmt.Errorf("syscall to `EvtUpdateBookmark` failed: %s", err)
+		return fmt.Errorf("syscall to `EvtUpdateBookmark` failed: %w", err)
 	}
 
 	return nil
@@ -77,7 +77,7 @@ func (b *Bookmark) Render(buffer Buffer) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("syscall to 'EvtRender' failed: %s", err)
+		return "", fmt.Errorf("syscall to 'EvtRender' failed: %w", err)
 	}
 
 	return buffer.ReadString(*bufferUsed)
@@ -90,7 +90,7 @@ func (b *Bookmark) Close() error {
 	}
 
 	if err := evtClose(b.handle); err != nil {
-		return fmt.Errorf("failed to close bookmark handle: %s", err)
+		return fmt.Errorf("failed to close bookmark handle: %w", err)
 	}
 
 	b.handle = 0

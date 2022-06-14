@@ -95,7 +95,7 @@ func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLab
 
 			metric, err := r.newMetric(metricName, dsType, val, labels)
 			if err != nil {
-				return metrics, fmt.Errorf("error processing metric %s: %v", sanitize.String(metricName), err)
+				return metrics, fmt.Errorf("error processing metric %s: %w", sanitize.String(metricName), err)
 			}
 			metrics = append(metrics, metric)
 
@@ -108,7 +108,7 @@ func (r *collectDRecord) newMetric(name string, dsType *string, val *json.Number
 	metric := &metricspb.Metric{}
 	point, isDouble, err := r.newPoint(val)
 	if err != nil {
-		return metric, fmt.Errorf("error processing metric %s: %v", name, err)
+		return metric, fmt.Errorf("error processing metric %s: %w", name, err)
 	}
 
 	lKeys, lValues := labelKeysAndValues(labels)
@@ -159,7 +159,7 @@ func (r *collectDRecord) newPoint(val *json.Number) (*metricspb.Point, bool, err
 	} else {
 		v, err := val.Float64()
 		if err != nil {
-			return nil, isDouble, fmt.Errorf("value could not be decoded: %v", err)
+			return nil, isDouble, fmt.Errorf("value could not be decoded: %w", err)
 		}
 		p.Value = &metricspb.Point_DoubleValue{DoubleValue: v}
 	}

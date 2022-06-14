@@ -16,6 +16,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -88,8 +89,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	data, err := s.getProcessMetadata()
 	if err != nil {
-		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
-		if !isPartial {
+		var partialErr scrapererror.PartialScrapeError
+		if !errors.As(err, &partialErr) {
 			return pmetric.NewMetrics(), err
 		}
 
