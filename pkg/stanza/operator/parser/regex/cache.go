@@ -17,8 +17,9 @@ package regex // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"math"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"go.uber.org/atomic"
 )
 
 // cache allows operators to cache a value and look it up later
@@ -140,7 +141,7 @@ func newStartedAtomicLimiter(max uint64, interval uint64) *atomicLimiter {
 	}
 
 	a := &atomicLimiter{
-		count:    0,
+		count:    atomic.NewUint64(0),
 		max:      max,
 		interval: time.Second * time.Duration(interval),
 	}
@@ -153,13 +154,13 @@ func newStartedAtomicLimiter(max uint64, interval uint64) *atomicLimiter {
 // counter. When count is >= max, throttled will return
 // true. The count is reset on an interval.
 type atomicLimiter struct {
-	count    uint64
+	count    *atomic.Uint64
 	max      uint64
 	interval time.Duration
 	start    sync.Once
 }
 
-var _ limiter = (&atomicLimiter{})
+var _ limiter = &atomicLimiter{count: atomic.NewUint64(0)}
 
 // init initializes the limiter
 func (l *atomicLimiter) init() {
@@ -172,7 +173,7 @@ func (l *atomicLimiter) init() {
 			for {
 				time.Sleep(l.interval)
 				if l.currentCount() > 0 {
-					atomic.AddUint64(&l.count, ^uint64(x))
+					l.count.Add(^uint64(x))
 				}
 			}
 		}()
@@ -181,10 +182,10 @@ func (l *atomicLimiter) init() {
 
 // increment increments the atomic counter
 func (l *atomicLimiter) increment() {
-	if l.count == l.max {
+	if l.count.Load() == l.max {
 		return
 	}
-	atomic.AddUint64(&l.count, 1)
+	l.count.Inc()
 }
 
 // Returns true if the cache is currently throttled, meaning a high
@@ -197,7 +198,7 @@ func (l *atomicLimiter) throttled() bool {
 }
 
 func (l *atomicLimiter) currentCount() uint64 {
-	return atomic.LoadUint64(&l.count)
+	return l.count.Load()
 }
 
 func (l *atomicLimiter) limit() uint64 {
