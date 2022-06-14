@@ -16,10 +16,11 @@
 package k8sclient
 
 import (
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -29,8 +30,6 @@ type mockReflectorSyncChecker struct {
 func (m *mockReflectorSyncChecker) Check(_ cacheReflector, _ string) {
 
 }
-
-var kubeConfigPath string
 
 func setKubeConfigPath(t *testing.T) string {
 	content := `
@@ -63,21 +62,10 @@ users:
       command: foo-command
       provideClusterInfo: true
 `
-	tmpfile, err := ioutil.TempFile("", "kubeconfig")
-	if err != nil {
-		t.Error(err)
-	}
-	if err := ioutil.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
-		t.Error(err)
-	}
-	//overwrite the default kube config path
-	kubeConfigPath = tmpfile.Name()
-	return kubeConfigPath
-}
+	tempFileName := filepath.Join(t.TempDir(), "kubeconfig")
+	require.NoError(t, os.WriteFile(tempFileName, []byte("foobar"), 0600))
 
-func removeTempKubeConfig() {
-	os.Remove(kubeConfigPath)
-	kubeConfigPath = ""
+	return tempFileName
 }
 
 func convertToInterfaceArray(objArray []runtime.Object) []interface{} {

@@ -16,10 +16,9 @@ package pprofextension
 
 import (
 	"context"
-	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -123,18 +122,11 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 }
 
 func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
-	tmpFile, err := ioutil.TempFile("", "pprof*.yaml")
-	require.NoError(t, err)
-	defer func() {
-		os.Remove(tmpFile.Name())
-	}()
-	require.NoError(t, tmpFile.Close())
-
 	config := Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		SaveToFile: tmpFile.Name(),
+		SaveToFile: filepath.Join(t.TempDir(), "pprof.yaml"),
 	}
 
 	pprofExt := newServer(config, zap.NewNop())

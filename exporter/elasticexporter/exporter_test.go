@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -139,10 +138,10 @@ func newRecorder(t *testing.T) (*transporttest.RecorderTransport, *Config) {
 	t.Cleanup(srv.Close)
 
 	// Write the server's self-signed certificate to a file to test the exporter's TLS config.
-	certfile, err := ioutil.TempFile("", "otel-elastic-cacert")
+	caFile, err := ioutil.TempFile(t.TempDir(), "otel-elastic-cacert")
 	require.NoError(t, err)
-	t.Cleanup(func() { os.Remove(certfile.Name()) })
-	err = pem.Encode(certfile, &pem.Block{
+	t.Cleanup(func() { require.NoError(t, caFile.Close()) })
+	err = pem.Encode(caFile, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: srv.TLS.Certificates[0].Certificate[0],
 	})
@@ -151,7 +150,7 @@ func newRecorder(t *testing.T) (*transporttest.RecorderTransport, *Config) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.TLSClientSetting.CAFile = certfile.Name()
+	eCfg.TLSClientSetting.CAFile = caFile.Name()
 	eCfg.APMServerURL = srv.URL
 	return &recorder, eCfg
 }

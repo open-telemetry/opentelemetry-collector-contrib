@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -140,11 +141,9 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
-	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
-	require.Nil(t, err)
-	defer os.Remove(confFile.Name())
-	_, err = confFile.Write([]byte(cfg))
-	require.Nil(t, err)
+	confFileName := filepath.Join(t.TempDir(), "conf-")
+	require.NoError(t, os.WriteFile(confFileName, []byte(cfg), 0600))
+
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
 	require.Nil(t, err)
@@ -162,7 +161,7 @@ service:
 	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
-			Locations:    []string{confFile.Name()},
+			Locations:    []string{confFileName},
 			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
 		})
 	require.NoError(t, err)

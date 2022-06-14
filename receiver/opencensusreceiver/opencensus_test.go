@@ -24,9 +24,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
-	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -282,17 +283,8 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func tempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
-	require.NoError(t, err)
-	require.NoError(t, tmpfile.Close())
-	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
-	return socket
-}
-
 func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
-	socketName := tempSocketName(t)
+	socketName := "sock" + strconv.Itoa(rand.Int())
 	cbts := consumertest.NewNop()
 	r, err := newOpenCensusReceiver(ocReceiverID, "unix", socketName, cbts, nil, componenttest.NewNopReceiverCreateSettings())
 	require.NoError(t, err)

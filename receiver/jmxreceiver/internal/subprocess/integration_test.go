@@ -21,8 +21,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -54,15 +54,8 @@ func TestSubprocessIntegration(t *testing.T) {
 
 func (suite *SubprocessIntegrationSuite) SetupSuite() {
 	t := suite.T()
-	scriptFile, err := ioutil.TempFile("", "subproc")
-	require.NoError(t, err)
-
-	_, err = scriptFile.Write([]byte(scriptContents))
-	require.NoError(t, err)
-	require.NoError(t, scriptFile.Chmod(0700))
-	scriptFile.Close()
-
-	suite.scriptPath = scriptFile.Name()
+	suite.scriptPath = filepath.Join(t.TempDir(), "subproc")
+	require.NoError(t, os.WriteFile(suite.scriptPath, []byte(scriptContents), 0700))
 }
 
 func (suite *SubprocessIntegrationSuite) TearDownSuite() {

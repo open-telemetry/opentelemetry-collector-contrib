@@ -27,6 +27,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -89,9 +90,9 @@ func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 	x509Cert, err := x509.CreateCertificate(rand.Reader, &cert, &cert, &priv.PublicKey, priv)
 	require.NoError(t, err)
 
-	caFile, err := ioutil.TempFile(os.TempDir(), "cert")
+	caFile, err := ioutil.TempFile(t.TempDir(), "cert")
 	require.NoError(t, err)
-	defer os.Remove(caFile.Name())
+	t.Cleanup(func() { require.NoError(t, caFile.Close()) })
 
 	err = pem.Encode(caFile, &pem.Block{
 		Type:  "CERTIFICATE",
@@ -137,18 +138,18 @@ func TestOIDCLoadIssuerCAFromPath(t *testing.T) {
 	x509Cert, err := x509.CreateCertificate(rand.Reader, &cert, &cert, &priv.PublicKey, priv)
 	require.NoError(t, err)
 
-	file, err := ioutil.TempFile(os.TempDir(), "cert")
+	caFile, err := ioutil.TempFile(t.TempDir(), "cert")
 	require.NoError(t, err)
-	defer os.Remove(file.Name())
+	t.Cleanup(func() { require.NoError(t, caFile.Close()) })
 
-	err = pem.Encode(file, &pem.Block{
+	err = pem.Encode(caFile, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: x509Cert,
 	})
 	require.NoError(t, err)
 
 	// test
-	loaded, err := getIssuerCACertFromPath(file.Name())
+	loaded, err := getIssuerCACertFromPath(caFile.Name())
 
 	// verify
 	assert.NoError(t, err)
@@ -157,12 +158,11 @@ func TestOIDCLoadIssuerCAFromPath(t *testing.T) {
 
 func TestOIDCFailedToLoadIssuerCAFromPathEmptyCert(t *testing.T) {
 	// prepare
-	file, err := ioutil.TempFile(os.TempDir(), "cert")
-	require.NoError(t, err)
-	defer os.Remove(file.Name())
+	caFileName := filepath.Join(t.TempDir(), "cert")
+	require.NoError(t, os.WriteFile(caFileName, []byte{}, 0600))
 
 	// test
-	loaded, err := getIssuerCACertFromPath(file.Name()) // the file exists, but the contents isn't a cert
+	loaded, err := getIssuerCACertFromPath(caFileName) // the file exists, but the contents isn't a cert
 
 	// verify
 	assert.Error(t, err)
@@ -180,14 +180,11 @@ func TestOIDCFailedToLoadIssuerCAFromPathMissingFile(t *testing.T) {
 
 func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	// prepare
-	file, err := ioutil.TempFile(os.TempDir(), "cert")
-	require.NoError(t, err)
-	defer os.Remove(file.Name())
-	_, err = file.Write([]byte("foobar"))
-	require.NoError(t, err)
+	caFileName := filepath.Join(t.TempDir(), "cert")
+	require.NoError(t, os.WriteFile(caFileName, []byte("foobar"), 0600))
 
 	config := &Config{
-		IssuerCAPath: file.Name(),
+		IssuerCAPath: caFileName,
 	}
 
 	// test

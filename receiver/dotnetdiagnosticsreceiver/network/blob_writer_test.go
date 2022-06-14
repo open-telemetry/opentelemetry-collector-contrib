@@ -30,7 +30,7 @@ import (
 
 func TestBlobWriter(t *testing.T) {
 	maxFiles := 4
-	dir := filepath.Join(os.TempDir(), "blobtest")
+	dir := filepath.Join(t.TempDir(), "blobtest")
 	w := NewBlobWriter(dir, maxFiles, zap.NewNop())
 	err := w.Init()
 	require.NoError(t, err)
@@ -47,7 +47,6 @@ func TestBlobWriter(t *testing.T) {
 	files, err := ioutil.ReadDir(dir)
 	require.NoError(t, err)
 	assert.Equal(t, maxFiles, len(files))
-	_ = os.RemoveAll(dir)
 }
 
 func fill(p []byte, size, offset int) {

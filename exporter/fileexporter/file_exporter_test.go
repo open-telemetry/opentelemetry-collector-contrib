@@ -17,7 +17,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,7 @@ import (
 )
 
 func TestFileTracesExporter(t *testing.T) {
-	fe := &fileExporter{path: tempFileName(t)}
+	fe := &fileExporter{path: filepath.Join(t.TempDir(), "temp.json")}
 	require.NotNil(t, fe)
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
@@ -59,7 +59,7 @@ func TestFileTracesExporterError(t *testing.T) {
 }
 
 func TestFileMetricsExporter(t *testing.T) {
-	fe := &fileExporter{path: tempFileName(t)}
+	fe := &fileExporter{path: filepath.Join(t.TempDir(), "temp.json")}
 	require.NotNil(t, fe)
 
 	md := testdata.GenerateMetricsTwoMetrics()
@@ -87,7 +87,7 @@ func TestFileMetricsExporterError(t *testing.T) {
 }
 
 func TestFileLogsExporter(t *testing.T) {
-	fe := &fileExporter{path: tempFileName(t)}
+	fe := &fileExporter{path: filepath.Join(t.TempDir(), "temp.json")}
 	require.NotNil(t, fe)
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -112,16 +112,6 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	// Cannot call Start since we inject directly the WriterCloser.
 	assert.Error(t, fe.ConsumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
-}
-
-// tempFileName provides a temporary file name for testing.
-func tempFileName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "*.json")
-	require.NoError(t, err)
-	require.NoError(t, tmpfile.Close())
-	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
-	return socket
 }
 
 // errorWriter is an io.Writer that will return an error all ways

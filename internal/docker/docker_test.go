@@ -12,22 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-// +build !windows
-
 // TODO review if tests should succeed on Windows
 // nolint:errcheck
 package docker
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -60,29 +56,9 @@ func TestInvalidExclude(t *testing.T) {
 	assert.Equal(t, "could not determine docker client excluded images: invalid glob item: unexpected end of input", err.Error())
 }
 
-func tmpSock(t *testing.T) (net.Listener, string) {
-	f, err := ioutil.TempFile(os.TempDir(), "testsock")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := f.Name()
-	os.Remove(addr)
-
-	listener, err := net.Listen("unix", addr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return listener, addr
-}
-
 func TestWatchingTimeouts(t *testing.T) {
-	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
-
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + "sock" + strconv.Itoa(rand.Int()),
 		Timeout:  50 * time.Millisecond,
 	}
 
@@ -118,12 +94,8 @@ func TestWatchingTimeouts(t *testing.T) {
 }
 
 func TestFetchingTimeouts(t *testing.T) {
-	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
-
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + "sock" + strconv.Itoa(rand.Int()),
 		Timeout:  50 * time.Millisecond,
 	}
 
@@ -169,12 +141,8 @@ func TestFetchingTimeouts(t *testing.T) {
 }
 
 func TestToStatsJSONErrorHandling(t *testing.T) {
-	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
-
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + "sock" + strconv.Itoa(rand.Int()),
 		Timeout:  50 * time.Millisecond,
 	}
 

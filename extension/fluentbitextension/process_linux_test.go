@@ -16,8 +16,8 @@ package fluentbitextension
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -42,23 +42,16 @@ func setup(t *testing.T, conf *Config) (*processManager, **process.Process, func
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
-	mockScriptFile, err := ioutil.TempFile("", "mocksubproc")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	cleanup := func() {
 		spew.Dump(logObserver.All())
-		os.Remove(mockScriptFile.Name())
 	}
 
-	_, err = mockScriptFile.Write([]byte(mockScript))
-	require.Nil(t, err)
+	mockScriptFile := filepath.Join(t.TempDir(), "mocksubproc")
+	require.NoError(t, os.WriteFile(mockScriptFile, []byte(mockScript), 0700))
 
-	err = mockScriptFile.Chmod(0700)
-	require.Nil(t, err)
-
-	require.NoError(t, mockScriptFile.Close())
-
-	conf.ExecutablePath = mockScriptFile.Name()
+	conf.ExecutablePath = mockScriptFile
 	pm := newProcessManager(conf, logger)
 
 	var mockProc *process.Process
@@ -68,7 +61,7 @@ func setup(t *testing.T, conf *Config) (*processManager, **process.Process, func
 		for _, proc := range procs {
 			if ppid, _ := proc.Ppid(); ppid == int32(selfPid) {
 				cmdline, _ := proc.Cmdline()
-				if strings.HasPrefix(cmdline, "/bin/sh "+mockScriptFile.Name()) {
+				if strings.HasPrefix(cmdline, "/bin/sh "+mockScriptFile) {
 					mockProc = proc
 					return true
 				}

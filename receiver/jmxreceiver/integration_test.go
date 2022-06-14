@@ -57,9 +57,7 @@ func TestJMXIntegration(t *testing.T) {
 func (suite *JMXIntegrationSuite) SetupSuite() {
 	suite.VersionToJar = make(map[string]string)
 	for version, url := range jmxJarReleases {
-		jarPath, err := downloadJMXMetricGathererJAR(url)
-		require.NoError(suite.T(), err)
-		suite.VersionToJar[version] = jarPath
+		suite.VersionToJar[version] = downloadJMXMetricGathererJAR(suite.T(), url)
 	}
 }
 
@@ -69,21 +67,21 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 	}
 }
 
-func downloadJMXMetricGathererJAR(url string) (string, error) {
+func downloadJMXMetricGathererJAR(t *testing.T, url string) string {
 	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
 
-	file, err := ioutil.TempFile("", "jmx-metrics.jar")
-	if err != nil {
-		return "", err
-	}
+	file, err := ioutil.TempFile(t.TempDir(), "jmx-metrics.jar")
+	require.NoError(t, err)
 
-	defer file.Close()
 	_, err = io.Copy(file, resp.Body)
-	return file.Name(), err
+	require.NoError(t, err)
+	require.NoError(t, file.Close())
+
+	return file.Name()
 }
 
 func cassandraContainer(t *testing.T) testcontainers.Container {

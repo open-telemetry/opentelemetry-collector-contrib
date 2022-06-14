@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,14 +60,13 @@ var (
 
 func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
-	f, err := ioutil.TempFile("", ".htpasswd")
+	f, err := ioutil.TempFile(t.TempDir(), ".htpasswd")
 	require.NoError(t, err)
-	defer os.Remove(f.Name())
-
 	for _, c := range credentials {
 		_, err = fmt.Fprintf(f, "%s:%s\n", c[0], c[1])
 		require.NoError(t, err)
 	}
+	require.NoError(t, f.Close())
 
 	ctx := context.Background()
 
@@ -160,16 +160,12 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 
 func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	t.Parallel()
-	f, err := ioutil.TempFile("", ".htpasswd")
-	require.NoError(t, err)
-	defer os.Remove(f.Name())
-
-	_, err = f.WriteString("username:fromfile")
-	require.NoError(t, err)
+	fileName := filepath.Join(t.TempDir(), ".htpasswd")
+	require.NoError(t, os.WriteFile(fileName, []byte("username:fromfile"), 0600))
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{
-			File:   f.Name(),
+			File:   fileName,
 			Inline: "username:frominline",
 		},
 	})

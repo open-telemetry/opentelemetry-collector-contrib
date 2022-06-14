@@ -44,5 +44,4 @@ func TestGetShutdown(t *testing.T) {
 	assert.Nil(t, k8sClient.pod)
 	assert.Nil(t, k8sClient.replicaSet)
 	assert.Equal(t, 0, len(optionsToK8sClient))
-	removeTempKubeConfig()
 }
