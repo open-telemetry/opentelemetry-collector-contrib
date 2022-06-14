@@ -50,11 +50,17 @@ func (p *nodeNameProviderImpl) namespace() string {
 
 func (p *nodeNameProviderImpl) NodeName(ctx context.Context) (string, error) {
 	namespace := p.namespace()
+
+	// NOTE: The pod name may not match the OS hostname, e.g. if it has been modified
+	// via the 'setHostnameAsFQDN' and 'hostname' fields in the pod spec.
+	// The query below will error out in that case. See:
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11033
 	podName, err := os.Hostname()
 	if err != nil {
-		return "", fmt.Errorf("could not fetch our hostname: %w", err)
+		return "", fmt.Errorf("could not fetch pod hostname: %w", err)
 	}
 
+	// NOTE: If changing this, check if the RBAC rules on the docs or examples need updates.
 	pod, err := p.client.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
