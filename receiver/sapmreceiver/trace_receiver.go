@@ -89,7 +89,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 	// pass the trace data to the next consumer
 	err = sr.nextConsumer.ConsumeTraces(ctx, td)
 	if err != nil {
-		err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
+		err = fmt.Errorf("error passing trace data to next consumer: %w", err)
 	}
 
 	sr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)

@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/rand"
-	"os"
 	"testing"
 	"time"
 
@@ -37,7 +36,7 @@ import (
 )
 
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter()
+	traceExporter := initializeTracesExporter(t)
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -49,11 +48,11 @@ func TestTraceExport(t *testing.T) {
 func TestXraySpanTraceResourceExtraction(t *testing.T) {
 	td := constructSpanData()
 	logger, _ := zap.NewProduction()
-	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 2, "2 spans have xay trace id")
+	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have xay trace id")
 }
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter()
+	traceExporter := initializeTracesExporter(t)
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -65,18 +64,18 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
 	td := constructXrayAndW3CSpanData()
 	logger, _ := zap.NewProduction()
-	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 2, "2 spans have xay trace id")
+	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have xay trace id")
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
 	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9255")
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
-	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 0, "0 spans have xray trace id")
+	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 0, "0 spans have xray trace id")
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter()
+	traceExporter := initializeTracesExporter(b)
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()
@@ -86,8 +85,8 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter() component.TracesExporter {
-	exporterConfig := generateConfig()
+func initializeTracesExporter(t testing.TB) component.TracesExporter {
+	exporterConfig := generateConfig(t)
 	mconn := new(awsutil.Conn)
 	traceExporter, err := newTracesExporter(exporterConfig, componenttest.NewNopExporterCreateSettings(), mconn)
 	if err != nil {
@@ -96,11 +95,11 @@ func initializeTracesExporter() component.TracesExporter {
 	return traceExporter
 }
 
-func generateConfig() config.Exporter {
-	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
-	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
-	os.Setenv("AWS_REGION", "us-east-1")
+func generateConfig(t testing.TB) config.Exporter {
+	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
+	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	t.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
 	exporterConfig := factory.CreateDefaultConfig()
 	exporterConfig.(*Config).Region = "us-east-1"

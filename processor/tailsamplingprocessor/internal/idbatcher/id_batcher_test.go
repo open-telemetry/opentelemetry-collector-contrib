@@ -41,10 +41,7 @@ func TestBatcherNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity, tt.batchChannelSize)
-			if err != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != nil {
 				got.Stop()
 			}
