@@ -100,13 +100,13 @@ type currentProvider struct {
 // 2. Cache
 // 3. EC2 instance metadata
 // 4. System
-func (c *currentProvider) hostname(ctx context.Context) (string, error) {
+func (c *currentProvider) hostname(ctx context.Context) string {
 	if c.configHostname != "" {
-		return c.configHostname, nil
+		return c.configHostname
 	}
 
 	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
-		return cacheVal.(string), nil
+		return cacheVal.(string)
 	}
 
 	ec2Info := c.ec2Provider.HostInfo()
@@ -130,14 +130,9 @@ func (c *currentProvider) hostname(ctx context.Context) (string, error) {
 
 	c.logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
 	cache.Cache.Set(cache.CanonicalHostnameKey, hostname, cache.NoExpiration)
-	return hostname, nil
+	return hostname
 }
 
 func (c *currentProvider) Source(ctx context.Context) (source.Source, error) {
-	hostname, err := c.hostname(ctx)
-	if err != nil {
-		return source.Source{}, err
-	}
-
-	return source.Source{Kind: source.HostnameKind, Identifier: hostname}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: c.hostname(ctx)}, nil
 }
