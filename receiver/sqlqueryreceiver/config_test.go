@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
@@ -32,10 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestParseConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-	factories.Receivers[typeStr] = NewFactory()
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "config.yaml"), testFactories(t))
 	require.NoError(t, err)
 	sqlCfg := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, "mydriver", sqlCfg.Driver)
@@ -53,9 +51,6 @@ func TestParseConfig(t *testing.T) {
 }
 
 func TestConfig_Validate_Invalid(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-	factories.Receivers[typeStr] = NewFactory()
 	cfgFiles := []string{
 		"config-invalid-datatype.yaml",
 		"config-invalid-valuetype.yaml",
@@ -69,10 +64,28 @@ func TestConfig_Validate_Invalid(t *testing.T) {
 		"config-invalid-missing-datasource.yaml",
 	}
 	for _, cfgFile := range cfgFiles {
-		_, err = servicetest.LoadConfigAndValidate(
+		_, err := servicetest.LoadConfigAndValidate(
 			path.Join("testdata", cfgFile),
-			factories,
+			testFactories(t),
 		)
 		require.Error(t, err)
 	}
+}
+
+func TestConfig_Validate_Multierr(t *testing.T) {
+	_, err := servicetest.LoadConfigAndValidate(
+		path.Join("testdata", "config-invalid-multierr.yaml"),
+		testFactories(t),
+	)
+	assert.ErrorContains(t, err, "invalid metric config with metric_name 'my.metric'")
+	assert.ErrorContains(t, err, "metric config has unsupported value_type: 'xint'")
+	assert.ErrorContains(t, err, "metric config has unsupported data_type: 'xgauge'")
+	assert.ErrorContains(t, err, "metric config has unsupported aggregation: 'xcumulative'")
+}
+
+func testFactories(t *testing.T) component.Factories {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factories.Receivers[typeStr] = NewFactory()
+	return factories
 }

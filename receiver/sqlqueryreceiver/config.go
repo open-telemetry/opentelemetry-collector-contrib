@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/multierr"
 )
 
 type Config struct {
@@ -54,18 +55,19 @@ type Query struct {
 }
 
 func (q Query) Validate() error {
+	var errs error
 	if q.SQL == "" {
-		return errors.New("'query.sql' cannot be empty")
+		errs = multierr.Append(errs, errors.New("'query.sql' cannot be empty"))
 	}
 	if len(q.Metrics) == 0 {
-		return errors.New("'query.metrics' cannot be empty")
+		errs = multierr.Append(errs, errors.New("'query.metrics' cannot be empty"))
 	}
 	for _, metric := range q.Metrics {
 		if err := metric.Validate(); err != nil {
-			return err
+			errs = multierr.Append(errs, err)
 		}
 	}
-	return nil
+	return errs
 }
 
 type MetricCfg struct {
@@ -81,22 +83,26 @@ type MetricCfg struct {
 }
 
 func (c MetricCfg) Validate() error {
+	var errs error
 	if c.MetricName == "" {
-		return errors.New("'metric.metric_name' cannot be empty")
+		errs = multierr.Append(errs, errors.New("metric config: 'metric_name' cannot be empty"))
 	}
 	if c.ValueColumn == "" {
-		return errors.New("'metric.value_column' cannot be empty")
+		errs = multierr.Append(errs, errors.New("metric config: 'value_column' cannot be empty"))
 	}
 	if err := c.ValueType.Validate(); err != nil {
-		return err
+		errs = multierr.Append(errs, err)
 	}
 	if err := c.DataType.Validate(); err != nil {
-		return err
+		errs = multierr.Append(errs, err)
 	}
 	if err := c.Aggregation.Validate(); err != nil {
-		return err
+		errs = multierr.Append(errs, err)
 	}
-	return nil
+	if errs != nil && c.MetricName != "" {
+		errs = multierr.Append(fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName), errs)
+	}
+	return errs
 }
 
 type MetricDataType string
@@ -112,7 +118,7 @@ func (t MetricDataType) Validate() error {
 	case MetricDataTypeUnspecified, MetricDataTypeGauge, MetricDataTypeSum:
 		return nil
 	}
-	return fmt.Errorf("metric has unsupported 'data_type' value: '%s'", t)
+	return fmt.Errorf("metric config has unsupported data_type: '%s'", t)
 }
 
 type MetricValueType string
@@ -128,7 +134,7 @@ func (t MetricValueType) Validate() error {
 	case MetricValueTypeUnspecified, MetricValueTypeInt, MetricValueTypeDouble:
 		return nil
 	}
-	return fmt.Errorf("metric has unsupported 'value_type' value: '%s'", t)
+	return fmt.Errorf("metric config has unsupported value_type: '%s'", t)
 }
 
 type MetricAggregation string
@@ -144,7 +150,7 @@ func (a MetricAggregation) Validate() error {
 	case MetricAggregationUnspecified, MetricAggregationCumulative, MetricAggregationDelta:
 		return nil
 	}
-	return fmt.Errorf("metric has unsupported 'aggregation' value: '%s'", a)
+	return fmt.Errorf("metric config has unsupported aggregation: '%s'", a)
 }
 
 func createDefaultConfig() config.Receiver {

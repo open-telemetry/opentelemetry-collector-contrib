@@ -55,7 +55,7 @@ func (cl dbSQLClient) metricRows(ctx context.Context) ([]metricRow, error) {
 		return nil, err
 	}
 	var out []metricRow
-	rr := reusableRow{
+	row := reusableRow{
 		attrs: map[string]func() string{},
 	}
 	types, err := sqlRows.ColumnTypes()
@@ -65,7 +65,7 @@ func (cl dbSQLClient) metricRows(ctx context.Context) ([]metricRow, error) {
 	for _, sqlType := range types {
 		colName := sqlType.Name()
 		var v interface{}
-		rr.attrs[colName] = func() string {
+		row.attrs[colName] = func() string {
 			format := "%v"
 			if reflect.TypeOf(v).Kind() == reflect.Slice {
 				// The Postgres driver returns a []uint8 (a string) for decimal and numeric types,
@@ -75,14 +75,14 @@ func (cl dbSQLClient) metricRows(ctx context.Context) ([]metricRow, error) {
 			}
 			return fmt.Sprintf(format, v)
 		}
-		rr.scanDest = append(rr.scanDest, &v)
+		row.scanDest = append(row.scanDest, &v)
 	}
 	for sqlRows.Next() {
-		err = sqlRows.Scan(rr.scanDest...)
+		err = sqlRows.Scan(row.scanDest...)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, rr.toMetricRow())
+		out = append(out, row.toMetricRow())
 	}
 	return out, nil
 }
@@ -92,9 +92,9 @@ type reusableRow struct {
 	scanDest []interface{}
 }
 
-func (r reusableRow) toMetricRow() metricRow {
+func (row reusableRow) toMetricRow() metricRow {
 	out := metricRow{}
-	for k, f := range r.attrs {
+	for k, f := range row.attrs {
 		out[k] = f()
 	}
 	return out

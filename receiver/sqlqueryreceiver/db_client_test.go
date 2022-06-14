@@ -19,9 +19,13 @@ import "context"
 type fakeDBClient struct {
 	requestCounter int
 	responses      [][]metricRow
+	err            error
 }
 
 func (c *fakeDBClient) metricRows(context.Context) ([]metricRow, error) {
+	if c.err != nil {
+		return nil, c.err
+	}
 	idx := c.requestCounter
 	c.requestCounter++
 	return c.responses[idx], nil

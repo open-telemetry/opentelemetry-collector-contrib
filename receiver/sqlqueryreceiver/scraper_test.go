@@ -16,12 +16,80 @@ package sqlqueryreceiver
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+func TestScraper_ErrorOnStart(t *testing.T) {
+	scrpr := scraper{
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, errors.New("oops")
+		},
+	}
+	err := scrpr.Start(context.Background(), componenttest.NewNopHost())
+	require.Error(t, err)
+}
+
+func TestScraper_ClientErrorOnScrape(t *testing.T) {
+	client := &fakeDBClient{
+		err: errors.New("oops"),
+	}
+	scrpr := scraper{
+		client: client,
+	}
+	_, err := scrpr.Scrape(context.Background())
+	require.Error(t, err)
+}
+
+func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
+	client := &fakeDBClient{
+		responses: [][]metricRow{
+			{{"myfloat": "blah"}},
+		},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:  "my.float",
+				ValueColumn: "myfloat",
+				Monotonic:   true,
+				ValueType:   MetricValueTypeDouble,
+				DataType:    MetricDataTypeGauge,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	require.Error(t, err)
+}
+
+func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
+	client := &fakeDBClient{
+		responses: [][]metricRow{
+			{{"myint": "blah"}},
+		},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:  "my.int",
+				ValueColumn: "int",
+				Monotonic:   true,
+				ValueType:   MetricValueTypeInt,
+				DataType:    MetricDataTypeGauge,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	require.Error(t, err)
+}
 
 func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 	scrpr := scraper{

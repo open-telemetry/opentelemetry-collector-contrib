@@ -18,32 +18,45 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 func TestCreateReceiver(t *testing.T) {
-	f := createReceiverFunc(fakeDBConnect, mkFakeClient)
+	createReceiver := createReceiverFunc(fakeDBConnect, mkFakeClient)
 	ctx := context.Background()
-	receiver, err := f(
+	receiver, err := createReceiver(
 		ctx,
 		component.ReceiverCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
 				TracerProvider: trace.NewNoopTracerProvider(),
 			},
 		},
-		createDefaultConfig(),
+		&Config{
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: 10 * time.Second,
+			},
+			Driver:     "mydriver",
+			DataSource: "my-datasource",
+			Queries: []Query{{
+				SQL: "select * from foo",
+				Metrics: []MetricCfg{{
+					MetricName:  "my-metric",
+					ValueColumn: "my-column",
+				}},
+			}},
+		},
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	err = receiver.Start(ctx, componenttest.NewNopHost())
-	require.NoError(t, err)
-	err = receiver.Shutdown(ctx)
 	require.NoError(t, err)
 }
 

@@ -19,6 +19,7 @@ package sqlqueryreceiver
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -59,7 +60,7 @@ func TestPostgresIntegration(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	config.Driver = "postgres"
-	config.DataSource = "host=localhost port=" + externalPort + " user=otel password=otel sslmode=disable"
+	config.DataSource = fmt.Sprintf("host=localhost port=%s user=otel password=otel sslmode=disable", externalPort)
 	config.Queries = []Query{
 		{
 			SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",

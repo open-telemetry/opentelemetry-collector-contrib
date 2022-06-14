@@ -25,13 +25,13 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
-	dps := setMetricFields(cfg, dest)
-	dp := dps.AppendEmpty()
-	err := setDataPointValue(cfg, row[cfg.ValueColumn], dp)
+	dataPointSlice := setMetricFields(cfg, dest)
+	dataPoint := dataPointSlice.AppendEmpty()
+	err := setDataPointValue(cfg, row[cfg.ValueColumn], dataPoint)
 	if err != nil {
 		return fmt.Errorf("rowToMetric: %w", err)
 	}
-	attrs := dp.Attributes()
+	attrs := dataPoint.Attributes()
 	for _, columnName := range cfg.AttributeColumns {
 		if attrVal, found := row[columnName]; found {
 			attrs.InsertString(columnName, attrVal)
