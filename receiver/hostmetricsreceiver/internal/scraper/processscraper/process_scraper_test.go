@@ -65,7 +65,9 @@ func TestScrape(t *testing.T) {
 	if err != nil {
 		require.True(t, scrapererror.IsPartialScrapeError(err))
 		noProcessesScraped := md.ResourceMetrics().Len()
-		noProcessesErrored := err.(scrapererror.PartialScrapeError).Failed
+		var scraperErr scrapererror.PartialScrapeError
+		require.ErrorAs(t, err, &scraperErr)
+		noProcessesErrored := scraperErr.Failed
 		require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
 		require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
 	}
@@ -463,7 +465,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			assert.True(t, isPartial)
 			if isPartial {
 				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
-				assert.Equal(t, expectedFailures, err.(scrapererror.PartialScrapeError).Failed)
+				var scraperErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &scraperErr)
+				assert.Equal(t, expectedFailures, scraperErr.Failed)
 			}
 		})
 	}

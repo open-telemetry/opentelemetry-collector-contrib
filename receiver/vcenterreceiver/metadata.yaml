@@ -34,11 +34,9 @@ attributes:
       - virtual
       - physical
   host_effective:
+    type: bool
     value: effective
     description: Whether the host is effective in the vCenter cluster.
-    enum:
-      - "true"
-      - "false"
   disk_direction:
     value: direction
     description: The direction of disk latency.
