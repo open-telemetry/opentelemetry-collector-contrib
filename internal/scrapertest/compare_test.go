@@ -487,7 +487,7 @@ func TestCompareMetrics(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", tc.name, "expected.4_0.json"))
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", tc.name, "expected.json"))
 			require.NoError(t, err)
 
 			actual, err := golden.ReadMetrics(filepath.Join("testdata", tc.name, "actual.json"))

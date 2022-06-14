@@ -39,7 +39,7 @@ func TestWriteMetrics(t *testing.T) {
 	actualBytes, err := ioutil.ReadFile(actualFile)
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "roundtrip", "expected.4_0.json")
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
 	expectedBytes, err := ioutil.ReadFile(expectedFile)
 	require.NoError(t, err)
 
@@ -56,7 +56,7 @@ func TestReadMetrics(t *testing.T) {
 	expectedMetrics := pmetric.NewMetrics()
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
-	expectedFile := filepath.Join("testdata", "roundtrip", "expected.4_0.json")
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
 	actualMetrics, err := ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.Equal(t, expectedMetrics, actualMetrics)

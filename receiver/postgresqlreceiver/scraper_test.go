@@ -52,7 +52,7 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.4_0.json")
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -69,7 +69,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.4_0.json")
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected.4_0.json")
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
