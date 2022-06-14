@@ -161,8 +161,7 @@ func TestEncodeSpanStatus(t *testing.T) {
 			span.Status().SetCode(statusCode)
 		}
 
-		err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
-		require.NoError(t, err)
+		require.NoError(t, elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w))
 		sendStream(t, &w, &recorder)
 		payloads := recorder.Payloads()
 		require.Len(t, payloads.Transactions, 1)
@@ -520,10 +519,8 @@ func transactionWithAttributes(t *testing.T, attrs map[string]interface{}) model
 	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 
 	resource := pcommon.NewResource()
-	err := elastic.EncodeResourceMetadata(resource, &w)
-	assert.NoError(t, err)
-	err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
-	assert.NoError(t, err)
+	assert.NoError(t, elastic.EncodeResourceMetadata(resource, &w))
+	assert.NoError(t, elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w))
 	sendStream(t, &w, &recorder)
 
 	payloads := recorder.Payloads()
@@ -540,10 +537,8 @@ func spanWithAttributes(t *testing.T, attrs map[string]interface{}) model.Span {
 	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 
 	resource := pcommon.NewResource()
-	err := elastic.EncodeResourceMetadata(resource, &w)
-	assert.NoError(t, err)
-	err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
-	assert.NoError(t, err)
+	assert.NoError(t, elastic.EncodeResourceMetadata(resource, &w))
+	assert.NoError(t, elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w))
 	sendStream(t, &w, &recorder)
 
 	payloads := recorder.Payloads()
