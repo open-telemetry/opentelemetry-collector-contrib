@@ -150,6 +150,7 @@ metrics:
       monotonic: true
     attributes: [device]
 
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithProtocolAttribute feature gate is enabled
   system.network.connections:
     enabled: true
     description: The number of connections.
@@ -159,6 +160,27 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: [protocol, state]
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute feature gate is enabled
+  system.network.tcp.connections:
+    enabled: true
+    description: The number of TCP connections.
+    unit: "{connections}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: [state]
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute feature gate is enabled
+  system.network.udp.connections:
+    enabled: true
+    description: The number of UDP connections.
+    unit: "{connections}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
 
   system.network.conntrack.count:
     enabled: false

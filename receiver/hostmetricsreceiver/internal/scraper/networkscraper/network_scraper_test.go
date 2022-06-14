@@ -47,6 +47,8 @@ func TestScrape(t *testing.T) {
 		expectedErrCount                       int
 		expectMetricsWithDirectionAttribute    bool
 		expectMetricsWithoutDirectionAttribute bool
+		expectMetricsWithProtocolAttribute     bool
+		expectMetricsWithoutProtocolAttribute  bool
 		mutateScraper                          func(*scraper)
 	}
 
@@ -58,6 +60,7 @@ func TestScrape(t *testing.T) {
 			},
 			expectNetworkMetrics:                true,
 			expectMetricsWithDirectionAttribute: true,
+			expectMetricsWithProtocolAttribute:  true,
 		},
 		{
 			name: "Standard with direction removed",
@@ -67,9 +70,24 @@ func TestScrape(t *testing.T) {
 			expectNetworkMetrics:                   true,
 			expectMetricsWithDirectionAttribute:    false,
 			expectMetricsWithoutDirectionAttribute: true,
+			expectMetricsWithProtocolAttribute:     true,
 			mutateScraper: func(s *scraper) {
 				s.emitMetricsWithDirectionAttribute = false
 				s.emitMetricsWithoutDirectionAttribute = true
+			},
+		},
+		{
+			name: "Standard with protocol removed",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
+			expectNetworkMetrics:                  true,
+			expectMetricsWithProtocolAttribute:    false,
+			expectMetricsWithoutProtocolAttribute: true,
+			expectMetricsWithDirectionAttribute:   true,
+			mutateScraper: func(s *scraper) {
+				s.emitMetricsWithProtocolAttribute = false
+				s.emitMetricsWithoutProtocolAttribute = true
 			},
 		},
 		{
@@ -80,6 +98,7 @@ func TestScrape(t *testing.T) {
 			bootTimeFunc:                        func() (uint64, error) { return 100, nil },
 			expectNetworkMetrics:                true,
 			expectMetricsWithDirectionAttribute: true,
+			expectMetricsWithProtocolAttribute:  true,
 			expectedStartTime:                   100 * 1e9,
 		},
 		{
@@ -88,7 +107,8 @@ func TestScrape(t *testing.T) {
 				Metrics: metadata.DefaultMetricsSettings(),
 				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
-			expectNetworkMetrics: false,
+			expectNetworkMetrics:               false,
+			expectMetricsWithProtocolAttribute: true,
 		},
 		{
 			name: "Invalid Include Filter",
@@ -179,45 +199,51 @@ func TestScrape(t *testing.T) {
 				if test.expectMetricsWithDirectionAttribute {
 					expectedMetricCount += 4
 				}
+				if test.expectMetricsWithoutProtocolAttribute {
+					expectedMetricCount += 1
+				}
 			}
 			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			idx := 0
-			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
-			if test.expectNetworkMetrics {
-				if test.expectMetricsWithoutDirectionAttribute {
-					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.dropped.transmit",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.errors.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.errors.transmit",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+5), "system.network.io.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+6), "system.network.io.transmit",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+7), "system.network.packets.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+8), "system.network.packets.transmit",
-						test.expectedStartTime, true)
+			// these idx are used to compare timestamps between network metrics.
+			// the value of the index was previously hardcoded
+			startIdx, endIdx := 0, 0
+			for idx := 0; idx < metrics.Len(); idx++ {
+				metric := metrics.At(idx)
+				switch metric.Name() {
+				case "system.network.connections":
+					assert.True(t, test.expectMetricsWithProtocolAttribute)
+					assertTCPConnectionsMetricValid(t, metric, metric.Name(), false, true)
+				case "system.network.tcp.connections":
+					assert.True(t, test.expectMetricsWithoutProtocolAttribute)
+					assertTCPConnectionsMetricValid(t, metric, metric.Name(), true, true)
+				case "system.network.udp.connections":
+					assert.True(t, test.expectMetricsWithoutProtocolAttribute)
+					assertNetworkConnectionsMetricValid(t, metric, metric.Name(), true, false)
+				case "system.network.dropped", "system.network.errors", "system.network.io", "system.network.packets":
+					if startIdx == 0 {
+						startIdx = idx
+					}
+					endIdx = idx
+					assert.True(t, test.expectMetricsWithDirectionAttribute)
+					assertNetworkIOMetricValid(t, metric, metric.Name(), test.expectedStartTime, false)
+				case "system.network.dropped.receive", "system.network.dropped.transmit", "system.network.errors.receive",
+					"system.network.errors.transmit", "system.network.io.receive", "system.network.io.transmit",
+					"system.network.packets.receive", "system.network.packets.transmit":
+					if startIdx == 0 {
+						startIdx = idx
+					}
+					endIdx = idx
+					assert.True(t, test.expectMetricsWithoutDirectionAttribute)
+					assertNetworkIOMetricValid(t, metric, metric.Name(), test.expectedStartTime, true)
+				default:
+					assert.Fail(t, "unexpected metric", map[string]string{"metric name": metric.Name()})
 				}
-				if test.expectMetricsWithDirectionAttribute {
-					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped",
-						test.expectedStartTime, false)
-					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime,
-						false)
-					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime, false)
-					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets",
-						test.expectedStartTime, false)
-				}
-				internal.AssertSameTimeStampForMetrics(t, metrics, 1, 5)
-				idx += 4
 			}
-
-			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
+			if test.expectNetworkMetrics {
+				internal.AssertSameTimeStampForMetrics(t, metrics, startIdx, endIdx)
+			}
 		})
 	}
 }
@@ -238,10 +264,19 @@ func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedNam
 	}
 }
 
-func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
-	assert.Equal(t, metric.Name(), "system.network.connections")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
-		pcommon.NewValueString(metadata.AttributeProtocolTcp.String()))
-	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
+func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric, expectedName string, expectProtocolRemoved bool, expectState bool) {
+	assert.Equal(t, metric.Name(), expectedName)
+	if expectState {
+		internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
+	}
+
+	if !expectProtocolRemoved {
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
+			pcommon.NewValueString(metadata.AttributeProtocolTcp.String()))
+	}
+}
+
+func assertTCPConnectionsMetricValid(t *testing.T, metric pmetric.Metric, expectedName string, expectProtocolRemoved bool, expectState bool) {
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
+	assertNetworkConnectionsMetricValid(t, metric, expectedName, expectProtocolRemoved, expectState)
 }

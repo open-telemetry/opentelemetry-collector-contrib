@@ -33,6 +33,8 @@ type MetricsSettings struct {
 	SystemNetworkPackets         MetricSettings `mapstructure:"system.network.packets"`
 	SystemNetworkPacketsReceive  MetricSettings `mapstructure:"system.network.packets.receive"`
 	SystemNetworkPacketsTransmit MetricSettings `mapstructure:"system.network.packets.transmit"`
+	SystemNetworkTCPConnections  MetricSettings `mapstructure:"system.network.tcp.connections"`
+	SystemNetworkUDPConnections  MetricSettings `mapstructure:"system.network.udp.connections"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -80,6 +82,12 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SystemNetworkPacketsTransmit: MetricSettings{
+			Enabled: true,
+		},
+		SystemNetworkTCPConnections: MetricSettings{
+			Enabled: true,
+		},
+		SystemNetworkUDPConnections: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -929,6 +937,110 @@ func newMetricSystemNetworkPacketsTransmit(settings MetricSettings) metricSystem
 	return m
 }
 
+type metricSystemNetworkTCPConnections struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.network.tcp.connections metric with initial data.
+func (m *metricSystemNetworkTCPConnections) init() {
+	m.data.SetName("system.network.tcp.connections")
+	m.data.SetDescription("The number of TCP connections.")
+	m.data.SetUnit("{connections}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemNetworkTCPConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("state", stateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNetworkTCPConnections) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNetworkTCPConnections) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNetworkTCPConnections(settings MetricSettings) metricSystemNetworkTCPConnections {
+	m := metricSystemNetworkTCPConnections{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemNetworkUDPConnections struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.network.udp.connections metric with initial data.
+func (m *metricSystemNetworkUDPConnections) init() {
+	m.data.SetName("system.network.udp.connections")
+	m.data.SetDescription("The number of UDP connections.")
+	m.data.SetUnit("{connections}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricSystemNetworkUDPConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNetworkUDPConnections) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNetworkUDPConnections) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNetworkUDPConnections(settings MetricSettings) metricSystemNetworkUDPConnections {
+	m := metricSystemNetworkUDPConnections{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -952,6 +1064,8 @@ type MetricsBuilder struct {
 	metricSystemNetworkPackets         metricSystemNetworkPackets
 	metricSystemNetworkPacketsReceive  metricSystemNetworkPacketsReceive
 	metricSystemNetworkPacketsTransmit metricSystemNetworkPacketsTransmit
+	metricSystemNetworkTCPConnections  metricSystemNetworkTCPConnections
+	metricSystemNetworkUDPConnections  metricSystemNetworkUDPConnections
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -984,6 +1098,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricSystemNetworkPackets:         newMetricSystemNetworkPackets(settings.SystemNetworkPackets),
 		metricSystemNetworkPacketsReceive:  newMetricSystemNetworkPacketsReceive(settings.SystemNetworkPacketsReceive),
 		metricSystemNetworkPacketsTransmit: newMetricSystemNetworkPacketsTransmit(settings.SystemNetworkPacketsTransmit),
+		metricSystemNetworkTCPConnections:  newMetricSystemNetworkTCPConnections(settings.SystemNetworkTCPConnections),
+		metricSystemNetworkUDPConnections:  newMetricSystemNetworkUDPConnections(settings.SystemNetworkUDPConnections),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1052,6 +1168,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemNetworkPackets.emit(ils.Metrics())
 	mb.metricSystemNetworkPacketsReceive.emit(ils.Metrics())
 	mb.metricSystemNetworkPacketsTransmit.emit(ils.Metrics())
+	mb.metricSystemNetworkTCPConnections.emit(ils.Metrics())
+	mb.metricSystemNetworkUDPConnections.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -1144,6 +1262,16 @@ func (mb *MetricsBuilder) RecordSystemNetworkPacketsReceiveDataPoint(ts pcommon.
 // RecordSystemNetworkPacketsTransmitDataPoint adds a data point to system.network.packets.transmit metric.
 func (mb *MetricsBuilder) RecordSystemNetworkPacketsTransmitDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
 	mb.metricSystemNetworkPacketsTransmit.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+}
+
+// RecordSystemNetworkTCPConnectionsDataPoint adds a data point to system.network.tcp.connections metric.
+func (mb *MetricsBuilder) RecordSystemNetworkTCPConnectionsDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue string) {
+	mb.metricSystemNetworkTCPConnections.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+}
+
+// RecordSystemNetworkUDPConnectionsDataPoint adds a data point to system.network.udp.connections metric.
+func (mb *MetricsBuilder) RecordSystemNetworkUDPConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemNetworkUDPConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

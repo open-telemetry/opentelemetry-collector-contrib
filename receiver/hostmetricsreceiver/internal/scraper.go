@@ -25,6 +25,8 @@ import (
 const (
 	EmitMetricsWithDirectionAttributeFeatureGateID    = "receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute"
 	EmitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute"
+	EmitMetricsWithProtocolAttributeFeatureGateID     = "receiver.hostmetricsreceiver.emitMetricsWithProtocolAttribute"
+	EmitMetricsWithoutProtocolAttributeFeatureGateID  = "receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute"
 )
 
 var (
@@ -47,11 +49,32 @@ var (
 			"attribute. For more details, see: " +
 			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md#feature-gate-configurations",
 	}
+	emitMetricsWithProtocolAttributeFeatureGate = featuregate.Gate{
+		ID:      EmitMetricsWithProtocolAttributeFeatureGateID,
+		Enabled: true,
+		Description: "Some process host metrics reported are transitioning from being reported with a protocol " +
+			"attribute to being reported with the protocol included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the protocol " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md#feature-gate-configurations",
+	}
+
+	emitMetricsWithoutProtocolAttributeFeatureGate = featuregate.Gate{
+		ID:      EmitMetricsWithoutProtocolAttributeFeatureGateID,
+		Enabled: false,
+		Description: "Some process host metrics reported are transitioning from being reported with a protcol " +
+			"attribute to being reported with the protocol included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the protocol " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md#feature-gate-configurations",
+	}
 )
 
 func init() {
 	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
 	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithProtocolAttributeFeatureGate)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithoutProtocolAttributeFeatureGate)
 }
 
 // ScraperFactory can create a MetricScraper.

@@ -53,6 +53,8 @@ type scraper struct {
 	conntrack                            func() ([]net.FilterStat, error)
 	emitMetricsWithDirectionAttribute    bool
 	emitMetricsWithoutDirectionAttribute bool
+	emitMetricsWithProtocolAttribute     bool
+	emitMetricsWithoutProtocolAttribute  bool
 }
 
 // newNetworkScraper creates a set of Network related metrics
@@ -66,6 +68,8 @@ func newNetworkScraper(_ context.Context, settings component.ReceiverCreateSetti
 		conntrack:                            net.FilterCounters,
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+		emitMetricsWithProtocolAttribute:     featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithProtocolAttributeFeatureGateID),
+		emitMetricsWithoutProtocolAttribute:  featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutProtocolAttributeFeatureGateID),
 	}
 
 	var err error
@@ -202,8 +206,16 @@ func (s *scraper) recordNetworkConnectionsMetrics() error {
 	}
 
 	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
+	s.recordNetworkTCPConnectionsMetric(now, tcpConnectionStatusCounts)
 
-	s.recordNetworkConnectionsMetric(now, tcpConnectionStatusCounts)
+	if s.emitMetricsWithoutProtocolAttribute {
+		connections, err = s.connections("udp")
+		if err != nil {
+			return fmt.Errorf("failed to read UDP connections: %w", err)
+		}
+
+		s.mb.RecordSystemNetworkUDPConnectionsDataPoint(now, int64(len(connections)))
+	}
 	return nil
 }
 
@@ -219,9 +231,14 @@ func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]i
 	return tcpStatuses
 }
 
-func (s *scraper) recordNetworkConnectionsMetric(now pcommon.Timestamp, connectionStateCounts map[string]int64) {
+func (s *scraper) recordNetworkTCPConnectionsMetric(now pcommon.Timestamp, connectionStateCounts map[string]int64) {
 	for connectionState, count := range connectionStateCounts {
-		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocolTcp, connectionState)
+		if s.emitMetricsWithProtocolAttribute {
+			s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocolTcp, connectionState)
+		}
+		if s.emitMetricsWithoutProtocolAttribute {
+			s.mb.RecordSystemNetworkTCPConnectionsDataPoint(now, count, connectionState)
+		}
 	}
 }
 

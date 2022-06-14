@@ -23,6 +23,8 @@ These are the metrics available for this scraper.
 | **system.network.packets** | The number of packets transferred. (Deprecated) | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
 | **system.network.packets.receive** | The number of packets received. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
 | **system.network.packets.transmit** | The number of packets transmitted. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.tcp.connections** | The number of TCP connections. | {connections} | Sum(Int) | <ul> <li>state</li> </ul> |
+| **system.network.udp.connections** | The number of UDP connections. | {connections} | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:

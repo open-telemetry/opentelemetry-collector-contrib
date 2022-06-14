@@ -179,8 +179,7 @@ The following feature gates control the transition process:
 - **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without
   `direction` attribute are emitted by the receiver.
 - **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with 
-  `direction`
-  attribute are emitted by the receiver.
+  `direction` attribute are emitted by the receiver.
 
 ##### Transition schedule:
 
@@ -241,6 +240,64 @@ receivers:
 
 - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815
 - https://github.com/open-telemetry/opentelemetry-specification/pull/2617
+
+#### Transition from metrics with "protocol" attribute
+
+Some host metrics reported are transitioning from being reported with a `protocol` attribute to being reported with the
+protocol included in the metric name to adhere to the OpenTelemetry specification
+(https://github.com/open-telemetry/opentelemetry-specification/pull/2675):
+
+- `network` scraper metrics:
+  - `system.network.connections` will become:
+    - `system.network.tcp.connections`
+    - `system.network.udp.connections`
+
+The following feature gates control the transition process:
+
+- **receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute**: controls if the new metrics without
+  `protocol` attribute are emitted by the receiver.
+- **receiver.hostmetricsreceiver.emitMetricsWithProtocolAttribute**: controls if the deprecated metrics with 
+  `protocol` attribute are emitted by the receiver.
+
+##### Transition schedule:
+
+1. v0.58.0, August 2022:
+
+- The new metrics are available for network scraper, but disabled by default, they can be enabled with the feature gates.
+- The old metrics with `protocol` attribute are deprecated with a warning.
+- `receiver.hostmetricsreceiver.emitMetricsWithProtocolAttribute` is enabled by default.
+- `receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute` is disabled by default.
+
+2. v0.60.0, September 2022:
+
+- The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
+- `receiver.hostmetricsreceiver.emitMetricsWithProtocolAttribute` is disabled by default.
+- `receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute` is enabled by default.
+
+3. v0.62.0, October 2022:
+
+- The feature gates are removed.
+- The new metrics without `protocol` attribute are always emitted.
+- The deprecated metrics with `protocol` attribute are no longer available.
+
+##### Usage:
+
+To enable the new metrics without `protocol` attribute and disable the deprecated metrics, run OTel Collector with the 
+following arguments:
+
+```sh
+otelcol --feature-gates=-receiver.hostmetricsreceiver.emitMetricsWithProtocolAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute
+```
+
+It's also possible to emit both the deprecated and the new metrics:
+
+```sh
+otelcol --feature-gates=+receiver.hostmetricsreceiver.emitMetricsWithProtocolAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutProtocolAttribute
+```
+
+##### More information:
+
+- https://github.com/open-telemetry/opentelemetry-specification/pull/2675
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
