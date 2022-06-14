@@ -25,7 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -67,9 +67,9 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 	case "double":
 		mvt.ValueType = pcommon.ValueTypeDouble
 	case "bool":
-		mvt.ValueType = pcommon.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeBool
 	case "bytes":
-		mvt.ValueType = pcommon.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeBytes
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}
@@ -172,12 +172,12 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := filemapprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
 
-	m, err := cp.AsMap()
+	m, err := cp.AsConf()
 	if err != nil {
 		return metadata{}, err
 	}
@@ -197,7 +197,7 @@ func loadMetadata(filePath string) (metadata, error) {
 func validateMetadata(out metadata) error {
 	v := validator.New()
 	if err := v.RegisterValidation("notblank", validators.NotBlank); err != nil {
-		return fmt.Errorf("failed registering notblank validator: %v", err)
+		return fmt.Errorf("failed registering notblank validator: %w", err)
 	}
 
 	// Provides better validation error messages.
@@ -210,7 +210,7 @@ func validateMetadata(out metadata) error {
 	}
 
 	if err := en_translations.RegisterDefaultTranslations(v, tr); err != nil {
-		return fmt.Errorf("failed registering translations: %v", err)
+		return fmt.Errorf("failed registering translations: %w", err)
 	}
 
 	if err := v.RegisterTranslation("nosuchattribute", tr, func(ut ut.Translator) error {
@@ -219,13 +219,14 @@ func validateMetadata(out metadata) error {
 		t, _ := ut.T("nosuchattribute", fe.Field())
 		return t
 	}); err != nil {
-		return fmt.Errorf("failed registering nosuchattribute: %v", err)
+		return fmt.Errorf("failed registering nosuchattribute: %w", err)
 	}
 
 	v.RegisterStructValidation(metricValidation, metric{})
 
 	if err := v.Struct(&out); err != nil {
-		if verr, ok := err.(validator.ValidationErrors); ok {
+		var verr validator.ValidationErrors
+		if errors.As(err, &verr) {
 			m := verr.Translate(tr)
 			buf := strings.Builder{}
 			buf.WriteString("error validating struct:\n")
@@ -234,7 +235,7 @@ func validateMetadata(out metadata) error {
 			}
 			return errors.New(buf.String())
 		}
-		return fmt.Errorf("unknown validation error: %v", err)
+		return fmt.Errorf("unknown validation error: %w", err)
 	}
 
 	// Set metric data interface.

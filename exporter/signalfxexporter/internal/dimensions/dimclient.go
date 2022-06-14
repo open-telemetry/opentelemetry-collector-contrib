@@ -274,7 +274,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 func (dc *DimensionClient) makeDimURL(key, value string) (*url.URL, error) {
 	url, err := dc.APIURL.Parse(fmt.Sprintf("/v2/dimension/%s/%s", url.PathEscape(key), url.PathEscape(value)))
 	if err != nil {
-		return nil, fmt.Errorf("could not construct dimension property PATCH URL with %s / %s: %v", key, value, err)
+		return nil, fmt.Errorf("could not construct dimension property PATCH URL with %s / %s: %w", key, value, err)
 	}
 
 	return url, nil

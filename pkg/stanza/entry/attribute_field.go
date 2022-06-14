@@ -177,7 +177,7 @@ func (f AttributeField) Delete(entry *Entry) (interface{}, bool) {
 func (f *AttributeField) UnmarshalJSON(raw []byte) error {
 	var value string
 	if err := json.Unmarshal(raw, &value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)
@@ -203,7 +203,7 @@ func (f AttributeField) MarshalJSON() ([]byte, error) {
 func (f *AttributeField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)

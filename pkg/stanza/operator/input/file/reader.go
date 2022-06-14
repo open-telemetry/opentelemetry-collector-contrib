@@ -17,6 +17,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,7 +27,7 @@ import (
 	"golang.org/x/text/transform"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -40,7 +41,7 @@ type fileAttributes struct {
 
 // resolveFileAttributes resolves file attributes
 // and sets it to empty string in case of error
-func (f *InputOperator) resolveFileAttributes(path string) *fileAttributes {
+func (f *Input) resolveFileAttributes(path string) *fileAttributes {
 	resolved, err := filepath.EvalSymlinks(path)
 	if err != nil {
 		f.Error(err)
@@ -65,7 +66,7 @@ type Reader struct {
 	Offset      int64
 
 	generation     int
-	fileInput      *InputOperator
+	fileInput      *Input
 	file           *os.File
 	fileAttributes *fileAttributes
 
@@ -78,7 +79,7 @@ type Reader struct {
 }
 
 // NewReader creates a new file reader
-func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
+func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
 	r := &Reader{
 		Fingerprint:    fp,
 		file:           file,
@@ -107,7 +108,7 @@ func (r *Reader) InitializeOffset(startAtBeginning bool) error {
 	if !startAtBeginning {
 		info, err := r.file.Stat()
 		if err != nil {
-			return fmt.Errorf("stat: %s", err)
+			return fmt.Errorf("stat: %w", err)
 		}
 		r.Offset = info.Size()
 	}
@@ -167,16 +168,16 @@ func (r *Reader) emit(ctx context.Context, msgBuf []byte) error {
 	if r.fileInput.encoding.Encoding == encoding.Nop {
 		e, err = r.fileInput.NewEntry(msgBuf)
 		if err != nil {
-			return fmt.Errorf("create entry: %s", err)
+			return fmt.Errorf("create entry: %w", err)
 		}
 	} else {
 		msg, err := r.decode(msgBuf)
 		if err != nil {
-			return fmt.Errorf("decode: %s", err)
+			return fmt.Errorf("decode: %w", err)
 		}
 		e, err = r.fileInput.NewEntry(msg)
 		if err != nil {
-			return fmt.Errorf("create entry: %s", err)
+			return fmt.Errorf("create entry: %w", err)
 		}
 	}
 
@@ -204,11 +205,11 @@ func (r *Reader) decode(msgBuf []byte) (string, error) {
 	for {
 		r.decoder.Reset()
 		nDst, _, err := r.decoder.Transform(r.decodeBuffer, msgBuf, true)
-		if err != nil && err == transform.ErrShortDst {
+		if errors.Is(err, transform.ErrShortDst) {
 			r.decodeBuffer = make([]byte, len(r.decodeBuffer)*2)
 			continue
 		} else if err != nil {
-			return "", fmt.Errorf("transform encoding: %s", err)
+			return "", fmt.Errorf("transform encoding: %w", err)
 		}
 		return string(r.decodeBuffer[:nDst]), nil
 	}
@@ -216,21 +217,29 @@ func (r *Reader) decode(msgBuf []byte) (string, error) {
 
 func getScannerError(scanner *PositionalScanner) error {
 	err := scanner.Err()
-	if err == bufio.ErrTooLong {
-		return errors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
+	if errors.Is(err, bufio.ErrTooLong) {
+		return stanzaerrors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
 	} else if err != nil {
-		return errors.Wrap(err, "scanner error")
+		return stanzaerrors.Wrap(err, "scanner error")
 	}
 	return nil
 }
 
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (int, error) {
-	if len(r.Fingerprint.FirstBytes) == r.fileInput.fingerprintSize {
+	// Skip if fingerprint is already built
+	// or if fingerprint is behind Offset
+	if len(r.Fingerprint.FirstBytes) == r.fileInput.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
 		return r.file.Read(dst)
 	}
 	n, err := r.file.Read(dst)
 	appendCount := min0(n, r.fileInput.fingerprintSize-int(r.Offset))
+	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
+	if appendCount == 0 {
+		return n, err
+	}
+
+	// for appendCount==0, the following code would add `0` to fingerprint
 	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	return n, err
 }

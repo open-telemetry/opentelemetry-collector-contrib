@@ -16,6 +16,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -32,12 +33,12 @@ type Fingerprint struct {
 }
 
 // NewFingerprint creates a new fingerprint from an open file
-func (f *InputOperator) NewFingerprint(file *os.File) (*Fingerprint, error) {
+func (f *Input) NewFingerprint(file *os.File) (*Fingerprint, error) {
 	buf := make([]byte, f.fingerprintSize)
 
 	n, err := file.ReadAt(buf, 0)
-	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("reading fingerprint bytes: %s", err)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
 	}
 
 	fp := &Fingerprint{

@@ -26,7 +26,7 @@ func TestGoldenConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name: "move_body_to_body",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("new")
@@ -35,7 +35,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_body_to_attribute",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField("new")
@@ -44,7 +44,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_attribute_to_body",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewBodyField("new")
@@ -53,7 +53,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_attribute_to_resource",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewResourceField("new")
@@ -62,7 +62,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_bracketed_attribute_to_resource",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("dotted.field.name")
 				cfg.To = entry.NewResourceField("new")
@@ -71,7 +71,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_resource_to_attribute",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewResourceField("new")
 				cfg.To = entry.NewAttributeField("new")
@@ -80,7 +80,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_nested",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewBodyField("NewNested")
@@ -89,7 +89,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_from_nested_object",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested", "nestedkey")
 				cfg.To = entry.NewBodyField("unnestedkey")
@@ -98,7 +98,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_to_nested_object",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("newnestedkey")
 				cfg.To = entry.NewBodyField("nested", "newnestedkey")
@@ -107,7 +107,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_double_nested_object",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested", "nested2")
 				cfg.To = entry.NewBodyField("nested2")
@@ -116,7 +116,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_nested_to_resource",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewResourceField("NewNested")
@@ -125,7 +125,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_nested_to_attribute",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewAttributeField("NewNested")
@@ -134,7 +134,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_nested_body_to_nested_attribute",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("one", "two")
 				cfg.To = entry.NewAttributeField("three", "four")
@@ -143,7 +143,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "move_nested_body_to_nested_resource",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("one", "two")
 				cfg.To = entry.NewResourceField("three", "four")
@@ -152,7 +152,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "replace_body",
-			Expect: func() *MoveOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewBodyField()
@@ -167,6 +167,6 @@ func TestGoldenConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *MoveOperatorConfig {
-	return NewMoveOperatorConfig("move")
+func defaultCfg() *Config {
+	return NewConfig("move")
 }

@@ -51,7 +51,7 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 // when IncludeFileName and IncludeFilePath are set to true
 func TestAddFileFields(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileName = true
 		cfg.IncludeFilePath = true
 	}, nil)
@@ -74,7 +74,7 @@ func TestAddFileFields(t *testing.T) {
 // when IncludeFileNameResolved and IncludeFilePathResolved are set to true
 func TestAddFileResolvedFields(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileName = true
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
@@ -82,11 +82,13 @@ func TestAddFileResolvedFields(t *testing.T) {
 	}, nil)
 
 	// Create temp dir with log file
-	dir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	dir := t.TempDir()
 
 	file, err := ioutil.TempFile(dir, "")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, file.Close())
+	})
 
 	// Create symbolic link in monitored directory
 	symLinkPath := filepath.Join(tempDir, "symlink")
@@ -112,10 +114,6 @@ func TestAddFileResolvedFields(t *testing.T) {
 	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
 	require.Equal(t, filepath.Base(resolved), e.Attributes["log.file.name_resolved"])
 	require.Equal(t, resolved, e.Attributes["log.file.path_resolved"])
-
-	// Clean up (linux based host)
-	// Ignore error on windows host (The process cannot access the file because it is being used by another process.)
-	os.RemoveAll(dir)
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -125,7 +123,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 // monitored file (symlink) -> middleSymlink -> file_2
 func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileName = true
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
@@ -133,14 +131,19 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	}, nil)
 
 	// Create temp dir with log file
-	dir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
+	dir := t.TempDir()
 
 	file1, err := ioutil.TempFile(dir, "")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, file1.Close())
+	})
 
 	file2, err := ioutil.TempFile(dir, "")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, file2.Close())
+	})
 
 	// Resolve paths
 	real1, err := filepath.EvalSymlinks(file1.Name())
@@ -190,10 +193,6 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
 	require.Equal(t, filepath.Base(resolved2), e.Attributes["log.file.name_resolved"])
 	require.Equal(t, resolved2, e.Attributes["log.file.path_resolved"])
-
-	// Clean up (linux based host)
-	// Ignore error on windows host (The process cannot access the file because it is being used by another process.)
-	os.RemoveAll(dir)
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we
@@ -262,7 +261,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
-			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
 				cfg.Encoding.Encoding = "nop"
 			}, nil)
@@ -342,7 +341,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.testName, func(t *testing.T) {
-			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = tc.maxLogSize
 				cfg.Encoding.Encoding = "nop"
 			}, nil)
@@ -414,7 +413,7 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 // we don't read any entries that were in the file before startup
 func TestStartAtEnd(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
 	}, nil)
 	operator.persister = testutil.NewMockPersister("test")
@@ -460,7 +459,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 // even if the file doesn't end in a newline
 func TestNoNewline(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.Splitter = helper.NewSplitterConfig()
 		cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
 	}, nil)
@@ -780,7 +779,7 @@ func TestFileBatching(t *testing.T) {
 	actualMessages := make([]string, 0, files*linesPerFile)
 
 	operator, logReceived, tempDir := newTestFileOperator(t,
-		func(cfg *InputConfig) {
+		func(cfg *Config) {
 			cfg.MaxConcurrentFiles = maxConcurrentFiles
 		},
 		func(out *testutil.FakeOutput) {
@@ -880,7 +879,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 	for _, lineLen := range lineLens {
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
-			operator, _, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, _, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.FingerprintSize = helper.ByteSize(maxFP)
 			}, nil)
 			defer func() {
@@ -920,6 +919,92 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 				reader.ReadToEnd(context.Background())
 				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
 			}
+		})
+	}
+}
+
+// This is same test like TestFingerprintGrowsAndStops, but with additional check for fingerprint size check
+// Test that a fingerprint:
+// - Starts empty
+// - Updates as a file is read
+// - Stops updating when the max fingerprint size is reached
+// - Stops exactly at max fingerprint size, regardless of content
+// - Do not change size after fingerprint configuration change
+func TestFingerprintChangeSize(t *testing.T) {
+	t.Parallel()
+
+	// Use a number with many factors.
+	// Sometimes fingerprint length will align with
+	// the end of a line, sometimes not. Test both.
+	maxFP := 360
+
+	// Use prime numbers to ensure variation in
+	// whether or not they are factors of maxFP
+	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
+
+	for _, lineLen := range lineLens {
+		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
+			t.Parallel()
+			operator, _, tempDir := newTestFileOperator(t, func(cfg *Config) {
+				cfg.FingerprintSize = helper.ByteSize(maxFP)
+			}, nil)
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
+
+			temp := openTemp(t, tempDir)
+			tempCopy := openFile(t, temp.Name())
+			fp, err := operator.NewFingerprint(temp)
+			require.NoError(t, err)
+			require.Equal(t, []byte(""), fp.FirstBytes)
+
+			splitter, err := operator.getMultiline()
+			require.NoError(t, err)
+
+			reader, err := operator.NewReader(temp.Name(), tempCopy, fp, splitter)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			// keep track of what has been written to the file
+			fileContent := []byte{}
+
+			// keep track of expected fingerprint size
+			expectedFP := 0
+
+			// Write lines until file is much larger than the length of the fingerprint
+			for len(fileContent) < 2*maxFP {
+				expectedFP += lineLen
+				if expectedFP > maxFP {
+					expectedFP = maxFP
+				}
+
+				line := stringWithLength(lineLen-1) + "\n"
+				fileContent = append(fileContent, []byte(line)...)
+
+				writeString(t, temp, line)
+				reader.ReadToEnd(context.Background())
+				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+			}
+
+			// Test fingerprint change
+			// Change fingerprint and try to read file again
+			// We do not expect fingerprint change
+			// We test both increasing and decreasing fingerprint size
+			reader.fileInput.fingerprintSize = maxFP * (lineLen / 3)
+			line := stringWithLength(lineLen-1) + "\n"
+			fileContent = append(fileContent, []byte(line)...)
+
+			writeString(t, temp, line)
+			reader.ReadToEnd(context.Background())
+			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+
+			reader.fileInput.fingerprintSize = maxFP / 2
+			line = stringWithLength(lineLen-1) + "\n"
+			fileContent = append(fileContent, []byte(line)...)
+
+			writeString(t, temp, line)
+			reader.ReadToEnd(context.Background())
+			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
 		})
 	}
 }
@@ -985,7 +1070,7 @@ func TestEncodings(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			operator, receivedEntries, tempDir := newTestFileOperator(t, func(cfg *InputConfig) {
+			operator, receivedEntries, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.Encoding = helper.EncodingConfig{Encoding: tc.encoding}
 			}, nil)
 

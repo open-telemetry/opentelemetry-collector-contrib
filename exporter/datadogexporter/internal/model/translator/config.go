@@ -30,7 +30,8 @@ type translatorConfig struct {
 	deltaTTL      int64
 
 	// hostname provider configuration
-	fallbackHostnameProvider HostnameProvider
+	previewHostnameFromAttributes bool
+	fallbackHostnameProvider      HostnameProvider
 }
 
 // Option is a translator creation option.
@@ -57,6 +58,14 @@ func WithDeltaTTL(deltaTTL int64) Option {
 func WithFallbackHostnameProvider(provider HostnameProvider) Option {
 	return func(t *translatorConfig) error {
 		t.fallbackHostnameProvider = provider
+		return nil
+	}
+}
+
+// WithPreviewHostnameFromAttributes enables the preview hostname algorithm.
+func WithPreviewHostnameFromAttributes() Option {
+	return func(t *translatorConfig) error {
+		t.previewHostnameFromAttributes = true
 		return nil
 	}
 }

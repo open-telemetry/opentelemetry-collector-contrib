@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
 	github.com/prometheus/common v0.34.0
-	github.com/prometheus/prometheus v0.35.1-0.20220503184552-2381d7be5731
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.51.1-0.20220519211145-c56d20e9e0af
-	go.opentelemetry.io/collector/pdata v0.51.1-0.20220519211145-c56d20e9e0af
-	go.opentelemetry.io/collector/semconv v0.51.1-0.20220519211145-c56d20e9e0af
+	github.com/prometheus/prometheus v0.36.1
+	github.com/stretchr/testify v1.7.2
+	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.0
+	go.opentelemetry.io/collector/semconv v0.53.0
 	go.uber.org/multierr v1.8.0
 )
 
@@ -22,13 +22,13 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220414192740-2d67ff6cf2b4 // indirect
-	google.golang.org/grpc v1.46.2 // indirect
+	google.golang.org/genproto v0.0.0-20220524023933-508584e28198 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal

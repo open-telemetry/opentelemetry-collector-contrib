@@ -31,47 +31,47 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func newTestParser(t *testing.T, regex string, cacheSize uint16) *RegexParser {
-	cfg := NewRegexParserConfig("test")
+func newTestParser(t *testing.T, regex string, cacheSize uint16) *Parser {
+	cfg := NewConfig("test")
 	cfg.Regex = regex
 	if cacheSize > 0 {
 		cfg.Cache.Size = cacheSize
 	}
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	return op.(*RegexParser)
+	return op.(*Parser)
 }
 
-func TestRegexParserBuildFailure(t *testing.T) {
-	cfg := NewRegexParserConfig("test")
+func TestParserBuildFailure(t *testing.T) {
+	cfg := NewConfig("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
-func TestRegexParserByteFailure(t *testing.T) {
+func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>test)", 0)
 	_, err := parser.parse([]byte("invalid"))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]uint8' cannot be parsed as regex")
 }
 
-func TestRegexParserStringFailure(t *testing.T) {
+func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>test)", 0)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "regex pattern does not match")
 }
 
-func TestRegexParserInvalidType(t *testing.T) {
+func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>test)", 0)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as regex")
 }
 
-func TestRegexParserCache(t *testing.T) {
+func TestParserCache(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>cache)", 200)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
@@ -83,13 +83,13 @@ func TestRegexParserCache(t *testing.T) {
 func TestParserRegex(t *testing.T) {
 	cases := []struct {
 		name      string
-		configure func(*RegexParserConfig)
+		configure func(*Config)
 		input     *entry.Entry
 		expected  *entry.Entry
 	}{
 		{
 			"RootString",
-			func(p *RegexParserConfig) {
+			func(p *Config) {
 				p.Regex = "a=(?P<a>.*)"
 			},
 			&entry.Entry{
@@ -104,7 +104,7 @@ func TestParserRegex(t *testing.T) {
 		},
 		{
 			"MemeoryCache",
-			func(p *RegexParserConfig) {
+			func(p *Config) {
 				p.Regex = "a=(?P<a>.*)"
 				p.Cache.Size = 100
 			},
@@ -120,7 +120,7 @@ func TestParserRegex(t *testing.T) {
 		},
 		{
 			"K8sFileCache",
-			func(p *RegexParserConfig) {
+			func(p *Config) {
 				p.Regex = `^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$`
 				p.Cache.Size = 100
 			},
@@ -141,7 +141,7 @@ func TestParserRegex(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewRegexParserConfig("test")
+			cfg := NewConfig("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -164,35 +164,35 @@ func TestParserRegex(t *testing.T) {
 }
 
 func TestBuildParserRegex(t *testing.T) {
-	newBasicRegexParser := func() *RegexParserConfig {
-		cfg := NewRegexParserConfig("test")
+	newBasicParser := func() *Config {
+		cfg := NewConfig("test")
 		cfg.OutputIDs = []string{"test"}
 		cfg.Regex = "(?P<all>.*)"
 		return cfg
 	}
 
 	t.Run("BasicConfig", func(t *testing.T) {
-		c := newBasicRegexParser()
+		c := newBasicParser()
 		_, err := c.Build(testutil.Logger(t))
 		require.NoError(t, err)
 	})
 
 	t.Run("MissingRegexField", func(t *testing.T) {
-		c := newBasicRegexParser()
+		c := newBasicParser()
 		c.Regex = ""
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 	})
 
 	t.Run("InvalidRegexField", func(t *testing.T) {
-		c := newBasicRegexParser()
+		c := newBasicParser()
 		c.Regex = "())()"
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 	})
 
 	t.Run("NoNamedGroups", func(t *testing.T) {
-		c := newBasicRegexParser()
+		c := newBasicParser()
 		c.Regex = ".*"
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
@@ -200,7 +200,7 @@ func TestBuildParserRegex(t *testing.T) {
 	})
 
 	t.Run("NoNamedGroups", func(t *testing.T) {
-		c := newBasicRegexParser()
+		c := newBasicParser()
 		c.Regex = "(.*)"
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
@@ -208,8 +208,8 @@ func TestBuildParserRegex(t *testing.T) {
 	})
 }
 
-func TestRegexParserConfig(t *testing.T) {
-	expect := NewRegexParserConfig("test")
+func TestConfig(t *testing.T) {
+	expect := NewConfig("test")
 	expect.Regex = "test123"
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.NewBodyField("to")
@@ -223,7 +223,7 @@ func TestRegexParserConfig(t *testing.T) {
 			"parse_to":   "body.to",
 			"on_error":   "send",
 		}
-		var actual RegexParserConfig
+		var actual Config
 		err := helper.UnmarshalMapstructure(input, &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
@@ -237,7 +237,7 @@ on_error: "send"
 regex: "test123"
 parse_from: body.from
 parse_to: body.to`
-		var actual RegexParserConfig
+		var actual Config
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
@@ -268,17 +268,17 @@ const benchParsePattern = `^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9
 
 var benchParsePatterns = benchParseInput()
 
-func newTestBenchParser(t *testing.T, cacheSize uint16) *RegexParser {
-	cfg := NewRegexParserConfig("bench")
+func newTestBenchParser(t *testing.T, cacheSize uint16) *Parser {
+	cfg := NewConfig("bench")
 	cfg.Regex = benchParsePattern
 	cfg.Cache.Size = cacheSize
 
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
-	return op.(*RegexParser)
+	return op.(*Parser)
 }
 
-func benchmarkParseThreaded(b *testing.B, parser *RegexParser, input []string) {
+func benchmarkParseThreaded(b *testing.B, parser *Parser, input []string) {
 	wg := sync.WaitGroup{}
 
 	for _, i := range input {
@@ -295,7 +295,7 @@ func benchmarkParseThreaded(b *testing.B, parser *RegexParser, input []string) {
 	wg.Wait()
 }
 
-func benchmarkParse(b *testing.B, parser *RegexParser, input []string) {
+func benchmarkParse(b *testing.B, parser *Parser, input []string) {
 	for _, i := range input {
 		if _, err := parser.match(i); err != nil {
 			b.Error(err)
