@@ -32,6 +32,7 @@
 - `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
 - `windowseventlogreceiver`: Fixed example config in readme (#10971)
+- `exporter/awsemfexporter:`: Fix dead links in README.md. (#11027)
 
 ## v0.53.0
 
