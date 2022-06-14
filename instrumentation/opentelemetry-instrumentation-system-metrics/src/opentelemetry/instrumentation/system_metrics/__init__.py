@@ -101,6 +101,7 @@ _DEFAULT_CONFIG = {
     "system.network.connections": ["family", "type"],
     "runtime.memory": ["rss", "vms"],
     "runtime.cpu.time": ["user", "system"],
+    "runtime.gc_count": None,
 }
 
 
@@ -149,6 +150,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         return _instruments
 
     def _instrument(self, **kwargs):
+        # pylint: disable=too-many-branches
         meter_provider = kwargs.get("meter_provider")
         self._meter = get_meter(
             __name__,
@@ -156,47 +158,53 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
             meter_provider,
         )
 
-        self._meter.create_observable_counter(
-            name="system.cpu.time",
-            callbacks=[self._get_system_cpu_time],
-            description="System CPU time",
-            unit="seconds",
-        )
+        if "system.cpu.time" in self._config:
+            self._meter.create_observable_counter(
+                name="system.cpu.time",
+                callbacks=[self._get_system_cpu_time],
+                description="System CPU time",
+                unit="seconds",
+            )
 
-        self._meter.create_observable_gauge(
-            name="system.cpu.utilization",
-            callbacks=[self._get_system_cpu_utilization],
-            description="System CPU utilization",
-            unit="1",
-        )
+        if "system.cpu.utilization" in self._config:
+            self._meter.create_observable_gauge(
+                name="system.cpu.utilization",
+                callbacks=[self._get_system_cpu_utilization],
+                description="System CPU utilization",
+                unit="1",
+            )
 
-        self._meter.create_observable_gauge(
-            name="system.memory.usage",
-            callbacks=[self._get_system_memory_usage],
-            description="System memory usage",
-            unit="bytes",
-        )
+        if "system.memory.usage" in self._config:
+            self._meter.create_observable_gauge(
+                name="system.memory.usage",
+                callbacks=[self._get_system_memory_usage],
+                description="System memory usage",
+                unit="bytes",
+            )
 
-        self._meter.create_observable_gauge(
-            name="system.memory.utilization",
-            callbacks=[self._get_system_memory_utilization],
-            description="System memory utilization",
-            unit="1",
-        )
+        if "system.memory.utilization" in self._config:
+            self._meter.create_observable_gauge(
+                name="system.memory.utilization",
+                callbacks=[self._get_system_memory_utilization],
+                description="System memory utilization",
+                unit="1",
+            )
 
-        self._meter.create_observable_gauge(
-            name="system.swap.usage",
-            callbacks=[self._get_system_swap_usage],
-            description="System swap usage",
-            unit="pages",
-        )
+        if "system.swap.usage" in self._config:
+            self._meter.create_observable_gauge(
+                name="system.swap.usage",
+                callbacks=[self._get_system_swap_usage],
+                description="System swap usage",
+                unit="pages",
+            )
 
-        self._meter.create_observable_gauge(
-            name="system.swap.utilization",
-            callbacks=[self._get_system_swap_utilization],
-            description="System swap utilization",
-            unit="1",
-        )
+        if "system.swap.utilization" in self._config:
+            self._meter.create_observable_gauge(
+                name="system.swap.utilization",
+                callbacks=[self._get_system_swap_utilization],
+                description="System swap utilization",
+                unit="1",
+            )
 
         # TODO Add _get_system_swap_page_faults
 
@@ -217,26 +225,29 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         #     value_type=int,
         # )
 
-        self._meter.create_observable_counter(
-            name="system.disk.io",
-            callbacks=[self._get_system_disk_io],
-            description="System disk IO",
-            unit="bytes",
-        )
+        if "system.disk.io" in self._config:
+            self._meter.create_observable_counter(
+                name="system.disk.io",
+                callbacks=[self._get_system_disk_io],
+                description="System disk IO",
+                unit="bytes",
+            )
 
-        self._meter.create_observable_counter(
-            name="system.disk.operations",
-            callbacks=[self._get_system_disk_operations],
-            description="System disk operations",
-            unit="operations",
-        )
+        if "system.disk.operations" in self._config:
+            self._meter.create_observable_counter(
+                name="system.disk.operations",
+                callbacks=[self._get_system_disk_operations],
+                description="System disk operations",
+                unit="operations",
+            )
 
-        self._meter.create_observable_counter(
-            name="system.disk.time",
-            callbacks=[self._get_system_disk_time],
-            description="System disk time",
-            unit="seconds",
-        )
+        if "system.disk.time" in self._config:
+            self._meter.create_observable_counter(
+                name="system.disk.time",
+                callbacks=[self._get_system_disk_time],
+                description="System disk time",
+                unit="seconds",
+            )
 
         # TODO Add _get_system_filesystem_usage
 
@@ -260,61 +271,69 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         # TODO Filesystem information can be obtained with os.statvfs in Unix-like
         # OSs, how to do the same in Windows?
 
-        self._meter.create_observable_counter(
-            name="system.network.dropped_packets",
-            callbacks=[self._get_system_network_dropped_packets],
-            description="System network dropped_packets",
-            unit="packets",
-        )
+        if "system.network.dropped.packets" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.dropped_packets",
+                callbacks=[self._get_system_network_dropped_packets],
+                description="System network dropped_packets",
+                unit="packets",
+            )
 
-        self._meter.create_observable_counter(
-            name="system.network.packets",
-            callbacks=[self._get_system_network_packets],
-            description="System network packets",
-            unit="packets",
-        )
+        if "system.network.packets" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.packets",
+                callbacks=[self._get_system_network_packets],
+                description="System network packets",
+                unit="packets",
+            )
 
-        self._meter.create_observable_counter(
-            name="system.network.errors",
-            callbacks=[self._get_system_network_errors],
-            description="System network errors",
-            unit="errors",
-        )
+        if "system.network.errors" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.errors",
+                callbacks=[self._get_system_network_errors],
+                description="System network errors",
+                unit="errors",
+            )
 
-        self._meter.create_observable_counter(
-            name="system.network.io",
-            callbacks=[self._get_system_network_io],
-            description="System network io",
-            unit="bytes",
-        )
+        if "system.network.io" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.io",
+                callbacks=[self._get_system_network_io],
+                description="System network io",
+                unit="bytes",
+            )
 
-        self._meter.create_observable_up_down_counter(
-            name="system.network.connections",
-            callbacks=[self._get_system_network_connections],
-            description="System network connections",
-            unit="connections",
-        )
+        if "system.network.connections" in self._config:
+            self._meter.create_observable_up_down_counter(
+                name="system.network.connections",
+                callbacks=[self._get_system_network_connections],
+                description="System network connections",
+                unit="connections",
+            )
 
-        self._meter.create_observable_counter(
-            name=f"runtime.{self._python_implementation}.memory",
-            callbacks=[self._get_runtime_memory],
-            description=f"Runtime {self._python_implementation} memory",
-            unit="bytes",
-        )
+        if "runtime.memory" in self._config:
+            self._meter.create_observable_counter(
+                name=f"runtime.{self._python_implementation}.memory",
+                callbacks=[self._get_runtime_memory],
+                description=f"Runtime {self._python_implementation} memory",
+                unit="bytes",
+            )
 
-        self._meter.create_observable_counter(
-            name=f"runtime.{self._python_implementation}.cpu_time",
-            callbacks=[self._get_runtime_cpu_time],
-            description=f"Runtime {self._python_implementation} CPU time",
-            unit="seconds",
-        )
+        if "runtime.cpu.time" in self._config:
+            self._meter.create_observable_counter(
+                name=f"runtime.{self._python_implementation}.cpu_time",
+                callbacks=[self._get_runtime_cpu_time],
+                description=f"Runtime {self._python_implementation} CPU time",
+                unit="seconds",
+            )
 
-        self._meter.create_observable_counter(
-            name=f"runtime.{self._python_implementation}.gc_count",
-            callbacks=[self._get_runtime_gc_count],
-            description=f"Runtime {self._python_implementation} GC count",
-            unit="bytes",
-        )
+        if "runtime.gc_count" in self._config:
+            self._meter.create_observable_counter(
+                name=f"runtime.{self._python_implementation}.gc_count",
+                callbacks=[self._get_runtime_gc_count],
+                description=f"Runtime {self._python_implementation} GC count",
+                unit="bytes",
+            )
 
     def _uninstrument(self, **__):
         pass
@@ -329,7 +348,8 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_cpu_time_labels["state"] = metric
                     self._system_cpu_time_labels["cpu"] = cpu + 1
                     yield Observation(
-                        getattr(times, metric), self._system_cpu_time_labels
+                        getattr(times, metric),
+                        self._system_cpu_time_labels.copy(),
                     )
 
     def _get_system_cpu_utilization(
@@ -346,7 +366,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_cpu_utilization_labels["cpu"] = cpu + 1
                     yield Observation(
                         getattr(times_percent, metric) / 100,
-                        self._system_cpu_utilization_labels,
+                        self._system_cpu_utilization_labels.copy(),
                     )
 
     def _get_system_memory_usage(
@@ -359,7 +379,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
             if hasattr(virtual_memory, metric):
                 yield Observation(
                     getattr(virtual_memory, metric),
-                    self._system_memory_usage_labels,
+                    self._system_memory_usage_labels.copy(),
                 )
 
     def _get_system_memory_utilization(
@@ -373,7 +393,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
             if hasattr(system_memory, metric):
                 yield Observation(
                     getattr(system_memory, metric) / system_memory.total,
-                    self._system_memory_utilization_labels,
+                    self._system_memory_utilization_labels.copy(),
                 )
 
     def _get_system_swap_usage(
@@ -387,7 +407,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
             if hasattr(system_swap, metric):
                 yield Observation(
                     getattr(system_swap, metric),
-                    self._system_swap_usage_labels,
+                    self._system_swap_usage_labels.copy(),
                 )
 
     def _get_system_swap_utilization(
@@ -401,7 +421,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 self._system_swap_utilization_labels["state"] = metric
                 yield Observation(
                     getattr(system_swap, metric) / system_swap.total,
-                    self._system_swap_utilization_labels,
+                    self._system_swap_utilization_labels.copy(),
                 )
 
     def _get_system_disk_io(
@@ -415,7 +435,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_disk_io_labels["direction"] = metric
                     yield Observation(
                         getattr(counters, f"{metric}_bytes"),
-                        self._system_disk_io_labels,
+                        self._system_disk_io_labels.copy(),
                     )
 
     def _get_system_disk_operations(
@@ -429,7 +449,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_disk_operations_labels["direction"] = metric
                     yield Observation(
                         getattr(counters, f"{metric}_count"),
-                        self._system_disk_operations_labels,
+                        self._system_disk_operations_labels.copy(),
                     )
 
     def _get_system_disk_time(
@@ -443,7 +463,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_disk_time_labels["direction"] = metric
                     yield Observation(
                         getattr(counters, f"{metric}_time") / 1000,
-                        self._system_disk_time_labels,
+                        self._system_disk_time_labels.copy(),
                     )
 
     def _get_system_disk_merged(
@@ -461,7 +481,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_disk_merged_labels["direction"] = metric
                     yield Observation(
                         getattr(counters, f"{metric}_merged_count"),
-                        self._system_disk_merged_labels,
+                        self._system_disk_merged_labels.copy(),
                     )
 
     def _get_system_network_dropped_packets(
@@ -481,7 +501,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     ] = metric
                     yield Observation(
                         getattr(counters, f"drop{in_out}"),
-                        self._system_network_dropped_packets_labels,
+                        self._system_network_dropped_packets_labels.copy(),
                     )
 
     def _get_system_network_packets(
@@ -497,7 +517,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_network_packets_labels["direction"] = metric
                     yield Observation(
                         getattr(counters, f"packets_{recv_sent}"),
-                        self._system_network_packets_labels,
+                        self._system_network_packets_labels.copy(),
                     )
 
     def _get_system_network_errors(
@@ -512,7 +532,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_network_errors_labels["direction"] = metric
                     yield Observation(
                         getattr(counters, f"err{in_out}"),
-                        self._system_network_errors_labels,
+                        self._system_network_errors_labels.copy(),
                     )
 
     def _get_system_network_io(
@@ -528,7 +548,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_network_io_labels["direction"] = metric
                     yield Observation(
                         getattr(counters, f"bytes_{recv_sent}"),
-                        self._system_network_io_labels,
+                        self._system_network_io_labels.copy(),
                     )
 
     def _get_system_network_connections(
@@ -581,7 +601,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 self._runtime_memory_labels["type"] = metric
                 yield Observation(
                     getattr(proc_memory, metric),
-                    self._runtime_memory_labels,
+                    self._runtime_memory_labels.copy(),
                 )
 
     def _get_runtime_cpu_time(
@@ -594,7 +614,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                 self._runtime_cpu_time_labels["type"] = metric
                 yield Observation(
                     getattr(proc_cpu, metric),
-                    self._runtime_cpu_time_labels,
+                    self._runtime_cpu_time_labels.copy(),
                 )
 
     def _get_runtime_gc_count(
@@ -603,4 +623,4 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         """Observer callback for garbage collection"""
         for index, count in enumerate(gc.get_count()):
             self._runtime_gc_count_labels["count"] = str(index)
-            yield Observation(count, self._runtime_gc_count_labels)
+            yield Observation(count, self._runtime_gc_count_labels.copy())
