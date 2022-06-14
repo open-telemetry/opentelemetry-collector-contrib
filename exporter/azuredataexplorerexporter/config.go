@@ -30,7 +30,7 @@ type Config struct {
 	TenantId                string `mapstructure:"tenant_id"`
 	Database                string `mapstructure:"db_name"`
 	RawMetricTable          string `mapstructure:"metrics_table_name"`
-	CollectorHostName       string `mapstructure:"collector_host_name"`
+	IngestionType           string `mapstructure:"ingestion_type"`
 }
 
 // Validate checks if the exporter configuration is valid. TODO tests for this one
@@ -40,11 +40,11 @@ func (adxCfg *Config) Validate() error {
 	}
 
 	if isEmpty(adxCfg.ClusterName) || isEmpty(adxCfg.ClientId) || isEmpty(adxCfg.ClientSecret) || isEmpty(adxCfg.TenantId) {
-		return errors.New(`Mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
+		return errors.New(`mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
 	}
 	return nil
 }
 
 func isEmpty(str string) bool {
-	return strings.TrimSpace(str) != ""
+	return strings.TrimSpace(str) == ""
 }

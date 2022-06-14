@@ -18,13 +18,45 @@ exporters:
     db_name: "oteldb"
     # raw metric table name
     metrics_table_name: "RawMetrics"
+    # type of ingestion managed or queued
+    ingestion_type : "managed"
+  azuredataexplorer/2:
+    # Kusto cluster uri
+    cluster_name: ""
+    # Client Id
+    client_id: ""
+    # The client secret for the client
+    client_secret: "17cc3f47-e95e-4045-af6c-ec2eea163cc6"
+    # The tenant
+    tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
+    # database for the logs
+    db_name: "oteldb"
+    # raw metric table name
+    metrics_table_name: "RawMetrics"
+    # type of ingestion managed or queued
+    ingestion_type : "managed"
+  azuredataexplorer/3:
+    # Kusto cluster uri
+    cluster_name: ""
+    # Client Id
+    client_id: ""
+    # The client secret for the client
+    client_secret: "17cc3f47-e95e-4045-af6c-ec2eea163cc6"
+    # The tenant
+    tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
+    # database for the logs
+    db_name: "oteldb"
+    # raw metric table name
+    metrics_table_name: "RawMetrics"
+    # type of ingestion managed or queued
+    ingestion_type : ""
 service:
   pipelines:
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [azuredataexplorer]
+      exporters: [azuredataexplorer,azuredataexplorer/2]
     logs:
       receivers: [nop]
       processors: [nop]
-      exporters: [azuredataexplorer]
+      exporters: [azuredataexplorer,azuredataexplorer/2]

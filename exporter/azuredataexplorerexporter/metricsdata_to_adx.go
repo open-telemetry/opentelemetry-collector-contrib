@@ -1,12 +1,13 @@
 package azuredataexplorerexporter
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"strconv"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -24,22 +25,22 @@ const (
 )
 
 type AdxMetric struct {
-	Timestamp  string   //The timestamp of the occurance. A metric is measured at a point of time. Formatted into string as RFC3339
-	MetricName string   //Name of the metric field
-	MetricType string   // The type of the metric field
-	Value      *float64 // the value of the metric
-	Host       string   // the hostname for analysis of the metric
-	Attributes string   // JSON attributes that can then be parsed. Usually custom metrics
+	Timestamp  string  //The timestamp of the occurance. A metric is measured at a point of time. Formatted into string as RFC3339
+	MetricName string  //Name of the metric field
+	MetricType string  // The type of the metric field
+	Value      float64 // the value of the metric
+	Host       string  // the hostname for analysis of the metric
+	Attributes string  // JSON attributes that can then be parsed. Usually custom metrics
 }
 
 /*
 Convert the pMetric to the type ADXMetric , this matches the scheme in the RawMetric table in the database
 */
 
-func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, logger *zap.Logger) []*AdxMetric {
+func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, logger *zap.Logger) []*AdxMetric {
 	logger.Debug("Entering processing of toAdxMetric function")
-	// default to collectors host name
-	host := config.CollectorHostName
+	// default to collectors host name. Ignore the error here. This should not cause the failure of the process
+	host, _ := os.Hostname()
 	commonFields := map[string]interface{}{}
 
 	res.Attributes().Range(func(k string, v pcommon.Value) bool {
@@ -68,7 +69,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 				metricValue = float64(dataPoint.DoubleVal())
 			}
 			// there is an error case here as well! TODO need to atleast log it
-			fieldsJson, err := json.Marshal(fields)
+			fieldsJson, err := jsoniter.MarshalToString(fields)
 			if err != nil {
 				logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 			}
@@ -77,9 +78,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 				Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 				MetricName: md.Name(),
 				MetricType: pmetric.MetricDataTypeGauge.String(),
-				Value:      &metricValue,
+				Value:      metricValue,
 				Host:       host,
-				Attributes: string(fieldsJson),
+				Attributes: fieldsJson,
 			}
 
 		}
@@ -95,7 +96,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 			{
 				fields := cloneMap(commonFields)
 				// there is an error case here as well! TODO need to atleast log it
-				fieldsJson, err := json.Marshal(fields)
+				fieldsJson, err := jsoniter.MarshalToString(fields)
 				if err != nil {
 					logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 				}
@@ -105,15 +106,15 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 					MetricName: fmt.Sprintf("%s_%s", md.Name(), sumSuffix),
 					MetricType: pmetric.MetricDataTypeHistogram.String(),
-					Value:      &metricValue,
+					Value:      metricValue,
 					Host:       host,
-					Attributes: string(fieldsJson),
+					Attributes: fieldsJson,
 				})
 			}
 			{
 				fields := cloneMap(commonFields)
 				// there is an error case here as well! TODO need to atleast log it
-				fieldsJson, err := json.Marshal(fields)
+				fieldsJson, err := jsoniter.MarshalToString(fields)
 				if err != nil {
 					logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 				}
@@ -124,9 +125,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 					MetricName: fmt.Sprintf("%s_%s", md.Name(), countSuffix),
 					MetricType: pmetric.MetricDataTypeHistogram.String(),
-					Value:      &metricValue,
+					Value:      metricValue,
 					Host:       host,
-					Attributes: string(fieldsJson),
+					Attributes: fieldsJson,
 				})
 			}
 			// Spec says counts is optional but if present it must have one more
@@ -144,20 +145,19 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 				value += counts[bi]
 
 				// there is an error case here as well! TODO need to atleast log it
-				fieldsJson, err := json.Marshal(fields)
+				fieldsJson, err := jsoniter.MarshalToString(fields)
 				if err != nil {
 					logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 				}
-				populateAttributes(fields, dataPoint.Attributes())
 				// Change int to float. The value is a float64 in the table
 				metricValue := float64(value)
 				adxMetrics = append(adxMetrics, &AdxMetric{
 					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 					MetricName: fmt.Sprintf("%s_bucket", md.Name()),
 					MetricType: pmetric.MetricDataTypeHistogram.String(),
-					Value:      &metricValue,
+					Value:      metricValue,
 					Host:       host,
-					Attributes: string(fieldsJson),
+					Attributes: fieldsJson,
 				})
 			}
 			// add an upper bound for +Inf
@@ -168,21 +168,19 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 				// Add the LE field for the bucket's bound
 				fields["le"] = float64ToDimValue(math.Inf(1))
 				metricValue := float64(value + counts[len(counts)-1])
-
 				// there is an error case here as well! TODO need to atleast log it
-				fieldsJson, err := json.Marshal(fields)
+				fieldsJson, err := jsoniter.MarshalToString(fields)
 				if err != nil {
 					logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 				}
-				populateAttributes(fields, dataPoint.Attributes())
 				// Change int to float. The value is a float64 in the table
 				adxMetrics = append(adxMetrics, &AdxMetric{
 					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 					MetricName: fmt.Sprintf("%s_bucket", md.Name()),
 					MetricType: pmetric.MetricDataTypeHistogram.String(),
-					Value:      &metricValue,
+					Value:      metricValue,
 					Host:       host,
-					Attributes: string(fieldsJson),
+					Attributes: fieldsJson,
 				})
 			}
 		}
@@ -195,7 +193,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 			fields := cloneMap(commonFields)
 			populateAttributes(fields, dataPoint.Attributes())
 			// there is an error case here as well! TODO need to atleast log it
-			fieldsJson, err := json.Marshal(fields)
+			fieldsJson, err := jsoniter.MarshalToString(fields)
 			if err != nil {
 				logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 			}
@@ -212,10 +210,10 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 			adxMetrics[gi] = &AdxMetric{
 				Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 				MetricName: md.Name(),
-				MetricType: pmetric.MetricDataTypeHistogram.String(),
-				Value:      &metricValue,
+				MetricType: pmetric.MetricDataTypeSum.String(),
+				Value:      metricValue,
 				Host:       host,
-				Attributes: string(fieldsJson),
+				Attributes: fieldsJson,
 			}
 		}
 		return adxMetrics
@@ -229,7 +227,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPoint.Attributes())
 				// there is an error case here as well! TODO need to atleast log it
-				fieldsJson, err := json.Marshal(fields)
+				fieldsJson, err := jsoniter.MarshalToString(fields)
 				if err != nil {
 					logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 				}
@@ -238,9 +236,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 					MetricName: fmt.Sprintf("%s_%s", md.Name(), sumSuffix),
 					MetricType: pmetric.MetricDataTypeSummary.String(),
-					Value:      &metricValue,
+					Value:      metricValue,
 					Host:       host,
-					Attributes: string(fieldsJson),
+					Attributes: fieldsJson,
 				})
 			}
 
@@ -248,7 +246,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPoint.Attributes())
 				// there is an error case here as well! TODO need to atleast log it
-				fieldsJson, err := json.Marshal(fields)
+				fieldsJson, err := jsoniter.MarshalToString(fields)
 				if err != nil {
 					logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 				}
@@ -257,9 +255,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 					MetricName: fmt.Sprintf("%s_%s", md.Name(), countSuffix),
 					MetricType: pmetric.MetricDataTypeSummary.String(),
-					Value:      &metricValue,
+					Value:      metricValue,
 					Host:       host,
-					Attributes: string(fieldsJson),
+					Attributes: fieldsJson,
 				})
 			}
 
@@ -272,18 +270,18 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, config *Config, log
 				fields[md.Name()+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = sanitizeFloat(dp.Value())
 
 				// there is an error case here as well! TODO need to atleast log it
-				fieldsJson, err := json.Marshal(fields)
+				fieldsJson, err := jsoniter.MarshalToString(fields)
 				if err != nil {
 					logger.Warn("Error marshalling attribute fields ", zap.Any("Attributes", fields), zap.Error(err))
 				}
-				metricValue := float64(dataPoint.Count())
+				metricValue := dp.Value()
 				adxMetrics = append(adxMetrics, &AdxMetric{
 					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName: fmt.Sprintf("%s_%s", md.Name(), countSuffix),
+					MetricName: fmt.Sprintf("%s_%s", md.Name(), strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)),
 					MetricType: pmetric.MetricDataTypeSummary.String(),
-					Value:      &metricValue,
+					Value:      metricValue,
 					Host:       host,
-					Attributes: string(fieldsJson),
+					Attributes: fieldsJson,
 				})
 			}
 		}

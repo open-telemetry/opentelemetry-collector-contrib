@@ -32,28 +32,32 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg, _ := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 
-	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	// There are 3 stanzas in the exporter.
+	assert.Equal(t, len(cfg.Exporters), 3)
 
 	exporter := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), exporter)
 
-	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
+	// Is a valid configuration that has no errors
 	assert.NoError(t, configtest.CheckConfigStruct(exporter))
 	assert.Equal(
 		t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			ClusterName:      "https://CLUSTER.kusto.windows.net",
-			ClientId:         "f80da32c-108c-415c-a19e-643f461a677a",
-			ClientSecret:     "17cc3f47-e95e-4045-af6c-ec2eea163cc6",
-			TenantId:         "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
-			Database:         "oteldb",
-			RawMetricTable:   "RawMetrics",
+			ClusterName:    "https://CLUSTER.kusto.windows.net",
+			ClientId:       "f80da32c-108c-415c-a19e-643f461a677a",
+			ClientSecret:   "17cc3f47-e95e-4045-af6c-ec2eea163cc6",
+			TenantId:       "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
+			Database:       "oteldb",
+			RawMetricTable: "RawMetrics",
+			IngestionType:  managedingesttype,
 		},
 		exporter)
+
+	// The second one has a validation error
+	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
+	err = cfg.Validate()
+	assert.EqualError(t, err, `exporter "azuredataexplorer/2" has invalid configuration: mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
 }

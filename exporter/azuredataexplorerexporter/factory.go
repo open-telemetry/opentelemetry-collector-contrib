@@ -17,7 +17,6 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -26,12 +25,13 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "azuredataexplorer"
-	defaultMaxIdleCons = 100
-	defaultHTTPTimeout = 10 * time.Second
+	typeStr           = "azuredataexplorer"
+	managedingesttype = "managed"
+	queuedingesttest  = "queued"
+	unknown           = "unknown"
 )
 
-// NewFactory creates a factory for Splunk HEC exporter.
+// Creates a factory for the ADX Exporter
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
@@ -44,11 +44,12 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ClusterName:    "https://CLUSTER.kusto.windows.net",
-		ClientId:       "unknown",
-		ClientSecret:   "unknown",
-		TenantId:       "unknown",
-		Database:       "not-configured",
-		RawMetricTable: "not-configured",
+		ClientId:       unknown,
+		ClientSecret:   unknown,
+		TenantId:       unknown,
+		Database:       unknown,
+		RawMetricTable: unknown,
+		IngestionType:  queuedingesttest,
 	}
 }
 
@@ -61,8 +62,14 @@ func createMetricsExporter(
 		return nil, errors.New("nil config")
 	}
 	adxCfg := config.(*Config)
-
-	// call the common exporter function in baseexporter
+	// In case the ingestion type is not set , it falls back to queued ingestion.
+	// This form of ingestion is always available on all clusters
+	if adxCfg.IngestionType == "" {
+		set.Logger.Warn("Ingestion type is not set , will be defaulted to queued ingestion")
+		adxCfg.IngestionType = queuedingesttest
+	}
+	// call the common exporter function in baseexporter. This ensures that the client and the ingest
+	// are initialized and the metrics struct are available for operations
 	amp, err := newMetricsExporter(adxCfg, set.Logger)
 
 	if err != nil {
