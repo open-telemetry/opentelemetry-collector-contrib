@@ -163,10 +163,10 @@ func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid 
 	params.Add("filters", string(jsonFilter[:]))
 	listCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
-	cStats, err := pc.client.list(listCtx, params)
-	if len(cStats) == 1 && err == nil {
-		pc.persistContainer(cStats[0])
-		return &cStats[0], true
+	container, err := pc.client.list(listCtx, params)
+	if len(container) == 1 && err == nil {
+		pc.persistContainer(container[0])
+		return &container[0], true
 	}
 	pc.logger.Error(
 		"Could not inspect updated container",
