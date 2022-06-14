@@ -59,5 +59,5 @@ func TestLoadConfig(t *testing.T) {
 	// The second one has a validation error
 	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
 	err = cfg.Validate()
-	assert.EqualError(t, err, `exporter "azuredataexplorer/2" has invalid configuration: mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
+	assert.EqualError(t, err, `exporter "azuredataexplorer/3" has invalid configuration: mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
 }

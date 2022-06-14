@@ -48,7 +48,10 @@ func (e *adxMetricsProducer) metricsDataPusher(_ context.Context, metrics pmetri
 			for k := 0; k < metrics.Len(); k++ {
 				transformedadxmetrics := mapToAdxMetric(res, metrics.At(k), e.logger)
 				for tm := 0; tm < len(transformedadxmetrics); tm++ {
-					adxmetricjsonstring, _ := jsoniter.MarshalToString(transformedadxmetrics[tm])
+					adxmetricjsonstring, err := jsoniter.MarshalToString(transformedadxmetrics[tm])
+					if err != nil {
+						e.logger.Error("Error performing serialization of data.", zap.Error(err))
+					}
 					adxmetrics = append(adxmetrics, adxmetricjsonstring)
 				}
 			}
@@ -57,6 +60,7 @@ func (e *adxMetricsProducer) metricsDataPusher(_ context.Context, metrics pmetri
 	if len(adxmetrics) > 0 {
 		adxJsonIngestString = strings.Join(adxmetrics, "\r\n")
 		ingestreader := strings.NewReader(adxJsonIngestString)
+		fmt.Println(adxJsonIngestString) // {"message":"hello"} <nil>
 		if e.managedingest != nil {
 			if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
 				e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
@@ -114,7 +118,8 @@ func newMetricsExporter(config *Config, logger *zap.Logger) (*adxMetricsProducer
 	//TODO much more optimized as a multi line JSON
 	ingestoptions := make([]ingest.FileOption, 2)
 	ingestoptions[0] = ingest.FileFormat(ingest.MultiJSON)
-	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower(config.RawMetricTable)), ingest.MultiJSON)
+	ingestoptions[1] = ingest.IngestionMapping(fmt.Sprintf("%s_mapping", strings.ToLower(config.RawMetricTable)), ingest.MultiJSON)
+	//ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower(config.RawMetricTable)), ingest.MultiJSON)
 
 	return &adxMetricsProducer{
 		client:        metricclient,

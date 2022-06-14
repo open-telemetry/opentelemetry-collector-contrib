@@ -27,20 +27,27 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// The value of "type" key in configuration.
+	testhost = "test-host"
+)
+
 func Test_mapToAdxMetric(t *testing.T) {
 	tsUnix := time.Unix(time.Now().Unix(), time.Now().UnixNano())
 	ts := pcommon.NewTimestampFromTime(tsUnix)
 	tstr := ts.AsTime().Format(time.RFC3339)
+	tmap := make(map[string]interface{})
+	tmap["key"] = "value"
 
 	distributionBounds := []float64{1, 2, 4}
 	distributionCounts := []uint64{4, 2, 3, 5}
 
 	tests := []struct {
-		name               string
-		resourceFn         func() pcommon.Resource
-		metricsDataFn      func() pmetric.Metric
-		expectedAdxMetrics []*AdxMetric
-		configFn           func() *Config
+		name               string                  // name of the test
+		resourceFn         func() pcommon.Resource // function that generates the resources
+		metricsDataFn      func() pmetric.Metric   // function that generates the metric
+		expectedAdxMetrics []*AdxMetric            // expected results
+		configFn           func() *Config          // the config to apply
 	}{
 		{
 			name: "counter_over_time",
@@ -66,8 +73,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "counter_over_time",
 					MetricType: "Sum",
 					Value:      22.0,
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 			},
 		},
@@ -95,8 +102,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "int_counter_over_time",
 					MetricType: "Sum",
 					Value:      221,
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 			},
 		},
@@ -143,16 +150,16 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "simple_histogram_with_value_sum",
 					MetricType: "Histogram",
 					Value:      23,
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 				{
 					Timestamp:  tstr,
 					MetricName: "simple_histogram_with_value_count",
 					MetricType: "Histogram",
 					Value:      7,
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 				//The list of buckets
 				{
@@ -160,8 +167,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "simple_histogram_with_value_bucket",
 					MetricType: "Histogram",
 					Value:      4,
-					Host:       "test-host",
-					Attributes: `{"key":"value","le":"1"}`,
+					Host:       testhost,
+					Attributes: newMapFromAttr(`{"key":"value","le":"1"}`),
 				},
 
 				{
@@ -169,8 +176,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "simple_histogram_with_value_bucket",
 					MetricType: "Histogram",
 					Value:      6,
-					Host:       "test-host",
-					Attributes: `{"key":"value","le":"2"}`,
+					Host:       testhost,
+					Attributes: newMapFromAttr(`{"key":"value","le":"2"}`),
 				},
 
 				{
@@ -178,8 +185,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "simple_histogram_with_value_bucket",
 					MetricType: "Histogram",
 					Value:      9,
-					Host:       "test-host",
-					Attributes: `{"key":"value","le":"4"}`,
+					Host:       testhost,
+					Attributes: newMapFromAttr(`{"key":"value","le":"4"}`),
 				},
 
 				{
@@ -187,8 +194,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "simple_histogram_with_value_bucket",
 					MetricType: "Histogram",
 					Value:      14, // Sum of distribution counts
-					Host:       "test-host",
-					Attributes: `{"key":"value","le":"+Inf"}`,
+					Host:       testhost,
+					Attributes: newMapFromAttr(`{"key":"value","le":"+Inf"}`),
 				},
 			},
 		},
@@ -230,8 +237,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "Int_gauge_value",
 					MetricType: "Gauge",
 					Value:      5,
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 			},
 		},
@@ -258,8 +265,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "Float_gauge_value",
 					MetricType: "Gauge",
 					Value:      float64(5.32),
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 			},
 		},
@@ -291,32 +298,32 @@ func Test_mapToAdxMetric(t *testing.T) {
 					MetricName: "summary_sum",
 					MetricType: "Summary",
 					Value:      float64(42),
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 				{
 					Timestamp:  tstr,
 					MetricName: "summary_count",
 					MetricType: "Summary",
 					Value:      float64(2),
-					Host:       "test-host",
-					Attributes: `{"key":"value"}`,
+					Host:       testhost,
+					Attributes: tmap,
 				},
 				{
 					Timestamp:  tstr,
 					MetricName: "summary_0.5",
 					MetricType: "Summary",
 					Value:      float64(34),
-					Host:       "test-host",
-					Attributes: `{"key":"value","qt": "0.5","summary_0.5": 34}`,
+					Host:       testhost,
+					Attributes: newMapFromAttr(`{"key":"value","qt": "0.5","summary_0.5": 34}`),
 				},
 				{
 					Timestamp:  tstr,
 					MetricName: "summary_0.6",
 					MetricType: "Summary",
 					Value:      float64(45),
-					Host:       "test-host",
-					Attributes: `{"key":"value","qt": "0.6","summary_0.6": 45}`,
+					Host:       testhost,
+					Attributes: newMapFromAttr(`{"key":"value","qt": "0.6","summary_0.6": 45}`),
 				},
 			},
 			configFn: func() *Config {
@@ -379,7 +386,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				assert.Equal(t, expectedMetric.Value, actualMetrics[i].Value, fmt.Sprintf("Mismatch for value for test %s", tt.name))
 				assert.Equal(t, expectedMetric.Host, actualMetrics[i].Host)
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
-				assert.JSONEq(t, expectedMetric.Attributes, actualMetrics[i].Attributes)
+				assert.Equal(t, expectedMetric.Attributes, actualMetrics[i].Attributes)
 				err := encoder.Encode(actualMetrics[i])
 				assert.NoError(t, err)
 			}
@@ -390,6 +397,12 @@ func Test_mapToAdxMetric(t *testing.T) {
 func newMetricsWithResources() pcommon.Resource {
 	res := pcommon.NewResource()
 	res.Attributes().InsertString("key", "value")
-	res.Attributes().InsertString(hostKey, "test-host")
+	res.Attributes().InsertString(hostKey, testhost)
 	return res
+}
+
+func newMapFromAttr(jsonStr string) map[string]interface{} {
+	dynamic := make(map[string]interface{})
+	json.Unmarshal([]byte(jsonStr), &dynamic)
+	return dynamic
 }
