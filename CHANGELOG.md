@@ -27,6 +27,7 @@
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
 - `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+- `dynatraceexporter`: Provide better estimated summaries for partial histograms. (#11044)
 
 ### 🧰 Bug fixes 🧰
 
