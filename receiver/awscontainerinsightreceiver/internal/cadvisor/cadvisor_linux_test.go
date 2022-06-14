@@ -20,7 +20,6 @@ package cadvisor
 import (
 	"errors"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/google/cadvisor/cache/memory"
@@ -62,6 +61,14 @@ func (m *mockCadvisorManager2) SubcontainersInfo(containerName string, query *in
 	return nil, nil
 }
 
+func newMockCreateManager(t *testing.T) createCadvisorManager {
+	return func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
+		perfEventsFile string) (cadvisorManager, error) {
+		return &mockCadvisorManager{t: t}, nil
+	}
+}
+
 var mockCreateManager2 = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
 	includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 	perfEventsFile string) (cadvisorManager, error) {
@@ -82,53 +89,52 @@ func (m *MockK8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extracto
 }
 
 func TestGetMetrics(t *testing.T) {
-	// normal case
-	originalHostName := os.Getenv("HOST_NAME")
-	os.Setenv("HOST_NAME", "host")
+	t.Setenv("HOST_NAME", "host")
 	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
 	k8sdecoratorOption := WithDecorator(&MockK8sDecorator{})
-	mockCreateManager := func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
-		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
-		perfEventsFile string) (cadvisorManager, error) {
-		return &mockCadvisorManager{t: t}, nil
-	}
-	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager), k8sdecoratorOption)
+
+	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(newMockCreateManager(t)), k8sdecoratorOption)
 	assert.NotNil(t, c)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, c.GetMetrics())
-	os.Setenv("HOST_NAME", originalHostName)
+}
 
-	// no environmental variable
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager), k8sdecoratorOption)
+func TestGetMetricsNoEnv(t *testing.T) {
+	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
+	k8sdecoratorOption := WithDecorator(&MockK8sDecorator{})
+
+	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(newMockCreateManager(t)), k8sdecoratorOption)
 	assert.Nil(t, c)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
+}
 
-	// no cluster name
-	originalHostName = os.Getenv("HOST_NAME")
-	os.Setenv("HOST_NAME", "host")
-	hostInfo = testutils.MockHostInfo{}
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager), k8sdecoratorOption)
+func TestGetMetricsNoClusterName(t *testing.T) {
+	t.Setenv("HOST_NAME", "host")
+	hostInfo := testutils.MockHostInfo{}
+	k8sdecoratorOption := WithDecorator(&MockK8sDecorator{})
+
+	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(newMockCreateManager(t)), k8sdecoratorOption)
 	assert.NotNil(t, c)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, c.GetMetrics())
-	os.Setenv("HOST_NAME", originalHostName)
+}
 
-	// error when calling manager.Start
-	originalHostName = os.Getenv("HOST_NAME")
-	os.Setenv("HOST_NAME", "host")
-	hostInfo = testutils.MockHostInfo{ClusterName: "cluster"}
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager2), k8sdecoratorOption)
+func TestGetMetricsErrorWhenCreatingManager(t *testing.T) {
+	t.Setenv("HOST_NAME", "host")
+	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
+	k8sdecoratorOption := WithDecorator(&MockK8sDecorator{})
+
+	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManagerWithError), k8sdecoratorOption)
 	assert.Nil(t, c)
-	assert.NotNil(t, err)
-	os.Setenv("HOST_NAME", originalHostName)
+	assert.Error(t, err)
+}
 
-	// error when creating cadvisor manager
-	originalHostName = os.Getenv("HOST_NAME")
-	os.Setenv("HOST_NAME", "host")
-	hostInfo = testutils.MockHostInfo{ClusterName: "cluster"}
-	c, err = New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManagerWithError), k8sdecoratorOption)
+func TestGetMetricsErrorWhenCallingManagerStart(t *testing.T) {
+	t.Setenv("HOST_NAME", "host")
+	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
+	k8sdecoratorOption := WithDecorator(&MockK8sDecorator{})
+
+	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager2), k8sdecoratorOption)
 	assert.Nil(t, c)
-	assert.NotNil(t, err)
-
-	os.Setenv("HOST_NAME", originalHostName)
+	assert.Error(t, err)
 }

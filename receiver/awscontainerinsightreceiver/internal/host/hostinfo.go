@@ -82,14 +82,14 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 
 	nodeCapacity, err := mInfo.nodeCapacityCreator(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize NodeCapacity: %v", err)
+		return nil, fmt.Errorf("failed to initialize NodeCapacity: %w", err)
 	}
 	mInfo.nodeCapacity = nodeCapacity
 
 	defaultSessionConfig := awsutil.CreateDefaultSessionConfig()
 	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &defaultSessionConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws session: %v", err)
+		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
 	mInfo.awsSession = session
 

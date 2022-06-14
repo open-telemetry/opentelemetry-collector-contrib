@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -30,8 +29,7 @@ import (
 )
 
 func TestTransformer(t *testing.T) {
-	os.Setenv("TEST_FILTER_OPERATOR_ENV", "foo")
-	defer os.Unsetenv("TEST_FILTER_OPERATOR_ENV")
+	t.Setenv("TEST_FILTER_OPERATOR_ENV", "foo")
 
 	cases := []struct {
 		name       string

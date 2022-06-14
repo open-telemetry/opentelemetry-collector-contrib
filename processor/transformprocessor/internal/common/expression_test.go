@@ -63,6 +63,13 @@ func Test_newGetter(t *testing.T) {
 			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},
 		{
+			name: "bool literal",
+			val: Value{
+				Bool: (*Boolean)(testhelper.Boolp(true)),
+			},
+			want: true,
+		},
+		{
 			name: "path expression",
 			val: Value{
 				Path: &Path{

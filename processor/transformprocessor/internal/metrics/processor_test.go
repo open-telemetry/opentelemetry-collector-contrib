@@ -49,6 +49,8 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
 			},
 		},
 		{
@@ -65,6 +67,7 @@ func TestProcess(t *testing.T) {
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("test")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription("test")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetDescription("test")
 			},
 		},
 		{
@@ -72,6 +75,7 @@ func TestProcess(t *testing.T) {
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetUnit("new unit")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetUnit("new unit")
 			},
 		},
 		{
@@ -85,12 +89,44 @@ func TestProcess(t *testing.T) {
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 			},
 		},
 		{
-			query: `set(metric.is_monotonic, "true") where metric.is_monotonic == "false"`,
+			query: `set(metric.is_monotonic, true) where metric.is_monotonic == false`,
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetIsMonotonic(true)
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where count == 1`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where scale == 1`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where zero_count == 1`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where positive.offset == 1`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where negative.offset == 1`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
 			},
 		},
 	}
@@ -119,6 +155,7 @@ func constructMetrics() pmetric.Metrics {
 	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
 	fillMetricOne(rm0ils0.Metrics().AppendEmpty())
 	fillMetricTwo(rm0ils0.Metrics().AppendEmpty())
+	fillMetricThree(rm0ils0.Metrics().AppendEmpty())
 	return td
 }
 
@@ -152,8 +189,33 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint0.Attributes().InsertString("attr1", "test1")
 	dataPoint0.Attributes().InsertString("attr2", "test2")
 	dataPoint0.Attributes().InsertString("attr3", "test3")
+	dataPoint0.SetCount(1)
 
 	dataPoint1 := m.Histogram().DataPoints().AppendEmpty()
+	dataPoint1.SetStartTimestamp(StartTimestamp)
+	dataPoint1.Attributes().InsertString("attr1", "test1")
+	dataPoint1.Attributes().InsertString("attr2", "test2")
+	dataPoint1.Attributes().InsertString("attr3", "test3")
+}
+
+func fillMetricThree(m pmetric.Metric) {
+	m.SetName("operationC")
+	m.SetDescription("operationC description")
+	m.SetUnit("operationC unit")
+	m.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
+
+	dataPoint0 := m.ExponentialHistogram().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(StartTimestamp)
+	dataPoint0.Attributes().InsertString("attr1", "test1")
+	dataPoint0.Attributes().InsertString("attr2", "test2")
+	dataPoint0.Attributes().InsertString("attr3", "test3")
+	dataPoint0.SetCount(1)
+	dataPoint0.SetScale(1)
+	dataPoint0.SetZeroCount(1)
+	dataPoint0.Positive().SetOffset(1)
+	dataPoint0.Negative().SetOffset(1)
+
+	dataPoint1 := m.ExponentialHistogram().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(StartTimestamp)
 	dataPoint1.Attributes().InsertString("attr1", "test1")
 	dataPoint1.Attributes().InsertString("attr2", "test2")

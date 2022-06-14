@@ -20,7 +20,6 @@ package hostmetadata
 import (
 	"context"
 	"errors"
-	"os"
 	"reflect"
 	"testing"
 
@@ -179,10 +178,7 @@ func TestGetOS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hostInfo = tt.testfixtures.hostInfo
-			if err := os.Setenv("HOST_ETC", tt.testfixtures.hostEtc); err != nil {
-				t.Errorf("getOS() error = %v failed to set HOST_ETC env var", err)
-				return
-			}
+			t.Setenv("HOST_ETC", tt.testfixtures.hostEtc)
 			gotInfo, err := getOS()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getOS() error = %v, wantErr %v", err, tt.wantErr)
@@ -195,7 +191,6 @@ func TestGetOS(t *testing.T) {
 				}
 			}
 		})
-		os.Unsetenv("HOST_ETC")
 	}
 }
 
@@ -239,10 +234,7 @@ func Test_GetLinuxVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := os.Setenv("HOST_ETC", tt.etc); err != nil {
-				t.Errorf("getLinuxVersion() error = %v failed to set HOST_ETC env var", err)
-				return
-			}
+			t.Setenv("HOST_ETC", tt.etc)
 			got, err := getLinuxVersion()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getLinuxVersion() error = %v, wantErr %v", err, tt.wantErr)
@@ -252,7 +244,6 @@ func Test_GetLinuxVersion(t *testing.T) {
 				t.Errorf("getLinuxVersion() = %v, want %v", got, tt.want)
 			}
 		})
-		os.Unsetenv("HOST_ETC")
 	}
 }
 
@@ -305,16 +296,12 @@ func TestEtcPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.etc != "" {
-				if err := os.Setenv("HOST_ETC", tt.etc); err != nil {
-					t.Errorf("etcPath error = %v failed to set HOST_ETC env var", err)
-					return
-				}
+				t.Setenv("HOST_ETC", tt.etc)
 			}
 			if got := etcPath(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("etcPath = %v, want %v", got, tt.want)
 			}
 		})
-		os.Unsetenv("HOST_ETC")
 	}
 
 }

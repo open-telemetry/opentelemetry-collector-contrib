@@ -65,7 +65,7 @@ func (c *client) sendLogs(
 	jsonData, err := json.Marshal(data)
 
 	if err != nil {
-		return consumererror.NewPermanent(fmt.Errorf("failed to marshal log data to json, logs: %v", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to marshal log data to json, logs: %w", err))
 	}
 
 	var gzipped bytes.Buffer
