@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )

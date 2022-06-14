@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+
 	"go.uber.org/zap"
 )
 
