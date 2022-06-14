@@ -103,10 +103,24 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_state",
 				},
 			},
-			orig: "state",
-			new:  "newstate",
+			orig: "key1=val1,key2=val2",
+			new:  "key=newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceState("newstate")
+				span.SetTraceState("key=newVal")
+			},
+		},
+		{
+			name: "trace_state key",
+			path: []common.Field{
+				{
+					Name:   "trace_state",
+					MapKey: testhelper.Strp("key1"),
+				},
+			},
+			orig: "val1",
+			new:  "newVal",
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				span.SetTraceState("key1=newVal,key2=val2")
 			},
 		},
 		{
@@ -696,7 +710,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span := ptrace.NewSpan()
 	span.SetTraceID(pcommon.NewTraceID(traceID))
 	span.SetSpanID(pcommon.NewSpanID(spanID))
-	span.SetTraceState("state")
+	span.SetTraceState("key1=val1,key2=val2")
 	span.SetParentSpanID(pcommon.NewSpanID(spanID2))
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
