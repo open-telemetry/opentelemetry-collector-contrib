@@ -72,13 +72,13 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 	return provider.Once(chain), nil
 }
 
-func buildCurrentProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+func buildCurrentProvider(set component.TelemetrySettings, configHostname string) provider.HostnameProvider {
 	return &currentProvider{
 		logger:         set.Logger,
 		configHostname: configHostname,
 		systemProvider: system.NewProvider(set.Logger),
 		ec2Provider:    ec2.NewProvider(set.Logger),
-	}, nil
+	}
 }
 
 func GetHostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
@@ -87,14 +87,9 @@ func GetHostnameProvider(set component.TelemetrySettings, configHostname string)
 		return previewProvider, err
 	}
 
-	currentProvider, err := buildCurrentProvider(set, configHostname)
-	if err != nil {
-		return nil, err
-	}
-
 	return &warnProvider{
 		logger:          set.Logger,
-		curProvider:     currentProvider,
+		curProvider:     buildCurrentProvider(set, configHostname),
 		previewProvider: previewProvider,
 	}, nil
 }

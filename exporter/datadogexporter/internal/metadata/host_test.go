@@ -36,15 +36,13 @@ func TestHost(t *testing.T) {
 	// if the cache key is already set.
 	cache.Cache.Delete(cache.CanonicalHostnameKey)
 
-	p, err := buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host")
-	require.NoError(t, err)
+	p := buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host")
 	host, err := p.Hostname(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, host, "test-host")
 
 	// config.Config.Hostname does not get stored in the cache
-	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host-2")
-	require.NoError(t, err)
+	p = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host-2")
 	host, err = p.Hostname(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, host, "test-host-2")
@@ -57,8 +55,7 @@ func TestHost(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Setenv(awsEc2MetadataDisabled, curr)
 
-	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "")
-	require.NoError(t, err)
+	p = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "")
 	host, err = p.Hostname(context.Background())
 	require.NoError(t, err)
 	osHostname, err := os.Hostname()
