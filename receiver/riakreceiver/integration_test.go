@@ -65,7 +65,7 @@ func TestRiakIntegration(t *testing.T) {
 	hostname, err := container.Host(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "integration", "expected.json")
+	expectedFile := filepath.Join("testdata", "integration", "expected.4_0.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 

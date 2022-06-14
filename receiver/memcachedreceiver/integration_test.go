@@ -53,7 +53,7 @@ func TestIntegration(t *testing.T) {
 
 	actualMetrics := consumer.AllMetrics()[0]
 
-	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
+	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/expected.4_0.json")
 	require.NoError(t, err)
 	unmarshaller := pmetric.NewJSONUnmarshaler()
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
