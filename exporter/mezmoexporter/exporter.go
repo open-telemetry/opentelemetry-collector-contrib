@@ -120,7 +120,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 	var lineBytes []byte
 	for i, line := range lines {
 		if lineBytes, errs = json.Marshal(line); errs != nil {
-			return fmt.Errorf("error Creating JSON payload: %s", errs)
+			return fmt.Errorf("error Creating JSON payload: %w", errs)
 		}
 
 		var newBufSize = b.Len() + len(lineBytes)
@@ -163,7 +163,7 @@ func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
 
 	var res *http.Response
 	if res, errs = http.DefaultClient.Do(req); errs != nil {
-		return fmt.Errorf("failed to POST log to Mezmo: %s", errs)
+		return fmt.Errorf("failed to POST log to Mezmo: %w", errs)
 	}
 
 	return res.Body.Close()

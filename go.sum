@@ -305,8 +305,8 @@ github.com/aws/aws-sdk-go v1.34.28/go.mod h1:H7NKnBqNVzoTJpGfLrQkkD+ytBA93eiDYi/
 github.com/aws/aws-sdk-go v1.35.24/go.mod h1:tlPOdRjfxPBpNIwqDj61rmsnA85v9jc0Ps9+muhnW+k=
 github.com/aws/aws-sdk-go v1.38.35/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/aws/aws-sdk-go v1.38.68/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
-github.com/aws/aws-sdk-go v1.44.32 h1:x5hBtpY/02sgRL158zzTclcCLwh3dx3YlSl1rAH4Op0=
-github.com/aws/aws-sdk-go v1.44.32/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.44.33 h1:OoLO99CdssiyOISnZknsQfIqESOyuMgy7pLrPW7RLKg=
+github.com/aws/aws-sdk-go v1.44.33/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/aws/aws-sdk-go-v2 v1.0.0/go.mod h1:smfAbmpW+tcRVuNUjo3MOArSZmW72t62rkCzc2i0TWM=
 github.com/aws/aws-sdk-go-v2 v1.7.0/go.mod h1:tb9wi5s61kTDA5qCkcDbt3KRVV74GGslQkl/DRdX/P4=
@@ -634,8 +634,8 @@ github.com/dropbox/godropbox v0.0.0-20180512210157-31879d3884b9/go.mod h1:glr97h
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
-github.com/dynatrace-oss/dynatrace-metric-utils-go v0.3.0 h1:q2Ayh9s6Cr75bS5URiOUAoyFXemgKQaBJphbhAaJHCY=
-github.com/dynatrace-oss/dynatrace-metric-utils-go v0.3.0/go.mod h1:qw0E9EJ0PnSlhWawDNuqE0zhc1hqOBUCFIAj3dd9DNw=
+github.com/dynatrace-oss/dynatrace-metric-utils-go v0.4.0 h1:DNKHy0pt6iKh5w/FqWTlNL/vvZE5zxPLfjfm0Zqclc4=
+github.com/dynatrace-oss/dynatrace-metric-utils-go v0.4.0/go.mod h1:qw0E9EJ0PnSlhWawDNuqE0zhc1hqOBUCFIAj3dd9DNw=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-resiliency v1.2.0 h1:v7g92e/KSN71Rq7vSThKaWIq68fL4YHvWyiUKorFR1Q=
 github.com/eapache/go-resiliency v1.2.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=

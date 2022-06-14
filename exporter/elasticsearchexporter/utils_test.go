@@ -17,6 +17,7 @@ package elasticsearchexporter
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -184,7 +185,8 @@ func handleErr(fn func(http.ResponseWriter, *http.Request) error) http.HandlerFu
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := fn(w, r)
 		if err != nil {
-			if httpError, ok := err.(*httpTestError); ok {
+			httpError := &httpTestError{}
+			if errors.As(err, &httpError) {
 				http.Error(w, httpError.Message(), httpError.Status())
 			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

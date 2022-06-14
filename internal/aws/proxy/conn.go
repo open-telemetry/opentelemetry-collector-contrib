@@ -229,14 +229,15 @@ func (s *stsCalls) getCreds(region string, roleArn string) (*credentials.Credent
 	// Make explicit call to fetch credentials.
 	_, err = stsCred.Get()
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		var awsErr awserr.Error
+		if errors.As(err, &awsErr) {
+			switch awsErr.Code() {
 			case sts.ErrCodeRegionDisabledException:
 				s.log.Warn("STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
-					zap.String("region", region), zap.Error(aerr))
+					zap.String("region", region), zap.Error(awsErr))
 				stsCred, err = s.getSTSCredsFromPrimaryRegionEndpoint(sess, roleArn, region)
 			default:
-				return nil, fmt.Errorf("unable to handle AWS error: %w", aerr)
+				return nil, fmt.Errorf("unable to handle AWS error: %w", awsErr)
 			}
 		}
 	}

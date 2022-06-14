@@ -15,6 +15,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -168,7 +169,7 @@ func matchContainers(tasks []*taskAnnotated, matcher targetMatcher, matcherIndex
 			// NOTE: we don't stop when there is an error because it could be one task having invalid docker label.
 			if err != nil {
 				// Keep track of unexpected error
-				if err != errNotMatched {
+				if !errors.Is(err, errNotMatched) {
 					multierr.AppendInto(&merr, err)
 				}
 				continue

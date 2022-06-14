@@ -37,10 +37,10 @@ type ConfigUnmarshalTest struct {
 func configFromFileViaYaml(file string, config interface{}) error {
 	bytes, err := ioutil.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
-		return fmt.Errorf("could not find config file: %s", err)
+		return fmt.Errorf("could not find config file: %w", err)
 	}
 	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return fmt.Errorf("failed to read config file as yaml: %s", err)
+		return fmt.Errorf("failed to read config file as yaml: %w", err)
 	}
 
 	return nil
@@ -49,13 +49,13 @@ func configFromFileViaYaml(file string, config interface{}) error {
 func configFromFileViaMapstructure(file string, config interface{}) error {
 	bytes, err := ioutil.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
-		return fmt.Errorf("could not find config file: %s", err)
+		return fmt.Errorf("could not find config file: %w", err)
 	}
 
 	raw := map[string]interface{}{}
 
 	if err = yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %s", err)
+		return fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
 	dc := &mapstructure.DecoderConfig{Result: config, DecodeHook: helper.JSONUnmarshalerHook()}
