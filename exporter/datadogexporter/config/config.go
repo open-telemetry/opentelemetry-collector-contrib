@@ -451,7 +451,7 @@ func (c *Config) Validate() error {
 	}
 
 	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
-		return fmt.Errorf("hostname field is invalid: %s", err)
+		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
 	if c.API.Key == "" {

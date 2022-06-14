@@ -81,7 +81,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		}
 		err = collectorViperSection.UnmarshalExact(collectorCfg)
 		if err != nil {
-			return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
+			return fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
 		}
 
 		cfg.Scrapers[key] = collectorCfg

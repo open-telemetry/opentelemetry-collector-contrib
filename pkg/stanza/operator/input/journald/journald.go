@@ -140,7 +140,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 	// Start from a cursor if there is a saved offset
 	cursor, err := persister.Get(ctx, lastReadCursorKey)
 	if err != nil {
-		return fmt.Errorf("failed to get journalctl state: %s", err)
+		return fmt.Errorf("failed to get journalctl state: %w", err)
 	}
 
 	operator.persister = persister
@@ -149,11 +149,11 @@ func (operator *Input) Start(persister operator.Persister) error {
 	journal := operator.newCmd(ctx, cursor)
 	stdout, err := journal.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get journalctl stdout: %s", err)
+		return fmt.Errorf("failed to get journalctl stdout: %w", err)
 	}
 	err = journal.Start()
 	if err != nil {
-		return fmt.Errorf("start journalctl: %s", err)
+		return fmt.Errorf("start journalctl: %w", err)
 	}
 
 	// Start the reader goroutine
@@ -166,7 +166,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 		for {
 			line, err := stdoutBuf.ReadBytes('\n')
 			if err != nil {
-				if err != io.EOF {
+				if !errors.Is(err, io.EOF) {
 					operator.Errorw("Received error reading from journalctl stdout", zap.Error(err))
 				}
 				return
@@ -206,7 +206,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 
 	timestampInt, err := strconv.ParseInt(timestampString, 10, 64)
 	if err != nil {
-		return nil, "", fmt.Errorf("parse timestamp: %s", err)
+		return nil, "", fmt.Errorf("parse timestamp: %w", err)
 	}
 
 	delete(body, "__REALTIME_TIMESTAMP")
@@ -223,7 +223,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 
 	entry, err := operator.NewEntry(body)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to create entry: %s", err)
+		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
 
 	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
