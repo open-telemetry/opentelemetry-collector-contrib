@@ -33,8 +33,7 @@ import (
 func TestEncodeSpan(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	err := elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
-	assert.NoError(t, err)
+	assert.NoError(t, elastic.EncodeResourceMetadata(pcommon.NewResource(), &w))
 
 	traceID := model.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	rootTransactionID := model.SpanID{1, 1, 1, 1, 1, 1, 1, 1}
@@ -152,8 +151,7 @@ func TestEncodeSpanStatus(t *testing.T) {
 
 		var w fastjson.Writer
 		var recorder transporttest.RecorderTransport
-		err := elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
-		assert.NoError(t, err)
+		assert.NoError(t, elastic.EncodeResourceMetadata(pcommon.NewResource(), &w))
 		span := ptrace.NewSpan()
 		span.SetTraceID(pcommon.NewTraceID([16]byte{1}))
 		span.SetSpanID(pcommon.NewSpanID([8]byte{1}))
@@ -184,10 +182,8 @@ func TestEncodeSpanTruncation(t *testing.T) {
 
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	err := elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
-	assert.NoError(t, err)
-	err = elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w)
-	require.NoError(t, err)
+	assert.NoError(t, elastic.EncodeResourceMetadata(pcommon.NewResource(), &w))
+	require.NoError(t, elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), pcommon.NewResource(), &w))
 	sendStream(t, &w, &recorder)
 
 	payloads := recorder.Payloads()
@@ -500,10 +496,8 @@ func TestInstrumentationLibrary(t *testing.T) {
 	library.SetVersion("1.2.3")
 
 	resource := pcommon.NewResource()
-	err := elastic.EncodeResourceMetadata(resource, &w)
-	assert.NoError(t, err)
-	err = elastic.EncodeSpan(span, library, resource, &w)
-	assert.NoError(t, err)
+	assert.NoError(t, elastic.EncodeResourceMetadata(resource, &w))
+	assert.NoError(t, elastic.EncodeSpan(span, library, resource, &w))
 	sendStream(t, &w, &recorder)
 
 	payloads := recorder.Payloads()

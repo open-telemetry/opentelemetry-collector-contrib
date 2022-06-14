@@ -36,9 +36,7 @@ func TestTracesExporter(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer func() {
-		if err = tt.Shutdown(context.Background()); err != nil {
-			t.Fatalf("failed to stop: %v", err)
-		}
+		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	factory := NewFactory()
@@ -68,9 +66,7 @@ func TestMetricsExporter(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer func() {
-		if err = tt.Shutdown(context.Background()); err != nil {
-			t.Fatalf("failed to stop: %v", err)
-		}
+		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	factory := NewFactory()
@@ -95,9 +91,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer func() {
-		if err = tt.Shutdown(context.Background()); err != nil {
-			t.Fatalf("failed to stop: %v", err)
-		}
+		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	factory := NewFactory()

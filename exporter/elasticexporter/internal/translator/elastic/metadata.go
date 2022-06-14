@@ -98,21 +98,18 @@ func EncodeResourceMetadata(resource pcommon.Resource, w *fastjson.Writer) (err 
 
 	w.RawString(`{"metadata":{`)
 	w.RawString(`"service":`)
-	err = service.MarshalFastJSON(w)
-	if err != nil {
+	if err := service.MarshalFastJSON(w); err != nil {
 		return err
 	}
 	if system != (model.System{}) {
 		w.RawString(`,"system":`)
-		err = system.MarshalFastJSON(w)
-		if err != nil {
+		if err := system.MarshalFastJSON(w); err != nil {
 			return err
 		}
 	}
 	if len(labels) > 0 {
 		w.RawString(`,"labels":`)
-		err = labels.MarshalFastJSON(w)
-		if err != nil {
+		if err := labels.MarshalFastJSON(w); err != nil {
 			return err
 		}
 	}
