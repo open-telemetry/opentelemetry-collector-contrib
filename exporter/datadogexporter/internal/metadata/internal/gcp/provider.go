@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
+
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
 
 var _ source.Provider = (*Provider)(nil)

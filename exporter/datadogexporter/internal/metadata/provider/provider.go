@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
+
 	"go.uber.org/zap"
 )
 
