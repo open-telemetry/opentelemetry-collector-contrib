@@ -62,7 +62,7 @@ func (p *nodeNameProviderImpl) NodeName(ctx context.Context) (string, error) {
 	return pod.Spec.NodeName, nil
 }
 
-func newNodeNameProvider(logger *zap.Logger) (nodeNameProvider, error) {
+func newNodeNameProvider() (nodeNameProvider, error) {
 	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
 		AuthType: k8sconfig.AuthTypeServiceAccount,
 	})
