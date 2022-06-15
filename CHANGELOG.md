@@ -16,6 +16,7 @@
 
 - `expvarreceiver`: Include `expvarreceiver` in components (#10847)
 - `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
+- `googlemanagedprometheusexporter` The Google Managed Service for Prometheus exporter is alpha. (#10925)
 
 ### 💡 Enhancements 💡
 
@@ -27,6 +28,7 @@
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
 - `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+- `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
 
 ### 🧰 Bug fixes 🧰
 

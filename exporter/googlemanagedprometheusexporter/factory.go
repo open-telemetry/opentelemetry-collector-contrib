@@ -1,10 +1,10 @@
-// Copyright 2022 Google LLC
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      https://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@ package googlemanagedprometheusexporter // import "github.com/open-telemetry/ope
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -54,6 +54,19 @@ func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
-	// TODO: implement the metrics exporter
-	return nil, fmt.Errorf("not implemented")
+	eCfg := cfg.(*Config)
+	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.GMPConfig.toCollectorConfig(), params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		params,
+		mExp.PushMetrics,
+		exporterhelper.WithShutdown(mExp.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithRetry(eCfg.RetrySettings))
 }
