@@ -98,13 +98,14 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 			max = bounds[i]
 		}
 
-		if i == 0 {
+		switch i {
+		case 0:
 			// in the first bucket, estimate sum using the upper bound
 			sum += float64(counts[i]) * bounds[i]
-		} else if i == len(counts)-1 {
+		case len(counts) - 1:
 			// in the last bucket, estimate sum using the lower bound
 			sum += float64(counts[i]) * bounds[i-1]
-		} else {
+		default:
 			// in any other bucket, estimate sum using the bucket midpoint
 			sum += float64(counts[i]) * (bounds[i] + bounds[i-1]) / 2
 		}
