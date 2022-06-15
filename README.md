@@ -73,6 +73,11 @@ Even though the OpenTelemetry Collector Contrib maintainers are ultimately respo
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
+
+- Actively seeking contributors to triage issues
+
+Emeritus Triagers:
+
 - [Alolita Sharma](https://github.com/alolita), AWS
 - [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
