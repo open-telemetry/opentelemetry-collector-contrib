@@ -12,20 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+// +build integration
+
 package rabbitmqreceiver
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 var (
@@ -35,7 +41,7 @@ var (
 			Dockerfile: "Dockerfile.rabbitmq.3_9",
 		},
 		ExposedPorts: []string{"15672:15672"},
-		Hostname:     "localhost", //todo ?
+		Hostname:     "localhost",
 		WaitingFor: wait.ForListeningPort("15672").
 			WithStartupTimeout(2 * time.Minute),
 	}
@@ -48,12 +54,12 @@ func TestRabbitmqIntegration(t *testing.T) {
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
-		//hostname, err := container.Host(context.Background())
-		//require.NoError(t, err)
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
 
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		//cfg.Endpoint = fmt.Sprintf("http://%s:15672", hostname)
+		cfg.Endpoint = fmt.Sprintf("http://%s:15672", hostname)
 		cfg.Username = "otel" //otel guest
 		cfg.Password = "otel"
 
@@ -70,11 +76,6 @@ func TestRabbitmqIntegration(t *testing.T) {
 
 		actualMetrics := consumer.AllMetrics()[0]
 
-		//one run once
-		//actualFile := filepath.Join("testdata", "integration", "expected.3_9.json")
-		//err = golden.WriteMetrics(actualFile, actualMetrics)
-		//require.NoError(t, err)
-
 		expectedFile := filepath.Join("testdata", "integration", "expected.3_9.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
@@ -83,7 +84,6 @@ func TestRabbitmqIntegration(t *testing.T) {
 	})
 }
 
-//docker run -p 15672:15672 --hostname my-rabbit --name some-rabbit rabbitmq:3.9-management
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
 	require.NoError(t, req.Validate())
 	container, err := testcontainers.GenericContainer(

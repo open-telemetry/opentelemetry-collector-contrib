@@ -26,6 +26,7 @@
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
 - `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+- `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 
 ### 🧰 Bug fixes 🧰
 
