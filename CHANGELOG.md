@@ -29,6 +29,7 @@
 - `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
 - `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
+- `mezmoexporter`: add logging for HTTP errors (#10875)
 
 ### 🧰 Bug fixes 🧰
 
