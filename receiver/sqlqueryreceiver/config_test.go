@@ -50,25 +50,60 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, MetricAggregationCumulative, metric.Aggregation)
 }
 
-func TestConfig_Validate_Invalid(t *testing.T) {
-	cfgFiles := []string{
-		"config-invalid-datatype.yaml",
-		"config-invalid-valuetype.yaml",
-		"config-invalid-aggregation.yaml",
-		"config-invalid-missing-metricname.yaml",
-		"config-invalid-missing-valuecolumn.yaml",
-		"config-invalid-missing-sql.yaml",
-		"config-invalid-missing-queries.yaml",
-		"config-invalid-missing-driver.yaml",
-		"config-invalid-missing-metrics.yaml",
-		"config-invalid-missing-datasource.yaml",
+func TestValidateConfig_Invalid(t *testing.T) {
+	tests := []struct {
+		fname     string
+		errSubstr string
+	}{
+		{
+			fname:     "config-invalid-datatype.yaml",
+			errSubstr: "unsupported data_type: 'xyzgauge'",
+		},
+		{
+			fname:     "config-invalid-valuetype.yaml",
+			errSubstr: "unsupported value_type: 'xyzint'",
+		},
+		{
+			fname:     "config-invalid-aggregation.yaml",
+			errSubstr: "unsupported aggregation: 'xyzcumulative'",
+		},
+		{
+			fname:     "config-invalid-missing-metricname.yaml",
+			errSubstr: "'metric_name' cannot be empty",
+		},
+		{
+			fname:     "config-invalid-missing-valuecolumn.yaml",
+			errSubstr: "'value_column' cannot be empty",
+		},
+		{
+			fname:     "config-invalid-missing-sql.yaml",
+			errSubstr: "'query.sql' cannot be empty",
+		},
+		{
+			fname:     "config-invalid-missing-queries.yaml",
+			errSubstr: "'queries' cannot be empty",
+		},
+		{
+			fname:     "config-invalid-missing-driver.yaml",
+			errSubstr: "'driver' cannot be empty",
+		},
+		{
+			fname:     "config-invalid-missing-metrics.yaml",
+			errSubstr: "'query.metrics' cannot be empty",
+		},
+		{
+			fname:     "config-invalid-missing-datasource.yaml",
+			errSubstr: "'datasource' cannot be empty",
+		},
 	}
-	for _, cfgFile := range cfgFiles {
-		_, err := servicetest.LoadConfigAndValidate(
-			path.Join("testdata", cfgFile),
-			testFactories(t),
-		)
-		require.Error(t, err)
+	for _, test := range tests {
+		t.Run(test.fname, func(t *testing.T) {
+			_, err := servicetest.LoadConfigAndValidate(
+				path.Join("testdata", test.fname),
+				testFactories(t),
+			)
+			assert.ErrorContains(t, err, test.errSubstr)
+		})
 	}
 }
 

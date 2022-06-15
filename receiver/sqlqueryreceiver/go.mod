@@ -4,8 +4,17 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.5
+	github.com/SAP/go-hdb v0.106.1
+	github.com/denisenkom/go-mssqldb v0.12.2
+	github.com/docker/go-connections v0.4.0
+	github.com/go-sql-driver/mysql v1.6.0
+	github.com/lib/pq v1.10.6
+	github.com/snowflakedb/gosnowflake v1.6.10
+	github.com/testcontainers/testcontainers-go v0.13.0
 	go.opentelemetry.io/collector v0.54.0
+	go.opentelemetry.io/collector/pdata v0.54.0
 	go.opentelemetry.io/otel/trace v1.7.0
+	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -72,11 +81,9 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.54.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
