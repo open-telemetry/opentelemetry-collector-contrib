@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -546,9 +545,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 func TestNewExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
 	exp, err := newEmfPusher(expCfg, componenttest.NewNopExporterCreateSettings())
@@ -634,29 +631,11 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
 	exp, err := newEmfExporter(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
-}
-
-func stashEnv() []string {
-	env := os.Environ()
-	os.Clearenv()
-
-	return env
-}
-
-func popEnv(env []string) {
-	os.Clearenv()
-
-	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		os.Setenv(p[0], p[1])
-	}
 }

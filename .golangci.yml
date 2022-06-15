@@ -105,9 +105,11 @@ linters-settings:
 
 linters:
   enable:
+    - depguard
     - errcheck
     - errorlint
     - exportloopref
+    - gocritic
     - gofmt
     - goimports
     - gosec
@@ -115,9 +117,9 @@ linters:
     - misspell
     - revive
     - staticcheck
+    - tenv
     - unconvert
     - unparam
-    - gocritic
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
