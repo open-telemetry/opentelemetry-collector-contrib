@@ -84,8 +84,8 @@ github.com/DataDog/sketches-go v1.0.0/go.mod h1:O+XkJHWk9w4hDwY2ZUDU31ZC9sNYlYo8
 github.com/DataDog/sketches-go v1.4.1 h1:j5G6as+9FASM2qC36lvpvQAj9qsv/jUs3FtO8CwZNAY=
 github.com/DataDog/sketches-go v1.4.1/go.mod h1:xJIXldczJyyjnbDop7ZZcLxJdV3+7Kra7H1KMgpgkLk=
 github.com/DataDog/zstd v1.3.5/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.1 h1:v2ey6AUQFjj6vPMdXNL9K1R1/4V20qPBuL3os831jvw=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.1/go.mod h1:s7Gpwj0tk7XnVCm4BQEmx/mbS36SuTCY/vMB2SNxe8o=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.2 h1:aMWts6QP6yqlluU7KXl6j1zdPLW/PNNKHwm9804M5t4=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.2/go.mod h1:s7Gpwj0tk7XnVCm4BQEmx/mbS36SuTCY/vMB2SNxe8o=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.5.1/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
