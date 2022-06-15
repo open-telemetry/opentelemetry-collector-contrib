@@ -30,6 +30,7 @@
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
 - `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
 - `mezmoexporter`: add logging for HTTP errors (#10875)
+- `signalfxexporter`: Enable the exporting of seven Kubernetes metrics used in Splunk/SignalFx content by default (#11032)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
 
 ### 🧰 Bug fixes 🧰
