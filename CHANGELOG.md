@@ -29,6 +29,7 @@
 - `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
 - `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
+- `mezmoexporter`: add logging for HTTP errors (#10875)
 - `signalfxexporter`: Enable the exporting of seven Kubernetes metrics used in Splunk/SignalFx content by default (#11032)
 
 ### 🧰 Bug fixes 🧰
@@ -38,6 +39,7 @@
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
 - `windowseventlogreceiver`: Fixed example config in readme (#10971)
 - `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
+- `exporter/awsemfexporter:`: Fix dead links in README.md. (#11027)
 
 ## v0.53.0
 
