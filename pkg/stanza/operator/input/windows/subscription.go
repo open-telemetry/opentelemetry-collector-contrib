@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"errors"
 	"fmt"
 	"syscall"
 
@@ -36,19 +38,19 @@ func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark) e
 
 	signalEvent, err := windows.CreateEvent(nil, 0, 0, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create signal handle: %s", err)
+		return fmt.Errorf("failed to create signal handle: %w", err)
 	}
 	defer windows.CloseHandle(signalEvent)
 
 	channelPtr, err := syscall.UTF16PtrFromString(channel)
 	if err != nil {
-		return fmt.Errorf("failed to convert channel to utf16: %s", err)
+		return fmt.Errorf("failed to convert channel to utf16: %w", err)
 	}
 
 	flags := s.createFlags(startAt, bookmark)
 	subscriptionHandle, err := evtSubscribe(0, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
 	if err != nil {
-		return fmt.Errorf("failed to subscribe to %s channel: %s", channel, err)
+		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 	}
 
 	s.handle = subscriptionHandle
@@ -62,7 +64,7 @@ func (s *Subscription) Close() error {
 	}
 
 	if err := evtClose(s.handle); err != nil {
-		return fmt.Errorf("failed to close subscription handle: %s", err)
+		return fmt.Errorf("failed to close subscription handle: %w", err)
 	}
 
 	s.handle = 0
@@ -87,7 +89,7 @@ func (s *Subscription) Read(maxReads int) ([]Event, error) {
 		return nil, nil
 	}
 
-	if err != nil && err != windows.ERROR_NO_MORE_ITEMS {
+	if err != nil && !errors.Is(err, windows.ERROR_NO_MORE_ITEMS) {
 		return nil, err
 	}
 

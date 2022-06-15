@@ -64,7 +64,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.Services) > 0 {
 		serviceFS, err = filterset.CreateFilterSet(mp.Services, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating service name filters: %v", err)
+			return nil, fmt.Errorf("error creating service name filters: %w", err)
 		}
 	}
 
@@ -72,7 +72,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.SpanNames) > 0 {
 		nameFS, err = filterset.CreateFilterSet(mp.SpanNames, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating span name filters: %v", err)
+			return nil, fmt.Errorf("error creating span name filters: %w", err)
 		}
 	}
 

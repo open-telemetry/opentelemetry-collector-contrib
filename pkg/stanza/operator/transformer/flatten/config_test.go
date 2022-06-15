@@ -91,12 +91,12 @@ func TestGoldenConfig(t *testing.T) {
 func configFromFileViaYaml(file string) (*Config, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
+		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
 
 	config := defaultCfg()
 	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
+		return nil, fmt.Errorf("failed to read config file as yaml: %w", err)
 	}
 
 	return config, nil
@@ -105,13 +105,13 @@ func configFromFileViaYaml(file string) (*Config, error) {
 func configFromFileViaMapstructure(file string) (*Config, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
+		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
 
 	raw := map[string]interface{}{}
 
 	if err = yaml.Unmarshal(bytes, raw); err != nil {
-		return nil, fmt.Errorf("failed to read data from yaml: %s", err)
+		return nil, fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
 	cfg := defaultCfg()

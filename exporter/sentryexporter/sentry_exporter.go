@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sentryexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 
 import (
@@ -113,9 +112,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) erro
 
 	transactions := generateTransactions(transactionMap, orphanSpans)
 
-	events := append(transactions, exceptionEvents...)
+	transactions = append(transactions, exceptionEvents...)
 
-	s.transport.SendEvents(events)
+	s.transport.SendEvents(transactions)
 
 	return nil
 }

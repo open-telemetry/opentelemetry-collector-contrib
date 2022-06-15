@@ -69,7 +69,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 			// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
 			// this timeout is 10 minutes, which appears to be long enough.
-			if timedContextForInitialSync.Err() == context.DeadlineExceeded {
+			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
 				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))

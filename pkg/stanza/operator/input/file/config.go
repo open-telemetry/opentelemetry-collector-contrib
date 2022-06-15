@@ -86,7 +86,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	for _, include := range c.Include {
 		_, err = doublestar.PathMatch(include, "matchstring")
 		if err != nil {
-			return nil, fmt.Errorf("parse include glob: %s", err)
+			return nil, fmt.Errorf("parse include glob: %w", err)
 		}
 	}
 
@@ -94,7 +94,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	for _, exclude := range c.Exclude {
 		_, err = doublestar.PathMatch(exclude, "matchstring")
 		if err != nil {
-			return nil, fmt.Errorf("parse exclude glob: %s", err)
+			return nil, fmt.Errorf("parse exclude glob: %w", err)
 		}
 	}
 
