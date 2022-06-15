@@ -15,6 +15,7 @@
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -38,8 +39,6 @@ type adxMetricsProducer struct {
 
 func (e *adxMetricsProducer) metricsDataPusher(_ context.Context, metrics pmetric.Metrics) error {
 	resourceMetric := metrics.ResourceMetrics()
-	adxJsonIngestString := ""
-	var adxmetrics []string
 	for i := 0; i < resourceMetric.Len(); i++ {
 		res := resourceMetric.At(i).Resource()
 		scopeMetrics := resourceMetric.At(i).ScopeMetrics()
@@ -48,32 +47,26 @@ func (e *adxMetricsProducer) metricsDataPusher(_ context.Context, metrics pmetri
 			for k := 0; k < metrics.Len(); k++ {
 				transformedadxmetrics := mapToAdxMetric(res, metrics.At(k), e.logger)
 				for tm := 0; tm < len(transformedadxmetrics); tm++ {
-					adxmetricjsonstring, err := jsoniter.MarshalToString(transformedadxmetrics[tm])
+					adxmetricjsonbytes, err := jsoniter.Marshal(transformedadxmetrics[tm])
 					if err != nil {
 						e.logger.Error("Error performing serialization of data.", zap.Error(err))
 					}
-					adxmetrics = append(adxmetrics, adxmetricjsonstring)
+					ingestreader := bytes.NewReader(adxmetricjsonbytes)
+					if e.managedingest != nil {
+						if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
+							e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
+							return err
+						}
+					} else {
+						if _, err := e.queuedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
+							e.logger.Error("Error performing queued data ingestion.", zap.Error(err))
+							return err
+						}
+					}
+
 				}
 			}
 		}
-	}
-	if len(adxmetrics) > 0 {
-		adxJsonIngestString = strings.Join(adxmetrics, "\r\n")
-		ingestreader := strings.NewReader(adxJsonIngestString)
-		fmt.Println(adxJsonIngestString) // {"message":"hello"} <nil>
-		if e.managedingest != nil {
-			if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
-				e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
-				return err
-			}
-		} else {
-			if _, err := e.queuedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
-				e.logger.Error("Error performing queued data ingestion.", zap.Error(err))
-				return err
-			}
-		}
-	} else {
-		e.logger.Warn("Multi JSON buffer is empty , no records to process in the current batch")
 	}
 	return nil
 }
@@ -114,13 +107,10 @@ func newMetricsExporter(config *Config, logger *zap.Logger) (*adxMetricsProducer
 		queuedingest = qi
 		err = nil
 	}
-
-	//TODO much more optimized as a multi line JSON
 	ingestoptions := make([]ingest.FileOption, 2)
-	ingestoptions[0] = ingest.FileFormat(ingest.MultiJSON)
-	ingestoptions[1] = ingest.IngestionMapping(fmt.Sprintf("%s_mapping", strings.ToLower(config.RawMetricTable)), ingest.MultiJSON)
-	//ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower(config.RawMetricTable)), ingest.MultiJSON)
-
+	ingestoptions[0] = ingest.FileFormat(ingest.JSON)
+	// Expect that this mapping is alreay existent
+	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower(config.RawMetricTable)), ingest.JSON)
 	return &adxMetricsProducer{
 		client:        metricclient,
 		managedingest: managedingest,
