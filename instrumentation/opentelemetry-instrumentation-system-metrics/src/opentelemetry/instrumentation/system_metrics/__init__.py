@@ -31,7 +31,7 @@ following metrics are configured:
         "system.network.dropped.packets": ["transmit", "receive"],
         "system.network.packets": ["transmit", "receive"],
         "system.network.errors": ["transmit", "receive"],
-        "system.network.io": ["trasmit", "receive"],
+        "system.network.io": ["transmit", "receive"],
         "system.network.connections": ["family", "type"],
         "runtime.memory": ["rss", "vms"],
         "runtime.cpu.time": ["user", "system"],
@@ -59,7 +59,7 @@ Usage
     configuration = {
         "system.memory.usage": ["used", "free", "cached"],
         "system.cpu.time": ["idle", "user", "system", "irq"],
-        "system.network.io": ["trasmit", "receive"],
+        "system.network.io": ["transmit", "receive"],
         "runtime.memory": ["rss", "vms"],
         "runtime.cpu.time": ["user", "system"],
     }
@@ -97,7 +97,7 @@ _DEFAULT_CONFIG = {
     "system.network.dropped.packets": ["transmit", "receive"],
     "system.network.packets": ["transmit", "receive"],
     "system.network.errors": ["transmit", "receive"],
-    "system.network.io": ["trasmit", "receive"],
+    "system.network.io": ["transmit", "receive"],
     "system.network.connections": ["family", "type"],
     "runtime.memory": ["rss", "vms"],
     "runtime.cpu.time": ["user", "system"],
