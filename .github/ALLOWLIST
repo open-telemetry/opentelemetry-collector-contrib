@@ -16,7 +16,6 @@
 cmd/configschema
 examples/demo/client
 examples/demo/server
-exporter/opencensusexporter
 exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
@@ -29,15 +28,11 @@ internal/sharedcomponent
 internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
-pkg/translator/jaeger
-pkg/translator/opencensus
 pkg/translator/prometheusremotewrite
 pkg/translator/signalfx
-pkg/translator/zipkin
 pkg/winperfcounters
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
-receiver/opencensusreceiver
 receiver/podmanreceiver
 receiver/simpleprometheusreceiver
 receiver/simpleprometheusreceiver/examples/federation/prom-counter
