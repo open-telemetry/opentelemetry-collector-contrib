@@ -80,7 +80,7 @@ The following GitHub users are the currently available sponsors, either by being
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
 ## Adding metrics to existing receivers
-Following these steps for contributing additional metrics.
+Following these steps for contributing additional metrics to existing receivers.
  - Make sure you have basic tools, like `golang, make and git` installed in your system. 
  - Fork this repo and check it out locally to your system, e.g. into the directory `opentelemetry-collector-contrib`
  - Make sure $GOPATH is added to $PATH, if not sure, run `export PATH=$PATH:$(go env GOPATH)/bin`
