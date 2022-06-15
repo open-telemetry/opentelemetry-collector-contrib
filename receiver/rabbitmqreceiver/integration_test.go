@@ -12,7 +12,93 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-// +build integration
-
 package rabbitmqreceiver
+
+import (
+	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"path/filepath"
+	"testing"
+	"time"
+)
+
+var (
+	containerRequest3_9 = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.rabbitmq.3_9",
+		},
+		ExposedPorts: []string{"15672:15672"},
+		Hostname:     "localhost", //todo ?
+		WaitingFor: wait.ForListeningPort("15672").
+			WithStartupTimeout(2 * time.Minute),
+	}
+)
+
+func TestRabbitmqIntegration(t *testing.T) {
+	t.Run("Running rabbitmq 3.9", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest3_9)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		//hostname, err := container.Host(context.Background())
+		//require.NoError(t, err)
+
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		//cfg.Endpoint = fmt.Sprintf("http://%s:15672", hostname)
+		cfg.Username = "otel" //otel guest
+		cfg.Password = "otel"
+
+		consumer := new(consumertest.MetricsSink)
+		settings := componenttest.NewNopReceiverCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMetrics := consumer.AllMetrics()[0]
+
+		//one run once
+		//actualFile := filepath.Join("testdata", "integration", "expected.3_9.json")
+		//err = golden.WriteMetrics(actualFile, actualMetrics)
+		//require.NoError(t, err)
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.3_9.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+	})
+}
+
+//docker run -p 15672:15672 --hostname my-rabbit --name some-rabbit rabbitmq:3.9-management
+func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
+	require.NoError(t, req.Validate())
+	container, err := testcontainers.GenericContainer(
+		context.Background(),
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
+	require.NoError(t, err)
+
+	code, err := container.Exec(context.Background(), []string{"./setup.sh"})
+	require.NoError(t, err)
+	require.Equal(t, 0, code)
+
+	err = container.Start(context.Background())
+	require.NoError(t, err)
+	return container
+}
