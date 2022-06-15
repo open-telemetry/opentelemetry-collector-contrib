@@ -6,12 +6,17 @@
 | Supported pipeline types | metrics          |
 | Distributions            | [contrib], [AWS] |
 
-The [Dynatrace](https://dynatrace.com) metrics exporter exports metrics to the [metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
+The [Dynatrace](https://www.dynatrace.com/integrations/opentelemetry/) metrics exporter exports metrics to the [Metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
 using the [metrics ingestion protocol](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/metric-ingestion-protocol/).
-This enables Dynatrace to receive metrics collected by the OpenTelemetry Collector.
+This enables Dynatrace to receive metrics collected by the OpenTelemetry Collector.  
+More information on exporting metrics to Dynatrace can be found in the
+[Dynatrace documentation for OpenTelemetry metrics](https://www.dynatrace.com/support/help/shortlink/opentelemetry-metrics).
 
-The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).
+For ingesting traces (spans) into Dynatrace, use the generic OTLP/HTTP exporter shipped with the Collector.  
+More information on exporting traces to Dynatrace can be found in the
+[Dynatrace documentation for OpenTelemetry traces](https://www.dynatrace.com/support/help/extend-dynatrace/opentelemetry/opentelemetry-traces/opentelemetry-ingest).
 
+> The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).  
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
 > which contains recommendations on securing sensitive information such as the
@@ -51,7 +56,7 @@ exporters:
 
 If you run the Collector on a host or VM without a OneAgent you will need to configure the Metrics v2 API endpoint of your Dynatrace environment to send the metrics to as well as an API token.
 
-Find out how to create a token in the [Dynatrace documentation](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/) or navigate to **Settings > Integration > Dynatrace API** in your Dynatrace environment and create a token with the 'Ingest metrics' (`metrics.ingest`) scope enabled. It is recommended to limit token scope to only this permission.
+Find out how to create a token in the [Dynatrace documentation](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/) or navigate to **Access tokens** in your Dynatrace environment and create a token with the 'Ingest metrics' (`metrics.ingest`) scope enabled. It is recommended to limit token scope to only this permission.
 
 The endpoint for the Dynatrace Metrics API v2 is:
 
