@@ -1,3 +1,17 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package metrics
 
 import (
@@ -10,40 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func getTestSummaryMetric() pmetric.Metric {
-	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeSummary)
-	metricInput.SetName("summary_metric")
-	input := metricInput.Summary().DataPoints().AppendEmpty()
-	input.SetCount(100)
-	input.SetSum(12.34)
-
-	qVal1 := input.QuantileValues().AppendEmpty()
-	qVal1.SetValue(1)
-	qVal1.SetQuantile(.99)
-
-	qVal2 := input.QuantileValues().AppendEmpty()
-	qVal2.SetValue(2)
-	qVal2.SetQuantile(.95)
-
-	qVal3 := input.QuantileValues().AppendEmpty()
-	qVal3.SetValue(3)
-	qVal3.SetQuantile(.50)
-
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
-	return metricInput
-}
-
-func getTestAttributes() pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.InsertString("test", "hello world")
-	attrs.InsertInt("test2", 3)
-	attrs.InsertBool("test3", true)
-	return attrs
-}
-
-func TestConvertSummaryTransforms(t *testing.T) {
+func TestConvertSummaryCountValToSum(t *testing.T) {
 	tests := []struct {
 		name string
 		inv  common.Invocation
@@ -73,35 +54,6 @@ func TestConvertSummaryTransforms(t *testing.T) {
 				sumMetric.SetName("summary_metric_count")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(100)
-
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
-			},
-		},
-		{
-			name: "convert_summary_sum_val_to_sum",
-			inv: common.Invocation{
-				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []common.Value{
-					{
-						String: testhelper.Strp("delta"),
-					},
-					{
-						Bool: (*common.Boolean)(testhelper.Boolp(false)),
-					},
-				},
-			},
-			want: func(metrics pmetric.MetricSlice) {
-				summaryMetric := getTestSummaryMetric()
-				summaryMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				sumMetric.Sum().SetIsMonotonic(false)
-
-				sumMetric.SetName("summary_metric_sum")
-				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
