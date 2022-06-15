@@ -1,0 +1,17 @@
+receivers:
+  memcached:
+    endpoint: "localhost:11211"
+    collection_interval: 10s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [memcached]
+      processors: [nop]
+      exporters: [nop]

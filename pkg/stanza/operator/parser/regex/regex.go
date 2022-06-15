@@ -62,7 +62,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	r, err := regexp.Compile(c.Regex)
 	if err != nil {
-		return nil, fmt.Errorf("compiling regex: %s", err)
+		return nil, fmt.Errorf("compiling regex: %w", err)
 	}
 
 	namedCaptureGroups := 0

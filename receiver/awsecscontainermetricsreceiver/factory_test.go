@@ -16,7 +16,6 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,8 +32,6 @@ func TestValidConfig(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	os.Unsetenv(endpoints.TaskMetadataEndpointV4EnvVar)
-
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
@@ -46,7 +43,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithEnv(t *testing.T) {
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
@@ -59,7 +56,7 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),

@@ -20,6 +20,7 @@ package opencensusreceiver
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -404,7 +405,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -553,7 +554,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break

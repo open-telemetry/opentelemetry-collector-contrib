@@ -118,7 +118,7 @@ func expandMap(cfg map[string]interface{}, env observer.EndpointEnv) (map[string
 		case string:
 			res, err := evalBackticksInConfigValue(val, env)
 			if err != nil {
-				return nil, fmt.Errorf("failed evaluating config expression for key %q: %v", k, err)
+				return nil, fmt.Errorf("failed evaluating config expression for key %q: %w", k, err)
 			}
 			resolved[k] = res
 		default:
