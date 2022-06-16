@@ -1,7 +1,7 @@
 name: aerospikereceiver
 
 resource_attributes:
-  aerospike.node_name:
+  aerospike.node.name:
     description: Name of the Aerospike node collected from
     type: string
   aerospike.namespace:

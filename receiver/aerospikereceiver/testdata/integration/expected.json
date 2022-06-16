@@ -4,7 +4,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "aerospike.node_name",
+                        "key": "aerospike.node.name",
                         "value": {
                             "stringValue": "BB9020011AC4202"
                         }

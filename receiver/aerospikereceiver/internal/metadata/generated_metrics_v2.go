@@ -767,10 +767,10 @@ func WithAerospikeNamespace(val string) ResourceMetricsOption {
 	}
 }
 
-// WithAerospikeNodeName sets provided value as "aerospike.node_name" attribute for current resource.
+// WithAerospikeNodeName sets provided value as "aerospike.node.name" attribute for current resource.
 func WithAerospikeNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("aerospike.node_name", val)
+		rm.Resource().Attributes().UpsertString("aerospike.node.name", val)
 	}
 }
 
