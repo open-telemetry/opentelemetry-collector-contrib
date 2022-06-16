@@ -122,7 +122,7 @@ const (
 	AttributeNamespaceComponentData
 	AttributeNamespaceComponentIndex
 	AttributeNamespaceComponentSetIndex
-	AttributeNamespaceComponentSindex
+	AttributeNamespaceComponentSecondaryIndex
 )
 
 // String returns the string representation of the AttributeNamespaceComponent.
@@ -134,18 +134,18 @@ func (av AttributeNamespaceComponent) String() string {
 		return "index"
 	case AttributeNamespaceComponentSetIndex:
 		return "set_index"
-	case AttributeNamespaceComponentSindex:
-		return "sindex"
+	case AttributeNamespaceComponentSecondaryIndex:
+		return "secondary_index"
 	}
 	return ""
 }
 
 // MapAttributeNamespaceComponent is a helper map of string to AttributeNamespaceComponent attribute value.
 var MapAttributeNamespaceComponent = map[string]AttributeNamespaceComponent{
-	"data":      AttributeNamespaceComponentData,
-	"index":     AttributeNamespaceComponentIndex,
-	"set_index": AttributeNamespaceComponentSetIndex,
-	"sindex":    AttributeNamespaceComponentSindex,
+	"data":            AttributeNamespaceComponentData,
+	"index":           AttributeNamespaceComponentIndex,
+	"set_index":       AttributeNamespaceComponentSetIndex,
+	"secondary_index": AttributeNamespaceComponentSecondaryIndex,
 }
 
 // AttributeScanResult specifies the a value scan_result attribute.
@@ -183,33 +183,33 @@ type AttributeScanType int
 
 const (
 	_ AttributeScanType = iota
-	AttributeScanTypeAggr
+	AttributeScanTypeAggregation
 	AttributeScanTypeBasic
-	AttributeScanTypeOpsBg
-	AttributeScanTypeUdfBg
+	AttributeScanTypeOpsBackground
+	AttributeScanTypeUdfBackground
 )
 
 // String returns the string representation of the AttributeScanType.
 func (av AttributeScanType) String() string {
 	switch av {
-	case AttributeScanTypeAggr:
-		return "aggr"
+	case AttributeScanTypeAggregation:
+		return "aggregation"
 	case AttributeScanTypeBasic:
 		return "basic"
-	case AttributeScanTypeOpsBg:
-		return "ops_bg"
-	case AttributeScanTypeUdfBg:
-		return "udf_bg"
+	case AttributeScanTypeOpsBackground:
+		return "ops_background"
+	case AttributeScanTypeUdfBackground:
+		return "udf_background"
 	}
 	return ""
 }
 
 // MapAttributeScanType is a helper map of string to AttributeScanType attribute value.
 var MapAttributeScanType = map[string]AttributeScanType{
-	"aggr":   AttributeScanTypeAggr,
-	"basic":  AttributeScanTypeBasic,
-	"ops_bg": AttributeScanTypeOpsBg,
-	"udf_bg": AttributeScanTypeUdfBg,
+	"aggregation":    AttributeScanTypeAggregation,
+	"basic":          AttributeScanTypeBasic,
+	"ops_background": AttributeScanTypeOpsBackground,
+	"udf_background": AttributeScanTypeUdfBackground,
 }
 
 // AttributeTransactionResult specifies the a value transaction_result attribute.

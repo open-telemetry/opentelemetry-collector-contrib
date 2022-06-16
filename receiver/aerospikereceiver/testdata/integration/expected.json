@@ -29,44 +29,6 @@
                                             {
                                                 "key": "type",
                                                 "value": {
-                                                    "stringValue": "fabric"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "close"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "client"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "close"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
-                                        "asInt": "25"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
                                                     "stringValue": "client"
                                                 }
                                             },
@@ -77,9 +39,9 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
-                                        "asInt": "26"
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
+                                        "asInt": "55"
                                     },
                                     {
                                         "attributes": [
@@ -96,8 +58,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
                                         "asInt": "2"
                                     },
                                     {
@@ -105,6 +67,25 @@
                                             {
                                                 "key": "type",
                                                 "value": {
+                                                    "stringValue": "client"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "close"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
+                                        "asInt": "54"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
                                                     "stringValue": "heartbeat"
                                                 }
                                             },
@@ -115,8 +96,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
                                         "asInt": "0"
                                     },
                                     {
@@ -134,9 +115,28 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
                                         "asInt": "48"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "fabric"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "close"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
+                                        "asInt": "0"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -154,12 +154,25 @@
                                             {
                                                 "key": "type",
                                                 "value": {
+                                                    "stringValue": "client"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
+                                        "asInt": "1"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
                                                     "stringValue": "fabric"
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
                                         "asInt": "48"
                                     },
                                     {
@@ -171,22 +184,9 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
                                         "asInt": "2"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "client"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
-                                        "asInt": "1"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -199,9 +199,9 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1655393687487706243",
-                                        "timeUnixNano": "1655393702491498907",
-                                        "asInt": "70"
+                                        "startTimeUnixNano": "1655394861662434007",
+                                        "timeUnixNano": "1655394876665653577",
+                                        "asInt": "72"
                                     }
                                 ]
                             }

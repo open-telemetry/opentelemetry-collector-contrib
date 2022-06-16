@@ -39,8 +39,8 @@ metrics:
 | ---- | ----------- | ------ |
 | connection_op (operation) | Operation performed with a connection (open or close) | close, open |
 | connection_type (type) | Type of connection to an Aerospike node | client, fabric, heartbeat |
-| namespace_component (component) | Individual component of a namespace | data, index, set_index, sindex |
+| namespace_component (component) | Individual component of a namespace | data, index, set_index, secondary_index |
 | scan_result (result) | Result of a scan operation performed on a namespace | abort, complete, error |
-| scan_type (type) | Type of scan operation performed on a namespace | aggr, basic, ops_bg, udf_bg |
+| scan_type (type) | Type of scan operation performed on a namespace | aggregation, basic, ops_background, udf_background |
 | transaction_result (result) | Result of a transaction performed on a namespace | error, filtered_out, not_found, success, timeout |
 | transaction_type (type) | Type of transaction performed on a namespace | delete, read, udf, write |

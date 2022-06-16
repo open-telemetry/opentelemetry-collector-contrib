@@ -16,15 +16,15 @@ attributes:
       - data
       - index
       - set_index
-      - sindex
+      - secondary_index
   scan_type:
     value: type
     description: Type of scan operation performed on a namespace
     enum:
-      - aggr
+      - aggregation
       - basic
-      - ops_bg
-      - udf_bg
+      - ops_background
+      - udf_background
   scan_result:
     value: result
     description: Result of a scan operation performed on a namespace
