@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -567,7 +569,7 @@ func (m *metricAerospikeNodeConnectionCount) recordDataPoint(start pcommon.Times
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert("type", pcommon.NewValueString(connectionTypeAttributeValue))
-	dp.Attributes().Insert("op", pcommon.NewValueString(connectionOpAttributeValue))
+	dp.Attributes().Insert("operation", pcommon.NewValueString(connectionOpAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -765,10 +767,10 @@ func WithAerospikeNamespace(val string) ResourceMetricsOption {
 	}
 }
 
-// WithNodeName sets provided value as "node_name" attribute for current resource.
-func WithNodeName(val string) ResourceMetricsOption {
+// WithAerospikeNodeName sets provided value as "aerospike.node_name" attribute for current resource.
+func WithAerospikeNodeName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("node_name", val)
+		rm.Resource().Attributes().UpsertString("aerospike.node_name", val)
 	}
 }
 
@@ -832,43 +834,83 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordAeropsikeNamespaceTransactionCountDataPoint adds a data point to aeropsike.namespace.transaction.count metric.
-func (mb *MetricsBuilder) RecordAeropsikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, val int64, transactionTypeAttributeValue AttributeTransactionType, transactionResultAttributeValue AttributeTransactionResult) {
+func (mb *MetricsBuilder) RecordAeropsikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, inputVal string, transactionTypeAttributeValue AttributeTransactionType, transactionResultAttributeValue AttributeTransactionResult) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AeropsikeNamespaceTransactionCount, value was %s: %w", inputVal, err)
+	}
 	mb.metricAeropsikeNamespaceTransactionCount.recordDataPoint(mb.startTime, ts, val, transactionTypeAttributeValue.String(), transactionResultAttributeValue.String())
+	return nil
 }
 
 // RecordAerospikeNamespaceDiskAvailableDataPoint adds a data point to aerospike.namespace.disk.available metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceDiskAvailable, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNamespaceDiskAvailable.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordAerospikeNamespaceMemoryFreeDataPoint adds a data point to aerospike.namespace.memory.free metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryFreeDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceMemoryFree, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNamespaceMemoryFree.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordAerospikeNamespaceMemoryUsageDataPoint adds a data point to aerospike.namespace.memory.usage metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, namespaceComponentAttributeValue AttributeNamespaceComponent) {
+func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommon.Timestamp, inputVal string, namespaceComponentAttributeValue AttributeNamespaceComponent) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceMemoryUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNamespaceMemoryUsage.recordDataPoint(mb.startTime, ts, val, namespaceComponentAttributeValue.String())
+	return nil
 }
 
 // RecordAerospikeNamespaceScanCountDataPoint adds a data point to aerospike.namespace.scan.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceScanCountDataPoint(ts pcommon.Timestamp, val int64, scanTypeAttributeValue AttributeScanType, scanResultAttributeValue AttributeScanResult) {
+func (mb *MetricsBuilder) RecordAerospikeNamespaceScanCountDataPoint(ts pcommon.Timestamp, inputVal string, scanTypeAttributeValue AttributeScanType, scanResultAttributeValue AttributeScanResult) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceScanCount, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNamespaceScanCount.recordDataPoint(mb.startTime, ts, val, scanTypeAttributeValue.String(), scanResultAttributeValue.String())
+	return nil
 }
 
 // RecordAerospikeNodeConnectionCountDataPoint adds a data point to aerospike.node.connection.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeConnectionCountDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType, connectionOpAttributeValue AttributeConnectionOp) {
+func (mb *MetricsBuilder) RecordAerospikeNodeConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string, connectionTypeAttributeValue AttributeConnectionType, connectionOpAttributeValue AttributeConnectionOp) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNodeConnectionCount, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNodeConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String(), connectionOpAttributeValue.String())
+	return nil
 }
 
 // RecordAerospikeNodeConnectionOpenDataPoint adds a data point to aerospike.node.connection.open metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeConnectionOpenDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType) {
+func (mb *MetricsBuilder) RecordAerospikeNodeConnectionOpenDataPoint(ts pcommon.Timestamp, inputVal string, connectionTypeAttributeValue AttributeConnectionType) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNodeConnectionOpen, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNodeConnectionOpen.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String())
+	return nil
 }
 
 // RecordAerospikeNodeMemoryFreeDataPoint adds a data point to aerospike.node.memory.free metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeMemoryFreeDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordAerospikeNodeMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNodeMemoryFree, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNodeMemoryFree.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

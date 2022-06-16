@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,7 +30,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
 )
 
 // aerospikeReceiver is a metrics receiver using the Aerospike interface to collect
@@ -89,12 +89,12 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 		r.logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
 		return r.mb.Emit(), err
 	}
-	r.emitNode(info, now)
+	r.emitNode(info, now, errs)
 	r.scrapeNamespaces(info, client, now, errs)
 
 	if r.config.CollectClusterMetrics {
 		r.logger.Debug("Collecting peer nodes")
-		for _, n := range info.Services {
+		for _, n := range strings.Split(info["services"], ";") {
 			r.scrapeDiscoveredNode(n, now, errs)
 		}
 	}
@@ -110,7 +110,7 @@ func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, 
 		return
 	}
 
-	r.emitNode(info, now)
+	r.emitNode(info, now, errs)
 	r.scrapeNamespaces(info, client, now, errs)
 }
 
@@ -143,122 +143,108 @@ func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Ti
 }
 
 // emitNode records node metrics and emits the resource. If statistics are missing in INFO, nothing is recorded
-func (r *aerospikeReceiver) emitNode(info *model.NodeInfo, now pcommon.Timestamp) {
-	stats := info.Statistics
-	if stats == nil {
-		return
+func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	for k, v := range info {
+		switch k {
+		case "client_connections":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, v, metadata.AttributeConnectionTypeClient))
+		case "fabric_connections":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, v, metadata.AttributeConnectionTypeFabric))
+		case "heartbeat_connections":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, v, metadata.AttributeConnectionTypeHeartbeat))
+		case "client_connections_closed":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, v, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpClose))
+		case "client_connections_opened":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, v, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpOpen))
+		case "fabric_connections_closed":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, v, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpClose))
+		case "fabric_connections_opened":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, v, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpOpen))
+		case "heartbeat_connections_closed":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, v, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpClose))
+		case "heartbeat_connections_opened":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, v, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpOpen))
+		case "system_free_mem_pct":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeMemoryFreeDataPoint(now, v))
+		}
 	}
 
-	if stats.ClientConnections != nil {
-		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.ClientConnections, metadata.AttributeConnectionTypeClient)
-	}
-	if stats.FabricConnections != nil {
-		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.FabricConnections, metadata.AttributeConnectionTypeFabric)
-	}
-	if stats.HeartbeatConnections != nil {
-		r.mb.RecordAerospikeNodeConnectionOpenDataPoint(now, *stats.HeartbeatConnections, metadata.AttributeConnectionTypeHeartbeat)
-	}
-
-	if stats.ClientConnectionsClosed != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsClosed, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpClose)
-	}
-	if stats.ClientConnectionsOpened != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.ClientConnectionsOpened, metadata.AttributeConnectionTypeClient, metadata.AttributeConnectionOpOpen)
-	}
-	if stats.FabricConnectionsClosed != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsClosed, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpClose)
-	}
-	if stats.FabricConnectionsOpened != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.FabricConnectionsOpened, metadata.AttributeConnectionTypeFabric, metadata.AttributeConnectionOpOpen)
-	}
-	if stats.HeartbeatConnectionsClosed != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsClosed, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpClose)
-	}
-	if stats.HeartbeatConnectionsOpened != nil {
-		r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, *stats.HeartbeatConnectionsOpened, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpOpen)
-	}
-
-	r.mb.EmitForResource(metadata.WithNodeName(info.Name))
+	r.mb.EmitForResource(metadata.WithAerospikeNodeName(info["node"]))
 }
 
 // scrapeNamespaces records metrics for all namespaces on a node
 // The given client is used to collect namespace metrics, which is connected to a single node
-func (r *aerospikeReceiver) scrapeNamespaces(info *model.NodeInfo, client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if info.Namespaces == nil {
-		return
-	}
-
-	for _, n := range info.Namespaces {
+func (r *aerospikeReceiver) scrapeNamespaces(info map[string]string, client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	namespaces := strings.Split(info["namespaces"], ";")
+	for _, n := range namespaces {
+		if n == "" {
+			continue
+		}
 		nInfo, err := client.NamespaceInfo(n)
 		if err != nil {
 			r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
 			errs.AddPartial(0, err)
 			continue
 		}
-		nInfo.Node = info.Name
-		r.emitNamespace(nInfo, now)
+		nInfo["node"] = info["node"]
+		r.emitNamespace(nInfo, now, errs)
 	}
 }
 
 // emitNamespace emits a namespace resource with its name as resource attribute
-func (r *aerospikeReceiver) emitNamespace(info *model.NamespaceInfo, now pcommon.Timestamp) {
-	if info.DeviceAvailablePct != nil {
-		r.mb.RecordAerospikeNamespaceDiskAvailableDataPoint(now, *info.DeviceAvailablePct)
-	}
-	if info.MemoryFreePct != nil {
-		r.mb.RecordAerospikeNamespaceMemoryFreeDataPoint(now, *info.MemoryFreePct)
-	}
-	if info.MemoryUsedDataBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedDataBytes, metadata.AttributeNamespaceComponentData)
-	}
-	if info.MemoryUsedIndexBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedIndexBytes, metadata.AttributeNamespaceComponentIndex)
-	}
-	if info.MemoryUsedSIndexBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedSIndexBytes, metadata.AttributeNamespaceComponentSindex)
-	}
-	if info.MemoryUsedSetIndexBytes != nil {
-		r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, *info.MemoryUsedSetIndexBytes, metadata.AttributeNamespaceComponentSetIndex)
+func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	for k, v := range info {
+		switch k {
+		// Capacity
+		case "device_available_pct":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceDiskAvailableDataPoint(now, v))
+		case "memory_free_pct":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceMemoryFreeDataPoint(now, v))
+
+		// Memory usage
+		case "memory_used_data_bytes":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, v, metadata.AttributeNamespaceComponentData))
+		case "memory_used_index_bytes":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, v, metadata.AttributeNamespaceComponentIndex))
+		case "memory_used_sindex_bytes":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, v, metadata.AttributeNamespaceComponentSindex))
+		case "memory_used_set_index_bytes":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceMemoryUsageDataPoint(now, v, metadata.AttributeNamespaceComponentSetIndex))
+
+		// Scans
+		case "scan_aggr_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultAbort))
+		case "scan_aggr_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultComplete))
+		case "scan_aggr_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultError))
+		case "scan_basic_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultAbort))
+		case "scan_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultComplete))
+		case "scan_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultError))
+		case "scan_ops_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultAbort))
+		case "scan_ops_bg_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultComplete))
+		case "scan_ops_bg_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultError))
+		case "scan_udf_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultAbort))
+		case "scan_udf_bg_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultComplete))
+		case "scan_udf_bg_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultError))
+		}
 	}
 
-	if info.ScanAggrAbort != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanAggrAbort, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultAbort)
-	}
-	if info.ScanAggrComplete != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanAggrComplete, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultComplete)
-	}
-	if info.ScanAggrError != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanAggrError, metadata.AttributeScanTypeAggr, metadata.AttributeScanResultError)
-	}
+	r.mb.EmitForResource(metadata.WithAerospikeNamespace(info["name"]), metadata.WithAerospikeNodeName(info["node"]))
+}
 
-	if info.ScanBasicAbort != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanBasicAbort, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultAbort)
+// addPartialIfError adds a partial error if the given error isn't nil
+func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {
+	if err != nil {
+		errs.AddPartial(1, err)
 	}
-	if info.ScanBasicComplete != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanBasicComplete, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultComplete)
-	}
-	if info.ScanBasicError != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanBasicError, metadata.AttributeScanTypeBasic, metadata.AttributeScanResultError)
-	}
-
-	if info.ScanOpsBgAbort != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanOpsBgAbort, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultAbort)
-	}
-	if info.ScanOpsBgComplete != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanOpsBgComplete, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultComplete)
-	}
-	if info.ScanOpsBgError != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanOpsBgError, metadata.AttributeScanTypeOpsBg, metadata.AttributeScanResultError)
-	}
-
-	if info.ScanUdfBgAbort != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanUdfBgAbort, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultAbort)
-	}
-	if info.ScanUdfBgComplete != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanUdfBgComplete, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultComplete)
-	}
-	if info.ScanUdfBgError != nil {
-		r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, *info.ScanUdfBgError, metadata.AttributeScanTypeUdfBg, metadata.AttributeScanResultError)
-	}
-	r.mb.EmitForResource(metadata.WithAerospikeNamespace(info.Name), metadata.WithNodeName(info.Node))
 }

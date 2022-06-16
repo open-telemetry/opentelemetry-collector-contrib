@@ -33,7 +33,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 )
 
@@ -89,7 +88,7 @@ func TestScrapeNode(t *testing.T) {
 			name: "empty response",
 			setupClient: func() *mocks.Aerospike {
 				client := &mocks.Aerospike{}
-				client.On("Info").Return(&model.NodeInfo{}, nil)
+				client.On("Info").Return(map[string]string{}, nil)
 				return client
 			},
 		},
@@ -135,45 +134,43 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
 
-	expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, 22, metadata.AttributeConnectionTypeClient)
-	expectedMB.EmitForResource(metadata.WithNodeName("Primary Node"))
+	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
+	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("Primary Node"))
 
-	expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, 45)
-	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithNodeName("Primary Node"))
+	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "45"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("Primary Node"))
 
-	expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, 1, metadata.AttributeConnectionTypeClient)
-	expectedMB.EmitForResource(metadata.WithNodeName("Secondary Node"))
+	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "1", metadata.AttributeConnectionTypeClient))
+	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("Secondary Node"))
 
-	expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, 128, metadata.AttributeNamespaceComponentData)
-	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithNodeName("Secondary Node"))
+	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "128", metadata.AttributeNamespaceComponentData))
+	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("Secondary Node"))
 
 	initialClient := mocks.NewAerospike(t)
-	initialClient.On("Info").Return(&model.NodeInfo{
-		Name:       "Primary Node",
-		Services:   []string{"localhost:3001", "localhost:3002", "invalid"},
-		Namespaces: []string{"test", "bar"},
-		Statistics: &model.NodeStats{
-			ClientConnections: intPtr(22),
-		},
+	initialClient.On("Info").Return(map[string]string{
+		"node":               "Primary Node",
+		"namespaces":         "test;bar",
+		"services":           "localhost:3001;localhost:3002;invalid",
+		"client_connections": "22",
 	}, nil)
-	initialClient.On("NamespaceInfo", "test").Return(&model.NamespaceInfo{
-		Name:          "test",
-		MemoryFreePct: intPtr(45),
+	initialClient.On("NamespaceInfo", "test").Return(map[string]string{
+		"name":            "test",
+		"memory_free_pct": "45",
 	}, nil)
+
 	initialClient.On("NamespaceInfo", "bar").Return(nil, errors.New("no such namespace"))
 	initialClient.On("Close").Return()
 
 	peerClient := mocks.NewAerospike(t)
-	peerClient.On("Info").Return(&model.NodeInfo{
-		Name:       "Secondary Node",
-		Namespaces: []string{"test"},
-		Statistics: &model.NodeStats{
-			ClientConnections: intPtr(1),
-		},
+	peerClient.On("Info").Return(map[string]string{
+		"node":               "Secondary Node",
+		"namespaces":         "test",
+		"client_connections": "1",
 	}, nil)
-	peerClient.On("NamespaceInfo", "test").Return(&model.NamespaceInfo{
-		Name:                "test",
-		MemoryUsedDataBytes: intPtr(128),
+
+	peerClient.On("NamespaceInfo", "test").Return(map[string]string{
+		"name":                   "test",
+		"memory_used_data_bytes": "128",
 	}, nil)
 	peerClient.On("Close").Return()
 
@@ -208,9 +205,4 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	initialClient.AssertExpectations(t)
 	peerClient.AssertExpectations(t)
-}
-
-// intPtr returns a pointer to the given int
-func intPtr(v int64) *int64 {
-	return &v
 }

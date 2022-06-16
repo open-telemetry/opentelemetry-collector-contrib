@@ -16,12 +16,11 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v5"
 	"github.com/aerospike/aerospike-client-go/v5/types"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/model"
 )
 
 type defaultASClient struct {
@@ -32,9 +31,9 @@ type defaultASClient struct {
 // aerospike is the interface that provides information about a given node
 type aerospike interface {
 	// NamespaceInfo gets information about a specific namespace
-	NamespaceInfo(namespace string) (*model.NamespaceInfo, error)
+	NamespaceInfo(namespace string) (map[string]string, error)
 	// Info gets high-level information about the node/system.
-	Info() (*model.NodeInfo, error)
+	Info() (map[string]string, error)
 	// Close closes the connection to the Aerospike node
 	Close()
 }
@@ -68,12 +67,12 @@ func newASClient(host string, port int, username, password string, timeout time.
 	}, nil
 }
 
-func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo, error) {
+func (c *defaultASClient) NamespaceInfo(namespace string) (map[string]string, error) {
 	if err := c.conn.SetTimeout(time.Now().Add(c.policy.Timeout), c.policy.Timeout); err != nil {
 		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
-	var response model.InfoResponse
-	response, err := c.conn.RequestInfo(model.NamespaceKey(namespace))
+	namespaceKey := "namespace/" + namespace
+	response, err := c.conn.RequestInfo(namespaceKey)
 
 	// Try to login and get a new session
 	if err != nil && err.Matches(types.EXPIRED_SESSION) {
@@ -86,14 +85,29 @@ func (c *defaultASClient) NamespaceInfo(namespace string) (*model.NamespaceInfo,
 		return nil, err
 	}
 
-	return model.ParseNamespaceInfo(response, namespace), nil
+	info := make(map[string]string)
+	for k, v := range response {
+		if k == namespaceKey {
+			for _, pair := range splitFields(v) {
+				parts := splitPair(pair)
+				// TODO: Warn/indicate we skipped a pair
+				if len(parts) != 2 {
+					continue
+				}
+				info[parts[0]] = parts[1]
+
+			}
+
+		}
+	}
+	return info, nil
 }
 
-func (c *defaultASClient) Info() (*model.NodeInfo, error) {
+func (c *defaultASClient) Info() (map[string]string, error) {
 	if err := c.conn.SetTimeout(time.Now().Add(c.policy.Timeout), c.policy.Timeout); err != nil {
 		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
-	var response model.InfoResponse
+
 	response, err := c.conn.RequestInfo("namespaces", "node", "statistics", "services")
 
 	// Try to login and get a new session
@@ -106,10 +120,36 @@ func (c *defaultASClient) Info() (*model.NodeInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	info := make(map[string]string)
+	for k, v := range response {
+		switch k {
+		case "statistics":
+			for _, pair := range splitFields(v) {
+				parts := splitPair(pair)
+				// TODO: Warn/indicate we skipped a pair
+				if len(parts) != 2 {
+					continue
+				}
+				info[parts[0]] = parts[1]
 
-	return model.ParseInfo(response), nil
+			}
+		case "node":
+			info[k] = v
+		}
+	}
+	return info, nil
 }
 
 func (c *defaultASClient) Close() {
 	c.conn.Close()
+}
+
+// splitPair splits a metric pair in the format of 'key=value'
+func splitPair(pair string) []string {
+	return strings.Split(pair, "=")
+}
+
+// splitFields splits a string of metric pairs delimited with the ';' character
+func splitFields(info string) []string {
+	return strings.Split(info, ";")
 }

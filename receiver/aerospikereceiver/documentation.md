@@ -31,13 +31,13 @@ metrics:
 | Name | Description | Type |
 | ---- | ----------- | ---- |
 | aerospike.namespace | Name of the Aerospike namespace | String |
-| node_name | Name of the Aerospike node collected from | String |
+| aerospike.node_name | Name of the Aerospike node collected from | String |
 
 ## Metric attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| connection_op (op) | Operation performed with a connection (open or close) | close, open |
+| connection_op (operation) | Operation performed with a connection (open or close) | close, open |
 | connection_type (type) | Type of connection to an Aerospike node | client, fabric, heartbeat |
 | namespace_component (component) | Individual component of a namespace | data, index, set_index, sindex |
 | scan_result (result) | Result of a scan operation performed on a namespace | abort, complete, error |

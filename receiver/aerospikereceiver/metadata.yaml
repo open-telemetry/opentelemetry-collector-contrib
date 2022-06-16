@@ -1,7 +1,7 @@
 name: aerospikereceiver
 
 resource_attributes:
-  node_name:
+  aerospike.node_name:
     description: Name of the Aerospike node collected from
     type: string
   aerospike.namespace:
@@ -57,7 +57,7 @@ attributes:
       - fabric
       - heartbeat
   connection_op:
-    value: op
+    value: operation
     description: Operation performed with a connection (open or close)
     enum:
       - close
@@ -71,6 +71,7 @@ metrics:
     unit: '%'
     gauge:
       value_type: int
+      input_type: string
   aerospike.node.connection.count:
     enabled: true
     description: Number of connections opened and closed to the node
@@ -79,6 +80,7 @@ metrics:
     attributes: [connection_type, connection_op]
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
   aerospike.node.connection.open:
@@ -89,6 +91,7 @@ metrics:
     attributes: [connection_type]
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation: cumulative
   aerospike.namespace.memory.usage:
@@ -99,6 +102,7 @@ metrics:
     attributes: [namespace_component]
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation: cumulative
   aerospike.namespace.memory.free:
@@ -108,12 +112,14 @@ metrics:
     unit: '%'
     gauge:
       value_type: int
+      input_type: string
   aerospike.namespace.disk.available:
     enabled: true
     description: Minimum percentage of contiguous disk space free to the namespace across all devices
     unit: '%'
     gauge:
       value_type: int
+      input_type: string
   aerospike.namespace.scan.count:
     enabled: true
     description: Number of scan operations performed on the namespace
@@ -122,6 +128,7 @@ metrics:
     attributes: [scan_type, scan_result]
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
   aeropsike.namespace.transaction.count:
@@ -132,5 +139,6 @@ metrics:
     attributes: [transaction_type, transaction_result]
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation: cumulative
