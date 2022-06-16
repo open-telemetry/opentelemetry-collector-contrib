@@ -81,17 +81,14 @@ Whenever a sponsor is picked from the top of this list, please move them to the 
 
 ## Adding metrics to existing receivers
 Following these steps for contributing additional metrics to existing receivers.
- - Make sure you have basic tools, like `golang, make and git` installed in your system. 
- - Fork this repo and check it out locally to your system, e.g. into the directory `opentelemetry-collector-contrib`
- - Make sure $GOPATH is added to $PATH, if not sure, run `export PATH=$PATH:$(go env GOPATH)/bin`
- - Run `cd opentelemetry-collector-contrib`
- - Run `make install-tools`
+ - Read instructions [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#fork) on how to 
+   fork, build and create PRs. The only difference is to change repository name from `opentelemetry-collector` to `opentelemetry-collector-contrib`
  - Edit `metadata.yaml` of your metrics receiver to add new metrics, e.g.: `redisreceiver/metadata.yaml`
  - To generate new metrics on top of this updated YAML file.
    - Run `cd receiver/redisreceiver`
    - Run `go generate ./...`
 - Review the changed files and merge the changes into your forked repo.
-- Create PR from Github web console.
+- Create PR from Github web console following the instructions above.
 
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not rigid rules and there are exceptions but
