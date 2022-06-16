@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.36.0-rc.4.0.20220426134022-b55bccd5073f
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/DataDog/sketches-go v1.4.1
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.1
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.2
 	github.com/aws/aws-sdk-go v1.44.33
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
@@ -16,9 +16,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.53.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.53.0
-	go.opentelemetry.io/collector/pdata v0.53.0
-	go.opentelemetry.io/collector/semconv v0.53.0
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.38.1

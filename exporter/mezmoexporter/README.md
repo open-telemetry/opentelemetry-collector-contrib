@@ -4,7 +4,7 @@ This exporter supports sending OpenTelemetry log data to [LogDNA (Mezmo)](https:
 
 # Configuration options:
 
-- `ingest_url` (optional): Specifies the URL to send ingested logs to.  If not specified, will default to `https://logs.logdna.com/log/ingest`.
+- `ingest_url` (optional): Specifies the URL to send ingested logs to.  If not specified, will default to `https://logs.logdna.com/logs/ingest`.
 - `ingest_key` (required): Ingestion key used to send log data to LogDNA.  See [Ingestion Keys](https://docs.logdna.com/docs/ingestion-key) for more details.
 
 # Example:
@@ -19,7 +19,7 @@ receivers:
 
 exporters:
   mezmo:
-    ingest_url: "https://logs.logdna.com/log/ingest"
+    ingest_url: "https://logs.logdna.com/logs/ingest"
     ingest_key: "00000000000000000000000000000000"
 
 service:
