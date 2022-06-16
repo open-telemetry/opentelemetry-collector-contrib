@@ -45,6 +45,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (common.Exp
 		sumMetric := mtc.GetMetrics().AppendEmpty()
 		sumMetric.SetDescription(metric.Description())
 		sumMetric.SetName(metric.Name() + "_sum")
+		sumMetric.SetUnit(metric.Unit())
 		sumMetric.SetDataType(pmetric.MetricDataTypeSum)
 		sumMetric.Sum().SetAggregationTemporality(aggTemp)
 		sumMetric.Sum().SetIsMonotonic(monotonic)
