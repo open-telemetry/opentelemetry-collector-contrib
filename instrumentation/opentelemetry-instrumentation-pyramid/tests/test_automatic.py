@@ -136,6 +136,27 @@ class TestAutomatic(InstrumentationTest, TestBase, WsgiTestBase):
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
+    def test_400s_response_is_not_an_error(self):
+        tween_list = "pyramid.tweens.excview_tween_factory"
+        config = Configurator(settings={"pyramid.tweens": tween_list})
+        self._common_initialization(config)
+        resp = self.client.get("/hello/404")
+        self.assertEqual(404, resp.status_code)
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        self.assertEqual(span_list[0].status.status_code, StatusCode.UNSET)
+
+        PyramidInstrumentor().uninstrument()
+
+        self.config = Configurator()
+
+        self._common_initialization(self.config)
+
+        resp = self.client.get("/hello/404")
+        self.assertEqual(404, resp.status_code)
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+
 
 class TestWrappedWithOtherFramework(
     InstrumentationTest, TestBase, WsgiTestBase
