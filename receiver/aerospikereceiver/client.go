@@ -21,11 +21,13 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go/v5"
 	"github.com/aerospike/aerospike-client-go/v5/types"
+	"go.uber.org/zap"
 )
 
 type defaultASClient struct {
 	conn   *as.Connection   // open connection to Aerospike
 	policy *as.ClientPolicy // Timeout and authentication information
+	logger *zap.Logger      // logs malformed metrics in responses
 }
 
 // aerospike is the interface that provides information about a given node
@@ -40,7 +42,7 @@ type aerospike interface {
 
 // newASClient creates a new defaultASClient connected to the given host and port.
 // If username and password aren't blank, they're used to authenticate
-func newASClient(host string, port int, username, password string, timeout time.Duration) (*defaultASClient, error) {
+func newASClient(host string, port int, username, password string, timeout time.Duration, logger *zap.Logger) (*defaultASClient, error) {
 	authEnabled := username != "" && password != ""
 
 	policy := as.NewClientPolicy()
@@ -63,6 +65,7 @@ func newASClient(host string, port int, username, password string, timeout time.
 
 	return &defaultASClient{
 		conn:   conn,
+		logger: logger,
 		policy: policy,
 	}, nil
 }
@@ -90,8 +93,8 @@ func (c *defaultASClient) NamespaceInfo(namespace string) (map[string]string, er
 		if k == namespaceKey {
 			for _, pair := range splitFields(v) {
 				parts := splitPair(pair)
-				// TODO: Warn/indicate we skipped a pair
 				if len(parts) != 2 {
+					c.logger.Warn(fmt.Sprintf("metric pair '%s' not in key=value format", pair))
 					continue
 				}
 				info[parts[0]] = parts[1]
@@ -126,8 +129,8 @@ func (c *defaultASClient) Info() (map[string]string, error) {
 		case "statistics":
 			for _, pair := range splitFields(v) {
 				parts := splitPair(pair)
-				// TODO: Warn/indicate we skipped a pair
 				if len(parts) != 2 {
+					c.logger.Warn(fmt.Sprintf("metric pair '%s' not in key=value format", pair))
 					continue
 				}
 				info[parts[0]] = parts[1]

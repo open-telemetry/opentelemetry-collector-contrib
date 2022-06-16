@@ -65,7 +65,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		config:   cfg,
 		consumer: consumer,
 		clientFactory: func(host string, port int) (aerospike, error) {
-			return newASClient(host, port, cfg.Username, cfg.Password, cfg.Timeout)
+			return newASClient(host, port, cfg.Username, cfg.Password, cfg.Timeout, params.Logger)
 		},
 		host: host,
 		port: int(port),
