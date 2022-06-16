@@ -56,6 +56,8 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (common.Exp
 			sumDp := sumDps.AppendEmpty()
 			dp.Attributes().CopyTo(sumDp.Attributes())
 			sumDp.SetDoubleVal(dp.Sum())
+			sumDp.SetStartTimestamp(dp.StartTimestamp())
+			sumDp.SetTimestamp(dp.Timestamp())
 		}
 		return nil
 	}, nil
