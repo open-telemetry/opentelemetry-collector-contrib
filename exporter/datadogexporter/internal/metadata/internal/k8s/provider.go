@@ -49,14 +49,9 @@ func (p *Provider) Hostname(ctx context.Context) (string, error) {
 
 // NewProvider creates a new Kubernetes hostname provider.
 func NewProvider(logger *zap.Logger, clusterProvider provider.ClusterNameProvider) (*Provider, error) {
-	nodeProvider, err := newNodeNameProvider()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build node name provider: %w", err)
-	}
-
 	return &Provider{
 		logger:              logger,
-		nodeNameProvider:    nodeProvider,
+		nodeNameProvider:    newNodeNameProvider(),
 		clusterNameProvider: clusterProvider,
 	}, nil
 }

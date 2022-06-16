@@ -68,16 +68,26 @@ func (p *nodeNameProviderImpl) NodeName(ctx context.Context) (string, error) {
 	return pod.Spec.NodeName, nil
 }
 
-func newNodeNameProvider() (nodeNameProvider, error) {
+var _ nodeNameProvider = (*nodeNameUnavailable)(nil)
+
+type nodeNameUnavailable struct {
+	err error
+}
+
+func (n *nodeNameUnavailable) NodeName(context.Context) (string, error) {
+	return "", fmt.Errorf("k8s client is unavailable: %w", n.err)
+}
+
+func newNodeNameProvider() nodeNameProvider {
 	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
 		AuthType: k8sconfig.AuthTypeServiceAccount,
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to build k8s client: %w", err)
+		return &nodeNameUnavailable{err: err}
 	}
 
 	return &nodeNameProviderImpl{
 		client: client,
-	}, nil
+	}
 }
