@@ -25,8 +25,8 @@ set -eu -o pipefail
 CODEOWNERS=".github/CODEOWNERS"
 ALLOWLIST=".github/ALLOWLIST"
 
-# Get component folders from the project and checks that they have 
-# an owner in $CODEOWNERS 
+# Get component folders from the project and checks that they have
+# an owner in $CODEOWNERS
 check_code_owner_existence() {
   MODULES=$(find . -type f -name "go.mod" -exec dirname {} \; | sort | grep -E '^./' | cut -c 3-)
   MISSING_COMPONENTS=0
@@ -34,7 +34,7 @@ check_code_owner_existence() {
   for module in ${MODULES}
   do
     if ! grep -q "^$module " "$CODEOWNERS"; then
-      # Account for parent folders which implicitly include 
+      # Account for parent folders which implicitly include
       # sub folders e.g. 'internal/aws' is listed in $CODEOWNERS
       # which accounts for internal/aws/awsutil, internal/aws/k8s etc.
       PREFIX_MODULE_PATH=$(echo $module | cut -d/ -f 1-5)
@@ -42,10 +42,10 @@ check_code_owner_existence() {
         # Check if it is a known component that is waiting on an owner
         if grep -wq "$module" "$ALLOWLIST"; then
           ((ALLOW_LIST_COMPONENTS=ALLOW_LIST_COMPONENTS+1))
-          echo "\"$module\" not included in CODEOWNERS but in the ALLOWLIST"
+          echo "pass: \"$module\" not included in CODEOWNERS but in the ALLOWLIST"
         else
           ((MISSING_COMPONENTS=MISSING_COMPONENTS+1))
-          echo "\"$module\" not included in CODEOWNERS"
+          echo "FAIL: \"$module\" not included in CODEOWNERS"
         fi
       fi
     fi
