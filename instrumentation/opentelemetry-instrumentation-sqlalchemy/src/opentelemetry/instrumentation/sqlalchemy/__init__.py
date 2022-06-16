@@ -51,6 +51,7 @@ Usage
 API
 ---
 """
+from collections.abc import Sequence
 from typing import Collection
 
 import sqlalchemy
@@ -83,10 +84,11 @@ class SQLAlchemyInstrumentor(BaseInstrumentor):
         Args:
             **kwargs: Optional arguments
                 ``engine``: a SQLAlchemy engine instance
+                ``engines``: a list of SQLAlchemy engine instances
                 ``tracer_provider``: a TracerProvider, defaults to global
 
         Returns:
-            An instrumented engine if passed in as an argument, None otherwise.
+            An instrumented engine if passed in as an argument or list of instrumented engines, None otherwise.
         """
         tracer_provider = kwargs.get("tracer_provider")
         _w("sqlalchemy", "create_engine", _wrap_create_engine(tracer_provider))
@@ -108,6 +110,18 @@ class SQLAlchemyInstrumentor(BaseInstrumentor):
                 kwargs.get("engine"),
                 kwargs.get("enable_commenter", False),
             )
+        if kwargs.get("engines") is not None and isinstance(
+            kwargs.get("engines"), Sequence
+        ):
+            return [
+                EngineTracer(
+                    _get_tracer(tracer_provider),
+                    engine,
+                    kwargs.get("enable_commenter", False),
+                )
+                for engine in kwargs.get("engines")
+            ]
+
         return None
 
     def _uninstrument(self, **kwargs):

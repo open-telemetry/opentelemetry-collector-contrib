@@ -50,6 +50,24 @@ class TestSqlalchemyInstrumentation(TestBase):
         self.assertEqual(spans[0].name, "SELECT :memory:")
         self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
 
+    def test_instrument_two_engines(self):
+        engine_1 = create_engine("sqlite:///:memory:")
+        engine_2 = create_engine("sqlite:///:memory:")
+
+        SQLAlchemyInstrumentor().instrument(
+            engines=[engine_1, engine_2],
+            tracer_provider=self.tracer_provider,
+        )
+
+        cnx_1 = engine_1.connect()
+        cnx_1.execute("SELECT	1 + 1;").fetchall()
+        cnx_2 = engine_2.connect()
+        cnx_2.execute("SELECT	1 + 1;").fetchall()
+
+        spans = self.memory_exporter.get_finished_spans()
+
+        self.assertEqual(len(spans), 2)
+
     @pytest.mark.skipif(
         not sqlalchemy.__version__.startswith("1.4"),
         reason="only run async tests for 1.4",
