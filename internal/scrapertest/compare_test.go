@@ -444,7 +444,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			//sort MetricSlice
-			name: "sort-unordered-MetricSlice",
+			name: "sort-unordered-metric-slice",
 			withoutOptions: expectation{
 				err:    nil,
 				reason: "An unpredictable resource attribute will cause failures if not ignored.",
