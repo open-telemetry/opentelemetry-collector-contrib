@@ -1,0 +1,17 @@
+receivers:
+  redis:
+    endpoint:
+    collection_interval: 10s
+    password:
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [redis]
+      processors: [nop]
+      exporters: [nop]
