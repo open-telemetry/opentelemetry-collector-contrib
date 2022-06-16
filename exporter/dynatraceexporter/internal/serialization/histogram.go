@@ -54,6 +54,7 @@ func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimension
 }
 
 // histDataPointToSummary returns the estimated minimum and maximum value in the histogram by using the min and max non-empty buckets.
+// It MAY NOT be called with a data point with dp.Count() == 0.
 func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, float64) {
 	bounds := dp.MExplicitBounds()
 	counts := dp.MBucketCounts()
@@ -131,6 +132,7 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 
 	// Set min to average when higher than average. This can happen when most values are lower than first boundary (falling in first bucket).
 	// Set max to average when lower than average. This can happen when most values are higher than last boundary (falling in last bucket).
+	// dp.Count() will never be zero
 	avg := sum / float64(dp.Count())
 	if min > avg {
 		min = avg
