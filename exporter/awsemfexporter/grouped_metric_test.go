@@ -278,7 +278,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				switch metricName {
 				case "int-gauge", "int-sum":
 					assert.Equal(t, 2, len(group.metrics))
-					assert.Equal(t, int64(1608068109347), group.metadata.timestampMs)	
+					assert.Equal(t, int64(1608068109347), group.metadata.timestampMs)
 				case "summary":
 					assert.Equal(t, 1, len(group.metrics))
 					assert.Equal(t, int64(1608068110347), group.metadata.timestampMs)

@@ -179,11 +179,14 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	_, _ = r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
@@ -370,11 +373,14 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	_, _ = r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
@@ -426,11 +432,14 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	_, _ = r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
@@ -501,10 +510,13 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	_, _ = r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
-	line, err := r.ReadLine()
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
