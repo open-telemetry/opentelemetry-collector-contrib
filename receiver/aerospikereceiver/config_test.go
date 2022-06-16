@@ -16,6 +16,7 @@ package aerospikereceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -60,6 +61,14 @@ func TestValidate(t *testing.T) {
 				Endpoint: "localhost:2.02",
 			},
 			expected: errBadPort,
+		},
+		{
+			name: "negative timeout",
+			config: &Config{
+				Endpoint: "localhost:3001",
+				Timeout:  -1 * time.Second,
+			},
+			expected: errNegativeTimeout,
 		},
 		{
 			name: "password but no username",

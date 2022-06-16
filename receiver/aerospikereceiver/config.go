@@ -28,11 +28,12 @@ import (
 )
 
 var (
-	errBadEndpoint   = errors.New("endpoint must be specified as host:port")
-	errBadPort       = errors.New("invalid port in endpoint")
-	errEmptyEndpoint = errors.New("endpoint must be specified")
-	errEmptyPassword = errors.New("password must be set if username is set")
-	errEmptyUsername = errors.New("username must be set if password is set")
+	errBadEndpoint     = errors.New("endpoint must be specified as host:port")
+	errBadPort         = errors.New("invalid port in endpoint")
+	errEmptyEndpoint   = errors.New("endpoint must be specified")
+	errEmptyPassword   = errors.New("password must be set if username is set")
+	errEmptyUsername   = errors.New("username must be set if password is set")
+	errNegativeTimeout = errors.New("timeout must be non-negative")
 )
 
 // Config is the receiver configuration
@@ -78,6 +79,9 @@ func (c *Config) Validate() error {
 
 	if c.Password != "" && c.Username == "" {
 		allErrs = multierr.Append(allErrs, errEmptyUsername)
+	}
+	if c.Timeout.Milliseconds() < 0 {
+		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: must be positive", errNegativeTimeout))
 	}
 
 	return allErrs
