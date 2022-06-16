@@ -175,8 +175,6 @@ func (t *transaction) AddTargetInfo(labels labels.Labels) error {
 			continue
 		}
 
-		// TODO: Do I need to sanitise (desantise)?
-		// TODO: What if there is already an attribute? Is Upsert correct?
 		attrs.UpsertString(lbl.Name, lbl.Value)
 	}
 
