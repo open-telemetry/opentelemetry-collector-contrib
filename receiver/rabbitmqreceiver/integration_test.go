@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-// +build integration
-
 package rabbitmqreceiver
 
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -60,8 +57,8 @@ func TestRabbitmqIntegration(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Endpoint = fmt.Sprintf("http://%s:15672", hostname)
-		cfg.Username = "otel" //otel guest
-		cfg.Password = "otel"
+		cfg.Username = "otelu"
+		cfg.Password = "otelp"
 
 		consumer := new(consumertest.MetricsSink)
 		settings := componenttest.NewNopReceiverCreateSettings()
@@ -81,6 +78,7 @@ func TestRabbitmqIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, err)
 	})
 }
 
