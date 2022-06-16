@@ -2,8 +2,8 @@
 
 set -e
 
-USER='otel'
-ROOT_PASS='otel'
+USER='otelu'
+ROOT_PASS='otelp'
 
 echo "creating user: ${USER} . . ."
 rabbitmqctl add_user ${USER} ${ROOT_PASS} > /dev/null
