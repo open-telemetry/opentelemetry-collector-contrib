@@ -79,7 +79,7 @@ func createTracesExporter(
 	if corrCfg.Endpoint == "" {
 		apiURL, err := cfg.getAPIURL()
 		if err != nil {
-			return nil, fmt.Errorf("unable to create API URL: %v", err)
+			return nil, fmt.Errorf("unable to create API URL: %w", err)
 		}
 		corrCfg.Endpoint = apiURL.String()
 	}
@@ -173,7 +173,7 @@ func loadConfig(bytes []byte) (Config, error) {
 	}
 
 	if err := confmap.NewFromStringMap(data).UnmarshalExact(&cfg); err != nil {
-		return cfg, fmt.Errorf("failed to load default exclude metrics: %v", err)
+		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
 	}
 
 	return cfg, nil

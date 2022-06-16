@@ -73,7 +73,7 @@ func (f *Input) Start(persister operator.Persister) error {
 
 	// Load offsets from disk
 	if err := f.loadLastPollFiles(ctx); err != nil {
-		return fmt.Errorf("read known files from database: %s", err)
+		return fmt.Errorf("read known files from database: %w", err)
 	}
 
 	// Start polling goroutine
@@ -279,7 +279,7 @@ func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Rea
 	}
 	startAtBeginning := !firstCheck || f.startAtBeginning
 	if err := newReader.InitializeOffset(startAtBeginning); err != nil {
-		return nil, fmt.Errorf("initialize offset: %s", err)
+		return nil, fmt.Errorf("initialize offset: %w", err)
 	}
 	return newReader, nil
 }

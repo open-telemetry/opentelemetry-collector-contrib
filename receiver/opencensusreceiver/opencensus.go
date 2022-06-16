@@ -76,7 +76,7 @@ func newOpenCensusReceiver(
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen(transport, addr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to bind to address %q: %v", addr, err)
+		return nil, fmt.Errorf("failed to bind to address %q: %w", addr, err)
 	}
 
 	ocr := &ocReceiver{

@@ -36,8 +36,7 @@ func TestNewDetector(t *testing.T) {
 }
 
 func TestDetector_Detect_K8s_Azure(t *testing.T) {
-	os.Clearenv()
-	setK8sEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	detector := &Detector{provider: mockProvider()}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
@@ -49,8 +48,7 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 }
 
 func TestDetector_Detect_K8s_NonAzure(t *testing.T) {
-	os.Clearenv()
-	setK8sEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(nil, errors.New(""))
 	detector := &Detector{provider: mp}
@@ -73,9 +71,4 @@ func mockProvider() *azure.MockProvider {
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(&azure.ComputeMetadata{}, nil)
 	return mp
-}
-
-func setK8sEnv(t *testing.T) {
-	err := os.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
-	require.NoError(t, err)
 }
