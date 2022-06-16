@@ -77,6 +77,12 @@ func TestProcess(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
 			},
 		},
+		{
+			query: `set(attributes["test"], "pass") where name like "*A"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -266,6 +266,50 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			query: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name like "fido*"`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "foo",
+									},
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("bar"),
+									},
+									{
+										Name: "cat",
+									},
+								},
+							},
+						},
+						{
+							String: testhelper.Strp("dog"),
+						},
+					},
+				},
+				Condition: &Condition{
+					Left: Value{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					Op: "like",
+					Right: Value{
+						String: testhelper.Strp("fido*"),
+					},
+				},
+			},
+		},
+		{
 			query: `set("fo\"o")`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{

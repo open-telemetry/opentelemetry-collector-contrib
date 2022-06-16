@@ -16,6 +16,8 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
+
+	"github.com/gobwas/glob"
 )
 
 type condFunc = func(ctx TransformContext) bool
@@ -23,6 +25,8 @@ type condFunc = func(ctx TransformContext) bool
 var alwaysTrue = func(ctx TransformContext) bool {
 	return true
 }
+
+var likeErrorMessage = "the value to the right of a 'like' condition must be a literal string."
 
 func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
 	if cond == nil {
@@ -50,6 +54,29 @@ func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pa
 			a := left.Get(ctx)
 			b := right.Get(ctx)
 			return a != b
+		}, nil
+	case "like":
+
+		l, ok := right.(*literal)
+		if !ok {
+			return nil, fmt.Errorf(likeErrorMessage)
+		}
+		pattern, ok := l.value.(string)
+		if !ok {
+			return nil, fmt.Errorf(likeErrorMessage)
+		}
+
+		glob, err := glob.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("the pattern supplied to the right of 'like' is not a valid pattern: %w", err)
+		}
+
+		return func(ctx TransformContext) bool {
+			a := left.Get(ctx)
+			if aStr, ok := a.(string); ok {
+				return glob.Match(aStr)
+			}
+			panic(fmt.Errorf("the value supplied to the left of 'like' was not a string"))
 		}, nil
 	}
 

@@ -94,6 +94,18 @@ func Test_newConditionEvaluator(t *testing.T) {
 			name: "no condition",
 			cond: nil,
 		},
+		{
+			name: "like match",
+			cond: &Condition{
+				Left: Value{
+					String: testhelper.Strp("hello world"),
+				},
+				Right: Value{
+					String: testhelper.Strp("hello*"),
+				},
+				Op: "like",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,17 +116,134 @@ func Test_newConditionEvaluator(t *testing.T) {
 			}))
 		})
 	}
+}
 
-	t.Run("invalid", func(t *testing.T) {
-		_, err := newConditionEvaluator(&Condition{
-			Left: Value{
-				String: testhelper.Strp("bear"),
+func Test_newConditionEvaluator_Invalid(t *testing.T) {
+	tests := []struct {
+		name string
+		cond *Condition
+	}{
+		{
+			name: "invalid operation",
+			cond: &Condition{
+				Left: Value{
+					String: testhelper.Strp("hello"),
+				},
+				Right: Value{
+					String: testhelper.Strp("goodbye"),
+				},
+				Op: "<>",
 			},
-			Op: "<>",
-			Right: Value{
-				String: testhelper.Strp("cat"),
+		},
+		{
+			name: "invalid literal on right side of like",
+			cond: &Condition{
+				Left: Value{
+					String: testhelper.Strp("hello"),
+				},
+				Right: Value{
+					Int: testhelper.Intp(1),
+				},
+				Op: "like",
 			},
-		}, DefaultFunctions(), testParsePath)
-		assert.Error(t, err)
-	})
+		},
+		{
+			name: "invalid path on right side of like",
+			cond: &Condition{
+				Left: Value{
+					String: testhelper.Strp("hello"),
+				},
+				Right: Value{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+				Op: "like",
+			},
+		},
+		{
+			name: "invalid function on right side of like",
+			cond: &Condition{
+				Left: Value{
+					String: testhelper.Strp("hello"),
+				},
+				Right: Value{
+					Invocation: &Invocation{
+						Function: "functionThatReturnsAPattern",
+					},
+				},
+				Op: "like",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			functions := DefaultFunctions()
+			functions["functionThatReturnsAPattern"] = functionThatReturnsAPattern
+			_, err := newConditionEvaluator(tt.cond, functions, testParsePath)
+			assert.Error(t, err)
+		})
+	}
+}
+
+func functionThatReturnsAPattern() (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "hello*"
+	}, nil
+}
+
+func Test_newConditionEvaluator_Panic(t *testing.T) {
+	tests := []struct {
+		name string
+		cond *Condition
+	}{
+		{
+			name: "panic when not string",
+			cond: &Condition{
+				Left: Value{
+					Int: testhelper.Intp(1),
+				},
+				Right: Value{
+					String: testhelper.Strp("hello*"),
+				},
+				Op: "like",
+			},
+		},
+		{
+			name: "panic when function returns not string",
+			cond: &Condition{
+				Left: Value{
+					Invocation: &Invocation{
+						Function: "functionThatReturnsAFloat",
+					},
+				},
+				Right: Value{
+					String: testhelper.Strp("hello*"),
+				},
+				Op: "like",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			functions := DefaultFunctions()
+			functions["functionThatReturnsAFloat"] = functionThatReturnsAFloat
+			assert.Panics(t, func() {
+				evaluate, _ := newConditionEvaluator(tt.cond, functions, testParsePath)
+				evaluate(testhelper.TestTransformContext{
+					Item: nil,
+				})
+			})
+		})
+	}
+}
+
+func functionThatReturnsAFloat() (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return 1.0
+	}, nil
 }

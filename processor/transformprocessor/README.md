@@ -51,6 +51,7 @@ Metric only functions:
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
 - `!=` - matches telemetry where the values are not equal to each other
+- `like` - matches telemetry where the left string value matches the glob on the right.  If the right is not a string literal the processor will error during startup.  If the left value is not a string literal, is not a path to a string, or is not a function that returns a string, the processor will panic during processing.
 
 Example configuration:
 ```yaml

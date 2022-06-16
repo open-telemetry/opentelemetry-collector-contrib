@@ -35,7 +35,7 @@ type ParsedQuery struct {
 // nolint:govet
 type Condition struct {
 	Left  Value  `@@`
-	Op    string `@("==" | "!=")`
+	Op    string `@("==" | "!=" | "like")`
 	Right Value  `@@`
 }
 
