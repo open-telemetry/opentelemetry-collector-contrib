@@ -51,8 +51,9 @@ check_code_owner_existence() {
     fi
   done
   echo "there are $ALLOW_LIST_COMPONENTS components not included in CODEOWNERS but known in the ALLOWLIST"
-  echo "there are $MISSING_COMPONENTS components not included in CODEOWNERS and not known in the ALLOWLIST"
   if [ "$MISSING_COMPONENTS" -gt 0 ]; then
+    echo "---"
+    echo "FAIL: there are $MISSING_COMPONENTS components not included in CODEOWNERS and not known in the ALLOWLIST"
     exit 1
   fi
 }
