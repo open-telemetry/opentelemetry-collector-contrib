@@ -17,7 +17,6 @@ package metricstransformprocessor
 
 import (
 	"context"
-	"math"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -73,72 +72,6 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			assert.NoError(t, mtp.Shutdown(ctx))
 		})
 	}
-}
-
-func TestComputeDistVals(t *testing.T) {
-	ssdTests := []struct {
-		name        string
-		pointGroup1 []float64
-		pointGroup2 []float64
-	}{
-		{
-			name:        "similar point groups",
-			pointGroup1: []float64{1, 2, 3, 7, 4},
-			pointGroup2: []float64{1, 2, 3, 3, 1},
-		},
-		{
-			name:        "different size point groups",
-			pointGroup1: []float64{1, 2, 3, 7, 4},
-			pointGroup2: []float64{1},
-		},
-		{
-			name:        "point groups with an outlier",
-			pointGroup1: []float64{1, 2, 3, 7, 1000},
-			pointGroup2: []float64{1, 2, 5},
-		},
-	}
-
-	for _, test := range ssdTests {
-		t.Run(test.name, func(t *testing.T) {
-			p := newMetricsTransformProcessor(nil, nil)
-
-			pointGroup1 := test.pointGroup1
-			pointGroup2 := test.pointGroup2
-			sum1, sumOfSquaredDeviation1 := calculateSumOfSquaredDeviation(pointGroup1)
-			sum2, sumOfSquaredDeviation2 := calculateSumOfSquaredDeviation(pointGroup2)
-			_, sumOfSquaredDeviation := calculateSumOfSquaredDeviation(append(pointGroup1, pointGroup2...))
-
-			val1 := &metricspb.DistributionValue{
-				Count:                 int64(len(pointGroup1)),
-				Sum:                   sum1,
-				SumOfSquaredDeviation: sumOfSquaredDeviation1,
-			}
-
-			val2 := &metricspb.DistributionValue{
-				Count:                 int64(len(pointGroup2)),
-				Sum:                   sum2,
-				SumOfSquaredDeviation: sumOfSquaredDeviation2,
-			}
-
-			outVal := p.computeSumOfSquaredDeviation(val1, val2)
-
-			assert.Equal(t, sumOfSquaredDeviation, outVal)
-		})
-	}
-}
-
-// calculateSumOfSquaredDeviation returns the sum and the sumOfSquaredDeviation for this slice
-func calculateSumOfSquaredDeviation(slice []float64) (sum float64, sumOfSquaredDeviation float64) {
-	sum = 0
-	for _, e := range slice {
-		sum += e
-	}
-	ave := sum / float64(len(slice))
-	sumOfSquaredDeviation = 0
-	for _, e := range slice {
-		sumOfSquaredDeviation += math.Pow((e - ave), 2)
-	}
-	return
 }
 
 func TestExemplars(t *testing.T) {

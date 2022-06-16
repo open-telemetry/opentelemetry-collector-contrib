@@ -102,28 +102,10 @@
     "k8s.hpa.desired_replicas": null
   },
   {
-    "k8s.container.cpu_request": null
-  },
-  {
     "k8s.container.ephemeral-storage_limit": null
   },
   {
     "k8s.container.ephemeral-storage_request": null
-  },
-  {
-    "k8s.container.memory_request": null
-  },
-  {
-    "k8s.node.condition_memory_pressure": null
-  },
-  {
-    "k8s.node.condition_network_unavailable": null
-  },
-  {
-    "k8s.node.condition_out_of_disk": null
-  },
-  {
-    "k8s.node.condition_p_i_d_pressure": null
   },
   {
     "container.memory.available": null
