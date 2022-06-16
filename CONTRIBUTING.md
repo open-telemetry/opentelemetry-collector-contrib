@@ -89,7 +89,7 @@ Following these steps for contributing additional metrics to existing receivers.
  - Edit `metadata.yaml` of your metrics receiver to add new metrics, e.g.: `redisreceiver/metadata.yaml`
  - To generate new metrics on top of this updated YAML file.
    - Run `cd receiver/redisreceiver`
-   - Run `go generate`
+   - Run `go generate ./...`
 - Review the changed files and merge the changes into your forked repo.
 - Create PR from Github web console.
 
