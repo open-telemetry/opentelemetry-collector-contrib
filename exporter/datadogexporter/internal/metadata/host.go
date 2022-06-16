@@ -16,18 +16,20 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/k8s"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
 
 // UsePreviewHostnameLogic decides whether to use the preview hostname logic or not.
@@ -39,17 +41,42 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 		return nil, err
 	}
 
+	azureProvider := azure.NewProvider()
+	ec2Provider, err := ec2.NewProvider(set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build EC2 provider: %w", err)
+	}
+	gcpProvider := gcp.NewProvider()
+
+	clusterNameProvider, err := provider.ChainCluster(set.Logger,
+		map[string]provider.ClusterNameProvider{
+			"azure": azureProvider,
+			"ec2":   ec2Provider,
+			"gcp":   gcpProvider,
+		},
+		[]string{"azure", "ec2", "gcp"},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build Kubernetes cluster name provider: %w", err)
+	}
+
+	k8sProvider, err := k8s.NewProvider(set.Logger, clusterNameProvider)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build Kubernetes hostname provider: %w", err)
+	}
+
 	chain, err := provider.Chain(
 		set.Logger,
 		map[string]provider.HostnameProvider{
-			"config": provider.Config(configHostname),
-			"docker": dockerProvider,
-			"azure":  azure.NewProvider(),
-			"ec2":    ec2.NewProvider(set.Logger),
-			"gcp":    gcp.NewProvider(),
-			"system": system.NewProvider(set.Logger),
+			"config":     provider.Config(configHostname),
+			"azure":      azureProvider,
+			"ec2":        ec2Provider,
+			"gcp":        gcpProvider,
+			"kubernetes": k8sProvider,
+			"docker":     dockerProvider,
+			"system":     system.NewProvider(set.Logger),
 		},
-		[]string{"config", "docker", "azure", "ec2", "gcp", "system"},
+		[]string{"config", "azure", "ec2", "gcp", "kubernetes", "docker", "system"},
 	)
 
 	if err != nil {
@@ -60,11 +87,16 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 }
 
 func buildCurrentProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+	ec2Provider, err := ec2.NewProvider(set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build EC2 provider: %w", err)
+	}
+
 	return &currentProvider{
 		logger:         set.Logger,
 		configHostname: configHostname,
 		systemProvider: system.NewProvider(set.Logger),
-		ec2Provider:    ec2.NewProvider(set.Logger),
+		ec2Provider:    ec2Provider,
 	}, nil
 }
 

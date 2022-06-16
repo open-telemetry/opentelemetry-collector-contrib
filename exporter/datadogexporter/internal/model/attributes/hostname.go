@@ -76,6 +76,17 @@ func HostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bo
 	return candidateHost, ok
 }
 
+func k8sHostnameFromAttributes(attrs pcommon.Map) (string, bool) {
+	if k8sNodeName, ok := attrs.Get(AttributeK8sNodeName); ok {
+		if k8sClusterName, ok := getClusterName(attrs); ok {
+			return k8sNodeName.StringVal() + "-" + k8sClusterName, true
+		}
+		return k8sNodeName.StringVal(), true
+	}
+
+	return "", false
+}
+
 func unsanitizedHostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
 	// Custom hostname: useful for overriding in k8s/cloud envs
 	if customHostname, ok := attrs.Get(AttributeDatadogHostname); ok {
@@ -88,11 +99,10 @@ func unsanitizedHostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) 
 	}
 
 	// Kubernetes: node-cluster if cluster name is available, else node
-	if k8sNodeName, ok := attrs.Get(AttributeK8sNodeName); ok {
-		if k8sClusterName, ok := getClusterName(attrs); ok {
-			return k8sNodeName.StringVal() + "-" + k8sClusterName, true
-		}
-		return k8sNodeName.StringVal(), true
+	k8sName, k8sOk := k8sHostnameFromAttributes(attrs)
+
+	if !usePreviewRules && k8sOk {
+		return k8sName, true
 	}
 
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
@@ -102,6 +112,10 @@ func unsanitizedHostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) 
 		return gcp.HostnameFromAttributes(attrs, usePreviewRules)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
 		return azure.HostnameFromAttributes(attrs, usePreviewRules)
+	}
+
+	if usePreviewRules && k8sOk {
+		return k8sName, true
 	}
 
 	// host id from cloud provider
