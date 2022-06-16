@@ -276,4 +276,52 @@ func Test_serializeHistogram(t *testing.T) {
 			assert.Equal(t, 5.0, max, "use the estimated boundary")
 		})
 	})
+
+	t.Run("when sum is not provided it should be estimated", func(t *testing.T) {
+		t.Run("single bucket histogram", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{})
+			hist.SetMBucketCounts([]uint64{13})
+			hist.SetCount(6)
+
+			_, _, sum := histDataPointToSummary(hist)
+
+			assert.Equal(t, 0.0, sum, "estimate zero (midpoint of [-Inf, Inf])")
+		})
+
+		t.Run("data in bounded buckets", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{0, 3, 5, 0, 0, 0})
+			hist.SetCount(6)
+
+			_, _, sum := histDataPointToSummary(hist)
+
+			assert.Equal(t, 3*1.5+5*2.5, sum, "estimate sum using bucket midpoints")
+		})
+
+		t.Run("data in unbounded buckets", func(t *testing.T) {
+			t.Run("first bucket", func(t *testing.T) {
+				hist := pmetric.NewHistogramDataPoint()
+				hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+				hist.SetMBucketCounts([]uint64{2, 3, 5, 0, 0, 0})
+				hist.SetCount(6)
+
+				_, _, sum := histDataPointToSummary(hist)
+
+				assert.Equal(t, 1*2+3*1.5+5*2.5, sum, "use bucket upper bound")
+			})
+
+			t.Run("last bucket", func(t *testing.T) {
+				hist := pmetric.NewHistogramDataPoint()
+				hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+				hist.SetMBucketCounts([]uint64{0, 3, 5, 0, 0, 2})
+				hist.SetCount(6)
+
+				_, _, sum := histDataPointToSummary(hist)
+
+				assert.Equal(t, 3*1.5+5*2.5+2*5, sum, "use bucket upper bound")
+			})
+		})
+	})
 }
