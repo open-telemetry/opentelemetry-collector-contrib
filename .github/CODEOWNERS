@@ -123,7 +123,7 @@ receiver/awsfirehosereceiver/                        @open-telemetry/collector-c
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @willarmiros
 receiver/bigipreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
-receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared
+receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared @crobert-1
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/couchdbreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
