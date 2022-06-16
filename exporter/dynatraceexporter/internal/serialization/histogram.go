@@ -68,6 +68,11 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 		return estimateSingleBucketHistogram(dp)
 	}
 
+	// If any of min, max, sum is not provided in the data point,
+	// loop through the buckets to estimate them.
+	// All three values are estimated in order to avoid looping multiple times
+	// or complicating the loop with branches. After the loop, estimates
+	// will be overridden with any values provided by the data point.
 	foundNonEmptyBucket := false
 	var min, max, sum float64 = 0, 0, 0
 
@@ -78,7 +83,7 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 			continue
 		}
 
-		// range for counts[i] is bounds[i-1] to bounds[i]
+		// range for bucket counts[i] is bounds[i-1] to bounds[i]
 
 		// min estimation
 		if !foundNonEmptyBucket {
@@ -91,6 +96,7 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 			}
 		}
 
+		// max estimation
 		if i == len(counts)-1 {
 			// if we're in the last bucket, the best estimate we can make for max is the lower bound
 			max = bounds[i-1]
@@ -98,6 +104,7 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 			max = bounds[i]
 		}
 
+		// sum estimation
 		switch i {
 		case 0:
 			// in the first bucket, estimate sum using the upper bound
@@ -111,6 +118,7 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 		}
 	}
 
+	// Override estimates with any values provided by the data point
 	if dp.HasMin() {
 		min = dp.Min()
 	}
