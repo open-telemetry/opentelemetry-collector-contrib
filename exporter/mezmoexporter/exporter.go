@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
 
 type mezmoExporter struct {
@@ -33,6 +35,7 @@ type mezmoExporter struct {
 	settings        component.TelemetrySettings
 	client          *http.Client
 	userAgentString string
+	log             *zap.Logger
 	wg              sync.WaitGroup
 }
 
@@ -48,11 +51,12 @@ type MezmoLogBody struct {
 	Lines []MezmoLogLine `json:"lines"`
 }
 
-func newLogsExporter(config *Config, settings component.TelemetrySettings, buildInfo component.BuildInfo) *mezmoExporter {
+func newLogsExporter(config *Config, settings component.TelemetrySettings, buildInfo component.BuildInfo, logger *zap.Logger) *mezmoExporter {
 	var e = &mezmoExporter{
 		config:          config,
 		settings:        settings,
 		userAgentString: fmt.Sprintf("mezmo-otel-exporter/%s", buildInfo.Version),
+		log:             logger,
 	}
 	return e
 }
@@ -164,6 +168,13 @@ func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
 	var res *http.Response
 	if res, errs = http.DefaultClient.Do(req); errs != nil {
 		return fmt.Errorf("failed to POST log to Mezmo: %w", errs)
+	}
+	if res.StatusCode >= 400 {
+		m.log.Error(fmt.Sprintf("got http status (%s): %s", req.URL.Path, res.Status))
+		if checkLevel := m.log.Check(zap.DebugLevel, "http response"); checkLevel != nil {
+			responseBody, _ := ioutil.ReadAll(res.Body)
+			checkLevel.Write(zap.String("response", string(responseBody)))
+		}
 	}
 
 	return res.Body.Close()
