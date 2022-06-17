@@ -32,12 +32,14 @@
 - `mezmoexporter`: add logging for HTTP errors (#10875)
 - `signalfxexporter`: Enable the exporting of seven Kubernetes metrics used in Splunk/SignalFx content by default (#11032)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
+- `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 
 
 ### 🧰 Bug fixes 🧰
 
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `transformprocessor`: Fix issue where some trace fields were not working correctly in conditions. (#10471)
 - `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
 - `windowseventlogreceiver`: Fixed example config in readme (#10971)
