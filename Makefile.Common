@@ -99,7 +99,7 @@ checklicense:
 .PHONY: checklinks
 checklinks:
 	command -v $(MDLINKCHECK) >/dev/null 2>&1 || { echo >&2 "$(MDLINKCHECK) not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
-	find . -name \*.md -print0 | sort | uniq | xargs -0 -n1 \
+	find . -name \*.md -print0 | sort -z | xargs -0 -n1 \
 		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
