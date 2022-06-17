@@ -9,7 +9,7 @@
 The span processor modifies the span name based on its attributes or extract span attributes from the span name. It also allows
 to change span status. Please refer to [config.go](./config.go) for the config spec.
 
-It optionally supports the ability to [include/exclude spans](../README.md#includeexclude-spans).
+It optionally supports the ability to [include/exclude spans](../attributesprocessor/README.md#includeexclude-filtering).
 
 The following actions are supported:
 
