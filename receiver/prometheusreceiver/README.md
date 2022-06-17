@@ -1,5 +1,11 @@
 # Prometheus Receiver
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [core], [contrib] |
+
 Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 [Design](DESIGN.md) for additional information on this receiver.
 
@@ -79,3 +85,6 @@ receivers:
 ```
 
 [sc]: https://github.com/prometheus/prometheus/blob/v2.28.1/docs/configuration/configuration.md#scrape_config
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
