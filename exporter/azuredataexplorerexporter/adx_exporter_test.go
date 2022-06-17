@@ -65,6 +65,24 @@ func TestMetricsDataPusher(t *testing.T) {
 	//kustoclient.Query(context.Background(), "testDB", stmt)
 }
 
+func TestClose(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+	kustoclient := kusto.NewMockClient()
+	ingestoptions := make([]ingest.FileOption, 2)
+	ingestoptions[0] = ingest.FileFormat(ingest.MultiJSON)
+	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower("RawMetrics")), ingest.MultiJSON)
+	managedstreamingingest, _ := ingest.NewManaged(kustoclient, "testDB", "RawMetrics")
+
+	adxMetricsProducer := &adxMetricsProducer{
+		client:        kustoclient,
+		managedingest: managedstreamingingest,
+		ingestoptions: ingestoptions,
+		logger:        logger,
+	}
+	err := adxMetricsProducer.Close(context.Background())
+	assert.Nil(t, err)
+}
+
 func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()

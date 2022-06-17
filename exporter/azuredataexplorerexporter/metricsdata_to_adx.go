@@ -6,7 +6,6 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -27,6 +26,10 @@ const (
 	sumdescription = "(Sum total of samples)"
 	// Count used in summary , histogram and also in exponential histogram
 	countdescription = "(Count of samples)"
+	// Scope name
+	scopename = "scope.name"
+	// Scope version
+	scopeversion = "scope.version"
 )
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
@@ -106,15 +109,14 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			{
 				metricValue := dataPoint.Sum()
 				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:         dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:        fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
-					MetricType:        pmetric.MetricDataTypeHistogram.String(),
-					MetricUnit:        md.Unit(),
-					MetricDescription: fmt.Sprintf("%s%s", md.Description(), sumdescription),
-					MetricValue:       metricValue,
-					Host:              host,
-					MetricAttributes:  clonedscopeattrs,
-
+					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
+					MetricName:         fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
+					MetricType:         pmetric.MetricDataTypeHistogram.String(),
+					MetricUnit:         md.Unit(),
+					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), sumdescription),
+					MetricValue:        metricValue,
+					MetricAttributes:   clonedscopeattrs,
+					Host:               host,
 					ResourceAttributes: resourceattrs,
 				})
 			}
@@ -122,14 +124,14 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				// Change int to float. The value is a float64 in the table
 				metricValue := float64(dataPoint.Count())
 				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:         dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:        fmt.Sprintf("%s_%s", md.Name(), countsuffix),
-					MetricType:        pmetric.MetricDataTypeHistogram.String(), // A count does not have a unit
-					MetricDescription: fmt.Sprintf("%s%s", md.Description(), countdescription),
-					MetricValue:       metricValue,
-					Host:              host,
-					MetricAttributes:  clonedscopeattrs,
-
+					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
+					MetricName:         fmt.Sprintf("%s_%s", md.Name(), countsuffix),
+					MetricType:         pmetric.MetricDataTypeHistogram.String(), // A count does not have a unit
+					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), countdescription),
+					MetricUnit:         md.Unit(),
+					MetricValue:        metricValue,
+					MetricAttributes:   clonedscopeattrs,
+					Host:               host,
 					ResourceAttributes: resourceattrs,
 				})
 			}
@@ -156,8 +158,8 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					MetricUnit:         md.Unit(),
 					MetricDescription:  md.Description(),
 					MetricValue:        metricValue,
-					Host:               host,
 					MetricAttributes:   clonedscopeattrs,
+					Host:               host,
 					ResourceAttributes: resourceattrs,
 				})
 			}
@@ -175,8 +177,10 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					MetricName:         fmt.Sprintf("%s_bucket", md.Name()),
 					MetricType:         pmetric.MetricDataTypeHistogram.String(),
 					MetricValue:        metricValue,
-					Host:               host,
+					MetricUnit:         md.Unit(),
+					MetricDescription:  md.Description(),
 					MetricAttributes:   clonedscopeattrs,
+					Host:               host,
 					ResourceAttributes: resourceattrs,
 				})
 			}
@@ -224,7 +228,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
 					MetricName:         fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
 					MetricType:         pmetric.MetricDataTypeSummary.String(),
-					MetricUnit:         strings.ToTitle(sumsuffix), // Sum of all the samples
+					MetricUnit:         md.Unit(), // Sum of all the samples
 					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), sumdescription),
 					MetricValue:        metricValue,
 					Host:               host,
@@ -243,8 +247,8 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					MetricType:         pmetric.MetricDataTypeSummary.String(), // There is no metric unit for number of / count of
 					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), countdescription),
 					MetricValue:        metricValue,
-					Host:               host,
 					MetricAttributes:   clonedscopeattrs,
+					Host:               host,
 					ResourceAttributes: resourceattrs,
 				})
 			}
@@ -258,14 +262,14 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				clonedscopeattrs[quantilename] = sanitizeFloat(dp.Value())
 				metricValue := dp.Value()
 				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:         fmt.Sprintf("%s_%s", md.Name(), strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)),
-					MetricType:         pmetric.MetricDataTypeSummary.String(),
-					MetricUnit:         md.Unit(), // There is no unit for a quantile. Will be empty
-					MetricDescription:  fmt.Sprintf("%s_%s", md.Description(), countdescription),
+					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
+					MetricName: quantilename,
+					MetricType: pmetric.MetricDataTypeSummary.String(),
+					// There is no unit for a quantile. Will be empty
+					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), countdescription),
 					MetricValue:        metricValue,
-					Host:               host,
 					MetricAttributes:   clonedscopeattrs,
+					Host:               host,
 					ResourceAttributes: resourceattrs,
 				})
 			}
@@ -282,7 +286,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 }
 
 // Given all the metrics , transform that to the representative structure
-func (e *adxMetricsProducer) rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics) ([]*AdxMetric, error) {
+func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *zap.Logger) ([]*AdxMetric, error) {
 	var transformedadxmetrics []*AdxMetric
 	resourceMetric := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetric.Len(); i++ {
@@ -292,18 +296,16 @@ func (e *adxMetricsProducer) rawMetricsToAdxMetrics(_ context.Context, metrics p
 			scopemetric := scopeMetrics.At(j)
 			metrics := scopemetric.Metrics()
 			// get details of the scope from the scope metric
-			scopename := scopemetric.Scope().Name()
-			scopeversion := scopemetric.Scope().Version()
+			scopenameval := scopemetric.Scope().Name()
+			scopeversionval := scopemetric.Scope().Version()
 			scopeAttr := make(map[string]interface{}, 2)
-			scopeAttr["Name"] = scopename
-			scopeAttr["Version"] = scopeversion
+			scopeAttr[scopename] = scopenameval
+			scopeAttr[scopeversion] = scopeversionval
 			for k := 0; k < metrics.Len(); k++ {
-				transformedadxmetrics = append(transformedadxmetrics, mapToAdxMetric(res, metrics.At(k), scopeAttr, e.logger)...)
+				transformedadxmetrics = append(transformedadxmetrics, mapToAdxMetric(res, metrics.At(k), scopeAttr, logger)...)
 			}
 		}
 	}
-	metricsflushed := len(transformedadxmetrics)
-	e.logger.Sugar().Infof("Flushing %d metrics to sink", metricsflushed)
 	return transformedadxmetrics, nil
 }
 

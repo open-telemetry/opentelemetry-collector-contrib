@@ -39,8 +39,7 @@ type adxMetricsProducer struct {
 
 // given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxMetricsProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
-
-	transformedadxmetrics, err := e.rawMetricsToAdxMetrics(ctx, metrics)
+	transformedadxmetrics, err := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
 	if err != nil {
 		e.logger.Error("Error transforming metrics to ADX metric format.", zap.Error(err))
 		return err
@@ -63,8 +62,9 @@ func (e *adxMetricsProducer) metricsDataPusher(ctx context.Context, metrics pmet
 				return err
 			}
 		}
-
 	}
+	metricsflushed := len(transformedadxmetrics)
+	e.logger.Sugar().Infof("Flushing %d metrics to sink", metricsflushed)
 	return nil
 }
 
