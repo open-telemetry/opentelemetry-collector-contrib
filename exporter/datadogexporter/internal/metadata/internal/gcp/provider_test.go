@@ -55,6 +55,10 @@ func (m *mockDetector) GCEHostName() (string, error) {
 	return m.instanceName, nil
 }
 
+func (m *mockDetector) GKEClusterName() (string, error) {
+	return "", fmt.Errorf("not available")
+}
+
 func TestProvider(t *testing.T) {
 	tests := []struct {
 		name         string
