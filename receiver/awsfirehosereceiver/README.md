@@ -38,7 +38,7 @@ The type of record being received from the delivery stream. Each unmarshaler han
 
 default: `cwmetrics`
 
-See the [Record Types](#record-types) section for all available options.
+See the [Record Types](#record_type) section for all available options.
 
 ### access_key (Optional):
 The access key to be checked on each request received. This can be set when creating or updating the delivery stream.
