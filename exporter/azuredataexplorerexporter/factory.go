@@ -70,7 +70,7 @@ func createMetricsExporter(
 	}
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	amp, err := newMetricsExporter(adxCfg, set.Logger)
+	amp, err := newExporter(adxCfg, set.Logger, MetricsType)
 
 	if err != nil {
 		return nil, err
