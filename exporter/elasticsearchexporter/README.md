@@ -1,10 +1,10 @@
 # Elasticsearch Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | logs      |
-| Distributions            | [contrib] |
+| Status                   |             |
+| ------------------------ |-------------|
+| Stability                | [beta]      |
+| Supported pipeline types | logs,traces |
+| Distributions            | [contrib]   |
 
 This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www.elastic.co/elasticsearch).
 
