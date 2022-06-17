@@ -37,9 +37,9 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 
 - `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is a non-negative integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `limit(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
 
-- `replace_match(target, pattern, replacement)` - `target` is a path expression to a telemetry field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. If `target` matches `pattern` it will get replaced with `replacement`. e.g., `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
+- `replace_match(target, regex, replacement)` - `target` is a path expression to a telemetry field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_match(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 
-- `replace_all_matches(target, pattern, replacement)` - `target` is a path expression to a map type field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. Each string value in `target` that matches `pattern` will get replaced with `replacement`. e.g., `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
+- `replace_all_match(target, regex, replacement)` - `target` is a path expression to a map type field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_all_match(attributes["http.target"], "/user/\\d{4}", "/user/{userId})`
 
 Metric only functions:
 - `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
@@ -69,7 +69,7 @@ processors:
         - set(status.code, 1) where attributes["http.path"] == "/health"
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
         - set(name, attributes["http.route"])
-        - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
+        - replace_match(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
         - limit(attributes, 100)
         - limit(resource.attributes, 100)
         - truncate_all(attributes, 4096)
@@ -86,7 +86,7 @@ processors:
     logs:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
-        - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
+        - replace_all_match(attributes["http.target"], "/user/\\d{4}", "/user/{userId})
         - set(body, attributes["http.route"])
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
 service:

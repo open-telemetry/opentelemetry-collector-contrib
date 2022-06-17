@@ -24,7 +24,7 @@ import (
 )
 
 func Test_replaceMatch(t *testing.T) {
-	input := pcommon.NewValueString("hello world")
+	input := pcommon.NewValueString("application passwd=sensitivedtata otherarg=notsensitive")
 
 	target := &testGetSetter{
 		getter: func(ctx TransformContext) interface{} {
@@ -43,21 +43,21 @@ func Test_replaceMatch(t *testing.T) {
 		want        func(pcommon.Value)
 	}{
 		{
-			name:        "replace match",
+			name:        "replace regex match",
 			target:      target,
-			pattern:     "hello*",
-			replacement: "hello {universe}",
+			pattern:     `passwd\=[^\s]*(\s?)`,
+			replacement: "passwd=*** ",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello {universe}")
+				expectedValue.SetStringVal("application passwd=*** otherarg=notsensitive")
 			},
 		},
 		{
-			name:        "no match",
+			name:        "no regex match",
 			target:      target,
-			pattern:     "goodbye*",
-			replacement: "goodbye {universe}",
+			pattern:     `nomatch\=[^\s]*(\s?)`,
+			replacement: "shouldnotbeinoutput",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello world")
+				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive")
 			},
 		},
 	}
@@ -95,7 +95,8 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceAllMatches(target, "*", "{replacement}")
+	exprFunc, err := replaceAllMatches(target, "regexp", "{replacement}")
+	assert.Nil(t, err)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
@@ -115,6 +116,6 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceMatch(target, "*", "{anything}")
+	exprFunc, _ := replaceMatch(target, `nomatch\=[^\s]*(\s?)`, "{anything}")
 	exprFunc(ctx)
 }

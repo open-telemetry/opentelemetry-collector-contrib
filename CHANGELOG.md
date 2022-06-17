@@ -4,7 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 - `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
-
+- `transformprocessor`: `replace_match` and `replace_all_match` now use regex for pattern matching instead of wildcards. (#11118)
 - `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
 
 ### 🚩 Deprecations 🚩
