@@ -65,6 +65,7 @@
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 - `googlecloudpubsubreceiver` Activate the Google Cloud Pubsub receiver. (#10580)
 - `googlecloudpubsubexporter` Activate the Google Cloud Pubsub exporter. (#10580)
+- `aerospikereceiver`: Add implementation of Aerospike Metric Receiver. (#9961)
 
 ### 💡 Enhancements 💡
 
@@ -101,6 +102,7 @@
 
 ### 🚀 New components 🚀
 
+- `aerospikereceiver`: Add implementation of Aerospike Metrics Receiver (#9961)
 - `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
