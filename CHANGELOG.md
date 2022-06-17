@@ -3,30 +3,49 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
+- `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
 
 - `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
 
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+- `observiqexporter`: Deprecate the observiq exporter (#10977)
+- `honeycombexporter`: Deprecate honeycomb exporter (#10318)
 
 ### 🚀 New components 🚀
 
 - `expvarreceiver`: Include `expvarreceiver` in components (#10847)
 - `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
+- `googlemanagedprometheusexporter` The Google Managed Service for Prometheus exporter is alpha. (#10925)
 
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Allow attribute values of any types (#9245)
+- `metricstransformprocessor`: Migrate the processor from OC to pdata (#10817)
+  - This behavior can be reverted by disabling the `processor.metricstransformprocessor.UseOTLPDataModel` feature gate.
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `filestorageextension`: Add background compaction capability (#9327)
+- `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+- `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
+- `mezmoexporter`: add logging for HTTP errors (#10875)
+- `signalfxexporter`: Enable the exporting of seven Kubernetes metrics used in Splunk/SignalFx content by default (#11032)
+- `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
+- `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
 
 ### 🧰 Bug fixes 🧰
 
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `transformprocessor`: Fix issue where some trace fields were not working correctly in conditions. (#10471)
 - `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
+- `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
+- `windowseventlogreceiver`: Fixed example config in readme (#10971)
+- `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
+- `exporter/awsemfexporter:`: Fix dead links in README.md. (#11027)
+- `googlecloudexporter`: Fix (self-obs) point_count metric calculation, concurrent map write panic, and dropped log attributes (#11051)
 
 ## v0.53.0
 

@@ -46,11 +46,7 @@ func TestHost(t *testing.T) {
 
 	// Disable EC2 Metadata service to prevent fetching hostname from there,
 	// in case the test is running on an EC2 instance
-	const awsEc2MetadataDisabled = "AWS_EC2_METADATA_DISABLED"
-	curr := os.Getenv(awsEc2MetadataDisabled)
-	err = os.Setenv(awsEc2MetadataDisabled, "true")
-	require.NoError(t, err)
-	defer os.Setenv(awsEc2MetadataDisabled, curr)
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 
 	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)

@@ -55,7 +55,7 @@ func Chain(logger *zap.Logger, providers map[string]source.Provider, priorityLis
 		}
 	}
 
-	return &chainProvider{logger: logger, providers: providers}, nil
+	return &chainProvider{logger: logger, providers: providers, priorityList: priorityList}, nil
 }
 
 var _ source.Provider = (*configProvider)(nil)

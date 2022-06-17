@@ -33,7 +33,7 @@ func TestProvider(t *testing.T) {
 		VMID:              "vmID",
 		VMSize:            "vmSize",
 		SubscriptionID:    "subscriptionID",
-		ResourceGroupName: "resourceGroup",
+		ResourceGroupName: "MC_aks-kenafeh_aks-kenafeh-eu_westeurope",
 		VMScaleSetName:    "myScaleset",
 	}, nil)
 
@@ -42,4 +42,8 @@ func TestProvider(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, source.HostnameKind, src.Kind)
 	assert.Equal(t, "vmID", src.Identifier)
+
+	clusterName, err := provider.ClusterName(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "aks-kenafeh-eu", clusterName)
 }

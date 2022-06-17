@@ -51,7 +51,7 @@ type factory struct {
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	f.onceProvider.Do(func() {
-		f.sourceProvider, f.providerErr = metadata.GetHostnameProvider(set, configHostname)
+		f.sourceProvider, f.providerErr = metadata.GetSourceProvider(set, configHostname)
 	})
 	return f.sourceProvider, f.providerErr
 }
@@ -164,7 +164,6 @@ func (f *factory) createMetricsExporter(
 
 	cfg := c.(*ddconfig.Config)
 
-	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
 	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}
@@ -229,7 +228,6 @@ func (f *factory) createTracesExporter(
 
 	cfg := c.(*ddconfig.Config)
 
-	set.Logger.Info("sanitizing Datadog traces exporter configuration")
 	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
 	}

@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"strings"
@@ -269,8 +270,8 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 		}
 		if err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: n1}); err == nil {
 			t.Errorf("Iteration #%d: Unexpectedly succeeded in sending a message upstream. Connection must be in terminal state", i)
-		} else if g, w := err, io.EOF; g != w {
-			t.Errorf("Iteration #%d:\nGot error %q\nWant error %q", i, g, w)
+		} else if !errors.Is(err, io.EOF) {
+			t.Errorf("Iteration #%d:\nGot error %q\nWant error %q", i, err, io.EOF)
 		}
 	}
 

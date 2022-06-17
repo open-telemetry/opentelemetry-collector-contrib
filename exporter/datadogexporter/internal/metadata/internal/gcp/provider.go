@@ -19,12 +19,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
 
 var _ source.Provider = (*Provider)(nil)
+var _ provider.ClusterNameProvider = (*Provider)(nil)
 
 var _ gcpDetector = gcp.NewDetector()
 
@@ -32,6 +34,7 @@ type gcpDetector interface {
 	ProjectID() (string, error)
 	CloudPlatform() gcp.Platform
 	GCEHostName() (string, error)
+	GKEClusterName() (string, error)
 }
 
 type Provider struct {
@@ -60,6 +63,10 @@ func (p *Provider) Source(context.Context) (source.Source, error) {
 	}
 
 	return source.Source{Kind: source.HostnameKind, Identifier: fmt.Sprintf("%s.%s", name, cloudAccount)}, nil
+}
+
+func (p *Provider) ClusterName(ctx context.Context) (string, error) {
+	return p.detector.GKEClusterName()
 }
 
 // NewProvider creates a new GCP hostname provider.

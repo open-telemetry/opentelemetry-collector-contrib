@@ -240,6 +240,30 @@ func TestHostnameKubernetes(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, hostname, "nodeName")
 
+	// Node name, no cluster name, AWS EC2, no preview
+	attrs = testutils.NewAttributeMap(map[string]string{
+		AttributeK8sNodeName:               testNodeName,
+		conventions.AttributeContainerID:   testContainerID,
+		conventions.AttributeHostID:        testHostID,
+		conventions.AttributeHostName:      testHostName,
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+	})
+	hostname, ok = hostnameFromAttributes(attrs, false)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, "nodeName")
+
+	// Node name, no cluster name, AWS EC2, preview
+	attrs = testutils.NewAttributeMap(map[string]string{
+		AttributeK8sNodeName:               testNodeName,
+		conventions.AttributeContainerID:   testContainerID,
+		conventions.AttributeHostID:        testHostID,
+		conventions.AttributeHostName:      testHostName,
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+	})
+	hostname, ok = hostnameFromAttributes(attrs, true)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testHostID)
+
 	// no node name, cluster name
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeK8SClusterName: testClusterName,
