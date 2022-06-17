@@ -19,7 +19,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
