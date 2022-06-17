@@ -116,6 +116,7 @@ processor/tailsamplingprocessor/                     @open-telemetry/collector-c
 processor/transformprocessor/                        @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @bogdandrutu @TylerHelmuth
 
 receiver/activedirectorydsreceiver/                  @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
+receiver/aerospikereceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @Aneurysm9
