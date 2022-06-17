@@ -67,32 +67,39 @@ var (
 )
 
 func TestMetricsGrouping(t *testing.T) {
-	for _, test := range groupingTests {
-		t.Run(test.name, func(t *testing.T) {
-			next := new(consumertest.MetricsSink)
-			p := newMetricsTransformProcessor(zap.NewExample(), test.transforms)
+	for _, useOTLP := range []bool{false, true} {
+		for _, test := range groupingTests {
+			t.Run(test.name, func(t *testing.T) {
+				next := new(consumertest.MetricsSink)
 
-			mtp, err := processorhelper.NewMetricsProcessor(&Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-			}, next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
-			require.NoError(t, err)
+				p := &metricsTransformProcessor{
+					transforms:               test.transforms,
+					logger:                   zap.NewExample(),
+					otlpDataModelGateEnabled: useOTLP,
+				}
 
-			caps := mtp.Capabilities()
-			assert.Equal(t, true, caps.MutatesData)
+				mtp, err := processorhelper.NewMetricsProcessor(&Config{
+					ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				}, next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
+				require.NoError(t, err)
 
-			input, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_in.json"))
-			require.NoError(t, err)
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_out.json"))
-			require.NoError(t, err)
+				caps := mtp.Capabilities()
+				assert.Equal(t, true, caps.MutatesData)
 
-			cErr := mtp.ConsumeMetrics(context.Background(), input)
-			assert.NoError(t, cErr)
+				input, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_in.json"))
+				require.NoError(t, err)
+				expected, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_out.json"))
+				require.NoError(t, err)
 
-			got := next.AllMetrics()
-			require.Equal(t, 1, len(got))
-			require.NoError(t, scrapertest.CompareMetrics(expected, got[0], scrapertest.IgnoreMetricValues()))
+				cErr := mtp.ConsumeMetrics(context.Background(), input)
+				assert.NoError(t, cErr)
 
-			assert.NoError(t, mtp.Shutdown(context.Background()))
-		})
+				got := next.AllMetrics()
+				require.Equal(t, 1, len(got))
+				require.NoError(t, scrapertest.CompareMetrics(expected, got[0], scrapertest.IgnoreMetricValues()))
+
+				assert.NoError(t, mtp.Shutdown(context.Background()))
+			})
+		}
 	}
 }
