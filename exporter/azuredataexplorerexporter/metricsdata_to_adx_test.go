@@ -15,6 +15,7 @@
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -32,31 +33,183 @@ const (
 	testhost = "test-host"
 )
 
-func Test_mapToAdxMetric(t *testing.T) {
-	tsUnix := time.Unix(time.Now().Unix(), time.Now().UnixNano())
-	ts := pcommon.NewTimestampFromTime(tsUnix)
-	tstr := ts.AsTime().Format(time.RFC3339)
-	tmap := make(map[string]interface{})
-	tmap["key"] = "value"
+// The timestamps used for the tests
+var tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
+var ts = pcommon.NewTimestampFromTime(tsUnix)
+var tstr = ts.AsTime().Format(time.RFC3339)
 
-	distributionBounds := []float64{1, 2, 4}
-	distributionCounts := []uint64{4, 2, 3, 5}
+// the histogram values and distribution for the tests
+var distributionBounds = []float64{1, 2, 4}
+var distributionCounts = []uint64{4, 2, 3, 5}
+
+func Test_rawMetricsToAdxMetrics(t *testing.T) {
+	t.Parallel()
+	// Resource map
+	rmap := make(map[string]interface{})
+	rmap["key"] = "value"
+	rmap[hostkey] = testhost
+
+	//Metric map , with scopes
+	mmap := make(map[string]interface{})
+	mmap[scopename] = "SN"
+	mmap[scopeversion] = "SV"
+
+	tests := []struct {
+		name               string                                                                        // name of the test
+		metricsDataFn      func(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics // function that generates the metric
+		metricDataType     pmetric.MetricDataType
+		expectedAdxMetrics []*AdxMetric // expected results
+	}{
+		{
+			name: "metrics_counter_over_time",
+			metricsDataFn: func(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics {
+				return newMetrics(metricType, ts)
+			},
+			metricDataType: pmetric.MetricDataTypeSum,
+			expectedAdxMetrics: []*AdxMetric{
+				{
+					Timestamp:          tstr,
+					MetricName:         "page_faults",
+					MetricDescription:  "process page faults",
+					MetricType:         "Sum",
+					MetricValue:        22.0,
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+			},
+		},
+		{
+			name: "metrics_simple_histogram_with_value",
+			metricsDataFn: func(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics {
+				return newMetrics(metricType, ts)
+			},
+			metricDataType: pmetric.MetricDataTypeHistogram,
+			expectedAdxMetrics: []*AdxMetric{
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_sum",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", sumdescription),
+					MetricValue:        23,
+					Host:               testhost,
+					MetricAttributes:   newMapFromAttr(`{"scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
+					ResourceAttributes: rmap,
+				},
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_count",
+					MetricType:         "Histogram", // There is no unit for counts. It is only a count or a "number of samples"
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
+					MetricValue:        7,
+					MetricUnit:         "milliseconds",
+					MetricAttributes:   newMapFromAttr(`{"scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+				//The list of buckets
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        4,
+					MetricAttributes:   newMapFromAttr(`{"le":"1", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        6,
+					MetricAttributes:   newMapFromAttr(`{"le":"2", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        9,
+					MetricAttributes:   newMapFromAttr(`{"le":"4", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+
+				{
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        14, // Sum of distribution counts
+					MetricAttributes:   newMapFromAttr(`{"le":"+Inf", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metrics := tt.metricsDataFn(tt.metricDataType, ts)
+			actualMetrics, _ := rawMetricsToAdxMetrics(context.Background(), metrics, zap.NewNop())
+			encoder := json.NewEncoder(ioutil.Discard)
+			for i, expectedMetric := range tt.expectedAdxMetrics {
+				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
+				// Metric assertions
+				assert.Equal(t, expectedMetric.MetricName, actualMetrics[i].MetricName)
+				assert.Equal(t, expectedMetric.MetricType, actualMetrics[i].MetricType)
+				assert.Equal(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, fmt.Sprintf("Mismatch for value for test %s", tt.name))
+				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
+				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
+				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)
+				// Host as seperate column
+				assert.Equal(t, expectedMetric.Host, actualMetrics[i].Host)
+				// Resource attributes
+				assert.Equal(t, expectedMetric.ResourceAttributes, actualMetrics[i].ResourceAttributes)
+				err := encoder.Encode(actualMetrics[i])
+				assert.NoError(t, err)
+			}
+		})
+	}
+
+}
+
+func Test_mapToAdxMetric(t *testing.T) {
+	t.Parallel()
+
+	rmap := make(map[string]interface{})
+	rmap["key"] = "value"
+	rmap[hostkey] = testhost
+	mmap := make(map[string]interface{})
 
 	tests := []struct {
 		name               string                  // name of the test
 		resourceFn         func() pcommon.Resource // function that generates the resources
-		metricsDataFn      func() pmetric.Metric   // function that generates the metric
+		metricDataFn       func() pmetric.Metric   // function that generates the metric
 		expectedAdxMetrics []*AdxMetric            // expected results
 		configFn           func() *Config          // the config to apply
 	}{
 		{
 			name: "counter_over_time",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
-				sumV.SetName("counter_over_time")
+				sumV.SetName("page_faults")
+				sumV.SetDescription("process page faults") // Only description and no units. Count units are just "number of / count of"
 				sumV.SetDataType(pmetric.MetricDataTypeSum)
 				dp := sumV.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(22.0)
@@ -69,23 +222,26 @@ func Test_mapToAdxMetric(t *testing.T) {
 
 			expectedAdxMetrics: []*AdxMetric{
 				{
-					Timestamp:  tstr,
-					MetricName: "counter_over_time",
-					MetricType: "Sum",
-					Value:      22.0,
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "page_faults",
+					MetricDescription:  "process page faults",
+					MetricType:         "Sum",
+					MetricValue:        22.0,
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 			},
 		},
 		{
 			name: "int_counter_over_time",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
-				sumV.SetName("int_counter_over_time")
+				sumV.SetName("page_faults")
+				sumV.SetDescription("process page faults")
 				sumV.SetDataType(pmetric.MetricDataTypeSum)
 				dp := sumV.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(221)
@@ -98,12 +254,14 @@ func Test_mapToAdxMetric(t *testing.T) {
 
 			expectedAdxMetrics: []*AdxMetric{
 				{
-					Timestamp:  tstr,
-					MetricName: "int_counter_over_time",
-					MetricType: "Sum",
-					Value:      221,
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "page_faults",
+					MetricDescription:  "process page faults",
+					MetricType:         "Sum",
+					MetricValue:        221,
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 			},
 		},
@@ -111,11 +269,11 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "nil_counter_over_time",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
-				sumV.SetName("nil_counter_over_time")
+				sumV.SetName("page_faults")
 				sumV.SetDataType(pmetric.MetricDataTypeSum)
 				return sumV
 			},
@@ -126,11 +284,14 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "simple_histogram_with_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			// Refers example from https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument-unit
+			metricDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
-				histogram.SetName("simple_histogram_with_value")
+				histogram.SetName("http.server.duration")
+				histogram.SetUnit("milliseconds")
+				histogram.SetDescription("measures the duration of the inbound HTTP request")
 				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
 				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
 				histogramPt.SetMExplicitBounds(distributionBounds)
@@ -146,67 +307,87 @@ func Test_mapToAdxMetric(t *testing.T) {
 
 			expectedAdxMetrics: []*AdxMetric{
 				{
-					Timestamp:  tstr,
-					MetricName: "simple_histogram_with_value_sum",
-					MetricType: "Histogram",
-					Value:      23,
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_sum",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", sumdescription),
+					MetricValue:        23,
+					Host:               testhost,
+					MetricAttributes:   mmap,
+					ResourceAttributes: rmap,
 				},
 				{
-					Timestamp:  tstr,
-					MetricName: "simple_histogram_with_value_count",
-					MetricType: "Histogram",
-					Value:      7,
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_count",
+					MetricType:         "Histogram", // There is no unit for counts. It is only a count or a "number of samples"
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
+					MetricValue:        7,
+					MetricUnit:         "milliseconds",
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 				//The list of buckets
 				{
-					Timestamp:  tstr,
-					MetricName: "simple_histogram_with_value_bucket",
-					MetricType: "Histogram",
-					Value:      4,
-					Host:       testhost,
-					Attributes: newMapFromAttr(`{"key":"value","le":"1"}`),
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        4,
+					MetricAttributes:   newMapFromAttr(`{"le":"1"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 
 				{
-					Timestamp:  tstr,
-					MetricName: "simple_histogram_with_value_bucket",
-					MetricType: "Histogram",
-					Value:      6,
-					Host:       testhost,
-					Attributes: newMapFromAttr(`{"key":"value","le":"2"}`),
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        6,
+					MetricAttributes:   newMapFromAttr(`{"le":"2"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 
 				{
-					Timestamp:  tstr,
-					MetricName: "simple_histogram_with_value_bucket",
-					MetricType: "Histogram",
-					Value:      9,
-					Host:       testhost,
-					Attributes: newMapFromAttr(`{"key":"value","le":"4"}`),
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        9,
+					MetricAttributes:   newMapFromAttr(`{"le":"4"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 
 				{
-					Timestamp:  tstr,
-					MetricName: "simple_histogram_with_value_bucket",
-					MetricType: "Histogram",
-					Value:      14, // Sum of distribution counts
-					Host:       testhost,
-					Attributes: newMapFromAttr(`{"key":"value","le":"+Inf"}`),
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_bucket",
+					MetricType:         "Histogram",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  "measures the duration of the inbound HTTP request",
+					MetricValue:        14, // Sum of distribution counts
+					MetricAttributes:   newMapFromAttr(`{"le":"+Inf"}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 			},
 		},
 		{
 			name: "nil_gauge_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
-				gauge.SetName("nil_gauge_value")
+				gauge.SetName("cpu.frequency")
+				gauge.SetUnit("GHz")
+				gauge.SetDescription("the real-time CPU clock speed")
 				gauge.SetDataType(pmetric.MetricDataTypeGauge)
 				return gauge
 			},
@@ -217,11 +398,13 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "int_gauge_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
-				gauge.SetName("Int_gauge_value")
+				gauge.SetName("cpu.frequency")
+				gauge.SetUnit("GHz")
+				gauge.SetDescription("the real-time CPU clock speed")
 				gauge.SetDataType(pmetric.MetricDataTypeGauge)
 				dp := gauge.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
@@ -233,23 +416,28 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 			expectedAdxMetrics: []*AdxMetric{
 				{
-					Timestamp:  tstr,
-					MetricName: "Int_gauge_value",
-					MetricType: "Gauge",
-					Value:      5,
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "cpu.frequency",
+					MetricType:         "Gauge",
+					MetricUnit:         "GHz",
+					MetricDescription:  "the real-time CPU clock speed",
+					MetricValue:        5,
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 			},
 		},
 		{
 			name: "float_gauge_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
-				gauge.SetName("Float_gauge_value")
+				gauge.SetName("cpu.frequency")
+				gauge.SetUnit("GHz")
+				gauge.SetDescription("the real-time CPU clock speed")
 				gauge.SetDataType(pmetric.MetricDataTypeGauge)
 				dp := gauge.Gauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
@@ -261,23 +449,28 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 			expectedAdxMetrics: []*AdxMetric{
 				{
-					Timestamp:  tstr,
-					MetricName: "Float_gauge_value",
-					MetricType: "Gauge",
-					Value:      float64(5.32),
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "cpu.frequency",
+					MetricType:         "Gauge",
+					MetricUnit:         "GHz",
+					MetricDescription:  "the real-time CPU clock speed",
+					MetricValue:        float64(5.32),
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 			},
 		},
 		{
 			name: "summary",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
-				summary.SetName("summary")
+				summary.SetName("http.server.duration")
+				summary.SetDescription("measures the duration of the inbound HTTP request")
+				summary.SetUnit("milliseconds")
 				summary.SetDataType(pmetric.MetricDataTypeSummary)
 				summaryPt := summary.Summary().DataPoints().AppendEmpty()
 				summaryPt.SetTimestamp(ts)
@@ -294,36 +487,45 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 			expectedAdxMetrics: []*AdxMetric{
 				{
-					Timestamp:  tstr,
-					MetricName: "summary_sum",
-					MetricType: "Summary",
-					Value:      float64(42),
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_sum",
+					MetricType:         "Summary",
+					MetricUnit:         "milliseconds",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", sumdescription),
+					MetricValue:        float64(42),
+					Host:               testhost,
+					MetricAttributes:   mmap,
+					ResourceAttributes: rmap,
 				},
 				{
-					Timestamp:  tstr,
-					MetricName: "summary_count",
-					MetricType: "Summary",
-					Value:      float64(2),
-					Host:       testhost,
-					Attributes: tmap,
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_count",
+					MetricType:         "Summary",
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
+					MetricValue:        float64(2),
+					MetricAttributes:   mmap,
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 				{
-					Timestamp:  tstr,
-					MetricName: "summary_0.5",
-					MetricType: "Summary",
-					Value:      float64(34),
-					Host:       testhost,
-					Attributes: newMapFromAttr(`{"key":"value","qt": "0.5","summary_0.5": 34}`),
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_0.5",
+					MetricType:         "Summary",
+					MetricValue:        float64(34),
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
+					MetricAttributes:   newMapFromAttr(`{"qt": "0.5","http.server.duration_0.5": 34}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 				{
-					Timestamp:  tstr,
-					MetricName: "summary_0.6",
-					MetricType: "Summary",
-					Value:      float64(45),
-					Host:       testhost,
-					Attributes: newMapFromAttr(`{"key":"value","qt": "0.6","summary_0.6": 45}`),
+					Timestamp:          tstr,
+					MetricName:         "http.server.duration_0.6",
+					MetricType:         "Summary",
+					MetricValue:        float64(45),
+					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
+					MetricAttributes:   newMapFromAttr(`{"qt": "0.6","http.server.duration_0.6": 45}`),
+					Host:               testhost,
+					ResourceAttributes: rmap,
 				},
 			},
 			configFn: func() *Config {
@@ -333,9 +535,9 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "nil_summary",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
 				summary.SetName("nil_summary")
 				summary.SetDataType(pmetric.MetricDataTypeSummary)
@@ -360,9 +562,9 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "unknown_type",
 			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
+				return newMetricResource()
 			},
-			metricsDataFn: func() pmetric.Metric {
+			metricDataFn: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("unknown_with_dims")
 				metric.SetDataType(pmetric.MetricDataTypeNone)
@@ -377,16 +579,23 @@ func Test_mapToAdxMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res := tt.resourceFn()
-			md := tt.metricsDataFn()
-			actualMetrics := mapToAdxMetric(res, md, zap.NewNop())
+			md := tt.metricDataFn()
+			emptyscopemap := make(map[string]interface{}, 2)
+			actualMetrics := mapToAdxMetric(res, md, emptyscopemap, zap.NewNop())
 			encoder := json.NewEncoder(ioutil.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
+				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
+				// Metric assertions
 				assert.Equal(t, expectedMetric.MetricName, actualMetrics[i].MetricName)
 				assert.Equal(t, expectedMetric.MetricType, actualMetrics[i].MetricType)
-				assert.Equal(t, expectedMetric.Value, actualMetrics[i].Value, fmt.Sprintf("Mismatch for value for test %s", tt.name))
+				assert.Equal(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, fmt.Sprintf("Mismatch for value for test %s", tt.name))
+				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
+				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
+				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)
+				// Host as seperate column
 				assert.Equal(t, expectedMetric.Host, actualMetrics[i].Host)
-				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
-				assert.Equal(t, expectedMetric.Attributes, actualMetrics[i].Attributes)
+				// Resource attributes
+				assert.Equal(t, expectedMetric.ResourceAttributes, actualMetrics[i].ResourceAttributes)
 				err := encoder.Encode(actualMetrics[i])
 				assert.NoError(t, err)
 			}
@@ -394,10 +603,10 @@ func Test_mapToAdxMetric(t *testing.T) {
 	}
 }
 
-func newMetricsWithResources() pcommon.Resource {
+func newMetricResource() pcommon.Resource {
 	res := pcommon.NewResource()
 	res.Attributes().InsertString("key", "value")
-	res.Attributes().InsertString(hostKey, testhost)
+	res.Attributes().InsertString(hostkey, testhost)
 	return res
 }
 
@@ -405,4 +614,43 @@ func newMapFromAttr(jsonStr string) map[string]interface{} {
 	dynamic := make(map[string]interface{})
 	json.Unmarshal([]byte(jsonStr), &dynamic)
 	return dynamic
+}
+
+func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics {
+	// Create metrics
+	metrics := pmetric.NewMetrics()
+	rms := metrics.ResourceMetrics().AppendEmpty()
+	rms.Resource().Attributes().InsertString("key", "value")
+	rms.Resource().Attributes().InsertString(hostkey, testhost)
+	// // Scope metric in a metric
+	sms := rms.ScopeMetrics().AppendEmpty()
+	scope := sms.Scope()
+	scope.SetName("SN")
+	scope.SetVersion("SV")
+	//
+
+	switch metricType {
+	case pmetric.MetricDataTypeSum:
+		sumV := sms.Metrics().AppendEmpty()
+		sumV.SetName("page_faults")
+		sumV.SetDescription("process page faults") // Only description and no units. Count units are just "number of / count of"
+		sumV.SetDataType(pmetric.MetricDataTypeSum)
+		dp := sumV.Sum().DataPoints().AppendEmpty()
+		dp.SetDoubleVal(22.0)
+		dp.SetTimestamp(ts)
+	case pmetric.MetricDataTypeHistogram:
+		histogram := sms.Metrics().AppendEmpty()
+		histogram.SetName("http.server.duration")
+		histogram.SetUnit("milliseconds")
+		histogram.SetDescription("measures the duration of the inbound HTTP request")
+		histogram.SetDataType(pmetric.MetricDataTypeHistogram)
+		histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
+		histogramPt.SetMExplicitBounds(distributionBounds)
+		histogramPt.SetMBucketCounts(distributionCounts)
+		histogramPt.Attributes().InsertString("k1", "v1")
+		histogramPt.SetSum(23)  //
+		histogramPt.SetCount(7) // sum of distributionBounds
+		histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(ts.AsTime()))
+	}
+	return metrics
 }

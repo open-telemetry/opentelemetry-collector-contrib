@@ -37,37 +37,34 @@ type adxMetricsProducer struct {
 	logger        *zap.Logger         // Loggers for tracing the flow
 }
 
-func (e *adxMetricsProducer) metricsDataPusher(_ context.Context, metrics pmetric.Metrics) error {
-	resourceMetric := metrics.ResourceMetrics()
-	for i := 0; i < resourceMetric.Len(); i++ {
-		res := resourceMetric.At(i).Resource()
-		scopeMetrics := resourceMetric.At(i).ScopeMetrics()
-		for j := 0; j < scopeMetrics.Len(); j++ {
-			metrics := scopeMetrics.At(j).Metrics()
-			for k := 0; k < metrics.Len(); k++ {
-				transformedadxmetrics := mapToAdxMetric(res, metrics.At(k), e.logger)
-				for tm := 0; tm < len(transformedadxmetrics); tm++ {
-					adxmetricjsonbytes, err := jsoniter.Marshal(transformedadxmetrics[tm])
-					if err != nil {
-						e.logger.Error("Error performing serialization of data.", zap.Error(err))
-					}
-					ingestreader := bytes.NewReader(adxmetricjsonbytes)
-					if e.managedingest != nil {
-						if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
-							e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
-							return err
-						}
-					} else {
-						if _, err := e.queuedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
-							e.logger.Error("Error performing queued data ingestion.", zap.Error(err))
-							return err
-						}
-					}
-
-				}
+// given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
+func (e *adxMetricsProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
+	transformedadxmetrics, err := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
+	if err != nil {
+		e.logger.Error("Error transforming metrics to ADX metric format.", zap.Error(err))
+		return err
+	}
+	// Since the transform succeeded ,  using the option for ingestion ingest the data into ADX
+	for tm := 0; tm < len(transformedadxmetrics); tm++ {
+		adxmetricjsonbytes, err := jsoniter.Marshal(transformedadxmetrics[tm])
+		if err != nil {
+			e.logger.Error("Error performing serialization of data.", zap.Error(err))
+		}
+		ingestreader := bytes.NewReader(adxmetricjsonbytes)
+		if e.managedingest != nil {
+			if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
+				e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
+				return err
+			}
+		} else {
+			if _, err := e.queuedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
+				e.logger.Error("Error performing queued data ingestion.", zap.Error(err))
+				return err
 			}
 		}
 	}
+	metricsflushed := len(transformedadxmetrics)
+	e.logger.Sugar().Infof("Flushing %d metrics to sink", metricsflushed)
 	return nil
 }
 
