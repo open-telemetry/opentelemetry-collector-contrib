@@ -16,23 +16,23 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
-	"regexp"
+
+	"github.com/gobwas/glob"
 )
 
-func replaceMatch(target GetSetter, regexPattern string, replacement string) (ExprFunc, error) {
-	compiledPattern, err := regexp.Compile(regexPattern)
+func replaceMatch(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
+	glob, err := glob.Compile(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("the regex pattern supplied to replace_match is not a valid pattern: %w", err)
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
 	return func(ctx TransformContext) interface{} {
-		originalVal := target.Get(ctx)
-		if originalVal == nil {
+		val := target.Get(ctx)
+		if val == nil {
 			return nil
 		}
-		if originalValStr, ok := originalVal.(string); ok {
-			if compiledPattern.MatchString(originalValStr) {
-				updatedStr := compiledPattern.ReplaceAllLiteralString(originalValStr, replacement)
-				target.Set(ctx, updatedStr)
+		if valStr, ok := val.(string); ok {
+			if glob.Match(valStr) {
+				target.Set(ctx, replacement)
 			}
 		}
 		return nil

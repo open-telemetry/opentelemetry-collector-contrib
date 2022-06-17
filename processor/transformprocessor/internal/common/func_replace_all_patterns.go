@@ -16,15 +16,15 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
+	"regexp"
 
-	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func replaceAllMatches(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
-	glob, err := glob.Compile(pattern)
+func replaceAllPatterns(target GetSetter, regexPattern string, replacement string) (ExprFunc, error) {
+	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
+		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
 	}
 	return func(ctx TransformContext) interface{} {
 		val := target.Get(ctx)
@@ -34,11 +34,12 @@ func replaceAllMatches(target GetSetter, pattern string, replacement string) (Ex
 		if attrs, ok := val.(pcommon.Map); ok {
 			updated := pcommon.NewMap()
 			updated.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, value pcommon.Value) bool {
-				if glob.Match(value.StringVal()) {
-					updated.InsertString(key, replacement)
+			attrs.Range(func(key string, originalValue pcommon.Value) bool {
+				if compiledPattern.MatchString(originalValue.StringVal()) {
+					updatedString := compiledPattern.ReplaceAllLiteralString(originalValue.StringVal(), replacement)
+					updated.InsertString(key, updatedString)
 				} else {
-					updated.Insert(key, value)
+					updated.Insert(key, originalValue)
 				}
 				return true
 			})

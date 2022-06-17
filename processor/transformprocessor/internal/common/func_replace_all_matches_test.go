@@ -49,11 +49,11 @@ func Test_replaceAllMatches(t *testing.T) {
 		{
 			name:        "replace only matches",
 			target:      target,
-			pattern:     "hello",
+			pattern:     "hello*",
 			replacement: "hello {universe}",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "hello {universe} world")
+				expectedMap.InsertString("test", "hello {universe}")
 				expectedMap.InsertString("test2", "hello {universe}")
 				expectedMap.InsertString("test3", "goodbye")
 			},
@@ -61,7 +61,7 @@ func Test_replaceAllMatches(t *testing.T) {
 		{
 			name:        "no matches",
 			target:      target,
-			pattern:     "nothing",
+			pattern:     "nothing*",
 			replacement: "nothing {matches}",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
@@ -106,9 +106,7 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := replaceAllMatches(target, "regexpattern", "{replacement}")
-	assert.Nil(t, err)
-
+	exprFunc, _ := replaceAllMatches(target, "*", "{replacement}")
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
@@ -128,7 +126,6 @@ func Test_replaceAllMatches_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := replaceAllMatches(target, "regexp", "{anything}")
-	assert.Nil(t, err)
+	exprFunc, _ := replaceAllMatches(target, "*", "{anything}")
 	exprFunc(ctx)
 }

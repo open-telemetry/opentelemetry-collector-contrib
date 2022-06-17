@@ -23,15 +23,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
-func Test_replaceMatch(t *testing.T) {
-	input := pcommon.NewValueString("hello world")
+func Test_replaceAllPatterns(t *testing.T) {
+	input := pcommon.NewMap()
+	input.InsertString("test", "hello world")
+	input.InsertString("test2", "hello")
+	input.InsertString("test3", "goodbye")
 
 	target := &testGetSetter{
 		getter: func(ctx TransformContext) interface{} {
-			return ctx.GetItem().(pcommon.Value).StringVal()
+			return ctx.GetItem()
 		},
 		setter: func(ctx TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
+			ctx.GetItem().(pcommon.Map).Clear()
+			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
 		},
 	}
 
@@ -40,48 +44,55 @@ func Test_replaceMatch(t *testing.T) {
 		target      GetSetter
 		pattern     string
 		replacement string
-		want        func(pcommon.Value)
+		want        func(pcommon.Map)
 	}{
 		{
-			name:        "replace match",
+			name:        "replace only matches",
 			target:      target,
-			pattern:     "hello*",
+			pattern:     "hello",
 			replacement: "hello {universe}",
-			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello {universe}")
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello {universe} world")
+				expectedMap.InsertString("test2", "hello {universe}")
+				expectedMap.InsertString("test3", "goodbye")
 			},
 		},
 		{
-			name:        "no match",
+			name:        "no matches",
 			target:      target,
-			pattern:     "goodbye*",
-			replacement: "goodbye {universe}",
-			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello world")
+			pattern:     "nothing",
+			replacement: "nothing {matches}",
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertString("test2", "hello")
+				expectedMap.InsertString("test3", "goodbye")
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(input.StringVal())
+			scenarioMap := pcommon.NewMap()
+			input.CopyTo(scenarioMap)
 
 			ctx := testhelper.TestTransformContext{
-				Item: scenarioValue,
+				Item: scenarioMap,
 			}
 
-			exprFunc, _ := replaceMatch(tt.target, tt.pattern, tt.replacement)
+			exprFunc, _ := replaceAllPatterns(tt.target, tt.pattern, tt.replacement)
 			exprFunc(ctx)
 
-			expected := pcommon.NewValueString("")
+			expected := pcommon.NewMap()
 			tt.want(expected)
 
-			assert.Equal(t, expected, scenarioValue)
+			assert.Equal(t, expected, scenarioMap)
 		})
 	}
 }
 
-func Test_replaceMatch_bad_input(t *testing.T) {
-	input := pcommon.NewValueInt(1)
+func Test_replaceAllPatterns_bad_input(t *testing.T) {
+	input := pcommon.NewValueString("not a map")
 	ctx := testhelper.TestTransformContext{
 		Item: input,
 	}
@@ -95,13 +106,15 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceAllMatches(target, "*", "{replacement}")
+	exprFunc, err := replaceAllPatterns(target, "regexpattern", "{replacement}")
+	assert.Nil(t, err)
+
 	exprFunc(ctx)
 
-	assert.Equal(t, pcommon.NewValueInt(1), input)
+	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
-func Test_replaceMatch_get_nil(t *testing.T) {
+func Test_replaceAllPatterns_get_nil(t *testing.T) {
 	ctx := testhelper.TestTransformContext{
 		Item: nil,
 	}
@@ -115,6 +128,7 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceMatch(target, "*", "{anything}")
+	exprFunc, err := replaceAllPatterns(target, "regexp", "{anything}")
+	assert.Nil(t, err)
 	exprFunc(ctx)
 }

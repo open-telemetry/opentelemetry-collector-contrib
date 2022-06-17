@@ -23,8 +23,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
-func Test_replaceMatch(t *testing.T) {
-	input := pcommon.NewValueString("hello world")
+func Test_replacePattern(t *testing.T) {
+	input := pcommon.NewValueString("application passwd=sensitivedtata otherarg=notsensitive")
 
 	target := &testGetSetter{
 		getter: func(ctx TransformContext) interface{} {
@@ -43,21 +43,21 @@ func Test_replaceMatch(t *testing.T) {
 		want        func(pcommon.Value)
 	}{
 		{
-			name:        "replace match",
+			name:        "replace regex match",
 			target:      target,
-			pattern:     "hello*",
-			replacement: "hello {universe}",
+			pattern:     `passwd\=[^\s]*(\s?)`,
+			replacement: "passwd=*** ",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello {universe}")
+				expectedValue.SetStringVal("application passwd=*** otherarg=notsensitive")
 			},
 		},
 		{
-			name:        "no match",
+			name:        "no regex match",
 			target:      target,
-			pattern:     "goodbye*",
-			replacement: "goodbye {universe}",
+			pattern:     `nomatch\=[^\s]*(\s?)`,
+			replacement: "shouldnotbeinoutput",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello world")
+				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive")
 			},
 		},
 	}
@@ -69,7 +69,7 @@ func Test_replaceMatch(t *testing.T) {
 				Item: scenarioValue,
 			}
 
-			exprFunc, _ := replaceMatch(tt.target, tt.pattern, tt.replacement)
+			exprFunc, _ := replacePattern(tt.target, tt.pattern, tt.replacement)
 			exprFunc(ctx)
 
 			expected := pcommon.NewValueString("")
@@ -80,7 +80,7 @@ func Test_replaceMatch(t *testing.T) {
 	}
 }
 
-func Test_replaceMatch_bad_input(t *testing.T) {
+func Test_replacePattern_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	ctx := testhelper.TestTransformContext{
 		Item: input,
@@ -95,13 +95,14 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceAllMatches(target, "*", "{replacement}")
+	exprFunc, err := replacePattern(target, "regexp", "{replacement}")
+	assert.Nil(t, err)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
-func Test_replaceMatch_get_nil(t *testing.T) {
+func Test_replacePattern_get_nil(t *testing.T) {
 	ctx := testhelper.TestTransformContext{
 		Item: nil,
 	}
@@ -115,6 +116,6 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceMatch(target, "*", "{anything}")
+	exprFunc, _ := replacePattern(target, `nomatch\=[^\s]*(\s?)`, "{anything}")
 	exprFunc(ctx)
 }

@@ -4,7 +4,6 @@
 
 ## 🛑 Breaking changes 🛑
 - `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
-- `transformprocessor`: `replace_match` and `replace_all_match` now use regex for pattern matching instead of wildcards. (#11118)
 - `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
 
 ### 🚩 Deprecations 🚩
@@ -36,6 +35,7 @@
 - `signalfxexporter`: Enable the exporting of seven Kubernetes metrics used in Splunk/SignalFx content by default (#11032)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
 - `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
+- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing test in attributes/metrics. (#11118)
 
 ### 🧰 Bug fixes 🧰
 
