@@ -20,9 +20,12 @@ import (
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.uber.org/zap"
 )
 
@@ -88,16 +91,25 @@ func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
 }
 
 var _ provider.HostnameProvider = (*Provider)(nil)
+var _ provider.ClusterNameProvider = (*Provider)(nil)
 
 type Provider struct {
 	once     sync.Once
 	hostInfo HostInfo
 
-	logger *zap.Logger
+	detector ec2provider.Provider
+	logger   *zap.Logger
 }
 
-func NewProvider(logger *zap.Logger) *Provider {
-	return &Provider{logger: logger}
+func NewProvider(logger *zap.Logger) (*Provider, error) {
+	sess, err := session.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	return &Provider{
+		logger:   logger,
+		detector: ec2provider.NewProvider(sess),
+	}, nil
 }
 
 func (p *Provider) fillHostInfo() {
@@ -111,6 +123,63 @@ func (p *Provider) Hostname(ctx context.Context) (string, error) {
 	}
 
 	return p.hostInfo.InstanceID, nil
+}
+
+// instanceTags gets the EC2 tags for the current instance.
+func (p *Provider) instanceTags(ctx context.Context) (*ec2.DescribeTagsOutput, error) {
+	// Get EC2 metadata to find the region and instance ID
+	meta, err := p.detector.Get(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metadata: %w", err)
+	}
+
+	// Get the EC2 tags for the instance id.
+	// Similar to:
+	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/39dbc1ac8/processor/resourcedetectionprocessor/internal/aws/ec2/ec2.go#L118-L151
+	// - https://github.com/DataDog/datadog-agent/blob/1b4afdd6a03e8fabcc169b924931b2bb8935dab9/pkg/util/ec2/ec2_tags.go#L104-L134
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(meta.Region),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build AWS session: %w", err)
+	}
+
+	svc := ec2.New(sess)
+	return svc.DescribeTagsWithContext(ctx,
+		&ec2.DescribeTagsInput{
+			Filters: []*ec2.Filter{{
+				Name: aws.String("resource-id"),
+				Values: []*string{
+					aws.String(meta.InstanceID),
+				},
+			}},
+		})
+}
+
+// clusterNameFromTags gets the AWS EC2 Cluster name from the tags on an EC2 instance.
+func clusterNameFromTags(ec2Tags *ec2.DescribeTagsOutput) (string, error) {
+	// Similar to:
+	// - https://github.com/DataDog/datadog-agent/blob/1b4afdd6a03/pkg/util/ec2/ec2.go#L256-L271
+	const clusterNameTagPrefix = "kubernetes.io/cluster/"
+	for _, tag := range ec2Tags.Tags {
+		if strings.HasPrefix(*tag.Key, clusterNameTagPrefix) {
+			if len(*tag.Key) == len(clusterNameTagPrefix) {
+				return "", fmt.Errorf("missing cluster name in %q tag", *tag.Key)
+			}
+			return strings.Split(*tag.Key, "/")[2], nil
+		}
+	}
+
+	return "", fmt.Errorf("no tag found with prefix %q", clusterNameTagPrefix)
+}
+
+// ClusterName gets the cluster name from an AWS EC2 machine.
+func (p *Provider) ClusterName(ctx context.Context) (string, error) {
+	ec2Tags, err := p.instanceTags(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get EC2 instance tags: %w", err)
+	}
+	return clusterNameFromTags(ec2Tags)
 }
 
 func (p *Provider) HostInfo() *HostInfo {
