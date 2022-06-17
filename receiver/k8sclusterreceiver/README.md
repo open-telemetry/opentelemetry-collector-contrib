@@ -1,7 +1,7 @@
 # Kubernetes Cluster Receiver
 
 | Status                   |           |
-| ------------------------ |-----------|
+| ------------------------ | --------- |
 | Stability                | [beta]    |
 | Supported pipeline types | metrics   |
 | Distributions            | [contrib] |
@@ -136,7 +136,7 @@ type MetadataDelta struct {
 }
 ```
 
-See [here](collection/metadata.go) for details about the above types.
+See [here](internal/collection/metadata.go) for details about the above types.
 
 ## Example
 
