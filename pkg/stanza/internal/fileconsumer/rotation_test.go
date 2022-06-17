@@ -27,7 +27,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -44,17 +43,17 @@ func TestMultiFileRotate(t *testing.T) {
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 
 	numFiles := 3
 	numMessages := 3
 	numRotations := 3
 
-	expected := make([]string, 0, numFiles*numMessages*numRotations)
+	expected := make([][]byte, 0, numFiles*numMessages*numRotations)
 	for i := 0; i < numFiles; i++ {
 		for j := 0; j < numMessages; j++ {
 			for k := 0; k < numRotations; k++ {
-				expected = append(expected, getMessage(i, k, j))
+				expected = append(expected, []byte(getMessage(i, k, j)))
 			}
 		}
 	}
@@ -86,7 +85,7 @@ func TestMultiFileRotate(t *testing.T) {
 		}(temp, i)
 	}
 
-	waitForMessages(t, logReceived, expected)
+	waitForTokens(t, emitCalls, expected)
 	wg.Wait()
 }
 
@@ -99,7 +98,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 
 	t.Parallel()
 
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -109,11 +108,11 @@ func TestMultiFileRotateSlow(t *testing.T) {
 	numMessages := 30
 	numRotations := 3
 
-	expected := make([]string, 0, numFiles*numMessages*numRotations)
+	expected := make([][]byte, 0, numFiles*numMessages*numRotations)
 	for i := 0; i < numFiles; i++ {
 		for j := 0; j < numMessages; j++ {
 			for k := 0; k < numRotations; k++ {
-				expected = append(expected, getMessage(i, k, j))
+				expected = append(expected, []byte(getMessage(i, k, j)))
 			}
 		}
 	}
@@ -142,12 +141,12 @@ func TestMultiFileRotateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForMessages(t, logReceived, expected)
+	waitForTokens(t, emitCalls, expected)
 	wg.Wait()
 }
 
 func TestMultiCopyTruncateSlow(t *testing.T) {
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -157,11 +156,11 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 	numMessages := 30
 	numRotations := 3
 
-	expected := make([]string, 0, numFiles*numMessages*numRotations)
+	expected := make([][]byte, 0, numFiles*numMessages*numRotations)
 	for i := 0; i < numFiles; i++ {
 		for j := 0; j < numMessages; j++ {
 			for k := 0; k < numRotations; k++ {
-				expected = append(expected, getMessage(i, k, j))
+				expected = append(expected, []byte(getMessage(i, k, j)))
 			}
 		}
 	}
@@ -198,7 +197,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForMessages(t, logReceived, expected)
+	waitForTokens(t, emitCalls, expected)
 	wg.Wait()
 }
 
@@ -249,20 +248,19 @@ func (rt rotationTest) expectEphemeralLines() bool {
 
 func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(t *testing.T) {
 	return func(t *testing.T) {
-		operator, logReceived, tempDir := newTestFileOperator(t,
+		emitCalls := make(chan *emitParams, tc.totalLines)
+		operator, tempDir := newTestScenarioWithChan(t,
 			func(cfg *Config) {
 				cfg.PollInterval = helper.NewDuration(tc.pollInterval)
 			},
-			func(out *testutil.FakeOutput) {
-				out.Received = make(chan *entry.Entry, tc.totalLines)
-			},
+			emitCalls,
 		)
 		logger := getRotatingLogger(t, tempDir, tc.maxLinesPerFile, tc.maxBackupFiles, copyTruncate, sequential)
 
-		expected := make([]string, 0, tc.totalLines)
-		baseStr := stringWithLength(46) // + ' 123'
+		expected := make([][]byte, 0, tc.totalLines)
+		baseStr := string(tokenWithLength(46)) // + ' 123'
 		for i := 0; i < tc.totalLines; i++ {
-			expected = append(expected, fmt.Sprintf("%s %3d", baseStr, i))
+			expected = append(expected, []byte(fmt.Sprintf("%s %3d", baseStr, i)))
 		}
 
 		require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
@@ -271,16 +269,16 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		}()
 
 		for _, message := range expected {
-			logger.Println(message)
+			logger.Println(string(message))
 			time.Sleep(tc.writeInterval)
 		}
 
-		received := make([]string, 0, tc.totalLines)
+		received := make([][]byte, 0, tc.totalLines)
 	LOOP:
 		for {
 			select {
-			case e := <-logReceived:
-				received = append(received, e.Body.(string))
+			case call := <-emitCalls:
+				received = append(received, call.token)
 			case <-time.After(200 * time.Millisecond):
 				break LOOP
 			}
@@ -353,7 +351,7 @@ func TestMoveFile(t *testing.T) {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -365,7 +363,7 @@ func TestMoveFile(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForMessage(t, logReceived, "testlog1")
+	waitForToken(t, emitCalls, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
 	operator.wg.Wait()
@@ -373,7 +371,7 @@ func TestMoveFile(t *testing.T) {
 	require.NoError(t, err)
 
 	operator.poll(context.Background())
-	expectNoMessages(t, logReceived)
+	expectNoTokens(t, emitCalls)
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
@@ -381,7 +379,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -393,7 +391,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForMessage(t, logReceived, "testlog1")
+	waitForToken(t, emitCalls, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
 	operator.wg.Wait()
@@ -411,14 +409,14 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	writeString(t, movedFile, "testlog2\n")
 	operator.poll(context.Background())
 
-	waitForMessage(t, logReceived, "testlog2")
+	waitForToken(t, emitCalls, []byte("testlog2"))
 }
 
 // TruncateThenWrite tests that, after a file has been truncated,
 // any new writes are picked up
 func TestTruncateThenWrite(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -429,8 +427,8 @@ func TestTruncateThenWrite(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForMessage(t, logReceived, "testlog1")
-	waitForMessage(t, logReceived, "testlog2")
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte("testlog2"))
 
 	require.NoError(t, temp1.Truncate(0))
 	_, err := temp1.Seek(0, 0)
@@ -438,8 +436,8 @@ func TestTruncateThenWrite(t *testing.T) {
 
 	writeString(t, temp1, "testlog3\n")
 	operator.poll(context.Background())
-	waitForMessage(t, logReceived, "testlog3")
-	expectNoMessages(t, logReceived)
+	waitForToken(t, emitCalls, []byte("testlog3"))
+	expectNoTokens(t, emitCalls)
 }
 
 // CopyTruncateWriteBoth tests that when a file is copied
@@ -448,7 +446,7 @@ func TestTruncateThenWrite(t *testing.T) {
 // written to the truncated file
 func TestCopyTruncateWriteBoth(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -459,8 +457,8 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForMessage(t, logReceived, "testlog1")
-	waitForMessage(t, logReceived, "testlog2")
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte("testlog2"))
 	operator.wg.Wait() // wait for all goroutines to finish
 
 	// Copy the first file to a new file, and add another log
@@ -479,19 +477,19 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 
 	// Expect both messages to come through
 	operator.poll(context.Background())
-	waitForMessages(t, logReceived, []string{"testlog3", "testlog4"})
+	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog3"), []byte("testlog4")})
 }
 
 func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
 	persister := testutil.NewMockPersister("test")
 
-	log1 := stringWithLength(1000)
-	log2 := stringWithLength(1000)
+	log1 := tokenWithLength(1000)
+	log2 := tokenWithLength(1000)
 
 	temp := openTemp(t, tempDir)
-	writeString(t, temp, log1+"\n")
+	writeString(t, temp, string(log1)+"\n")
 	require.NoError(t, temp.Close())
 
 	// Start the operator
@@ -499,7 +497,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
-	waitForMessage(t, logReceived, log1)
+	waitForToken(t, emitCalls, log1)
 
 	// Stop the operator, then rename and write a new log
 	require.NoError(t, operator.Stop())
@@ -509,9 +507,9 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 
 	temp = reopenTemp(t, temp.Name())
 	require.NoError(t, err)
-	writeString(t, temp, log2+"\n")
+	writeString(t, temp, string(log2)+"\n")
 
 	// Expect the message written to the new log to come through
 	require.NoError(t, operator.Start(persister))
-	waitForMessage(t, logReceived, log2)
+	waitForToken(t, emitCalls, log2)
 }
