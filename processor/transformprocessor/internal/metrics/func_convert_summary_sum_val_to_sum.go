@@ -17,8 +17,9 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, error) {
