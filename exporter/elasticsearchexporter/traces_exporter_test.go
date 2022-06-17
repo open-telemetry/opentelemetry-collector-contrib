@@ -19,29 +19,29 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net/http"
-	"runtime"
-	"sync"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"net/http"
+	"os"
+	"sync"
+	"testing"
+	"time"
 )
 
-func TestExporter_New(t *testing.T) {
-	type validate func(*testing.T, *elasticsearchExporter, error)
+func TestTracesExporter_New(t *testing.T) {
+	type validate func(*testing.T, *elasticsearchTracesExporter, error)
 
-	success := func(t *testing.T, exporter *elasticsearchExporter, err error) {
+	success := func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 		require.Nil(t, err)
 		require.NotNil(t, exporter)
 	}
 
 	failWith := func(want error) validate {
-		return func(t *testing.T, exporter *elasticsearchExporter, err error) {
+		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
 			require.NotNil(t, err)
 			if !errors.Is(err, want) {
@@ -51,7 +51,7 @@ func TestExporter_New(t *testing.T) {
 	}
 
 	failWithMessage := func(msg string) validate {
-		return func(t *testing.T, exporter *elasticsearchExporter, err error) {
+		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
 			require.NotNil(t, err)
 			require.Contains(t, err.Error(), msg)
@@ -106,11 +106,21 @@ func TestExporter_New(t *testing.T) {
 				env = map[string]string{defaultElasticsearchEnvName: ""}
 			}
 
+			oldEnv := make(map[string]string, len(env))
+			defer func() {
+				for k, v := range oldEnv {
+					os.Setenv(k, v)
+				}
+			}()
+
+			for k := range env {
+				oldEnv[k] = os.Getenv(k)
+			}
 			for k, v := range env {
-				t.Setenv(k, v)
+				os.Setenv(k, v)
 			}
 
-			exporter, err := newExporter(zap.NewNop(), test.config)
+			exporter, err := newTracesExporter(zap.NewNop(), test.config)
 			if exporter != nil {
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.TODO()))
@@ -122,10 +132,16 @@ func TestExporter_New(t *testing.T) {
 	}
 }
 
-func TestExporter_PushEvent(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10178")
-	}
+func generateTracesOneEmptyResourceSpans(opName string) ptrace.Traces {
+	td := ptrace.NewTraces()
+	resourceSpan := td.ResourceSpans().AppendEmpty()
+	il := resourceSpan.ScopeSpans().AppendEmpty()
+	span := il.Spans().AppendEmpty()
+	span.SetName(opName)
+	return td
+}
+
+func TestExporter_PushTraceRecord(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -133,9 +149,9 @@ func TestExporter_PushEvent(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestExporter(t, server.URL)
-		mustSend(t, exporter, `{"message": "test1"}`)
-		mustSend(t, exporter, `{"message": "test2"}`)
+		exporter := newTestTracesExporter(t, server.URL)
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
 
 		rec.WaitItems(2)
 	})
@@ -153,8 +169,8 @@ func TestExporter_PushEvent(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestExporter(t, server.URL)
-		mustSend(t, exporter, `{"message": "test1"}`)
+		exporter := newTestTracesExporter(t, server.URL)
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
 
 		rec.WaitItems(1)
 	})
@@ -199,8 +215,8 @@ func TestExporter_PushEvent(t *testing.T) {
 						server := newESTestServer(t, handler(attempts))
 
 						testConfig := configurer(server.URL)
-						exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
-						mustSend(t, exporter, `{"message": "test1"}`)
+						exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
+						mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
 
 						time.Sleep(200 * time.Millisecond)
 						assert.Equal(t, int64(1), attempts.Load())
@@ -217,8 +233,8 @@ func TestExporter_PushEvent(t *testing.T) {
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
 
-		exporter := newTestExporter(t, server.URL)
-		mustSend(t, exporter, `{"message": "test1"}`)
+		exporter := newTestTracesExporter(t, server.URL)
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
 
 		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
@@ -238,8 +254,8 @@ func TestExporter_PushEvent(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestExporter(t, server.URL)
-		mustSend(t, exporter, `{"message": "test1"}`)
+		exporter := newTestTracesExporter(t, server.URL)
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
 
 		rec.WaitItems(1)
 	})
@@ -251,8 +267,8 @@ func TestExporter_PushEvent(t *testing.T) {
 			return itemsReportStatus(docs, http.StatusBadRequest)
 		})
 
-		exporter := newTestExporter(t, server.URL)
-		mustSend(t, exporter, `{"message": "test1"}`)
+		exporter := newTestTracesExporter(t, server.URL)
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test1"))
 
 		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
@@ -287,14 +303,14 @@ func TestExporter_PushEvent(t *testing.T) {
 			return resp, nil
 		})
 
-		exporter := newTestExporter(t, server.URL, func(cfg *Config) {
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.Flush.Interval = 50 * time.Millisecond
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
-		mustSend(t, exporter, `{"message": "test1", "idx": 0}`)
-		mustSend(t, exporter, `{"message": "test2", "idx": 1}`)
-		mustSend(t, exporter, `{"message": "test3", "idx": 2}`)
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test_id1"))
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test_id2"))
+		mustSendTraces(t, exporter, generateTracesOneEmptyResourceSpans("test_id3"))
 
 		wg.Wait() // <- this blocks forever if the event is not retried
 
@@ -302,15 +318,15 @@ func TestExporter_PushEvent(t *testing.T) {
 	})
 }
 
-func newTestExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchExporter {
-	exporter, err := newExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(url))
+func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchTracesExporter {
+	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
 	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
 	return exporter
 }
 
-func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
+func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 	return func(url string) *Config {
 		var configMods []func(*Config)
 		configMods = append(configMods, func(cfg *Config) {
@@ -323,7 +339,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-func mustSend(t *testing.T, exporter *elasticsearchExporter, contents string) {
-	err := exporter.pushEvent(context.TODO(), []byte(contents))
+func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, td ptrace.Traces) {
+	err := exporter.pushTraceData(context.TODO(), td)
 	require.NoError(t, err)
 }

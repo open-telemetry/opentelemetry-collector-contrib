@@ -50,7 +50,9 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html
 	//
 	// This setting is required.
-	Index string `mapstructure:"index"`
+	LogsIndex string `mapstructure:"logs_index"`
+
+	TracesIndex string `mapstructure:"traces_index"`
 
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
@@ -171,7 +173,7 @@ const (
 var (
 	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
 	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
-	errConfigNoIndex       = errors.New("index must be specified")
+	errConfigNoIndex       = errors.New("logs or traces index must be specified")
 )
 
 func (m MappingMode) String() string {
@@ -217,7 +219,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Index == "" {
+	if cfg.LogsIndex == "" || cfg.TracesIndex == "" {
 		return errConfigNoIndex
 	}
 

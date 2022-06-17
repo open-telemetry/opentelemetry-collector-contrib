@@ -35,6 +35,7 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		component.WithLogsExporter(createLogsExporter),
+		component.WithTracesExporter(createTracesExporter),
 	)
 }
 
@@ -44,7 +45,8 @@ func createDefaultConfig() config.Exporter {
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
-		Index: "logs-generic-default",
+		LogsIndex:   "logs-generic-default",
+		TracesIndex: "traces-generic-default",
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRequests:     3,
@@ -67,7 +69,7 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	exporter, err := newExporter(set.Logger, cfg.(*Config))
+	exporter, err := newLogsExporter(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
 	}
@@ -76,6 +78,21 @@ func createLogsExporter(
 		cfg,
 		set,
 		exporter.pushLogsData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+	)
+}
+
+func createTracesExporter(ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter) (component.TracesExporter, error) {
+	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure Elasticsearch traces exporter: %w", err)
+	}
+	return exporterhelper.NewTracesExporter(
+		cfg,
+		set,
+		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }
