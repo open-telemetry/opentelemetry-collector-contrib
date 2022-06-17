@@ -3,7 +3,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [beta]    |
-| Supported pipeline types | tmetrics  |
+| Supported pipeline types | metrics  |
 | Distributions            | [contrib] |
 
 Riak metrics will be collected from the [/stats](https://docs.riak.com/riak/kv/2.2.3/developing/api/http/status.1.html) endpoint.
