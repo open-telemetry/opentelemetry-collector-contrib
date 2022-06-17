@@ -1,6 +1,10 @@
 # Span Processor
 
-Supported pipeline types: traces
+| Status                   |                   |
+| ------------------------ | ----------------- |
+| Stability                | [alpha]           |
+| Supported pipeline types | traces            |
+| Distributions            | [core], [contrib] |
 
 The span processor modifies the span name based on its attributes or extract span attributes from the span name. It also allows
 to change span status. Please refer to [config.go](./config.go) for the config spec.
@@ -122,3 +126,7 @@ span/set_status:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
