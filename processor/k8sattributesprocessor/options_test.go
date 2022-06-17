@@ -16,7 +16,6 @@
 package k8sattributesprocessor
 
 import (
-	"os"
 	"reflect"
 	"regexp"
 	"testing"
@@ -57,12 +56,10 @@ func TestWithFilterNode(t *testing.T) {
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
 	assert.Equal(t, p.filters.Node, "")
 
-	os.Setenv("NODE_NAME", "nodefromenv")
+	t.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
 	assert.Equal(t, p.filters.Node, "nodefromenv")
-
-	os.Unsetenv("NODE_NAME")
 }
 
 func TestWithPassthrough(t *testing.T) {

@@ -67,6 +67,9 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 	if i := val.Int; i != nil {
 		return &literal{value: *i}, nil
 	}
+	if b := val.Bool; b != nil {
+		return &literal{value: bool(*b)}, nil
+	}
 	if b := val.Bytes; b != nil {
 		return &literal{value: ([]byte)(*b)}, nil
 	}

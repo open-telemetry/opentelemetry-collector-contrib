@@ -39,6 +39,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter

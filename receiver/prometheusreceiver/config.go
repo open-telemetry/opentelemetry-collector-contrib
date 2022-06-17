@@ -75,10 +75,10 @@ func checkFile(fn string) error {
 
 func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	if err := checkFile(tlsConfig.CertFile); err != nil {
-		return fmt.Errorf("error checking client cert file %q - %v", tlsConfig.CertFile, err)
+		return fmt.Errorf("error checking client cert file %q: %w", tlsConfig.CertFile, err)
 	}
 	if err := checkFile(tlsConfig.KeyFile); err != nil {
-		return fmt.Errorf("error checking client key file %q - %v", tlsConfig.KeyFile, err)
+		return fmt.Errorf("error checking client key file %q: %w", tlsConfig.KeyFile, err)
 	}
 	if len(tlsConfig.CertFile) > 0 && len(tlsConfig.KeyFile) == 0 {
 		return fmt.Errorf("client cert file %q specified without client key file", tlsConfig.CertFile)
@@ -108,11 +108,11 @@ func checkSDFile(filename string) error {
 	switch ext := filepath.Ext(filename); strings.ToLower(ext) {
 	case ".json":
 		if err := json.Unmarshal(content, &targetGroups); err != nil {
-			return fmt.Errorf("Error in unmarshaling json file extension - %v", err)
+			return fmt.Errorf("error in unmarshaling json file extension: %w", err)
 		}
 	case ".yml", ".yaml":
 		if err := yaml.UnmarshalStrict(content, &targetGroups); err != nil {
-			return fmt.Errorf("Error in unmarshaling yaml file extension - %v", err)
+			return fmt.Errorf("error in unmarshaling yaml file extension: %w", err)
 		}
 	default:
 		return fmt.Errorf("invalid file extension: %q", ext)
@@ -172,7 +172,7 @@ func (cfg *Config) Validate() error {
 
 		if sc.HTTPClientConfig.Authorization != nil {
 			if err := checkFile(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
-				return fmt.Errorf("error checking authorization credentials file %q - %s", sc.HTTPClientConfig.Authorization.CredentialsFile, err)
+				return fmt.Errorf("error checking authorization credentials file %q: %w", sc.HTTPClientConfig.Authorization.CredentialsFile, err)
 			}
 		}
 
@@ -196,7 +196,7 @@ func (cfg *Config) Validate() error {
 						for _, f := range files {
 							err = checkSDFile(f)
 							if err != nil {
-								return fmt.Errorf("checking SD file %q: %v", file, err)
+								return fmt.Errorf("checking SD file %q: %w", file, err)
 							}
 						}
 						continue
@@ -219,7 +219,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	err := componentParser.UnmarshalExact(cfg)
 	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to parse config: %s", err)
+		return fmt.Errorf("prometheus receiver failed to parse config: %w", err)
 	}
 
 	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
@@ -229,12 +229,12 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 	out, err := yaml.Marshal(promCfg.ToStringMap())
 	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
+		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %w", err)
 	}
 
 	err = yaml.UnmarshalStrict(out, &cfg.PrometheusConfig)
 	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
+		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %w", err)
 	}
 
 	return nil

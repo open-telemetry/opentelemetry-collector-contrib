@@ -15,7 +15,6 @@
 package jmxreceiver
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -346,9 +345,7 @@ func TestClassPathParse(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			os.Unsetenv("CLASSPATH")
-			err := os.Setenv("CLASSPATH", tc.existingEnvVal)
-			require.NoError(t, err)
+			t.Setenv("CLASSPATH", tc.existingEnvVal)
 
 			actual := tc.cfg.parseClasspath()
 			require.Equal(t, tc.expected, actual)

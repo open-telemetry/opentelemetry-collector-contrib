@@ -7,8 +7,8 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.5
 	github.com/stretchr/testify v1.7.2
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector v0.53.0
-	go.opentelemetry.io/collector/pdata v0.53.0
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 
@@ -24,7 +24,7 @@ require (
 	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.15+incompatible // indirect
+	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect

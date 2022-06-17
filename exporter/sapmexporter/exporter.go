@@ -17,6 +17,7 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jaegertracing/jaeger/model"
 	sapmclient "github.com/signalfx/sapm-proto/client"
@@ -120,7 +121,8 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 
 	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
 	if err != nil {
-		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
+		sendErr := &sapmclient.ErrSend{}
+		if errors.As(err, &sendErr) && sendErr.Permanent {
 			return consumererror.NewPermanent(sendErr)
 		}
 		return err

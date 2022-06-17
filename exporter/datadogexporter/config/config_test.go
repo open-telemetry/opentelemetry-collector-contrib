@@ -18,10 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
-	"go.uber.org/zap"
 )
 
 func TestHostTags(t *testing.T) {
@@ -81,103 +78,108 @@ func TestHostTags(t *testing.T) {
 	)
 }
 
-// TestOverrideMetricsURL tests that the metrics URL is overridden
-// correctly when set manually.
-func TestOverrideMetricsURL(t *testing.T) {
+func TestValidate(t *testing.T) {
 
-	const DebugEndpoint string = "http://localhost:8080"
-
-	cfg := Config{
-		API: APIConfig{Key: "notnull", Site: DefaultSite},
-		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: DebugEndpoint,
+	tests := []struct {
+		name string
+		cfg  *Config
+		err  string
+	}{
+		{
+			name: "no api::key",
+			cfg:  &Config{},
+			err:  errUnsetAPIKey.Error(),
+		},
+		{
+			name: "invalid hostname",
+			cfg: &Config{
+				API:        APIConfig{Key: "notnull"},
+				TagsConfig: TagsConfig{Hostname: "invalid_host"},
+			},
+			err: "hostname field is invalid: 'invalid_host' is not RFC1123 compliant",
+		},
+		{
+			name: "no metadata",
+			cfg: &Config{
+				API:          APIConfig{Key: "notnull"},
+				OnlyMetadata: true,
+				SendMetadata: false,
+			},
+			err: errNoMetadata.Error(),
+		},
+		{
+			name: "span name remapping valid",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}},
+			},
+		},
+		{
+			name: "span name remapping empty val",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}},
+			},
+			err: "'' is not valid value for span name remapping",
+		},
+		{
+			name: "span name remapping empty key",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}},
+			},
+			err: "'' is not valid key for span name remapping",
+		},
+		{
+			name: "ignore resources valid",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{IgnoreResources: []string{"[123]"}},
+			},
+		},
+		{
+			name: "ignore resources missing bracket",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{IgnoreResources: []string{"[123"}},
+			},
+			err: "'[123' is not valid resource filter regular expression",
+		},
+		{
+			name: "invalid histogram settings",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				Metrics: MetricsConfig{
+					HistConfig: HistogramConfig{
+						Mode:         HistogramModeNoBuckets,
+						SendCountSum: false,
+					},
+				},
+			},
+			err: "'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics",
+		},
+		{
+			name: "TLS settings are valid",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+					TLSSetting: LimitedTLSClientSettings{
+						InsecureSkipVerify: true,
+					},
+				},
 			},
 		},
 	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
-}
-
-// TestDefaultSite tests that the Site option is set to the
-// default value when no value was set prior to running Sanitize
-func TestDefaultSite(t *testing.T) {
-	cfg := Config{
-		API: APIConfig{Key: "notnull"},
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			err := testInstance.cfg.Validate()
+			if testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, cfg.API.Site, DefaultSite)
-}
-
-func TestDefaultTLSSettings(t *testing.T) {
-	cfg := Config{
-		API: APIConfig{Key: "notnull"},
-	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, false)
-}
-
-func TestTLSSettings(t *testing.T) {
-	cfg := Config{
-		API: APIConfig{Key: "notnull"},
-		LimitedHTTPClientSettings: LimitedHTTPClientSettings{
-			TLSSetting: LimitedTLSClientSettings{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, cfg.TLSSetting.InsecureSkipVerify, true)
-}
-
-func TestAPIKeyUnset(t *testing.T) {
-	cfg := Config{}
-	err := cfg.Sanitize(zap.NewNop())
-	assert.Equal(t, err, errUnsetAPIKey)
-}
-
-func TestNoMetadata(t *testing.T) {
-	cfg := Config{
-		OnlyMetadata: true,
-		SendMetadata: false,
-	}
-
-	err := cfg.Sanitize(zap.NewNop())
-	assert.Equal(t, err, errNoMetadata)
-}
-
-func TestInvalidHostname(t *testing.T) {
-	cfg := Config{TagsConfig: TagsConfig{Hostname: "invalid_host"}}
-
-	err := cfg.Sanitize(zap.NewNop())
-	require.Error(t, err)
-}
-
-func TestIgnoreResourcesValidation(t *testing.T) {
-	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
-	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
-
-	noErr := validCfg.Validate()
-	err := invalidCfg.Validate()
-	require.NoError(t, noErr)
-	require.Error(t, err)
-}
-
-func TestSpanNameRemappingsValidation(t *testing.T) {
-	validCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}}
-	invalidCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}}
-	noErr := validCfg.Validate()
-	err := invalidCfg.Validate()
-	require.NoError(t, noErr)
-	require.Error(t, err)
 }
 
 func TestUnmarshal(t *testing.T) {

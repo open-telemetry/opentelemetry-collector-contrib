@@ -166,13 +166,13 @@ func (c MultilineConfig) getSplitFunc(encodingVar encoding.Encoding, flushAtEOF 
 	case endPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineEndPattern)
 		if err != nil {
-			return nil, fmt.Errorf("compile line end regex: %s", err)
+			return nil, fmt.Errorf("compile line end regex: %w", err)
 		}
 		splitFunc = NewLineEndSplitFunc(re, flushAtEOF)
 	case startPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
 		if err != nil {
-			return nil, fmt.Errorf("compile line start regex: %s", err)
+			return nil, fmt.Errorf("compile line start regex: %w", err)
 		}
 		splitFunc = NewLineStartSplitFunc(re, flushAtEOF)
 	default:
