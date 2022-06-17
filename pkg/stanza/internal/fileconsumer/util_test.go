@@ -15,6 +15,7 @@
 package fileconsumer
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -27,40 +28,48 @@ import (
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newDefaultConfig(tempDir string) *Config {
-	cfg := NewConfig("testfile")
+	cfg := NewConfig()
 	cfg.PollInterval = helper.Duration{Duration: 200 * time.Millisecond}
 	cfg.StartAt = "beginning"
 	cfg.Include = []string{fmt.Sprintf("%s/*", tempDir)}
-	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 
-func newTestFileOperator(t *testing.T, cfgMod func(*Config), outMod func(*testutil.FakeOutput)) (*Input, chan *entry.Entry, string) {
-	fakeOutput := testutil.NewFakeOutput(t)
-	if outMod != nil {
-		outMod(fakeOutput)
+func emitOnChan(received chan []byte) EmitFunc {
+	return func(_ context.Context, _ *FileAttributes, token []byte) {
+		received <- token
 	}
+}
 
+type emitParams struct {
+	attrs *FileAttributes
+	token []byte
+}
+
+func newTestScenario(t *testing.T, cfgMod func(*Config)) (*Input, chan *emitParams, string) {
+	emitChan := make(chan *emitParams, 100)
+	input, tempDir := newTestScenarioWithChan(t, cfgMod, emitChan)
+	return input, emitChan, tempDir
+}
+
+func newTestScenarioWithChan(t *testing.T, cfgMod func(*Config), emitChan chan *emitParams) (*Input, string) {
 	tempDir := t.TempDir()
-
 	cfg := newDefaultConfig(tempDir)
 	if cfgMod != nil {
 		cfgMod(cfg)
 	}
-	op, err := cfg.Build(testutil.Logger(t))
+
+	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
+		emitChan <- &emitParams{attrs, token}
+	})
 	require.NoError(t, err)
 
-	err = op.SetOutputs([]operator.Operator{fakeOutput})
-	require.NoError(t, err)
-
-	return op.(*Input), fakeOutput.Received, tempDir
+	return input, tempDir
 }
 
 func openFile(tb testing.TB, path string) *os.File {
@@ -108,80 +117,71 @@ func writeString(t testing.TB, file *os.File, s string) {
 	require.NoError(t, err)
 }
 
-func stringWithLength(length int) string {
+func tokenWithLength(length int) []byte {
 	charset := "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
-	return string(b)
+	return b
 }
 
-func waitForOne(t *testing.T, c chan *entry.Entry) *entry.Entry {
+func waitForEmit(t *testing.T, c chan *emitParams) *emitParams {
 	select {
-	case e := <-c:
-		return e
+	case call := <-c:
+		return call
 	case <-time.After(3 * time.Second):
 		require.FailNow(t, "Timed out waiting for message")
 		return nil
 	}
 }
 
-func waitForN(t *testing.T, c chan *entry.Entry, n int) []string {
-	messages := make([]string, 0, n)
+func waitForNTokens(t *testing.T, c chan *emitParams, n int) [][]byte {
+	emitChan := make([][]byte, 0, n)
 	for i := 0; i < n; i++ {
 		select {
-		case e := <-c:
-			messages = append(messages, e.Body.(string))
+		case call := <-c:
+			emitChan = append(emitChan, call.token)
 		case <-time.After(3 * time.Second):
 			require.FailNow(t, "Timed out waiting for message")
 			return nil
 		}
 	}
-	return messages
+	return emitChan
 }
 
-func waitForMessage(t *testing.T, c chan *entry.Entry, expected string) {
+func waitForToken(t *testing.T, c chan *emitParams, expected []byte) {
 	select {
-	case e := <-c:
-		require.Equal(t, expected, e.Body.(string))
+	case call := <-c:
+		require.Equal(t, expected, call.token)
 	case <-time.After(3 * time.Second):
-		require.FailNow(t, "Timed out waiting for message", expected)
+		require.FailNow(t, "Timed out waiting for token", expected)
 	}
 }
 
-func waitForByteMessage(t *testing.T, c chan *entry.Entry, expected []byte) {
-	select {
-	case e := <-c:
-		require.Equal(t, expected, e.Body.([]byte))
-	case <-time.After(3 * time.Second):
-		require.FailNow(t, "Timed out waiting for message", expected)
-	}
-}
-
-func waitForMessages(t *testing.T, c chan *entry.Entry, expected []string) {
-	receivedMessages := make([]string, 0, len(expected))
+func waitForTokens(t *testing.T, c chan *emitParams, expected [][]byte) {
+	actual := make([][]byte, 0, len(expected))
 LOOP:
 	for {
 		select {
-		case e := <-c:
-			receivedMessages = append(receivedMessages, e.Body.(string))
+		case call := <-c:
+			actual = append(actual, call.token)
 		case <-time.After(3 * time.Second):
 			break LOOP
 		}
 	}
 
-	require.ElementsMatch(t, expected, receivedMessages)
+	require.ElementsMatch(t, expected, actual)
 }
 
-func expectNoMessages(t *testing.T, c chan *entry.Entry) {
-	expectNoMessagesUntil(t, c, 200*time.Millisecond)
+func expectNoTokens(t *testing.T, c chan *emitParams) {
+	expectNoTokensUntil(t, c, 200*time.Millisecond)
 }
 
-func expectNoMessagesUntil(t *testing.T, c chan *entry.Entry, d time.Duration) {
+func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
 	select {
-	case e := <-c:
-		require.FailNow(t, "Received unexpected message", "Message: %s", e.Body.(string))
+	case token := <-c:
+		require.FailNow(t, "Received unexpected message", "Message: %s", token)
 	case <-time.After(d):
 	}
 }
