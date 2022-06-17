@@ -9,7 +9,7 @@ plug-and-play solution to getting metrics from those third-party services
 that sometimes simply don't natively export metrics or speak any
 instrumentation protocols (MySQL, Apache, Nginx, JVM, etc.) while taking
 advantage of the large [Prometheus
-exporters]((https://prometheus.io/docs/instrumenting/exporters/)) ecosystem.
+exporters](https://prometheus.io/docs/instrumenting/exporters/) ecosystem.
 
 Through the configuration file, you can indicate which binaries to run
 (usually [Prometheus
