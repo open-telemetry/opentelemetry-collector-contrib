@@ -94,7 +94,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", sumdescription),
 					MetricValue:        23,
 					Host:               testhost,
-					MetricAttributes:   mmap,
+					MetricAttributes:   newMapFromAttr(`{"scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
 					ResourceAttributes: rmap,
 				},
 				{
@@ -104,7 +104,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 					MetricDescription:  fmt.Sprintf("%s%s", "measures the duration of the inbound HTTP request", countdescription),
 					MetricValue:        7,
 					MetricUnit:         "milliseconds",
-					MetricAttributes:   mmap,
+					MetricAttributes:   newMapFromAttr(`{"scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
 					Host:               testhost,
 					ResourceAttributes: rmap,
 				},
@@ -116,7 +116,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 					MetricUnit:         "milliseconds",
 					MetricDescription:  "measures the duration of the inbound HTTP request",
 					MetricValue:        4,
-					MetricAttributes:   newMapFromAttr(`{"le":"1", "scope.name":"SN", "scope.version":"SV"}`),
+					MetricAttributes:   newMapFromAttr(`{"le":"1", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
 					Host:               testhost,
 					ResourceAttributes: rmap,
 				},
@@ -128,7 +128,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 					MetricUnit:         "milliseconds",
 					MetricDescription:  "measures the duration of the inbound HTTP request",
 					MetricValue:        6,
-					MetricAttributes:   newMapFromAttr(`{"le":"2", "scope.name":"SN", "scope.version":"SV"}`),
+					MetricAttributes:   newMapFromAttr(`{"le":"2", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
 					Host:               testhost,
 					ResourceAttributes: rmap,
 				},
@@ -140,7 +140,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 					MetricUnit:         "milliseconds",
 					MetricDescription:  "measures the duration of the inbound HTTP request",
 					MetricValue:        9,
-					MetricAttributes:   newMapFromAttr(`{"le":"4", "scope.name":"SN", "scope.version":"SV"}`),
+					MetricAttributes:   newMapFromAttr(`{"le":"4", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
 					Host:               testhost,
 					ResourceAttributes: rmap,
 				},
@@ -152,7 +152,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 					MetricUnit:         "milliseconds",
 					MetricDescription:  "measures the duration of the inbound HTTP request",
 					MetricValue:        14, // Sum of distribution counts
-					MetricAttributes:   newMapFromAttr(`{"le":"+Inf", "scope.name":"SN", "scope.version":"SV"}`),
+					MetricAttributes:   newMapFromAttr(`{"le":"+Inf", "scope.name":"SN", "scope.version":"SV","k1":"v1"}`),
 					Host:               testhost,
 					ResourceAttributes: rmap,
 				},
@@ -647,6 +647,7 @@ func newMetrics(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric
 		histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
 		histogramPt.SetMExplicitBounds(distributionBounds)
 		histogramPt.SetMBucketCounts(distributionCounts)
+		histogramPt.Attributes().InsertString("k1", "v1")
 		histogramPt.SetSum(23)  //
 		histogramPt.SetCount(7) // sum of distributionBounds
 		histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(ts.AsTime()))
