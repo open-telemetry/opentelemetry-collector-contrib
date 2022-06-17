@@ -59,7 +59,7 @@ undocumented metrics types, including:
 * Statset
 
 More details can be found from the
-[prometheus text parser source code]( https://github.com/prometheus/prometheus/blob/master/pkg/textparse/interface.go#L82)
+[prometheus text parser source code](https://github.com/prometheus/prometheus/blob/master/model/textparse/interface.go#L94)
 
 ### Metric Grouping
 
@@ -126,8 +126,8 @@ shown in the flowchart below:
 
 It basically does the following things in turn:
 
-  1. make a http call to fetch data from the binding [target](#target)'s metrics endpoint with [scraper](#scraper)
-  2. acquired a [storage appender](#storage-appender) instance with the [Appendable](#appendable) interface 
+  1. make a http call to fetch data from the binding [target](#prometheus-metric-scraper-anatomy)'s metrics endpoint with [scraper](#prometheus-metric-scraper-anatomy)
+  2. acquired a [storage appender](#prometheus-metric-scraper-anatomy) instance with the [Appendable](#prometheus-metric-scraper-anatomy) interface 
   3. feed the data to a textParser
   4. parse and feed metric data points to storage appender
   5. commit if success or rollback
@@ -688,4 +688,4 @@ will produce an OpenTelemetry Summary with Snapshot set to `nil`.
 ### Others
 
 For any other Prometheus metrics types, they will be transformed into the
-OpenTelemetry [Gauge](#gague) type.
+OpenTelemetry [Gauge](#gauge) type.
