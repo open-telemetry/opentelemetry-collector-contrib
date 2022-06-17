@@ -118,10 +118,17 @@ exclude_metrics:
   - '!k8s.container.memory_limit'
   - '!k8s.container.cpu_limit'
 
+  # matches all container request metrics but k8s.container.cpu_request and k8s.container.memory_request
   - /^k8s\.container\..+_request$/
+  - '!k8s.container.memory_request'
+  - '!k8s.container.cpu_request'
 
-  # matches any node condition but k8s.node.condition_ready
+  # matches any node condition but memory_pressure, network_unavailable, out_of_disk, p_i_d_pressure, and ready
   - /^k8s\.node\.condition_.+$/
+  - '!k8s.node.condition_memory_pressure'
+  - '!k8s.node.condition_network_unavailable'
+  - '!k8s.node.condition_out_of_disk'
+  - '!k8s.node.condition_p_i_d_pressure'
   - '!k8s.node.condition_ready'
 
   # kubelet metrics
@@ -141,8 +148,8 @@ exclude_metrics:
   # matches (k8s.node|k8s.pod).cpu.time
   - /^k8s\.(?i:(node)|(pod))\.cpu\.time$/
 
-  # matches (container|k8s.node|k8s.pod).cpu.utilization
-  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.cpu\.utilization$/
+  # matches (k8s.node|k8s.pod).cpu.utilization
+  - /^(?i:(k8s\.node)|(k8s\.pod))\.cpu\.utilization$/
 
   # matches k8s.node.network.io and k8s.node.network.errors
   - /^k8s\.node\.network\.(?:(io)|(errors))$/

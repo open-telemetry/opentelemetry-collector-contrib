@@ -66,13 +66,43 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x01000000000000000000000000000000)`,
+			query: `set(attributes["test"], "pass") where dropped_attributes_count == 1`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
 			},
 		},
 		{
-			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0100000000000000)`,
+			query: `set(attributes["test"], "pass") where dropped_events_count == 1`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where dropped_links_count == 1`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0102030405060708)`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where parent_span_id == SpanID(0x0807060504030201)`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where trace_state == "new"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
 			},
@@ -208,11 +238,15 @@ func constructTracesNum(num int) ptrace.Traces {
 
 func fillSpanOne(span ptrace.Span) {
 	span.SetName("operationA")
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	span.SetSpanID(pcommon.NewSpanID(spanID))
+	span.SetParentSpanID(pcommon.NewSpanID(spanID2))
+	span.SetTraceID(pcommon.NewTraceID(traceID))
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
+	span.SetDroppedLinksCount(1)
+	span.SetDroppedEventsCount(1)
+	span.SetTraceState("new")
 	span.Attributes().InsertString("http.method", "get")
 	span.Attributes().InsertString("http.path", "/health")
 	span.Attributes().InsertString("http.url", "http://localhost/health")

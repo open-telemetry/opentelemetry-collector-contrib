@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/awstesting/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMetadataProvider_get(t *testing.T) {
@@ -83,9 +84,8 @@ func TestMetadataProvider_available(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewProvider(tt.args.sess)
-			if _, got := c.InstanceID(tt.args.ctx); got != tt.want {
-				t.Errorf("available() = %v, want %v", got, tt.want)
-			}
+			_, err := c.InstanceID(tt.args.ctx)
+			assert.ErrorIs(t, err, tt.want)
 		})
 	}
 }

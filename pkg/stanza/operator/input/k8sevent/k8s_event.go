@@ -24,7 +24,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	watch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/watch"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 
@@ -126,7 +126,7 @@ func (k *Input) Start(_ operator.Persister) error {
 	if len(k.namespaces) > 0 {
 		testWatcher, err := k.client.Events(k.namespaces[0]).Watch(ctx, metav1.ListOptions{})
 		if err != nil {
-			return fmt.Errorf("test connection failed: list events for namespace '%s': %s", k.namespaces[0], err)
+			return fmt.Errorf("test connection failed: list events for namespace '%s': %w", k.namespaces[0], err)
 		}
 		testWatcher.Stop()
 	}
