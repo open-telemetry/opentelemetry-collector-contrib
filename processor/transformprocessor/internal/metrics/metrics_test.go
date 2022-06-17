@@ -391,8 +391,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					Name: "count",
 				},
 			},
-			orig: uint64(2),
-			new:  uint64(3),
+			orig: int64(2),
+			new:  int64(3),
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetCount(3)
 			},
@@ -729,8 +729,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "count",
 				},
 			},
-			orig: uint64(2),
-			new:  uint64(3),
+			orig: int64(2),
+			new:  int64(3),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetCount(3)
 			},
@@ -755,8 +755,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "scale",
 				},
 			},
-			orig: int32(1),
-			new:  int32(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetScale(2)
 			},
@@ -768,8 +768,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "zero_count",
 				},
 			},
-			orig: uint64(1),
-			new:  uint64(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetZeroCount(2)
 			},
@@ -797,8 +797,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "offset",
 				},
 			},
-			orig: int32(1),
-			new:  int32(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Positive().SetOffset(2)
 			},
@@ -842,8 +842,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "offset",
 				},
 			},
-			orig: int32(1),
-			new:  int32(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Negative().SetOffset(2)
 			},
@@ -1158,8 +1158,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "count",
 				},
 			},
-			orig: uint64(2),
-			new:  uint64(3),
+			orig: int64(2),
+			new:  int64(3),
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetCount(3)
 			},
@@ -1549,8 +1549,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "is_monotonic",
 				},
 			},
-			orig: "true",
-			new:  "false",
+			orig: true,
+			new:  false,
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetIsMonotonic(false)
 			},

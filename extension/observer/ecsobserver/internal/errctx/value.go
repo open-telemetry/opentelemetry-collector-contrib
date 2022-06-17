@@ -94,8 +94,8 @@ func ValueFrom(err error, key string) (interface{}, bool) {
 	if err == nil {
 		return nil, false
 	}
-	verr, ok := err.(ErrorWithValue)
-	if ok {
+	var verr ErrorWithValue
+	if errors.As(err, &verr) {
 		v, vok := verr.Value(key)
 		if vok {
 			return v, vok

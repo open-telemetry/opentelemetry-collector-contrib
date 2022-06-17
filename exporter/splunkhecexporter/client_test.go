@@ -948,29 +948,30 @@ func Test_pushLogData_PostError(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	var logsErr consumererror.Logs
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
@@ -1032,8 +1033,10 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	assert.IsType(t, consumererror.Logs{}, err)
 
 	// Only the record that was not successfully sent should be returned
-	assert.Equal(t, 1, (err.(consumererror.Logs)).GetLogs().ResourceLogs().Len())
-	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 1, logsErr.GetLogs().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), logsErr.GetLogs().ResourceLogs().At(0))
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {

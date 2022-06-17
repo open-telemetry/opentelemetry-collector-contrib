@@ -68,7 +68,7 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 	// set up the listener
 	ln, err := net.Listen("tcp", ar.config.Endpoint)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %v", ar.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", ar.config.Endpoint, err)
 	}
 	ar.logger.Info(fmt.Sprintf("listen to address %s", ar.config.Endpoint))
 

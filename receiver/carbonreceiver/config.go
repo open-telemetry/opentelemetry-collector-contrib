@@ -69,11 +69,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	if err := protocol.LoadParserConfig(vParserCfg, cfg.Parser); err != nil {
-		return fmt.Errorf(
-			"error on %q section for %s: %v",
-			parserConfigSection,
-			cfg.ID().String(),
-			err)
+		return fmt.Errorf("error on %q section for %s: %w", parserConfigSection, cfg.ID().String(), err)
 	}
 
 	// Unmarshal exact to validate the config keys.

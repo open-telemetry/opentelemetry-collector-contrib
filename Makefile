@@ -319,6 +319,10 @@ build-examples:
 checkdoc:
 	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
+.PHONY: all-checklinks
+all-checklinks:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="checklinks"
+
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
 # Accepts command to execute as first parameter.
