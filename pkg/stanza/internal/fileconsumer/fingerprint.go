@@ -22,8 +22,8 @@ import (
 	"os"
 )
 
-const defaultFingerprintSize = 1000 // bytes
-const minFingerprintSize = 16       // bytes
+const DefaultFingerprintSize = 1000 // bytes
+const MinFingerprintSize = 16       // bytes
 
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file,

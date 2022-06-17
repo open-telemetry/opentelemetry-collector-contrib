@@ -31,7 +31,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 
 	fileContents := fmt.Sprintf("%s%s%s\n", fingerprint, next, extra)
 
-	f, _, tempDir := newTestFileOperator(t, nil, nil)
+	f, _, tempDir := newTestScenario(t, nil)
 	f.fingerprintSize = len(fingerprint)
 
 	// Create a new file
@@ -71,39 +71,39 @@ func TestNewFingerprint(t *testing.T) {
 	}{
 		{
 			name:            "defaultExactFileSize",
-			fingerprintSize: defaultFingerprintSize,
-			fileSize:        defaultFingerprintSize,
-			expectedLen:     defaultFingerprintSize,
+			fingerprintSize: DefaultFingerprintSize,
+			fileSize:        DefaultFingerprintSize,
+			expectedLen:     DefaultFingerprintSize,
 		},
 		{
 			name:            "defaultWithFileHalfOfFingerprint",
-			fingerprintSize: defaultFingerprintSize,
-			fileSize:        defaultFingerprintSize / 2,
-			expectedLen:     defaultFingerprintSize / 2,
+			fingerprintSize: DefaultFingerprintSize,
+			fileSize:        DefaultFingerprintSize / 2,
+			expectedLen:     DefaultFingerprintSize / 2,
 		},
 		{
 			name:            "defaultWithFileTwiceFingerprint",
-			fingerprintSize: defaultFingerprintSize,
-			fileSize:        defaultFingerprintSize * 2,
-			expectedLen:     defaultFingerprintSize,
+			fingerprintSize: DefaultFingerprintSize,
+			fileSize:        DefaultFingerprintSize * 2,
+			expectedLen:     DefaultFingerprintSize,
 		},
 		{
 			name:            "minFingerprintExactFileSize",
-			fingerprintSize: minFingerprintSize,
-			fileSize:        minFingerprintSize,
-			expectedLen:     minFingerprintSize,
+			fingerprintSize: MinFingerprintSize,
+			fileSize:        MinFingerprintSize,
+			expectedLen:     MinFingerprintSize,
 		},
 		{
 			name:            "minFingerprintWithSmallerFileSize",
-			fingerprintSize: minFingerprintSize,
-			fileSize:        minFingerprintSize / 2,
-			expectedLen:     minFingerprintSize / 2,
+			fingerprintSize: MinFingerprintSize,
+			fileSize:        MinFingerprintSize / 2,
+			expectedLen:     MinFingerprintSize / 2,
 		},
 		{
 			name:            "minFingerprintWithLargerFileSize",
-			fingerprintSize: minFingerprintSize,
-			fileSize:        defaultFingerprintSize,
-			expectedLen:     minFingerprintSize,
+			fingerprintSize: MinFingerprintSize,
+			fileSize:        DefaultFingerprintSize,
+			expectedLen:     MinFingerprintSize,
 		},
 		{
 			name:            "largeFingerprintSmallFile",
@@ -122,12 +122,12 @@ func TestNewFingerprint(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			f, _, tempDir := newTestFileOperator(t, nil, nil)
+			f, _, tempDir := newTestScenario(t, nil)
 			f.fingerprintSize = tc.fingerprintSize
 
 			// Create a new file
 			temp := openTemp(t, tempDir)
-			writeString(t, temp, stringWithLength(tc.fileSize))
+			writeString(t, temp, string(tokenWithLength(tc.fileSize)))
 
 			// Validate that the file is actually the expected size after writing
 			info, err := temp.Stat()
@@ -148,9 +148,9 @@ func TestFingerprintCopy(t *testing.T) {
 		"",
 		"hello",
 		"asdfsfaddsfas",
-		stringWithLength(minFingerprintSize),
-		stringWithLength(defaultFingerprintSize),
-		stringWithLength(1234),
+		string(tokenWithLength(MinFingerprintSize)),
+		string(tokenWithLength(DefaultFingerprintSize)),
+		string(tokenWithLength(1234)),
 	}
 
 	for _, tc := range cases {
@@ -225,7 +225,7 @@ func TestFingerprintStartsWith(t *testing.T) {
 func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	r := rand.New(rand.NewSource(112358))
 
-	operator, _, tempDir := newTestFileOperator(t, nil, nil)
+	operator, _, tempDir := newTestScenario(t, nil)
 	operator.fingerprintSize *= 10
 
 	fileLength := 12 * operator.fingerprintSize

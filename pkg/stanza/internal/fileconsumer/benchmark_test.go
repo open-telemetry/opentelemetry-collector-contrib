@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -37,7 +36,7 @@ type benchFile struct {
 }
 
 func simpleTextFile(b *testing.B, file *os.File) *benchFile {
-	line := stringWithLength(49) + "\n"
+	line := string(tokenWithLength(49)) + "\n"
 	return &benchFile{
 		File: file,
 		log: func(_ int) {
@@ -55,7 +54,7 @@ func BenchmarkFileInput(b *testing.B) {
 				"file0.log",
 			},
 			config: func() *Config {
-				cfg := NewConfig("test_id")
+				cfg := NewConfig()
 				cfg.Include = []string{
 					"file0.log",
 				}
@@ -71,7 +70,7 @@ func BenchmarkFileInput(b *testing.B) {
 				"file3.log",
 			},
 			config: func() *Config {
-				cfg := NewConfig("test_id")
+				cfg := NewConfig()
 				cfg.Include = []string{"file*.log"}
 				return cfg
 			},
@@ -85,7 +84,7 @@ func BenchmarkFileInput(b *testing.B) {
 				"log1.log",
 			},
 			config: func() *Config {
-				cfg := NewConfig("test_id")
+				cfg := NewConfig()
 				cfg.Include = []string{
 					"file*.log",
 					"log*.log",
@@ -102,7 +101,7 @@ func BenchmarkFileInput(b *testing.B) {
 				"file3.log",
 			},
 			config: func() *Config {
-				cfg := NewConfig("test_id")
+				cfg := NewConfig()
 				cfg.Include = []string{
 					"file*.log",
 				}
@@ -116,11 +115,11 @@ func BenchmarkFileInput(b *testing.B) {
 				"file0.log",
 			},
 			config: func() *Config {
-				cfg := NewConfig("test_id")
+				cfg := NewConfig()
 				cfg.Include = []string{
 					"file*.log",
 				}
-				cfg.FingerprintSize = 10 * defaultFingerprintSize
+				cfg.FingerprintSize = 10 * DefaultFingerprintSize
 				return cfg
 			},
 		},
@@ -130,11 +129,11 @@ func BenchmarkFileInput(b *testing.B) {
 				"file0.log",
 			},
 			config: func() *Config {
-				cfg := NewConfig("test_id")
+				cfg := NewConfig()
 				cfg.Include = []string{
 					"file*.log",
 				}
-				cfg.FingerprintSize = defaultFingerprintSize / 10
+				cfg.FingerprintSize = DefaultFingerprintSize / 10
 				return cfg
 			},
 		},
@@ -151,17 +150,14 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 
 			cfg := bench.config()
-			cfg.OutputIDs = []string{"fake"}
 			for i, inc := range cfg.Include {
 				cfg.Include[i] = filepath.Join(rootDir, inc)
 			}
 			cfg.StartAt = "beginning"
 
-			op, err := cfg.Build(testutil.Logger(b))
-			require.NoError(b, err)
+			received := make(chan []byte)
 
-			fakeOutput := testutil.NewFakeOutput(b)
-			err = op.SetOutputs([]operator.Operator{fakeOutput})
+			op, err := cfg.Build(testutil.Logger(b), emitOnChan(received))
 			require.NoError(b, err)
 
 			// write half the lines before starting
@@ -189,7 +185,7 @@ func BenchmarkFileInput(b *testing.B) {
 			}()
 
 			for i := 0; i < b.N*len(files); i++ {
-				<-fakeOutput.Received
+				<-received
 			}
 		})
 	}
