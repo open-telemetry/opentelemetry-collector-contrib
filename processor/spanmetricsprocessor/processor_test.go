@@ -318,14 +318,18 @@ func TestMetricKeyCache(t *testing.T) {
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	assert.Eventually(t, func() bool {
+		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
-	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
-
 	require.NoError(t, err)
+
+	// 2 key was cached, other keys were evicted and cleaned after the processing
+	assert.Eventually(t, func() bool {
+		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	}, 10*time.Second, time.Millisecond*100)
 }
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
