@@ -231,7 +231,7 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	// Execute trace to metrics aggregation as a goroutine and only log errors instead
-	// of failing the entire pipeline to prioritise the propagation of trace data,
+	// of failing the entire pipeline to prioritize the propagation of trace data,
 	// regardless of error.
 	//
 	// This processor should be treated as a branched, out-of-band process
