@@ -44,6 +44,8 @@ const (
 	Composite PolicyType = "composite"
 	// And allows defining a And policy, combining the other policies in one
 	And PolicyType = "and"
+	// Span Count sample traces that are have more spans per Trace than a given threshold.
+	SpanCount PolicyType = "span_count"
 )
 
 // SubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -66,6 +68,8 @@ type SubPolicyCfg struct {
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
 	// Configs for and policy evaluator.
 	AndCfg AndCfg `mapstructure:"and"`
+	// Configs for span counter filter sampling policy evaluator.
+	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 }
 
 type AndSubPolicyCfg struct {
@@ -85,6 +89,8 @@ type AndSubPolicyCfg struct {
 	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
+	// Configs for span counter filter sampling policy evaluator.
+	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 }
 
 type AndCfg struct {
@@ -128,6 +134,8 @@ type PolicyCfg struct {
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
 	// Configs for defining and policy
 	AndCfg AndCfg `mapstructure:"and"`
+	// Configs for span count filter sampling policy evaluator.
+	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy
@@ -191,6 +199,13 @@ type StringAttributeCfg struct {
 type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum nuber of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+}
+
+// SpanCountCfg holds the configurable settings to create a Span Count filter sampling policy
+// sampling policy evaluator
+type SpanCountCfg struct {
+	// Minimum number of spans in a Trace
+	MinSpans int32 `mapstructure:"min_spans"`
 }
 
 // Config holds the configuration for tail-based sampling.

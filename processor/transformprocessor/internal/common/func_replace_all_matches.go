@@ -24,7 +24,7 @@ import (
 func replaceAllMatches(target GetSetter, pattern string, replacement string) (ExprFunc, error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern, %v", err)
+		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
 	return func(ctx TransformContext) interface{} {
 		val := target.Get(ctx)

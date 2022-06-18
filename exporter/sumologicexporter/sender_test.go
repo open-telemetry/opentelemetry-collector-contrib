@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package sumologicexporter
 
 import (
@@ -546,7 +545,8 @@ func TestSendCompressGzip(t *testing.T) {
 	test := prepareSenderTest(t, []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(200)
-			res.Write([]byte(""))
+			_, err := res.Write([]byte(""))
+			require.NoError(t, err)
 			body := decodeGzip(t, req.Body)
 			assert.Equal(t, "gzip", req.Header.Get("Content-Encoding"))
 			assert.Equal(t, "Some example log", body)
@@ -570,7 +570,8 @@ func TestSendCompressDeflate(t *testing.T) {
 	test := prepareSenderTest(t, []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(200)
-			res.Write([]byte(""))
+			_, err := res.Write([]byte(""))
+			require.NoError(t, err)
 			body := decodeDeflate(t, req.Body)
 			assert.Equal(t, "deflate", req.Header.Get("Content-Encoding"))
 			assert.Equal(t, "Some example log", body)

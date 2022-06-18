@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.28
+	github.com/aws/aws-sdk-go v1.44.33
 	github.com/google/cadvisor v0.44.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.53.0
@@ -13,8 +13,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.53.0
 	github.com/shirou/gopsutil/v3 v3.22.5
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.53.0
-	go.opentelemetry.io/collector/pdata v0.53.0
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/zap v1.21.0
 	k8s.io/api v0.24.1
 	k8s.io/apimachinery v0.24.1
@@ -36,7 +36,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.0-beta.1+incompatible // indirect
-	github.com/docker/docker v20.10.15+incompatible // indirect
+	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect

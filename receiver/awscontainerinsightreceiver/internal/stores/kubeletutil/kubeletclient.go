@@ -62,13 +62,13 @@ func (k *KubeletClient) ListPods() ([]corev1.Pod, error) {
 	var result []corev1.Pod
 	b, err := k.restClient.Get("/pods")
 	if err != nil {
-		return result, fmt.Errorf("call to /pods endpoint failed: %v", err)
+		return result, fmt.Errorf("call to /pods endpoint failed: %w", err)
 	}
 
 	pods := corev1.PodList{}
 	err = json.Unmarshal(b, &pods)
 	if err != nil {
-		return result, fmt.Errorf("parsing response failed: %v", err)
+		return result, fmt.Errorf("parsing response failed: %w", err)
 	}
 
 	return pods.Items, nil

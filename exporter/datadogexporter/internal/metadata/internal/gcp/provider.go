@@ -25,6 +25,7 @@ import (
 )
 
 var _ provider.HostnameProvider = (*Provider)(nil)
+var _ provider.ClusterNameProvider = (*Provider)(nil)
 
 var _ gcpDetector = gcp.NewDetector()
 
@@ -32,6 +33,7 @@ type gcpDetector interface {
 	ProjectID() (string, error)
 	CloudPlatform() gcp.Platform
 	GCEHostName() (string, error)
+	GKEClusterName() (string, error)
 }
 
 type Provider struct {
@@ -60,6 +62,10 @@ func (p *Provider) Hostname(context.Context) (string, error) {
 	}
 
 	return fmt.Sprintf("%s.%s", name, cloudAccount), nil
+}
+
+func (p *Provider) ClusterName(ctx context.Context) (string, error) {
+	return p.detector.GKEClusterName()
 }
 
 // NewProvider creates a new GCP hostname provider.

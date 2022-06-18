@@ -242,32 +242,6 @@ var MapAttributeDiskType = map[string]AttributeDiskType{
 	"physical": AttributeDiskTypePhysical,
 }
 
-// AttributeHostEffective specifies the a value host_effective attribute.
-type AttributeHostEffective int
-
-const (
-	_ AttributeHostEffective = iota
-	AttributeHostEffectiveTrue
-	AttributeHostEffectiveFalse
-)
-
-// String returns the string representation of the AttributeHostEffective.
-func (av AttributeHostEffective) String() string {
-	switch av {
-	case AttributeHostEffectiveTrue:
-		return "true"
-	case AttributeHostEffectiveFalse:
-		return "false"
-	}
-	return ""
-}
-
-// MapAttributeHostEffective is a helper map of string to AttributeHostEffective attribute value.
-var MapAttributeHostEffective = map[string]AttributeHostEffective{
-	"true":  AttributeHostEffectiveTrue,
-	"false": AttributeHostEffectiveFalse,
-}
-
 // AttributeLatencyType specifies the a value latency_type attribute.
 type AttributeLatencyType int
 
@@ -465,7 +439,7 @@ func (m *metricVcenterClusterHostCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterClusterHostCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue string) {
+func (m *metricVcenterClusterHostCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue bool) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -473,7 +447,7 @@ func (m *metricVcenterClusterHostCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("effective", pcommon.NewValueString(hostEffectiveAttributeValue))
+	dp.Attributes().Insert("effective", pcommon.NewValueBool(hostEffectiveAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2392,8 +2366,8 @@ func (mb *MetricsBuilder) RecordVcenterClusterCPULimitDataPoint(ts pcommon.Times
 }
 
 // RecordVcenterClusterHostCountDataPoint adds a data point to vcenter.cluster.host.count metric.
-func (mb *MetricsBuilder) RecordVcenterClusterHostCountDataPoint(ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue AttributeHostEffective) {
-	mb.metricVcenterClusterHostCount.recordDataPoint(mb.startTime, ts, val, hostEffectiveAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcenterClusterHostCountDataPoint(ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue bool) {
+	mb.metricVcenterClusterHostCount.recordDataPoint(mb.startTime, ts, val, hostEffectiveAttributeValue)
 }
 
 // RecordVcenterClusterMemoryEffectiveDataPoint adds a data point to vcenter.cluster.memory.effective metric.

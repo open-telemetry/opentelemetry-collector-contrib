@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/prometheus/common/model"
@@ -1217,12 +1218,12 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
+		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); !errors.Is(err, errMetricNameNotFound) {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
 			return
 		}
 
-		if _, _, _, err := b.Build(); err != errNoDataToBuild {
+		if _, _, _, err := b.Build(); !errors.Is(err, errNoDataToBuild) {
 			t.Error("expecting errNoDataToBuild error, but get nil")
 		}
 	})
@@ -1230,7 +1231,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
+		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})
@@ -1238,7 +1239,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
+		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})
