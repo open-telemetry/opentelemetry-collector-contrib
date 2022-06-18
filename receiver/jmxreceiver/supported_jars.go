@@ -40,6 +40,10 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 }
 
 var jmxMetricsGathererVersions = map[string]supportedJar{
+	"3c46cff8521cdb0d36bb2891b15cbc1bb2fcbca7c5344253403ab30fe9f693a6": {
+		version: "1.15.0",
+		jar:     "JMX metrics gatherer",
+	},
 	"0646639df98404bd9b1263b46e2fd4612bc378f9951a561f0a0be9725718db36": {
 		version: "1.14.0",
 		jar:     "JMX metrics gatherer",
@@ -213,6 +217,10 @@ var wildflyJarVersions = map[string]supportedJar{
 	},
 	"86b65d22d3904e6fa7a9016e574b67ad1caf0548d7bc51b229f9026ed459738f": {
 		version: "26.1.0",
+		jar:     "wildfly jboss client",
+	},
+	"8dd73d59bc458457f95abb2532d24650ac1025b6150fa7d4a24c674ab309eb02": {
+		version: "26.1.1",
 		jar:     "wildfly jboss client",
 	},
 }
