@@ -48,6 +48,7 @@
 - `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
 - `exporter/awsemfexporter:`: Fix dead links in README.md. (#11027)
 - `googlecloudexporter`: Fix (self-obs) point_count metric calculation, concurrent map write panic, and dropped log attributes (#11051)
+- `spanmetricsprocessor`: Fix concurrency bug causing premature key eviction (#13406)
 
 ## v0.53.0
 
