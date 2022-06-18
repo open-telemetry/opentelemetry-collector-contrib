@@ -269,6 +269,9 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		// Since parallelism is enabled in these tests, to avoid flaky behaviour,
+		// instantiate a copy of the test case for t.Run's closure to use.
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
 			mexp := &mocks.MetricsExporter{}
