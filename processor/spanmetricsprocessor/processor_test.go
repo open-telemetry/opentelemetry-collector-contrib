@@ -18,9 +18,6 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-	"sync"
 	"testing"
 	"time"
 
@@ -37,7 +34,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
@@ -233,14 +232,6 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			assert.Eventually(t, func() bool {
 				return logs.FilterMessage(tc.consumeMetricsErr.Error()).Len() > 0
 			}, 10*time.Second, time.Millisecond*100)
-
-			// expectedLogs := []observer.LoggedEntry{{
-			// 	Entry:   zapcore.Entry{Level: zap.ErrorLevel, Message: "metricsExporter error"},
-			// 	Context: []zapcore.Field{},
-			// }}
-			//
-			// assert.Equal(t, 1, logs.Len())
-			// assert.Equal(t, expectedLogs, logs.AllUntimed())
 		})
 	}
 }
@@ -320,12 +311,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 	defaultNullValue := "defaultNullValue"
 	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
-
-	// Both should be in cache.
-	traces0 := buildSampleTraceReproduceErr("service-a", "service-b")
-
-	// "service-a" evicted by "service-c".
-	traces1 := buildSampleTraceReproduceErr("service-a", "service-c")
+	traces := buildSampleTrace()
 
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
@@ -333,26 +319,18 @@ func TestMetricKeyCache(t *testing.T) {
 	// 0 key was cached at beginning
 	assert.Empty(t, p.metricKeyToDimensions.Keys())
 
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		err := p.ConsumeTraces(ctx, traces0)
-		require.NoError(t, err)
-	}()
-	go func() {
-		defer wg.Done()
-		err := p.ConsumeTraces(ctx, traces1)
-		require.NoError(t, err)
-	}()
-	wg.Wait()
-
+	err := p.ConsumeTraces(ctx, traces)
+	// Validate
+	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
-	}, 10*time.Second, time.Millisecond*100)
+	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
 
+	// consume another batch of traces
+	err = p.ConsumeTraces(ctx, traces)
+	// 2 key was cached, other keys were evicted and cleaned after the processing
+	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+
+	require.NoError(t, err)
 }
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
@@ -584,26 +562,6 @@ func buildSampleTrace() ptrace.Traces {
 			},
 		}, traces.ResourceSpans().AppendEmpty())
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
-	return traces
-}
-
-func buildSampleTraceReproduceErr(spanNames ...string) ptrace.Traces {
-	traces := ptrace.NewTraces()
-
-	for _, spanName := range spanNames {
-		s := serviceSpans{
-			serviceName: spanName,
-			spans: []span{
-				{
-					operation:  "/ping",
-					kind:       ptrace.SpanKindServer,
-					statusCode: ptrace.StatusCodeOk,
-				},
-			},
-		}
-		initServiceSpans(s, traces.ResourceSpans().AppendEmpty())
-	}
-
 	return traces
 }
 
