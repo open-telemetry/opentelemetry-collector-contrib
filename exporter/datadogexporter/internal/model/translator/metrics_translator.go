@@ -22,11 +22,12 @@ import (
 	"strconv"
 
 	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationlibrary"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationscope"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 )
 
 const metricName string = "metric name"

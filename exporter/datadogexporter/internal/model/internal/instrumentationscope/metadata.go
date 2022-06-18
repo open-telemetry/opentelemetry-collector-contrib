@@ -16,6 +16,7 @@ package instrumentationscope // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/utils"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
