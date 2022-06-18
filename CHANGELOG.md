@@ -9,6 +9,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `instrumentation_library_metadata_as_tags` (#11135)
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
 - `observiqexporter`: Deprecate the observiq exporter (#10977)
 - `honeycombexporter`: Deprecate honeycomb exporter (#10318)
