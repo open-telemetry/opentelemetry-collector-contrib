@@ -102,13 +102,14 @@ func main() {
 	}()
 
 	attributes := []attribute.KeyValue{}
+	// may be overridden by `-otlp-attributes service.name=foo`
+	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
+
 	if len(cfg.ResourceAttributes) > 0 {
 		for k, v := range cfg.ResourceAttributes {
 			attributes = append(attributes, attribute.String(k, v))
 		}
 	}
-
-	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
 
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
