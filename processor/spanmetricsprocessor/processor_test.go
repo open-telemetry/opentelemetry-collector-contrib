@@ -18,6 +18,9 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	"sync"
 	"testing"
 	"time"
 
@@ -186,37 +189,58 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 		name              string
 		consumeMetricsErr error
 		consumeTracesErr  error
-		wantErrMsg        string
 	}{
 		{
 			name:              "metricsExporter error",
 			consumeMetricsErr: fmt.Errorf("metricsExporter error"),
-			wantErrMsg:        "metricsExporter error",
 		},
 		{
 			name:             "nextConsumer error",
 			consumeTracesErr: fmt.Errorf("nextConsumer error"),
-			wantErrMsg:       "nextConsumer error",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
+			obs, logs := observer.New(zap.ErrorLevel)
+			logger := zap.New(obs)
+			// logger := zaptest.NewLogger(t, zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			//
+			// }))
+
 			mexp := &mocks.MetricsExporter{}
 			mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(tc.consumeMetricsErr)
 
 			tcon := &mocks.TracesConsumer{}
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(tc.consumeTracesErr)
 
-			p := newProcessorImp(mexp, tcon, nil, cumulative, t)
+			p := newProcessorImp(mexp, tcon, nil, cumulative, logger)
 
 			traces := buildSampleTrace()
 
 			// Test
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err := p.ConsumeTraces(ctx, traces)
+			if tc.consumeTracesErr != nil {
+				require.Error(t, err)
+				assert.EqualError(t, err, tc.consumeTracesErr.Error())
+				return
+			}
 
 			// Verify
-			assert.EqualError(t, err, tc.wantErrMsg)
+			// time.Sleep(time.Second)
+			// assert.EqualError(t, err, tc.wantErrMsg)
+			require.NoError(t, err)
+			assert.Eventually(t, func() bool {
+				return logs.FilterMessage(tc.consumeMetricsErr.Error()).Len() > 0
+			}, 10*time.Second, time.Millisecond*100)
+
+			// expectedLogs := []observer.LoggedEntry{{
+			// 	Entry:   zapcore.Entry{Level: zap.ErrorLevel, Message: "metricsExporter error"},
+			// 	Context: []zapcore.Field{},
+			// }}
+			//
+			// assert.Equal(t, 1, logs.Len())
+			// assert.Equal(t, expectedLogs, logs.AllUntimed())
 		})
 	}
 }
@@ -266,12 +290,14 @@ func TestProcessorConsumeTraces(t *testing.T) {
 
 			// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-				return tc.verifier(t, input)
+				return assert.Eventually(t, func() bool {
+					return tc.verifier(t, input)
+				}, 10*time.Second, time.Millisecond*100)
 			})).Return(nil)
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 			defaultNullValue := "defaultNullValue"
-			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, t)
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t))
 
 			for _, traces := range tc.traces {
 				// Test
@@ -293,9 +319,13 @@ func TestMetricKeyCache(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, t)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
 
-	traces := buildSampleTrace()
+	// Both should be in cache.
+	traces0 := buildSampleTraceReproduceErr("service-a", "service-b")
+
+	// "service-a" evicted by "service-c".
+	traces1 := buildSampleTraceReproduceErr("service-a", "service-c")
 
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
@@ -303,18 +333,26 @@ func TestMetricKeyCache(t *testing.T) {
 	// 0 key was cached at beginning
 	assert.Empty(t, p.metricKeyToDimensions.Keys())
 
-	err := p.ConsumeTraces(ctx, traces)
-	// Validate
-	require.NoError(t, err)
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		err := p.ConsumeTraces(ctx, traces0)
+		require.NoError(t, err)
+	}()
+	go func() {
+		defer wg.Done()
+		err := p.ConsumeTraces(ctx, traces1)
+		require.NoError(t, err)
+	}()
+	wg.Wait()
+
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	assert.Eventually(t, func() bool {
+		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	}, 10*time.Second, time.Millisecond*100)
 
-	// consume another batch of traces
-	err = p.ConsumeTraces(ctx, traces)
-	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
-
-	require.NoError(t, err)
 }
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
@@ -326,7 +364,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, b)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b))
 
 	traces := buildSampleTrace()
 
@@ -337,7 +375,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, tb testing.TB) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, logger *zap.Logger) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	// use size 2 for LRU cache for testing purpose
 	metricKeyToDimensions, err := cache.NewCache(DimensionsCacheSize)
@@ -345,7 +383,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		panic(err)
 	}
 	return &processorImp{
-		logger:          zaptest.NewLogger(tb),
+		logger:          logger,
 		config:          Config{AggregationTemporality: temporality},
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
@@ -546,6 +584,26 @@ func buildSampleTrace() ptrace.Traces {
 			},
 		}, traces.ResourceSpans().AppendEmpty())
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
+	return traces
+}
+
+func buildSampleTraceReproduceErr(spanNames ...string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	for _, spanName := range spanNames {
+		s := serviceSpans{
+			serviceName: spanName,
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+				},
+			},
+		}
+		initServiceSpans(s, traces.ResourceSpans().AppendEmpty())
+	}
+
 	return traces
 }
 
@@ -774,7 +832,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	//testcases with skipSanitizeLabel flag turned on
+	// testcases with skipSanitizeLabel flag turned on
 	cfg.skipSanitizeLabel = true
 	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
 	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))

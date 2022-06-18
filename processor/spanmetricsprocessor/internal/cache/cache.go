@@ -15,8 +15,6 @@
 package cache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
 
 import (
-	"sync"
-
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -27,18 +25,14 @@ import (
 // batch of spans.
 type Cache struct {
 	*lru.Cache
-	rw           *sync.RWMutex
 	evictedItems map[interface{}]interface{}
 }
 
 // NewCache creates a Cache.
 func NewCache(size int) (*Cache, error) {
 	evictedItems := make(map[interface{}]interface{})
-	rw := new(sync.RWMutex)
 	lruCache, err := lru.NewWithEvict(size, func(key interface{}, value interface{}) {
-		rw.Lock()
 		evictedItems[key] = value
-		rw.Unlock()
 	})
 	if err != nil {
 		return nil, err
@@ -47,18 +41,15 @@ func NewCache(size int) (*Cache, error) {
 	return &Cache{
 		Cache:        lruCache,
 		evictedItems: evictedItems,
-		rw:           rw,
 	}, nil
 }
 
 // RemoveEvictedItems cleans all the evicted items.
 func (c *Cache) RemoveEvictedItems() {
-	c.rw.Lock()
 	// we need to keep the original pointer to evictedItems map as it is used in the closure of lru.NewWithEvict
 	for k := range c.evictedItems {
 		delete(c.evictedItems, k)
 	}
-	c.rw.Unlock()
 }
 
 // Get retrieves an item from the LRU cache or evicted items.
@@ -66,9 +57,7 @@ func (c *Cache) Get(key interface{}) (interface{}, bool) {
 	if val, ok := c.Cache.Get(key); ok {
 		return val, ok
 	}
-	c.rw.RLock()
 	val, ok := c.evictedItems[key]
-	c.rw.RUnlock()
 	return val, ok
 }
 
