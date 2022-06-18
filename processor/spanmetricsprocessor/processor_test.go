@@ -202,9 +202,6 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			// Prepare
 			obs, logs := observer.New(zap.ErrorLevel)
 			logger := zap.New(obs)
-			// logger := zaptest.NewLogger(t, zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			//
-			// }))
 
 			mexp := &mocks.MetricsExporter{}
 			mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(tc.consumeMetricsErr)
@@ -226,8 +223,6 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			}
 
 			// Verify
-			// time.Sleep(time.Second)
-			// assert.EqualError(t, err, tc.wantErrMsg)
 			require.NoError(t, err)
 			assert.Eventually(t, func() bool {
 				return logs.FilterMessage(tc.consumeMetricsErr.Error()).Len() > 0
