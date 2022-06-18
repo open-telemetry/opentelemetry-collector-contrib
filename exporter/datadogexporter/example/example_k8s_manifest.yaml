@@ -1,5 +1,5 @@
 # This manifest file is meant as an example of how to deploy otel-agent as daemonset and otel-collector as a standalone service.
-# Using this example should correctly identifies hostnames for individual k8s nodes. 
+# Using this example should correctly identifies hostnames for individual k8s nodes.
 # This is meant as an example only and may differ depending on deployment scenario and specifics of the environment the collector is used.
 ---
 # The k8sattributes processor may require additional

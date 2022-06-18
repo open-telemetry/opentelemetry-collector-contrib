@@ -22,11 +22,11 @@ import (
 	"strconv"
 
 	"github.com/DataDog/datadog-agent/pkg/quantile"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationlibrary"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationscope"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 const metricName string = "metric name"
@@ -47,6 +47,7 @@ func New(logger *zap.Logger, options ...Option) (*Translator, error) {
 		SendMonotonic:                        true,
 		ResourceAttributesAsTags:             false,
 		InstrumentationLibraryMetadataAsTags: false,
+		InstrumentationScopeMetadataAsTags:   false,
 		sweepInterval:                        1800,
 		deltaTTL:                             3600,
 		fallbackHostnameProvider:             &noHostProvider{},
@@ -427,7 +428,9 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 			metricsArray := ilm.Metrics()
 
 			var additionalTags []string
-			if t.cfg.InstrumentationLibraryMetadataAsTags {
+			if t.cfg.InstrumentationScopeMetadataAsTags {
+				additionalTags = append(attributeTags, instrumentationscope.TagsFromInstrumentationScopeMetadata(ilm.Scope())...)
+			} else if t.cfg.InstrumentationLibraryMetadataAsTags {
 				additionalTags = append(attributeTags, instrumentationlibrary.TagsFromInstrumentationLibraryMetadata(ilm.Scope())...)
 			} else {
 				additionalTags = attributeTags
