@@ -1,10 +1,10 @@
 # SignalFx Receiver
 
-| Status                   |              |
-| ------------------------ |--------------|
-| Stability                | [stable]     |
-| Supported pipeline types | traces, logs |
-| Distributions            | [contrib]    |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [stable]      |
+| Supported pipeline types | metrics, logs |
+| Distributions            | [contrib]     |
 
 The SignalFx receiver accepts:
 
