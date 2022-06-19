@@ -26,18 +26,24 @@ CODEOWNERS=".github/CODEOWNERS"
 ALLOWLIST=".github/ALLOWLIST"
 
 # Get component folders from the project and checks that they have 
-# an owner in $CODEOWNERS 
+# an owner in $CODEOWNERS
 check_code_owner_existence() {
   MODULES=$(find . -type f -name "go.mod" -exec dirname {} \; | sort | grep -E '^./' | cut -c 3-)
   MISSING_COMPONENTS=0
   ALLOW_LIST_COMPONENTS=0
   for module in ${MODULES}
   do
-    if ! grep -q "^$module " "$CODEOWNERS"; then
-      # Account for parent folders which implicitly include 
-      # sub folders e.g. 'internal/aws' is listed in $CODEOWNERS
+    # For a component path exact match, need to add '/ ' to end of module as 
+    # each line in the CODEOWNERS file is of the format:
+    # <component_path_relative_from_project_root>/<min_1_space><owner_1><space><owner_2><space>..<owner_n>
+    # This is because the path separator at end is dropped while searching for 
+    # modules and there is at least 1 space separating the path from the owners.
+    if ! grep -q "^$module/ " "$CODEOWNERS"; then
+      # If there is not an exact match to component path, there might be a parent folder
+      # which has an owner and would therefore implicitly include the component
+      # path as a sub folder e.g. 'internal/aws' is listed in $CODEOWNERS
       # which accounts for internal/aws/awsutil, internal/aws/k8s etc.
-      PREFIX_MODULE_PATH=$(echo $module | cut -d/ -f 1-5)
+      PREFIX_MODULE_PATH=$(echo $module | cut -d/ -f 1-2)
       if ! grep -wq "^$PREFIX_MODULE_PATH/ " "$CODEOWNERS"; then
         # Check if it is a known component that is waiting on an owner
         if grep -wq "$module" "$ALLOWLIST"; then

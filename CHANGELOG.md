@@ -20,8 +20,9 @@
 - `googlemanagedprometheusexporter` The Google Managed Service for Prometheus exporter is alpha. (#10925)
 
 ### 💡 Enhancements 💡
-- `tailsamplingprocessor`: Add trace_state policy (#10852)
 
+- `tailsamplingprocessor`: Add trace_state policy (#10852)
+- `mongodbatlasreceiver` Add support for receiving alerts (#10854)
 - `cmd/mdatagen`: Allow attribute values of any types (#9245)
 - `metricstransformprocessor`: Migrate the processor from OC to pdata (#10817)
   - This behavior can be reverted by disabling the `processor.metricstransformprocessor.UseOTLPDataModel` feature gate.
