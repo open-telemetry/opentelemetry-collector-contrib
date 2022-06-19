@@ -20,6 +20,7 @@ package podmanreceiver
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -205,4 +206,71 @@ func TestList(t *testing.T) {
 	containers, err := cli.list(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedContainer, containers[0])
+}
+
+func TestEvents(t *testing.T) {
+	// event samples
+	eventsExample := []string{
+		`{"status":"start","id":"49a4c52afb06e6b36b2941422a0adf47421dbfbf40503dbe17bd56b4570b6681","from":"docker.io/library/httpd:latest","Type":"container","Action":"start","Actor":{"ID":"49a4c52afb06e6b36b2941422a0adf47421dbfbf40503dbe17bd56b4570b6681","Attributes":{"containerExitCode":"0","image":"docker.io/library/httpd:latest","name":"vigilant_jennings"}},"scope":"local","time":1655230086,"timeNano":1655230086294801585}`,
+		`{"status":"died","id":"d5c43c6954e4bfe62170c75f9f18f81da644bd35bfd22dbfafda349192d4940a","from":"docker.io/library/nginx:latest","Type":"container","Action":"died","Actor":{"ID":"d5c43c6954e4bfe62170c75f9f18f81da644bd35bfd22dbfafda349192d4940a","Attributes":{"containerExitCode":"0","image":"docker.io/library/nginx:latest","name":"relaxed_mccarthy"}},"scope":"local","time":1655653026,"timeNano":1655653026340832435}`,
+	}
+
+	listener, addr := tmpSock(t)
+	defer listener.Close()
+	defer os.Remove(addr)
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "events") {
+			// write stream events
+			for _, event := range eventsExample {
+				_, err := w.Write([]byte(event))
+				assert.NoError(t, err)
+			}
+			// empty write to generate io.EOF error
+			_, err := w.Write([]byte{})
+			assert.NoError(t, err)
+		} else {
+			_, err := w.Write([]byte{})
+			assert.NoError(t, err)
+		}
+	}))
+	srv.Listener = listener
+	srv.Start()
+	defer srv.Close()
+
+	config := &Config{
+		Endpoint: fmt.Sprintf("unix://%s", addr),
+		// default timeout
+		Timeout: 5 * time.Second,
+	}
+
+	cli, err := newLibpodClient(zap.NewNop(), config)
+	assert.NotNil(t, cli)
+	assert.Nil(t, err)
+
+	expectedEvents := []Event{
+		{ID: "49a4c52afb06e6b36b2941422a0adf47421dbfbf40503dbe17bd56b4570b6681", Status: "start"},
+		{ID: "d5c43c6954e4bfe62170c75f9f18f81da644bd35bfd22dbfafda349192d4940a", Status: "died"},
+	}
+
+	events, errs := cli.events(context.Background(), nil)
+	var actualEvents []Event
+
+loop:
+	for {
+
+		select {
+		case err := <-errs:
+			if err != nil && err != io.EOF {
+				t.Fatal(err)
+			}
+			assert.Equal(t, io.EOF, err)
+			break loop
+		case e := <-events:
+			actualEvents = append(actualEvents, e)
+		}
+	}
+
+	assert.Equal(t, expectedEvents, actualEvents)
+
 }

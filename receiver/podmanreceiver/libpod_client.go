@@ -120,29 +120,49 @@ func (c *libpodClient) ping(ctx context.Context) error {
 	return nil
 }
 
+// Events returns a stream of events. It's up to the caller to close the stream by cancelling the context.
 func (c *libpodClient) events(ctx context.Context, options url.Values) (<-chan Event, <-chan error) {
 	events := make(chan Event)
-	errs := make(chan error)
+	errs := make(chan error, 1)
+
+	started := make(chan struct{})
 	go func() {
+		defer close(errs)
+
 		resp, err := c.request(ctx, "/events", options)
 		if err != nil {
+			close(started)
 			errs <- err
+			return
 		}
+		defer resp.Body.Close()
+
 		dec := json.NewDecoder(resp.Body)
+		close(started)
 		for {
 			var e Event
 			select {
 			case <-ctx.Done():
+				errs <- ctx.Err()
 				return
 			default:
 				err := dec.Decode(&e)
 				if err != nil {
 					errs <- err
-				} else {
-					events <- e
+					return
+				}
+
+				select {
+				case events <- e:
+				case <-ctx.Done():
+					errs <- ctx.Err()
+					return
 				}
 			}
 		}
 	}()
+
+	<-started
+
 	return events, errs
 }
