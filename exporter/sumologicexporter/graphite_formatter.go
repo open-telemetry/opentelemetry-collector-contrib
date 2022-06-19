@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"regexp"
 	"strings"
 	"time"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type graphiteFormatter struct {
@@ -36,7 +34,7 @@ const (
 
 // newGraphiteFormatter creates new formatter for given SourceFormat template
 func newGraphiteFormatter(template string) (graphiteFormatter, error) {
-	r, err := regexp.Compile(sourceRegex)
+	r, err := regexp.MustCompile(sourceRegex)
 	if err != nil {
 		return graphiteFormatter{}, err
 	}

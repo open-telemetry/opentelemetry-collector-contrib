@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sumologicexporter
 
 import (
-	"regexp"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"regexp"
+	"testing"
 )
 
 func getTestSourceFormat(t *testing.T, template string) sourceFormat {
-	r, err := regexp.Compile(sourceRegex)
+	r, err := regexp.MustCompile(sourceRegex)
 	require.NoError(t, err)
 
 	return newSourceFormat(r, template)
@@ -38,7 +36,7 @@ func TestNewSourceFormat(t *testing.T) {
 		template: "%s/test",
 	}
 
-	r, err := regexp.Compile(sourceRegex)
+	r, err := regexp.MustCompile(sourceRegex)
 	require.NoError(t, err)
 
 	s := newSourceFormat(r, "%{test}/test")

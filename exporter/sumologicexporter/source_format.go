@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
@@ -57,7 +56,7 @@ func newSourceFormat(r *regexp.Regexp, text string) sourceFormat {
 
 // newSourceFormats returns sourceFormats for name, host and category based on cfg
 func newSourceFormats(cfg *Config) (sourceFormats, error) {
-	r, err := regexp.Compile(sourceRegex)
+	r, err := regexp.MustCompile(sourceRegex)
 	if err != nil {
 		return sourceFormats{}, err
 	}
