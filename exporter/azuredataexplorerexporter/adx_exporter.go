@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-kusto-go/kusto"
+	"github.com/Azure/azure-kusto-go/kusto/data/errors"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	jsoniter "github.com/json-iterator/go"
@@ -30,9 +31,9 @@ import (
 
 // adxDataProducer uses the ADX client to perform ingestion
 type adxDataProducer struct {
-	client        *kusto.Client       // Shared client for logs , traces and metrics
-	managedingest *ingest.Managed     // managed ingestion for metrics
-	queuedingest  *ingest.Ingestion   // queued ingestion for metrics
+	client        *kusto.Client       // client for logs , traces and metrics
+	managedingest *ingest.Managed     // managed ingestion for  logs, traces and metrics
+	queuedingest  *ingest.Ingestion   // queued ingestion for  logs, traces and metrics
 	ingestoptions []ingest.FileOption // Options for the ingestion
 	logger        *zap.Logger         // Loggers for tracing the flow
 }
@@ -41,10 +42,11 @@ const (
 	MetricsType = 1
 )
 
+var nextline = []byte("\n")
+
 // given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
-	nextline := []byte("\n")
-	metricsByteArray := make([]byte, 0)
+	metricsbytearray := make([]byte, 0)
 	transformedadxmetrics, err := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
 	if err != nil {
 		e.logger.Error("Error transforming metrics to ADX metric format.", zap.Error(err))
@@ -56,14 +58,12 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 		if err != nil {
 			e.logger.Error("Error performing serialization of data.", zap.Error(err))
 		}
-		adxmetricjsonbytes = append(adxmetricjsonbytes, nextline...)
-		metricsByteArray = append(metricsByteArray, adxmetricjsonbytes...)
+		metricsbytearray = bytes.Join([][]byte{metricsbytearray, adxmetricjsonbytes}, nextline)
 	}
-	if len(metricsByteArray) != 0 {
-		if err := e.ingestData(metricsByteArray); err != nil {
+	if len(metricsbytearray) != 0 {
+		if err := e.ingestData(metricsbytearray); err != nil {
 			return err
 		}
-		metricsByteArray = metricsByteArray[:0]
 	}
 	metricsflushed := len(transformedadxmetrics)
 	e.logger.Sugar().Infof("Flushing %d metrics to sink", metricsflushed)
@@ -73,6 +73,8 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 func (e *adxDataProducer) ingestData(b []byte) error {
 
 	ingestreader := bytes.NewReader(b)
+
+	// Either of the ingestion pilicy will be present according to the configuration provided, other will be nill
 	if e.managedingest != nil {
 		if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
 			e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
@@ -88,7 +90,16 @@ func (e *adxDataProducer) ingestData(b []byte) error {
 }
 
 func (amp *adxDataProducer) Close(context.Context) error {
-	return amp.managedingest.Close()
+
+	var err error
+	err = amp.managedingest.Close()
+	err2 := amp.client.Close()
+	if err == nil {
+		err = err2
+	} else {
+		err = errors.GetCombinedError(err, err2)
+	}
+	return err
 }
 
 /*
@@ -126,7 +137,7 @@ func newExporter(config *Config, logger *zap.Logger, dataType int) (*adxDataProd
 	}
 	ingestoptions := make([]ingest.FileOption, 2)
 	ingestoptions[0] = ingest.FileFormat(ingest.JSON)
-	// Expect that this mapping is alreay existent
+	// Expect that this mapping is already existent
 	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower(tableName)), ingest.JSON)
 	return &adxDataProducer{
 		client:        metricclient,
