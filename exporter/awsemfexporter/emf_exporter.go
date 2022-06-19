@@ -81,7 +81,6 @@ func newEmfPusher(
 	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
-
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
