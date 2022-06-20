@@ -42,6 +42,19 @@ func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 	return dataPointSlice
 }
 
+func sortInstrumentationLibrary(a, b pmetric.ScopeMetrics) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	if a.Scope().Name() < b.Scope().Name() {
+		return true
+	}
+	if a.Scope().Version() < b.Scope().Version() {
+		return true
+	}
+	return false
+}
+
 func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
 	if a.SchemaUrl() < b.SchemaUrl() {
 		return true
