@@ -56,6 +56,7 @@ type Value struct {
 	Float      *float64    `| @Float`
 	Int        *int64      `| @Int`
 	Bool       *Boolean    `| @("true" | "false")`
+	IsNil      *IsNil      `| @"nil"`
 	Path       *Path       `| @@ )`
 }
 
@@ -98,6 +99,13 @@ type Boolean bool
 
 func (b *Boolean) Capture(values []string) error {
 	*b = values[0] == "true"
+	return nil
+}
+
+type IsNil bool
+
+func (n *IsNil) Capture(_ []string) error {
+	*n = true
 	return nil
 }
 
