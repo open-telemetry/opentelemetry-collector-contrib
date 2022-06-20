@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package skywalkingexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"sync"
@@ -224,7 +226,7 @@ type mockLogHandler struct {
 func (h *mockLogHandler) Collect(stream logpb.LogReportService_CollectServer) error {
 	for {
 		r, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {
@@ -241,7 +243,7 @@ type mockMetricHandler struct {
 func (h *mockMetricHandler) CollectBatch(stream metricpb.MeterReportService_CollectBatchServer) error {
 	for {
 		r, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {

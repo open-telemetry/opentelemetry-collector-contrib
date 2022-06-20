@@ -1,4 +1,10 @@
 # Honeycomb Exporter
+# Deprecated Honeycomb Exporter
+| Status                   |                  |
+| ------------------------ |------------------|
+| Stability                | [deprecated]     |
+| Supported pipeline types | traces           |
+| Distributions            | [contrib]        |
 
 **NOTE:** Honeycomb now supports OTLP ingest directly. This means you can use an [OTLP](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) exporter and no longer need this exporter to send data to Honeycomb.
 
@@ -43,3 +49,6 @@ exporters:
       num_consumers: 10
       queue_size: 10000
 ```
+
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -1,10 +1,14 @@
 # Riak Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics  |
+| Distributions            | [contrib] |
+
 Riak metrics will be collected from the [/stats](https://docs.riak.com/riak/kv/2.2.3/developing/api/http/status.1.html) endpoint.
 
 This Riak receiver will collect metrics for [3.x+](https://github.com/basho/riak/releases)
-
-Supported pipeline types: `metrics`
 
 ## Configuration
 
@@ -33,4 +37,7 @@ receivers:
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 

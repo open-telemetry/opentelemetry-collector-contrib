@@ -278,12 +278,24 @@ jobs:
     needs: [unittest, integration-tests, lint]
     strategy:
       matrix:
-        binary:
-          - darwin_amd64
-          - darwin_arm64
-          - linux_amd64
-          - linux_arm64
-          - windows_amd64
+        os:
+          - darwin
+          - linux
+          - windows
+        arch:
+          - 386
+          - amd64
+          - arm
+          - arm64
+        exclude:
+          - os: darwin
+            arch: 386
+          - os: darwin
+            arch: arm
+          - os: windows
+            arch: arm
+          - os: windows
+            arch: arm64
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -306,7 +318,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Build Collector ${{ matrix.binary }}
-        run: make otelcontribcol-${{ matrix.binary }}
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} otelcontribcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:

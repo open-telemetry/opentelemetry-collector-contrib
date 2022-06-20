@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
@@ -699,12 +699,12 @@ func TestGoldenTimeParserConfig(t *testing.T) {
 func timeConfigFromFileViaYaml(file string) (*TimeParser, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
+		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
 
 	config := defaultTimeCfg()
 	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
+		return nil, fmt.Errorf("failed to read config file as yaml: %w", err)
 	}
 
 	return config, nil
@@ -713,13 +713,13 @@ func timeConfigFromFileViaYaml(file string) (*TimeParser, error) {
 func timeConfigFromFileViaMapstructure(file string, result *TimeParser) error {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return fmt.Errorf("could not find config file: %s", err)
+		return fmt.Errorf("could not find config file: %w", err)
 	}
 
 	raw := map[string]interface{}{}
 
 	if err = yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %s", err)
+		return fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
 	err = UnmarshalMapstructure(raw, result)

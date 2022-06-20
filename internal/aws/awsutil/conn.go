@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
+// nolint:errcheck,gocritic
 package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
 	"crypto/tls"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -230,11 +231,12 @@ func getSTSCreds(logger *zap.Logger, region string, roleArn string) (*credential
 	// Make explicit call to fetch credentials.
 	_, err = stsCred.Get()
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
+		var awsErr awserr.Error
+		if errors.As(err, &awsErr) {
 			err = nil
-			switch aerr.Code() {
+			switch awsErr.Code() {
 			case sts.ErrCodeRegionDisabledException:
-				logger.Error("Region ", zap.String("region", region), zap.String("error", aerr.Error()))
+				logger.Error("Region ", zap.String("region", region), zap.Error(awsErr))
 				stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, roleArn, region)
 			}
 		}

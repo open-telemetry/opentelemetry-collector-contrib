@@ -1,10 +1,12 @@
 # Filelog Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 Tails and parses logs from files.
-
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
 
 ## Configuration
 
@@ -86,3 +88,6 @@ receivers:
           parse_from: attributes.time
           layout: '%Y-%m-%d %H:%M:%S'
 ```
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

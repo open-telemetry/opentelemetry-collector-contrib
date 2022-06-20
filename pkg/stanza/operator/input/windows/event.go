@@ -39,12 +39,12 @@ func (e *Event) RenderSimple(buffer Buffer) (EventXML, error) {
 	}
 
 	if err != nil {
-		return EventXML{}, fmt.Errorf("syscall to 'EvtRender' failed: %s", err)
+		return EventXML{}, fmt.Errorf("syscall to 'EvtRender' failed: %w", err)
 	}
 
 	bytes, err := buffer.ReadBytes(*bufferUsed)
 	if err != nil {
-		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %s", err)
+		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
 	return unmarshalEventXML(bytes)
@@ -64,12 +64,12 @@ func (e *Event) RenderFormatted(buffer Buffer, publisher Publisher) (EventXML, e
 	}
 
 	if err != nil {
-		return EventXML{}, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %s", err)
+		return EventXML{}, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %w", err)
 	}
 
 	bytes, err := buffer.ReadWideChars(bufferUsed)
 	if err != nil {
-		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %s", err)
+		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
 	return unmarshalEventXML(bytes)
@@ -82,7 +82,7 @@ func (e *Event) Close() error {
 	}
 
 	if err := evtClose(e.handle); err != nil {
-		return fmt.Errorf("failed to close event handle: %s", err)
+		return fmt.Errorf("failed to close event handle: %w", err)
 	}
 
 	e.handle = 0

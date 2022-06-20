@@ -4,16 +4,16 @@ go 1.17
 
 require (
 	github.com/lib/pq v1.10.6
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.52.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.53.0
+	github.com/stretchr/testify v1.7.2
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
 
 require (
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector/pdata v0.52.0
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 )
 
 require (
@@ -25,7 +25,7 @@ require (
 	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.15+incompatible // indirect
+	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -64,10 +64,10 @@ require (
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.46.2 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest

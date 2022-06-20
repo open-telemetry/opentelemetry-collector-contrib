@@ -23,6 +23,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes value matches, both exact and regex value matches are supported
 - `rate_limiting`: Sample based on rate
+- `span_count`: Sample based on the minimum number of spans within a batch. If all traces within the batch have less number of spans than the threshold, the batch will not be sampled.
 - `and`: Sample based on multiple policies, creates an AND policy 
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
@@ -88,6 +89,11 @@ processors:
             name: test-policy-9,
             type: string_attribute,
             string_attribute: {key: http.url, values: [\/health, \/metrics], enabled_regex_matching: true, invert_match: true}
+         },
+         {
+            name: test-policy-10,
+            type: span_count,
+            span_count: {min_spans: 2}
          },
          {
             name: and-policy-1,

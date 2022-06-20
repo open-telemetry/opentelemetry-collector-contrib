@@ -1,15 +1,13 @@
 # Prometheus Receiver
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [core], [contrib] |
+
 Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 [Design](DESIGN.md) for additional information on this receiver.
-
-Supported pipeline types: metrics
-
-## ❗️ Important note
-
-Starting from version 0.49.0, the receiver consumes 30% more memory when there is a lot of target churn.
-The issue is currently being investigated and will be fixed in one of the new releases. More details:
-https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 ## ⚠️ Warning
 
@@ -85,3 +83,7 @@ receivers:
 ```
 
 [sc]: https://github.com/prometheus/prometheus/blob/v2.28.1/docs/configuration/configuration.md#scrape_config
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

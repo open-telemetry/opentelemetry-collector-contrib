@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/prometheus/common/model"
@@ -182,52 +183,67 @@ func TestGetBoundary(t *testing.T) {
 
 func TestConvToMetricType(t *testing.T) {
 	tests := []struct {
-		name  string
-		mtype textparse.MetricType
-		want  pmetric.MetricDataType
+		name          string
+		mtype         textparse.MetricType
+		want          pmetric.MetricDataType
+		wantMonotonic bool
 	}{
 		{
-			name:  "textparse.counter",
-			mtype: textparse.MetricTypeCounter,
-			want:  pmetric.MetricDataTypeSum,
+			name:          "textparse.counter",
+			mtype:         textparse.MetricTypeCounter,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: true,
 		},
 		{
-			name:  "textparse.gauge",
-			mtype: textparse.MetricTypeGauge,
-			want:  pmetric.MetricDataTypeGauge,
+			name:          "textparse.gauge",
+			mtype:         textparse.MetricTypeGauge,
+			want:          pmetric.MetricDataTypeGauge,
+			wantMonotonic: false,
 		},
 		{
-			name:  "textparse.unknown",
-			mtype: textparse.MetricTypeUnknown,
-			want:  pmetric.MetricDataTypeGauge,
+			name:          "textparse.unknown",
+			mtype:         textparse.MetricTypeUnknown,
+			want:          pmetric.MetricDataTypeGauge,
+			wantMonotonic: false,
 		},
 		{
-			name:  "textparse.histogram",
-			mtype: textparse.MetricTypeHistogram,
-			want:  pmetric.MetricDataTypeHistogram,
+			name:          "textparse.histogram",
+			mtype:         textparse.MetricTypeHistogram,
+			want:          pmetric.MetricDataTypeHistogram,
+			wantMonotonic: true,
 		},
 		{
-			name:  "textparse.summary",
-			mtype: textparse.MetricTypeSummary,
-			want:  pmetric.MetricDataTypeSummary,
+			name:          "textparse.summary",
+			mtype:         textparse.MetricTypeSummary,
+			want:          pmetric.MetricDataTypeSummary,
+			wantMonotonic: true,
 		},
 		{
-			name:  "textparse.metric_type_info",
-			mtype: textparse.MetricTypeInfo,
-			want:  pmetric.MetricDataTypeNone,
+			name:          "textparse.metric_type_info",
+			mtype:         textparse.MetricTypeInfo,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: false,
 		},
 		{
-			name:  "textparse.metric_state_set",
-			mtype: textparse.MetricTypeStateset,
-			want:  pmetric.MetricDataTypeNone,
+			name:          "textparse.metric_state_set",
+			mtype:         textparse.MetricTypeStateset,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.metric_gauge_hostogram",
+			mtype:         textparse.MetricTypeGaugeHistogram,
+			want:          pmetric.MetricDataTypeNone,
+			wantMonotonic: false,
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := convToMetricType(tt.mtype)
+			got, monotonic := convToMetricType(tt.mtype)
 			require.Equal(t, got.String(), tt.want.String())
+			require.Equal(t, monotonic, tt.wantMonotonic)
 		})
 	}
 }
@@ -932,6 +948,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetCount(3)
 				pt0.SetSum(100)
 				pt0.SetMBucketCounts([]uint64{3})
+				pt0.SetMExplicitBounds([]float64{})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
@@ -961,6 +978,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetCount(3)
 				pt0.SetSum(100)
 				pt0.SetMBucketCounts([]uint64{3})
+				pt0.SetMExplicitBounds([]float64{})
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
@@ -1200,12 +1218,12 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
+		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); !errors.Is(err, errMetricNameNotFound) {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
 			return
 		}
 
-		if _, _, _, err := b.Build(); err != errNoDataToBuild {
+		if _, _, _, err := b.Build(); !errors.Is(err, errNoDataToBuild) {
 			t.Error("expecting errNoDataToBuild error, but get nil")
 		}
 	})
@@ -1213,7 +1231,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
+		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})
@@ -1221,7 +1239,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
+		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})

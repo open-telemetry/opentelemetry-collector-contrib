@@ -268,7 +268,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return nil
 	}
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
-	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %v: %s", resp.Status, err, body)
+	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		return rerr
 	}

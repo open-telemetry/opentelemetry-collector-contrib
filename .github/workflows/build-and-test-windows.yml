@@ -9,7 +9,7 @@ env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
 
 jobs:
-  windows-unittest:
+  windows-unittest-matrix:
     strategy:
       matrix:
         group:
@@ -44,3 +44,9 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         run: make gotest GROUP=${{ matrix.group }}
+  windows-unittest:
+    runs-on: windows-latest
+    needs: [windows-unittest-matrix]
+    steps:
+      - name: Unit Tests Complete
+        run: echo "Windows unit tests complete"

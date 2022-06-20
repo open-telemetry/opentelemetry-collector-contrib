@@ -54,7 +54,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	syslogParserCfg.OutputIDs = c.OutputIDs
 	syslogParser, err := syslogParserCfg.Build(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve syslog config: %s", err)
+		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)
 	}
 
 	if c.TCP != nil {
@@ -63,7 +63,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve tcp config: %s", err)
+			return nil, fmt.Errorf("failed to resolve tcp config: %w", err)
 		}
 
 		tcpInput.SetOutputIDs([]string{syslogParser.ID()})
@@ -84,7 +84,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve upd config: %s", err)
+			return nil, fmt.Errorf("failed to resolve upd config: %w", err)
 		}
 
 		udpInput.SetOutputIDs([]string{syslogParser.ID()})

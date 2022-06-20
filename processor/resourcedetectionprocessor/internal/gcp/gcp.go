@@ -66,7 +66,6 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		b.addZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion)
 		b.add(conventions.AttributeK8SClusterName, d.detector.GKEClusterName)
 		b.add(conventions.AttributeHostID, d.detector.GKEHostID)
-		b.add(conventions.AttributeHostName, d.detector.GKEHostName)
 	case gcp.CloudRun:
 		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
 		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
@@ -79,12 +78,19 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
 		b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
-	case gcp.AppEngine:
+	case gcp.AppEngineFlex:
 		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
-		b.addZoneAndRegion(d.detector.AppEngineAvailabilityZoneAndRegion)
+		b.addZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion)
 		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
+	case gcp.AppEngineStandard:
+		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
+		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
+		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
+		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
+		b.add(conventions.AttributeCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone)
+		b.add(conventions.AttributeCloudRegion, d.detector.AppEngineStandardCloudRegion)
 	case gcp.GCE:
 		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
 		b.addZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion)

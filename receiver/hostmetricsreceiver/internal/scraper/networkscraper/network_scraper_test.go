@@ -141,7 +141,9 @@ func TestScrape(t *testing.T) {
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, test.expectedErrCount, err.(scrapererror.PartialScrapeError).Failed)
+					var scraperErr scrapererror.PartialScrapeError
+					require.ErrorAs(t, err, &scraperErr)
+					assert.Equal(t, test.expectedErrCount, scraperErr.Failed)
 				}
 
 				return
