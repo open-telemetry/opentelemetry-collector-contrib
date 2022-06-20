@@ -1,10 +1,10 @@
 ## Dotnet Diagnostics Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |            |
+| ------------------------ |------------|
+| Stability                | [alpha]    |
+| Supported pipeline types | metrics    |
+| Distributions            | [contrib]  |
 
 This receiver provides a capability similar to the
 [dotnet-counters](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters)
@@ -116,5 +116,5 @@ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-
 
 https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
