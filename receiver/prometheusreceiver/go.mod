@@ -7,7 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.53.0
-	github.com/prometheus/common v0.34.0
+	github.com/prometheus/common v0.35.0
 	github.com/prometheus/prometheus v0.36.1
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
