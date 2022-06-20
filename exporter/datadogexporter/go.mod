@@ -8,7 +8,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.2
-	github.com/aws/aws-sdk-go v1.44.33
+	github.com/aws/aws-sdk-go v1.44.37
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
