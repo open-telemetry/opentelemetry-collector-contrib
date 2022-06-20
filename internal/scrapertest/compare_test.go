@@ -403,16 +403,16 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: expectation{
 				err: multierr.Combine(
 					errors.New("missing expected resource with attributes: map[node_id:BB902-expected]"),
-					errors.New("missing expected resource with attributes: map[namespace:test node_id:BB902-expected]"),
 					errors.New("missing expected resource with attributes: map[node_id:BB904-expected]"),
-					errors.New("missing expected resource with attributes: map[namespace:test node_id:BB904-expected]"),
 					errors.New("missing expected resource with attributes: map[node_id:BB903-expected]"),
+					errors.New("missing expected resource with attributes: map[namespace:test node_id:BB902-expected]"),
+					errors.New("missing expected resource with attributes: map[namespace:test node_id:BB904-expected]"),
 					errors.New("missing expected resource with attributes: map[namespace:test node_id:BB903-expected]"),
 					errors.New("extra resource with attributes: map[node_id:BB902-actual]"),
-					errors.New("extra resource with attributes: map[namespace:test node_id:BB902-actual]"),
 					errors.New("extra resource with attributes: map[node_id:BB904-actual]"),
-					errors.New("extra resource with attributes: map[namespace:test node_id:BB904-actual]"),
 					errors.New("extra resource with attributes: map[node_id:BB903-actual]"),
+					errors.New("extra resource with attributes: map[namespace:test node_id:BB902-actual]"),
+					errors.New("extra resource with attributes: map[namespace:test node_id:BB904-actual]"),
 					errors.New("extra resource with attributes: map[namespace:test node_id:BB903-actual]"),
 				),
 				reason: "An unpredictable resource attribute will cause failures if not ignored.",
@@ -438,14 +438,14 @@ func TestCompareMetrics(t *testing.T) {
 			},
 			withOptions: expectation{
 				err:    nil,
-				reason: "The unpredictable resource attribute was ignored on each resource that carried it, but the predictable attributes were preserved.",
+				reason: "The underbred resource metrics was properly sorted. The unpredictable resource attribute was ignored on each resource that carried it, but the predictable attributes were preserved.",
 			},
 		},
 		{
 			name: "sort-unordered-metric-slice",
 			withoutOptions: expectation{
 				err:    nil,
-				reason: "An unpredictable resource attribute will cause failures if not ignored.",
+				reason: "the underbred metric slices was properly sorted.",
 			},
 		},
 		{
