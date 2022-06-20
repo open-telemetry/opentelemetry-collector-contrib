@@ -43,7 +43,7 @@ func (adxCfg *Config) Validate() error {
 		return errors.New(`mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
 	}
 
-	if !(adxCfg.IngestionType == managedingesttype || adxCfg.IngestionType == queuedingesttest) {
+	if !(adxCfg.IngestionType == managedingesttype || adxCfg.IngestionType == queuedingesttest || adxCfg.IngestionType == "") {
 		return errors.New(`unsupported configuration for ingestion_type`)
 	}
 

@@ -99,7 +99,7 @@ func (amp *adxDataProducer) Close(context.Context) error {
 }
 
 /*
-Create a metric exporter. The metric exporter instantiates a client , creates the ingester and then sends data through it
+Create an exporter. The exporter instantiates a client , creates the ingester and then sends data through it
 */
 func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*adxDataProducer, error) {
 	tablename := getTableName(config, telemetrydatatype)
