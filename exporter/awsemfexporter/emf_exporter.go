@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -46,7 +45,7 @@ const (
 )
 
 type emfExporter struct {
-	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
+	// Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
 	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 	svcStructuredLog       *cwlogs.Client
 	config                 config.Exporter
@@ -81,8 +80,6 @@ func newEmfPusher(
 	// create CWLogs client with aws session config
 	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
 	collectorIdentifier, _ := uuid.NewRandom()
-
-	expConfig.Validate()
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
@@ -174,7 +171,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		for _, emfPusher := range emf.listPushers() {
 			returnError := emfPusher.ForceFlush()
 			if returnError != nil {
-				//TODO now we only have one logPusher, so it's ok to return after first error occurred
+				// TODO now we only have one logPusher, so it's ok to return after first error occurred
 				err := wrapErrorIfBadRequest(returnError)
 				if err != nil {
 					emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))

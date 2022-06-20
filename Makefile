@@ -334,7 +334,8 @@ endef
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
-             receiver/splunkhecreceiver/testdata
+             receiver/splunkhecreceiver/testdata \
+             receiver/mongodbatlasreceiver/testdata/alerts/certs
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs
