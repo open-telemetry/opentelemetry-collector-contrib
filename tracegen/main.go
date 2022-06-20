@@ -19,8 +19,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"go.opentelemetry.io/otel/attribute"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
 
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/otel"
