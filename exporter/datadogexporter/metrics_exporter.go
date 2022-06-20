@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -87,6 +88,10 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config, hostProvider p
 	}
 
 	options = append(options, translator.WithNumberMode(numberMode))
+
+	if featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
+		options = append(options, translator.WithPreviewHostnameFromAttributes())
+	}
 
 	return translator.New(logger, options...)
 }

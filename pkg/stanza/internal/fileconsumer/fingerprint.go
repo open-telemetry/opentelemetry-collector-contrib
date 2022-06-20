@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
 
 import (
 	"bytes"
@@ -22,8 +22,8 @@ import (
 	"os"
 )
 
-const defaultFingerprintSize = 1000 // bytes
-const minFingerprintSize = 16       // bytes
+const DefaultFingerprintSize = 1000 // bytes
+const MinFingerprintSize = 16       // bytes
 
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file,

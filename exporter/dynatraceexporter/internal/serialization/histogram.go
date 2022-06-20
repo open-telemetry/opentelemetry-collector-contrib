@@ -36,19 +36,14 @@ func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimension
 		return "", nil
 	}
 
-	min, max := estimateHistMinMax(dp)
+	min, max, sum := histDataPointToSummary(dp)
 
 	dm, err := dtMetric.NewMetric(
 		name,
 		dtMetric.WithPrefix(prefix),
 		dtMetric.WithDimensions(dims),
 		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
-		dtMetric.WithFloatSummaryValue(
-			min,
-			max,
-			dp.Sum(),
-			int64(dp.Count()),
-		),
+		dtMetric.WithFloatSummaryValue(min, max, sum, int64(dp.Count())),
 	)
 
 	if err != nil {
@@ -58,58 +53,87 @@ func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimension
 	return dm.Serialize()
 }
 
-// estimateHistMinMax returns the estimated minimum and maximum value in the histogram by using the min and max non-empty buckets.
-func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
+// histDataPointToSummary returns the estimated minimum and maximum value in the histogram by using the min and max non-empty buckets.
+// It MAY NOT be called with a data point with dp.Count() == 0.
+func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, float64) {
 	bounds := dp.MExplicitBounds()
 	counts := dp.MBucketCounts()
 
-	// shortcut in the case both max and min are provided
-	if dp.HasMin() && dp.HasMax() {
-		return dp.Min(), dp.Max()
+	// shortcut if min, max, and sum are provided
+	if dp.HasMin() && dp.HasMax() && dp.HasSum() {
+		return dp.Min(), dp.Max(), dp.Sum()
 	}
 
-	// Because we do not know the actual min and max, we estimate them based on the min and max non-empty bucket
-	minIdx, maxIdx := -1, -1
-	for y := 0; y < len(counts); y++ {
-		if counts[y] > 0 {
-			if minIdx == -1 {
-				minIdx = y
+	// a single-bucket histogram is a special case
+	if len(counts) == 1 {
+		return estimateSingleBucketHistogram(dp)
+	}
+
+	// If any of min, max, sum is not provided in the data point,
+	// loop through the buckets to estimate them.
+	// All three values are estimated in order to avoid looping multiple times
+	// or complicating the loop with branches. After the loop, estimates
+	// will be overridden with any values provided by the data point.
+	foundNonEmptyBucket := false
+	var min, max, sum float64 = 0, 0, 0
+
+	// Because we do not know the actual min, max, or sum, we estimate them based on non-empty buckets
+	for i := 0; i < len(counts); i++ {
+		// empty bucket
+		if counts[i] == 0 {
+			continue
+		}
+
+		// range for bucket counts[i] is bounds[i-1] to bounds[i]
+
+		// min estimation
+		if !foundNonEmptyBucket {
+			foundNonEmptyBucket = true
+			if i == 0 {
+				// if we're in the first bucket, the best estimate we can make for min is the upper bound
+				min = bounds[i]
+			} else {
+				min = bounds[i-1]
 			}
-			maxIdx = y
+		}
+
+		// max estimation
+		if i == len(counts)-1 {
+			// if we're in the last bucket, the best estimate we can make for max is the lower bound
+			max = bounds[i-1]
+		} else {
+			max = bounds[i]
+		}
+
+		// sum estimation
+		switch i {
+		case 0:
+			// in the first bucket, estimate sum using the upper bound
+			sum += float64(counts[i]) * bounds[i]
+		case len(counts) - 1:
+			// in the last bucket, estimate sum using the lower bound
+			sum += float64(counts[i]) * bounds[i-1]
+		default:
+			// in any other bucket, estimate sum using the bucket midpoint
+			sum += float64(counts[i]) * (bounds[i] + bounds[i-1]) / 2
 		}
 	}
 
-	if minIdx == -1 || maxIdx == -1 {
-		return 0, 0
-	}
-
-	var min, max float64
-
+	// Override estimates with any values provided by the data point
 	if dp.HasMin() {
 		min = dp.Min()
-	} else {
-		// Use lower bound for min unless it is the first bucket which has no lower bound, then use upper
-		if minIdx == 0 {
-			min = bounds[minIdx]
-		} else {
-			min = bounds[minIdx-1]
-		}
 	}
-
 	if dp.HasMax() {
 		max = dp.Max()
-	} else {
-		// Use upper bound for max unless it is the last bucket which has no upper bound, then use lower
-		if maxIdx == len(counts)-1 {
-			max = bounds[maxIdx-1]
-		} else {
-			max = bounds[maxIdx]
-		}
+	}
+	if dp.HasSum() {
+		sum = dp.Sum()
 	}
 
 	// Set min to average when higher than average. This can happen when most values are lower than first boundary (falling in first bucket).
 	// Set max to average when lower than average. This can happen when most values are higher than last boundary (falling in last bucket).
-	avg := dp.Sum() / float64(dp.Count())
+	// dp.Count() will never be zero
+	avg := sum / float64(dp.Count())
 	if min > avg {
 		min = avg
 	}
@@ -117,5 +141,29 @@ func estimateHistMinMax(dp pmetric.HistogramDataPoint) (float64, float64) {
 		max = avg
 	}
 
-	return min, max
+	return min, max, sum
+}
+
+func estimateSingleBucketHistogram(dp pmetric.HistogramDataPoint) (float64, float64, float64) {
+	min, max, sum := 0.0, 0.0, 0.0
+
+	if dp.HasSum() {
+		sum = dp.Sum()
+	}
+
+	mean := sum / float64(dp.Count())
+
+	if dp.HasMin() {
+		min = dp.Min()
+	} else {
+		min = mean
+	}
+
+	if dp.HasMax() {
+		max = dp.Max()
+	} else {
+		max = mean
+	}
+
+	return min, max, sum
 }

@@ -17,8 +17,10 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/azure"
@@ -32,8 +34,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
-// UsePreviewHostnameLogic decides whether to use the preview hostname logic or not.
-const UsePreviewHostnameLogic = false
+const (
+	HostnamePreviewFeatureGate      = "exporter.datadog.hostname.preview"
+	defaultHostnameChangeLogMessage = "The default hostname on this host will change on a future minor version. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424"
+	previewHostnameFailedLogMessage = "failed to get preview hostname. Please report this to Datadog."
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(featuregate.Gate{
+		ID:          HostnamePreviewFeatureGate,
+		Description: "When enabled, the Datadog exporter uses the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and sets 'host_metadata::hostname_source: config_or_system' by default.",
+		Enabled:     false,
+	})
+}
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
 	dockerProvider, err := docker.NewProvider()
@@ -101,11 +114,23 @@ func buildCurrentProvider(set component.TelemetrySettings, configHostname string
 }
 
 func GetHostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
-	if UsePreviewHostnameLogic {
-		return buildPreviewProvider(set, configHostname)
+	previewProvider, err := buildPreviewProvider(set, configHostname)
+	if err != nil {
+		return nil, err
+	} else if featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate) {
+		return previewProvider, err
 	}
 
-	return buildCurrentProvider(set, configHostname)
+	currentProvider, err := buildCurrentProvider(set, configHostname)
+	if err != nil {
+		return nil, err
+	}
+
+	return &warnProvider{
+		logger:          set.Logger,
+		curProvider:     currentProvider,
+		previewProvider: previewProvider,
+	}, nil
 }
 
 var _ provider.HostnameProvider = (*currentProvider)(nil)
@@ -152,4 +177,38 @@ func (c *currentProvider) Hostname(ctx context.Context) (string, error) {
 	c.logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
 	cache.Cache.Set(cache.CanonicalHostnameKey, hostname, cache.NoExpiration)
 	return hostname, nil
+}
+
+var _ provider.HostnameProvider = (*warnProvider)(nil)
+
+type warnProvider struct {
+	onceDefaultChanged        sync.Once
+	oncePreviewHostnameFailed sync.Once
+
+	logger          *zap.Logger
+	curProvider     provider.HostnameProvider
+	previewProvider provider.HostnameProvider
+}
+
+func (p *warnProvider) Hostname(ctx context.Context) (string, error) {
+	curHostname, err := p.curProvider.Hostname(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	previewHostname, err := p.previewProvider.Hostname(ctx)
+	if err != nil {
+		p.oncePreviewHostnameFailed.Do(func() {
+			p.logger.Warn(previewHostnameFailedLogMessage, zap.Error(err))
+		})
+	} else if curHostname != previewHostname {
+		p.onceDefaultChanged.Do(func() {
+			p.logger.Warn(defaultHostnameChangeLogMessage,
+				zap.String("current default hostname", curHostname),
+				zap.String("future default hostname", previewHostname),
+			)
+		})
+	}
+
+	return curHostname, nil
 }

@@ -12,11 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+//go:build windows
+// +build windows
+
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
 
 import "context"
 
-type roller interface {
-	roll(context.Context, []*Reader)
-	cleanup()
+type closeImmediately struct{}
+
+func newRoller() roller {
+	return &closeImmediately{}
+}
+
+func (r *closeImmediately) roll(_ context.Context, readers []*Reader) {
+	for _, reader := range readers {
+		reader.Close()
+	}
+}
+
+func (r *closeImmediately) cleanup() {
+	return
 }

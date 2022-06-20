@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
 
 import (
 	"context"

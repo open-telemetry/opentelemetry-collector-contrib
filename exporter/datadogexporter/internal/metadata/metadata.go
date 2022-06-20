@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
@@ -97,7 +98,9 @@ type Meta struct {
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	if hostname, ok := attributes.HostnameFromAttributes(attrs, UsePreviewHostnameLogic); ok {
+	var usePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate)
+
+	if hostname, ok := attributes.HostnameFromAttributes(attrs, usePreviewHostnameLogic); ok {
 		hm.InternalHostname = hostname
 		hm.Meta.Hostname = hostname
 	}
@@ -110,11 +113,11 @@ func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
-		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, UsePreviewHostnameLogic)
+		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
-		azureHostInfo := azure.HostInfoFromAttributes(attrs, UsePreviewHostnameLogic)
+		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
 
