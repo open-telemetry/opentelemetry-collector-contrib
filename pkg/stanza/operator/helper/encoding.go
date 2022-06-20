@@ -15,6 +15,7 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -63,11 +64,11 @@ func (e *Encoding) Decode(msgBuf []byte) (string, error) {
 		if err == nil {
 			return string(decodeBuffer[:nDst]), nil
 		}
-		if err == transform.ErrShortDst {
+		if errors.Is(err, transform.ErrShortDst) {
 			decodeBuffer = make([]byte, len(decodeBuffer)*2)
 			continue
 		}
-		return "", fmt.Errorf("transform encoding: %s", err)
+		return "", fmt.Errorf("transform encoding: %w", err)
 	}
 }
 

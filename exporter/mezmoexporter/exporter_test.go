@@ -17,6 +17,7 @@ package mezmoexporter
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -31,6 +32,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 var buildInfo = component.BuildInfo{
@@ -101,7 +105,7 @@ type testServer struct {
 	url      string
 }
 
-type httpAssertionCallback func(req *http.Request, body MezmoLogBody)
+type httpAssertionCallback func(req *http.Request, body MezmoLogBody) (int, string)
 type testServerParams struct {
 	t                  *testing.T
 	assertionsCallback httpAssertionCallback
@@ -121,9 +125,12 @@ func createHTTPServer(params *testServerParams) testServer {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 		}
 
-		params.assertionsCallback(r, logBody)
+		statusCode, responseBody := params.assertionsCallback(r, logBody)
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(statusCode)
+		if len(responseBody) > 0 {
+			w.Write([]byte(responseBody)) //nolint:errcheck
+		}
 	}))
 
 	serverURL, err := url.Parse(httpServer.URL)
@@ -137,8 +144,8 @@ func createHTTPServer(params *testServerParams) testServer {
 	return server
 }
 
-func createExporter(t *testing.T, config *Config) *mezmoExporter {
-	exporter := newLogsExporter(config, componenttest.NewNopTelemetrySettings(), buildInfo)
+func createExporter(t *testing.T, config *Config, logger *zap.Logger) *mezmoExporter {
+	exporter := newLogsExporter(config, componenttest.NewNopTelemetrySettings(), buildInfo, logger)
 	require.NotNil(t, exporter)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
@@ -147,21 +154,30 @@ func createExporter(t *testing.T, config *Config) *mezmoExporter {
 	return exporter
 }
 
+func createLogger() (*zap.Logger, *observer.ObservedLogs) {
+	core, logObserver := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+
+	return logger, logObserver
+}
+
 func TestLogsExporter(t *testing.T) {
 	httpServerParams := testServerParams{
 		t: t,
-		assertionsCallback: func(req *http.Request, body MezmoLogBody) {
+		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
 			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
 			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
+			return http.StatusOK, ""
 		},
 	}
 	server := createHTTPServer(&httpServerParams)
 	defer server.instance.Close()
 
+	log, _ := createLogger()
 	config := &Config{
 		IngestURL: server.url,
 	}
-	exporter := createExporter(t, config)
+	exporter := createExporter(t, config, log)
 
 	t.Run("Test simple log data", func(t *testing.T) {
 		var logs = createSimpleLogData(3)
@@ -180,4 +196,40 @@ func TestLogsExporter(t *testing.T) {
 		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
+}
+
+func Test404IngestError(t *testing.T) {
+	log, logObserver := createLogger()
+
+	httpServerParams := testServerParams{
+		t: t,
+		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
+			return http.StatusNotFound, `{"foo":"bar"}`
+		},
+	}
+	server := createHTTPServer(&httpServerParams)
+	defer server.instance.Close()
+
+	config := &Config{
+		IngestURL: fmt.Sprintf("%s/foobar", server.url),
+	}
+	exporter := createExporter(t, config, log)
+
+	logs := createSizedPayloadLogData(1)
+	err := exporter.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+
+	assert.Equal(t, logObserver.Len(), 2)
+
+	logLine := logObserver.All()[0]
+	assert.Equal(t, logLine.Message, "got http status (/foobar): 404 Not Found")
+	assert.Equal(t, logLine.Level, zapcore.ErrorLevel)
+
+	logLine = logObserver.All()[1]
+	assert.Equal(t, logLine.Message, "http response")
+	assert.Equal(t, logLine.Level, zapcore.DebugLevel)
+
+	responseField := logLine.Context[0]
+	assert.Equal(t, responseField.Key, "response")
+	assert.Equal(t, responseField.String, `{"foo":"bar"}`)
 }

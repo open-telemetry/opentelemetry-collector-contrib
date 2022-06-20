@@ -109,7 +109,7 @@ func (s *bigipScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	// scrape metrics for pool members
 	poolMembers, err := s.client.GetPoolMembers(ctx, pools)
-	if err == errCollectedNoPoolMembers {
+	if errors.Is(err, errCollectedNoPoolMembers) {
 		scrapeErrors.AddPartial(1, err)
 		s.logger.Warn("Failed to scrape pool member metrics", zap.Error(err))
 	} else {

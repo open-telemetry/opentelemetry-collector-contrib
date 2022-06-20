@@ -17,8 +17,8 @@ in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
   - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
   - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
-- Literals: Strings, ints, and floats can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
-- Function invocations: Functions can be invoked with arguments matching the function's expected arguments
+- Literals: Strings, ints, floats, bools, and nil can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
+- Function invocations: Functions can be invoked with arguments matching the function's expected arguments.  The literal nil cannot be used as a replacement for maps or slices in function calls.
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
 
 Supported functions:
@@ -43,10 +43,10 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 
 Metric only functions:
 - `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
-**NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md#gauge). Use at your own risk.
+**NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#gauge). Use at your own risk.
 
 - `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". 
-**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md#sums). Use at your own risk.
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
@@ -130,6 +130,10 @@ All logs
 2) Replace any attribute value that matches `/user/*/list/*` with `/user/{userId}/list/{listId}`
 3) Set `body` to the `http.route` attribute if it is set
 4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+
+## Contributing
+ <!-- markdown-link-check-disable-next-line -->
+See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

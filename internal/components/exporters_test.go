@@ -338,6 +338,10 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
 		},
 		{
+			exporter:      "googlemanagedprometheus",
+			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
+		},
+		{
 			exporter: "googlecloudpubsub",
 		},
 		{

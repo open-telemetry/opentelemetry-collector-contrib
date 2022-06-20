@@ -1,7 +1,15 @@
 # Filter Processor
 
 - Supported pipeline types: logs, metrics, spans
-- The filter processor can be configured to include or exclude:
+=======
+| Status                   |                   |
+| ------------------------ | ----------------- |
+| Stability                | [alpha]           |
+| Supported pipeline types | metrics, logs, traces  |
+| Distributions            | [core], [contrib] |
+
+The filter processor can be configured to include or exclude:
+
 
 - logs, based on resource attributes using the `strict` or `regexp` match types
 - metrics based on metric name in the case of the `strict` or `regexp` match types,
@@ -241,3 +249,7 @@ processors:
           - Key: container.host
             Value: (localhost|127.0.0.1)
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

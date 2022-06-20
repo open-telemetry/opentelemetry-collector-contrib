@@ -66,7 +66,7 @@ func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
 func NewField(s string) (Field, error) {
 	keys, err := fromJSONDot(s)
 	if err != nil {
-		return Field{}, fmt.Errorf("splitting field: %s", err)
+		return Field{}, fmt.Errorf("splitting field: %w", err)
 	}
 
 	switch keys[0] {
