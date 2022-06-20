@@ -337,7 +337,6 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 				}
 				return err
 			}
-			remainingFailures = cp.resourceSpec.MaxConsecutiveFailures
 
 		case <-cp.doneSignal:
 			log.Printf("Stopping process monitor.")
