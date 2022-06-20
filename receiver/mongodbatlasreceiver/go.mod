@@ -48,7 +48,7 @@ require (
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.3
 	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/multierr v1.8.0
 )
