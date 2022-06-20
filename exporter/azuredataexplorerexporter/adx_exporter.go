@@ -105,8 +105,8 @@ func (amp *adxDataProducer) Close(context.Context) error {
 /*
 Create a metric exporter. The metric exporter instantiates a client , creates the ingester and then sends data through it
 */
-func newExporter(config *Config, logger *zap.Logger, dataType int) (*adxDataProducer, error) {
-	tableName := getTableName(config, dataType)
+func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*adxDataProducer, error) {
+	tablename := getTableName(config, telemetrydatatype)
 	metricclient, err := buildAdxClient(config)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func newExporter(config *Config, logger *zap.Logger, dataType int) (*adxDataProd
 
 	// The exporter could be configured to run in either modes. Using managedstreaming or batched queueing
 	if strings.ToLower(config.IngestionType) == managedingesttype {
-		mi, err := createManagedStreamingIngester(config, metricclient, tableName)
+		mi, err := createManagedStreamingIngester(config, metricclient, tablename)
 		if err != nil {
 			return nil, err
 		}
@@ -127,7 +127,7 @@ func newExporter(config *Config, logger *zap.Logger, dataType int) (*adxDataProd
 		queuedingest = nil
 		err = nil
 	} else {
-		qi, err := createQueuedIngester(config, metricclient, tableName)
+		qi, err := createQueuedIngester(config, metricclient, tablename)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +138,7 @@ func newExporter(config *Config, logger *zap.Logger, dataType int) (*adxDataProd
 	ingestoptions := make([]ingest.FileOption, 2)
 	ingestoptions[0] = ingest.FileFormat(ingest.JSON)
 	// Expect that this mapping is already existent
-	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower(tableName)), ingest.JSON)
+	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower(tablename)), ingest.JSON)
 	return &adxDataProducer{
 		client:        metricclient,
 		managedingest: managedingest,
@@ -177,8 +177,8 @@ func createQueuedIngester(config *Config, adxclient *kusto.Client, tablename str
 	return ingester, err
 }
 
-func getTableName(config *Config, dataType int) string {
-	switch dataType {
+func getTableName(config *Config, telemetrydatatype int) string {
+	switch telemetrydatatype {
 	case MetricsType:
 		return config.RawMetricTable
 	}
