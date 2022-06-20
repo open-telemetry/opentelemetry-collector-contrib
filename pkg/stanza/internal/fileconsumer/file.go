@@ -25,25 +25,25 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-// Input is an operator that monitors files for entries
-type Input struct {
-	helper.InputOperator
+type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 
-	finder                Finder
-	FilePathField         entry.Field
-	FileNameField         entry.Field
-	FilePathResolvedField entry.Field
-	FileNameResolvedField entry.Field
-	PollInterval          time.Duration
-	Splitter              helper.SplitterConfig
-	MaxLogSize            int
-	MaxConcurrentFiles    int
-	SeenPaths             map[string]struct{}
+// TODO rename this struct
+type Input struct {
+	*zap.SugaredLogger
+	finder                  Finder
+	captureFileName         bool
+	captureFilePath         bool
+	captureFileNameResolved bool
+	captureFilePathResolved bool
+	PollInterval            time.Duration
+	Splitter                helper.SplitterConfig
+	MaxLogSize              int
+	MaxConcurrentFiles      int
+	SeenPaths               map[string]struct{}
 
 	persister operator.Persister
 
@@ -56,14 +56,15 @@ type Input struct {
 
 	fingerprintSize int
 
-	encoding helper.Encoding
+	Encoding helper.Encoding // TODO can this be skipped and handled by caller?
 
-	wg         sync.WaitGroup
 	firstCheck bool
+	wg         sync.WaitGroup
 	cancel     context.CancelFunc
+
+	emit EmitFunc
 }
 
-// Start will start the file monitoring process
 func (f *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	f.cancel = cancel
@@ -273,7 +274,7 @@ func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Rea
 	if err != nil {
 		return nil, err
 	}
-	newReader, err := f.NewReader(file.Name(), file, fp, splitter)
+	newReader, err := f.NewReader(file.Name(), file, fp, splitter, f.emit)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +348,7 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		newReader, err := f.NewReader("", nil, nil, splitter)
+		newReader, err := f.NewReader("", nil, nil, splitter, f.emit)
 		if err != nil {
 			return err
 		}
@@ -362,5 +363,5 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 
 // getMultiline returns helper.Splitter structure and error eventually
 func (f *Input) getMultiline() (*helper.Splitter, error) {
-	return f.Splitter.Build(f.encoding.Encoding, false, f.MaxLogSize)
+	return f.Splitter.Build(f.Encoding.Encoding, false, f.MaxLogSize)
 }

@@ -15,14 +15,13 @@
 package fileconsumer
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -33,24 +32,19 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "default",
 			ExpectErr: false,
-			Expect:    defaultCfg(),
+			Expect:    NewConfig(),
 		},
 		{
 
 			Name:      "extra_field",
 			ExpectErr: false,
-			Expect:    defaultCfg(),
-		},
-		{
-			Name:      "id_custom",
-			ExpectErr: false,
-			Expect:    NewConfig("test_id"),
+			Expect:    NewConfig(),
 		},
 		{
 			Name:      "include_one",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				return cfg
 			}(),
@@ -59,7 +53,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_multi",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log", "two.log", "three.log")
 				return cfg
 			}(),
@@ -68,7 +62,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_glob",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				return cfg
 			}(),
@@ -77,7 +71,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_glob_double_asterisk",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "**.log")
 				return cfg
 			}(),
@@ -86,7 +80,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_glob_double_asterisk_nested",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "directory/**/*.log")
 				return cfg
 			}(),
@@ -95,7 +89,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_glob_double_asterisk_prefix",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "**/directory/**/*.log")
 				return cfg
 			}(),
@@ -104,7 +98,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_inline",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "a.log", "b.log")
 				return cfg
 			}(),
@@ -118,7 +112,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "exclude_one",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "one.log")
 				return cfg
@@ -128,7 +122,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "exclude_multi",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "one.log", "two.log", "three.log")
 				return cfg
@@ -138,7 +132,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "exclude_glob",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "not*.log")
 				return cfg
@@ -148,7 +142,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "exclude_glob_double_asterisk",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "not**.log")
 				return cfg
@@ -158,7 +152,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "exclude_glob_double_asterisk_nested",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "directory/**/not*.log")
 				return cfg
@@ -168,7 +162,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "exclude_glob_double_asterisk_prefix",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "**/directory/**/not*.log")
 				return cfg
@@ -178,7 +172,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "exclude_inline",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "a.log", "b.log")
 				return cfg
@@ -193,7 +187,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "poll_interval_no_units",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.PollInterval = helper.NewDuration(time.Second)
 				return cfg
 			}(),
@@ -202,7 +196,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "poll_interval_1s",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.PollInterval = helper.NewDuration(time.Second)
 				return cfg
 			}(),
@@ -211,7 +205,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "poll_interval_1ms",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.PollInterval = helper.NewDuration(time.Millisecond)
 				return cfg
 			}(),
@@ -220,7 +214,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "poll_interval_1000ms",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.PollInterval = helper.NewDuration(time.Second)
 				return cfg
 			}(),
@@ -229,7 +223,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "fingerprint_size_no_units",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.FingerprintSize = helper.ByteSize(1000)
 				return cfg
 			}(),
@@ -238,7 +232,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "fingerprint_size_1kb_lower",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.FingerprintSize = helper.ByteSize(1000)
 				return cfg
 			}(),
@@ -247,7 +241,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "fingerprint_size_1KB",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.FingerprintSize = helper.ByteSize(1000)
 				return cfg
 			}(),
@@ -256,7 +250,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "fingerprint_size_1kib_lower",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.FingerprintSize = helper.ByteSize(1024)
 				return cfg
 			}(),
@@ -265,7 +259,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "fingerprint_size_1KiB",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.FingerprintSize = helper.ByteSize(1024)
 				return cfg
 			}(),
@@ -274,7 +268,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "fingerprint_size_float",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.FingerprintSize = helper.ByteSize(1100)
 				return cfg
 			}(),
@@ -283,7 +277,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_name_lower",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
 				return cfg
@@ -293,7 +287,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_name_upper",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
 				return cfg
@@ -303,7 +297,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_name_on",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
 				return cfg
@@ -313,7 +307,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_name_yes",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
 				return cfg
@@ -323,7 +317,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_path_lower",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
 				return cfg
@@ -333,7 +327,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_path_upper",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
 				return cfg
@@ -343,7 +337,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_path_on",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
 				return cfg
@@ -353,7 +347,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_path_yes",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
 				return cfg
@@ -363,7 +357,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_path_off",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = false
 				return cfg
@@ -373,7 +367,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "include_file_path_no",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = false
 				return cfg
@@ -388,7 +382,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "multiline_line_start_string",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineStartPattern = "Start"
 				cfg.Splitter = newSplit
@@ -399,7 +393,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "multiline_line_start_special",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineStartPattern = "%"
 				cfg.Splitter = newSplit
@@ -410,7 +404,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "multiline_line_end_string",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineEndPattern = "Start"
 				cfg.Splitter = newSplit
@@ -421,7 +415,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "multiline_line_end_special",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineEndPattern = "%"
 				cfg.Splitter = newSplit
@@ -437,7 +431,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "start_at_string",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.StartAt = "beginning"
 				return cfg
 			}(),
@@ -446,7 +440,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "max_concurrent_large",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.MaxConcurrentFiles = 9223372036854775807
 				return cfg
 			}(),
@@ -455,7 +449,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "max_log_size_mib_lower",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
 			}(),
@@ -464,7 +458,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "max_log_size_mib_upper",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
 			}(),
@@ -473,7 +467,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "max_log_size_mb_upper",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
 			}(),
@@ -482,7 +476,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "max_log_size_mb_lower",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
 			}(),
@@ -491,7 +485,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "encoding_lower",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Encoding = helper.EncodingConfig{Encoding: "utf-16le"}
 				return cfg
 			}(),
@@ -500,7 +494,7 @@ func TestUnmarshal(t *testing.T) {
 			Name:      "encoding_upper",
 			ExpectErr: false,
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Encoding = helper.EncodingConfig{Encoding: "UTF-16lE"}
 				return cfg
 			}(),
@@ -509,18 +503,16 @@ func TestUnmarshal(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			tc.Run(t, defaultCfg())
+			tc.Run(t, NewConfig())
 		})
 	}
 }
 
 func TestBuild(t *testing.T) {
 	t.Parallel()
-	fakeOutput := testutil.NewMockOperator("fake")
 
 	basicConfig := func() *Config {
-		cfg := NewConfig("testfile")
-		cfg.OutputIDs = []string{"fake"}
+		cfg := NewConfig()
 		cfg.Include = []string{"/var/log/testpath.*"}
 		cfg.Exclude = []string{"/var/log/testpath.ex*"}
 		cfg.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
@@ -538,10 +530,7 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Input) {
-				require.Equal(t, f.OutputOperators[0], fakeOutput)
 				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
-				require.Equal(t, f.FilePathField, entry.NewNilField())
-				require.Equal(t, f.FileNameField, entry.NewAttributeField("log.file.name"))
 				require.Equal(t, f.PollInterval, 10*time.Millisecond)
 			},
 		},
@@ -655,27 +644,21 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			op, err := cfg.Build(testutil.Logger(t))
+			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
+
+			input, err := cfg.Build(testutil.Logger(t), nopEmit)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
 			}
 
-			err = op.SetOutputs([]operator.Operator{fakeOutput})
-			require.NoError(t, err)
-
-			fileInput := op.(*Input)
-			tc.validate(t, fileInput)
+			tc.validate(t, input)
 		})
 	}
 }
 
-func defaultCfg() *Config {
-	return NewConfig("file_input")
-}
-
 func NewTestConfig() *Config {
-	cfg := NewConfig("config_test")
+	cfg := NewConfig()
 	cfg.Include = []string{"i1", "i2"}
 	cfg.Exclude = []string{"e1", "e2"}
 	cfg.Splitter = helper.NewSplitterConfig()

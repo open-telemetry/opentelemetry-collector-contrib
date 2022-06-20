@@ -23,16 +23,12 @@ import (
 	"path/filepath"
 
 	"go.uber.org/zap"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/transform"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-// File attributes contains information about file paths
-type fileAttributes struct {
+type FileAttributes struct {
 	Name         string
 	Path         string
 	ResolvedName string
@@ -41,7 +37,7 @@ type fileAttributes struct {
 
 // resolveFileAttributes resolves file attributes
 // and sets it to empty string in case of error
-func (f *Input) resolveFileAttributes(path string) *fileAttributes {
+func (f *Input) resolveFileAttributes(path string) *FileAttributes {
 	resolved, err := filepath.EvalSymlinks(path)
 	if err != nil {
 		f.Error(err)
@@ -52,7 +48,7 @@ func (f *Input) resolveFileAttributes(path string) *fileAttributes {
 		f.Error(err)
 	}
 
-	return &fileAttributes{
+	return &FileAttributes{
 		Path:         path,
 		Name:         filepath.Base(path),
 		ResolvedPath: abs,
@@ -68,10 +64,7 @@ type Reader struct {
 	generation     int
 	fileInput      *Input
 	file           *os.File
-	fileAttributes *fileAttributes
-
-	decoder      *encoding.Decoder
-	decodeBuffer []byte
+	fileAttributes *FileAttributes
 
 	splitter *helper.Splitter
 
@@ -79,14 +72,12 @@ type Reader struct {
 }
 
 // NewReader creates a new file reader
-func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
+func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter, emit EmitFunc) (*Reader, error) {
 	r := &Reader{
+		SugaredLogger:  f.SugaredLogger.With("path", path),
 		Fingerprint:    fp,
 		file:           file,
 		fileInput:      f,
-		SugaredLogger:  f.SugaredLogger.With("path", path),
-		decoder:        f.encoding.Encoding.NewDecoder(),
-		decodeBuffer:   make([]byte, 1<<12),
 		fileAttributes: f.resolveFileAttributes(path),
 		splitter:       splitter,
 	}
@@ -95,7 +86,7 @@ func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter 
 
 // Copy creates a deep copy of a Reader
 func (r *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy(), r.splitter)
+	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy(), r.splitter, r.fileInput.emit)
 	if err != nil {
 		return nil, err
 	}
@@ -140,9 +131,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		if err := r.emit(ctx, scanner.Bytes()); err != nil {
-			r.Error("Failed to emit entry", zap.Error(err))
-		}
+		r.fileInput.emit(ctx, r.fileAttributes, scanner.Bytes())
 		r.Offset = scanner.Pos()
 	}
 }
@@ -153,65 +142,6 @@ func (r *Reader) Close() {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
-	}
-}
-
-// Emit creates an entry with the decoded message and sends it to the next
-// operator in the pipeline
-func (r *Reader) emit(ctx context.Context, msgBuf []byte) error {
-	// Skip the entry if it's empty
-	if len(msgBuf) == 0 {
-		return nil
-	}
-	var e *entry.Entry
-	var err error
-	if r.fileInput.encoding.Encoding == encoding.Nop {
-		e, err = r.fileInput.NewEntry(msgBuf)
-		if err != nil {
-			return fmt.Errorf("create entry: %w", err)
-		}
-	} else {
-		msg, err := r.decode(msgBuf)
-		if err != nil {
-			return fmt.Errorf("decode: %w", err)
-		}
-		e, err = r.fileInput.NewEntry(msg)
-		if err != nil {
-			return fmt.Errorf("create entry: %w", err)
-		}
-	}
-
-	if err := e.Set(r.fileInput.FilePathField, r.fileAttributes.Path); err != nil {
-		return err
-	}
-	if err := e.Set(r.fileInput.FileNameField, r.fileAttributes.Name); err != nil {
-		return err
-	}
-
-	if err := e.Set(r.fileInput.FilePathResolvedField, r.fileAttributes.ResolvedPath); err != nil {
-		return err
-	}
-
-	if err := e.Set(r.fileInput.FileNameResolvedField, r.fileAttributes.ResolvedName); err != nil {
-		return err
-	}
-
-	r.fileInput.Write(ctx, e)
-	return nil
-}
-
-// decode converts the bytes in msgBuf to utf-8 from the configured encoding
-func (r *Reader) decode(msgBuf []byte) (string, error) {
-	for {
-		r.decoder.Reset()
-		nDst, _, err := r.decoder.Transform(r.decodeBuffer, msgBuf, true)
-		if errors.Is(err, transform.ErrShortDst) {
-			r.decodeBuffer = make([]byte, len(r.decodeBuffer)*2)
-			continue
-		} else if err != nil {
-			return "", fmt.Errorf("transform encoding: %w", err)
-		}
-		return string(r.decodeBuffer[:nDst]), nil
 	}
 }
 
