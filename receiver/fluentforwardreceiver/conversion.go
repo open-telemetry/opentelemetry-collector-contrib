@@ -17,6 +17,7 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -34,8 +35,9 @@ const tagAttributeKey = "fluent.tag"
 // which describes the fields in much greater detail.
 
 type Event interface {
-	DecodeMsg(dc *msgp.Reader) error
+	DecodeMsg(ctx context.Context, dc *msgp.Reader) error
 	LogRecords() plog.LogRecordSlice
+	Context() context.Context
 	Chunk() string
 	Compressed() string
 }
@@ -201,15 +203,21 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 }
 
 type MessageEventLogRecord struct {
+	ctx context.Context
 	plog.LogRecordSlice
 	OptionsMap
+}
+
+func (melr *MessageEventLogRecord) Context() context.Context {
+	return melr.ctx
 }
 
 func (melr *MessageEventLogRecord) LogRecords() plog.LogRecordSlice {
 	return melr.LogRecordSlice
 }
 
-func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
+func (melr *MessageEventLogRecord) DecodeMsg(ctx context.Context, dc *msgp.Reader) error {
+	melr.ctx = ctx
 	melr.LogRecordSlice = plog.NewLogRecordSlice()
 	log := melr.LogRecordSlice.AppendEmpty()
 
@@ -275,15 +283,21 @@ func parseOptions(dc *msgp.Reader) (OptionsMap, error) {
 }
 
 type ForwardEventLogRecords struct {
+	ctx context.Context
 	plog.LogRecordSlice
 	OptionsMap
+}
+
+func (fe *ForwardEventLogRecords) Context() context.Context {
+	return fe.ctx
 }
 
 func (fe *ForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 	return fe.LogRecordSlice
 }
 
-func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
+func (fe *ForwardEventLogRecords) DecodeMsg(ctx context.Context, dc *msgp.Reader) (err error) {
+	fe.ctx = ctx
 	fe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	var arrLen uint32
@@ -347,8 +361,13 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 }
 
 type PackedForwardEventLogRecords struct {
+	ctx context.Context
 	plog.LogRecordSlice
 	OptionsMap
+}
+
+func (pfe *PackedForwardEventLogRecords) Context() context.Context {
+	return pfe.ctx
 }
 
 func (pfe *PackedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
@@ -357,7 +376,8 @@ func (pfe *PackedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 
 // DecodeMsg implements msgp.Decodable.  This was originally code generated but
 // then manually copied here in order to handle the optional Options field.
-func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
+func (pfe *PackedForwardEventLogRecords) DecodeMsg(ctx context.Context, dc *msgp.Reader) error {
+	pfe.ctx = ctx
 	pfe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()

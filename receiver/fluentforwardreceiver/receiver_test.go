@@ -20,12 +20,15 @@ import (
 	"io"
 	"net"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -33,10 +36,43 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc) {
+type extLogsSink struct {
+	*consumertest.LogsSink
+	mu       sync.Mutex
+	contexts []context.Context
+}
+
+func (e *extLogsSink) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (e *extLogsSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.contexts = append(e.contexts, ctx)
+	return e.LogsSink.ConsumeLogs(ctx, ld)
+}
+
+func (e *extLogsSink) AllContexts() []context.Context {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	copyContexts := make([]context.Context, len(e.contexts))
+	copy(copyContexts, e.contexts)
+	return copyContexts
+}
+
+func newExtLogsSink() *extLogsSink {
+	return &extLogsSink{
+		LogsSink: new(consumertest.LogsSink),
+	}
+}
+
+func setupServer(t *testing.T) (func() net.Conn, *extLogsSink, *observer.ObservedLogs, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	next := new(consumertest.LogsSink)
+	next := newExtLogsSink()
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
@@ -108,9 +144,11 @@ func TestMessageEvent(t *testing.T) {
 	require.NoError(t, conn.Close())
 
 	var converted []plog.Logs
+	var contexts []context.Context
 	require.Eventually(t, func() bool {
 		converted = next.AllLogs()
-		return len(converted) == 1
+		contexts = next.AllContexts()
+		return len(converted) == 1 && len(contexts) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
 	converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
@@ -125,6 +163,11 @@ func TestMessageEvent(t *testing.T) {
 		},
 	},
 	), converted[0])
+
+	// Also check if client context was passed
+	ctx := contexts[0]
+	cl := client.FromContext(ctx)
+	require.True(t, strings.HasPrefix(cl.Addr.String(), "127.0.0.1:"))
 }
 
 func TestForwardEvent(t *testing.T) {

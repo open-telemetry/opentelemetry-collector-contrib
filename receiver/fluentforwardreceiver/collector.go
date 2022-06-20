@@ -19,6 +19,7 @@ import (
 	"context"
 
 	"go.opencensus.io/stats"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -59,8 +60,7 @@ func (c *Collector) processEvents(ctx context.Context) {
 			// efficiency on LogResource allocations.
 			buffered = fillBufferUntilChanEmpty(c.eventCh, buffered)
 
-			logs := collectLogRecords(buffered)
-			c.nextConsumer.ConsumeLogs(ctx, logs)
+			c.collectLogRecords(buffered)
 		}
 	}
 }
@@ -76,13 +76,40 @@ func fillBufferUntilChanEmpty(eventCh <-chan Event, buf []Event) []Event {
 	}
 }
 
-func collectLogRecords(events []Event) plog.Logs {
+func newLogs() (plog.Logs, plog.LogRecordSlice) {
 	out := plog.NewLogs()
 	rls := out.ResourceLogs().AppendEmpty()
 	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
+
+	return out, logSlice
+}
+
+func (c *Collector) collectLogRecords(events []Event) {
+	if len(events) == 0 {
+		return
+	}
+
+	logs, logSlice := newLogs()
+	prevContext := events[0].Context()
+	prevInfo := client.FromContext(events[0].Context())
+
 	for i := range events {
+		curInfo := client.FromContext(events[i].Context())
+		if curInfo.Addr != prevInfo.Addr {
+			c.consumeLogs(prevContext, logs)
+			logs, logSlice = newLogs()
+			prevContext = events[i].Context()
+			prevInfo = curInfo
+		}
 		events[i].LogRecords().MoveAndAppendTo(logSlice)
 	}
-	stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
-	return out
+
+	c.consumeLogs(prevContext, logs)
+}
+
+func (c *Collector) consumeLogs(ctx context.Context, logs plog.Logs) {
+	if logs.LogRecordCount() > 0 {
+		c.nextConsumer.ConsumeLogs(ctx, logs)
+		stats.Record(context.Background(), observ.RecordsGenerated.M(int64(logs.LogRecordCount())))
+	}
 }

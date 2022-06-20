@@ -16,6 +16,7 @@ package fluentforwardreceiver
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
 
@@ -30,7 +31,7 @@ func TestMessageEventConversion(t *testing.T) {
 	reader := msgp.NewReader(bytes.NewReader(eventBytes))
 
 	var event MessageEventLogRecord
-	err := event.DecodeMsg(reader)
+	err := event.DecodeMsg(context.Background(), reader)
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)
@@ -98,7 +99,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 	reader := msgp.NewReader(bytes.NewReader(b))
 
 	var event MessageEventLogRecord
-	err = event.DecodeMsg(reader)
+	err = event.DecodeMsg(context.Background(), reader)
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)
@@ -161,7 +162,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
 			var event MessageEventLogRecord
-			err := event.DecodeMsg(reader)
+			err := event.DecodeMsg(context.Background(), reader)
 			require.NotNil(t, err)
 		})
 	}
@@ -173,7 +174,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 		reader := msgp.NewReader(bytes.NewReader(in))
 
 		var event MessageEventLogRecord
-		err := event.DecodeMsg(reader)
+		err := event.DecodeMsg(context.Background(), reader)
 		require.NotNil(t, err)
 	})
 }
@@ -186,7 +187,7 @@ func TestForwardEventConversionWithErrors(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
 			var event ForwardEventLogRecords
-			err := event.DecodeMsg(reader)
+			err := event.DecodeMsg(context.Background(), reader)
 			require.NotNil(t, err)
 		})
 	}
@@ -200,7 +201,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
 			var event PackedForwardEventLogRecords
-			err := event.DecodeMsg(reader)
+			err := event.DecodeMsg(context.Background(), reader)
 			require.NotNil(t, err)
 		})
 	}
@@ -212,7 +213,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 		reader := msgp.NewReader(bytes.NewReader(in))
 
 		var event PackedForwardEventLogRecords
-		err := event.DecodeMsg(reader)
+		err := event.DecodeMsg(context.Background(), reader)
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "gzip")
 		print(err.Error())
@@ -246,7 +247,7 @@ func TestBodyConversion(t *testing.T) {
 	reader := msgp.NewReader(bytes.NewReader(b))
 
 	var event MessageEventLogRecord
-	err = event.DecodeMsg(reader)
+	err = event.DecodeMsg(context.Background(), reader)
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)

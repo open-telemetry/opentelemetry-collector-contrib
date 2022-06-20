@@ -25,6 +25,7 @@ import (
 
 	"github.com/tinylib/msgp/msgp"
 	"go.opencensus.io/stats"
+	"go.opentelemetry.io/collector/client"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
@@ -75,7 +76,8 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 		go func() {
 			defer stats.Record(ctx, observ.ConnectionsClosed.M(1))
 
-			err := s.handleConn(ctx, conn)
+			cl := client.Info{Addr: conn.RemoteAddr()}
+			err := s.handleConn(client.NewContext(ctx, cl), conn)
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					s.logger.Debug("Closing connection", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Error(err))
@@ -111,7 +113,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 			panic("programmer bug in mode handling")
 		}
 
-		err = event.DecodeMsg(reader)
+		err = event.DecodeMsg(ctx, reader)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				stats.Record(ctx, observ.FailedToParse.M(1))
