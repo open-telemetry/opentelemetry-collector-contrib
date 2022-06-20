@@ -9,6 +9,8 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
+    paths-ignore:
+      - '**/README.md'
 jobs:
   changelog:
     runs-on: ubuntu-latest
