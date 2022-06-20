@@ -423,8 +423,7 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
-			//todo sort resource metrics
-			name: "ignore-one-resource-attribute-unordered",
+			name: "sort-unordered-resource-metrics",
 			compareOptions: []CompareOption{
 				IgnoreResourceAttributeValue("node_id"),
 			},
@@ -443,7 +442,6 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
-			//sort MetricSlice
 			name: "sort-unordered-metric-slice",
 			withoutOptions: expectation{
 				err:    nil,

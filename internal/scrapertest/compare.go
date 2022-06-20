@@ -99,9 +99,6 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 			ailms.Len())
 	}
 
-	eilms.Sort(sortInstrumentationLibrary)
-	ailms.Sort(sortInstrumentationLibrary)
-
 	for i := 0; i < eilms.Len(); i++ {
 		eilm, ailm := eilms.At(i), ailms.At(i)
 		eil, ail := eilm.Scope(), ailm.Scope()
