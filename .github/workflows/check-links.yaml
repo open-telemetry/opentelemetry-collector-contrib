@@ -32,7 +32,8 @@ jobs:
 
       - name: Install markdown-link-check
         run: npm install -g markdown-link-check
-
+      - name: Print version of markdown-link-check
+        run: markdown-link-check --version
       - name: Run markdown-link-check
         run: |
           markdown-link-check \
