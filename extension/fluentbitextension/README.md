@@ -3,7 +3,6 @@
 | Status                   |                   |
 | ------------------------ |-------------------|
 | Stability                | [deprecated]      |
-| Supported pipeline types | n/a               |
 | Distributions            | [contrib]         |
 
 This extension has been deprecated due to security concerns around the ability to specify the execution of
