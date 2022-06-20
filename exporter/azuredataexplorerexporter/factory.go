@@ -29,6 +29,7 @@ const (
 	managedingesttype = "managed"
 	queuedingesttest  = "queued"
 	unknown           = "unknown"
+	MetricsType       = 1
 )
 
 // Creates a factory for the ADX Exporter

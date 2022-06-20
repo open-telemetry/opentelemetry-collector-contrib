@@ -38,10 +38,6 @@ type adxDataProducer struct {
 	logger        *zap.Logger         // Loggers for tracing the flow
 }
 
-const (
-	MetricsType = 1
-)
-
 var nextline = []byte("\n")
 
 // given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
@@ -74,7 +70,7 @@ func (e *adxDataProducer) ingestData(b []byte) error {
 
 	ingestreader := bytes.NewReader(b)
 
-	// Either of the ingestion pilicy will be present according to the configuration provided, other will be nill
+	// Either of the ingestion pilicy will be present according to the configuration provided, other will be nil
 	if e.managedingest != nil {
 		if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
 			e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
