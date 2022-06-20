@@ -61,7 +61,7 @@ func (p *Provider) OnECSFargate(ctx context.Context) (bool, error) {
 // Source returns the task ARN of the ECS Fargate task if on ECS Fargate.
 func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	if onECSFargate, err := p.OnECSFargate(ctx); !onECSFargate && err == nil {
-		// Empty hostname for ECS Fargate tasks
+		// Not on ECS Fargate
 		return source.Source{}, ErrNotOnECSFargate
 	} else if err != nil {
 		// Failed to determine if on ECS Fargate

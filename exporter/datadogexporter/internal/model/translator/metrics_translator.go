@@ -419,7 +419,7 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 		case source.HostnameKind:
 			host = src.Identifier
 			if c, ok := consumer.(HostConsumer); ok {
-				c.ConsumeHost(src.Identifier)
+				c.ConsumeHost(host)
 			}
 		case source.AWSECSFargateKind:
 			if c, ok := consumer.(TagsConsumer); ok {
