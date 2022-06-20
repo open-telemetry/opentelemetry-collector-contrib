@@ -24,6 +24,9 @@ import httpretty
 
 import opentelemetry.instrumentation.urllib  # pylint: disable=no-name-in-module,import-error
 from opentelemetry import context, trace
+
+# FIXME: fix the importing of this private attribute when the location of the _SUPPRESS_HTTP_INSTRUMENTATION_KEY is defined.
+from opentelemetry.context import _SUPPRESS_HTTP_INSTRUMENTATION_KEY
 from opentelemetry.instrumentation.urllib import (  # pylint: disable=no-name-in-module,import-error
     URLLibInstrumentor,
 )
@@ -179,6 +182,18 @@ class RequestsIntegrationTestBase(abc.ABC):
     def test_suppress_instrumentation(self):
         token = context.attach(
             context.set_value(_SUPPRESS_INSTRUMENTATION_KEY, True)
+        )
+        try:
+            result = self.perform_request(self.URL)
+            self.assertEqual(result.read(), b"Hello!")
+        finally:
+            context.detach(token)
+
+        self.assert_span(num_spans=0)
+
+    def test_suppress_http_instrumentation(self):
+        token = context.attach(
+            context.set_value(_SUPPRESS_HTTP_INSTRUMENTATION_KEY, True)
         )
         try:
             result = self.perform_request(self.URL)

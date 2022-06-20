@@ -57,6 +57,9 @@ from requests.sessions import Session
 from requests.structures import CaseInsensitiveDict
 
 from opentelemetry import context
+
+# FIXME: fix the importing of this private attribute when the location of the _SUPPRESS_HTTP_INSTRUMENTATION_KEY is defined.
+from opentelemetry.context import _SUPPRESS_HTTP_INSTRUMENTATION_KEY
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.requests.package import _instruments
 from opentelemetry.instrumentation.requests.version import __version__
@@ -74,12 +77,6 @@ from opentelemetry.util.http import (
     remove_url_credentials,
 )
 from opentelemetry.util.http.httplib import set_ip_on_next_http_connection
-
-# A key to a context variable to avoid creating duplicate spans when instrumenting
-# both, Session.request and Session.send, since Session.request calls into Session.send
-_SUPPRESS_HTTP_INSTRUMENTATION_KEY = context.create_key(
-    "suppress_http_instrumentation"
-)
 
 _excluded_urls_from_env = get_excluded_urls("REQUESTS")
 

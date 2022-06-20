@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-grpc` narrow protobuf dependency to exclude protobuf >= 4
   ([#1109](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1109))
 - cleanup type hints for textmap `Getter` and `Setter` classes
-  ([#1106](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1106))
+- Suppressing downstream HTTP instrumentation to avoid [extra spans](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/930)
+  ([#1116](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1116))
 - fixed typo in `system.network.io` metric configuration
   ([#1135](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1135))
 

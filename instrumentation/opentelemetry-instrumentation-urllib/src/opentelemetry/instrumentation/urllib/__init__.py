@@ -75,6 +75,9 @@ from urllib.request import (  # pylint: disable=no-name-in-module,import-error
 )
 
 from opentelemetry import context
+
+# FIXME: fix the importing of this private attribute when the location of the _SUPPRESS_HTTP_INSTRUMENTATION_KEY is defined.
+from opentelemetry.context import _SUPPRESS_HTTP_INSTRUMENTATION_KEY
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.urllib.package import _instruments
 from opentelemetry.instrumentation.urllib.version import __version__
@@ -87,12 +90,6 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Span, SpanKind, get_tracer
 from opentelemetry.trace.status import Status
 from opentelemetry.util.http import remove_url_credentials
-
-# A key to a context variable to avoid creating duplicate spans when instrumenting
-# both, Session.request and Session.send, since Session.request calls into Session.send
-_SUPPRESS_HTTP_INSTRUMENTATION_KEY = context.create_key(
-    "suppress_http_instrumentation"
-)
 
 _RequestHookT = typing.Optional[typing.Callable[[Span, Request], None]]
 _ResponseHookT = typing.Optional[

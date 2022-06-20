@@ -87,6 +87,9 @@ from botocore.exceptions import ClientError
 from wrapt import wrap_function_wrapper
 
 from opentelemetry import context as context_api
+
+# FIXME: fix the importing of this private attribute when the location of the _SUPPRESS_HTTP_INSTRUMENTATION_KEY is defined.
+from opentelemetry.context import _SUPPRESS_HTTP_INSTRUMENTATION_KEY
 from opentelemetry.instrumentation.botocore.extensions import _find_extension
 from opentelemetry.instrumentation.botocore.extensions.types import (
     _AwsSdkCallContext,
@@ -104,13 +107,6 @@ from opentelemetry.trace import get_tracer
 from opentelemetry.trace.span import Span
 
 logger = logging.getLogger(__name__)
-
-# A key to a context variable to avoid creating duplicate spans when instrumenting
-# both botocore.client and urllib3.connectionpool.HTTPConnectionPool.urlopen since
-# botocore calls urlopen
-_SUPPRESS_HTTP_INSTRUMENTATION_KEY = context_api.create_key(
-    "suppress_http_instrumentation"
-)
 
 
 # pylint: disable=unused-argument

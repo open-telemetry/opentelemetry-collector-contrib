@@ -22,6 +22,9 @@ from requests.models import Response
 
 import opentelemetry.instrumentation.requests
 from opentelemetry import context, trace
+
+# FIXME: fix the importing of this private attribute when the location of the _SUPPRESS_HTTP_INSTRUMENTATION_KEY is defined.
+from opentelemetry.context import _SUPPRESS_HTTP_INSTRUMENTATION_KEY
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.utils import _SUPPRESS_INSTRUMENTATION_KEY
 from opentelemetry.propagate import get_global_textmap, set_global_textmap
@@ -237,6 +240,18 @@ class RequestsIntegrationTestBase(abc.ABC):
     def test_suppress_instrumentation(self):
         token = context.attach(
             context.set_value(_SUPPRESS_INSTRUMENTATION_KEY, True)
+        )
+        try:
+            result = self.perform_request(self.URL)
+            self.assertEqual(result.text, "Hello!")
+        finally:
+            context.detach(token)
+
+        self.assert_span(num_spans=0)
+
+    def test_suppress_http_instrumentation(self):
+        token = context.attach(
+            context.set_value(_SUPPRESS_HTTP_INSTRUMENTATION_KEY, True)
         )
         try:
             result = self.perform_request(self.URL)
