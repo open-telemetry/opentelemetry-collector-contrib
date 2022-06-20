@@ -6,7 +6,9 @@
 | Supported pipeline types | metrics  |
 | Distributions            | [contrib] |
 
-Riak metrics will be collected from the [/stats](https://docs.riak.com/riak/kv/2.2.3/developing/api/http/status.1.html) endpoint.
+
+<!-- markdown-link-check-disable --><!-- Failing due to "unable to verify the first certificate" -->
+Riak metrics will be collected from the [/stats](https://docs.riak.com/riak/kv/2.2.3/developing/api/http/status) endpoint.
 
 This Riak receiver will collect metrics for [3.x+](https://github.com/basho/riak/releases)
 
