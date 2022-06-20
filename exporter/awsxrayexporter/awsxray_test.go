@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package awsxrayexporter
 
 import (
@@ -81,7 +80,8 @@ func BenchmarkForTracesExporter(b *testing.B) {
 		ctx := context.Background()
 		td := constructSpanData()
 		b.StartTimer()
-		traceExporter.ConsumeTraces(ctx, td)
+		err := traceExporter.ConsumeTraces(ctx, td)
+		assert.Error(b, err)
 	}
 }
 

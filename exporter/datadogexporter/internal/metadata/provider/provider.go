@@ -79,7 +79,7 @@ func Config(hostname string) source.Provider {
 var _ source.Provider = (*onceProvider)(nil)
 
 type onceProvider struct {
-	once     *sync.Once
+	once     sync.Once
 	src      source.Source
 	err      error
 	provider source.Provider
