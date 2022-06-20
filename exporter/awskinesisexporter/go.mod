@@ -14,7 +14,7 @@ require (
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
-	github.com/jaegertracing/jaeger v1.35.1
+	github.com/jaegertracing/jaeger v1.35.2
 	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/multierr v1.8.0
 )
