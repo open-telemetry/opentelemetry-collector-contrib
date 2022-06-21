@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
 
 ## v0.54.0
 
