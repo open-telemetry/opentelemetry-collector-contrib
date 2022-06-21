@@ -39,7 +39,6 @@
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
 - `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
 
-
 ### 🧰 Bug fixes 🧰
 
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
