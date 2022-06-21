@@ -26,7 +26,6 @@ from opentelemetry.instrumentation.propagators import (
 from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.util.http import get_excluded_urls
 
@@ -50,7 +49,7 @@ def expected_attributes(override_attributes):
     return default_attributes
 
 
-class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
+class TestProgrammatic(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
 
@@ -252,7 +251,7 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(len(span_list), 1)
 
 
-class TestProgrammaticHooks(InstrumentationTest, TestBase, WsgiTestBase):
+class TestProgrammaticHooks(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
 
@@ -300,9 +299,7 @@ class TestProgrammaticHooks(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(resp.headers["hook_attr"], "hello otel")
 
 
-class TestProgrammaticHooksWithoutApp(
-    InstrumentationTest, TestBase, WsgiTestBase
-):
+class TestProgrammaticHooksWithoutApp(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
 
@@ -350,9 +347,7 @@ class TestProgrammaticHooksWithoutApp(
         self.assertEqual(resp.headers["hook_attr"], "hello otel without app")
 
 
-class TestProgrammaticCustomTracerProvider(
-    InstrumentationTest, TestBase, WsgiTestBase
-):
+class TestProgrammaticCustomTracerProvider(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
         resource = Resource.create({"service.name": "flask-api"})
@@ -383,7 +378,7 @@ class TestProgrammaticCustomTracerProvider(
 
 
 class TestProgrammaticCustomTracerProviderWithoutApp(
-    InstrumentationTest, TestBase, WsgiTestBase
+    InstrumentationTest, WsgiTestBase
 ):
     def setUp(self):
         super().setUp()
@@ -417,7 +412,7 @@ class TestProgrammaticCustomTracerProviderWithoutApp(
 
 
 class TestProgrammaticWrappedWithOtherFramework(
-    InstrumentationTest, TestBase, WsgiTestBase
+    InstrumentationTest, WsgiTestBase
 ):
     def setUp(self):
         super().setUp()
@@ -444,9 +439,7 @@ class TestProgrammaticWrappedWithOtherFramework(
         )
 
 
-class TestCustomRequestResponseHeaders(
-    InstrumentationTest, TestBase, WsgiTestBase
-):
+class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
 

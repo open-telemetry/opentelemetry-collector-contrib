@@ -17,14 +17,13 @@ from werkzeug.test import Client
 from werkzeug.wrappers import Response
 
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 
 # pylint: disable=import-error
 from .base_test import InstrumentationTest
 
 
-class TestAutomatic(InstrumentationTest, TestBase, WsgiTestBase):
+class TestAutomatic(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
 

@@ -35,7 +35,6 @@ from opentelemetry.sdk import resources
 from opentelemetry.sdk.trace import Span
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import (
     SpanKind,
@@ -84,7 +83,7 @@ urlpatterns = [
 _django_instrumentor = DjangoInstrumentor()
 
 
-class TestMiddleware(TestBase, WsgiTestBase):
+class TestMiddleware(WsgiTestBase):
     @classmethod
     def setUpClass(cls):
         conf.settings.configure(ROOT_URLCONF=modules[__name__])
@@ -402,7 +401,7 @@ class TestMiddleware(TestBase, WsgiTestBase):
         self.memory_exporter.clear()
 
 
-class TestMiddlewareWithTracerProvider(TestBase, WsgiTestBase):
+class TestMiddlewareWithTracerProvider(WsgiTestBase):
     @classmethod
     def setUpClass(cls):
         conf.settings.configure(ROOT_URLCONF=modules[__name__])
@@ -460,7 +459,7 @@ class TestMiddlewareWithTracerProvider(TestBase, WsgiTestBase):
             )
 
 
-class TestMiddlewareWsgiWithCustomHeaders(TestBase, WsgiTestBase):
+class TestMiddlewareWsgiWithCustomHeaders(WsgiTestBase):
     @classmethod
     def setUpClass(cls):
         conf.settings.configure(ROOT_URLCONF=modules[__name__])

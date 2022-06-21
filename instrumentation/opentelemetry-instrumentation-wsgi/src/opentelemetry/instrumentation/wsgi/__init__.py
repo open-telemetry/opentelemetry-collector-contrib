@@ -158,6 +158,7 @@ API
 import functools
 import typing
 import wsgiref.util as wsgiref_util
+from timeit import default_timer
 
 from opentelemetry import context, trace
 from opentelemetry.instrumentation.utils import (
@@ -165,6 +166,7 @@ from opentelemetry.instrumentation.utils import (
     http_status_to_status_code,
 )
 from opentelemetry.instrumentation.wsgi.version import __version__
+from opentelemetry.metrics import get_meter
 from opentelemetry.propagators.textmap import Getter
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
@@ -180,6 +182,26 @@ from opentelemetry.util.http import (
 _HTTP_VERSION_PREFIX = "HTTP/"
 _CARRIER_KEY_PREFIX = "HTTP_"
 _CARRIER_KEY_PREFIX_LEN = len(_CARRIER_KEY_PREFIX)
+
+# List of recommended attributes
+_duration_attrs = [
+    SpanAttributes.HTTP_METHOD,
+    SpanAttributes.HTTP_HOST,
+    SpanAttributes.HTTP_SCHEME,
+    SpanAttributes.HTTP_STATUS_CODE,
+    SpanAttributes.HTTP_FLAVOR,
+    SpanAttributes.HTTP_SERVER_NAME,
+    SpanAttributes.NET_HOST_NAME,
+    SpanAttributes.NET_HOST_PORT,
+]
+
+_active_requests_count_attrs = [
+    SpanAttributes.HTTP_METHOD,
+    SpanAttributes.HTTP_HOST,
+    SpanAttributes.HTTP_SCHEME,
+    SpanAttributes.HTTP_FLAVOR,
+    SpanAttributes.HTTP_SERVER_NAME,
+]
 
 
 class WSGIGetter(Getter[dict]):
@@ -304,6 +326,14 @@ def collect_custom_response_headers_attributes(response_headers):
     return attributes
 
 
+def _parse_status_code(resp_status):
+    status_code, _ = resp_status.split(" ", 1)
+    try:
+        return int(status_code)
+    except ValueError:
+        return None
+
+
 def add_response_attributes(
     span, start_response_status, response_headers
 ):  # pylint: disable=unused-argument
@@ -352,18 +382,39 @@ class OpenTelemetryMiddleware:
     """
 
     def __init__(
-        self, wsgi, request_hook=None, response_hook=None, tracer_provider=None
+        self,
+        wsgi,
+        request_hook=None,
+        response_hook=None,
+        tracer_provider=None,
+        meter_provider=None,
     ):
         self.wsgi = wsgi
         self.tracer = trace.get_tracer(__name__, __version__, tracer_provider)
+        self.meter = get_meter(__name__, __version__, meter_provider)
+        self.duration_histogram = self.meter.create_histogram(
+            name="http.server.duration",
+            unit="ms",
+            description="measures the duration of the inbound HTTP request",
+        )
+        self.active_requests_counter = self.meter.create_up_down_counter(
+            name="http.server.active_requests",
+            unit="requests",
+            description="measures the number of concurrent HTTP requests that are currently in-flight",
+        )
         self.request_hook = request_hook
         self.response_hook = response_hook
 
     @staticmethod
-    def _create_start_response(span, start_response, response_hook):
+    def _create_start_response(
+        span, start_response, response_hook, duration_attrs
+    ):
         @functools.wraps(start_response)
         def _start_response(status, response_headers, *args, **kwargs):
             add_response_attributes(span, status, response_headers)
+            status_code = _parse_status_code(status)
+            if status_code is not None:
+                duration_attrs[SpanAttributes.HTTP_STATUS_CODE] = status_code
             if span.is_recording() and span.kind == trace.SpanKind.SERVER:
                 custom_attributes = collect_custom_response_headers_attributes(
                     response_headers
@@ -376,6 +427,7 @@ class OpenTelemetryMiddleware:
 
         return _start_response
 
+    # pylint: disable=too-many-branches
     def __call__(self, environ, start_response):
         """The WSGI application
 
@@ -383,13 +435,24 @@ class OpenTelemetryMiddleware:
             environ: A WSGI environment.
             start_response: The WSGI start_response callable.
         """
+        req_attrs = collect_request_attributes(environ)
+        active_requests_count_attrs = {}
+        for attr_key in _active_requests_count_attrs:
+            if req_attrs.get(attr_key) is not None:
+                active_requests_count_attrs[attr_key] = req_attrs[attr_key]
+
+        duration_attrs = {}
+        for attr_key in _duration_attrs:
+            if req_attrs.get(attr_key) is not None:
+                duration_attrs[attr_key] = req_attrs[attr_key]
+
         span, token = _start_internal_or_server_span(
             tracer=self.tracer,
             span_name=get_default_span_name(environ),
             start_time=None,
             context_carrier=environ,
             context_getter=wsgi_getter,
-            attributes=collect_request_attributes(environ),
+            attributes=req_attrs,
         )
         if span.is_recording() and span.kind == trace.SpanKind.SERVER:
             custom_attributes = collect_custom_request_headers_attributes(
@@ -405,15 +468,15 @@ class OpenTelemetryMiddleware:
         if response_hook:
             response_hook = functools.partial(response_hook, span, environ)
 
+        start = default_timer()
+        self.active_requests_counter.add(1, active_requests_count_attrs)
         try:
             with trace.use_span(span):
                 start_response = self._create_start_response(
-                    span, start_response, response_hook
+                    span, start_response, response_hook, duration_attrs
                 )
                 iterable = self.wsgi(environ, start_response)
-                return _end_span_after_iterating(
-                    iterable, span, self.tracer, token
-                )
+                return _end_span_after_iterating(iterable, span, token)
         except Exception as ex:
             if span.is_recording():
                 span.set_status(Status(StatusCode.ERROR, str(ex)))
@@ -421,12 +484,16 @@ class OpenTelemetryMiddleware:
             if token is not None:
                 context.detach(token)
             raise
+        finally:
+            duration = max(round((default_timer() - start) * 1000), 0)
+            self.duration_histogram.record(duration, duration_attrs)
+            self.active_requests_counter.add(-1, active_requests_count_attrs)
 
 
 # Put this in a subfunction to not delay the call to the wrapped
 # WSGI application (instrumentation should change the application
 # behavior as little as possible).
-def _end_span_after_iterating(iterable, span, tracer, token):
+def _end_span_after_iterating(iterable, span, token):
     try:
         with trace.use_span(span):
             yield from iterable

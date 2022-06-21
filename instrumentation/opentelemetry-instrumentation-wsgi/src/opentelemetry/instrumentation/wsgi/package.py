@@ -14,3 +14,5 @@
 
 
 _instruments = tuple()
+
+_supports_metrics = True

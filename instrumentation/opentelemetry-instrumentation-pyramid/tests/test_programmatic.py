@@ -24,7 +24,6 @@ from opentelemetry.instrumentation.propagators import (
 )
 from opentelemetry.instrumentation.pyramid import PyramidInstrumentor
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.util.http import get_excluded_urls
 
@@ -48,7 +47,7 @@ def expected_attributes(override_attributes):
     return default_attributes
 
 
-class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
+class TestProgrammatic(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
         config = Configurator()

@@ -19,7 +19,6 @@ from pyramid.config import Configurator
 from opentelemetry import trace
 from opentelemetry.instrumentation.pyramid import PyramidInstrumentor
 from opentelemetry.test.globals_test import reset_trace_globals
-from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import SpanKind
 from opentelemetry.trace.status import StatusCode
@@ -32,7 +31,7 @@ from opentelemetry.util.http import (
 from .pyramid_base_test import InstrumentationTest
 
 
-class TestAutomatic(InstrumentationTest, TestBase, WsgiTestBase):
+class TestAutomatic(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
 
@@ -158,9 +157,7 @@ class TestAutomatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(len(span_list), 1)
 
 
-class TestWrappedWithOtherFramework(
-    InstrumentationTest, TestBase, WsgiTestBase
-):
+class TestWrappedWithOtherFramework(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
         PyramidInstrumentor().instrument()
@@ -189,9 +186,7 @@ class TestWrappedWithOtherFramework(
             )
 
 
-class TestCustomRequestResponseHeaders(
-    InstrumentationTest, TestBase, WsgiTestBase
-):
+class TestCustomRequestResponseHeaders(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
         PyramidInstrumentor().instrument()
@@ -296,9 +291,7 @@ class TestCustomRequestResponseHeaders(
                 self.assertNotIn(key, span.attributes)
 
 
-class TestCustomHeadersNonRecordingSpan(
-    InstrumentationTest, TestBase, WsgiTestBase
-):
+class TestCustomHeadersNonRecordingSpan(InstrumentationTest, WsgiTestBase):
     def setUp(self):
         super().setUp()
         # This is done because set_tracer_provider cannot override the
