@@ -45,7 +45,6 @@ type AdxMetric struct {
 	//Additional properties
 	Host               string                 // the hostname for analysis of the metric. Extracted from https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/
 	ResourceAttributes map[string]interface{} // The originating Resource attributes. Refer https://opentelemetry.io/docs/reference/specification/resource/sdk/
-	Scope              map[string]interface{} // The instrumentation Scope (e.g., instrumentation library name, version)
 }
 
 /*
