@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
@@ -192,24 +193,11 @@ func (mtp *metricsTransformProcessor) computeDistVals(val1 *metricspb.Distributi
 				},
 			},
 		},
-		Count:                 val1.Count + val2.Count,
-		Sum:                   val1.Sum + val2.Sum,
-		Buckets:               buckets,
-		SumOfSquaredDeviation: mtp.computeSumOfSquaredDeviation(val1, val2),
+		Count:   val1.Count + val2.Count,
+		Sum:     val1.Sum + val2.Sum,
+		Buckets: buckets,
 	}
 	return newDistVal
-}
-
-// computeSumOfSquaredDeviation computes the combined SumOfSquaredDeviation from the two points
-// Formula derived from https://math.stackexchange.com/questions/2971315/how-do-i-combine-standard-deviations-of-two-groups
-// SSDcomb = SSD1 + n(ave(x) - ave(z))^2 + SSD2 +n(ave(y) - ave(z))^2
-func (mtp *metricsTransformProcessor) computeSumOfSquaredDeviation(val1 *metricspb.DistributionValue, val2 *metricspb.DistributionValue) float64 {
-	mean1 := val1.Sum / float64(val1.Count)
-	mean2 := val2.Sum / float64(val2.Count)
-	meanCombined := (val1.Sum + val2.Sum) / float64(val1.Count+val2.Count)
-	squaredMeanDiff1 := math.Pow(mean1-meanCombined, 2)
-	squaredMeanDiff2 := math.Pow(mean2-meanCombined, 2)
-	return val1.SumOfSquaredDeviation + (float64(val1.Count) * squaredMeanDiff1) + val2.SumOfSquaredDeviation + (float64(val2.Count) * squaredMeanDiff2)
 }
 
 // pickExemplar picks an exemplar from 2 randomly with each haing a 50% chance of getting picked

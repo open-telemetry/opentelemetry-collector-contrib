@@ -8,8 +8,6 @@
 
 Sends pipeline data to Parquet files.
 
-> :construction: This receiver is in beta and configuration fields are subject to change.
-
 ## Configuration
 
 The following configuration options are required:

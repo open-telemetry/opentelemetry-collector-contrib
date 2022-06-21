@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
+// nolint:errcheck,gocritic
 package cwlogs
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -39,7 +37,7 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	current := time.Now().UnixNano() / 1e6
 	collection := map[string]interface{}{}
 
-	emfPusher, _ := newMockPusherWithEventCheck(func(msg string) {
+	emfPusher := newMockPusherWithEventCheck(func(msg string) {
 		if _, ok := collection[msg]; ok {
 			t.Errorf("Sending duplicated event message %s", msg)
 		} else {
@@ -65,9 +63,7 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	maxEventPayloadBytes = defaultMaxEventPayloadBytes
 }
 
-func newMockPusherWithEventCheck(check func(msg string)) (Pusher, string) {
-	logger := zap.NewNop()
-	tmpfolder, _ := ioutil.TempDir("", "")
+func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {
 		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
 		for _, event := range input.LogEvents {
@@ -75,8 +71,8 @@ func newMockPusherWithEventCheck(check func(msg string)) (Pusher, string) {
 			check(eventMsg)
 		}
 	})
-	p := newLogPusher(&logGroup, &logStreamName, *svc, logger)
-	return p, tmpfolder
+	p := newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
+	return p
 }
 
 //
@@ -91,10 +87,9 @@ func TestLogEvent_eventPayloadBytes(t *testing.T) {
 func TestValidateLogEventWithMutating(t *testing.T) {
 	maxEventPayloadBytes = 64
 
-	logger := zap.NewNop()
 	logEvent := NewEvent(0, "abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
 	logEvent.GeneratedTime = time.Now()
-	err := logEvent.Validate(logger)
+	err := logEvent.Validate(zap.NewNop())
 	assert.Nil(t, err)
 	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
 	assert.Equal(t, 64-perEventHeaderBytes, len(*logEvent.InputLogEvent.Message))
@@ -175,12 +170,9 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 //
 
 // Need to remove the tmp state folder after testing.
-func newMockPusher() (*logPusher, string) {
-	logger := zap.NewNop()
-	tmpfolder, _ := ioutil.TempDir("", "")
+func newMockPusher() *logPusher {
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
-	p := newLogPusher(&logGroup, &logStreamName, *svc, logger)
-	return p, tmpfolder
+	return newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
 }
 
 //
@@ -191,8 +183,7 @@ var timestampMs = time.Now().UnixNano() / 1e6
 var msg = "test log message"
 
 func TestPusher_newLogEventBatch(t *testing.T) {
-	p, tmpFolder := newMockPusher()
-	defer os.RemoveAll(tmpFolder)
+	p := newMockPusher()
 
 	logEventBatch := newEventBatch(p.logGroupName, p.logStreamName)
 	assert.Equal(t, int64(0), logEventBatch.maxTimestampMs)
@@ -205,8 +196,7 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 }
 
 func TestPusher_addLogEventBatch(t *testing.T) {
-	p, tmpFolder := newMockPusher()
-	defer os.RemoveAll(tmpFolder)
+	p := newMockPusher()
 
 	cap := cap(p.logEventBatch.putLogEventsInput.LogEvents)
 	logEvent := NewEvent(timestampMs, msg)
@@ -242,8 +232,7 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 }
 
 func TestAddLogEventWithValidation(t *testing.T) {
-	p, tmpFolder := newMockPusher()
-	defer os.RemoveAll(tmpFolder)
+	p := newMockPusher()
 	largeEventContent := strings.Repeat("a", defaultMaxEventPayloadBytes)
 
 	logEvent := NewEvent(timestampMs, largeEventContent)

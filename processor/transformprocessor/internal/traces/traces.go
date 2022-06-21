@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -58,7 +58,10 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 }
 
 func ParsePath(val *common.Path) (common.GetSetter, error) {
-	return newPathGetSetter(val.Fields)
+	if val != nil && len(val.Fields) > 0 {
+		return newPathGetSetter(val.Fields)
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }
 
 func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
@@ -218,11 +221,8 @@ func accessTraceID() pathGetSetter {
 			return ctx.GetItem().(ptrace.Span).TraceID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [16]byte
-				copy(idArr[:16], id)
-				ctx.GetItem().(ptrace.Span).SetTraceID(pcommon.NewTraceID(idArr))
+			if newTraceID, ok := val.(pcommon.TraceID); ok {
+				ctx.GetItem().(ptrace.Span).SetTraceID(newTraceID)
 			}
 		},
 	}
@@ -234,11 +234,8 @@ func accessSpanID() pathGetSetter {
 			return ctx.GetItem().(ptrace.Span).SpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [8]byte
-				copy(idArr[:8], id)
-				ctx.GetItem().(ptrace.Span).SetSpanID(pcommon.NewSpanID(idArr))
+			if newSpanID, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanID)
 			}
 		},
 	}
@@ -247,7 +244,7 @@ func accessSpanID() pathGetSetter {
 func accessTraceState() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceState()
+			return (string)(ctx.GetItem().(ptrace.Span).TraceState())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
@@ -263,11 +260,8 @@ func accessParentSpanID() pathGetSetter {
 			return ctx.GetItem().(ptrace.Span).ParentSpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [8]byte
-				copy(idArr[:8], id)
-				ctx.GetItem().(ptrace.Span).SetParentSpanID(pcommon.NewSpanID(idArr))
+			if newParentSpanID, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(ptrace.Span).SetParentSpanID(newParentSpanID)
 			}
 		},
 	}
@@ -353,7 +347,7 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 func accessDroppedAttributesCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).DroppedAttributesCount()
+			return int64(ctx.GetItem().(ptrace.Span).DroppedAttributesCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -382,7 +376,7 @@ func accessEvents() pathGetSetter {
 func accessDroppedEventsCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).DroppedEventsCount()
+			return int64(ctx.GetItem().(ptrace.Span).DroppedEventsCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -411,7 +405,7 @@ func accessLinks() pathGetSetter {
 func accessDroppedLinksCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).DroppedLinksCount()
+			return int64(ctx.GetItem().(ptrace.Span).DroppedLinksCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 
 import (
@@ -19,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,6 +37,8 @@ type Translator struct {
 	prevPts *ttlCache
 	logger  *zap.Logger
 	cfg     translatorConfig
+
+	onceHostnameChanged sync.Once
 }
 
 // New creates a new translator with given options.
@@ -63,7 +67,11 @@ func New(logger *zap.Logger, options ...Option) (*Translator, error) {
 	}
 
 	cache := newTTLCache(cfg.sweepInterval, cfg.deltaTTL)
-	return &Translator{cache, logger, cfg}, nil
+	return &Translator{
+		prevPts: cache,
+		logger:  logger,
+		cfg:     cfg,
+	}, nil
 }
 
 // isCumulativeMonotonic checks if a metric is a cumulative monotonic metric
@@ -396,12 +404,30 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 		// Fetch tags from attributes.
 		attributeTags := attributes.TagsFromAttributes(rm.Resource().Attributes())
 
-		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes(), t.cfg.previewHostnameFromAttributes)
 		if !ok {
 			var err error
 			host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())
 			if err != nil {
 				return fmt.Errorf("failed to get fallback host: %w", err)
+			}
+		}
+
+		// Log related to the preview hostname feature flag.
+		// TODO (#10424): Remove this once the feature flag is enabled by default.
+		if !t.cfg.previewHostnameFromAttributes && host != "" {
+			previewHost, oldOk := attributes.HostnameFromAttributes(rm.Resource().Attributes(), true)
+			if !oldOk {
+				previewHost, _ = t.cfg.fallbackHostnameProvider.Hostname(context.Background())
+			}
+			if previewHost != host {
+				t.onceHostnameChanged.Do(func() {
+					t.logger.Warn(
+						"The hostname resolved from attributes on one of your metrics will change on a future minor version. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424",
+						zap.String("current hostname", host),
+						zap.String("future hostname", previewHost),
+					)
+				})
 			}
 		}
 

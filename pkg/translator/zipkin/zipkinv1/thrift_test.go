@@ -491,10 +491,7 @@ func Test_bytesInt16ToInt64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt16ToInt64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesInt16ToInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesInt16ToInt64() = %v, want %v", got, tt.want)
 			}
@@ -531,10 +528,7 @@ func Test_bytesInt32ToInt64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt32ToInt64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesInt32ToInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesInt32ToInt64() = %v, want %v", got, tt.want)
 			}
@@ -571,10 +565,7 @@ func Test_bytesInt64ToInt64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt64ToInt64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesInt64ToInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesInt64ToInt64() = %v, want %v", got, tt.want)
 			}
@@ -611,10 +602,7 @@ func Test_bytesFloat64ToFloat64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesFloat64ToFloat64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesFloat64ToFloat64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesFloat64ToFloat64() = %v, want %v", got, tt.want)
 			}

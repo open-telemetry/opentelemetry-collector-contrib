@@ -274,7 +274,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 
 	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
 	if err := validateMetadataExporters(metadataExportersSet, exporters); err != nil {
-		return fmt.Errorf("failed to configure metadata_exporters: %v", err)
+		return fmt.Errorf("failed to configure metadata_exporters: %w", err)
 	}
 
 	for cfg, exp := range exporters {
