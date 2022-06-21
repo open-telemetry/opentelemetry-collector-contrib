@@ -26,6 +26,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -44,6 +46,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
 
 type testRoundTripper func(req *http.Request) *http.Response
 
@@ -277,6 +281,18 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, t *testing.T) ([]r
 			if len(requests) == 0 {
 				err = errors.New("timeout")
 			}
+
+			// sort the requests according to the traces we received, reordering them so we can assert on their size.
+			sort.Slice(requests, func(i, j int) bool {
+				imatch := requestTimeRegex.FindSubmatch(requests[i].body)
+				jmatch := requestTimeRegex.FindSubmatch(requests[j].body)
+				// no matches mean it's compressed, just leave as is
+				if len(imatch) == 0 {
+					return i < j
+				}
+				return string(imatch[1]) <= string(jmatch[1])
+			})
+
 			return requests, err
 		}
 	}

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sobserver
 
 import (
@@ -47,7 +46,8 @@ func (e *endpointSink) OnRemove(removed []observer.Endpoint) {
 func (e *endpointSink) OnChange(changed []observer.Endpoint) {
 	e.Lock()
 	defer e.Unlock()
-	e.changed = append(e.removed, changed...)
+	e.changed = e.removed
+	e.changed = append(e.changed, changed...)
 }
 
 var _ observer.Notify = (*endpointSink)(nil)
