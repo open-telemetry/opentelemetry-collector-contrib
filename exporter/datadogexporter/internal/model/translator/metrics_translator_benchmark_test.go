@@ -30,7 +30,7 @@ import (
 
 func newBenchmarkTranslator(b *testing.B, logger *zap.Logger, opts ...Option) *Translator {
 	options := append([]Option{
-		WithFallbackHostnameProvider(testProvider("fallbackHostname")),
+		WithFallbackSourceProvider(testProvider("fallbackHostname")),
 		WithHistogramMode(HistogramModeDistributions),
 		WithNumberMode(NumberModeCumulativeToDelta),
 	}, opts...)
