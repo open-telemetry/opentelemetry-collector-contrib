@@ -4,7 +4,6 @@
 
 ## 🛑 Breaking changes 🛑
 - `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
-
 - `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
 
 ### 🚩 Deprecations 🚩
@@ -26,6 +25,7 @@
 - `metricstransformprocessor`: Migrate the processor from OC to pdata (#10817)
   - This behavior can be reverted by disabling the `processor.metricstransformprocessor.UseOTLPDataModel` feature gate.
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `transformprocessor`: Add Summary transform functions. (#11041)
 - `transformprocessor`: Add nil literal to the grammar. (#11150)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
