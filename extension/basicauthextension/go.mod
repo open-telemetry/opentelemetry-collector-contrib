@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/basic
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.3
 	github.com/tg123/go-htpasswd v1.2.0
 	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
 	google.golang.org/grpc v1.47.0

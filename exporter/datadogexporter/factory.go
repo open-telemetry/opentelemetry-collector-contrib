@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -47,6 +48,8 @@ type factory struct {
 	onceProvider sync.Once
 	hostProvider provider.HostnameProvider
 	providerErr  error
+
+	registry *featuregate.Registry
 }
 
 func (f *factory) HostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
@@ -56,15 +59,19 @@ func (f *factory) HostnameProvider(set component.TelemetrySettings, configHostna
 	return f.hostProvider, f.providerErr
 }
 
-// NewFactory creates a Datadog exporter factory
-func NewFactory() component.ExporterFactory {
-	f := &factory{}
+func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFactory {
+	f := &factory{registry: registry}
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
 		component.WithMetricsExporter(f.createMetricsExporter),
 		component.WithTracesExporter(f.createTracesExporter),
 	)
+}
+
+// NewFactory creates a Datadog exporter factory
+func NewFactory() component.ExporterFactory {
+	return newFactoryWithRegistry(featuregate.GetRegistry())
 }
 
 func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
@@ -75,7 +82,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 
 // createDefaultConfig creates the default exporter configuration
 // TODO (#8396): Remove `os.Getenv` everywhere.
-func (*factory) createDefaultConfig() config.Exporter {
+func (f *factory) createDefaultConfig() config.Exporter {
 	env := os.Getenv("DD_ENV")
 	if env == "" {
 		env = "none"
@@ -94,6 +101,11 @@ func (*factory) createDefaultConfig() config.Exporter {
 	tracesEndpoint := os.Getenv("DD_APM_URL")
 	if tracesEndpoint == "" {
 		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
+	}
+
+	hostnameSource := ddconfig.HostnameSourceFirstResource
+	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
+		hostnameSource = ddconfig.HostnameSourceConfigOrSystem
 	}
 
 	return &ddconfig.Config{
@@ -147,7 +159,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		HostMetadata: ddconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: ddconfig.HostnameSourceFirstResource,
+			HostnameSource: hostnameSource,
 		},
 
 		SendMetadata:        true,
