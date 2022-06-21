@@ -222,7 +222,7 @@ type MetricsExporterConfig struct {
 	// resource attributes into metric labels, which are then converted into tags
 	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
 
-	// Deprecated: Use InstrumentationScopeMetadataAsTags instead in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
+	// Deprecated: [0.54.0] Use InstrumentationScopeMetadataAsTags instead in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
 	// Both must not be enabled at the same time.
 	// InstrumentationLibraryMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation library that created a metric to the metric tags

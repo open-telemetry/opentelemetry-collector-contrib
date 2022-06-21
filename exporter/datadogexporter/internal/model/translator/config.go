@@ -23,7 +23,7 @@ type translatorConfig struct {
 	Quantiles                bool
 	SendMonotonic            bool
 	ResourceAttributesAsTags bool
-	// Deprecated: Use InstrumentationScopeMetadataAsTags instead in favor of
+	// Deprecated: [0.54.0] Use InstrumentationScopeMetadataAsTags instead in favor of
 	// https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
 	// Both must not be enabled at the same time.
 	InstrumentationLibraryMetadataAsTags bool

@@ -132,7 +132,7 @@ exporters:
       #
       # resource_attributes_as_tags: false
 
-      ## Deprecated: use instrumentation_scope_metadata_as_tags instead in favor of
+      ## Deprecated: [0.54.0] use instrumentation_scope_metadata_as_tags instead in favor of
       ## https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
       ## Both must not be enabled at the same time.
       ## @param instrumentation_library_metadata_as_tags - string - optional - default: false
