@@ -1,10 +1,10 @@
 # Carbon Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
+| Status                   |            |
+| ------------------------ |------------|
 | Stability                | [alpha]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Supported pipeline types | metrics    |
+| Distributions            | [contrib]  |
 
 The [Carbon](https://github.com/graphite-project/carbon) receiver supports
 Carbon's [plaintext
