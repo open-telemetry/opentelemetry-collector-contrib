@@ -1,5 +1,11 @@
 # Deprecated prometheus_exec Receiver
 
+| Status                   |              |
+| ------------------------ | ------------ |
+| Stability                | [deprecated] |
+| Supported pipeline types | metrics      |
+| Distributions            | none         |
+
 This receiver has been deprecated due to security concerns around the ability to specify the execution of
 any arbitrary processes via its configuration. See [#6722](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6722) for additional details.
 
@@ -97,3 +103,5 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
