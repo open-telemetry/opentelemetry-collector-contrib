@@ -111,8 +111,8 @@ func TestAddFileResolvedFields(t *testing.T) {
 	emitCall := waitForEmit(t, emitCalls)
 	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
 	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved), emitCall.attrs.ResolvedName)
-	require.Equal(t, resolved, emitCall.attrs.ResolvedPath)
+	require.Equal(t, filepath.Base(resolved), emitCall.attrs.NameResolved)
+	require.Equal(t, resolved, emitCall.attrs.PathResolved)
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -175,8 +175,8 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	emitCall := waitForEmit(t, emitCalls)
 	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
 	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved1), emitCall.attrs.ResolvedName)
-	require.Equal(t, resolved1, emitCall.attrs.ResolvedPath)
+	require.Equal(t, filepath.Base(resolved1), emitCall.attrs.NameResolved)
+	require.Equal(t, resolved1, emitCall.attrs.PathResolved)
 
 	// Change middleSymLink to point to file2
 	err = os.Remove(middleSymLinkPath)
@@ -190,8 +190,8 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	emitCall = waitForEmit(t, emitCalls)
 	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
 	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved2), emitCall.attrs.ResolvedName)
-	require.Equal(t, resolved2, emitCall.attrs.ResolvedPath)
+	require.Equal(t, filepath.Base(resolved2), emitCall.attrs.NameResolved)
+	require.Equal(t, resolved2, emitCall.attrs.PathResolved)
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we
