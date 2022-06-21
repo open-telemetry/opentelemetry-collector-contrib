@@ -33,7 +33,7 @@ import (
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -45,18 +45,18 @@ const (
 type factory struct {
 	onceMetadata sync.Once
 
-	onceProvider sync.Once
-	hostProvider provider.HostnameProvider
-	providerErr  error
+	onceProvider   sync.Once
+	sourceProvider source.Provider
+	providerErr    error
 
 	registry *featuregate.Registry
 }
 
-func (f *factory) HostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	f.onceProvider.Do(func() {
-		f.hostProvider, f.providerErr = metadata.GetHostnameProvider(set, configHostname)
+		f.sourceProvider, f.providerErr = metadata.GetSourceProvider(set, configHostname)
 	})
-	return f.hostProvider, f.providerErr
+	return f.sourceProvider, f.providerErr
 }
 
 func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFactory {
@@ -180,7 +180,7 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 
-	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -244,7 +244,7 @@ func (f *factory) createTracesExporter(
 		return nil, err
 	}
 
-	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}

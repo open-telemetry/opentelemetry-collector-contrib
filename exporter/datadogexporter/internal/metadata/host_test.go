@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
@@ -38,16 +39,16 @@ func TestHost(t *testing.T) {
 
 	p, err := buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host")
 	require.NoError(t, err)
-	host, err := p.Hostname(context.Background())
+	src, err := p.Source(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, host, "test-host")
+	assert.Equal(t, src.Identifier, "test-host")
 
 	// config.Config.Hostname does not get stored in the cache
 	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host-2")
 	require.NoError(t, err)
-	host, err = p.Hostname(context.Background())
+	src, err = p.Source(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, host, "test-host-2")
+	assert.Equal(t, src.Identifier, "test-host-2")
 
 	// Disable EC2 Metadata service to prevent fetching hostname from there,
 	// in case the test is running on an EC2 instance
@@ -55,42 +56,42 @@ func TestHost(t *testing.T) {
 
 	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
-	host, err = p.Hostname(context.Background())
+	src, err = p.Source(context.Background())
 	require.NoError(t, err)
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
-	assert.Contains(t, host, osHostname)
+	assert.Contains(t, src.Identifier, osHostname)
 }
 
-var _ provider.HostnameProvider = (*ErrorHostnameProvider)(nil)
+var _ source.Provider = (*ErrorSourceProvider)(nil)
 
-type ErrorHostnameProvider string
+type ErrorSourceProvider string
 
-func (p ErrorHostnameProvider) Hostname(context.Context) (string, error) {
-	return "", errors.New(string(p))
+func (p ErrorSourceProvider) Source(context.Context) (source.Source, error) {
+	return source.Source{}, errors.New(string(p))
 }
 
 func TestWarnProvider(t *testing.T) {
 	tests := []struct {
 		name            string
-		curProvider     provider.HostnameProvider
-		previewProvider provider.HostnameProvider
+		curProvider     source.Provider
+		previewProvider source.Provider
 
 		expectedLogs []observer.LoggedEntry
-		hostname     string
+		src          source.Source
 		err          string
 	}{
 		{
 			name:            "current provider fails",
-			curProvider:     ErrorHostnameProvider("errorCurrentHostname"),
+			curProvider:     ErrorSourceProvider("errorCurrentHostname"),
 			previewProvider: provider.Config("previewHostname"),
 			err:             "errorCurrentHostname",
 		},
 		{
 			name:            "preview provider fails",
 			curProvider:     provider.Config("currentHostname"),
-			previewProvider: ErrorHostnameProvider("errorPreviewHostname"),
-			hostname:        "currentHostname",
+			previewProvider: ErrorSourceProvider("errorPreviewHostname"),
+			src:             source.Source{Kind: source.HostnameKind, Identifier: "currentHostname"},
 			expectedLogs: []observer.LoggedEntry{
 				{
 					Entry: zapcore.Entry{
@@ -111,13 +112,13 @@ func TestWarnProvider(t *testing.T) {
 			name:            "preview provider and current provider match",
 			curProvider:     provider.Config("hostname"),
 			previewProvider: provider.Config("hostname"),
-			hostname:        "hostname",
+			src:             source.Source{Kind: source.HostnameKind, Identifier: "hostname"},
 		},
 		{
 			name:            "preview provider and current provider don't match",
 			curProvider:     provider.Config("currentHostname"),
 			previewProvider: provider.Config("previewHostname"),
-			hostname:        "currentHostname",
+			src:             source.Source{Kind: source.HostnameKind, Identifier: "currentHostname"},
 			expectedLogs: []observer.LoggedEntry{
 				{
 					Entry: zapcore.Entry{
@@ -126,14 +127,14 @@ func TestWarnProvider(t *testing.T) {
 					},
 					Context: []zapcore.Field{
 						{
-							Key:    "current default hostname",
-							Type:   zapcore.StringType,
-							String: "currentHostname",
+							Key:       "current default source",
+							Type:      zapcore.ReflectType,
+							Interface: source.Source{Kind: source.HostnameKind, Identifier: "currentHostname"},
 						},
 						{
-							Key:    "future default hostname",
-							Type:   zapcore.StringType,
-							String: "previewHostname",
+							Key:       "future default source",
+							Type:      zapcore.ReflectType,
+							Interface: source.Source{Kind: source.HostnameKind, Identifier: "previewHostname"},
 						},
 					},
 				},
@@ -150,11 +151,11 @@ func TestWarnProvider(t *testing.T) {
 				previewProvider: testInstance.previewProvider,
 			}
 
-			hostname, err := provider.Hostname(context.Background())
+			src, err := provider.Source(context.Background())
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)
 			} else {
-				assert.Equal(t, testInstance.hostname, hostname)
+				assert.Equal(t, testInstance.src, src)
 			}
 			assert.ElementsMatch(t,
 				testInstance.expectedLogs,

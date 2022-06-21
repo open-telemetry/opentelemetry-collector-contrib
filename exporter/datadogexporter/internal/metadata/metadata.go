@@ -31,11 +31,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 	ec2Attributes "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
@@ -99,10 +99,9 @@ func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
 	var usePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate)
-
-	if hostname, ok := attributes.HostnameFromAttributes(attrs, usePreviewHostnameLogic); ok {
-		hm.InternalHostname = hostname
-		hm.Meta.Hostname = hostname
+	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
+		hm.InternalHostname = src.Identifier
+		hm.Meta.Hostname = src.Identifier
 	}
 
 	// AWS EC2 resource metadata
@@ -124,12 +123,12 @@ func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, p provider.HostnameProvider, hm *HostMetadata) {
+func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		if hostname, err := p.Hostname(context.TODO()); err == nil {
-			hm.InternalHostname = hostname
-			hm.Meta.Hostname = hostname
+		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
+			hm.InternalHostname = src.Identifier
+			hm.Meta.Hostname = src.Identifier
 		}
 	}
 
@@ -202,7 +201,7 @@ func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCrea
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, p provider.HostnameProvider, attrs pcommon.Map) {
+func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()

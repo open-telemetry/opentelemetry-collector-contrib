@@ -17,19 +17,23 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
 
-var _ provider.HostnameProvider = (*Provider)(nil)
+var _ source.Provider = (*Provider)(nil)
 
 type Provider struct {
 	detector docker.Provider
 }
 
 // Hostname returns the hostname from the Docker socket.
-func (p *Provider) Hostname(ctx context.Context) (string, error) {
-	return p.detector.Hostname(ctx)
+func (p *Provider) Source(ctx context.Context) (source.Source, error) {
+	hostname, err := p.detector.Hostname(ctx)
+	if err != nil {
+		return source.Source{}, err
+	}
+	return source.Source{Kind: source.HostnameKind, Identifier: hostname}, nil
 }
 
 // NewProvider creates a new Docker hostname provider.
