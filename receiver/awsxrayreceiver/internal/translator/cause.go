@@ -91,10 +91,14 @@ func convertStackFramesToStackTraceStr(excp awsxray.Exception) string {
 	// "<*excp.Type>: <*excp.Message>\n" +
 	// "\tat <*frameN.Label>(<*frameN.Path>: <*frameN.Line>)\n"
 	var b strings.Builder
-	b.Grow(len(*excp.Type) + len(": ") + len(*excp.Message) + len("\n"))
+	message := "<no message>"
+	if excp.Message != nil {
+		message = *excp.Message
+	}
+	b.Grow(len(*excp.Type) + len(": ") + len(message) + len("\n"))
 	b.WriteString(*excp.Type)
 	b.WriteString(": ")
-	b.WriteString(*excp.Message)
+	b.WriteString(message)
 	b.WriteString("\n")
 	for _, frame := range excp.Stack {
 		label := awsxray.StringOrEmpty(frame.Label)
