@@ -59,6 +59,7 @@
 - `signalfxexporter`: Event Type is a required field, if not set, set it to `unknown` to prevent signalfx ingest from dropping it (#11121)
 - `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
 - `splunkhecexporter`: Fix flaky test when exporting traces (#11418)
+- `mongodbatlasexporter`: Fix mongodbatlas.system.memory.usage.max not being reported (#11126)
 
 ## v0.53.0
 
