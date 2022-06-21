@@ -32,64 +32,11 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 
 	switch metric.DataType() {
 	case pmetric.MetricDataTypeGauge:
-		points = metric.Gauge().DataPoints().Len()
-		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
-			dp := metric.Gauge().DataPoints().At(i)
-
-			line, err := serializeGaugePoint(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				dp,
-			)
-
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing gauge data point",
-					"name", metric.Name(),
-					"value-type", dp.ValueType().String(),
-					"error", err,
-				)
-			}
-
-			if line != "" {
-				metricLines = append(metricLines, line)
-			}
-		}
+		metricLines = serializeGauge(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	case pmetric.MetricDataTypeSum:
-		if lines, ok := serializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev); ok {
-			metricLines = append(metricLines, lines...)
-		}
+		metricLines = serializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev, metricLines)
 	case pmetric.MetricDataTypeHistogram:
-		points = metric.Histogram().DataPoints().Len()
-		if metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
-			logger.Sugar().Warnw(
-				"dropping cumulative histogram",
-				"name", metric.Name(),
-			)
-			break
-		}
-		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
-			dp := metric.Histogram().DataPoints().At(i)
-
-			line, err := serializeHistogramPoint(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				metric.Histogram().AggregationTemporality(),
-				dp,
-			)
-
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing histogram data point",
-					"name", metric.Name(),
-					"error", err,
-				)
-			}
-
-			if line != "" {
-				metricLines = append(metricLines, line)
-			}
-		}
+		metricLines = serializeHistogram(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	default:
 		return nil, fmt.Errorf("metric type %s unsupported", metric.DataType().String())
 	}
@@ -99,68 +46,6 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 	}
 
 	return metricLines, nil
-}
-
-func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, bool) {
-	sum := metric.Sum()
-	monotonic := sum.IsMonotonic()
-
-	if !monotonic && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
-		logger.Sugar().Warnw(
-			"dropping delta non-monotonic sum",
-			"name", metric.Name(),
-		)
-		return nil, false
-	}
-
-	points := metric.Sum().DataPoints()
-	numPoints := points.Len()
-
-	lines := make([]string, 0, numPoints)
-
-	for i := 0; i < numPoints; i++ {
-		dp := points.At(i)
-		if monotonic {
-			// serialize monotonic sum points as count (cumulatives are converted to delta in serializeSumPoint)
-			line, err := serializeSumPoint(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				metric.Sum().AggregationTemporality(),
-				dp,
-				prev,
-			)
-
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing sum data point",
-					"name", metric.Name(),
-					"value-type", dp.ValueType().String(),
-					"error", err,
-				)
-			}
-
-			if line != "" {
-				lines = append(lines, line)
-			}
-		} else {
-			// Cumulative non-monotonic sum points are serialized as gauges. Delta non-monotonic sums are dropped above.
-			line, err := serializeGaugePoint(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				dp,
-			)
-
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing non-monotonic Sum as gauge", "name", metric.Name(), "value-type", dp.ValueType().String(), "error", err)
-			}
-
-			if line != "" {
-				lines = append(lines, line)
-			}
-		}
-	}
-	return lines, true
 }
 
 func makeCombinedDimensions(labels pcommon.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {

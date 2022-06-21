@@ -33,7 +33,7 @@ func Test_serializeHistogram(t *testing.T) {
 	hist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 	t.Run("delta with prefix and dimension", func(t *testing.T) {
-		got, err := serializeHistogramPoint("delta_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, hist)
+		got, err := serializeHistogramPoint("delta_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), hist)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_hist,key=value gauge,min=0,max=8,sum=9.5,count=2 1626438600000", got)
 	})
@@ -46,7 +46,7 @@ func Test_serializeHistogram(t *testing.T) {
 		histWithNonEmptyFirstLast.SetSum(9.5)
 		histWithNonEmptyFirstLast.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeHistogramPoint("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, histWithNonEmptyFirstLast)
+		got, err := serializeHistogramPoint("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), histWithNonEmptyFirstLast)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_nonempty_first_last_hist,key=value gauge,min=0,max=8,sum=9.5,count=3 1626438600000", got)
 	})
@@ -60,7 +60,7 @@ func Test_serializeHistogram(t *testing.T) {
 		histWitMaxGreaterAvg.SetSum(30)
 		histWitMaxGreaterAvg.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeHistogramPoint("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, histWitMaxGreaterAvg)
+		got, err := serializeHistogramPoint("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), histWitMaxGreaterAvg)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_nonempty_first_last_hist,key=value gauge,min=10,max=15,sum=30,count=2 1626438600000", got)
 	})
@@ -74,15 +74,9 @@ func Test_serializeHistogram(t *testing.T) {
 		histWitMinLessAvg.SetSum(10)
 		histWitMinLessAvg.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeHistogramPoint("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityDelta, histWitMinLessAvg)
+		got, err := serializeHistogramPoint("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), histWitMinLessAvg)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_nonempty_first_last_hist,key=value gauge,min=5,max=10,sum=10,count=2 1626438600000", got)
-	})
-
-	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
-		got, err := serializeHistogramPoint("hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, hist)
-		assert.Error(t, err)
-		assert.Equal(t, "", got)
 	})
 
 	t.Run("when min is provided it should be used", func(t *testing.T) {
@@ -94,7 +88,7 @@ func Test_serializeHistogram(t *testing.T) {
 		minMaxHist.SetMin(3)
 		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeHistogramPoint("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		got, err := serializeHistogramPoint("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), minMaxHist)
 		assert.NoError(t, err)
 		// min 3, max 10, sum 10 is impossible but passes consistency check because the estimated max 10 is greater than the mean 5
 		// it is the best we can do without a better max estimate
@@ -110,7 +104,7 @@ func Test_serializeHistogram(t *testing.T) {
 		minMaxHist.SetMax(7)
 		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeHistogramPoint("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		got, err := serializeHistogramPoint("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), minMaxHist)
 		assert.NoError(t, err)
 		// min 5, max 7, sum 10 is impossible with count 2 but passes consistency check because the estimated min 10 is reduced to the mean 5
 		// it is the best we can do without a better min estimate
@@ -127,7 +121,7 @@ func Test_serializeHistogram(t *testing.T) {
 		minMaxHist.SetMax(7)
 		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeHistogramPoint("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		got, err := serializeHistogramPoint("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), minMaxHist)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.min_max_hist gauge,min=3,max=7,sum=10,count=2 1626438600000", got)
 	})

@@ -16,6 +16,7 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
@@ -37,6 +38,64 @@ func serializeSumPoint(name, prefix string, dims dimensions.NormalizedDimensionL
 	}
 
 	return "", nil
+}
+
+func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap, metricLines []string) []string {
+	sum := metric.Sum()
+	monotonic := sum.IsMonotonic()
+
+	if !monotonic && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+		logger.Sugar().Warnw("dropping delta non-monotonic sum", "name", metric.Name())
+		return metricLines
+	}
+
+	points := metric.Sum().DataPoints()
+	numPoints := points.Len()
+
+	for i := 0; i < numPoints; i++ {
+		dp := points.At(i)
+		if monotonic {
+			// serialize monotonic sum points as count (cumulatives are converted to delta in serializeSumPoint)
+			line, err := serializeSumPoint(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				metric.Sum().AggregationTemporality(),
+				dp,
+				prev,
+			)
+
+			if err != nil {
+				logger.Sugar().Warnw("Error serializing sum data point",
+					"name", metric.Name(),
+					"value-type", dp.ValueType().String(),
+					"error", err,
+				)
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		} else {
+			// Cumulative non-monotonic sum points are serialized as gauges. Delta non-monotonic sums are dropped above.
+			line, err := serializeGaugePoint(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				dp,
+			)
+
+			if err != nil {
+				logger.Sugar().Warnw("Error serializing non-monotonic Sum as gauge", "name", metric.Name(), "value-type", dp.ValueType().String(), "error", err)
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	}
+
+	return metricLines
 }
 
 func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
