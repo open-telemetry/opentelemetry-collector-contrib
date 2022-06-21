@@ -55,6 +55,7 @@
 - `googlecloudexporter`: Fix (self-obs) point_count metric calculation, concurrent map write panic, and dropped log attributes (#11051)
 - `signalfxexporter`: Event Type is a required field, if not set, set it to `unknown` to prevent signalfx ingest from dropping it (#11121)
 - `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
+- `splunkhecexporter`: Fix flaky test when exporting traces (#11418)
 
 ## v0.53.0
 
