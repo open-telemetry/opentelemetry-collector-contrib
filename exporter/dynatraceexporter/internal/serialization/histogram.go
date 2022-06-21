@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.MetricAggregationTemporality, dp pmetric.HistogramDataPoint) (string, error) {
+func serializeHistogramPoint(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.MetricAggregationTemporality, dp pmetric.HistogramDataPoint) (string, error) {
 	if t == pmetric.MetricAggregationTemporalityCumulative {
 		// convert to delta histogram
 		// skip first point because there is nothing to calculate a delta from

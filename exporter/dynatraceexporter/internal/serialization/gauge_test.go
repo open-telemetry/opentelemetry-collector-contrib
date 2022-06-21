@@ -30,7 +30,7 @@ func Test_serializeGauge(t *testing.T) {
 		dp.SetDoubleVal(5.5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeGauge("dbl_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
+		got, err := serializeGaugePoint("dbl_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.dbl_gauge,key=value gauge,5.5 1626438600000", got)
 	})
@@ -40,7 +40,7 @@ func Test_serializeGauge(t *testing.T) {
 		dp.SetIntVal(5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
+		got, err := serializeGaugePoint("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_gauge,key=value gauge,5 1626438600000", got)
 	})
@@ -49,7 +49,7 @@ func Test_serializeGauge(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntVal(5)
 
-		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(), dp)
+		got, err := serializeGaugePoint("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(), dp)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_gauge gauge,5", got)
 	})

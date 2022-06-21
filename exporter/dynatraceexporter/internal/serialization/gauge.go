@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
+func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
 	var metricOption dtMetric.MetricOption
 
 	switch dp.ValueType() {

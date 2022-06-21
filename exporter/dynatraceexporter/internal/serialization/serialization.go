@@ -36,7 +36,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
 			dp := metric.Gauge().DataPoints().At(i)
 
-			line, err := serializeGauge(
+			line, err := serializeGaugePoint(
 				metric.Name(),
 				prefix,
 				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
@@ -56,59 +56,8 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 			}
 		}
 	case pmetric.MetricDataTypeSum:
-		points = metric.Sum().DataPoints().Len()
-
-		if metric.Sum().IsMonotonic() {
-			for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
-				dp := metric.Sum().DataPoints().At(i)
-
-				line, err := serializeSum(
-					metric.Name(),
-					prefix,
-					makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-					metric.Sum().AggregationTemporality(),
-					dp,
-					prev,
-				)
-
-				if err != nil {
-					logger.Sugar().Warnw("Error serializing sum data point",
-						"name", metric.Name(),
-						"value-type", dp.ValueType().String(),
-						"error", err,
-					)
-				}
-
-				if line != "" {
-					metricLines = append(metricLines, line)
-				}
-			}
-		} else {
-			if metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
-				logger.Sugar().Warnw(
-					"dropping delta non-monotonic sum",
-					"name", metric.Name(),
-				)
-				break
-			}
-			for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
-				dp := metric.Sum().DataPoints().At(i)
-
-				line, err := serializeGauge(
-					metric.Name(),
-					prefix,
-					makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-					dp,
-				)
-
-				if err != nil {
-					logger.Sugar().Warnw("Error serializing non-monotonic Sum as gauge", "name", metric.Name(), "value-type", dp.ValueType().String(), "error", err)
-				}
-
-				if line != "" {
-					metricLines = append(metricLines, line)
-				}
-			}
+		if lines, ok := serializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev); ok {
+			metricLines = append(metricLines, lines...)
 		}
 	case pmetric.MetricDataTypeHistogram:
 		points = metric.Histogram().DataPoints().Len()
@@ -122,7 +71,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
 			dp := metric.Histogram().DataPoints().At(i)
 
-			line, err := serializeHistogram(
+			line, err := serializeHistogramPoint(
 				metric.Name(),
 				prefix,
 				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
@@ -152,8 +101,70 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 	return metricLines, nil
 }
 
+func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, bool) {
+	sum := metric.Sum()
+	monotonic := sum.IsMonotonic()
+
+	if !monotonic && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+		logger.Sugar().Warnw(
+			"dropping delta non-monotonic sum",
+			"name", metric.Name(),
+		)
+		return nil, false
+	}
+
+	points := metric.Sum().DataPoints()
+	numPoints := points.Len()
+
+	lines := make([]string, 0, numPoints)
+
+	for i := 0; i < numPoints; i++ {
+		dp := points.At(i)
+		if monotonic {
+			// serialize monotonic sum points as count (cumulatives are converted to delta in serializeSumPoint)
+			line, err := serializeSumPoint(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				metric.Sum().AggregationTemporality(),
+				dp,
+				prev,
+			)
+
+			if err != nil {
+				logger.Sugar().Warnw("Error serializing sum data point",
+					"name", metric.Name(),
+					"value-type", dp.ValueType().String(),
+					"error", err,
+				)
+			}
+
+			if line != "" {
+				lines = append(lines, line)
+			}
+		} else {
+			// Cumulative non-monotonic sum points are serialized as gauges. Delta non-monotonic sums are dropped above.
+			line, err := serializeGaugePoint(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				dp,
+			)
+
+			if err != nil {
+				logger.Sugar().Warnw("Error serializing non-monotonic Sum as gauge", "name", metric.Name(), "value-type", dp.ValueType().String(), "error", err)
+			}
+
+			if line != "" {
+				lines = append(lines, line)
+			}
+		}
+	}
+	return lines, true
+}
+
 func makeCombinedDimensions(labels pcommon.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
-	dimsFromLabels := []dimensions.Dimension{}
+	dimsFromLabels := make([]dimensions.Dimension, 0, labels.Len())
 
 	labels.Range(func(k string, v pcommon.Value) bool {
 		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v.AsString()))
