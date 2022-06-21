@@ -8,7 +8,7 @@ Supported pipeline types: logs
 
 The following settings are required:
 
-- `endpoint` (no default): The target URL to send Loki log streams to (e.g.: http://loki:3100/loki/api/v1/push).
+- `endpoint` (no default): The target URL to send Loki log streams to (e.g.: `http://loki:3100/loki/api/v1/push`).
   
 - `labels.{attributes/resource}` (no default): Either a map of attributes or resource names to valid Loki label names 
   (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams. 

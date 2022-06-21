@@ -11,7 +11,7 @@ It takes a list of queries which are performed in the order specified in the con
 
 Queries are composed of the following parts
 - Path expressions: Fields within the incoming data can be referenced using expressions composed of the names as defined
-in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]`. If the path expression begins with
+in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]`, `trace_state["example_key"]`. If the path expression begins with
 `resource.` or `instrumentation_library.`, it will reference those values.  For metrics, `name`, `description`, `unit`, `type`, `is_monotonic`, and `aggregation_temporality` are accessed via `metric.`
   - The name `instrumentation_library` within OpenTelemetry is currently under discussion and may be changed in the future.
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
@@ -29,7 +29,7 @@ Supported functions:
 - `IsMatch(target, pattern)` - `target` is either a path expression to a telemetry field to retrieve or a literal string.  `pattern` is a regexp pattern. The function matches the target against the pattern, returning true if the match is successful and false otherwise.  If target is nil or not a string false is always returned. 
 
 - `set(target, value)` - `target` is a path expression to a telemetry field to set `value` into. `value` is any value type.
-e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`. If `value` resolves to `nil`, e.g.
+e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`, `set(trace_state["svc"], "example")`, `set(attributes["source"], trace_state["source"])`. If `value` resolves to `nil`, e.g.
 it references an unset map value, there will be no action.
 
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
@@ -47,7 +47,14 @@ Metric only functions:
 - `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
 **NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#gauge). Use at your own risk.
 
-- `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". 
+- `convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)` - Creates a new Sum metric out of incoming metrics of type "Summary" with a "Count" Value. Noop for metrics that are not of type "Summary". The name for the new metric with be `<summary metric>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`.
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk. 
+
+- `convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)` - Creates a new Sum metric out of incoming metrics of type "Summary" with a "Sum" Value. Noop for metrics that are not of type "Summary". The name for the new metric with be `<summary metric>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+
+- `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
 Supported where operations:

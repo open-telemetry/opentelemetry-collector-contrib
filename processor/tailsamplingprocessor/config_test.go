@@ -84,6 +84,11 @@ func TestLoadConfig(t *testing.T) {
 					SpanCountCfg: SpanCountCfg{MinSpans: 2},
 				},
 				{
+					Name:          "test-policy-9",
+					Type:          TraceState,
+					TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
+				},
+				{
 					Name: "and-policy-1",
 					Type: And,
 					AndCfg: AndCfg{
