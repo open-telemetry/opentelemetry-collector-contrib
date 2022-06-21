@@ -70,7 +70,7 @@ func (e *adxDataProducer) ingestData(b []byte) error {
 
 	ingestreader := bytes.NewReader(b)
 
-	// Either of the ingestion pilicy will be present according to the configuration provided, other will be nil
+	// Either of the ingestion policy will be present according to the configuration provided, other will be nil
 	if e.managedingest != nil {
 		if _, err := e.managedingest.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
 			e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
