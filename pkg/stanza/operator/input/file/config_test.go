@@ -539,10 +539,8 @@ func TestBuild(t *testing.T) {
 			require.NoError,
 			func(t *testing.T, f *Input) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
 				require.Equal(t, f.FilePathField, entry.NewNilField())
 				require.Equal(t, f.FileNameField, entry.NewAttributeField("log.file.name"))
-				require.Equal(t, f.PollInterval, 10*time.Millisecond)
 			},
 		},
 		{

@@ -1,6 +1,10 @@
 # Group by Attributes processor
 
-Supported pipeline types: **traces**, **logs**, **metrics**
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [beta]                |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [contrib]             |
 
 ## Description
 
@@ -178,7 +182,7 @@ Please refer to:
 The following internal metrics are recorded by this processor:
 
 | Metric                    | Description                                              |
-|---------------------------|----------------------------------------------------------|
+| ------------------------- | -------------------------------------------------------- |
 | `num_grouped_spans`       | the number of spans that had attributes grouped          |
 | `num_non_grouped_spans`   | the number of spans that did not have attributes grouped |
 | `span_groups`             | distribution of groups extracted for spans               |
@@ -188,3 +192,6 @@ The following internal metrics are recorded by this processor:
 | `num_grouped_metrics`     | number of metrics that had attributes grouped            |
 | `num_non_grouped_metrics` | number of metrics that did not have attributes grouped   |
 | `metric_groups`           | distribution of groups extracted for metrics             |
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
