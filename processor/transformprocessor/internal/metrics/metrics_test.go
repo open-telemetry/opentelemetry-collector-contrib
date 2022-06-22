@@ -198,7 +198,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -530,7 +530,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -958,7 +958,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{

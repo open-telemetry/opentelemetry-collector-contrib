@@ -26,8 +26,8 @@ import (
 
 func Test_serializeHistogram(t *testing.T) {
 	hist := pmetric.NewHistogramDataPoint()
-	hist.SetMExplicitBounds([]float64{0, 2, 4, 8})
-	hist.SetMBucketCounts([]uint64{0, 1, 0, 1, 0})
+	hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
+	hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 0}))
 	hist.SetCount(2)
 	hist.SetSum(9.5)
 	hist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -40,8 +40,8 @@ func Test_serializeHistogram(t *testing.T) {
 
 	t.Run("delta with non-empty first and last bucket", func(t *testing.T) {
 		histWithNonEmptyFirstLast := pmetric.NewHistogramDataPoint()
-		histWithNonEmptyFirstLast.SetMExplicitBounds([]float64{0, 2, 4, 8})
-		histWithNonEmptyFirstLast.SetMBucketCounts([]uint64{0, 1, 0, 1, 1})
+		histWithNonEmptyFirstLast.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
+		histWithNonEmptyFirstLast.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 1}))
 		histWithNonEmptyFirstLast.SetCount(3)
 		histWithNonEmptyFirstLast.SetSum(9.5)
 		histWithNonEmptyFirstLast.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))

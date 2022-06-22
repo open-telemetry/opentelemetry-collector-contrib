@@ -49,8 +49,8 @@ var (
 
 	lbs1    = getAttributes(label11, value11, label12, value12)
 	lbs2    = getAttributes(label21, value21, label22, value22)
-	bounds  = []float64{0.1, 0.5, 0.99}
-	buckets = []uint64{1, 2, 3}
+	bounds  = pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.5, 0.99})
+	buckets = pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
 
 	quantileBounds = []float64{0.15, 0.9, 0.99}
 	quantileValues = []float64{7, 8, 9}
@@ -79,14 +79,16 @@ var (
 		validSummary:     getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
 	}
 	validMetrics2 = map[string]pmetric.Metric{
-		validIntGauge:            getIntGaugeMetric(validIntGauge, lbs2, intVal2, time2),
-		validDoubleGauge:         getDoubleGaugeMetric(validDoubleGauge, lbs2, floatVal2, time2),
-		validIntSum:              getIntSumMetric(validIntSum, lbs2, intVal2, time2),
-		validSum:                 getSumMetric(validSum, lbs2, floatVal2, time2),
-		validHistogram:           getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
-		validSummary:             getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
-		validIntGaugeDirty:       getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
-		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pcommon.NewMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
+		validIntGauge:      getIntGaugeMetric(validIntGauge, lbs2, intVal2, time2),
+		validDoubleGauge:   getDoubleGaugeMetric(validDoubleGauge, lbs2, floatVal2, time2),
+		validIntSum:        getIntSumMetric(validIntSum, lbs2, intVal2, time2),
+		validSum:           getSumMetric(validSum, lbs2, floatVal2, time2),
+		validHistogram:     getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
+		validSummary:       getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+		validIntGaugeDirty: getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
+		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pcommon.NewMap(), 0, 0, 0,
+			pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.2, 0.3}),
+			pcommon.NewImmutableUInt64Slice([]uint64{1, 2})),
 	}
 
 	empty = "empty"
@@ -121,13 +123,15 @@ var (
 
 	// staleNaN metrics as input should have the staleness marker flag
 	staleNaNMetrics = map[string]pmetric.Metric{
-		staleNaNIntGauge:       getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
-		staleNaNDoubleGauge:    getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
-		staleNaNIntSum:         getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
-		staleNaNSum:            getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
-		staleNaNHistogram:      getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
-		staleNaNEmptyHistogram: getHistogramMetric(staleNaNEmptyHistogram, lbs1, time1, floatVal2, uint64(intVal2), []float64{}, []uint64{}),
-		staleNaNSummary:        getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+		staleNaNIntGauge:    getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
+		staleNaNDoubleGauge: getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
+		staleNaNIntSum:      getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
+		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
+		staleNaNHistogram:   getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
+		staleNaNEmptyHistogram: getHistogramMetric(staleNaNEmptyHistogram, lbs1, time1, floatVal2, uint64(intVal2),
+			pcommon.NewImmutableFloat64Slice([]float64{}),
+			pcommon.NewImmutableUInt64Slice([]uint64{})),
+		staleNaNSummary: getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 	}
 )
 
@@ -289,7 +293,8 @@ func getEmptyCumulativeHistogramMetric(name string) pmetric.Metric {
 	return metric
 }
 
-func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) pmetric.Metric {
+func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum float64, count uint64, bounds pcommon.ImmutableFloat64Slice,
+	buckets pcommon.ImmutableUInt64Slice) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeHistogram)
@@ -300,8 +305,8 @@ func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum floa
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	dp.SetMBucketCounts(buckets)
-	dp.SetMExplicitBounds(bounds)
+	dp.SetBucketCounts(buckets)
+	dp.SetExplicitBounds(bounds)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))

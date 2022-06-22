@@ -9,9 +9,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.53.0
 	github.com/openzipkin/zipkin-go v0.4.0
-	github.com/stretchr/testify v1.7.3
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
-	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6
+	github.com/stretchr/testify v1.7.4
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220621130052-408f1e9f6d87
 	google.golang.org/protobuf v1.28.0
 
 )

@@ -71,8 +71,8 @@ func Test_FromMetrics(t *testing.T) {
 		dp.SetTimestamp(ts)
 		dp.SetCount(16)
 		dp.SetSum(100.0)
-		dp.SetMExplicitBounds([]float64{1, 2, 4})
-		dp.SetMBucketCounts([]uint64{4, 2, 3, 7})
+		dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4}))
+		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 7}))
 		attrMap.CopyTo(dp.Attributes())
 	}
 
