@@ -53,6 +53,7 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().InsertString("test", "pass")
 
 			},
@@ -144,6 +145,7 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().UpdateString("attr1","pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().UpdateString("attr1","pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().UpdateString("attr1","pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().UpdateString("attr1","pass")
 			},
 		},
 		{
@@ -327,6 +329,7 @@ func fillMetricThree(m pmetric.Metric) {
 	mapVal.InsertString("mapattr1", "testmap1")
 	mapVal.InsertString("mapattr2", "testmap2")
 	mapVal.InsertString("mapattr3", "testmap3")
+	mapVal.InsertString("test", "pass")
 	mapVal.CopyTo(dataPoint2.Attributes())
 }
 

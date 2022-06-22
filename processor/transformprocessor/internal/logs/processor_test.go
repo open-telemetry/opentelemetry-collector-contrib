@@ -70,7 +70,7 @@ func TestProcess(t *testing.T) {
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpdateString("http.method","post")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().UpdateString("http.method","post")
-      }
+      },
     },
     {
       query: `set(attributes["test"], "pass") where dropped_attributes_count == 1`,
