@@ -65,6 +65,13 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetSeverityText("ok")
 			},
 		},
+		{
+			query: `replace_pattern(attributes["http.method"], "get", "post")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpdateString("http.method","post")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().UpdateString("http.method","post")
+			},
+		},
 	}
 
 	for _, tt := range tests {

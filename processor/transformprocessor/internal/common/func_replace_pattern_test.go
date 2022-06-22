@@ -24,7 +24,7 @@ import (
 )
 
 func Test_replacePattern(t *testing.T) {
-	input := pcommon.NewValueString("application passwd=sensitivedtata otherarg=notsensitive")
+	input := pcommon.NewValueString("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 
 	target := &testGetSetter{
 		getter: func(ctx TransformContext) interface{} {
@@ -48,7 +48,7 @@ func Test_replacePattern(t *testing.T) {
 			pattern:     `passwd\=[^\s]*(\s?)`,
 			replacement: "passwd=*** ",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("application passwd=*** otherarg=notsensitive")
+				expectedValue.SetStringVal("application passwd=*** otherarg=notsensitive key1 key2")
 			},
 		},
 		{
@@ -57,7 +57,16 @@ func Test_replacePattern(t *testing.T) {
 			pattern:     `nomatch\=[^\s]*(\s?)`,
 			replacement: "shouldnotbeinoutput",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive")
+				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:        "multiple regex match",
+			target:      target,
+			pattern:     `key[^\s]*(\s?)`,
+			replacement: "**** ",
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive **** **** ")
 			},
 		},
 	}
@@ -118,4 +127,22 @@ func Test_replacePattern_get_nil(t *testing.T) {
 
 	exprFunc, _ := replacePattern(target, `nomatch\=[^\s]*(\s?)`, "{anything}")
 	exprFunc(ctx)
+}
+
+
+func Test_replacePatterns_invalid_pattern(t *testing.T) {
+	target := &testGetSetter{
+		getter: func(ctx TransformContext) interface{} {
+			t.Errorf("nothing should be received in this scenario")
+			return nil
+		},
+		setter: func(ctx TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	invalidRegexPattern := "*"
+	exprFunc, err := replaceAllPatterns(target, invalidRegexPattern, "{anything}")
+	assert.Nil(t, exprFunc)
+	assert.Contains(t, err.Error(), "error parsing regexp:")
 }

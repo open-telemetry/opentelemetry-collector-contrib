@@ -35,7 +35,7 @@
 - `signalfxexporter`: Enable the exporting of seven Kubernetes metrics used in Splunk/SignalFx content by default (#11032)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
 - `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
-- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing test in attributes/metrics. (#11118)
+- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics. (#11118)
 
 ### 🧰 Bug fixes 🧰
 

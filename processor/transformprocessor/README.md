@@ -71,7 +71,7 @@ processors:
     traces:
       queries:
         - set(status.code, 1) where attributes["http.path"] == "/health"
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region", "process.command_line")
         - set(name, attributes["http.route"])
         - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
         - replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")

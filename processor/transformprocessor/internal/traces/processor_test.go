@@ -107,6 +107,13 @@ func TestProcess(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
 			},
 		},
+		{
+			query: `replace_pattern(attributes["http.method"], "get", "post")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpdateString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpdateString("http.method", "post")
+			},
+		},
 	}
 
 	for _, tt := range tests {
