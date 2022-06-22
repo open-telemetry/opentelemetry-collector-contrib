@@ -4,12 +4,11 @@ go 1.17
 
 require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.51.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.51.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.29.1
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.51.0
-	go.opentelemetry.io/collector/pdata v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.53.0
+	github.com/stretchr/testify v1.7.3
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -29,6 +28,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
@@ -42,11 +42,11 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gonum.org/v1/gonum v0.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.46.0 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ../../internal/stanza
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza

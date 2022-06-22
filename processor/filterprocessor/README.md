@@ -1,6 +1,10 @@
 # Filter Processor
 
-Supported pipeline types: logs, metrics
+| Status                   |                   |
+| ------------------------ | ----------------- |
+| Stability                | [alpha]           |
+| Supported pipeline types | metrics, logs     |
+| Distributions            | [core], [contrib] |
 
 The filter processor can be configured to include or exclude:
 
@@ -42,7 +46,7 @@ This processor uses [re2 regex][re2_regex] for regex syntax.
 
 [re2_regex]: https://github.com/google/re2/wiki/Syntax
 
-More details can found at [include/exclude metrics](../README.md#includeexclude-metrics).
+More details can found at [include/exclude metrics](../attributesprocessor/README.md#includeexclude-filtering).
 
 Examples:
 
@@ -204,3 +208,7 @@ processors:
 ```
 
 In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

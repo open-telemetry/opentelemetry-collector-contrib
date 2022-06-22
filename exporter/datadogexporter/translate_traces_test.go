@@ -36,11 +36,17 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+var testSource = source.Source{
+	Kind:       source.HostnameKind,
+	Identifier: "test-host",
+}
 
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
@@ -134,7 +140,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 		Version: "1.0",
 	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 1, len(outputTraces))
 	assert.Equal(t, 1, len(runningMetrics))
@@ -147,7 +153,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 		Version: "1.0",
 	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0, len(outputTraces))
 	assert.Equal(t, 0, len(runningMetrics))
@@ -176,7 +182,7 @@ func TestRunningTraces(t *testing.T) {
 		Version: "1.0",
 	}
 
-	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", &config.Config{}, newDenylister([]string{}), buildInfo)
+	_, runningMetrics := convertToDatadogTd(td, source.Source{Kind: source.HostnameKind, Identifier: "fallbackHost"}, &config.Config{}, newDenylister([]string{}), buildInfo)
 
 	runningHostnames := []string{}
 	for _, metric := range runningMetrics {
@@ -216,7 +222,7 @@ func TestRunningTracesARN(t *testing.T) {
 
 	buildInfo := component.BuildInfo{}
 
-	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", &config.Config{}, newDenylister([]string{}), buildInfo)
+	_, runningMetrics := convertToDatadogTd(td, source.Source{Kind: source.HostnameKind, Identifier: "fallbackHost"}, &config.Config{}, newDenylister([]string{}), buildInfo)
 
 	runningHostnames := []string{}
 	runningTags := []string{}
@@ -244,9 +250,9 @@ func TestObfuscation(t *testing.T) {
 	resource := rs.Resource()
 	resource.Attributes().InsertString("service.name", "sure")
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 
 	span := ilss.Spans().AppendEmpty()
 
@@ -254,7 +260,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
 
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
@@ -1180,7 +1186,7 @@ func TestILTagsExctraction(t *testing.T) {
 
 	tags := map[string]string{}
 
-	extractInstrumentationLibraryTags(il, tags)
+	extractScopeTags(il, tags)
 
 	assert.Equal(t, "", tags[conventions.OtelLibraryName])
 
@@ -1315,9 +1321,9 @@ func TestSamplingWeightedStatsAggregations(t *testing.T) {
 
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 	span.Attributes().InsertString("_sample_rate", "0.2")
 	span.SetKind(ptrace.SpanKindServer)
@@ -1357,12 +1363,12 @@ func TestSanitization(t *testing.T) {
 	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	ilss.Spans().EnsureCapacity(1)
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
 
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
@@ -1455,9 +1461,9 @@ func TestSpanNameMapping(t *testing.T) {
 	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 
 	traceID := pcommon.NewTraceID(mockTraceID)
@@ -1473,7 +1479,7 @@ func TestSpanNameMapping(t *testing.T) {
 
 	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &config, denylister, buildInfo)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
@@ -1507,9 +1513,9 @@ func TestSpanEnvClobbering(t *testing.T) {
 
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 
 	traceID := pcommon.NewTraceID(mockTraceID)
@@ -1523,7 +1529,7 @@ func TestSpanEnvClobbering(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
 
 	// Ensure the deployment.environment value is copied to both deployment.environment and env
 	assert.Equal(t, "correctenv", outputTraces[0].Traces[0].Spans[0].Meta["env"])
@@ -1553,9 +1559,9 @@ func TestSpanRateLimitTag(t *testing.T) {
 
 	rs.ScopeSpans().EnsureCapacity(1)
 	ilss := rs.ScopeSpans().AppendEmpty()
-	instrumentationLibrary := ilss.Scope()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
+	scope := ilss.Scope()
+	scope.SetName("flash")
+	scope.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 
 	attribs := map[string]interface{}{
@@ -1575,7 +1581,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
 }

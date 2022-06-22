@@ -16,7 +16,6 @@ package jmxreceiver
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -33,7 +32,7 @@ func TestReceiver(t *testing.T) {
 	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
-			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
+			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
@@ -75,14 +74,26 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				Username: "myuser\nname",
 				Password: `mypass 
 word`,
-				Realm:         "myrealm",
-				RemoteProfile: "myprofile",
+				Realm:              "myrealm",
+				RemoteProfile:      "myprofile",
+				TruststorePath:     "/1/2/3",
+				TruststorePassword: "trustpass",
+				TruststoreType:     "ASCII",
+				KeystorePath:       "/my/keystore",
+				KeystorePassword:   "keypass",
+				KeystoreType:       "JKS",
 				ResourceAttributes: map[string]string{
 					"abc": "123",
 					"one": "two",
 				},
 			},
-			`otel.exporter.otlp.endpoint = https://myotlpendpoint
+			`javax.net.ssl.keyStore = /my/keystore
+javax.net.ssl.keyStorePassword = keypass
+javax.net.ssl.keyStoreType = JKS
+javax.net.ssl.trustStore = /1/2/3
+javax.net.ssl.trustStorePassword = trustpass
+javax.net.ssl.trustStoreType = ASCII
+otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
 otel.exporter.otlp.timeout = 234000
 otel.jmx.interval.milliseconds = 123000

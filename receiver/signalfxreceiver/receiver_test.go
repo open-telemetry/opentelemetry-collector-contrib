@@ -36,7 +36,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -66,7 +65,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantStartErr: componenterror.ErrNilNextConsumer,
+			wantStartErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "default_endpoint",
@@ -100,8 +99,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	port := testutil.GetAvailablePort(t)
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
@@ -172,7 +170,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		conn, err := net.Dial("tcp", addr)
 		if err == nil && conn != nil {
 			conn.Close()
 			return true

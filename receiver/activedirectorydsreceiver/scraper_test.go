@@ -177,8 +177,3 @@ func (w mockPerfCounterWatcher) Close() error {
 
 	return w.closeErr
 }
-
-// GetMetricRep panics; It should not be called
-func (mockPerfCounterWatcher) GetMetricRep() winperfcounters.MetricRep {
-	panic("mockPerfCounterWatcher::GetMetricRep is not implemented")
-}

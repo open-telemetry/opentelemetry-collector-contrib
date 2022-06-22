@@ -14,8 +14,6 @@
 
 package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 
-//go:generate mockery --name=Builder --output=../testutil --outpkg=testutil --filename=operator_builder.go --structname=OperatorBuilder
-
 import (
 	"encoding/json"
 	"fmt"
@@ -57,7 +55,7 @@ func (c *Config) UnmarshalJSON(bytes []byte) error {
 
 	builder := builderFunc()
 	if err := json.Unmarshal(bytes, builder); err != nil {
-		return fmt.Errorf("unmarshal to %s: %s", typeUnmarshaller.Type, err)
+		return fmt.Errorf("unmarshal to %s: %w", typeUnmarshaller.Type, err)
 	}
 
 	c.Builder = builder
@@ -74,7 +72,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	rawConfig := map[string]interface{}{}
 	err := unmarshal(&rawConfig)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal yaml to base config: %s", err)
+		return fmt.Errorf("failed to unmarshal yaml to base config: %w", err)
 	}
 
 	typeInterface, ok := rawConfig["type"]
@@ -94,7 +92,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	builder := builderFunc()
 	if err = unmarshal(builder); err != nil {
-		return fmt.Errorf("unmarshal to %s: %s", typeString, err)
+		return fmt.Errorf("unmarshal to %s: %w", typeString, err)
 	}
 
 	c.Builder = builder

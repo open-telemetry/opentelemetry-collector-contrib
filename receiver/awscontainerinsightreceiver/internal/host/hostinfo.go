@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
@@ -81,14 +82,14 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 
 	nodeCapacity, err := mInfo.nodeCapacityCreator(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize NodeCapacity: %v", err)
+		return nil, fmt.Errorf("failed to initialize NodeCapacity: %w", err)
 	}
 	mInfo.nodeCapacity = nodeCapacity
 
 	defaultSessionConfig := awsutil.CreateDefaultSessionConfig()
 	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &defaultSessionConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws session: %v", err)
+		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
 	mInfo.awsSession = session
 

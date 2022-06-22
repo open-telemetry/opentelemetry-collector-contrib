@@ -25,25 +25,28 @@ import (
 )
 
 func TestStdin(t *testing.T) {
-	cfg := NewStdinInputConfig("")
+	cfg := NewConfig("")
 	cfg.OutputIDs = []string{"fake"}
 
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
-	op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
-	stdin := op.(*StdinInput)
+	stdin := op.(*Input)
 	stdin.stdin = r
 
 	require.NoError(t, stdin.Start(testutil.NewMockPersister("test")))
-	defer stdin.Stop()
+	defer func() {
+		require.NoError(t, stdin.Stop())
+	}()
 
-	w.WriteString("test")
+	_, err = w.WriteString("test")
+	require.NoError(t, err)
 	w.Close()
 	fake.ExpectBody(t, "test")
 }

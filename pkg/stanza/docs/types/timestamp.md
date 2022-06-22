@@ -1,33 +1,33 @@
 ## `timestamp` parsing parameters
 
-Parser operators can parse a timestamp and attach the resulting time value to a log entry.
+Parser operators, such as [`regex_parser`](../operators/regex_parser.md), can parse a timestamp and attach the resulting time value to the log entry in the `timestamp` field.
+
+To configure timestamp parsing, add a `timestamp` block in the parser's configuration.
+
+If a timestamp block is specified, the parser operator will perform the timestamp parsing _after_ performing its other parsing actions, but _before_ passing the entry to the specified output operator.
 
 | Field         | Default    | Description |
 | ---           | ---        | ---         |
-| `parse_from`  | required   | The [field](/docs/types/field.md) from which the value will be parsed. |
+| `parse_from`  | required   | The [field](../types/field.md) from which the value will be parsed. |
 | `layout_type` | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
 | `layout`      | required   | The exact layout of the timestamp to be parsed. |
 | `location`    | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 
-
 ### How to specify timestamp parsing parameters
-
-Most parser operators, such as [`regex_parser`](/docs/operators/regex_parser.md) support these fields inside of a `timestamp` block.
-
-If a timestamp block is specified, the parser operator will perform the timestamp parsing _after_ performing its other parsing actions, but _before_ passing the entry to the specified output operator.
 
 ```yaml
 - type: regex_parser
   regexp: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+)'
   timestamp:
-    parse_from: body.timestamp_field
+    parse_from: attributes.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
 ```
 
 ---
 
-As a special case, the [`time_parser`](/docs/operators/time_parser.md) operator supports these fields inline. This is because time parsing is the primary purpose of the operator.
+As a special case, the [`time_parser`](../operators/time_parser.md) operator supports these fields inline. This is because time parsing is the primary purpose of the operator.
+
 ```yaml
 - type: time_parser
   parse_from: body.timestamp_field
@@ -36,6 +36,112 @@ As a special case, the [`time_parser`](/docs/operators/time_parser.md) operator 
 ```
 
 ### Example Configurations
+
+The following examples use `filelog` receiver, but they also apply to other components that use the stanza libarary.
+
+#### Parse timestamps from plain text logs
+
+Let's assume you have a `my-app.log` file with timestamps at the start of each line:
+
+```logs
+2022-01-02 07:24:56,123 -0700 [INFO] App started
+2022-01-02 07:24:57,456 -0700 [INFO] Something happened
+2022-01-02 07:24:58,789 -0700 [WARN] Look alive!
+```
+
+Since the timestamp is a part of the log's body, it needs to be extracted from the body with a [regex_parser](../operators/regex_parser.md) operator.
+
+```yaml
+exporters:
+  logging:
+    loglevel: debug
+receivers:
+  filelog:
+    include:
+    - my-app.log
+    start_at: beginning
+    operators:
+    - type: regex_parser
+      regex: (?P<timestamp_field>^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} (\+|\-)\d{2}\d{2})
+      timestamp:
+        layout: "%Y-%m-%d %H:%M:%S.%f %z"
+        parse_from: attributes.timestamp_field
+service:
+  pipelines:
+    logs:
+      receivers:
+      - filelog
+      exporters:
+      - logging
+```
+
+Note that this configuration has a side effect of creating a `timestamp_field` attribute for each log record.
+To get rid of the attribute, use the `remove` operator:
+
+```yaml
+exporters:
+  logging:
+    loglevel: debug
+receivers:
+  filelog:
+    include:
+    - my-app.log
+    start_at: beginning
+    operators:
+    - type: regex_parser
+      regex: (?P<timestamp_field>^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} (\+|\-)\d{2}\d{2})
+      timestamp:
+        layout: "%Y-%m-%d %H:%M:%S.%f %z"
+        parse_from: attributes.timestamp_field
+    - type: remove
+      field: attributes.timestamp_field
+service:
+  pipelines:
+    logs:
+      receivers:
+      - filelog
+      exporters:
+      - logging
+```
+
+#### Parse timestamps from JSON logs
+
+Let's assume you have logs in JSON format:
+
+```logs
+{"log":"[INFO] App started\n","stream":"stdout","time":"2022-01-02T14:24:56.123123123Z"}
+{"log":"[INFO] Something happened\n","stream":"stdout","time":"2022-01-02T14:24:57.456456456Z"}
+{"log":"[WARN] Look alive!\n","stream":"stdout","time":"2022-01-02T14:24:58.789789789Z"}
+```
+
+Use [json_parser](../operators/json_parser.md) to parse the log body into JSON and then parse the `time` field into the timestamp:
+
+```yaml
+exporters:
+  logging:
+    loglevel: debug
+receivers:
+  filelog:
+    include:
+    - logs-json.log
+    start_at: beginning
+    operators:
+    - type: json_parser
+      parse_to: body
+    - type: time_parser
+      parse_from: body.time
+      layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+service:
+  pipelines:
+    logs:
+      receivers:
+      - filelog
+      exporters:
+      - logging
+```
+
+The above example uses a standalone [time_parser](../operators/time_parser.md) operator to parse the timestamp,
+but you could also use a `timestamp` block inside the `json_parser`.
 
 #### Parse a timestamp using a `strptime` layout
 
@@ -69,7 +175,9 @@ Configuration:
 ```json
 {
   "timestamp": "2020-06-05T13:50:27-05:00",
-  "body": {}
+  "body": {
+    "timestamp_field": "Jun 5 13:50:27 EST 2020"
+  }
 }
 ```
 
@@ -109,7 +217,9 @@ Configuration:
 ```json
 {
   "timestamp": "2020-06-05T13:50:27-05:00",
-  "body": {}
+  "body": {
+    "timestamp_field": "Jun 5 13:50:27 EST 2020"
+  }
 }
 ```
 
@@ -117,7 +227,7 @@ Configuration:
 </tr>
 </table>
 
-#### Parse a timestamp using an `epoch` layout (and preserve the original value)
+#### Parse a timestamp using an `epoch` layout
 
 The `epoch` layout type uses can consume epoch-based timestamps. The following layouts are supported:
 
@@ -142,7 +252,6 @@ Configuration:
   parse_from: body.timestamp_field
   layout_type: epoch
   layout: s
-  preserve: true
 ```
 
 <table>

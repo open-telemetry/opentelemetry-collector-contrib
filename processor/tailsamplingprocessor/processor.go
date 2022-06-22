@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
@@ -24,7 +25,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -71,7 +71,7 @@ const (
 // configuration.
 func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
@@ -145,6 +145,12 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case And:
 		andCfg := cfg.AndCfg
 		return getNewAndPolicy(logger, andCfg)
+	case SpanCount:
+		spCfg := cfg.SpanCountCfg
+		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil
+	case TraceState:
+		tsfCfg := cfg.TraceStateCfg
+		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}

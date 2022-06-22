@@ -25,25 +25,25 @@ import (
 )
 
 func init() {
-	operator.Register("time_parser", func() operator.Builder { return NewTimeParserConfig("") })
+	operator.Register("time_parser", func() operator.Builder { return NewConfig("") })
 }
 
-// NewTimeParserConfig creates a new time parser config with default values
-func NewTimeParserConfig(operatorID string) *TimeParserConfig {
-	return &TimeParserConfig{
+// NewConfig creates a new time parser config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "time_parser"),
 		TimeParser:        helper.NewTimeParser(),
 	}
 }
 
-// TimeParserConfig is the configuration of a time parser operator.
-type TimeParserConfig struct {
+// Config is the configuration of a time parser operator.
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
 	helper.TimeParser        `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
 // Build will build a time parser operator.
-func (c TimeParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -53,19 +53,19 @@ func (c TimeParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, e
 		return nil, err
 	}
 
-	return &TimeParserOperator{
+	return &Parser{
 		TransformerOperator: transformerOperator,
 		TimeParser:          c.TimeParser,
 	}, nil
 }
 
-// TimeParserOperator is an operator that parses time from a field to an entry.
-type TimeParserOperator struct {
+// Parser is an operator that parses time from a field to an entry.
+type Parser struct {
 	helper.TransformerOperator
 	helper.TimeParser
 }
 
 // Process will parse time from an entry.
-func (t *TimeParserOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (t *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return t.ProcessWith(ctx, entry, t.TimeParser.Parse)
 }

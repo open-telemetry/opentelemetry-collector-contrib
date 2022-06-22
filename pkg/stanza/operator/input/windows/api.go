@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
@@ -96,13 +97,15 @@ func evtNext(resultSet uintptr, eventsSize uint32, events *uintptr, timeout uint
 }
 
 // evtRender is the direct syscall implementation of EvtRender (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtrender)
-func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint32, buffer *byte, bufferUsed *uint32, propertyCount *uint32) error {
+func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, *uint32, error) {
+	bufferUsed := new(uint32)
+	propertyCount := new(uint32)
 	_, _, err := renderProc.Call(context, fragment, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)), uintptr(unsafe.Pointer(propertyCount)))
 	if err != ErrorSuccess {
-		return err
+		return nil, nil, err
 	}
 
-	return nil
+	return bufferUsed, propertyCount, nil
 }
 
 // evtClose is the direct syscall implementation of EvtClose (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtclose)

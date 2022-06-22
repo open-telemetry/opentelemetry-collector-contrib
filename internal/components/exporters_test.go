@@ -17,13 +17,13 @@ package components
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -87,9 +87,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "file",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
-				f := testutil.NewTemporaryFile(t)
-				assert.NoError(t, f.Close())
-				cfg.Path = f.Name()
+				cfg.Path = filepath.Join(t.TempDir(), "random.file")
 				return cfg
 			},
 		},
@@ -155,7 +153,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "parquet",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
-				cfg.Path = testutil.NewTemporaryDirectory(t)
+				cfg.Path = t.TempDir()
 				return cfg
 			},
 		},
@@ -327,12 +325,10 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter: "f5cloud",
 			getConfigFn: func() config.Exporter {
-				f := testutil.NewTemporaryFile(t)
-
 				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Source = "magic-source"
-				cfg.AuthConfig.CredentialFile = f.Name()
+				cfg.AuthConfig.CredentialFile = filepath.Join(t.TempDir(), "random.file")
 
 				return cfg
 			},
@@ -340,6 +336,13 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter:      "googlecloud",
 			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
+		},
+		{
+			exporter:      "googlemanagedprometheus",
+			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
+		},
+		{
+			exporter: "googlecloudpubsub",
 		},
 		{
 			exporter: "honeycomb",
@@ -486,7 +489,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 		var exps []component.Exporter
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateSettings, cfg)
-			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 				continue
 			}
 			require.NoError(t, err)

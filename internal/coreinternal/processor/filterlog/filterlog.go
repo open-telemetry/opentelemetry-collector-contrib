@@ -63,14 +63,14 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.LogBodies) > 0 {
 		bodyFS, err = filterset.CreateFilterSet(mp.LogBodies, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating log record body filters: %v", err)
+			return nil, fmt.Errorf("error creating log record body filters: %w", err)
 		}
 	}
 	var severitytextFS filterset.FilterSet
 	if len(mp.LogSeverityTexts) > 0 {
 		severitytextFS, err = filterset.CreateFilterSet(mp.LogSeverityTexts, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating log record severity text filters: %v", err)
+			return nil, fmt.Errorf("error creating log record severity text filters: %w", err)
 		}
 	}
 

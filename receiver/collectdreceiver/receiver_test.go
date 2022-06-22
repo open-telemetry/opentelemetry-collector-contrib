@@ -25,7 +25,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -54,13 +54,13 @@ func TestNewReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil nextConsumer",
+			name: "nil next Consumer",
 			args: args{
 				addr:        ":0",
 				timeout:     defaultTimeout,
 				attrsPrefix: "default_attr_",
 			},
-			wantErr: componenterror.ErrNilNextConsumer,
+			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "happy path",
@@ -76,10 +76,7 @@ func TestNewReceiver(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := newCollectdReceiver(logger, tt.args.addr, time.Second*10, "", tt.args.nextConsumer)
-			if err != tt.wantErr {
-				t.Errorf("newCollectdReceiver() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
 }

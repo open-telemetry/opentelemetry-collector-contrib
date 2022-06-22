@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
+// nolint:errcheck,gocritic
 package splunkhecexporter
 
 import (
@@ -26,6 +26,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -44,6 +46,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
 
 type testRoundTripper func(req *http.Request) *http.Response
 
@@ -277,6 +281,18 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, t *testing.T) ([]r
 			if len(requests) == 0 {
 				err = errors.New("timeout")
 			}
+
+			// sort the requests according to the traces we received, reordering them so we can assert on their size.
+			sort.Slice(requests, func(i, j int) bool {
+				imatch := requestTimeRegex.FindSubmatch(requests[i].body)
+				jmatch := requestTimeRegex.FindSubmatch(requests[j].body)
+				// no matches mean it's compressed, just leave as is
+				if len(imatch) == 0 {
+					return i < j
+				}
+				return string(imatch[1]) <= string(jmatch[1])
+			})
+
 			return requests, err
 		}
 	}
@@ -948,29 +964,30 @@ func Test_pushLogData_PostError(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	var logsErr consumererror.Logs
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
@@ -1032,8 +1049,10 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	assert.IsType(t, consumererror.Logs{}, err)
 
 	// Only the record that was not successfully sent should be returned
-	assert.Equal(t, 1, (err.(consumererror.Logs)).GetLogs().ResourceLogs().Len())
-	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 1, logsErr.GetLogs().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), logsErr.GetLogs().ResourceLogs().At(0))
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {

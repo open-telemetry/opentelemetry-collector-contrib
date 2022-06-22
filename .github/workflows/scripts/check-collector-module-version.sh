@@ -40,7 +40,7 @@ check_collector_versions_correct() {
    collector_module="$1"
    collector_mod_version="$2"
    incorrect_version=0
-   mod_files=$(find . -type f -not -path '*/pkg/stanza/*' -name "go.mod")
+   mod_files=$(find . -type f -name "go.mod")
 
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
@@ -49,8 +49,10 @@ check_collector_versions_correct() {
          version=$(echo "$mod_line" | cut -d" " -f2)
 
          # To account for a module on its own 'require' line,
-         # the version field is shifted right by 1
-         if [ "$version" == "$collector_module" ]; then
+         # the version field is shifted right by 1. Match
+         # with or without a trailing space at the end to account
+         # for the space at the end of some collector modules.
+         if [ "$version" == "$collector_module" ] || [ "$version " == "$collector_module" ]; then
             version=$(echo "$mod_line" | cut -d" " -f3)
          fi
 
@@ -78,7 +80,5 @@ COLLECTOR_MOD_VERSION=$(get_collector_version "$COLLECTOR_MODULE" "$MAIN_MOD_FIL
 
 # Check the collector module version in each of the module files
 check_collector_versions_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
-
-# Check the collector model module version in each of the module files
 check_collector_versions_correct "$COLLECTOR_MODEL_PDATA" "$COLLECTOR_MOD_VERSION"
 check_collector_versions_correct "$COLLECTOR_MODEL_SEMCONV" "$COLLECTOR_MOD_VERSION"

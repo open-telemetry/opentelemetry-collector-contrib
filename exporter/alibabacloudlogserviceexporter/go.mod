@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibab
 go 1.17
 
 require (
-	github.com/aliyun/aliyun-log-go-sdk v0.1.35
+	github.com/aliyun/aliyun-log-go-sdk v0.1.36
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.51.0
-	go.opentelemetry.io/collector/pdata v0.51.0
-	go.opentelemetry.io/collector/semconv v0.51.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
+	github.com/stretchr/testify v1.7.3
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/zap v1.21.0
 )
 
@@ -40,11 +40,10 @@ require (
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.46.0 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

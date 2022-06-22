@@ -27,7 +27,6 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -53,7 +52,7 @@ func newCollectdReceiver(
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &collectdReceiver{
@@ -75,7 +74,7 @@ func newCollectdReceiver(
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		if err := cdr.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
+			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %w", err))
 		}
 	}()
 	return nil

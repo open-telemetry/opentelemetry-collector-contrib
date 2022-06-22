@@ -5,20 +5,19 @@ go 1.17
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/google/go-cmp v0.5.8
-	github.com/jaegertracing/jaeger v1.34.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.51.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.51.0
+	github.com/jaegertracing/jaeger v1.35.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.53.0
 	github.com/openzipkin/zipkin-go v0.4.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/pdata v0.51.0
-	go.opentelemetry.io/collector/semconv v0.51.0
+	github.com/stretchr/testify v1.7.3
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6
 	google.golang.org/protobuf v1.28.0
 
 )
 
 require (
 	github.com/apache/thrift v0.16.0 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -38,8 +37,8 @@ require (
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
-	google.golang.org/grpc v1.46.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	google.golang.org/grpc v1.47.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal

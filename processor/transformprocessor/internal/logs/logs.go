@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -58,7 +58,10 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 }
 
 func ParsePath(val *common.Path) (common.GetSetter, error) {
-	return newPathGetSetter(val.Fields)
+	if val != nil && len(val.Fields) > 0 {
+		return newPathGetSetter(val.Fields)
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }
 
 func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
@@ -283,7 +286,7 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 func accessDroppedAttributesCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(plog.LogRecord).DroppedAttributesCount()
+			return int64(ctx.GetItem().(plog.LogRecord).DroppedAttributesCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -296,7 +299,7 @@ func accessDroppedAttributesCount() pathGetSetter {
 func accessFlags() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(plog.LogRecord).Flags()
+			return int64(ctx.GetItem().(plog.LogRecord).Flags())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -312,11 +315,8 @@ func accessTraceID() pathGetSetter {
 			return ctx.GetItem().(plog.LogRecord).TraceID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [16]byte
-				copy(idArr[:16], id)
-				ctx.GetItem().(plog.LogRecord).SetTraceID(pcommon.NewTraceID(idArr))
+			if newTraceID, ok := val.(pcommon.TraceID); ok {
+				ctx.GetItem().(plog.LogRecord).SetTraceID(newTraceID)
 			}
 		},
 	}
@@ -328,11 +328,8 @@ func accessSpanID() pathGetSetter {
 			return ctx.GetItem().(plog.LogRecord).SpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				id, _ := hex.DecodeString(str)
-				var idArr [8]byte
-				copy(idArr[:8], id)
-				ctx.GetItem().(plog.LogRecord).SetSpanID(pcommon.NewSpanID(idArr))
+			if newSpanID, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(plog.LogRecord).SetSpanID(newSpanID)
 			}
 		},
 	}

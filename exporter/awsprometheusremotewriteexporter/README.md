@@ -1,7 +1,7 @@
 ## DEPRECATION NOTICE
 
 The AWS Prometheus Remote Write Exporter will be removed at some point after `v0.49.0`. Users who want to send metrics to Amazon Managed Service 
-for Prometheus will need to instead use the [Prometheus Remote Write Exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/prometheusremotewriteexporter/README.md) along with the [Sigv4 Authenticator Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/sigv4authauthextension/README.md) 
+for Prometheus will need to instead use the [Prometheus Remote Write Exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/prometheusremotewriteexporter/README.md) along with the [Sigv4 Authenticator Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/sigv4authextension/README.md) 
 to achieve the same result. 
 
 # AWS Prometheus Remote Write Exporter

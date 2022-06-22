@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 import (
 	"fmt"
@@ -26,6 +27,7 @@ import (
 type metricTransformContext struct {
 	dataPoint interface{}
 	metric    pmetric.Metric
+	metrics   pmetric.MetricSlice
 	il        pcommon.InstrumentationScope
 	resource  pcommon.Resource
 }
@@ -46,6 +48,10 @@ func (ctx metricTransformContext) GetMetric() pmetric.Metric {
 	return ctx.metric
 }
 
+func (ctx metricTransformContext) GetMetrics() pmetric.MetricSlice {
+	return ctx.metrics
+}
+
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
 type pathGetSetter struct {
 	getter common.ExprFunc
@@ -61,7 +67,10 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 }
 
 func ParsePath(val *common.Path) (common.GetSetter, error) {
-	return newPathGetSetter(val.Fields)
+	if val != nil && len(val.Fields) > 0 {
+		return newPathGetSetter(val.Fields)
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }
 
 func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
@@ -310,24 +319,24 @@ func accessMetricAggTemporality() pathGetSetter {
 			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
-				return metric.Sum().AggregationTemporality()
+				return int64(metric.Sum().AggregationTemporality())
 			case pmetric.MetricDataTypeHistogram:
-				return metric.Histogram().AggregationTemporality()
+				return int64(metric.Histogram().AggregationTemporality())
 			case pmetric.MetricDataTypeExponentialHistogram:
-				return metric.ExponentialHistogram().AggregationTemporality()
+				return int64(metric.ExponentialHistogram().AggregationTemporality())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newAggTemporality, ok := val.(pmetric.MetricAggregationTemporality); ok {
+			if newAggTemporality, ok := val.(int64); ok {
 				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
-					metric.Sum().SetAggregationTemporality(newAggTemporality)
+					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
 				case pmetric.MetricDataTypeHistogram:
-					metric.Histogram().SetAggregationTemporality(newAggTemporality)
+					metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
 				case pmetric.MetricDataTypeExponentialHistogram:
-					metric.ExponentialHistogram().SetAggregationTemporality(newAggTemporality)
+					metric.ExponentialHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
 				}
 			}
 		},
@@ -597,23 +606,23 @@ func accessCount() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).Count()
+				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Count())
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Count()
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Count())
 			case pmetric.SummaryDataPoint:
-				return ctx.GetItem().(pmetric.SummaryDataPoint).Count()
+				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Count())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newCount, ok := val.(uint64); ok {
+			if newCount, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetCount(newCount)
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetCount(uint64(newCount))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetCount(newCount)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetCount(uint64(newCount))
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetCount(newCount)
+					ctx.GetItem().(pmetric.SummaryDataPoint).SetCount(uint64(newCount))
 				}
 			}
 		},
@@ -693,15 +702,15 @@ func accessScale() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Scale()
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Scale())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newScale, ok := val.(int32); ok {
+			if newScale, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetScale(newScale)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetScale(int32(newScale))
 				}
 			}
 		},
@@ -713,15 +722,15 @@ func accessZeroCount() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).ZeroCount()
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).ZeroCount())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newZeroCount, ok := val.(uint64); ok {
+			if newZeroCount, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetZeroCount(newZeroCount)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetZeroCount(uint64(newZeroCount))
 				}
 			}
 		},
@@ -753,15 +762,15 @@ func accessPositiveOffset() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().Offset()
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().Offset())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newPositiveOffset, ok := val.(int32); ok {
+			if newPositiveOffset, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetOffset(newPositiveOffset)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetOffset(int32(newPositiveOffset))
 				}
 			}
 		},
@@ -813,15 +822,15 @@ func accessNegativeOffset() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().Offset()
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().Offset())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newNegativeOffset, ok := val.(int32); ok {
+			if newNegativeOffset, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetOffset(newNegativeOffset)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetOffset(int32(newNegativeOffset))
 				}
 			}
 		},

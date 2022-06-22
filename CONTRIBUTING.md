@@ -19,8 +19,9 @@ providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
   the code and become a code owner for the component. For vendor-specific components, it's good to have a volunteer
-  sponsor. If you can't find one, we'll assign one in a round-robin fashion. For non-vendor specific components, having
-  a sponsor means that your use case has been validated.
+  sponsor. If you can't find one, we'll assign one in a round-robin fashion. A vendor-specific component directly interfaces
+  with a vendor-specific API and is expected to be maintained by a representative of the same vendor. For non-vendor specific
+  components, having a sponsor means that your use case has been validated.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
 * The configuration options your component will accept. This will help us understand what it does and have an idea of
@@ -65,7 +66,6 @@ and the rest of contributors.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
@@ -74,8 +74,22 @@ The following GitHub users are the currently available sponsors, either by being
 * [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
 * [@dashpole](https://github.com/dashpole)
+* [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@djaglowski](https://github.com/djaglowski)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
+
+## Adding metrics to existing receivers
+Following these steps for contributing additional metrics to existing receivers.
+ - Read instructions [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#fork) on how to 
+   fork, build and create PRs. The only difference is to change repository name from `opentelemetry-collector` to `opentelemetry-collector-contrib`
+ - Edit `metadata.yaml` of your metrics receiver to add new metrics, e.g.: `redisreceiver/metadata.yaml`
+ - To generate new metrics on top of this updated YAML file.
+   - Run `cd receiver/redisreceiver`
+   - Run `go generate ./...`
+- Review the changed files and merge the changes into your forked repo.
+- Create PR from Github web console following the instructions above.
+
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not rigid rules and there are exceptions but
 in general try to follow them.
@@ -86,4 +100,4 @@ in general try to follow them.
   package](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper). This will
   ensure that the exporter provides [zPages](https://opencensus.io/zpages/) and a standard set of metrics.
 - `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
-  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink). 
+  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).

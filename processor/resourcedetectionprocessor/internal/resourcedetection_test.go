@@ -204,6 +204,7 @@ func (p *MockParallelDetector) Detect(ctx context.Context) (pcommon.Resource, st
 // TestDetectResource_Parallel validates that Detect is only called once, even if there
 // are multiple calls to ResourceProvider.Get
 func TestDetectResource_Parallel(t *testing.T) {
+	t.Skip("skipping flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10292")
 	const iterations = 5
 
 	md1 := NewMockParallelDetector()
@@ -357,12 +358,4 @@ func TestAttributesToMap(t *testing.T) {
 	attr.Insert("array", ava)
 
 	assert.Equal(t, m, AttributesToMap(attr))
-}
-
-func TestGOOSToOsType(t *testing.T) {
-	assert.Equal(t, "darwin", GOOSToOSType("darwin"))
-	assert.Equal(t, "linux", GOOSToOSType("linux"))
-	assert.Equal(t, "windows", GOOSToOSType("windows"))
-	assert.Equal(t, "dragonflybsd", GOOSToOSType("dragonfly"))
-	assert.Equal(t, "z_os", GOOSToOSType("zos"))
 }

@@ -41,4 +41,4 @@ This creates a file called `config.md` in `receiver/otlpreceiver`.
 
 ### Output Example
 
-[OTLP Receiver Config Metadata Doc](../../../receiver/otlpreceiver/config.md)
+[OTLP Receiver Config Metadata Doc](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/otlpreceiver/config.md)

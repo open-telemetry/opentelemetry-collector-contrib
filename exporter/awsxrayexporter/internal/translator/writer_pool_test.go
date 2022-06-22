@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package translator
 
 import (
@@ -56,7 +55,8 @@ func BenchmarkWithoutPool(b *testing.B) {
 		buffer := bytes.NewBuffer(make([]byte, 0, 2048))
 		encoder := json.NewEncoder(buffer)
 		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false)
-		encoder.Encode(*segment)
+		err := encoder.Encode(*segment)
+		assert.NoError(b, err)
 		logger.Info(buffer.String())
 	}
 }
@@ -70,7 +70,8 @@ func BenchmarkWithPool(b *testing.B) {
 		b.StartTimer()
 		w := wp.borrow()
 		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false)
-		w.Encode(*segment)
+		err := w.Encode(*segment)
+		assert.Nil(b, err)
 		logger.Info(w.String())
 	}
 }

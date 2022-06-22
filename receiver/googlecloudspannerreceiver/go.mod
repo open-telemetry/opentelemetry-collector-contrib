@@ -3,28 +3,28 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.17
 
 require (
-	cloud.google.com/go/spanner v1.32.0
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.51.0
+	cloud.google.com/go/spanner v1.34.0
+	github.com/stretchr/testify v1.7.3
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/zap v1.21.0
-	google.golang.org/api v0.79.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	google.golang.org/api v0.84.0
+	gopkg.in/yaml.v3 v3.0.1
 
 )
 
 require (
-	google.golang.org/genproto v0.0.0-20220505152158-f39f71e6c8f3
-	google.golang.org/grpc v1.46.2
+	google.golang.org/genproto v0.0.0-20220616135557-88e70c0c3a90
+	google.golang.org/grpc v1.47.0
 )
 
 require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
-	go.opentelemetry.io/collector/pdata v0.51.0
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 )
 
 require (
-	cloud.google.com/go v0.100.2 // indirect
+	cloud.google.com/go v0.102.0 // indirect
 	cloud.google.com/go/compute v1.6.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
@@ -39,7 +39,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
-	github.com/googleapis/gax-go/v2 v2.3.0 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.0.0-20220520183353-fd19c99a87aa // indirect
+	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.1 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
@@ -51,21 +52,20 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.1.1 // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
-	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
+	golang.org/x/net v0.0.0-20220607020251-c690dde0001d // indirect
+	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb // indirect
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
+	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
+	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

@@ -76,7 +76,7 @@ func TestScraperLoop(t *testing.T) {
 			Stats: []containerStats{{
 				ContainerID: "c1",
 			}},
-			Error: "",
+			Error: containerStatsReportError{},
 		}
 	}()
 
@@ -96,8 +96,8 @@ func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
 
 func (c mockClient) stats(context.Context) ([]containerStats, error) {
 	report := <-c
-	if report.Error != "" {
-		return nil, errors.New(report.Error)
+	if report.Error.Message != "" {
+		return nil, errors.New(report.Error.Message)
 	}
 	return report.Stats, nil
 }
