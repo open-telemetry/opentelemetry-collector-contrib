@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-<<<<<<< HEAD
-// nolint:errcheck,gocritic
-=======
->>>>>>> add error checks for loadbalancing exporters
 package loadbalancingexporter
 
 import (
