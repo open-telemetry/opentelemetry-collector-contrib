@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/jaegertracing/jaeger v1.35.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.54.0
 	github.com/stretchr/testify v1.7.4
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.53.1-0.20220622150010-388c1172deb8

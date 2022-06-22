@@ -26,7 +26,7 @@ require (
 require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.54.0
 	go.opentelemetry.io/collector/pdata v0.53.1-0.20220622150010-388c1172deb8
 	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.8.0
