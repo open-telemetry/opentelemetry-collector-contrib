@@ -224,9 +224,15 @@ type MetricsExporterConfig struct {
 	// resource attributes into metric labels, which are then converted into tags
 	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
 
+	// Deprecated: [0.54.0] Use InstrumentationScopeMetadataAsTags instead in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
+	// Both must not be enabled at the same time.
 	// InstrumentationLibraryMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation library that created a metric to the metric tags
 	InstrumentationLibraryMetadataAsTags bool `mapstructure:"instrumentation_library_metadata_as_tags"`
+
+	// InstrumentationScopeMetadataAsTags, if set to true, adds the name and version of the
+	// instrumentation scope that created a metric to the metric tags
+	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
 }
 
 // TracesConfig defines the traces exporter specific configuration options

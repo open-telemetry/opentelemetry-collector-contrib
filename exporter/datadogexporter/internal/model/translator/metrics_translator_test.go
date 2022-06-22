@@ -1221,26 +1221,30 @@ func TestMapMetrics(t *testing.T) {
 		"env:dev",
 	}
 
-	ilName := "instrumentation_library"
-	ilVersion := "1.0.0"
+	instructionName := "foo"
+	instructionVersion := "1.0.0"
 	ilTags := []string{
-		fmt.Sprintf("instrumentation_library:%s", ilName),
-		fmt.Sprintf("instrumentation_library_version:%s", ilVersion),
+		fmt.Sprintf("instrumentation_library:%s", instructionName),
+		fmt.Sprintf("instrumentation_library_version:%s", instructionVersion),
+	}
+	isTags := []string{
+		fmt.Sprintf("instrumentation_scope:%s", instructionName),
+		fmt.Sprintf("instrumentation_scope_version:%s", instructionVersion),
 	}
 
 	tests := []struct {
-		name                                      string
 		resourceAttributesAsTags                  bool
 		instrumentationLibraryMetadataAsTags      bool
+		instrumentationScopeMetadataAsTags        bool
 		expectedMetrics                           []metric
 		expectedSketches                          []sketch
 		expectedUnknownMetricType                 int
 		expectedUnsupportedAggregationTemporality int
 	}{
 		{
-			name:                                 "ResourceAttributesAsTags: false, InstrumentationLibraryMetadataAsTags: false",
 			resourceAttributesAsTags:             false,
 			instrumentationLibraryMetadataAsTags: false,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, attrTags),
 				newGaugeWithHostname("double.gauge", math.Pi, attrTags),
@@ -1277,9 +1281,9 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
-			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: false",
 			resourceAttributesAsTags:             true,
 			instrumentationLibraryMetadataAsTags: false,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, attrTags),
 				newGaugeWithHostname("double.gauge", math.Pi, attrTags),
@@ -1316,9 +1320,9 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
-			name:                                 "ResourceAttributesAsTags: false, InstrumentationLibraryMetadataAsTags: true",
 			resourceAttributesAsTags:             false,
 			instrumentationLibraryMetadataAsTags: true,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, append(attrTags, ilTags...)),
 				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, ilTags...)),
@@ -1355,9 +1359,9 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
-			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: true",
 			resourceAttributesAsTags:             true,
 			instrumentationLibraryMetadataAsTags: true,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, append(attrTags, ilTags...)),
 				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, ilTags...)),
@@ -1393,11 +1397,56 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 3,
 		},
+		{
+			resourceAttributesAsTags:             true,
+			instrumentationLibraryMetadataAsTags: false,
+			instrumentationScopeMetadataAsTags:   true,
+			expectedMetrics: []metric{
+				newGaugeWithHostname("int.gauge", 1, append(attrTags, isTags...)),
+				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, isTags...)),
+				newCountWithHostname("int.delta.sum", 2, 0, append(attrTags, isTags...)),
+				newCountWithHostname("double.delta.sum", math.E, 0, append(attrTags, isTags...)),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, append(attrTags, isTags...)),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, append(attrTags, isTags...)),
+				newCountWithHostname("summary.sum", 10_000, 2, append(attrTags, isTags...)),
+				newCountWithHostname("summary.count", 100, 2, append(attrTags, isTags...)),
+				newGaugeWithHostname("int.cumulative.sum", 4, append(attrTags, isTags...)),
+				newGaugeWithHostname("double.cumulative.sum", 4, append(attrTags, isTags...)),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, append(attrTags, isTags...)),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, append(attrTags, isTags...)),
+			},
+			expectedSketches: []sketch{
+				newSketchWithHostname("double.histogram", summary.Summary{
+					Min: 0,
+					Max: 0,
+					Sum: math.Phi,
+					Avg: math.Phi / 20,
+					Cnt: 20,
+				}, append(attrTags, isTags...)),
+				newSketchWithHostname("double.exponentialHistogram", summary.Summary{
+					// Expected min: lower bound of the highest negative bucket
+					Min: -math.Pow(math.Pow(2, math.Pow(2, -6)), 7),
+					// Expected max: upper bound of the highest positive bucket
+					Max: math.Pow(math.Pow(2, math.Pow(2, -6)), 5),
+					Sum: math.Phi,
+					Avg: math.Phi / 25,
+					Cnt: 25,
+				}, append(attrTags, isTags...)),
+			},
+			expectedUnknownMetricType:                 1,
+			expectedUnsupportedAggregationTemporality: 3,
+		},
 	}
 
 	for _, testInstance := range tests {
-		t.Run(testInstance.name, func(t *testing.T) {
-			md := createTestMetrics(attrs, ilName, ilVersion)
+		name := fmt.Sprintf(
+			"ResourceAttributesAsTags: %t, InstrumentationScopeMetadataAsTags: %t, InstrumentationLibraryName: %t",
+			testInstance.resourceAttributesAsTags,
+			testInstance.instrumentationScopeMetadataAsTags,
+			testInstance.instrumentationLibraryMetadataAsTags,
+		)
+		t.Run(name, func(t *testing.T) {
+			md := createTestMetrics(attrs, instructionName, instructionVersion)
 
 			core, observed := observer.New(zapcore.DebugLevel)
 			testLogger := zap.New(core)
@@ -1407,6 +1456,9 @@ func TestMapMetrics(t *testing.T) {
 			options := []Option{}
 			if testInstance.resourceAttributesAsTags {
 				options = append(options, WithResourceAttributesAsTags())
+			}
+			if testInstance.instrumentationScopeMetadataAsTags {
+				options = append(options, WithInstrumentationScopeMetadataAsTags())
 			}
 			if testInstance.instrumentationLibraryMetadataAsTags {
 				options = append(options, WithInstrumentationLibraryMetadataAsTags())

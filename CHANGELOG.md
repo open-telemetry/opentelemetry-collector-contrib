@@ -8,6 +8,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `instrumentation_library_metadata_as_tags` (#11135)
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
 - `observiqexporter`: Deprecate the observiq exporter (#10977)
 - `honeycombexporter`: Deprecate honeycomb exporter (#10318)
@@ -32,6 +33,7 @@
 - `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
 - `datadogexporter`: Add `exporter.datadog.hostname.preview` feature flag and related warnings (#10926)
+- `datadogexporter`: Add `instrumentation_scope_metadata_as_tags` instead of `instrumentation_library_metadata_as_tags` in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0 (#11135)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
 - `filestorageextension`: Add background compaction capability (#9327)
 - `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
