@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.54.0
+
 ## 🛑 Breaking changes 🛑
 - `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
 - `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
