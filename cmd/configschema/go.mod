@@ -310,7 +310,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.53.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.1-0.20220615184617-4cefca87d2c6 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.1-0.20220621130052-408f1e9f6d87 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.53.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.53.0 // indirect
