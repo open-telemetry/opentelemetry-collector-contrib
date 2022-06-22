@@ -15,7 +15,6 @@
 package serialization
 
 import (
-	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"math"
@@ -28,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_SerializeGaugePoint(t *testing.T) {
+func Test_serializeGaugePoint(t *testing.T) {
 	t.Run("float with prefix and dimension", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetDoubleVal(5.5)
@@ -57,11 +56,6 @@ func Test_SerializeGaugePoint(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_gauge gauge,5", got)
 	})
-}
-
-type simplifiedLogRecord struct {
-	message    string
-	attributes map[string]string
 }
 
 func Test_serializeGauge(t *testing.T) {
@@ -195,20 +189,4 @@ func Test_serializeGauge(t *testing.T) {
 			}
 		})
 	}
-}
-
-func makeSimplifiedLogRecordsFromObservedLogs(observedLogs *observer.ObservedLogs) []simplifiedLogRecord {
-	observedLogRecords := make([]simplifiedLogRecord, observedLogs.Len())
-
-	for i, observedLog := range observedLogs.All() {
-		contextStringMap := make(map[string]string, len(observedLog.ContextMap()))
-		for k, v := range observedLog.ContextMap() {
-			contextStringMap[k] = fmt.Sprint(v)
-		}
-		observedLogRecords[i] = simplifiedLogRecord{
-			message:    observedLog.Message,
-			attributes: contextStringMap,
-		}
-	}
-	return observedLogRecords
 }
