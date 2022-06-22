@@ -124,8 +124,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetCount(66)
 				point.SetSum(1004.78)
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetMExplicitBounds([]float64{0.75, 2.75})
-				point.SetMBucketCounts([]uint64{33, 22, 11})
+				point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.75, 2.75}))
+				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{33, 22, 11}))
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
@@ -149,8 +149,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetFlags(pdataStaleFlags)
-				point.SetMExplicitBounds([]float64{0.75, 2.75})
-				point.SetMBucketCounts([]uint64{0, 0, 0})
+				point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.75, 2.75}))
+				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0}))
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")

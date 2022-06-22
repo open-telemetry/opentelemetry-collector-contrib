@@ -137,6 +137,7 @@ func (f *factory) createDefaultConfig() config.Exporter {
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags:             false,
 				InstrumentationLibraryMetadataAsTags: false,
+				InstrumentationScopeMetadataAsTags:   false,
 			},
 			HistConfig: ddconfig.HistogramConfig{
 				Mode:         "distributions",

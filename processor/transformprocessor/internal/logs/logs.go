@@ -374,7 +374,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case float64:
 		attrs.UpsertDouble(mapKey, v)
 	case []byte:
-		attrs.UpsertMBytes(mapKey, v)
+		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
 	case []string:
 		arr := pcommon.NewValueSlice()
 		for _, str := range v {
@@ -402,7 +402,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case [][]byte:
 		arr := pcommon.NewValueSlice()
 		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetMBytesVal(b)
+			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
 		}
 		attrs.Upsert(mapKey, arr)
 	default:
@@ -421,7 +421,7 @@ func setValue(value pcommon.Value, val interface{}) {
 	case float64:
 		value.SetDoubleVal(v)
 	case []byte:
-		value.SetMBytesVal(v)
+		value.SetBytesVal(pcommon.NewImmutableByteSlice(v))
 	case []string:
 		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
 			return true
@@ -455,7 +455,7 @@ func setValue(value pcommon.Value, val interface{}) {
 			return true
 		})
 		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetMBytesVal(b)
+			value.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
 		}
 	default:
 		// TODO(anuraaga): Support set of map type.

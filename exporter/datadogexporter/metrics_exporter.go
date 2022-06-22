@@ -73,7 +73,15 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config, sourceProvider
 		options = append(options, translator.WithResourceAttributesAsTags())
 	}
 
-	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags {
+	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags && cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
+		return nil, fmt.Errorf("cannot use both instrumentation_library_metadata_as_tags(deprecated) and instrumentation_scope_metadata_as_tags")
+	}
+
+	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags {
+		options = append(options, translator.WithInstrumentationScopeMetadataAsTags())
+	}
+
+	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
 		options = append(options, translator.WithInstrumentationLibraryMetadataAsTags())
 	}
 
