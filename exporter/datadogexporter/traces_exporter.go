@@ -31,7 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
@@ -46,7 +46,7 @@ type traceExporter struct {
 	denylister     *denylister
 	scrubber       scrub.Scrubber
 	onceMetadata   *sync.Once
-	hostProvider   provider.HostnameProvider
+	sourceProvider source.Provider
 }
 
 var (
@@ -67,7 +67,7 @@ var (
 	}
 )
 
-func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, hostProvider provider.HostnameProvider) (*traceExporter, error) {
+func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
@@ -91,7 +91,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 		denylister:     denylister,
 		scrubber:       scrub.NewScrubber(),
 		onceMetadata:   onceMetadata,
-		hostProvider:   hostProvider,
+		sourceProvider: sourceProvider,
 	}
 
 	return exporter, nil
@@ -128,19 +128,19 @@ func (exp *traceExporter) pushTraceData(
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.hostProvider, attrs)
+			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
 
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	fallbackHost, err := exp.hostProvider.Hostname(ctx)
+	fallbackSrc, err := exp.sourceProvider.Source(ctx)
 	if err != nil {
 		return err
 	}
 
-	ddTraces, ms := convertToDatadogTd(td, fallbackHost, exp.cfg, exp.denylister, exp.params.BuildInfo)
+	ddTraces, ms := convertToDatadogTd(td, fallbackSrc, exp.cfg, exp.denylister, exp.params.BuildInfo)
 
 	// group the traces by env to reduce the number of flushes
 	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)

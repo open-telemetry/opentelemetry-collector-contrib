@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -48,8 +49,8 @@ func TestProvider(t *testing.T) {
 		nodeNameProvider    nodeNameProvider
 		clusterNameProvider provider.ClusterNameProvider
 
-		hostname string
-		err      string
+		src source.Source
+		err string
 	}{
 		{
 			name:                "no node name",
@@ -61,13 +62,13 @@ func TestProvider(t *testing.T) {
 			name:                "node name but no cluster name",
 			nodeNameProvider:    StringProvider("nodeName"),
 			clusterNameProvider: ErrorProvider("errClusterName"),
-			hostname:            "nodeName",
+			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName"},
 		},
 		{
 			name:                "node and cluster name",
 			nodeNameProvider:    StringProvider("nodeName"),
 			clusterNameProvider: StringProvider("clusterName"),
-			hostname:            "nodeName-clusterName",
+			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName-clusterName"},
 		},
 	}
 
@@ -79,11 +80,11 @@ func TestProvider(t *testing.T) {
 				clusterNameProvider: testInstance.clusterNameProvider,
 			}
 
-			hostname, err := provider.Hostname(context.Background())
+			src, err := provider.Source(context.Background())
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)
 			} else {
-				assert.Equal(t, testInstance.hostname, hostname)
+				assert.Equal(t, testInstance.src, src)
 			}
 		})
 	}

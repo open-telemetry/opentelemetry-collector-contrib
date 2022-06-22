@@ -127,20 +127,6 @@ func waitForOne(t *testing.T, c chan *entry.Entry) *entry.Entry {
 	}
 }
 
-func waitForN(t *testing.T, c chan *entry.Entry, n int) []string {
-	messages := make([]string, 0, n)
-	for i := 0; i < n; i++ {
-		select {
-		case e := <-c:
-			messages = append(messages, e.Body.(string))
-		case <-time.After(3 * time.Second):
-			require.FailNow(t, "Timed out waiting for message")
-			return nil
-		}
-	}
-	return messages
-}
-
 func waitForMessage(t *testing.T, c chan *entry.Entry, expected string) {
 	select {
 	case e := <-c:

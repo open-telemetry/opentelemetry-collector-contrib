@@ -37,9 +37,11 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		attrs.EnsureCapacity(2 + len(event.Dimensions) + len(event.Properties))
 
 		// The EventType field is stored as an attribute.
-		if event.EventType != "" {
-			attrs.InsertString(splunk.SFxEventType, event.EventType)
+		eventType := event.EventType
+		if eventType == "" {
+			eventType = "unknown"
 		}
+		attrs.InsertString(splunk.SFxEventType, eventType)
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.

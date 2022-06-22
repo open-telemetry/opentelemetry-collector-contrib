@@ -27,6 +27,7 @@ import (
 type metricTransformContext struct {
 	dataPoint interface{}
 	metric    pmetric.Metric
+	metrics   pmetric.MetricSlice
 	il        pcommon.InstrumentationScope
 	resource  pcommon.Resource
 }
@@ -45,6 +46,10 @@ func (ctx metricTransformContext) GetResource() pcommon.Resource {
 
 func (ctx metricTransformContext) GetMetric() pmetric.Metric {
 	return ctx.metric
+}
+
+func (ctx metricTransformContext) GetMetrics() pmetric.MetricSlice {
+	return ctx.metrics
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.

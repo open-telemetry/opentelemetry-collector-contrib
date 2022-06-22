@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 )
 
 const (
@@ -56,7 +57,7 @@ func getClusterName(attrs pcommon.Map) (string, bool) {
 //   6. the host.name attribute.
 //
 //  It returns a boolean value indicated if any name was found
-func HostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
+func hostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
 	// Check if the host is localhost or 0.0.0.0, if so discard it.
 	// We don't do the more strict validation done for metadata,
 	// to avoid breaking users existing invalid-but-accepted hostnames.
@@ -94,8 +95,8 @@ func unsanitizedHostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) 
 	}
 
 	if launchType, ok := attrs.Get(conventions.AttributeAWSECSLaunchtype); ok && launchType.StringVal() == conventions.AttributeAWSECSLaunchtypeFargate {
-		// If on AWS ECS Fargate, return a valid but empty hostname
-		return "", true
+		// If on AWS ECS Fargate, we don't have a hostname
+		return "", false
 	}
 
 	// Kubernetes: node-cluster if cluster name is available, else node
@@ -136,4 +137,19 @@ func unsanitizedHostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) 
 	}
 
 	return "", false
+}
+
+// SourceFromAttributes gets a telemetry signal source from its attributes.
+func SourceFromAttributes(attrs pcommon.Map, usePreviewRules bool) (source.Source, bool) {
+	if launchType, ok := attrs.Get(conventions.AttributeAWSECSLaunchtype); ok && launchType.StringVal() == conventions.AttributeAWSECSLaunchtypeFargate {
+		if taskARN, ok := attrs.Get(conventions.AttributeAWSECSTaskARN); ok {
+			return source.Source{Kind: source.AWSECSFargateKind, Identifier: taskARN.StringVal()}, true
+		}
+	}
+
+	if host, ok := hostnameFromAttributes(attrs, usePreviewRules); ok {
+		return source.Source{Kind: source.HostnameKind, Identifier: host}, true
+	}
+
+	return source.Source{}, false
 }

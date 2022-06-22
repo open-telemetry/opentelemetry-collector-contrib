@@ -13,7 +13,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.5
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.3
 	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
 	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/atomic v1.9.0
@@ -71,7 +71,7 @@ require (
 )
 
 require (
-	github.com/jaegertracing/jaeger v1.35.1 // indirect
+	github.com/jaegertracing/jaeger v1.35.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.53.0
 	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad

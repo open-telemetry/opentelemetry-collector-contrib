@@ -1,5 +1,11 @@
 # Wavefront Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 The Wavefront receiver accepts metrics and depends on [carbonreceiver proto
 and
 transport](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/carbonreceiver),
@@ -13,7 +19,6 @@ it to the collector metric format. See
 [https://docs.wavefront.com/wavefront_data_format.html#metrics-data-format-syntax.](https://docs.wavefront.com/wavefront_data_format.html#metrics-data-format-syntax)
 Each line received represents a Wavefront metric in the following format:
 
-Supported pipeline types: metrics
 
 ```<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]```
 
@@ -51,3 +56,6 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

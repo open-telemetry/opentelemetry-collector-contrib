@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
-	github.com/stretchr/testify v1.7.2
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.418
+	github.com/stretchr/testify v1.7.3
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.424
 	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/zap v1.21.0
 )

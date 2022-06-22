@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package skywalkingexporter
 
 import (
@@ -108,21 +107,22 @@ func TestLogsDataToLogService(t *testing.T) {
 			assert.Equal(t, searchLogTag(severityText, log), "INFO")
 			assert.Equal(t, searchLogTag(severityNumber, log), "9")
 			assert.Equal(t, log.Timestamp, pcommon.Timestamp(int64(i)*time.Millisecond.Nanoseconds()).AsTime().UnixMilli())
-			if i == 1 {
+			switch i {
+			case 1:
 				assert.Equal(t, log.GetBody().GetText().GetText(), "true")
-			} else if i == 2 {
+			case 2:
 				assert.Equal(t, log.GetBody().GetText().GetText(), "2")
-			} else if i == 3 {
+			case 3:
 				assert.Equal(t, log.GetBody().GetText().GetText(), "3")
-			} else if i == 4 {
+			case 4:
 				assert.Equal(t, log.GetBody().GetText().GetText(), "4")
-			} else if i == 5 {
+			case 5:
 				assert.Equal(t, log.GetBody().GetText().GetText(), "log contents")
 				assert.Equal(t, searchLogTag("map-value", log), "{\"array\":[\"array\"],\"code\":200,\"map\":{\"data\":\"hello world\"},\"null\":null,\"result\":true,\"status\":\"ok\",\"value\":1.3}")
-			} else if i == 6 {
+			case 6:
 				assert.Equal(t, log.GetBody().GetText().GetText(), "log contents")
 				assert.Equal(t, searchLogTag("array-value", log), "[\"array\"]")
-			} else {
+			default:
 				assert.Equal(t, log.GetBody().GetText().GetText(), "log contents")
 			}
 		} else {

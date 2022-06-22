@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.3
 	go.uber.org/zap v1.21.0
 )
 

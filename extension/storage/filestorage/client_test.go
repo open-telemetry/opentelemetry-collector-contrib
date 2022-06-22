@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -287,71 +286,73 @@ func TestClientReboundCompaction(t *testing.T) {
 }
 
 func TestClientConcurrentCompaction(t *testing.T) {
-	t.Skip("Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11039")
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
 	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	checkInterval := time.Millisecond
+	stepInterval := time.Millisecond * 5
 
 	client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
 		OnRebound:                  true,
-		CheckInterval:              checkInterval,
+		CheckInterval:              stepInterval * 2,
 		ReboundNeededThresholdMiB:  1,
 		ReboundTriggerThresholdMiB: 5,
 	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
+		// At least one compaction should have happened
+		require.GreaterOrEqual(t, len(logObserver.FilterMessage("finished compaction").All()), 1)
 		require.NoError(t, client.Close(context.TODO()))
 	})
 
-	var wg sync.WaitGroup
-	repeats := 5
 	ctx := context.Background()
 
-	clientOperationsThread := func(id int) {
+	// Make sure the compaction conditions will be met by putting and deleting large chunk of data
+	batchWrite := []storage.Operation{
+		storage.SetOperation("large-payload", make([]byte, 10000000)),
+	}
+	err = client.Batch(ctx, batchWrite...)
+	require.NoError(t, err)
+	err = client.Batch(ctx, storage.DeleteOperation("large-payload"))
+	require.NoError(t, err)
+
+	// Start a couple of concurrent threads and see how they add/remove data as needed without failures
+	clientOperationsThread := func(t *testing.T, id int) {
+		repeats := 10
 		for i := 0; i < repeats; i++ {
 			batchWrite := []storage.Operation{
-				storage.SetOperation(fmt.Sprintf("foo-%d-%d", id, i), make([]byte, 1000000)),
+				storage.SetOperation(fmt.Sprintf("foo-%d-%d", id, i), make([]byte, 1000)),
 				storage.SetOperation(fmt.Sprintf("bar-%d-%d", id, i), []byte("testValueBar")),
 			}
-			err := client.Batch(ctx, batchWrite...)
-			require.NoError(t, err)
+			terr := client.Batch(ctx, batchWrite...)
+			require.NoError(t, terr)
 
-			err = client.Batch(ctx, storage.DeleteOperation(fmt.Sprintf("foo-%d-%d", id, i)))
-			require.NoError(t, err)
+			terr = client.Batch(ctx, storage.DeleteOperation(fmt.Sprintf("foo-%d-%d", id, i)))
+			require.NoError(t, terr)
 
-			// Make sure the requests are somewhat spaced
-			time.Sleep(checkInterval * 2)
-
-			result, err := client.Get(ctx, fmt.Sprintf("foo-%d-%d", id, i))
-			require.NoError(t, err)
+			result, terr := client.Get(ctx, fmt.Sprintf("foo-%d-%d", id, i))
+			require.NoError(t, terr)
 			require.Equal(t, []byte(nil), result)
 
-			result, err = client.Get(ctx, fmt.Sprintf("bar-%d-%d", id, i))
-			require.NoError(t, err)
+			result, terr = client.Get(ctx, fmt.Sprintf("bar-%d-%d", id, i))
+			require.NoError(t, terr)
 			require.Equal(t, []byte("testValueBar"), result)
 
 			// Make sure the requests are somewhat spaced
-			time.Sleep(checkInterval)
+			time.Sleep(stepInterval)
 		}
-
-		wg.Done()
 	}
 
-	// Start a couple of concurrent threads and see how they add/remove data as needed without failures
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go clientOperationsThread(i)
+		i := i
+		t.Run(fmt.Sprintf("client-operations-thread-%d", i), func(t *testing.T) {
+			t.Parallel()
+			clientOperationsThread(t, i)
+		})
 	}
-
-	wg.Wait()
-
-	// The actual number might vary a bit depending on the actual intervals
-	require.GreaterOrEqual(t, len(logObserver.FilterMessage("finished compaction").All()), 3)
 }
 
 func BenchmarkClientGet(b *testing.B) {

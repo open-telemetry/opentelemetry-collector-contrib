@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -120,7 +121,7 @@ func BenchmarkFileInput(b *testing.B) {
 				cfg.Include = []string{
 					"file*.log",
 				}
-				cfg.FingerprintSize = 10 * defaultFingerprintSize
+				cfg.FingerprintSize = 10 * fileconsumer.DefaultFingerprintSize
 				return cfg
 			},
 		},
@@ -134,7 +135,7 @@ func BenchmarkFileInput(b *testing.B) {
 				cfg.Include = []string{
 					"file*.log",
 				}
-				cfg.FingerprintSize = defaultFingerprintSize / 10
+				cfg.FingerprintSize = fileconsumer.DefaultFingerprintSize / 10
 				return cfg
 			},
 		},

@@ -51,6 +51,11 @@ processors:
             span_count: {min_spans: 2}
          },
          {
+            name: test-policy-9,
+            type: trace_state,
+            trace_state: { key: key3, values: [ value1, value2 ] }
+         },
+         {
             name: and-policy-1,
             type: and,
             and: {

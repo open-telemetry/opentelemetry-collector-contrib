@@ -11,14 +11,14 @@ It takes a list of queries which are performed in the order specified in the con
 
 Queries are composed of the following parts
 - Path expressions: Fields within the incoming data can be referenced using expressions composed of the names as defined
-in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]`. If the path expression begins with
+in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]`, `trace_state["example_key"]`. If the path expression begins with
 `resource.` or `instrumentation_library.`, it will reference those values.  For metrics, `name`, `description`, `unit`, `type`, `is_monotonic`, and `aggregation_temporality` are accessed via `metric.`
   - The name `instrumentation_library` within OpenTelemetry is currently under discussion and may be changed in the future.
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
   - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
   - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
-- Literals: Strings, ints, floats, and bools can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
-- Function invocations: Functions can be invoked with arguments matching the function's expected arguments
+- Literals: Strings, ints, floats, bools, and nil can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
+- Function invocations: Functions can be invoked with arguments matching the function's expected arguments.  The literal nil cannot be used as a replacement for maps or slices in function calls.
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
 
 Supported functions:
@@ -27,7 +27,7 @@ Supported functions:
 - `TraceID(bytes)` - `bytes` is a byte slice of exactly 16 bytes. The function returns a TraceID from `bytes`. e.g., `TraceID(0x00000000000000000000000000000000)`
 
 - `set(target, value)` - `target` is a path expression to a telemetry field to set `value` into. `value` is any value type.
-e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`. If `value` resolves to `nil`, e.g.
+e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`, `set(trace_state["svc"], "example")`, `set(attributes["source"], trace_state["source"])`. If `value` resolves to `nil`, e.g.
 it references an unset map value, there will be no action.
 
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
@@ -45,7 +45,14 @@ Metric only functions:
 - `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
 **NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#gauge). Use at your own risk.
 
-- `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". 
+- `convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)` - Creates a new Sum metric out of incoming metrics of type "Summary" with a "Count" Value. Noop for metrics that are not of type "Summary". The name for the new metric with be `<summary metric>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`.
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk. 
+
+- `convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)` - Creates a new Sum metric out of incoming metrics of type "Summary" with a "Sum" Value. Noop for metrics that are not of type "Summary". The name for the new metric with be `<summary metric>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+
+- `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
 Supported where operations:
