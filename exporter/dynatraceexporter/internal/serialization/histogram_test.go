@@ -15,6 +15,8 @@
 package serialization
 
 import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"testing"
 	"time"
 
@@ -24,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_serializeHistogram(t *testing.T) {
+func Test_serializeHistogramPoint(t *testing.T) {
 	hist := pmetric.NewHistogramDataPoint()
 	hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
 	hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 0}))
@@ -317,5 +319,94 @@ func Test_serializeHistogram(t *testing.T) {
 				assert.Equal(t, 3*1.5+5*2.5+2*5, sum, "use bucket upper bound")
 			})
 		})
+	})
+}
+
+func Test_serializeHistogram(t *testing.T) {
+	emptyDims := dimensions.NewNormalizedDimensionList()
+	t.Run("wrong aggregation temporality", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeHistogram)
+		metric.SetName("metric_name")
+		hist := metric.Histogram()
+		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		assert.Empty(t, lines)
+
+		actualLogRecords := makeSimplifiedLogRecordsFromObservedLogs(observedLogs)
+
+		expectedLogRecords := []simplifiedLogRecord{
+			{
+				message: "dropping cumulative histogram",
+				attributes: map[string]string{
+					"name": "metric_name",
+				},
+			},
+		}
+
+		assert.ElementsMatch(t, actualLogRecords, expectedLogRecords)
+	})
+
+	t.Run("serialize returns error", func(t *testing.T) {
+		// just testing one case to make sure the error reporting works,
+		// the actual testing is done in Test_serializeHistogramPoint
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeHistogram)
+		metric.SetName("metric_name")
+		hist := metric.Histogram()
+		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		dp := hist.DataPoints().AppendEmpty()
+		dp.SetMin(10)
+		dp.SetMax(3)
+		dp.SetCount(1)
+		dp.SetSum(30)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		assert.Empty(t, lines)
+
+		expectedLogRecords := []simplifiedLogRecord{
+			{
+				message: "Error serializing histogram data point",
+				attributes: map[string]string{
+					"name":  "metric_name",
+					"error": "min (10.000) cannot be greater than max (3.000)",
+				},
+			},
+		}
+
+		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+	})
+
+	t.Run("histogram serialized as summary", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeHistogram)
+		metric.SetName("metric_name")
+		hist := metric.Histogram()
+		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		dp := hist.DataPoints().AppendEmpty()
+		dp.SetMin(1)
+		dp.SetMax(5)
+		dp.SetCount(3)
+		dp.SetSum(8)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+
+		expectedLines := []string{
+			"metric_name gauge,min=1,max=5,sum=8,count=3",
+		}
+
+		assert.ElementsMatch(t, lines, expectedLines)
+
+		assert.Empty(t, observedLogs.All())
 	})
 }
