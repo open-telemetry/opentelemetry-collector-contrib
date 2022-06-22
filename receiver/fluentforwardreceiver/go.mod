@@ -6,8 +6,8 @@ require (
 	github.com/stretchr/testify v1.7.4
 	github.com/tinylib/msgp v1.1.6
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector v0.54.0
+	go.opentelemetry.io/collector/pdata v0.54.0
 	go.uber.org/zap v1.21.0
 
 )

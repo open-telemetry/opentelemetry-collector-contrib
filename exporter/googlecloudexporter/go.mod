@@ -6,13 +6,13 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.13
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.2
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.54.0
 	github.com/stretchr/testify v1.7.4
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
-	go.opentelemetry.io/collector/semconv v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector v0.54.0
+	go.opentelemetry.io/collector/pdata v0.54.0
+	go.opentelemetry.io/collector/semconv v0.54.0
 	google.golang.org/api v0.84.0
 	google.golang.org/genproto v0.0.0-20220608133413-ed9918b62aac
 	google.golang.org/grpc v1.47.0

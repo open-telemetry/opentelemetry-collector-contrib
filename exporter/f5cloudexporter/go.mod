@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clou
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.54.0
 	github.com/stretchr/testify v1.7.4
-	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector v0.54.0
 	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb
 	google.golang.org/api v0.84.0
 )
@@ -37,7 +37,7 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87 // indirect
+	go.opentelemetry.io/collector/pdata v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
