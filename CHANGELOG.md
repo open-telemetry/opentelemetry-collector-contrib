@@ -59,6 +59,7 @@
 - `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
 - `splunkhecexporter`: Fix flaky test when exporting traces (#11418)
 - `mongodbatlasexporter`: Fix mongodbatlas.system.memory.usage.max not being reported (#11126)
+- `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
 
 ## v0.53.0
 
