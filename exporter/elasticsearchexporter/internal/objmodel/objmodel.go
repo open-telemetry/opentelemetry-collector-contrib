@@ -253,12 +253,8 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 	if err != nil {
 		return err
 	}
-	defer func() error {
+	defer func() {
 		err = w.OnObjectFinished()
-		if err != nil {
-			return err
-		}
-		return nil
 	}()
 
 	for i := range doc.fields {
@@ -286,12 +282,8 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	if err != nil {
 		return err
 	}
-	defer func() error {
+	defer func() {
 		err = w.OnObjectFinished()
-		if err != nil {
-			return err
-		}
-		return nil
 	}()
 
 	for i := range doc.fields {
