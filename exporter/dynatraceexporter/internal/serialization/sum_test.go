@@ -15,6 +15,9 @@
 package serialization
 
 import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	"math"
 	"testing"
 	"time"
 
@@ -26,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func Test_serializeSum(t *testing.T) {
+func Test_serializeSumPoint(t *testing.T) {
 	t.Run("without timestamp", func(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntVal(5)
@@ -162,5 +165,195 @@ func Test_serializeSum(t *testing.T) {
 		assert.Equal(t, "", got)
 
 		assert.Equal(t, dp, prev.Get("int_sum"))
+	})
+}
+
+func Test_serializeSum(t *testing.T) {
+	empty := dimensions.NewNormalizedDimensionList()
+	t.Run("non-monotonic delta is dropped", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeSum)
+		metric.SetName("metric_name")
+		sum := metric.Sum()
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		sum.SetIsMonotonic(false)
+		prev := ttlmap.New(10, 10)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		lines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+		assert.Empty(t, lines)
+
+		expectedLogs := []simplifiedLogRecord{
+			{
+				message: "dropping delta non-monotonic sum",
+				attributes: map[string]string{
+					"name": "metric_name",
+				},
+			},
+		}
+		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogs)
+	})
+
+	t.Run("monotonic delta is exported as delta", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeSum)
+		metric.SetName("metric_name")
+		sum := metric.Sum()
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		sum.SetIsMonotonic(true)
+
+		// not checking Double, this is done in Test_serializeSumPoint
+		validDp := sum.DataPoints().AppendEmpty()
+		validDp.SetIntVal(12)
+
+		invalidDp := sum.DataPoints().AppendEmpty()
+		invalidDp.SetDoubleVal(math.NaN())
+
+		prev := ttlmap.New(10, 10)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+		expectedLines := []string{
+			"metric_name count,delta=12",
+		}
+		expectedLogRecords := []simplifiedLogRecord{
+			{
+				message: "Error serializing sum data point",
+				attributes: map[string]string{
+					"name":       "metric_name",
+					"value-type": "Double",
+					"error":      "value is NaN.",
+				},
+			},
+		}
+
+		assert.ElementsMatch(t, actualLines, expectedLines)
+		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+	})
+
+	t.Run("non-monotonic cumulative is exported as gauge", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeSum)
+		metric.SetName("metric_name")
+		sum := metric.Sum()
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		// not checking Int here, this is done in Test_serializeSumPoint
+		validDp := sum.DataPoints().AppendEmpty()
+		validDp.SetDoubleVal(12.3)
+
+		invalidDp := sum.DataPoints().AppendEmpty()
+		invalidDp.SetDoubleVal(math.NaN())
+
+		prev := ttlmap.New(10, 10)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+		expectedLines := []string{
+			"metric_name gauge,12.3",
+		}
+		expectedLogRecords := []simplifiedLogRecord{
+			{
+				message: "Error serializing non-monotonic Sum as gauge",
+				attributes: map[string]string{
+					"name":       "metric_name",
+					"value-type": "Double",
+					"error":      "value is NaN.",
+				},
+			},
+		}
+
+		assert.ElementsMatch(t, actualLines, expectedLines)
+		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+	})
+
+	t.Run("monotonic cumulative is converted to delta", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeSum)
+		metric.SetName("metric_name")
+		sum := metric.Sum()
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetIsMonotonic(true)
+
+		// not checking Int here, this is done in Test_serializeSumPoint
+		dp1 := sum.DataPoints().AppendEmpty()
+		dp1.SetDoubleVal(5.2)
+
+		dp2 := sum.DataPoints().AppendEmpty()
+		dp2.SetDoubleVal(5.7)
+
+		invalidDp := sum.DataPoints().AppendEmpty()
+		invalidDp.SetDoubleVal(math.NaN())
+
+		prev := ttlmap.New(10, 10)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+		expectedLines := []string{
+			"metric_name count,delta=0.5",
+		}
+		expectedLogRecords := []simplifiedLogRecord{
+			{
+				message: "Error serializing sum data point",
+				attributes: map[string]string{
+					"name":       "metric_name",
+					"value-type": "Double",
+					"error":      "value is NaN.",
+				},
+			},
+		}
+
+		assert.ElementsMatch(t, actualLines, expectedLines)
+		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+	})
+
+	t.Run("failure on switching value types in cumulative to delta conversion", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetDataType(pmetric.MetricDataTypeSum)
+		metric.SetName("metric_name")
+		sum := metric.Sum()
+		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetIsMonotonic(true)
+
+		// not checking Int here, this is done in Test_serializeSumPoint
+		dp1 := sum.DataPoints().AppendEmpty()
+		dp1.SetDoubleVal(5.2)
+
+		dp2 := sum.DataPoints().AppendEmpty()
+		dp2.SetIntVal(5)
+
+		prev := ttlmap.New(10, 10)
+
+		zapCore, observedLogs := observer.New(zap.WarnLevel)
+		logger := zap.New(zapCore)
+
+		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+		assert.Empty(t, actualLines)
+
+		expectedLogRecords := []simplifiedLogRecord{
+			{
+				message: "Error serializing sum data point",
+				attributes: map[string]string{
+					"name":       "metric_name",
+					"value-type": "Int",
+					"error":      "expected metric_name to be type MetricValueTypeDouble but got MericValueTypeInt - count reset",
+				},
+			},
+		}
+
+		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
 	})
 }
