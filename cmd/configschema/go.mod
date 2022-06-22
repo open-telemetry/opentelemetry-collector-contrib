@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.53.0
 	github.com/stretchr/testify v1.7.4
-	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector v0.53.1-0.20220622150010-388c1172deb8
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220622150010-388c1172deb8
 	go.uber.org/multierr v1.8.0
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
 	golang.org/x/text v0.3.7
@@ -492,7 +492,7 @@ require (
 	go.mongodb.org/atlas v0.16.0 // indirect
 	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.53.1-0.20220621130052-408f1e9f6d87 // indirect
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220622150010-388c1172deb8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.32.0 // indirect
