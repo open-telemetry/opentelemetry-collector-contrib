@@ -105,7 +105,7 @@ func TestBallastMemory(t *testing.T) {
 					testbed.ResourceSpec{
 						ExpectedMaxRAM:         test.maxRSS,
 						ResourceCheckPeriod:    time.Second,
-						MaxConsecutiveFailures: 3,
+						MaxConsecutiveFailures: 5,
 					},
 				),
 			)
@@ -119,7 +119,7 @@ func TestBallastMemory(t *testing.T) {
 			tc.WaitForN(func() bool {
 				rss, vms, _ = tc.AgentMemoryInfo()
 				return vms > test.ballastSize
-			}, time.Second*2, fmt.Sprintf("VMS must be greater than %d", test.ballastSize))
+			}, time.Second*5, fmt.Sprintf("VMS must be greater than %d", test.ballastSize))
 
 			// https://github.com/open-telemetry/opentelemetry-collector/issues/3233
 			// given that the maxRSS isn't an absolute maximum and that the actual maximum might be a bit off,

@@ -327,8 +327,8 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 			cp.fetchCPUUsage()
 
 			if err := cp.checkAllowedResourceUsage(); err != nil {
-				remainingFailures--
 				if remainingFailures > 0 {
+					remainingFailures--
 					log.Printf("Resource utilization too high. Remaining attempts: %d", remainingFailures)
 					continue
 				}
@@ -337,7 +337,6 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 				}
 				return err
 			}
-			remainingFailures = cp.resourceSpec.MaxConsecutiveFailures
 
 		case <-cp.doneSignal:
 			log.Printf("Stopping process monitor.")
