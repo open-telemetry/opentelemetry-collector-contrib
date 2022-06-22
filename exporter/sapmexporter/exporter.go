@@ -18,6 +18,7 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"errors"
+
 	"github.com/jaegertracing/jaeger/model"
 	sapmclient "github.com/signalfx/sapm-proto/client"
 	"go.opentelemetry.io/collector/component"
