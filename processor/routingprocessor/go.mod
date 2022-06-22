@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.53.0
-	github.com/stretchr/testify v1.7.3
-	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
+	github.com/stretchr/testify v1.7.4
+	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.47.0
 )
@@ -25,7 +25,7 @@ require (
 	github.com/jaegertracing/jaeger v1.35.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.6 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -39,7 +39,7 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6 // indirect
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220621130052-408f1e9f6d87 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect

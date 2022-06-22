@@ -56,8 +56,8 @@ func serializeHistogram(name, prefix string, dims dimensions.NormalizedDimension
 // histDataPointToSummary returns the estimated minimum and maximum value in the histogram by using the min and max non-empty buckets.
 // It MAY NOT be called with a data point with dp.Count() == 0.
 func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, float64) {
-	bounds := dp.MExplicitBounds()
-	counts := dp.MBucketCounts()
+	bounds := dp.ExplicitBounds()
+	counts := dp.BucketCounts()
 
 	// shortcut if min, max, and sum are provided
 	if dp.HasMin() && dp.HasMax() && dp.HasSum() {
@@ -65,7 +65,7 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 	}
 
 	// a single-bucket histogram is a special case
-	if len(counts) == 1 {
+	if counts.Len() == 1 {
 		return estimateSingleBucketHistogram(dp)
 	}
 
@@ -78,9 +78,9 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 	var min, max, sum float64 = 0, 0, 0
 
 	// Because we do not know the actual min, max, or sum, we estimate them based on non-empty buckets
-	for i := 0; i < len(counts); i++ {
+	for i := 0; i < counts.Len(); i++ {
 		// empty bucket
-		if counts[i] == 0 {
+		if counts.At(i) == 0 {
 			continue
 		}
 
@@ -91,31 +91,31 @@ func histDataPointToSummary(dp pmetric.HistogramDataPoint) (float64, float64, fl
 			foundNonEmptyBucket = true
 			if i == 0 {
 				// if we're in the first bucket, the best estimate we can make for min is the upper bound
-				min = bounds[i]
+				min = bounds.At(i)
 			} else {
-				min = bounds[i-1]
+				min = bounds.At(i - 1)
 			}
 		}
 
 		// max estimation
-		if i == len(counts)-1 {
+		if i == counts.Len()-1 {
 			// if we're in the last bucket, the best estimate we can make for max is the lower bound
-			max = bounds[i-1]
+			max = bounds.At(i - 1)
 		} else {
-			max = bounds[i]
+			max = bounds.At(i)
 		}
 
 		// sum estimation
 		switch i {
 		case 0:
 			// in the first bucket, estimate sum using the upper bound
-			sum += float64(counts[i]) * bounds[i]
-		case len(counts) - 1:
+			sum += float64(counts.At(i)) * bounds.At(i)
+		case counts.Len() - 1:
 			// in the last bucket, estimate sum using the lower bound
-			sum += float64(counts[i]) * bounds[i-1]
+			sum += float64(counts.At(i)) * bounds.At(i-1)
 		default:
 			// in any other bucket, estimate sum using the bucket midpoint
-			sum += float64(counts[i]) * (bounds[i] + bounds[i-1]) / 2
+			sum += float64(counts.At(i)) * (bounds.At(i) + bounds.At(i-1)) / 2
 		}
 	}
 

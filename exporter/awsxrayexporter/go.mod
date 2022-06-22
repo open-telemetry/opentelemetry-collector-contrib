@@ -6,10 +6,10 @@ require (
 	github.com/aws/aws-sdk-go v1.44.38
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.53.0
-	github.com/stretchr/testify v1.7.3
-	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
-	go.opentelemetry.io/collector/semconv v0.53.1-0.20220615184617-4cefca87d2c6
+	github.com/stretchr/testify v1.7.4
+	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector/semconv v0.53.1-0.20220621130052-408f1e9f6d87
 	go.uber.org/zap v1.21.0
 )
 
@@ -21,7 +21,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
