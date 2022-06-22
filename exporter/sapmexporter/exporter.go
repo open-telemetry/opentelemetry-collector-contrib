@@ -120,7 +120,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 	filterToken(batches)
 
 	ingestResponse, err := se.client.ExportWithAccessTokenAndGetResponse(ctx, batches, accessToken)
-	if se.config.LogDetailedResponseFromTraceIngest && ingestResponse != nil {
+	if se.config.LogDetailedResponse && ingestResponse != nil {
 		if ingestResponse.Err != nil {
 			se.logger.Debug("Failed to get response from trace ingest", zap.Error(ingestResponse.Err))
 		} else {

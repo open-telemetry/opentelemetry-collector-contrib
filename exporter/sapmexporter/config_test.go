@@ -47,12 +47,12 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings:                   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			Endpoint:                           "test-endpoint",
-			AccessToken:                        "abcd1234",
-			NumWorkers:                         3,
-			MaxConnections:                     45,
-			LogDetailedResponseFromTraceIngest: true,
+			ExporterSettings:    config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
+			Endpoint:            "test-endpoint",
+			AccessToken:         "abcd1234",
+			NumWorkers:          3,
+			MaxConnections:      45,
+			LogDetailedResponse: true,
 			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 				AccessTokenPassthrough: false,
 			},

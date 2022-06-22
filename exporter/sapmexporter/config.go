@@ -53,7 +53,7 @@ type Config struct {
 	DisableCompression bool `mapstructure:"disable_compression"`
 
 	// Log detailed response from trace ingest.
-	LogDetailedResponseFromTraceIngest bool `mapstructure:"log_detailed_response_from_trace_ingest"`
+	LogDetailedResponse bool `mapstructure:"log_detailed_response"`
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
