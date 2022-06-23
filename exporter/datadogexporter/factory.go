@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/featuregate"
 
-	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -103,23 +102,23 @@ func (f *factory) createDefaultConfig() config.Exporter {
 		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
 	}
 
-	hostnameSource := ddconfig.HostnameSourceFirstResource
+	hostnameSource := HostnameSourceFirstResource
 	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
-		hostnameSource = ddconfig.HostnameSourceConfigOrSystem
+		hostnameSource = HostnameSourceConfigOrSystem
 	}
 
-	return &ddconfig.Config{
+	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
-		API: ddconfig.APIConfig{
+		API: APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
 			Site: site,
 		},
 
-		TagsConfig: ddconfig.TagsConfig{
+		TagsConfig: TagsConfig{
 			Hostname:   os.Getenv("DD_HOST"),
 			Env:        env,
 			Service:    os.Getenv("DD_SERVICE"),
@@ -127,38 +126,38 @@ func (f *factory) createDefaultConfig() config.Exporter {
 			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set
 		},
 
-		Metrics: ddconfig.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: metricsEndpoint,
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
 			Quantiles:     true,
-			ExporterConfig: ddconfig.MetricsExporterConfig{
+			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:             false,
 				InstrumentationLibraryMetadataAsTags: false,
 				InstrumentationScopeMetadataAsTags:   false,
 			},
-			HistConfig: ddconfig.HistogramConfig{
+			HistConfig: HistogramConfig{
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
-			SumConfig: ddconfig.SumConfig{
-				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
-			SummaryConfig: ddconfig.SummaryConfig{
-				Mode: ddconfig.SummaryModeGauges,
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
 			},
 		},
 
-		Traces: ddconfig.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: tracesEndpoint,
 			},
 			IgnoreResources: []string{},
 		},
 
-		HostMetadata: ddconfig.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: hostnameSource,
 		},
@@ -175,7 +174,7 @@ func (f *factory) createMetricsExporter(
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
 
-	cfg := c.(*ddconfig.Config)
+	cfg := c.(*Config)
 
 	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err
@@ -239,7 +238,7 @@ func (f *factory) createTracesExporter(
 	c config.Exporter,
 ) (component.TracesExporter, error) {
 
-	cfg := c.(*ddconfig.Config)
+	cfg := c.(*Config)
 
 	if err := cfg.Sanitize(set.Logger); err != nil {
 		return nil, err

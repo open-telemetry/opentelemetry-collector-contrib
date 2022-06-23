@@ -32,7 +32,6 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
@@ -75,7 +74,7 @@ const (
 const AttributeExceptionEventName = "exception"
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td ptrace.Traces, fallbackSrc source.Source, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td ptrace.Traces, fallbackSrc source.Source, cfg *Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -156,7 +155,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs ptrace.ResourceSpans, hostname string, cfg *config.Config, blk *denylister, spanNameMap map[string]string) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs ptrace.ResourceSpans, hostname string, cfg *Config, blk *denylister, spanNameMap map[string]string) pb.TracePayload {
 	// get env tag
 	env := utils.NormalizeTag(cfg.Env)
 
@@ -250,7 +249,7 @@ func resourceSpansToDatadogSpans(rs ptrace.ResourceSpans, hostname string, cfg *
 func spanToDatadogSpan(s ptrace.Span,
 	serviceName string,
 	datadogTags map[string]string,
-	cfg *config.Config,
+	cfg *Config,
 	spanNameMap map[string]string,
 ) *pb.Span {
 	tags := aggregateSpanTags(s, datadogTags)

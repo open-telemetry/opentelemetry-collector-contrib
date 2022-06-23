@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `config` package in favor of structs on the `datadogexporter` package. (#TODO)
+
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑

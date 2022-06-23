@@ -34,7 +34,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
@@ -140,7 +139,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 		Version: "1.0",
 	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, testSource, &Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 1, len(outputTraces))
 	assert.Equal(t, 1, len(runningMetrics))
@@ -153,7 +152,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 		Version: "1.0",
 	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, testSource, &Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0, len(outputTraces))
 	assert.Equal(t, 0, len(runningMetrics))
@@ -182,7 +181,7 @@ func TestRunningTraces(t *testing.T) {
 		Version: "1.0",
 	}
 
-	_, runningMetrics := convertToDatadogTd(td, source.Source{Kind: source.HostnameKind, Identifier: "fallbackHost"}, &config.Config{}, newDenylister([]string{}), buildInfo)
+	_, runningMetrics := convertToDatadogTd(td, source.Source{Kind: source.HostnameKind, Identifier: "fallbackHost"}, &Config{}, newDenylister([]string{}), buildInfo)
 
 	runningHostnames := []string{}
 	for _, metric := range runningMetrics {
@@ -222,7 +221,7 @@ func TestRunningTracesARN(t *testing.T) {
 
 	buildInfo := component.BuildInfo{}
 
-	_, runningMetrics := convertToDatadogTd(td, source.Source{Kind: source.HostnameKind, Identifier: "fallbackHost"}, &config.Config{}, newDenylister([]string{}), buildInfo)
+	_, runningMetrics := convertToDatadogTd(td, source.Source{Kind: source.HostnameKind, Identifier: "fallbackHost"}, &Config{}, newDenylister([]string{}), buildInfo)
 
 	runningHostnames := []string{}
 	runningTags := []string{}
@@ -260,7 +259,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &Config{}, denylister, buildInfo)
 
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
@@ -286,7 +285,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeUnset, false, mockEndTime)
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &Config{}, denylister, map[string]string{})
 
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
@@ -362,7 +361,7 @@ func TestBasicTracesDenylist(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeUnset, false, mockEndTime)
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &Config{}, denylister, map[string]string{})
 
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
@@ -388,8 +387,8 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeError, true, mockEndTime)
 
 	// translate mocks to datadog traces
-	cfg := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfg := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 		},
 	}
@@ -467,7 +466,7 @@ func TestTracesFallbackErrorMessage(t *testing.T) {
 	span.Attributes().InsertString("http.status_text", "Not Found")
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &Config{}, denylister, map[string]string{})
 
 	// ensure that span error type uses a fallback of "error"
 	assert.Equal(t, "error", datadogPayload.Traces[0].Spans[0].Meta["error.type"])
@@ -517,8 +516,8 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	event.Attributes().InsertBool("flag", false)
 
 	// translate mocks to datadog traces
-	cfg := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfg := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 		},
 	}
@@ -574,8 +573,8 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	evt.Attributes().InsertBool("flag", false)
 
 	// translate mocks to datadog traces
-	cfg := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfg := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 		},
 	}
@@ -629,8 +628,8 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeError, true, mockEndTime)
 
 	// translate mocks to datadog traces
-	cfg := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfg := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 		},
 	}
@@ -678,8 +677,8 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// toggle on errors and custom service naming to test edge case code paths
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeUnset, true, mockEndTime)
 
-	cfg := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfg := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 			Service: "alt-service",
 		},
@@ -716,8 +715,8 @@ func TestTracesTranslationNoIls(t *testing.T) {
 
 	rs := ptrace.NewResourceSpans()
 
-	cfg := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfg := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 			Service: "alt-service",
 		},
@@ -750,24 +749,24 @@ func TestTracesTranslationInvalidService(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeUnset, false, mockEndTime)
 
 	// add a tab and an invalid character to see if it gets normalized
-	cfgInvalidService := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfgInvalidService := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 			Service: "alt-s	ervice",
 		},
 	}
 
 	// use only an invalid character
-	cfgEmptyService := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfgEmptyService := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 			Service: "	",
 		},
 	}
 
 	// start with an invalid character
-	cfgStartWithInvalidService := config.Config{
-		TagsConfig: config.TagsConfig{
+	cfgStartWithInvalidService := Config{
+		TagsConfig: TagsConfig{
 			Version: "v1",
 			Service: "	alt-service",
 		},
@@ -810,7 +809,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributePeerService, "my_peer_service_name")
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &Config{}, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -885,7 +884,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributeExceptionStacktrace, RandStringBytes(5500))
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &Config{}, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -1278,7 +1277,7 @@ func TestStatsAggregations(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeError, true, mockEndTime)
 
 	// translate mocks to datadog traces
-	cfg := config.Config{}
+	cfg := Config{}
 
 	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg, denylister, map[string]string{})
 
@@ -1329,7 +1328,7 @@ func TestSamplingWeightedStatsAggregations(t *testing.T) {
 	span.SetKind(ptrace.SpanKindServer)
 
 	// translate mocks to datadog traces
-	cfg := config.Config{}
+	cfg := Config{}
 
 	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg, denylister, map[string]string{})
 
@@ -1368,7 +1367,7 @@ func TestSanitization(t *testing.T) {
 	scope.SetVersion("v1")
 	ilss.Spans().EnsureCapacity(1)
 
-	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &Config{}, denylister, buildInfo)
 
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
@@ -1477,7 +1476,7 @@ func TestSpanNameMapping(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
+	config := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
 
 	outputTraces, _ := convertToDatadogTd(traces, testSource, &config, denylister, buildInfo)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
@@ -1529,7 +1528,7 @@ func TestSpanEnvClobbering(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &Config{}, denylister, buildInfo)
 
 	// Ensure the deployment.environment value is copied to both deployment.environment and env
 	assert.Equal(t, "correctenv", outputTraces[0].Traces[0].Spans[0].Meta["env"])
@@ -1581,7 +1580,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	outputTraces, _ := convertToDatadogTd(traces, testSource, &config.Config{}, denylister, buildInfo)
+	outputTraces, _ := convertToDatadogTd(traces, testSource, &Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
 }
@@ -1602,8 +1601,8 @@ func TestTracesSpanNamingOption(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, ptrace.StatusCodeUnset, false, mockEndTime)
 
 	// start with span name as resource name set to true
-	cfgSpanNameAsResourceName := config.Config{
-		Traces: config.TracesConfig{
+	cfgSpanNameAsResourceName := Config{
+		Traces: TracesConfig{
 			SpanNameAsResourceName: true,
 		},
 	}
