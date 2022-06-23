@@ -2,15 +2,16 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
+  - If users were disabling this feature gate, they may have to update
+    monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
+
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑
 - `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
 - `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
-
-- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
-  - If users were disabling this feature gate, they may have to update
-    monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.53.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
 
@@ -285,7 +286,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `attributesprocessor`: Remove log names from filters (#9131)
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
   - Users may have to update monitoring for a few Kubernetes cpu metrics, for
-    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.53.0/receiver/k8sclusterreceiver#feature-gate-configurations).
+    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
 
