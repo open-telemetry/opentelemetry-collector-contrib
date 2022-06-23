@@ -2,14 +2,31 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
+
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+- `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
+- `saphanareceiver`: Fix component memory query, add better error handling (#11507)
+
 ### 🧰 Bug fixes 🧰
 
+### Unmaintained components
+
+- `simpleprometheusreceiver`(#11133)
 - `tanzuobservabilityexporter`: remove calls to deprecated `NewProxySender` methods. (#11510)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
 
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑
+
 - `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
 - `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
 
@@ -48,12 +65,10 @@
 - `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
 - `mezmoexporter`: add logging for HTTP errors (#10875)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
-- `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
-- `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 
 ### 🧰 Bug fixes 🧰
 
@@ -73,11 +88,6 @@
 - `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
 - `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
 
-
-### Unmaintained components
-
-- `simpleprometheusreceiver`(#11133)
-
 ## v0.53.0
 
 ### 🛑 Breaking changes 🛑
@@ -87,10 +97,6 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
-- `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
-
-### 🚩 Deprecations 🚩
-
 
 ### 🚀 New components 🚀
 
