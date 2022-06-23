@@ -5,6 +5,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `tanzuobservabilityexporter`: remove calls to deprecated `NewProxySender` methods. (#11510)
+- `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
 
 ## v0.54.0
 
