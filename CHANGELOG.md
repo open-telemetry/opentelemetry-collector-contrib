@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Remove `Sanitize` method from `Config` struct. (#TODO)
+
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `config` package in favor of structs on the `datadogexporter` package. (#TODO)

@@ -175,10 +175,7 @@ func (f *factory) createMetricsExporter(
 ) (component.MetricsExporter, error) {
 
 	cfg := c.(*Config)
-
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
+	cfg.logWarnings(set.Logger)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
@@ -239,10 +236,7 @@ func (f *factory) createTracesExporter(
 ) (component.TracesExporter, error) {
 
 	cfg := c.(*Config)
-
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
+	cfg.logWarnings(set.Logger)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {

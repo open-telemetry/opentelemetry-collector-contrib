@@ -443,14 +443,11 @@ type Config struct {
 	warnings []error
 }
 
-// Sanitize tries to sanitize a given configuration
-// Deprecated: [v0.54.0] Will be unexported in a future minor version.
-func (c *Config) Sanitize(logger *zap.Logger) error {
+// logWarnings logs warning messages that were generated on unmarshaling.
+func (c *Config) logWarnings(logger *zap.Logger) {
 	for _, err := range c.warnings {
 		logger.Warn(fmt.Sprintf("%v", err))
 	}
-
-	return nil
 }
 
 func (c *Config) Validate() error {
