@@ -24,6 +24,7 @@
 - `simpleprometheusreceiver`(#11133)
 - `tanzuobservabilityexporter`: remove calls to deprecated `NewProxySender` methods. (#11510)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
+- `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 
 ## v0.54.0
 
