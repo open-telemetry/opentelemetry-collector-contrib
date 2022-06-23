@@ -59,8 +59,8 @@ func tokenizeMetricLine(s string) (string, []string) {
 		nameAndDims := strings.Split(tokens[0], ",")
 		if len(nameAndDims) > 0 {
 			name := nameAndDims[0]
-			dims := nameAndDims[1:]
-			result := append(dims, tokens[1:]...)
+			result := nameAndDims[1:]
+			result = append(result, tokens[1:]...)
 			return name, result
 		}
 	}

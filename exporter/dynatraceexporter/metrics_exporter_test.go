@@ -18,7 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -26,13 +29,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -348,13 +348,15 @@ func Test_SumMetrics(t *testing.T) {
 
 			dataPoint2 := sum.DataPoints().AppendEmpty()
 			dataPoint2.SetTimestamp(testTimestamp)
-			if tt.args.valueType == "int" {
+
+			switch tt.args.valueType {
+			case "int":
 				dataPoint1.SetIntVal(10)
 				dataPoint2.SetIntVal(20)
-			} else if tt.args.valueType == "double" {
+			case "double":
 				dataPoint1.SetDoubleVal(10.1)
 				dataPoint2.SetDoubleVal(20.2)
-			} else {
+			default:
 				t.Fatalf("valueType can only be 'int' or 'double' but was '%s'", tt.args.valueType)
 			}
 
@@ -609,7 +611,6 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
 	intGaugeDataPoint.SetIntVal(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
-
 	type fields struct {
 		logger *zap.Logger
 		cfg    *config.Config
