@@ -11,6 +11,8 @@
 
 ### 🚀 New components 🚀
 
+- `icingareceiver` Add implementation of Icinga Metric Receiver (#10839)
+
 ### 💡 Enhancements 💡
 
 - `flinkmetricsreceiver`: add attribute values to metadata #11520

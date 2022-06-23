@@ -122,6 +122,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icingareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
@@ -217,6 +218,7 @@ func Components() (component.Factories, error) {
 		googlecloudspannerreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
+		icingareceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
 		iisreceiver.NewFactory(),
 		jaegerreceiver.NewFactory(),
