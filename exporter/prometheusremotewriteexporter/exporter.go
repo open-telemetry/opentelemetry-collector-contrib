@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -148,23 +149,7 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 		if key == "" || value == "" {
 			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-
-		// Sanitize label keys to meet Prometheus Requirements
-		// if sanitizeLabel is enabled, invoke sanitizeLabels else sanitize
-		if len(key) > 2 && key[:2] == "__" {
-			if cfg.sanitizeLabel {
-				key = "__" + sanitizeLabels(key[2:])
-			} else {
-				key = "__" + sanitize(key[2:])
-			}
-		} else {
-			if cfg.sanitizeLabel {
-				key = sanitizeLabels(key)
-			} else {
-				key = sanitize(key)
-			}
-		}
-		sanitizedLabels[key] = value
+		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
 	}
 
 	return sanitizedLabels, nil

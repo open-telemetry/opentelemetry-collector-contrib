@@ -1,10 +1,10 @@
 # Simple Prometheus Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                |
+| ------------------------ | -------------- |
+| Stability                | [unmaintained] |
+| Supported pipeline types | metrics        |
+| Distributions            | [contrib]      |
 
 The `prometheus_simple` receiver is a wrapper around the [prometheus
 receiver](../prometheusreceiver).
@@ -72,5 +72,5 @@ Example:
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[unmaintained]:https://github.com/open-telemetry/opentelemetry-collector#unmaintained
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
