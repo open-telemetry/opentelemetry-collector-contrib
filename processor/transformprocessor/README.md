@@ -43,7 +43,7 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 
 - `replace_pattern(target, regex, replacement)` - `target` is a path expression to a telemetry field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If one or more sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 
-- `replace_all_patterns(target, regex, replacement)` - `target` is a path expression to a map type field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If one or more sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_all_patterns(attributes["http.target"], "/user/\\d{4}", "/user/{userId})`
+- `replace_all_patterns(target, regex, replacement)` - `target` is a path expression to a map type field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If one or more sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
 
 Metric only functions:
 - `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
@@ -99,7 +99,7 @@ processors:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
         - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-        - replace_all_patterns(attributes["http.target"], "/user/\\d{4}", "/user/{userId})
+        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
         - set(body, attributes["http.route"])
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
 service:
