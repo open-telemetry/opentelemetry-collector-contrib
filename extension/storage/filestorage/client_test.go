@@ -286,6 +286,7 @@ func TestClientReboundCompaction(t *testing.T) {
 }
 
 func TestClientConcurrentCompaction(t *testing.T) {
+	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11454")
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
