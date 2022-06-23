@@ -24,7 +24,10 @@ func getNewAndPolicy(logger *zap.Logger, config *AndCfg) (sampling.PolicyEvaluat
 	var subPolicyEvaluators []sampling.PolicyEvaluator
 	for i := range config.SubPolicyCfg {
 		policyCfg := &config.SubPolicyCfg[i]
-		policy, _ := getAndSubPolicyEvaluator(logger, policyCfg)
+		policy, err := getAndSubPolicyEvaluator(logger, policyCfg)
+		if err != nil {
+			return nil, err
+		}
 		subPolicyEvaluators = append(subPolicyEvaluators, policy)
 	}
 	return sampling.NewAnd(logger, subPolicyEvaluators), nil

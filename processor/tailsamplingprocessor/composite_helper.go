@@ -25,7 +25,10 @@ func getNewCompositePolicy(logger *zap.Logger, config *CompositeCfg) (sampling.P
 	rateAllocationsMap := getRateAllocationMap(config)
 	for i := range config.SubPolicyCfg {
 		policyCfg := &config.SubPolicyCfg[i]
-		policy, _ := getCompositeSubPolicyEvaluator(logger, policyCfg)
+		policy, err := getCompositeSubPolicyEvaluator(logger, policyCfg)
+		if err != nil {
+			return nil, err
+		}
 
 		evalParams := sampling.SubPolicyEvalParams{
 			Evaluator:         policy,

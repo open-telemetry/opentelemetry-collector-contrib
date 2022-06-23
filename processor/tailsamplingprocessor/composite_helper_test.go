@@ -37,7 +37,7 @@ func TestCompositeHelper(t *testing.T) {
 				},
 				CompositeCfg: CompositeCfg{
 					MaxTotalSpansPerSecond: 1000,
-					PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3", "test-composite-policy-4", "test-composite-policy-5", "test-composite-policy-6", "test-composite-policy-7", "test-composite-policy-8"},
+					PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3", "test-composite-policy-4", "test-composite-policy-5", "test-composite-policy-6", "test-composite-policy-7"},
 					SubPolicyCfg: []CompositeSubPolicyCfg{
 						{
 							sharedPolicyCfg: sharedPolicyCfg{
@@ -78,18 +78,13 @@ func TestCompositeHelper(t *testing.T) {
 							sharedPolicyCfg: sharedPolicyCfg{
 								Name:          "test-composite-policy-6",
 								Type:          StatusCode,
-								StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"200", "404"}},
+								StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"ERROR", "UNSET"}},
 							},
 						},
 						{
 							sharedPolicyCfg: sharedPolicyCfg{
 								Name: "test-composite-policy-7",
 								Type: AlwaysSample,
-							},
-						},
-						{
-							sharedPolicyCfg: sharedPolicyCfg{
-								Name: "test-composite-policy-8",
 							},
 						},
 					},
@@ -108,12 +103,12 @@ func TestCompositeHelper(t *testing.T) {
 		},
 	}
 	rlfCfg := cfg.PolicyCfgs[0].CompositeCfg
-	composite, e := getNewCompositePolicy(zap.NewNop(), &rlfCfg)
+	composite, err := getNewCompositePolicy(zap.NewNop(), &rlfCfg)
+	require.NoError(t, err)
 	require.NotNil(t, composite)
 	require.NotNil(t, cfg.ProcessorSettings)
 	require.Equal(t, 10*time.Second, cfg.DecisionWait)
 	require.Equal(t, uint64(100), cfg.NumTraces)
 	require.Equal(t, uint64(10), cfg.ExpectedNewTracesPerSec)
-	require.NoError(t, e)
 	// TBD add more assertions
 }
