@@ -1,7 +1,8 @@
 # Changelog
 
 ## Unreleased
-
+- `filterprocessor`: Ability to filter `Spans` (#6341)
+- 
 ## 🛑 Breaking changes 🛑
 
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
