@@ -15,10 +15,11 @@
 package serialization
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"

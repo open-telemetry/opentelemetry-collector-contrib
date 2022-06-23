@@ -16,6 +16,10 @@ package serialization
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+	"testing"
+
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 	"github.com/stretchr/testify/assert"
@@ -23,9 +27,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"sort"
-	"strings"
-	"testing"
 )
 
 type simplifiedLogRecord struct {
