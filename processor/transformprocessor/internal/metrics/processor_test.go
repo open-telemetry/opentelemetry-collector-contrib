@@ -149,9 +149,15 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-      query: []string{`replace_all_patterns(resource.attributes["mapattr1"], "testmap1", "passmap1")`},
+      query: []string{`replace_all_patterns(attributes, "test1", "pass")`},
 			want: func(td pmetric.Metrics) {
-				// This test should fail since we are not updating the resource metric.  Why is it passing?
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().UpdateString("attr1","pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().UpdateString("attr1","pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().UpdateString("attr1","pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().UpdateString("attr1","pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().UpdateString("attr1","pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().UpdateString("attr1","pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().UpdateString("attr1","pass")
 			},
 		},
 		{
@@ -323,14 +329,6 @@ func fillMetricThree(m pmetric.Metric) {
 	dataPoint1.Attributes().InsertString("attr1", "test1")
 	dataPoint1.Attributes().InsertString("attr2", "test2")
 	dataPoint1.Attributes().InsertString("attr3", "test3")
-
-	dataPoint2 := m.ExponentialHistogram().DataPoints().AppendEmpty()
-	mapVal := pcommon.NewMap()
-	mapVal.InsertString("mapattr1", "testmap1")
-	mapVal.InsertString("mapattr2", "testmap2")
-	mapVal.InsertString("mapattr3", "testmap3")
-	mapVal.InsertString("test", "pass")
-	mapVal.CopyTo(dataPoint2.Attributes())
 }
 
 func fillMetricFour(m pmetric.Metric) {
