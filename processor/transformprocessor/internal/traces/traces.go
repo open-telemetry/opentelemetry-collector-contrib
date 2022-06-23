@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
@@ -93,7 +94,11 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 	case "span_id":
 		return accessSpanID(), nil
 	case "trace_state":
-		return accessTraceState(), nil
+		mapKey := path[0].MapKey
+		if mapKey == nil {
+			return accessTraceState(), nil
+		}
+		return accessTraceStateKey(mapKey), nil
 	case "parent_span_id":
 		return accessParentSpanID(), nil
 	case "name":
@@ -249,6 +254,26 @@ func accessTraceState() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(str))
+			}
+		},
+	}
+}
+
+func accessTraceStateKey(mapKey *string) pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
+				return ts.Get(*mapKey)
+			}
+			return nil
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
+					if updated, err := ts.Insert(*mapKey, str); err == nil {
+						ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(updated.String()))
+					}
+				}
 			}
 		},
 	}
@@ -489,7 +514,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case float64:
 		attrs.UpsertDouble(mapKey, v)
 	case []byte:
-		attrs.UpsertMBytes(mapKey, v)
+		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
 	case []string:
 		arr := pcommon.NewValueSlice()
 		for _, str := range v {
@@ -517,7 +542,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case [][]byte:
 		arr := pcommon.NewValueSlice()
 		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetMBytesVal(b)
+			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
 		}
 		attrs.Upsert(mapKey, arr)
 	default:

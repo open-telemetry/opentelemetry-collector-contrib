@@ -588,6 +588,8 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	exp, err := newEmfPusher(expCfg, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
+	err = expCfg.Validate()
+	assert.Nil(t, err)
 
 	emfExporter := exp.(*emfExporter)
 	config := emfExporter.config.(*Config)

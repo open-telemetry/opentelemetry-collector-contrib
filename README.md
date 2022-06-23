@@ -86,17 +86,17 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [David Ashpole](https://github.com/dashpole), Google
-- [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Przemek Maciolek](https://github.com/pmm-sumo), Sumo Logic
 - [Tyler Helmuth](https://github.com/TylerHelmuth), New Relic
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
-- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Alex Boten](https://github.com/codeboten), Lightstep
-- [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
+- [Bogdan Drutu](https://github.com/bogdandrutu), Splunk
+- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
+- [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
+- [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 Emeritus Maintainers
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk

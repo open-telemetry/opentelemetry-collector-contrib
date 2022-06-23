@@ -71,11 +71,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	c, err := newCompressor(NoCompression)
 	require.NoError(t, err)
 
-	pf, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	pf := newPrometheusFormatter()
 
-	gf, err := newGraphiteFormatter(DefaultGraphiteTemplate)
-	require.NoError(t, err)
+	gf := newGraphiteFormatter(DefaultGraphiteTemplate)
 
 	err = exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -90,9 +88,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 			},
 			f,
 			sourceFormats{
-				host:     getTestSourceFormat(t, "source_host"),
-				category: getTestSourceFormat(t, "source_category"),
-				name:     getTestSourceFormat(t, "source_name"),
+				host:     getTestSourceFormat("source_host"),
+				category: getTestSourceFormat("source_category"),
+				name:     getTestSourceFormat("source_name"),
 			},
 			c,
 			pf,
@@ -422,7 +420,7 @@ func TestOverrideSourceName(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.sources.name = getTestSourceFormat(t, "Test source name/%{key1}")
+	test.s.sources.name = getTestSourceFormat("Test source name/%{key1}")
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
@@ -437,7 +435,7 @@ func TestOverrideSourceCategory(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.sources.category = getTestSourceFormat(t, "Test source category/%{key1}")
+	test.s.sources.category = getTestSourceFormat("Test source category/%{key1}")
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
@@ -452,7 +450,7 @@ func TestOverrideSourceHost(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.sources.host = getTestSourceFormat(t, "Test source host/%{key1}")
+	test.s.sources.host = getTestSourceFormat("Test source host/%{key1}")
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
@@ -842,8 +840,7 @@ gauge_metric_name.. 245 1608124662`
 	})
 	defer func() { test.srv.Close() }()
 
-	gf, err := newGraphiteFormatter("%{_metric_}.%{metric}.%{unit}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{_metric_}.%{metric}.%{unit}")
 	test.s.graphiteFormatter = gf
 
 	test.s.config.MetricFormat = GraphiteFormat
@@ -860,6 +857,6 @@ gauge_metric_name.. 245 1608124662`
 	test.s.metricBuffer[0].attributes.InsertString("unit", "m/s")
 	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
 
-	_, err = test.s.sendMetrics(context.Background(), flds)
+	_, err := test.s.sendMetrics(context.Background(), flds)
 	assert.NoError(t, err)
 }

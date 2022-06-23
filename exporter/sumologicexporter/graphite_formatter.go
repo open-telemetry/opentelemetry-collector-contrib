@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
@@ -35,18 +34,15 @@ const (
 )
 
 // newGraphiteFormatter creates new formatter for given SourceFormat template
-func newGraphiteFormatter(template string) (graphiteFormatter, error) {
-	r, err := regexp.Compile(sourceRegex)
-	if err != nil {
-		return graphiteFormatter{}, err
-	}
+func newGraphiteFormatter(template string) graphiteFormatter {
+	r := regexp.MustCompile(sourceRegex)
 
 	sf := newSourceFormat(r, template)
 
 	return graphiteFormatter{
 		template: sf,
 		replacer: strings.NewReplacer(`.`, `_`, ` `, `_`),
-	}, nil
+	}
 }
 
 // escapeGraphiteString replaces dot and space using replacer,

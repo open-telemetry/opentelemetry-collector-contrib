@@ -16,11 +16,9 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/hex"
-	"errors"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/multierr"
 )
 
@@ -56,6 +54,7 @@ type Value struct {
 	Float      *float64    `| @Float`
 	Int        *int64      `| @Int`
 	Bool       *Boolean    `| @("true" | "false")`
+	IsNil      *IsNil      `| @"nil"`
 	Path       *Path       `| @@ )`
 }
 
@@ -98,6 +97,13 @@ type Boolean bool
 
 func (b *Boolean) Capture(values []string) error {
 	*b = values[0] == "true"
+	return nil
+}
+
+type IsNil bool
+
+func (n *IsNil) Capture(_ []string) error {
+	*n = true
 	return nil
 }
 
@@ -165,30 +171,4 @@ func newParser() *participle.Parser {
 		panic("Unable to initialize parser, this is a programming error in the transformprocesor")
 	}
 	return parser
-}
-
-func ParseSpanID(spanIDStr string) (pcommon.SpanID, error) {
-	id, err := hex.DecodeString(spanIDStr)
-	if err != nil {
-		return pcommon.SpanID{}, err
-	}
-	if len(id) != 8 {
-		return pcommon.SpanID{}, errors.New("span ids must be 8 bytes")
-	}
-	var idArr [8]byte
-	copy(idArr[:8], id)
-	return pcommon.NewSpanID(idArr), nil
-}
-
-func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
-	id, err := hex.DecodeString(traceIDStr)
-	if err != nil {
-		return pcommon.TraceID{}, err
-	}
-	if len(id) != 16 {
-		return pcommon.TraceID{}, errors.New("traces ids must be 16 bytes")
-	}
-	var idArr [16]byte
-	copy(idArr[:16], id)
-	return pcommon.NewTraceID(idArr), nil
 }

@@ -472,9 +472,9 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	name := mi.Name()
 	tags := attributesToTagsForMetrics(histogram.Attributes(), mi.SourceKey)
 	ts := histogram.Timestamp().AsTime().Unix()
-	explicitBounds := histogram.MExplicitBounds()
-	bucketCounts := histogram.MBucketCounts()
-	if len(bucketCounts) != len(explicitBounds)+1 {
+	explicitBounds := histogram.ExplicitBounds()
+	bucketCounts := histogram.BucketCounts()
+	if bucketCounts.Len() != explicitBounds.Len()+1 {
 		reporting.LogMalformed(mi.Metric)
 		return
 	}
@@ -482,9 +482,9 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 		tags["_le"] = leTag
 	}
 	var leCount uint64
-	for i := range bucketCounts {
+	for i := 0; i < bucketCounts.Len(); i++ {
 		tags["le"] = leTagValue(explicitBounds, i)
-		leCount += bucketCounts[i]
+		leCount += bucketCounts.At(i)
 		err := c.sender.SendMetric(name, float64(leCount), ts, mi.Source, tags)
 		if err != nil {
 			*errs = append(*errs, err)
@@ -492,11 +492,11 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	}
 }
 
-func leTagValue(explicitBounds []float64, bucketIndex int) string {
-	if bucketIndex == len(explicitBounds) {
+func leTagValue(explicitBounds pcommon.ImmutableFloat64Slice, bucketIndex int) string {
+	if bucketIndex == explicitBounds.Len() {
 		return "+Inf"
 	}
-	return strconv.FormatFloat(explicitBounds[bucketIndex], 'f', -1, 64)
+	return strconv.FormatFloat(explicitBounds.At(bucketIndex), 'f', -1, 64)
 }
 
 type deltaHistogramDataPointConsumer struct {
@@ -518,16 +518,16 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	name := mi.Name()
 	tags := attributesToTagsForMetrics(his.Attributes(), mi.SourceKey)
 	ts := his.Timestamp().AsTime().Unix()
-	explicitBounds := his.MExplicitBounds()
-	bucketCounts := his.MBucketCounts()
-	if len(bucketCounts) != len(explicitBounds)+1 {
+	explicitBounds := his.ExplicitBounds()
+	bucketCounts := his.BucketCounts()
+	if bucketCounts.Len() != explicitBounds.Len()+1 {
 		reporting.LogMalformed(mi.Metric)
 		return
 	}
-	centroids := make([]histogram.Centroid, len(bucketCounts))
-	for i := range bucketCounts {
+	centroids := make([]histogram.Centroid, bucketCounts.Len())
+	for i := 0; i < bucketCounts.Len(); i++ {
 		centroids[i] = histogram.Centroid{
-			Value: centroidValue(explicitBounds, i), Count: int(bucketCounts[i])}
+			Value: centroidValue(explicitBounds, i), Count: int(bucketCounts.At(i))}
 	}
 	err := d.sender.SendDistribution(name, centroids, allGranularity, ts, mi.Source, tags)
 	if err != nil {
@@ -535,26 +535,26 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	}
 }
 
-func centroidValue(explicitBounds []float64, index int) float64 {
-	length := len(explicitBounds)
+func centroidValue(explicitBounds pcommon.ImmutableFloat64Slice, index int) float64 {
+	length := explicitBounds.Len()
 	if length == 0 {
 		// This is the best we can do.
 		return 0.0
 	}
 	if index == 0 {
-		return explicitBounds[0]
+		return explicitBounds.At(0)
 	}
 	if index == length {
-		return explicitBounds[length-1]
+		return explicitBounds.At(length - 1)
 	}
-	return (explicitBounds[index-1] + explicitBounds[index]) / 2.0
+	return (explicitBounds.At(index-1) + explicitBounds.At(index)) / 2.0
 }
 
 // histogramDataPoint represents either a regular or exponential histogram data point
 type histogramDataPoint interface {
 	Count() uint64
-	MExplicitBounds() []float64
-	MBucketCounts() []uint64
+	ExplicitBounds() pcommon.ImmutableFloat64Slice
+	BucketCounts() pcommon.ImmutableUInt64Slice
 	Attributes() pcommon.Map
 	Timestamp() pcommon.Timestamp
 }
@@ -686,8 +686,8 @@ func quantileTagValue(quantile float64) string {
 
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
-	bucketCounts   []uint64
-	explicitBounds []float64
+	bucketCounts   pcommon.ImmutableUInt64Slice
+	explicitBounds pcommon.ImmutableFloat64Slice
 }
 
 // newExponentialHistogram converts a pmetric.ExponentialHistogramDataPoint into a histogramDataPoint
@@ -706,8 +706,8 @@ func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramData
 	// ExponentialHistogramDataPoints have buckets with negative explicit bounds, buckets with
 	// positive explicit bounds, and a "zero" bucket. Our job is to merge these bucket groups into
 	// a single list of buckets and explicit bounds.
-	negativeBucketCounts := dataPoint.Negative().MBucketCounts()
-	positiveBucketCounts := dataPoint.Positive().MBucketCounts()
+	negativeBucketCounts := dataPoint.Negative().BucketCounts().AsRaw()
+	positiveBucketCounts := dataPoint.Positive().BucketCounts().AsRaw()
 
 	// The total number of buckets is the number of negative buckets + the number of positive
 	// buckets + 1 for the zero bucket + 1 bucket for the largest positive explicit bound up to
@@ -732,8 +732,8 @@ func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramData
 		dataPoint.Positive().Offset(), base, positiveBucketCounts, &bucketCounts, &explicitBounds)
 	return &exponentialHistogramDataPoint{
 		ExponentialHistogramDataPoint: dataPoint,
-		bucketCounts:                  bucketCounts,
-		explicitBounds:                explicitBounds,
+		bucketCounts:                  pcommon.NewImmutableUInt64Slice(bucketCounts),
+		explicitBounds:                pcommon.NewImmutableFloat64Slice(explicitBounds),
 	}
 }
 
@@ -796,11 +796,11 @@ func appendPositiveBucketsAndExplicitBounds(
 	*bucketCounts = append(*bucketCounts, 0)
 }
 
-func (e *exponentialHistogramDataPoint) MExplicitBounds() []float64 {
+func (e *exponentialHistogramDataPoint) ExplicitBounds() pcommon.ImmutableFloat64Slice {
 	return e.explicitBounds
 }
 
-func (e *exponentialHistogramDataPoint) MBucketCounts() []uint64 {
+func (e *exponentialHistogramDataPoint) BucketCounts() pcommon.ImmutableUInt64Slice {
 	return e.bucketCounts
 }
 
