@@ -1,0 +1,29 @@
+receivers:
+  icinga:
+    host: localhost:5665
+    username: 
+    password: test
+    disable_ssl_verification: false
+    filter: "foo_bar"
+    histograms:
+      - service: stp_cpu-usage
+        type: cpu_system
+        host: .*
+        values:
+        # not strictly increasing -> invalid
+          - 1
+          - .5
+          - .9
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [icinga]
+      processors: [nop]
+      exporters: [nop]

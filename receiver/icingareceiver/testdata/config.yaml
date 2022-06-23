@@ -1,0 +1,28 @@
+receivers:
+  icinga:
+    host: localhost:5665
+    username: root
+    password: test
+    disable_ssl_verification: true
+    filter: "foo_bar"
+    histograms:
+      - service: stp_cpu-usage
+        type: cpu_system
+        host: .*
+        values:
+          - .1
+          - .5
+          - .9
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [icinga]
+      processors: [nop]
+      exporters: [nop]
