@@ -44,14 +44,15 @@ const (
 	Composite PolicyType = "composite"
 	// And allows defining a And policy, combining the other policies in one
 	And PolicyType = "and"
-	// Span Count sample traces that are have more spans per Trace than a given threshold.
+	// SpanCount sample traces that are have more spans per Trace than a given threshold.
 	SpanCount PolicyType = "span_count"
 	// TraceState sample traces with specified values by the given key
 	TraceState PolicyType = "trace_state"
 )
 
-// SubPolicyCfg holds the common configuration to all policies under composite policy.
-type SubPolicyCfg struct {
+// sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
+// such as the and & composite policies.
+type sharedPolicyCfg struct {
 	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
 	Name string `mapstructure:"name"`
 	// Type of the policy this will be used to match the proper configuration of the policy.
@@ -68,35 +69,23 @@ type SubPolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
-	// Configs for and policy evaluator.
-	AndCfg AndCfg `mapstructure:"and"`
-	// Configs for span counter filter sampling policy evaluator.
+	// Configs for span count filter sampling policy evaluator.
 	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
-	// Configs for trace_state policy evaluator.
+	// Configs for defining trace_state policy
 	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
 }
 
+// CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
+type CompositeSubPolicyCfg struct {
+	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Configs for and policy evaluator.
+	AndCfg AndCfg `mapstructure:"and"`
+}
+
+// AndSubPolicyCfg holds the common configuration to all policies under and policy.
 type AndSubPolicyCfg struct {
-	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
-	Name string `mapstructure:"name"`
-	// Type of the policy this will be used to match the proper configuration of the policy.
-	Type PolicyType `mapstructure:"type"`
-	// Configs for numeric attribute filter sampling policy evaluator.
-	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
-	// Configs for probabilistic sampling policy evaluator.
-	ProbabilisticCfg ProbabilisticCfg `mapstructure:"probabilistic"`
-	// Configs for string attribute filter sampling policy evaluator.
-	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
-	// Configs for rate limiting filter sampling policy evaluator.
-	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
-	// Configs for latency filter sampling policy evaluator.
-	LatencyCfg LatencyCfg `mapstructure:"latency"`
-	// Configs for status code filter sampling policy evaluator.
-	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
-	// Configs for span counter filter sampling policy evaluator.
-	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
-	// Configs for trace_state filter sampling policy evaluator
-	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
+	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 type TraceStateCfg struct {
@@ -113,10 +102,10 @@ type AndCfg struct {
 // CompositeCfg holds the configurable settings to create a composite
 // sampling policy evaluator.
 type CompositeCfg struct {
-	MaxTotalSpansPerSecond int64               `mapstructure:"max_total_spans_per_second"`
-	PolicyOrder            []string            `mapstructure:"policy_order"`
-	SubPolicyCfg           []SubPolicyCfg      `mapstructure:"composite_sub_policy"`
-	RateAllocation         []RateAllocationCfg `mapstructure:"rate_allocation"`
+	MaxTotalSpansPerSecond int64                   `mapstructure:"max_total_spans_per_second"`
+	PolicyOrder            []string                `mapstructure:"policy_order"`
+	SubPolicyCfg           []CompositeSubPolicyCfg `mapstructure:"composite_sub_policy"`
+	RateAllocation         []RateAllocationCfg     `mapstructure:"rate_allocation"`
 }
 
 // RateAllocationCfg  used within composite policy
@@ -127,30 +116,12 @@ type RateAllocationCfg struct {
 
 // PolicyCfg holds the common configuration to all policies.
 type PolicyCfg struct {
-	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
-	Name string `mapstructure:"name"`
-	// Type of the policy this will be used to match the proper configuration of the policy.
-	Type PolicyType `mapstructure:"type"`
-	// Configs for latency filter sampling policy evaluator.
-	LatencyCfg LatencyCfg `mapstructure:"latency"`
-	// Configs for numeric attribute filter sampling policy evaluator.
-	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
-	// Configs for probabilistic sampling policy evaluator.
-	ProbabilisticCfg ProbabilisticCfg `mapstructure:"probabilistic"`
-	// Configs for status code filter sampling policy evaluator.
-	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
-	// Configs for string attribute filter sampling policy evaluator.
-	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
-	// Configs for rate limiting filter sampling policy evaluator.
-	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
 	// Configs for defining composite policy
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
 	// Configs for defining and policy
 	AndCfg AndCfg `mapstructure:"and"`
-	// Configs for span count filter sampling policy evaluator.
-	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
-	// Configs for defining trace_state policy
-	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy

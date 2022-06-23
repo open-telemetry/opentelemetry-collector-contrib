@@ -31,48 +31,66 @@ func TestCompositeHelper(t *testing.T) {
 		ExpectedNewTracesPerSec: 10,
 		PolicyCfgs: []PolicyCfg{
 			{
-				Name: "composite-policy-1",
-				Type: Composite,
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "composite-policy-1",
+					Type: Composite,
+				},
 				CompositeCfg: CompositeCfg{
 					MaxTotalSpansPerSecond: 1000,
 					PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3", "test-composite-policy-4", "test-composite-policy-5", "test-composite-policy-6", "test-composite-policy-7", "test-composite-policy-8"},
-					SubPolicyCfg: []SubPolicyCfg{
+					SubPolicyCfg: []CompositeSubPolicyCfg{
 						{
-							Name:                "test-composite-policy-1",
-							Type:                NumericAttribute,
-							NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:                "test-composite-policy-1",
+								Type:                NumericAttribute,
+								NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+							},
 						},
 						{
-							Name:               "test-composite-policy-2",
-							Type:               StringAttribute,
-							StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:               "test-composite-policy-2",
+								Type:               StringAttribute,
+								StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+							},
 						},
 						{
-							Name:            "test-composite-policy-3",
-							Type:            RateLimiting,
-							RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:            "test-composite-policy-3",
+								Type:            RateLimiting,
+								RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
+							},
 						},
 						{
-							Name:             "test-composite-policy-4",
-							Type:             Probabilistic,
-							ProbabilisticCfg: ProbabilisticCfg{HashSalt: "salt", SamplingPercentage: 10},
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:             "test-composite-policy-4",
+								Type:             Probabilistic,
+								ProbabilisticCfg: ProbabilisticCfg{HashSalt: "salt", SamplingPercentage: 10},
+							},
 						},
 						{
-							Name:       "test-composite-policy-5",
-							Type:       Latency,
-							LatencyCfg: LatencyCfg{ThresholdMs: 10},
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:       "test-composite-policy-5",
+								Type:       Latency,
+								LatencyCfg: LatencyCfg{ThresholdMs: 10},
+							},
 						},
 						{
-							Name:          "test-composite-policy-6",
-							Type:          StatusCode,
-							StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"200", "404"}},
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:          "test-composite-policy-6",
+								Type:          StatusCode,
+								StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"200", "404"}},
+							},
 						},
 						{
-							Name: "test-composite-policy-7",
-							Type: AlwaysSample,
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "test-composite-policy-7",
+								Type: AlwaysSample,
+							},
 						},
 						{
-							Name: "test-composite-policy-8",
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "test-composite-policy-8",
+							},
 						},
 					},
 					RateAllocation: []RateAllocationCfg{
@@ -90,7 +108,7 @@ func TestCompositeHelper(t *testing.T) {
 		},
 	}
 	rlfCfg := cfg.PolicyCfgs[0].CompositeCfg
-	composite, e := getNewCompositePolicy(zap.NewNop(), rlfCfg)
+	composite, e := getNewCompositePolicy(zap.NewNop(), &rlfCfg)
 	require.NotNil(t, composite)
 	require.NotNil(t, cfg.ProcessorSettings)
 	require.Equal(t, 10*time.Second, cfg.DecisionWait)
