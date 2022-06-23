@@ -46,17 +46,19 @@ func createDefaultConfig() config.Exporter {
 }
 
 // Create a log exporter for exporting to Mezmo
-func createLogsExporter(ctx context.Context, settings component.ExporterCreateSettings, exporter config.Exporter) (component.LogsExporter, error) {
-	if exporter == nil {
+func createLogsExporter(ctx context.Context, settings component.ExporterCreateSettings, exporterConfig config.Exporter) (component.LogsExporter, error) {
+	log := settings.Logger
+
+	if exporterConfig == nil {
 		return nil, errors.New("nil config")
 	}
-	expCfg := exporter.(*Config)
+	expCfg := exporterConfig.(*Config)
 
 	if err := expCfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo)
+	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,

@@ -15,23 +15,18 @@
 package common
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_newConditionEvaluator(t *testing.T) {
-	span := ptrace.NewSpan()
-	span.SetName("bear")
 	tests := []struct {
-		name     string
-		cond     *Condition
-		matching ptrace.Span
+		name string
+		cond *Condition
+		item interface{}
 	}{
 		{
 			name: "literals match",
@@ -44,7 +39,6 @@ func Test_newConditionEvaluator(t *testing.T) {
 				},
 				Op: "==",
 			},
-			matching: span,
 		},
 		{
 			name: "literals don't match",
@@ -57,7 +51,6 @@ func Test_newConditionEvaluator(t *testing.T) {
 				},
 				Op: "!=",
 			},
-			matching: span,
 		},
 		{
 			name: "path expression matches",
@@ -76,7 +69,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 				},
 				Op: "==",
 			},
-			matching: span,
+			item: "bear",
 		},
 		{
 			name: "path expression not matches",
@@ -95,22 +88,19 @@ func Test_newConditionEvaluator(t *testing.T) {
 				},
 				Op: "!=",
 			},
-			matching: span,
+			item: "bear",
 		},
 		{
-			name:     "no condition",
-			cond:     nil,
-			matching: span,
+			name: "no condition",
+			cond: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctions(), testParsePath)
 			assert.NoError(t, err)
-			assert.True(t, evaluate(testTransformContext{
-				span:     tt.matching,
-				il:       pcommon.NewInstrumentationScope(),
-				resource: pcommon.NewResource(),
+			assert.True(t, evaluate(testhelper.TestTransformContext{
+				Item: tt.item,
 			}))
 		})
 	}
@@ -127,52 +117,4 @@ func Test_newConditionEvaluator(t *testing.T) {
 		}, DefaultFunctions(), testParsePath)
 		assert.Error(t, err)
 	})
-}
-
-// Small copy of traces data model for use in common tests
-
-type testTransformContext struct {
-	span     ptrace.Span
-	il       pcommon.InstrumentationScope
-	resource pcommon.Resource
-}
-
-func (ctx testTransformContext) GetItem() interface{} {
-	return ctx.span
-}
-
-func (ctx testTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.il
-}
-
-func (ctx testTransformContext) GetResource() pcommon.Resource {
-	return ctx.resource
-}
-
-// pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
-type testGetSetter struct {
-	getter ExprFunc
-	setter func(ctx TransformContext, val interface{})
-}
-
-func (path testGetSetter) Get(ctx TransformContext) interface{} {
-	return path.getter(ctx)
-}
-
-func (path testGetSetter) Set(ctx TransformContext, val interface{}) {
-	path.setter(ctx, val)
-}
-
-func testParsePath(val *Path) (GetSetter, error) {
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
-		return &testGetSetter{
-			getter: func(ctx TransformContext) interface{} {
-				return ctx.GetItem().(ptrace.Span).Name()
-			},
-			setter: func(ctx TransformContext, val interface{}) {
-				ctx.GetItem().(ptrace.Span).SetName(val.(string))
-			},
-		}, nil
-	}
-	return nil, fmt.Errorf("bad path %v", val)
 }

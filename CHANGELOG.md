@@ -2,6 +2,75 @@
 
 ## Unreleased
 
+## v0.54.0
+
+## 🛑 Breaking changes 🛑
+- `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
+- `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `instrumentation_library_metadata_as_tags` (#11135)
+- `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+- `observiqexporter`: Deprecate the observiq exporter (#10977)
+- `honeycombexporter`: Deprecate honeycomb exporter (#10318)
+- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+
+### 🚀 New components 🚀
+
+- `expvarreceiver`: Include `expvarreceiver` in components (#10847)
+- `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
+- `googlemanagedprometheusexporter` The Google Managed Service for Prometheus exporter is alpha. (#10925)
+
+### 💡 Enhancements 💡
+
+- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
+- `tailsamplingprocessor`: Add trace_state policy (#10852)
+- `mongodbatlasreceiver` Add support for receiving alerts (#10854)
+- `cmd/mdatagen`: Allow attribute values of any types (#9245)
+- `metricstransformprocessor`: Migrate the processor from OC to pdata (#10817)
+  - This behavior can be reverted by disabling the `processor.metricstransformprocessor.UseOTLPDataModel` feature gate.
+- `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `transformprocessor`: Add Summary transform functions. (#11041)
+- `transformprocessor`: Add nil literal to the grammar. (#11150)
+- `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
+- `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
+- `datadogexporter`: Add `exporter.datadog.hostname.preview` feature flag and related warnings (#10926)
+- `datadogexporter`: Add `instrumentation_scope_metadata_as_tags` instead of `instrumentation_library_metadata_as_tags` in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0 (#11135)
+- `examples`: Add an example for scraping Couchbase metrics (#10894)
+- `filestorageextension`: Add background compaction capability (#9327)
+- `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+- `dynatraceexporter`: Provide better estimated summaries for partial histograms. (#11044)
+- `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
+- `mezmoexporter`: add logging for HTTP errors (#10875)
+- `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
+- `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
+- `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
+- `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
+- `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
+- `transformprocessor`: Allow using trace_state with key-value struct (#11029)
+
+### 🧰 Bug fixes 🧰
+
+- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
+- `transformprocessor`: Fix issue where some trace fields were not working correctly in conditions. (#10471)
+- `transformprocessor`: Fix issue where some log fields were not working correctly in conditions. (#10903)
+- `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
+- `windowseventlogreceiver`: Fixed example config in readme (#10971)
+- `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
+- `exporter/awsemfexporter:`: Fix dead links in README.md. (#11027)
+- `googlecloudexporter`: Fix (self-obs) point_count metric calculation, concurrent map write panic, and dropped log attributes (#11051)
+- `signalfxexporter`: Event Type is a required field, if not set, set it to `unknown` to prevent signalfx ingest from dropping it (#11121)
+- `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
+- `splunkhecexporter`: Fix flaky test when exporting traces (#11418)
+- `mongodbatlasexporter`: Fix mongodbatlas.system.memory.usage.max not being reported (#11126)
+- `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
+- `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
+
+## v0.53.0
+
 ### 🛑 Breaking changes 🛑
 
 - `jmxreceiver`: Remove properties & groovyscript parameters from JMX Receiver. Add ResourceAttributes & LogLevel parameter to supply some of the removed functionality with reduced attack surface (#9685)
@@ -11,7 +80,6 @@
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
 
 ### 🚩 Deprecations 🚩
-- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
 
 
 ### 🚀 New components 🚀
@@ -21,16 +89,18 @@
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 - `googlecloudpubsubreceiver` Activate the Google Cloud Pubsub receiver. (#10580)
 - `googlecloudpubsubexporter` Activate the Google Cloud Pubsub exporter. (#10580)
+- `aerospikereceiver`: Add implementation of Aerospike Metric Receiver. (#9961)
 
 ### 💡 Enhancements 💡
 
-- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
 - `awsemfexporter`: Add min and max support for histograms (#10577)
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
+- `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
+- `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
 
 ### 🧰 Bug fixes 🧰
 
@@ -45,6 +115,7 @@
 - `prometheusexporter`: Converting monotonic Delta to Cumulative sums (#9919)
 - `statsdreceiver`: Update the lastIntervalTime for Counter metrics (#9919)
 - `resourcedetectionprocessor`: GCP resource detector now correctly detects region on Google App Engine standard (#10814)
+- `apachereceiver`: Update units to follow semconv (#10587)
 
 ## v0.52.0
 
@@ -55,6 +126,7 @@
 
 ### 🚀 New components 🚀
 
+- `aerospikereceiver`: Add implementation of Aerospike Metrics Receiver (#9961)
 - `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
@@ -70,6 +142,7 @@
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 - `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 - `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
+- `pkg/stanza`: make multiline tests more like integration tests #10353 
 
 ### 🧰 Bug fixes 🧰
 

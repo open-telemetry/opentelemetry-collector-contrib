@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package humioexporter
 
 import (
@@ -311,7 +310,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestSanitizeValid(t *testing.T) {
-	//Arrange
+	// Arrange
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -340,7 +339,7 @@ func TestSanitizeValid(t *testing.T) {
 }
 
 func TestSanitizeCustomHeaders(t *testing.T) {
-	//Arrange
+	// Arrange
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -366,7 +365,7 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 }
 
 func TestSanitizeNoCompression(t *testing.T) {
-	//Arrange
+	// Arrange
 	cfg := &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		DisableCompression: true,

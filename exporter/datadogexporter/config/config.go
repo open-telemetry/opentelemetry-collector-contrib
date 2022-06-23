@@ -18,6 +18,7 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -25,8 +26,10 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
@@ -221,9 +224,15 @@ type MetricsExporterConfig struct {
 	// resource attributes into metric labels, which are then converted into tags
 	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
 
+	// Deprecated: [0.54.0] Use InstrumentationScopeMetadataAsTags instead in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
+	// Both must not be enabled at the same time.
 	// InstrumentationLibraryMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation library that created a metric to the metric tags
 	InstrumentationLibraryMetadataAsTags bool `mapstructure:"instrumentation_library_metadata_as_tags"`
+
+	// InstrumentationScopeMetadataAsTags, if set to true, adds the name and version of the
+	// instrumentation scope that created a metric to the metric tags
+	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
 }
 
 // TracesConfig defines the traces exporter specific configuration options
@@ -435,47 +444,28 @@ type Config struct {
 }
 
 // Sanitize tries to sanitize a given configuration
+// Deprecated: [v0.54.0] Will be unexported in a future minor version.
 func (c *Config) Sanitize(logger *zap.Logger) error {
-	if c.TagsConfig.Env == "" {
-		c.TagsConfig.Env = "none"
-	}
-
-	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
-		return errNoMetadata
-	}
-
-	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
-		return fmt.Errorf("hostname field is invalid: %s", err)
-	}
-
-	if c.API.Key == "" {
-		return errUnsetAPIKey
-	}
-
-	c.API.Key = strings.TrimSpace(c.API.Key)
-
-	// Set default site
-	if c.API.Site == "" {
-		c.API.Site = "datadoghq.com"
-	}
-
-	// Set the endpoint based on the Site
-	if c.Metrics.TCPAddr.Endpoint == "" {
-		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
-	}
-
-	if c.Traces.TCPAddr.Endpoint == "" {
-		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
-	}
-
 	for _, err := range c.warnings {
-		logger.Warn(fmt.Sprintf("Deprecated: %v", err))
+		logger.Warn(fmt.Sprintf("%v", err))
 	}
 
 	return nil
 }
 
 func (c *Config) Validate() error {
+	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
+		return errNoMetadata
+	}
+
+	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
+		return fmt.Errorf("hostname field is invalid: %w", err)
+	}
+
+	if c.API.Key == "" {
+		return errUnsetAPIKey
+	}
+
 	if c.Traces.IgnoreResources != nil {
 		for _, entry := range c.Traces.IgnoreResources {
 			_, err := regexp.Compile(entry)
@@ -514,6 +504,18 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 
+	c.API.Key = strings.TrimSpace(c.API.Key)
+
+	// If an endpoint is not explicitly set, override it based on the site.
+	// TODO (#8396) Remove DD_URL check.
+	if !configMap.IsSet("metrics::endpoint") && os.Getenv("DD_URL") == "" {
+		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
+	}
+	// TODO (#8396) Remove DD_APM_URL check.
+	if !configMap.IsSet("traces::endpoint") && os.Getenv("DD_APM_URL") == "" {
+		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+	}
+
 	// Add deprecation warnings for deprecated settings.
 	renamingWarnings, err := handleRenamedSettings(configMap, c)
 	if err != nil {
@@ -531,11 +533,20 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if c.Version != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
 	}
-	if c.Env != "" {
+	if configMap.IsSet("env") {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
 	}
 	if c.Traces.SampleRate != 0 {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "traces.sample_rate", "v0.52.0", 9771))
+	}
+
+	const settingName = "host_metadata::hostname_source"
+	if !configMap.IsSet(settingName) && !featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
+		c.warnings = append(c.warnings, fmt.Errorf(
+			"%q will change its default value on a future version. Use the %q feature gate to preview this and other hostname changes",
+			settingName,
+			metadata.HostnamePreviewFeatureGate,
+		))
 	}
 	return nil
 }

@@ -16,6 +16,7 @@
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -72,8 +73,8 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 		input.SequenceToken = token
 		response, err = client.svc.PutLogEvents(input)
 		if err != nil {
-			awsErr, ok := err.(awserr.Error)
-			if !ok {
+			var awsErr awserr.Error
+			if !errors.As(err, &awsErr) {
 				client.logger.Error("Cannot cast PutLogEvents error into awserr.Error.", zap.Error(err))
 				return token, err
 			}
@@ -152,7 +153,8 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 	})
 	if err != nil {
 		client.logger.Debug("cwlog_client: creating stream fail", zap.Error(err))
-		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+		var awsErr awserr.Error
+		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
 			_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 				LogGroupName: logGroup,
 			})
@@ -166,7 +168,8 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 	}
 
 	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == cloudwatchlogs.ErrCodeResourceAlreadyExistsException {
+		var awsErr awserr.Error
+		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceAlreadyExistsException {
 			return "", nil
 		}
 		client.logger.Debug("CreateLogStream / CreateLogGroup has errors.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))

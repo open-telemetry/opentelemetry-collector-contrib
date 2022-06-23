@@ -16,7 +16,6 @@ package jaegerreceiver
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -105,7 +104,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, 14250, r.(*jReceiver).config.CollectorGRPCPort, "grpc port should be default")
+	assert.Equal(t, defaultGRPCBindEndpoint, r.(*jReceiver).config.CollectorGRPCServerSettings.NetAddr.Endpoint, "grpc port should be default")
 }
 
 func TestCreateTLSGPRCEndpoint(t *testing.T) {
@@ -154,14 +153,11 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
-		Endpoint: defaultHTTPBindEndpoint,
-	}
 	set := componenttest.NewNopReceiverCreateSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, 14268, r.(*jReceiver).config.CollectorHTTPPort, "http port should be default")
+	assert.Equal(t, defaultHTTPBindEndpoint, r.(*jReceiver).config.CollectorHTTPSettings.Endpoint, "http port should be default")
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
@@ -175,7 +171,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, 6832, r.(*jReceiver).config.AgentBinaryThriftPort, "thrift port should be default")
+	assert.Equal(t, defaultThriftBinaryBindEndpoint, r.(*jReceiver).config.AgentBinaryThrift.Endpoint, "thrift port should be default")
 }
 
 func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
@@ -189,7 +185,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, 6831, r.(*jReceiver).config.AgentCompactThriftPort, "thrift port should be default")
+	assert.Equal(t, defaultThriftCompactBindEndpoint, r.(*jReceiver).config.AgentCompactThrift.Endpoint, "thrift port should be default")
 }
 
 func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
@@ -206,7 +202,7 @@ func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, defaultGRPCBindEndpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
-	assert.Equal(t, defaultAgentRemoteSamplingHTTPPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be default")
+	assert.Equal(t, defaultAgentRemoteSamplingHTTPEndpoint, r.(*jReceiver).config.AgentHTTPEndpoint, "agent http port should be default")
 }
 
 func TestAgentRemoteSamplingEndpoint(t *testing.T) {
@@ -228,7 +224,7 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
-	assert.Equal(t, defaultAgentRemoteSamplingHTTPPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be default")
+	assert.Equal(t, defaultAgentRemoteSamplingHTTPEndpoint, r.(*jReceiver).config.AgentHTTPEndpoint, "agent http port should be default")
 }
 
 func TestRemoteSamplingConfigPropagation(t *testing.T) {
@@ -236,7 +232,7 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	hostPort := 5778
+	hostEndpoint := "localhost:5778"
 	endpoint := "localhost:1234"
 	strategyFile := "strategies.json"
 	rCfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
@@ -249,7 +245,7 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: endpoint,
 		},
-		HostEndpoint: fmt.Sprintf("localhost:%d", hostPort),
+		HostEndpoint: hostEndpoint,
 		StrategyFile: strategyFile,
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
@@ -257,6 +253,6 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
-	assert.Equal(t, hostPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be configured value")
+	assert.Equal(t, hostEndpoint, r.(*jReceiver).config.AgentHTTPEndpoint, "agent http port should be configured value")
 	assert.Equal(t, strategyFile, r.(*jReceiver).config.RemoteSamplingStrategyFile)
 }

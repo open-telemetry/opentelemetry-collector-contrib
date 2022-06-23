@@ -16,7 +16,6 @@ package env
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,7 @@ func TestNewDetector(t *testing.T) {
 }
 
 func TestDetectTrue(t *testing.T) {
-	os.Setenv(envVar, "key=value")
+	t.Setenv(envVar, "key=value")
 
 	detector := &Detector{}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -44,7 +43,7 @@ func TestDetectTrue(t *testing.T) {
 }
 
 func TestDetectFalse(t *testing.T) {
-	os.Setenv(envVar, "")
+	t.Setenv(envVar, "")
 
 	detector := &Detector{}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -54,8 +53,8 @@ func TestDetectFalse(t *testing.T) {
 }
 
 func TestDetectDeprecatedEnv(t *testing.T) {
-	os.Setenv(envVar, "")
-	os.Setenv(deprecatedEnvVar, "key=value")
+	t.Setenv(envVar, "")
+	t.Setenv(deprecatedEnvVar, "key=value")
 
 	detector := &Detector{}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -65,7 +64,7 @@ func TestDetectDeprecatedEnv(t *testing.T) {
 }
 
 func TestDetectError(t *testing.T) {
-	os.Setenv(envVar, "key=value,key")
+	t.Setenv(envVar, "key=value,key")
 
 	detector := &Detector{}
 	res, schemaURL, err := detector.Detect(context.Background())

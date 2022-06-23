@@ -65,7 +65,7 @@ type Config struct {
 func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformer, err := c.TransformerConfig.Build(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build transformer config: %s", err)
+		return nil, fmt.Errorf("failed to build transformer config: %w", err)
 	}
 
 	if c.IsLastEntry != "" && c.IsFirstEntry != "" {
@@ -82,13 +82,13 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		matchesFirst = true
 		prog, err = expr.Compile(c.IsFirstEntry, expr.AsBool(), expr.AllowUndefinedVariables())
 		if err != nil {
-			return nil, fmt.Errorf("failed to compile is_first_entry: %s", err)
+			return nil, fmt.Errorf("failed to compile is_first_entry: %w", err)
 		}
 	} else {
 		matchesFirst = false
 		prog, err = expr.Compile(c.IsLastEntry, expr.AsBool(), expr.AllowUndefinedVariables())
 		if err != nil {
-			return nil, fmt.Errorf("failed to compile is_last_entry: %s", err)
+			return nil, fmt.Errorf("failed to compile is_last_entry: %w", err)
 		}
 	}
 
@@ -156,7 +156,7 @@ func (r *Transformer) flushLoop() {
 			r.Lock()
 			timeNow := time.Now()
 			for source, entries := range r.batchMap {
-				lastEntryTs := entries[len(entries)-1].Timestamp
+				lastEntryTs := entries[len(entries)-1].ObservedTimestamp
 				timeSinceLastEntry := timeNow.Sub(lastEntryTs)
 				if timeSinceLastEntry < r.forceFlushTimeout {
 					continue

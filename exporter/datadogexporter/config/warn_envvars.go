@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -30,15 +31,25 @@ func futureDefaultConfig() *Config {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 15 * time.Second,
 		},
+		API: APIConfig{
+			Site: "datadoghq.com",
+		},
+		TagsConfig: TagsConfig{
+			Env: "none",
+		},
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://api.datadoghq.com",
+			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:             false,
 				InstrumentationLibraryMetadataAsTags: false,
+				InstrumentationScopeMetadataAsTags:   false,
 			},
 			HistConfig: HistogramConfig{
 				Mode:         "distributions",
@@ -52,6 +63,9 @@ func futureDefaultConfig() *Config {
 			},
 		},
 		Traces: TracesConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://trace.agent.datadoghq.com",
+			},
 			IgnoreResources: []string{},
 		},
 		HostMetadata: HostMetadataConfig{

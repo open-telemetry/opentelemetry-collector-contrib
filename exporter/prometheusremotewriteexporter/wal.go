@@ -285,7 +285,7 @@ func (prwe *prweWAL) syncAndTruncateFront() error {
 	}
 	// Truncate the WAL from the front for the entries that we already
 	// read from the WAL and had already exported.
-	if err := prwe.wal.TruncateFront(prwe.rWALIndex.Load()); err != nil && err != wal.ErrOutOfRange {
+	if err := prwe.wal.TruncateFront(prwe.rWALIndex.Load()); err != nil && !errors.Is(err, wal.ErrOutOfRange) {
 		return err
 	}
 	return nil

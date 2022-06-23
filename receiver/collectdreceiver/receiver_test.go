@@ -76,10 +76,7 @@ func TestNewReceiver(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := newCollectdReceiver(logger, tt.args.addr, time.Second*10, "", tt.args.nextConsumer)
-			if err != tt.wantErr {
-				t.Errorf("newCollectdReceiver() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
 }

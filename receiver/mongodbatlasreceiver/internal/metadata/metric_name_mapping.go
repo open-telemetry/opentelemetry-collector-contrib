@@ -597,7 +597,7 @@ func getRecordFunc(metricName string) metricRecordFunc {
 		}
 	case "MAX_SYSTEM_MEMORY_FREE":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusFree)
+			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, float64(*dp.Value), AttributeMemoryStatusFree)
 		}
 	case "SYSTEM_MEMORY_SHARED":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {

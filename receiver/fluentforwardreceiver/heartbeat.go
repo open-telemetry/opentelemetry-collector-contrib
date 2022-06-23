@@ -16,6 +16,7 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"net"
 	"syscall"
 
@@ -33,7 +34,7 @@ func respondToHeartbeats(ctx context.Context, udpSock net.PacketConn, logger *za
 	for {
 		n, addr, err := udpSock.ReadFrom(buf)
 		if err != nil || n == 0 {
-			if ctx.Err() != nil || err == syscall.EINVAL {
+			if ctx.Err() != nil || errors.Is(err, syscall.EINVAL) {
 				return
 			}
 			continue

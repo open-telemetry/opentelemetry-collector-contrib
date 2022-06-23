@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package httpforwarder
 
 import (
@@ -196,7 +195,8 @@ func TestExtension(t *testing.T) {
 					w.Header().Set(k, v)
 				}
 				w.WriteHeader(test.expectedbackendStatusCode)
-				w.Write(test.expectedBackendResponseBody)
+				_, err := w.Write(test.expectedBackendResponseBody)
+				assert.NoError(t, err)
 			}))
 			defer backend.Close()
 
@@ -244,7 +244,10 @@ func TestExtension(t *testing.T) {
 				header := strings.ToLower(k)
 				if want, ok := test.expectedHeaders[header]; ok {
 					assert.Equal(t, want, got)
-				} else if k == "Content-Length" || k == "Content-Type" || k == "X-Content-Type-Options" || k == "Date" || k == "Via" {
+					continue
+				}
+
+				if k == "Content-Length" || k == "Content-Type" || k == "X-Content-Type-Options" || k == "Date" || k == "Via" {
 					// Content-Length, Content-Type, X-Content-Type-Options and Date are certain headers added by default.
 					// Assertion for Via is done above.
 					continue
