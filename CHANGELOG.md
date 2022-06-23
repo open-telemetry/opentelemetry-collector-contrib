@@ -50,6 +50,7 @@
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
+- `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 
 ### 🧰 Bug fixes 🧰
 
@@ -69,6 +70,11 @@
 - `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
 - `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
 
+
+### Unmaintained components
+
+- `simpleprometheusreceiver`(#11133)
+
 ## v0.53.0
 
 ### 🛑 Breaking changes 🛑
@@ -78,6 +84,10 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
+- `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
+
+### 🚩 Deprecations 🚩
+
 
 ### 🚩 Deprecations 🚩
 
@@ -2134,15 +2144,15 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### Receivers
 
-| Traces | Metrics |
-|:-------:|:-------:|
-| Jaeger Legacy | Carbon |
-| SAPM (SignalFx APM) | Collectd |
-| Zipkin Scribe | K8s Cluster |
-| | Redis |
-| |  SignalFx |
-| | Simple Prometheus |
-| | Wavefront |
+|       Traces        |      Metrics      |
+| :-----------------: | :---------------: |
+|    Jaeger Legacy    |      Carbon       |
+| SAPM (SignalFx APM) |     Collectd      |
+|    Zipkin Scribe    |    K8s Cluster    |
+|                     |       Redis       |
+|                     |     SignalFx      |
+|                     | Simple Prometheus |
+|                     |     Wavefront     |
 
 ### Processors
 
@@ -2150,18 +2160,18 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### Exporters
 
-| Commercial | Community |
-|:------------:|:-----------:|
-| Alibaba Cloud Log Service | Carbon |
-| AWS X-ray | Elastic |
-| Azure Monitor | Jaeger Thrift |
-| Honeycomb | Kinesis |
-| Lightstep |
-| New Relic |
-| SAPM (SignalFx APM) |
-| SignalFx (Metrics) |
-| Splunk HEC |
-| Stackdriver (Google) |
+|        Commercial         |   Community   |
+| :-----------------------: | :-----------: |
+| Alibaba Cloud Log Service |    Carbon     |
+|         AWS X-ray         |    Elastic    |
+|       Azure Monitor       | Jaeger Thrift |
+|         Honeycomb         |    Kinesis    |
+|         Lightstep         |
+|         New Relic         |
+|    SAPM (SignalFx APM)    |
+|    SignalFx (Metrics)     |
+|        Splunk HEC         |
+|   Stackdriver (Google)    |
 
 ### Extensions
 
