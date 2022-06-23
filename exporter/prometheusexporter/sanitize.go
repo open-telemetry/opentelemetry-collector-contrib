@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
@@ -36,7 +35,7 @@ func sanitize(s string, skipSanitizeLabel bool) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = "key_" + s
 	}
-	//replace labels starting with _ only when skipSanitizeLabel is disabled
+	// replace labels starting with _ only when skipSanitizeLabel is disabled
 	if !skipSanitizeLabel && s[0] == '_' {
 		s = "key" + s
 	}

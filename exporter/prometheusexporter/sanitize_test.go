@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusexporter
 
 import (
@@ -29,7 +28,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
 	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	//enable skipSanitizeLabel
+	// enable skipSanitizeLabel
 	cfg.skipSanitizeLabel = true
 	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))
 	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
