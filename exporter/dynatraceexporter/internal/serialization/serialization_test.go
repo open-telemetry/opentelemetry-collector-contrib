@@ -21,12 +21,13 @@ import (
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type simplifiedLogRecord struct {

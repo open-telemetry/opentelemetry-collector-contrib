@@ -26,19 +26,18 @@ import (
 	"time"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
-	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 var testTimestamp = pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano())
