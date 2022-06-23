@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package fluentbitextension
 
 import (
@@ -91,8 +90,10 @@ func TestProcessManager(t *testing.T) {
 	})
 	defer cleanup()
 
-	pm.Start(ctx, nil)
-	defer pm.Shutdown(ctx)
+	require.NoError(t, pm.Start(ctx, nil))
+	defer func() {
+		require.NoError(t, pm.Shutdown(ctx))
+	}()
 
 	require.Eventually(t, findSubproc, 12*time.Second, 100*time.Millisecond)
 	require.NotNil(t, *mockProc)
@@ -126,8 +127,10 @@ func TestProcessManagerArgs(t *testing.T) {
 	})
 	defer cleanup()
 
-	pm.Start(ctx, nil)
-	defer pm.Shutdown(ctx)
+	require.NoError(t, pm.Start(ctx, nil))
+	defer func() {
+		require.NoError(t, pm.Shutdown(ctx))
+	}()
 
 	require.Eventually(t, findSubproc, 12*time.Second, 100*time.Millisecond)
 	require.NotNil(t, *mockProc)
@@ -153,8 +156,10 @@ func TestProcessManagerBadExec(t *testing.T) {
 		Config:         "example config",
 	}, logger)
 
-	pm.Start(ctx, nil)
-	defer pm.Shutdown(ctx)
+	require.NoError(t, pm.Start(ctx, nil))
+	defer func() {
+		require.NoError(t, pm.Shutdown(ctx))
+	}()
 
 	time.Sleep(restartDelay + 2*time.Second)
 	require.Len(t, logObserver.FilterMessage("FluentBit process died").All(), 2)
@@ -170,8 +175,10 @@ func TestProcessManagerEmptyConfig(t *testing.T) {
 	})
 	defer cleanup()
 
-	pm.Start(ctx, nil)
-	defer pm.Shutdown(ctx)
+	require.NoError(t, pm.Start(ctx, nil))
+	defer func() {
+		require.NoError(t, pm.Shutdown(ctx))
+	}()
 
 	require.Eventually(t, findSubproc, 15*time.Second, 100*time.Millisecond)
 	require.NotNil(t, *mockProc)

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
@@ -43,16 +42,13 @@ const (
 	prometheusInfValue    string = "+Inf"
 )
 
-func newPrometheusFormatter() (prometheusFormatter, error) {
-	sanitNameRegex, err := regexp.Compile(`[^0-9a-zA-Z]`)
-	if err != nil {
-		return prometheusFormatter{}, err
-	}
+func newPrometheusFormatter() prometheusFormatter {
+	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z]`)
 
 	return prometheusFormatter{
 		sanitNameRegex: sanitNameRegex,
 		replacer:       strings.NewReplacer(`\`, `\\`, `"`, `\"`),
-	}, nil
+	}
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
@@ -281,17 +277,17 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 
-		explicitBounds := dp.MExplicitBounds()
-		if len(explicitBounds) == 0 {
+		explicitBounds := dp.ExplicitBounds()
+		if explicitBounds.Len() == 0 {
 			continue
 		}
 
 		var cumulative uint64
 		additionalAttributes := pcommon.NewMap()
 
-		for i, bound := range explicitBounds {
-			cumulative += dp.MBucketCounts()[i]
-			additionalAttributes.UpsertDouble(prometheusLeTag, bound)
+		for i := 0; i < explicitBounds.Len(); i++ {
+			cumulative += dp.BucketCounts().At(i)
+			additionalAttributes.UpsertDouble(prometheusLeTag, explicitBounds.At(i))
 
 			line := f.uintValueLine(
 				record.metric.Name(),
@@ -302,7 +298,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 			lines = append(lines, line)
 		}
 
-		cumulative += dp.MBucketCounts()[len(explicitBounds)]
+		cumulative += dp.BucketCounts().At(explicitBounds.Len())
 		additionalAttributes.UpsertString(prometheusLeTag, prometheusInfValue)
 		line := f.uintValueLine(
 			record.metric.Name(),

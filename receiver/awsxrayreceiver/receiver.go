@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
@@ -102,16 +103,11 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 func (x *xrayReceiver) Shutdown(ctx context.Context) error {
 	var err error
 	if pollerErr := x.poller.Close(); pollerErr != nil {
-		err = pollerErr
+		err = fmt.Errorf("failed to close poller: %w", pollerErr)
 	}
 
 	if proxyErr := x.server.Shutdown(ctx); proxyErr != nil {
-		if err == nil {
-			err = proxyErr
-		} else {
-			err = fmt.Errorf("failed to close proxy: %s: failed to close poller: %s",
-				proxyErr.Error(), err.Error())
-		}
+		err = multierr.Append(err, fmt.Errorf("failed to close proxy: %w", proxyErr))
 	}
 	return err
 }

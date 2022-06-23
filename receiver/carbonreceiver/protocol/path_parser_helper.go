@@ -111,12 +111,12 @@ func (pph *PathParserHelper) Parse(line string) (*metricspb.Metric, error) {
 	parsedPath := ParsedPath{}
 	err := pph.pathParser.ParsePath(path, &parsedPath)
 	if err != nil {
-		return nil, fmt.Errorf("invalid carbon metric [%s]: %v", line, err)
+		return nil, fmt.Errorf("invalid carbon metric [%s]: %w", line, err)
 	}
 
 	unixTime, err := strconv.ParseInt(timestampStr, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid carbon metric time [%s]: %v", line, err)
+		return nil, fmt.Errorf("invalid carbon metric time [%s]: %w", line, err)
 	}
 
 	var metricType metricspb.MetricDescriptor_Type
@@ -134,7 +134,7 @@ func (pph *PathParserHelper) Parse(line string) (*metricspb.Metric, error) {
 	} else {
 		dblVal, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("invalid carbon metric value [%s]: %v", line, err)
+			return nil, fmt.Errorf("invalid carbon metric value [%s]: %w", line, err)
 		}
 		if parsedPath.MetricType == CumulativeMetricType {
 			metricType = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE

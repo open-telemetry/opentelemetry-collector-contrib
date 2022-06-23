@@ -79,7 +79,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	address, err := net.ResolveUDPAddr("udp", c.ListenAddress)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
+		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
 	encoding, err := c.Encoding.Build()
@@ -133,7 +133,7 @@ func (u *Input) Start(persister operator.Persister) error {
 
 	conn, err := net.ListenUDP("udp", u.address)
 	if err != nil {
-		return fmt.Errorf("failed to open connection: %s", err)
+		return fmt.Errorf("failed to open connection: %w", err)
 	}
 	u.connection = conn
 
