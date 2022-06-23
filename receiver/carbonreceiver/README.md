@@ -2,7 +2,7 @@
 
 | Status                   |            |
 | ------------------------ |------------|
-| Stability                | [alpha]    |
+| Stability                | [stable]   |
 | Supported pipeline types | metrics    |
 | Distributions            | [contrib]  |
 
@@ -61,5 +61,5 @@ receivers:
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
