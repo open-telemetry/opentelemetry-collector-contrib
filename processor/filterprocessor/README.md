@@ -1,19 +1,23 @@
 # Filter Processor
 
+- Supported pipeline types: logs, metrics, spans
+=======
 | Status                   |                   |
 | ------------------------ | ----------------- |
 | Stability                | [alpha]           |
-| Supported pipeline types | metrics, logs     |
+| Supported pipeline types | metrics, logs, traces  |
 | Distributions            | [core], [contrib] |
 
 The filter processor can be configured to include or exclude:
+
 
 - logs, based on resource attributes using the `strict` or `regexp` match types
 - metrics based on metric name in the case of the `strict` or `regexp` match types,
   or based on other metric attributes in the case of the `expr` match type.
   Please refer to [config.go](./config.go) for the config spec.
+- Spans based on tags, resources, and names, all with full regex support
 
-It takes a pipeline type, of which `logs` and `metrics` are supported, followed
+It takes a pipeline type, of which `logs` `metrics`, and `traces` are supported, followed
 by an action:
 
 - `include`: Any names NOT matching filters are excluded from remainder of pipeline
@@ -208,6 +212,43 @@ processors:
 ```
 
 In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.
+
+### Filter Spans from Traces
+
+* This pipeline is able to drop spans and whole traces 
+* Note: If this drops a parent span, it does not search out it's children leading to a missing Span in your trace visualization
+
+See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
+
+For spans, one of Services, SpanNames, Attributes, Resources or Libraries must be specified with a
+non-empty value for a valid configuration.
+
+```yaml
+processors:
+  filter:
+    spans:
+      include:
+        match_type: strict
+        services:
+          - app_3
+      exclude:
+        match_type: regex
+        services:
+          - app_1
+          - app_2
+        span_names:
+          - hello_world
+          - hello/world
+        attributes:
+          - Key: container.name
+            Value: (app_container_1|app_container_2)
+        libraries:
+          - Name: opentelemetry
+            Version: 0.0-beta
+        resources:
+          - Key: container.host
+            Value: (localhost|127.0.0.1)
+```
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
