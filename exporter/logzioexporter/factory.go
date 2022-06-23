@@ -18,9 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configcompression"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -87,11 +88,11 @@ func getListenerURL(region string) string {
 func generateEndpoint(cfg *Config) (string, error) {
 	defaultURL := fmt.Sprintf("%s/?token=%s", getListenerURL(""), cfg.Token)
 	switch {
-	case cfg.Endpoint != "":
-		return cfg.Endpoint, nil
+	case cfg.HTTPClientSettings.Endpoint != "":
+		return cfg.HTTPClientSettings.Endpoint, nil
 	case cfg.Region != "":
 		return fmt.Sprintf("%s/?token=%s", getListenerURL(cfg.Region), cfg.Token), nil
-	case cfg.Endpoint == "" && cfg.Region == "":
+	case cfg.HTTPClientSettings.Endpoint == "" && cfg.Region == "":
 		return defaultURL, errors.New("failed to generate endpoint, Endpoint or Region must be set")
 	default:
 		return defaultURL, nil

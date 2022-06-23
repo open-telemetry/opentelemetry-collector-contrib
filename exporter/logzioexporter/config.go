@@ -37,32 +37,32 @@ type Config struct {
 	QueueMaxLength                int                               `mapstructure:"queue_max_length"` // **Deprecation** Max number of items allowed in the queue. Defaults to `500000`.
 }
 
-func (config *Config) Validate() error {
-	if config.Token == "" {
+func (c *Config) Validate() error {
+	if c.Token == "" {
 		return errors.New("`account_token` not specified")
 	}
 	return nil
 }
 
 // CheckAndWarnDeprecatedOptions Is checking for soon deprecated configuration options (queue_max_length, queue_capacity, drain_interval, custom_endpoint) log a warning message and map to the relevant updated option
-func (config *Config) checkAndWarnDeprecatedOptions(logger hclog.Logger) {
-	if config.QueueCapacity != 0 {
+func (c *Config) checkAndWarnDeprecatedOptions(logger hclog.Logger) {
+	if c.QueueCapacity != 0 {
 		logger.Warn("You are using  the deprecated`queue_capacity` option that will be removed in the next release; use exporter helper configuration instead: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md")
 	}
 	// Warn and map queue_max_length -> QueueSettings.QueueSize
-	if config.QueueMaxLength != 0 {
+	if c.QueueMaxLength != 0 {
 		logger.Warn("You are using the deprecated `queue_max_length` option that will be removed in the next release; use exporter helper `queue_size` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md")
-		config.QueueSettings.Enabled = true
+		c.QueueSettings.Enabled = true
 		logger.Warn("Mapping `queue_max_length` -> `QueueSettings.QueueSize`")
-		config.QueueSettings.QueueSize = config.QueueMaxLength
+		c.QueueSettings.QueueSize = c.QueueMaxLength
 	}
-	if config.DrainInterval != 0 {
+	if c.DrainInterval != 0 {
 		logger.Warn("You are using the deprecated `drain_interval` option that will be removed in the next release; use batch processor `timeout` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor#batch-processor")
 	}
 	// Warn and map CustomEndpoint -> Endpoint
-	if config.CustomEndpoint != "" {
+	if c.CustomEndpoint != "" {
 		logger.Warn("You are using the deprecated `custom_endpoint` option that will be removed in the next release; please use `endpoint` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp")
 		logger.Warn("Mapping `custom_endpoint` -> `Endpoint`")
-		config.Endpoint = config.CustomEndpoint
+		c.HTTPClientSettings.Endpoint = c.CustomEndpoint
 	}
 }
