@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
@@ -43,16 +42,13 @@ const (
 	prometheusInfValue    string = "+Inf"
 )
 
-func newPrometheusFormatter() (prometheusFormatter, error) {
-	sanitNameRegex, err := regexp.Compile(`[^0-9a-zA-Z]`)
-	if err != nil {
-		return prometheusFormatter{}, err
-	}
+func newPrometheusFormatter() prometheusFormatter {
+	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z]`)
 
 	return prometheusFormatter{
 		sanitNameRegex: sanitNameRegex,
 		replacer:       strings.NewReplacer(`\`, `\\`, `"`, `\"`),
-	}, nil
+	}
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
