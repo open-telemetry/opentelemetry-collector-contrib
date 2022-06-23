@@ -13,6 +13,7 @@
 
 ### 💡 Enhancements 💡
 
+- `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
