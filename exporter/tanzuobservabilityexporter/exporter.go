@@ -86,7 +86,6 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 	// but don't currently export any metrics from the pipeline
 	s, err := senders.NewSender(cfg.Traces.Endpoint,
 		senders.MetricsPort(metricsPort),
-		senders.FlushIntervalSeconds(1),
 		senders.SDKMetricsTags(map[string]string{"otel.traces.collector_version": settings.BuildInfo.Version}),
 	)
 	if err != nil {

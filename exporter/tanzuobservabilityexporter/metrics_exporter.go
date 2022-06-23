@@ -30,7 +30,6 @@ type metricsExporter struct {
 
 func createMetricsConsumer(endpoint string, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 	s, err := senders.NewSender(endpoint,
-		senders.FlushIntervalSeconds(1),
 		senders.SDKMetricsTags(map[string]string{"otel.metrics.collector_version": otelVersion}),
 	)
 	if err != nil {
