@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/schema"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -64,12 +64,12 @@ func TestConfigurationValidation(t *testing.T) {
 		{
 			scenario:    "One target of incomplete schema family",
 			target:      []string{"opentelemetry.io/schemas/1.0.0"},
-			expectError: schema.ErrInvalidFamily,
+			expectError: translation.ErrInvalidFamily,
 		},
 		{
 			scenario:    "One target of incomplete schema identifier",
 			target:      []string{"https://opentelemetry.io/schemas/1"},
-			expectError: schema.ErrInvalidIdentifier,
+			expectError: translation.ErrInvalidIdentifier,
 		},
 		{
 			scenario: "Valid target(s)",
