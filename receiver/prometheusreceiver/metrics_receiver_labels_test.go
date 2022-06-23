@@ -685,3 +685,51 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []*pmetric.Resourc
 			}),
 	})
 }
+
+const targetResourceAttsInTargetInfo = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap"} 100
+# HELP target_info has the resource attributes
+# TYPE target_info gauge
+target_info{foo="bar", team="infra"} 1
+`
+
+func TestTargetInfoResourceAttributes(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetResourceAttsInTargetInfo},
+			},
+			validateFunc: verifyTargetInfoResourceAttributes,
+		},
+	}
+
+	testComponent(t, targets, false, "")
+}
+
+func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	wantAttributes := td.attributes
+	wantAttributes.InsertString("foo", "bar")
+	wantAttributes.InsertString("team", "infra")
+
+	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
+		assertMetricPresent("jvm_memory_bytes_used",
+			compareMetricType(pmetric.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(100),
+						compareAttributes(map[string]string{"area": "heap"}),
+					},
+				},
+			}),
+	})
+}
