@@ -11,16 +11,16 @@ require (
 	github.com/aws/aws-sdk-go v1.44.38
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.54.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.7.4
-	go.opentelemetry.io/collector v0.53.1-0.20220621130052-408f1e9f6d87
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220621130052-408f1e9f6d87
-	go.opentelemetry.io/collector/semconv v0.53.1-0.20220621130052-408f1e9f6d87
+	go.opentelemetry.io/collector v0.54.0
+	go.opentelemetry.io/collector/pdata v0.54.0
+	go.opentelemetry.io/collector/semconv v0.54.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.38.1
@@ -74,7 +74,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.54.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
