@@ -126,12 +126,12 @@ type MetricValueType string
 const (
 	MetricValueTypeUnspecified MetricValueType = ""
 	MetricValueTypeInt         MetricValueType = "int"
-	MetricValueTypeDouble      MetricValueType = "double"
+	MetricValueTypeFloat       MetricValueType = "float"
 )
 
 func (t MetricValueType) Validate() error {
 	switch t {
-	case MetricValueTypeUnspecified, MetricValueTypeInt, MetricValueTypeDouble:
+	case MetricValueTypeUnspecified, MetricValueTypeInt, MetricValueTypeFloat:
 		return nil
 	}
 	return fmt.Errorf("metric config has unsupported value_type: '%s'", t)

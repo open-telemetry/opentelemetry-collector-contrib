@@ -60,7 +60,7 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 				MetricName:  "my.float",
 				ValueColumn: "myfloat",
 				Monotonic:   true,
-				ValueType:   MetricValueTypeDouble,
+				ValueType:   MetricValueTypeFloat,
 				DataType:    MetricDataTypeGauge,
 			}},
 		},
@@ -300,7 +300,7 @@ func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetr
 	assert.EqualValues(t, expected, sum.DataPoints().At(0).IntVal())
 }
 
-func TestScraper_Double(t *testing.T) {
+func TestScraper_Float(t *testing.T) {
 	client := &fakeDBClient{
 		responses: [][]metricRow{
 			{{"myfloat": "123.4"}},
@@ -313,7 +313,7 @@ func TestScraper_Double(t *testing.T) {
 				MetricName:  "my.float",
 				ValueColumn: "myfloat",
 				Monotonic:   true,
-				ValueType:   MetricValueTypeDouble,
+				ValueType:   MetricValueTypeFloat,
 				DataType:    MetricDataTypeGauge,
 			}},
 		},
