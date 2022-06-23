@@ -95,8 +95,9 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 		set,
 		exporter.pushTraceData,
 		exporterhelper.WithStart(exporter.start),
+		// disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
-		exporterhelper.WithTimeout(config.TimeoutSettings),
 		exporterhelper.WithRetry(config.RetrySettings),
 	)
 }
@@ -118,8 +119,9 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 		set,
 		exporter.pushLogData,
 		exporterhelper.WithStart(exporter.start),
+		// disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
-		exporterhelper.WithTimeout(config.TimeoutSettings),
 		exporterhelper.WithRetry(config.RetrySettings),
 	)
 }

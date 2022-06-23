@@ -25,17 +25,16 @@ import (
 
 // Config contains Logz.io specific configuration such as Account TracesToken, Region, etc.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`          // squash ensures fields are correctly decoded in embedded struct
-	confighttp.HTTPClientSettings  `mapstructure:",squash"`          // confighttp client settings https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#HTTPClientSettings
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`    // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"` // exporter helper retry settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#RetrySettings
-	exporterhelper.TimeoutSettings `mapstructure:"timeout"`          // exporter helper timeout settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#TimeoutSettings
-	Token                          string                            `mapstructure:"account_token"`    // Your Logz.io Account Token, can be found at https://app.logz.io/#/dashboard/settings/general
-	Region                         string                            `mapstructure:"region"`           // Your Logz.io 2-letter region code, can be found at https://docs.logz.io/user-guide/accounts/account-region.html#available-regions
-	CustomEndpoint                 string                            `mapstructure:"custom_endpoint"`  // **Deprecation** Custom endpoint to ship traces to. Use only for dev and tests.
-	DrainInterval                  int                               `mapstructure:"drain_interval"`   // **Deprecation** Queue drain interval in seconds. Defaults to `3`.
-	QueueCapacity                  int64                             `mapstructure:"queue_capacity"`   // **Deprecation** Queue capacity in bytes. Defaults to `20 * 1024 * 1024` ~ 20mb.
-	QueueMaxLength                 int                               `mapstructure:"queue_max_length"` // **Deprecation** Max number of items allowed in the queue. Defaults to `500000`.
+	config.ExporterSettings       `mapstructure:",squash"`          // squash ensures fields are correctly decoded in embedded struct
+	confighttp.HTTPClientSettings `mapstructure:",squash"`          // confighttp client settings https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#HTTPClientSettings
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`    // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"` // exporter helper retry settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#RetrySettings
+	Token                         string                            `mapstructure:"account_token"`    // Your Logz.io Account Token, can be found at https://app.logz.io/#/dashboard/settings/general
+	Region                        string                            `mapstructure:"region"`           // Your Logz.io 2-letter region code, can be found at https://docs.logz.io/user-guide/accounts/account-region.html#available-regions
+	CustomEndpoint                string                            `mapstructure:"custom_endpoint"`  // **Deprecation** Custom endpoint to ship traces to. Use only for dev and tests.
+	DrainInterval                 int                               `mapstructure:"drain_interval"`   // **Deprecation** Queue drain interval in seconds. Defaults to `3`.
+	QueueCapacity                 int64                             `mapstructure:"queue_capacity"`   // **Deprecation** Queue capacity in bytes. Defaults to `20 * 1024 * 1024` ~ 20mb.
+	QueueMaxLength                int                               `mapstructure:"queue_max_length"` // **Deprecation** Max number of items allowed in the queue. Defaults to `500000`.
 }
 
 func (config *Config) Validate() error {

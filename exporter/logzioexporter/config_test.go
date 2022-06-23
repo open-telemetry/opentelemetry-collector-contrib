@@ -49,7 +49,6 @@ func TestLoadConfig(t *testing.T) {
 		Token:            "token",
 		Region:           "eu",
 	}
-	expected.TimeoutSettings = exporterhelper.NewDefaultTimeoutSettings()
 	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
 	expected.RetrySettings.MaxInterval = 5 * time.Second
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
@@ -84,7 +83,6 @@ func TestDefaultLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 		Token:            "logzioTESTtoken",
 	}
-	expected.TimeoutSettings = exporterhelper.NewDefaultTimeoutSettings()
 	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
 	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
@@ -105,7 +103,6 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		Token:            "logzioTESTtoken",
 		CustomEndpoint:   "https://api.example.com",
 		QueueMaxLength:   10,
@@ -135,7 +132,6 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		DrainInterval:    10,
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "https://api.example.com",
 			Timeout:  10 * time.Second,
