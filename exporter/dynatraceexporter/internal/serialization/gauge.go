@@ -68,10 +68,11 @@ func serializeGauge(logger *zap.Logger, prefix string, metric pmetric.Metric, de
 		)
 
 		if err != nil {
-			logger.Sugar().Warnw("Error serializing gauge data point",
-				"name", metric.Name(),
-				"value-type", dp.ValueType().String(),
-				"error", err,
+			logger.Warn(
+				"Error serializing gauge data point",
+				zap.String("name", metric.Name()),
+				zap.String("value-type", dp.ValueType().String()),
+				zap.Error(err),
 			)
 		}
 

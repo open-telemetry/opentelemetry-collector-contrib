@@ -46,7 +46,10 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 	monotonic := sum.IsMonotonic()
 
 	if !monotonic && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
-		logger.Sugar().Warnw("dropping delta non-monotonic sum", "name", metric.Name())
+		logger.Warn(
+			"dropping delta non-monotonic sum",
+			zap.String("name", metric.Name()),
+		)
 		return metricLines
 	}
 
@@ -67,10 +70,11 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 			)
 
 			if err != nil {
-				logger.Sugar().Warnw("Error serializing sum data point",
-					"name", metric.Name(),
-					"value-type", dp.ValueType().String(),
-					"error", err,
+				logger.Warn(
+					"Error serializing sum data point",
+					zap.String("name", metric.Name()),
+					zap.String("value-type", dp.ValueType().String()),
+					zap.Error(err),
 				)
 			}
 
@@ -87,7 +91,12 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 			)
 
 			if err != nil {
-				logger.Sugar().Warnw("Error serializing non-monotonic Sum as gauge", "name", metric.Name(), "value-type", dp.ValueType().String(), "error", err)
+				logger.Warn(
+					"Error serializing non-monotonic Sum as gauge",
+					zap.String("name", metric.Name()),
+					zap.String("value-type", dp.ValueType().String()),
+					zap.Error(err),
+				)
 			}
 
 			if line != "" {

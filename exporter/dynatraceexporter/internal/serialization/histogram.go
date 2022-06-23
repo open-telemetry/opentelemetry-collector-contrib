@@ -48,9 +48,9 @@ func serializeHistogram(logger *zap.Logger, prefix string, metric pmetric.Metric
 	hist := metric.Histogram()
 
 	if hist.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
-		logger.Sugar().Warnw(
+		logger.Warn(
 			"dropping cumulative histogram",
-			"name", metric.Name(),
+			zap.String("name", metric.Name()),
 		)
 		return metricLines
 	}
@@ -66,9 +66,10 @@ func serializeHistogram(logger *zap.Logger, prefix string, metric pmetric.Metric
 		)
 
 		if err != nil {
-			logger.Sugar().Warnw("Error serializing histogram data point",
-				"name", metric.Name(),
-				"error", err,
+			logger.Warn(
+				"Error serializing histogram data point",
+				zap.String("name", metric.Name()),
+				zap.Error(err),
 			)
 		}
 
