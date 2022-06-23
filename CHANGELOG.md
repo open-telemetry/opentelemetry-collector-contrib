@@ -20,6 +20,7 @@
 ### Unmaintained components
 
 - `simpleprometheusreceiver`(#11133)
+- `tanzuobservabilityexporter`: remove calls to deprecated `NewProxySender` methods. (#11510)
 
 ## v0.54.0
 
