@@ -286,10 +286,10 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	// Should accumulate multiple metrics
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "node-exporter", "localhost:8080")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
+		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "node-exporter", "localhost:8080")))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -302,12 +302,12 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		want := []string{
 			`# HELP test_metric_1_this_one_there_where Extra ones`,
 			`# TYPE test_metric_1_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="cpu-exporter",os="windows"} %v %v`, 99+128, 1543160298100+128000),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="cpu-exporter",os="linux"} %v %v`, 100+128, 1543160298100),
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+128, 1543160298100+128000),
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+128, 1543160298100),
 			`# HELP test_metric_2_this_one_there_where Extra ones`,
 			`# TYPE test_metric_2_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="cpu-exporter",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="cpu-exporter",os="linux"} %v %v`, 100+delta, 1543160298100),
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+delta, 1543160298100),
 		}
 
 		for _, w := range want {
