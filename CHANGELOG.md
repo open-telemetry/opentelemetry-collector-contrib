@@ -76,6 +76,10 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
+- `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
+
+### 🚩 Deprecations 🚩
+
 
 ### 🚀 New components 🚀
 
