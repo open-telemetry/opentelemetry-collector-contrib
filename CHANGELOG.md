@@ -72,6 +72,7 @@
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
+- `prometheusexporter` : Added a feature to prometheusexporter to export exemplars along with histogram metrics.
 
 ### 🧰 Bug fixes 🧰
 

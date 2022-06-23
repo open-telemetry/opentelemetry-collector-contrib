@@ -160,3 +160,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
+
+replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.2-0.20220318110013-3bc8f2c651ff
