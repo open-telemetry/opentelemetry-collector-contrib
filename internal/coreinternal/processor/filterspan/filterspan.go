@@ -112,7 +112,9 @@ func SkipSpan(include Matcher, exclude Matcher, span ptrace.Span, resource pcomm
 func (mp *propertiesMatcher) MatchSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
+		// Check resource and spans for service.name
 		serviceName := serviceNameForResource(resource)
+
 		if !mp.serviceFilters.Matches(serviceName) {
 			return false
 		}
@@ -131,6 +133,5 @@ func serviceNameForResource(resource pcommon.Resource) string {
 	if !found {
 		return "<nil-service-name>"
 	}
-
-	return service.StringVal()
+	return service.AsString()
 }
