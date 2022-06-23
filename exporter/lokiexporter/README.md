@@ -1,8 +1,12 @@
 # Loki Exporter
 
-Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
 
-Supported pipeline types: logs
+Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
 
 ## Getting Started
 
@@ -84,3 +88,6 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [Queuing and retry settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
