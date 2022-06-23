@@ -16,6 +16,7 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"fmt"
+
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"

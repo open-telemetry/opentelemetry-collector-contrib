@@ -16,6 +16,7 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"fmt"
+
 	"go.uber.org/zap"
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
