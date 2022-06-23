@@ -66,7 +66,10 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	require.Error(t, err)
+	const expected = "scraper.Scrape row conversion errors: row 0: rowToMetric: " +
+		"setDataPointValue: error converting to double: " +
+		"strconv.ParseFloat: parsing \"blah\": invalid syntax"
+	assert.EqualError(t, err, expected)
 }
 
 func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
@@ -80,7 +83,7 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 		query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.int",
-				ValueColumn: "int",
+				ValueColumn: "myint",
 				Monotonic:   true,
 				ValueType:   MetricValueTypeInt,
 				DataType:    MetricDataTypeGauge,
@@ -88,7 +91,36 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	require.Error(t, err)
+	const expected = "scraper.Scrape row conversion errors: row 0: rowToMetric: " +
+		"setDataPointValue: error converting to integer: " +
+		"strconv.Atoi: parsing \"blah\": invalid syntax"
+	assert.EqualError(t, err, expected)
+}
+
+func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
+	client := &fakeDBClient{
+		responses: [][]metricRow{{
+			{"myint": "foo"},
+			{"myint": "bar"},
+		}},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:  "my.col",
+				ValueColumn: "mycol",
+				Monotonic:   true,
+				ValueType:   MetricValueTypeInt,
+				DataType:    MetricDataTypeGauge,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	const expected = "scraper.Scrape row conversion errors: " +
+		"row 0: rowToMetric: value_column 'mycol' not found in result set; " +
+		"row 1: rowToMetric: value_column 'mycol' not found in result set"
+	assert.EqualError(t, err, expected)
 }
 
 func TestScraper_SingleRow_MultiMetrics(t *testing.T) {

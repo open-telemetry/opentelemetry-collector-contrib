@@ -66,14 +66,15 @@ func (s scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ms := sm.Metrics()
 	var errs error
 	for _, metricCfg := range s.query.Metrics {
-		for _, row := range rows {
+		for i, row := range rows {
 			if err = rowToMetric(row, metricCfg, ms.AppendEmpty()); err != nil {
-				err = multierr.Append(errs, err)
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = multierr.Append(errs, err)
 			}
 		}
 	}
-	if err != nil {
-		errs = fmt.Errorf("scraper.Scrape errors: %w", errs)
+	if errs != nil {
+		errs = fmt.Errorf("scraper.Scrape row conversion errors: %w", errs)
 	}
 	return out, errs
 }

@@ -27,7 +27,11 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
-	err := setDataPointValue(cfg, row[cfg.ValueColumn], dataPoint)
+	value, found := row[cfg.ValueColumn]
+	if !found {
+		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)
+	}
+	err := setDataPointValue(cfg, value, dataPoint)
 	if err != nil {
 		return fmt.Errorf("rowToMetric: %w", err)
 	}
@@ -36,7 +40,7 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 		if attrVal, found := row[columnName]; found {
 			attrs.InsertString(columnName, attrVal)
 		} else {
-			return fmt.Errorf("rowToMetric: attribute_column not found: %q", columnName)
+			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
 		}
 	}
 	return nil
