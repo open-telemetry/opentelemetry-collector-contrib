@@ -68,12 +68,22 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		filePathResolvedField = entry.NewAttributeField("log.file.path_resolved")
 	}
 
+	var toBody toBodyFunc = func(token []byte) interface{} {
+		return string(token)
+	}
+	if helper.IsNop(c.Config.Splitter.EncodingConfig.Encoding) {
+		toBody = func(token []byte) interface{} {
+			return token
+		}
+	}
+
 	input := &Input{
 		InputOperator:         inputOperator,
 		FilePathField:         filePathField,
 		FileNameField:         fileNameField,
 		FilePathResolvedField: filePathResolvedField,
 		FileNameResolvedField: fileNameResolvedField,
+		toBody:                toBody,
 	}
 
 	input.fileConsumer, err = c.Config.Build(logger, input.emit)

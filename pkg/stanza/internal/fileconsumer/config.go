@@ -42,7 +42,6 @@ func NewConfig() *Config {
 		FingerprintSize:         DefaultFingerprintSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
-		Encoding:                helper.NewEncodingConfig(),
 	}
 }
 
@@ -58,7 +57,6 @@ type Config struct {
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"               json:"fingerprint_size,omitempty"              yaml:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"                   json:"max_log_size,omitempty"                  yaml:"max_log_size,omitempty"`
 	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"           json:"max_concurrent_files,omitempty"          yaml:"max_concurrent_files,omitempty"`
-	Encoding                helper.EncodingConfig `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
 }
 
@@ -102,13 +100,8 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
 	}
 
-	encoding, err := c.Encoding.Build()
-	if err != nil {
-		return nil, err
-	}
-
-	// Ensure that multiline is buildable
-	_, err = c.Splitter.Build(encoding.Encoding, false, int(c.MaxLogSize))
+	// Ensure that splitter is buildable
+	_, err := c.Splitter.Build(false, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +125,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 		captureFileNameResolved: c.IncludeFileNameResolved,
 		captureFilePathResolved: c.IncludeFilePathResolved,
 		startAtBeginning:        startAtBeginning,
-		Splitter:                c.Splitter,
+		SplitterConfig:          c.Splitter,
 		queuedMatches:           make([]string, 0),
 		firstCheck:              true,
 		cancel:                  func() {},
@@ -143,6 +136,5 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 		MaxConcurrentFiles:      c.MaxConcurrentFiles,
 		SeenPaths:               make(map[string]struct{}, 100),
 		emit:                    emit,
-		Encoding:                encoding, // TODO try to remove this
 	}, nil
 }
