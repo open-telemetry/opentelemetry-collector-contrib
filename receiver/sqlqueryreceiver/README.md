@@ -19,14 +19,13 @@ e.g. _host=localhost port=5432 user=me password=s3cr3t sslmode=disable_
 
 A _query_ consists of a sql statement and one or more _metrics_, where each metric consists of a
 `metric_name`, a `value_column`, an optional list of `attribute_columns`, an optional `is_monotonic` boolean
-, an optional map of `tags`, and an optional `unit`.
+, and an optional map of `tags`
 Each _metric_ in the configuration will produce one OTel metric per row returned from its sql query.
 
 * `metric_name`(required): the name assigned to the OTel metric.
 * `value_column`(required): the column name in the returned dataset used to set the value of the metric's datapoint. The column's values must be of an integer type.
 * `attribute_columns`(optional): a list of column names in the returned dataset used to set attibutes on the datapoint.
 * `is_monotonic`(optional): a boolean value indicating whether the metric value is monotonically increasing. If it is, the receiver will emit a sum type for this metric.
-* `unit` (optional): a string representing the unit of the qeuried metric(s)
 * `tags` (optional): a map of additional tags to be added to the __metric__
 
 ### Example
