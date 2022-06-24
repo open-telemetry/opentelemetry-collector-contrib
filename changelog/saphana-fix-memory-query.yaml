@@ -1,0 +1,4 @@
+change_type: enhancement
+component: saphanareceiver
+note: Fix component memory query, add better error handling
+issues: [ 11507 ]

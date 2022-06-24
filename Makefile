@@ -258,6 +258,22 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
+.PHONY: chlog-install
+chlog-install:
+	cd cmd/chloggen && $(GOCMD) install .
+
+.PHONY: chlog-validate
+chlog-validate: chlog-install
+	chloggen validate
+
+.PHONY: chlog-preview
+chlog-preview: chlog-install
+	chloggen preview
+
+.PHONY: chlog-update
+chlog-update: chlog-install
+	chloggen update
+
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:

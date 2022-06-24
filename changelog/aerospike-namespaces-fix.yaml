@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: aerospikereceiver
+note: Fix issue where namespaces would not be collected
+issues: [ 11465 ]

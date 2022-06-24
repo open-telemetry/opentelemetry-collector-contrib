@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+<!-- next version -->
 
+## Unreleased
+- `filterprocessor`: Ability to filter `Spans` (#6341)
+-
 ## 🛑 Breaking changes 🛑
 
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
@@ -19,7 +22,6 @@
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
-- `filterprocessor`: Add ability to filter `Spans` (#6341)
 - `tracegen`: support add additional resource attributes. (#11145)
 
 ### 🧰 Bug fixes 🧰
@@ -176,7 +178,7 @@
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 - `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 - `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
-- `pkg/stanza`: make multiline tests more like integration tests #10353 
+- `pkg/stanza`: make multiline tests more like integration tests #10353
 
 ### 🧰 Bug fixes 🧰
 
