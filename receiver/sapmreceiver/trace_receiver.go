@@ -156,6 +156,10 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 
 // Start starts the sapmReceiver's server.
 func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
+	// server.Handler will be nil on initial call, otherwise noop.
+	if sr.server != nil && sr.server.Handler != nil {
+		return nil
+	}
 	// set up the listener
 	ln, err := sr.config.HTTPServerSettings.ToListener()
 	if err != nil {
