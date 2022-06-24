@@ -63,7 +63,7 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 			line, err := serializeSumPoint(
 				metric.Name(),
 				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
 				metric.Sum().AggregationTemporality(),
 				dp,
 				prev,
@@ -86,7 +86,7 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 			line, err := serializeGaugePoint(
 				metric.Name(),
 				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+				makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
 				dp,
 			)
 

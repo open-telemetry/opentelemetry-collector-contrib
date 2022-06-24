@@ -49,7 +49,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 	return metricLines, nil
 }
 
-func makeCombinedDimensions(labels pcommon.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
+func makeCombinedDimensions(defaultDimensions dimensions.NormalizedDimensionList, labels pcommon.Map, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
 	dimsFromLabels := make([]dimensions.Dimension, 0, labels.Len())
 
 	labels.Range(func(k string, v pcommon.Value) bool {

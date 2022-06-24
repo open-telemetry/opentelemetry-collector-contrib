@@ -63,7 +63,7 @@ func serializeGauge(logger *zap.Logger, prefix string, metric pmetric.Metric, de
 		line, err := serializeGaugePoint(
 			metric.Name(),
 			prefix,
-			makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
+			makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
 			dp,
 		)
 

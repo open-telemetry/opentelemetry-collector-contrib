@@ -163,7 +163,7 @@ func Test_makeCombinedDimensions(t *testing.T) {
 		dimensions.NewDimension("c", "default"),
 	)
 
-	actual := makeCombinedDimensions(labels, defaultDims, staticDims)
+	actual := makeCombinedDimensions(defaultDims, labels, staticDims)
 
 	sortAndStringify :=
 		func(dims []dimensions.Dimension) string {
