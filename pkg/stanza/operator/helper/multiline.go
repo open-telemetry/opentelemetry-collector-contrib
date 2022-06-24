@@ -136,12 +136,12 @@ type MultilineConfig struct {
 }
 
 // Build will build a Multiline operator.
-func (c MultilineConfig) Build(encoding encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
-	return c.getSplitFunc(encoding, flushAtEOF, force, maxLogSize)
+func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize)
 }
 
 // getSplitFunc returns split function for bufio.Scanner basing on configured pattern
-func (c MultilineConfig) getSplitFunc(encodingVar encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
 	endPattern := c.LineEndPattern
 	startPattern := c.LineStartPattern
 
@@ -153,12 +153,12 @@ func (c MultilineConfig) getSplitFunc(encodingVar encoding.Encoding, flushAtEOF 
 	switch {
 	case endPattern != "" && startPattern != "":
 		return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
-	case encodingVar == encoding.Nop && (endPattern != "" || startPattern != ""):
+	case enc == encoding.Nop && (endPattern != "" || startPattern != ""):
 		return nil, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding")
-	case encodingVar == encoding.Nop:
+	case enc == encoding.Nop:
 		return SplitNone(maxLogSize), nil
 	case endPattern == "" && startPattern == "":
-		splitFunc, err = NewNewlineSplitFunc(encodingVar, flushAtEOF)
+		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF)
 
 		if err != nil {
 			return nil, err
@@ -288,13 +288,13 @@ func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 // NewNewlineSplitFunc splits log lines by newline, just as bufio.ScanLines, but
 // never returning an token using EOF as a terminator
-func NewNewlineSplitFunc(encoding encoding.Encoding, flushAtEOF bool) (bufio.SplitFunc, error) {
-	newline, err := encodedNewline(encoding)
+func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool) (bufio.SplitFunc, error) {
+	newline, err := encodedNewline(enc)
 	if err != nil {
 		return nil, err
 	}
 
-	carriageReturn, err := encodedCarriageReturn(encoding)
+	carriageReturn, err := encodedCarriageReturn(enc)
 	if err != nil {
 		return nil, err
 	}
@@ -323,15 +323,15 @@ func NewNewlineSplitFunc(encoding encoding.Encoding, flushAtEOF bool) (bufio.Spl
 	}, nil
 }
 
-func encodedNewline(encoding encoding.Encoding) ([]byte, error) {
+func encodedNewline(enc encoding.Encoding) ([]byte, error) {
 	out := make([]byte, 10)
-	nDst, _, err := encoding.NewEncoder().Transform(out, []byte{'\n'}, true)
+	nDst, _, err := enc.NewEncoder().Transform(out, []byte{'\n'}, true)
 	return out[:nDst], err
 }
 
-func encodedCarriageReturn(encoding encoding.Encoding) ([]byte, error) {
+func encodedCarriageReturn(enc encoding.Encoding) ([]byte, error) {
 	out := make([]byte, 10)
-	nDst, _, err := encoding.NewEncoder().Transform(out, []byte{'\r'}, true)
+	nDst, _, err := enc.NewEncoder().Transform(out, []byte{'\r'}, true)
 	return out[:nDst], err
 }
 
@@ -349,28 +349,36 @@ func trimWhitespaces(data []byte) []byte {
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	Multiline MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
-	Flusher   FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
+	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
 func NewSplitterConfig() SplitterConfig {
 	return SplitterConfig{
-		Multiline: NewMultilineConfig(),
-		Flusher:   NewFlusherConfig(),
+		EncodingConfig: NewEncodingConfig(),
+		Multiline:      NewMultilineConfig(),
+		Flusher:        NewFlusherConfig(),
 	}
 }
 
 // Build builds Splitter struct
-func (c *SplitterConfig) Build(encoding encoding.Encoding, flushAtEOF bool, maxLogSize int) (*Splitter, error) {
+func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, error) {
+	enc, err := c.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+
 	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(encoding, flushAtEOF, flusher, maxLogSize)
+	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &Splitter{
+		Encoding:  enc,
 		Flusher:   flusher,
 		SplitFunc: splitFunc,
 	}, nil
@@ -378,6 +386,7 @@ func (c *SplitterConfig) Build(encoding encoding.Encoding, flushAtEOF bool, maxL
 
 // Splitter consolidates Flusher and dependent splitFunc
 type Splitter struct {
+	Encoding  Encoding
 	SplitFunc bufio.SplitFunc
 	Flusher   *Flusher
 }
