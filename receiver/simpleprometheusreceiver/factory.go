@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 // This file implements factory for prometheus_simple receiver
