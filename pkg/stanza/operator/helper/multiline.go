@@ -349,23 +349,23 @@ func trimWhitespaces(data []byte) []byte {
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	Encoding  EncodingConfig  `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
-	Multiline MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
-	Flusher   FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
+	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
 func NewSplitterConfig() SplitterConfig {
 	return SplitterConfig{
-		Encoding:  NewEncodingConfig(),
-		Multiline: NewMultilineConfig(),
-		Flusher:   NewFlusherConfig(),
+		EncodingConfig: NewEncodingConfig(),
+		Multiline:      NewMultilineConfig(),
+		Flusher:        NewFlusherConfig(),
 	}
 }
 
 // Build builds Splitter struct
 func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, error) {
-	enc, err := c.Encoding.Build()
+	enc, err := c.EncodingConfig.Build()
 	if err != nil {
 		return nil, err
 	}
