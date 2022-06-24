@@ -15,14 +15,16 @@
 
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
+- `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
 
 ### 🧰 Bug fixes 🧰
 
 ### Unmaintained components
 
 - `simpleprometheusreceiver`(#11133)
-- `tanzuobservabilityexporter`: remove calls to deprecated `NewProxySender` methods. (#11510)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
+- `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
+- `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
 
 ## v0.54.0
 
