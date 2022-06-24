@@ -121,6 +121,12 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 	// SignalFx event timestamps.
 	event.Timestamp = int64(lr.Timestamp()) / 1e6
 
+	// EventType is a required field, if not set sfx event ingest will drop it
+	if event.EventType == "" {
+		logger.Debug("EventType is not set; setting it to unknown")
+		event.EventType = "unknown"
+	}
+
 	return &event, true
 }
 

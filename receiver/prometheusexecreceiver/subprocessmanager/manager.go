@@ -17,6 +17,7 @@ package subprocessmanager // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -88,7 +89,7 @@ func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time
 func (proc *SubprocessConfig) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger, isStdout bool) {
 	for {
 		line, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
+		if err != nil && !errors.Is(err, io.EOF) {
 			logger.Info("subprocess logging failed", zap.String("error", err.Error()))
 			break
 		}
@@ -103,7 +104,7 @@ func (proc *SubprocessConfig) pipeSubprocessOutput(reader *bufio.Reader, logger 
 		}
 
 		// Leave this function when error is EOF (stderr/stdout pipe was closed)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 	}

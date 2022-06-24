@@ -26,8 +26,8 @@ import (
 
 func Test_serializeHistogram(t *testing.T) {
 	hist := pmetric.NewHistogramDataPoint()
-	hist.SetMExplicitBounds([]float64{0, 2, 4, 8})
-	hist.SetMBucketCounts([]uint64{0, 1, 0, 1, 0})
+	hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
+	hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 0}))
 	hist.SetCount(2)
 	hist.SetSum(9.5)
 	hist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -40,8 +40,8 @@ func Test_serializeHistogram(t *testing.T) {
 
 	t.Run("delta with non-empty first and last bucket", func(t *testing.T) {
 		histWithNonEmptyFirstLast := pmetric.NewHistogramDataPoint()
-		histWithNonEmptyFirstLast.SetMExplicitBounds([]float64{0, 2, 4, 8})
-		histWithNonEmptyFirstLast.SetMBucketCounts([]uint64{0, 1, 0, 1, 1})
+		histWithNonEmptyFirstLast.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
+		histWithNonEmptyFirstLast.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 1}))
 		histWithNonEmptyFirstLast.SetCount(3)
 		histWithNonEmptyFirstLast.SetSum(9.5)
 		histWithNonEmptyFirstLast.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -83,5 +83,245 @@ func Test_serializeHistogram(t *testing.T) {
 		got, err := serializeHistogram("hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.MetricAggregationTemporalityCumulative, hist)
 		assert.Error(t, err)
 		assert.Equal(t, "", got)
+	})
+
+	t.Run("when min is provided it should be used", func(t *testing.T) {
+		minMaxHist := pmetric.NewHistogramDataPoint()
+		minMaxHist.SetMExplicitBounds([]float64{10, 20})
+		minMaxHist.SetMBucketCounts([]uint64{2, 0, 0})
+		minMaxHist.SetCount(2)
+		minMaxHist.SetSum(10)
+		minMaxHist.SetMin(3)
+		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeHistogram("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		assert.NoError(t, err)
+		// min 3, max 10, sum 10 is impossible but passes consistency check because the estimated max 10 is greater than the mean 5
+		// it is the best we can do without a better max estimate
+		assert.Equal(t, "prefix.min_max_hist gauge,min=3,max=10,sum=10,count=2 1626438600000", got)
+	})
+
+	t.Run("when max is provided it should be used", func(t *testing.T) {
+		minMaxHist := pmetric.NewHistogramDataPoint()
+		minMaxHist.SetMExplicitBounds([]float64{10, 20})
+		minMaxHist.SetMBucketCounts([]uint64{2, 0, 0})
+		minMaxHist.SetCount(2)
+		minMaxHist.SetSum(10)
+		minMaxHist.SetMax(7)
+		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeHistogram("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		assert.NoError(t, err)
+		// min 5, max 7, sum 10 is impossible with count 2 but passes consistency check because the estimated min 10 is reduced to the mean 5
+		// it is the best we can do without a better min estimate
+		assert.Equal(t, "prefix.min_max_hist gauge,min=5,max=7,sum=10,count=2 1626438600000", got)
+	})
+
+	t.Run("when min and max is provided it should be used", func(t *testing.T) {
+		minMaxHist := pmetric.NewHistogramDataPoint()
+		minMaxHist.SetMExplicitBounds([]float64{10, 20})
+		minMaxHist.SetMBucketCounts([]uint64{2, 0, 0})
+		minMaxHist.SetCount(2)
+		minMaxHist.SetSum(10)
+		minMaxHist.SetMin(3)
+		minMaxHist.SetMax(7)
+		minMaxHist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeHistogram("min_max_hist", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.MetricAggregationTemporalityDelta, minMaxHist)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.min_max_hist gauge,min=3,max=7,sum=10,count=2 1626438600000", got)
+	})
+
+	t.Run("when min is not provided it should be estimated", func(t *testing.T) {
+		t.Run("values between first two boundaries", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{0, 1, 0, 3, 2, 0})
+			hist.SetCount(6)
+			hist.SetSum(21.2)
+
+			min, _, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 1.0, min, "use bucket min")
+		})
+
+		t.Run("first bucket has value", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{1, 0, 0, 3, 0, 4})
+			hist.SetCount(8)
+			hist.SetSum(34.5)
+
+			min, _, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 1.0, min, "use the first boundary as estimation instead of Inf")
+		})
+
+		t.Run("only the first bucket has values, use the mean", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{3, 0, 0, 0, 0, 0})
+			hist.SetCount(3)
+			hist.SetSum(0.75)
+
+			min, _, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 0.25, min)
+		})
+		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{})
+			hist.SetMBucketCounts([]uint64{4})
+			hist.SetCount(4)
+			hist.SetSum(8.8)
+
+			min, _, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 2.2, min, "calculate the mean as min value")
+		})
+		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{})
+			hist.SetMBucketCounts([]uint64{1})
+			hist.SetCount(1)
+			hist.SetSum(1.2)
+
+			min, _, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 1.2, min, "calculate the mean as min value")
+		})
+		t.Run("only the last bucket has a value", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{0, 0, 0, 0, 0, 3})
+			hist.SetCount(3)
+			hist.SetSum(15.6)
+
+			min, _, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 5.0, min, "use the lower bound")
+		})
+	})
+
+	t.Run("when max is not provided it should be estimated", func(t *testing.T) {
+		t.Run("values between the last two boundaries", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{0, 1, 0, 3, 2, 0})
+			hist.SetSum(21.2)
+			hist.SetCount(6)
+
+			_, max, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 5.0, max, "use bucket max")
+		})
+
+		t.Run("last bucket has value", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{1, 0, 0, 3, 0, 4})
+			hist.SetSum(34.5)
+			hist.SetCount(8)
+
+			_, max, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 5.0, max, "use the last boundary as estimation instead of Inf")
+		})
+
+		t.Run("only the last bucket has values", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{0, 0, 0, 0, 0, 2})
+			hist.SetSum(20.2)
+			hist.SetCount(2)
+
+			_, max, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 10.1, max, "use the mean (10.1) Otherwise, the max would be estimated as 5, and max >= avg would be violated")
+		})
+
+		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{})
+			hist.SetMBucketCounts([]uint64{4})
+			hist.SetSum(8.8)
+			hist.SetCount(4)
+
+			_, max, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 2.2, max, "calculate the mean as max value")
+		})
+
+		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{})
+			hist.SetMBucketCounts([]uint64{1})
+			hist.SetSum(1.2)
+			hist.SetCount(1)
+
+			_, max, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 1.2, max, "calculate the mean as max value")
+		})
+
+		t.Run("max is larger than sum", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{0, 5})
+			hist.SetMBucketCounts([]uint64{0, 2, 0})
+			hist.SetSum(2.3)
+			hist.SetCount(2)
+
+			_, max, _ := histDataPointToSummary(hist)
+
+			assert.Equal(t, 5.0, max, "use the estimated boundary")
+		})
+	})
+
+	t.Run("when sum is not provided it should be estimated", func(t *testing.T) {
+		t.Run("single bucket histogram", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{})
+			hist.SetMBucketCounts([]uint64{13})
+			hist.SetCount(6)
+
+			_, _, sum := histDataPointToSummary(hist)
+
+			assert.Equal(t, 0.0, sum, "estimate zero (midpoint of [-Inf, Inf])")
+		})
+
+		t.Run("data in bounded buckets", func(t *testing.T) {
+			hist := pmetric.NewHistogramDataPoint()
+			hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+			hist.SetMBucketCounts([]uint64{0, 3, 5, 0, 0, 0})
+			hist.SetCount(6)
+
+			_, _, sum := histDataPointToSummary(hist)
+
+			assert.Equal(t, 3*1.5+5*2.5, sum, "estimate sum using bucket midpoints")
+		})
+
+		t.Run("data in unbounded buckets", func(t *testing.T) {
+			t.Run("first bucket", func(t *testing.T) {
+				hist := pmetric.NewHistogramDataPoint()
+				hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+				hist.SetMBucketCounts([]uint64{2, 3, 5, 0, 0, 0})
+				hist.SetCount(6)
+
+				_, _, sum := histDataPointToSummary(hist)
+
+				assert.Equal(t, 1*2+3*1.5+5*2.5, sum, "use bucket upper bound")
+			})
+
+			t.Run("last bucket", func(t *testing.T) {
+				hist := pmetric.NewHistogramDataPoint()
+				hist.SetMExplicitBounds([]float64{1, 2, 3, 4, 5})
+				hist.SetMBucketCounts([]uint64{0, 3, 5, 0, 0, 2})
+				hist.SetCount(6)
+
+				_, _, sum := histDataPointToSummary(hist)
+
+				assert.Equal(t, 3*1.5+5*2.5+2*5, sum, "use bucket upper bound")
+			})
+		})
 	})
 }

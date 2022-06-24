@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"runtime"
 	"sync"
 	"testing"
@@ -107,18 +106,8 @@ func TestExporter_New(t *testing.T) {
 				env = map[string]string{defaultElasticsearchEnvName: ""}
 			}
 
-			oldEnv := make(map[string]string, len(env))
-			defer func() {
-				for k, v := range oldEnv {
-					os.Setenv(k, v)
-				}
-			}()
-
-			for k := range env {
-				oldEnv[k] = os.Getenv(k)
-			}
 			for k, v := range env {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			exporter, err := newExporter(zap.NewNop(), test.config)

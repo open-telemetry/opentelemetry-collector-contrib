@@ -47,25 +47,22 @@ import (
 
 var jaegerAgent = config.NewComponentIDWithName(typeStr, "agent_test")
 
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10368")
-	port := testutil.GetAvailablePort(t)
-	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &configuration{
-		AgentCompactThriftPort:   int(port),
-		AgentCompactThriftConfig: DefaultServerConfigUDP(),
+	addr := testutil.GetAvailableLocalAddress(t)
+	testJaegerAgent(t, addr, &configuration{
+		AgentCompactThrift: ProtocolUDP{
+			Endpoint:        addr,
+			ServerConfigUDP: DefaultServerConfigUDP(),
+		},
 	})
 }
 
 func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
-	port := 999999
-
 	config := &configuration{
-		AgentCompactThriftPort: port,
+		AgentCompactThrift: ProtocolUDP{
+			Endpoint:        "0.0.0.0:999999",
+			ServerConfigUDP: DefaultServerConfigUDP(),
+		},
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
 	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
@@ -76,23 +73,24 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10369")
-	port := testutil.GetAvailablePort(t)
-	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &configuration{
-		AgentBinaryThriftPort:   int(port),
-		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
+	addr := testutil.GetAvailableLocalAddress(t)
+	testJaegerAgent(t, addr, &configuration{
+		AgentBinaryThrift: ProtocolUDP{
+			Endpoint:        addr,
+			ServerConfigUDP: DefaultServerConfigUDP(),
+		},
 	})
 }
 
 func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10370")
 	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
-	port := testutil.GetAvailablePort(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 
 	config := &configuration{
-		AgentBinaryThriftPort:   int(port),
-		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
+		AgentBinaryThrift: ProtocolUDP{
+			Endpoint:        addr,
+			ServerConfigUDP: DefaultServerConfigUDP(),
+		},
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
 	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
@@ -100,7 +98,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
+	l, err := net.Listen("udp", addr)
 	assert.Error(t, err, "should not have been able to listen to the port")
 
 	if l != nil {
@@ -109,10 +107,11 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
-	port := 999999
-
 	config := &configuration{
-		AgentBinaryThriftPort: port,
+		AgentBinaryThrift: ProtocolUDP{
+			Endpoint:        "0.0.0.0:999999",
+			ServerConfigUDP: DefaultServerConfigUDP(),
+		},
 	}
 	set := componenttest.NewNopReceiverCreateSettings()
 	jr := newJaegerReceiver(jaegerAgent, config, nil, set)
@@ -147,9 +146,9 @@ func TestJaegerHTTP(t *testing.T) {
 	})
 	defer s.GracefulStop()
 
-	port := testutil.GetAvailablePort(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	config := &configuration{
-		AgentHTTPPort: int(port),
+		AgentHTTPEndpoint: endpoint,
 		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
@@ -165,7 +164,7 @@ func TestJaegerHTTP(t *testing.T) {
 
 	// allow http server to start
 	assert.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		conn, err := net.Dial("tcp", endpoint)
 		if err == nil && conn != nil {
 			conn.Close()
 			return true
@@ -173,19 +172,19 @@ func TestJaegerHTTP(t *testing.T) {
 		return false
 	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
 
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
+	resp, err := http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
 
-	resp, err = http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
+	resp, err = http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
 
-	resp, err = http.Get(fmt.Sprintf("http://localhost:%d/baggageRestrictions?service=test", port))
+	resp, err = http.Get(fmt.Sprintf("http://%s/baggageRestrictions?service=test", endpoint))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
@@ -211,7 +210,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	require.NoError(t, err, "Start failed")
 
 	// 2. Then send spans to the Jaeger receiver.
-	jexp, err := newClientUDP(agentEndpoint, jr.agentBinaryThriftEnabled())
+	jexp, err := newClientUDP(agentEndpoint, jr.config.AgentBinaryThrift.Endpoint != "")
 	require.NoError(t, err, "Failed to create the Jaeger OpenTelemetry exporter for the live application")
 
 	// 3. Now finally send some spans

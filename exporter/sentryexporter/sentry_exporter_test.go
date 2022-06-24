@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package sentryexporter
 
 import (
@@ -680,7 +679,8 @@ func TestPushTraceData(t *testing.T) {
 				transport: transport,
 			}
 
-			s.pushTraceData(context.Background(), test.td)
+			err := s.pushTraceData(context.Background(), test.td)
+			assert.Nil(t, err)
 			assert.Equal(t, test.called, transport.called)
 		})
 	}

@@ -124,7 +124,7 @@ func (t *TransformerOperator) Skip(ctx context.Context, entry *entry.Entry) (boo
 
 	matches, err := vm.Run(t.IfExpr, env)
 	if err != nil {
-		return false, fmt.Errorf("running if expr: %s", err)
+		return false, fmt.Errorf("running if expr: %w", err)
 	}
 
 	return !matches.(bool), nil

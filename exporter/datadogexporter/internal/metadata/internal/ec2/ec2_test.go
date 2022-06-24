@@ -16,6 +16,7 @@ package ec2
 import (
 	"testing"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -49,4 +50,61 @@ func TestGetHostname(t *testing.T) {
 		EC2Hostname: customHost,
 	}
 	assert.Equal(t, customHost, hostInfo.GetHostname(logger))
+}
+
+func strp(s string) *string {
+	return &s
+}
+
+func TestClusterNameFromEC2Tags(t *testing.T) {
+	tests := []struct {
+		name        string
+		ec2Tags     *ec2.DescribeTagsOutput
+		clusterName string
+		err         string
+	}{
+		{
+			name: "missing cluster name tag",
+			ec2Tags: &ec2.DescribeTagsOutput{
+				NextToken: strp("NextToken"),
+				Tags: []*ec2.TagDescription{
+					{Key: strp("some key"), Value: strp("some value")},
+				},
+			},
+			err: "no tag found with prefix \"kubernetes.io/cluster/\"",
+		},
+		{
+			name: "cluster name tag only has the prefix",
+			ec2Tags: &ec2.DescribeTagsOutput{
+				NextToken: strp("NextToken"),
+				Tags: []*ec2.TagDescription{
+					{Key: strp("some key"), Value: strp("some value")},
+					{Key: strp("kubernetes.io/cluster/"), Value: strp("some value")},
+				},
+			},
+			err: "missing cluster name in \"kubernetes.io/cluster/\" tag",
+		},
+		{
+			name: "cluster name is available",
+			ec2Tags: &ec2.DescribeTagsOutput{
+				NextToken: strp("NextToken"),
+				Tags: []*ec2.TagDescription{
+					{Key: strp("some key"), Value: strp("some value")},
+					{Key: strp("kubernetes.io/cluster/myclustername"), Value: strp("some value")},
+				},
+			},
+			clusterName: "myclustername",
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			clusterName, err := clusterNameFromTags(testInstance.ec2Tags)
+			if err != nil || testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
+			} else {
+				assert.Equal(t, testInstance.clusterName, clusterName)
+			}
+		})
+	}
 }

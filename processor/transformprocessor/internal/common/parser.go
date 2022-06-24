@@ -15,19 +15,12 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"encoding/hex"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"go.uber.org/multierr"
 )
-
-// Type for capturing booleans, see:
-// https://github.com/alecthomas/participle#capturing-boolean-value
-type Boolean bool
-
-func (b *Boolean) Capture(values []string) error {
-	*b = values[0] == "true"
-	return nil
-}
 
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
 // nolint:govet
@@ -56,10 +49,12 @@ type Invocation struct {
 // nolint:govet
 type Value struct {
 	Invocation *Invocation `( @@`
+	Bytes      *Bytes      `| @Bytes`
 	String     *string     `| @String`
 	Float      *float64    `| @Float`
 	Int        *int64      `| @Int`
 	Bool       *Boolean    `| @("true" | "false")`
+	IsNil      *IsNil      `| @"nil"`
 	Path       *Path       `| @@ )`
 }
 
@@ -81,6 +76,35 @@ type Field struct {
 type Query struct {
 	Function  ExprFunc
 	Condition condFunc
+}
+
+// Bytes type for capturing byte arrays
+type Bytes []byte
+
+func (b *Bytes) Capture(values []string) error {
+	rawStr := values[0][2:]
+	bytes, err := hex.DecodeString(rawStr)
+	if err != nil {
+		return err
+	}
+	*b = bytes
+	return nil
+}
+
+// Boolean Type for capturing booleans, see:
+// https://github.com/alecthomas/participle#capturing-boolean-value
+type Boolean bool
+
+func (b *Boolean) Capture(values []string) error {
+	*b = values[0] == "true"
+	return nil
+}
+
+type IsNil bool
+
+func (n *IsNil) Capture(_ []string) error {
+	*n = true
+	return nil
 }
 
 func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
@@ -131,6 +155,7 @@ func parseQuery(raw string) (*ParsedQuery, error) {
 func newParser() *participle.Parser {
 	lex := lexer.MustSimple([]lexer.SimpleRule{
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},

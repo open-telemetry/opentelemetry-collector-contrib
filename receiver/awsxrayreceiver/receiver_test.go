@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -117,13 +116,13 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("skipping test on darwin")
 	}
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10596")
+
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestSegmentsPassedToConsumer")
 
@@ -151,9 +150,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestTranslatorErrorsOut")
 
@@ -177,9 +174,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestSegmentsConsumerErrorsOut")
 
@@ -207,16 +202,14 @@ func TestPollerCloseError(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
 	err = rcvr.Shutdown(context.Background())
-	assert.EqualError(t, err, mPoller.closeErr.Error(), "expected error")
+	assert.ErrorIs(t, err, mPoller.closeErr, "expected error")
 }
 
 func TestProxyCloseError(t *testing.T) {
@@ -224,16 +217,14 @@ func TestProxyCloseError(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
 	err = rcvr.Shutdown(context.Background())
-	assert.EqualError(t, err, mProxy.closeErr.Error(), "expected error")
+	assert.ErrorIs(t, err, mProxy.closeErr, "expected error")
 }
 
 func TestBothPollerAndProxyCloseError(t *testing.T) {
@@ -241,9 +232,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewComponentID("TestBothPollerAndProxyCloseError"), nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
@@ -251,10 +240,8 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = mProxy
 	err = rcvr.Shutdown(context.Background())
-	assert.EqualError(t, err,
-		fmt.Sprintf("failed to close proxy: %s: failed to close poller: %s",
-			mProxy.closeErr.Error(), mPoller.closeErr.Error()),
-		"expected error")
+	assert.ErrorIs(t, err, mPoller.closeErr, "expected error")
+	assert.ErrorIs(t, err, mProxy.closeErr, "expected error")
 }
 
 type mockPoller struct {

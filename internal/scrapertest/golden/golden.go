@@ -34,12 +34,12 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 
 // WriteMetrics writes a pmetric.Metrics to the specified file
 func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
-	bytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(metrics)
+	fileBytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(metrics)
 	if err != nil {
 		return err
 	}
 	var jsonVal map[string]interface{}
-	json.Unmarshal(bytes, &jsonVal)
+	json.Unmarshal(fileBytes, &jsonVal)
 	b, err := json.MarshalIndent(jsonVal, "", "   ")
 	if err != nil {
 		return err
