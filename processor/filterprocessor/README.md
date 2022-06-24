@@ -1,21 +1,18 @@
 # Filter Processor
 
-- Supported pipeline types: logs, metrics, spans
-=======
-| Status                   |                   |
-| ------------------------ | ----------------- |
-| Stability                | [alpha]           |
-| Supported pipeline types | metrics, logs, traces  |
-| Distributions            | [core], [contrib] |
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [alpha]               |
+| Supported pipeline types | metrics, logs, traces |
+| Distributions            | [core], [contrib]     |
 
 The filter processor can be configured to include or exclude:
-
 
 - logs, based on resource attributes using the `strict` or `regexp` match types
 - metrics based on metric name in the case of the `strict` or `regexp` match types,
   or based on other metric attributes in the case of the `expr` match type.
   Please refer to [config.go](./config.go) for the config spec.
-- Spans based on tags, resources, and names, all with full regex support
+- Spans based on span names, and resource attributes, all with full regex support
 
 It takes a pipeline type, of which `logs` `metrics`, and `traces` are supported, followed
 by an action:
