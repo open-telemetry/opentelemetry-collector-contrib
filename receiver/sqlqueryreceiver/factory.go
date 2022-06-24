@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const typeStr = "sqlquery"
@@ -28,15 +29,28 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(nilReceiver),
+		component.WithMetricsReceiver(createMetricsReceiver),
 	)
 }
 
-func nilReceiver(
-	context.Context,
-	component.ReceiverCreateSettings,
-	config.Receiver,
-	consumer.Metrics,
+func createMetricsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateSettings,
+	rConf config.Receiver,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return nil, nil
+	cfg := rConf.(*Config)
+
+	ns := newSqlQueryScraper(params, cfg)
+	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start),
+		scraperhelper.WithShutdown(ns.shutdown))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings, params, consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }

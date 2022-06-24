@@ -34,10 +34,11 @@ type Query struct {
 }
 
 type Metric struct {
-	MetricName       string   `mapstructure:"metric_name"`
-	ValueColumn      string   `mapstructure:"value_column"`
-	AttributeColumns []string `mapstructure:"attribute_columns"`
-	IsMonotonic      bool     `mapstructure:"is_monotonic"`
+	MetricName       string            `mapstructure:"metric_name"`
+	ValueColumn      string            `mapstructure:"value_column"`
+	AttributeColumns []string          `mapstructure:"attribute_columns"`
+	IsMonotonic      bool              `mapstructure:"is_monotonic"`
+	Tags             map[string]string `mapstructure:"tags"`
 }
 
 func createDefaultConfig() config.Receiver {

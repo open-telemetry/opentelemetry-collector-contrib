@@ -647,6 +647,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/sqlqueryreceiver"
+    schedule:
+      interval: "weekly"      
+  - package-ecosystem: "gomod"
     directory: "/receiver/tcplogreceiver"
     schedule:
       interval: "weekly"

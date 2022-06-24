@@ -40,11 +40,12 @@ func TestParseConfig(t *testing.T) {
 	require.NoError(t, err)
 	sqlCfg := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, "mydriver", sqlCfg.Driver)
-	assert.Equal(t, "host=localhost port=5432 user=me password=s3cr3t sslmode=disable", sqlCfg.DataSource)
+	assert.Equal(t, "userfoo:passbar@tcp(localhost:3306)/forbardb", sqlCfg.DataSource)
 	q := sqlCfg.Queries[0]
 	assert.Equal(t, "select count(*) as count, type from mytable group by type", q.SQL)
 	metric := q.Metrics[0]
 	assert.Equal(t, "val.count", metric.MetricName)
 	assert.Equal(t, "count", metric.ValueColumn)
+	assert.Equal(t, map[string]string{"foo": "bar"}, metric.Tags)
 	assert.Equal(t, "type", metric.AttributeColumns[0])
 }
