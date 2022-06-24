@@ -198,7 +198,7 @@ func Test_serializeSum(t *testing.T) {
 		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogs)
 	})
 
-	t.Run("monotonic delta is exported as delta", func(t *testing.T) {
+	t.Run("monotonic delta", func(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
@@ -206,155 +206,193 @@ func Test_serializeSum(t *testing.T) {
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		sum.SetIsMonotonic(true)
 
-		// not checking Double, this is done in Test_serializeSumPoint
-		validDp := sum.DataPoints().AppendEmpty()
-		validDp.SetIntVal(12)
+		dp := sum.DataPoints().AppendEmpty()
+		t.Run("with valid value is exported as delta", func(t *testing.T) {
+			// not checking Double, this is done in Test_serializeSumPoint
+			dp.SetIntVal(12)
 
-		invalidDp := sum.DataPoints().AppendEmpty()
-		invalidDp.SetDoubleVal(math.NaN())
+			prev := ttlmap.New(10, 10)
 
-		prev := ttlmap.New(10, 10)
+			zapCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(zapCore)
 
-		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
+			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
 
-		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			expectedLines := []string{
+				"metric_name count,delta=12",
+			}
+			assert.ElementsMatch(t, actualLines, expectedLines)
+			assert.Empty(t, observedLogs.All())
+		})
 
-		expectedLines := []string{
-			"metric_name count,delta=12",
-		}
-		expectedLogRecords := []simplifiedLogRecord{
-			{
-				message: "Error serializing sum data point",
-				attributes: map[string]string{
-					"name":       "metric_name",
-					"value-type": "Double",
-					"error":      "value is NaN.",
+		t.Run("with invalid value logs warning and returns no line", func(t *testing.T) {
+			dp.SetDoubleVal(math.NaN())
+
+			prev := ttlmap.New(10, 10)
+
+			zapCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(zapCore)
+
+			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+			expectedLogRecords := []simplifiedLogRecord{
+				{
+					message: "Error serializing sum data point",
+					attributes: map[string]string{
+						"name":       "metric_name",
+						"value-type": "Double",
+						"error":      "value is NaN.",
+					},
 				},
-			},
-		}
+			}
 
-		assert.ElementsMatch(t, actualLines, expectedLines)
-		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+			assert.Empty(t, actualLines)
+			assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+		})
+
 	})
 
-	t.Run("non-monotonic cumulative is exported as gauge", func(t *testing.T) {
+	t.Run("non-monotonic cumulative", func(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
 		sum := metric.Sum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		sum.SetIsMonotonic(false)
+		dp := sum.DataPoints().AppendEmpty()
 
-		// not checking Int here, this is done in Test_serializeSumPoint
-		validDp := sum.DataPoints().AppendEmpty()
-		validDp.SetDoubleVal(12.3)
+		t.Run("with valid value is exported as gauge", func(t *testing.T) {
+			// not checking Int here, this is done in Test_serializeSumPoint
+			dp.SetDoubleVal(12.3)
+
+			prev := ttlmap.New(10, 10)
+
+			zapCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(zapCore)
+
+			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+			expectedLines := []string{
+				"metric_name gauge,12.3",
+			}
+
+			assert.ElementsMatch(t, actualLines, expectedLines)
+			// no logs / errors expected.
+			assert.Empty(t, observedLogs.All())
+		})
+
+		t.Run("with invalid value logs warning and returns no line", func(t *testing.T) {
+			dp.SetDoubleVal(math.NaN())
+
+			prev := ttlmap.New(10, 10)
+
+			zapCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(zapCore)
+
+			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+			expectedLogRecords := []simplifiedLogRecord{
+				{
+					message: "Error serializing non-monotonic Sum as gauge",
+					attributes: map[string]string{
+						"name":       "metric_name",
+						"value-type": "Double",
+						"error":      "value is NaN.",
+					},
+				},
+			}
+
+			assert.Empty(t, actualLines)
+			assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+		})
 
 		invalidDp := sum.DataPoints().AppendEmpty()
 		invalidDp.SetDoubleVal(math.NaN())
 
-		prev := ttlmap.New(10, 10)
-
-		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
-
-		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
-
-		expectedLines := []string{
-			"metric_name gauge,12.3",
-		}
-		expectedLogRecords := []simplifiedLogRecord{
-			{
-				message: "Error serializing non-monotonic Sum as gauge",
-				attributes: map[string]string{
-					"name":       "metric_name",
-					"value-type": "Double",
-					"error":      "value is NaN.",
-				},
-			},
-		}
-
-		assert.ElementsMatch(t, actualLines, expectedLines)
-		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
 	})
 
-	t.Run("monotonic cumulative is converted to delta", func(t *testing.T) {
+	t.Run("monotonic cumulative", func(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
 		sum := metric.Sum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		sum.SetIsMonotonic(true)
-
-		// not checking Int here, this is done in Test_serializeSumPoint
 		dp1 := sum.DataPoints().AppendEmpty()
-		dp1.SetDoubleVal(5.2)
-
 		dp2 := sum.DataPoints().AppendEmpty()
-		dp2.SetDoubleVal(5.7)
 
-		invalidDp := sum.DataPoints().AppendEmpty()
-		invalidDp.SetDoubleVal(math.NaN())
+		t.Run("with two valid data points is converted to delta", func(t *testing.T) {
+			// not checking Int here, this is done in Test_serializeSumPoint
+			dp1.SetDoubleVal(5.2)
+			dp2.SetDoubleVal(5.7)
 
-		prev := ttlmap.New(10, 10)
+			prev := ttlmap.New(10, 10)
 
-		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
+			zapCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(zapCore)
 
-		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
 
-		expectedLines := []string{
-			"metric_name count,delta=0.5",
-		}
-		expectedLogRecords := []simplifiedLogRecord{
-			{
-				message: "Error serializing sum data point",
-				attributes: map[string]string{
-					"name":       "metric_name",
-					"value-type": "Double",
-					"error":      "value is NaN.",
+			expectedLines := []string{
+				"metric_name count,delta=0.5",
+			}
+
+			assert.ElementsMatch(t, actualLines, expectedLines)
+			assert.Empty(t, observedLogs.All())
+
+		})
+
+		t.Run("with invalid value logs error and exports no line", func(t *testing.T) {
+			dp1.SetDoubleVal(5.2)
+			dp2.SetDoubleVal(math.NaN())
+
+			prev := ttlmap.New(10, 10)
+
+			zapCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(zapCore)
+
+			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+
+			expectedLogRecords := []simplifiedLogRecord{
+				{
+					message: "Error serializing sum data point",
+					attributes: map[string]string{
+						"name":       "metric_name",
+						"value-type": "Double",
+						"error":      "value is NaN.",
+					},
 				},
-			},
-		}
+			}
 
-		assert.ElementsMatch(t, actualLines, expectedLines)
-		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
-	})
+			assert.Empty(t, actualLines)
+			assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+		})
 
-	t.Run("failure on switching value types in cumulative to delta conversion", func(t *testing.T) {
-		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeSum)
-		metric.SetName("metric_name")
-		sum := metric.Sum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-		sum.SetIsMonotonic(true)
+		t.Run("conversion with incompatible types returns an error", func(t *testing.T) {
+			// double and int are incompatible
+			dp1.SetDoubleVal(5.2)
+			dp2.SetIntVal(5)
 
-		// not checking Int here, this is done in Test_serializeSumPoint
-		dp1 := sum.DataPoints().AppendEmpty()
-		dp1.SetDoubleVal(5.2)
+			prev := ttlmap.New(10, 10)
 
-		dp2 := sum.DataPoints().AppendEmpty()
-		dp2.SetIntVal(5)
+			zapCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(zapCore)
 
-		prev := ttlmap.New(10, 10)
+			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
 
-		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
-
-		actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
-		assert.Empty(t, actualLines)
-
-		expectedLogRecords := []simplifiedLogRecord{
-			{
-				message: "Error serializing sum data point",
-				attributes: map[string]string{
-					"name":       "metric_name",
-					"value-type": "Int",
-					"error":      "expected metric_name to be type MetricValueTypeDouble but got MericValueTypeInt - count reset",
+			expectedLogRecords := []simplifiedLogRecord{
+				{
+					message: "Error serializing sum data point",
+					attributes: map[string]string{
+						"name":       "metric_name",
+						"value-type": "Int",
+						"error":      "expected metric_name to be type MetricValueTypeDouble but got MericValueTypeInt - count reset",
+					},
 				},
-			},
-		}
+			}
 
-		assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+			assert.Empty(t, actualLines)
+			assert.ElementsMatch(t, makeSimplifiedLogRecordsFromObservedLogs(observedLogs), expectedLogRecords)
+		})
 	})
 }
