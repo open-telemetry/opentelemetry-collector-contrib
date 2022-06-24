@@ -41,7 +41,6 @@ receivers:
           - metric_name: movie.count
             value_column: "count"
             is_monotonic: true
-            unit: count
             tags:
               key: value
           - metric_name: movie.val
