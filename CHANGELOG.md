@@ -20,6 +20,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `redactionprocessor`: respect allow_all_keys configuration (#11542)
+
 ### Unmaintained components
 
 - `simpleprometheusreceiver`(#11133)
