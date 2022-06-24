@@ -10,13 +10,13 @@
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
+- `sqlqueryreceiver`: Add SQL Query Receiver (#10544)
 
 ### 💡 Enhancements 💡
 
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
-
 ### 🧰 Bug fixes 🧰
 
 ### Unmaintained components
