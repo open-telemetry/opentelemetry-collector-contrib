@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 )
 
 // connectAndReceive with connect failure
@@ -354,6 +355,7 @@ func newReceiver() (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshal
 		factory:           messagingServiceFactory,
 		shutdownWaitGroup: &sync.WaitGroup{},
 		retryTimeout:      1 * time.Millisecond,
+		terminating:       atomic.NewBool(false),
 	}
 	return receiver, service, unmarshaller
 }

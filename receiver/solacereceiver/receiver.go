@@ -16,14 +16,15 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +43,7 @@ type solaceTracesReceiver struct {
 	// newFactory is the constructor to use to build new messagingServiceFactory instances
 	factory messagingServiceFactory
 	// terminating is used to indicate that the receiver is terminating
-	terminating uint32
+	terminating *atomic.Bool
 	// retryTimeout is the timeout between connection attempts
 	retryTimeout time.Duration
 }
@@ -76,6 +77,7 @@ func newTracesReceiver(config *Config, receiverCreateSettings component.Receiver
 		shutdownWaitGroup: &sync.WaitGroup{},
 		factory:           factory,
 		retryTimeout:      1 * time.Second,
+		terminating:       atomic.NewBool(false),
 	}, nil
 }
 
@@ -95,7 +97,7 @@ func (s *solaceTracesReceiver) Start(_ context.Context, _ component.Host) error 
 
 // Shutdown implements component.Receiver::Shutdown
 func (s *solaceTracesReceiver) Shutdown(ctx context.Context) error {
-	atomic.StoreUint32(&s.terminating, 1)
+	s.terminating.Store(true)
 	recordReceiverStatus(receiverStateTerminating)
 	s.settings.Logger.Info("Shutdown waiting for all components to complete")
 	s.cancel() // cancels the context passed to the reconneciton loop
@@ -151,7 +153,7 @@ reconnectionLoop:
 
 			if err := s.receiveMessages(ctx, service); err != nil {
 				s.settings.Logger.Debug("Encountered error while receiving messages", zap.Error(err))
-				if err == errUnknownTraceMessgeVersion {
+				if errors.Is(err, errUnknownTraceMessgeVersion) {
 					recordNeedUpgrade()
 					disable = true
 					return
@@ -168,7 +170,7 @@ reconnectionLoop:
 // is a best effort without mutex protection and additional state tracking, and in reality if
 // this state transition were to happen, it would be short lived.
 func (s *solaceTracesReceiver) recordConnectionState(state receiverState) {
-	if atomic.LoadUint32(&s.terminating) == 0 {
+	if !s.terminating.Load() {
 		recordReceiverStatus(state)
 	}
 }
@@ -211,7 +213,7 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	if unmarshalErr != nil {
 		s.settings.Logger.Error("Encountered error while unmarshalling message", zap.Error(unmarshalErr))
 		recordFatalUnmarshallingError()
-		if unmarshalErr == errUnknownTraceMessgeVersion {
+		if errors.Is(unmarshalErr, errUnknownTraceMessgeVersion) {
 			disposition = service.nack // if we don't know the version, reject the trace message since we will disable the receiver
 			return unmarshalErr
 		}
