@@ -331,7 +331,7 @@ require (
 	github.com/influxdata/influxdb-observability/influx2otel v0.2.21-0.20220517160208-05f925d616de // indirect
 	github.com/influxdata/influxdb-observability/otel2influx v0.2.21-0.20220517160208-05f925d616de // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
-	github.com/ionos-cloud/sdk-go/v6 v6.0.5851 // indirect
+	github.com/ionos-cloud/sdk-go/v6 v6.1.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -895,8 +895,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipki
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ./receiver/zookeeperreceiver
 
-replace github.com/ionos-cloud/sdk-go/v6 v6.0.5851 => github.com/ionos-cloud/sdk-go/v6 v6.0.4
-
 // see https://github.com/google/gnostic/issues/262
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
 
@@ -911,3 +909,6 @@ retract v0.37.0 // Contains dependencies on v0.36.0 components, which should hav
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
+
+// revision has been revoked.
+exclude github.com/ionos-cloud/sdk-go/v6 v6.0.5851
