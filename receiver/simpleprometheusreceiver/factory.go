@@ -58,12 +58,6 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func logStatus(logger *zap.Logger) {
-	once.Do(func() {
-		logger.Warn("prometheus_simple receiver is unmaintained and actively looking for contributors.")
-	})
-}
-
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
@@ -71,6 +65,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
-	logStatus(params.Logger)
 	return new(params, rCfg, nextConsumer), nil
 }
