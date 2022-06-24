@@ -146,8 +146,10 @@ github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q
 github.com/DataDog/agent-payload/v5 v5.0.23 h1:T+xalP3F9XOMZRSokcG4pK1hqyDBbEDPxp68tSBmfhc=
 github.com/DataDog/agent-payload/v5 v5.0.23/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.0.0-20211129110424-6491aa3bf583/go.mod h1:EP9f4GqaDJyP1F5jTNMtzdIpw3JpNs3rMSJOnYywCiw=
-github.com/DataDog/datadog-agent/pkg/quantile v0.36.0-rc.4.0.20220426134022-b55bccd5073f h1:6TRm46/qdRBGcm9MJz3NRpk8ZnKhNyVTojNvgkCQkzc=
-github.com/DataDog/datadog-agent/pkg/quantile v0.36.0-rc.4.0.20220426134022-b55bccd5073f/go.mod h1:jVxOyv395Gf9weXNdmSF6Tp9k/DEc7u+nqYWudznQtQ=
+github.com/DataDog/datadog-agent/pkg/otlp/model v0.37.0-rc.3.0.20220624141355-3b08b438490e h1:HajLQcrvCUdlpt5/EiABHlbOMkFEuAljO3LWxxPUpjE=
+github.com/DataDog/datadog-agent/pkg/otlp/model v0.37.0-rc.3.0.20220624141355-3b08b438490e/go.mod h1:6r0oj2i+/8hxAedff0IbsEvbxZw+zq1jcOjICW4Jjc0=
+github.com/DataDog/datadog-agent/pkg/quantile v0.37.0-rc.3.0.20220624141355-3b08b438490e h1:3NPCbH+E5mI34QfMS3tWCYBIaQn/cxEea8/BghTx2pY=
+github.com/DataDog/datadog-agent/pkg/quantile v0.37.0-rc.3.0.20220624141355-3b08b438490e/go.mod h1:jVxOyv395Gf9weXNdmSF6Tp9k/DEc7u+nqYWudznQtQ=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=

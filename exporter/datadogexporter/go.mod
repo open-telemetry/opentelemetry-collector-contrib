@@ -4,7 +4,8 @@ go 1.17
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.23
-	github.com/DataDog/datadog-agent/pkg/quantile v0.36.0-rc.4.0.20220426134022-b55bccd5073f
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.37.0-rc.3.0.20220624141355-3b08b438490e
+	github.com/DataDog/datadog-agent/pkg/quantile v0.37.0-rc.3.0.20220624141355-3b08b438490e
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.2
