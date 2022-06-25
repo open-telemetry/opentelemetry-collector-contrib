@@ -487,3 +487,47 @@ class TestRequestsIntegrationPreparedRequest(
         request = requests.Request("GET", url)
         prepared_request = session.prepare_request(request)
         return session.send(prepared_request)
+
+
+class TestRequestsIntergrationMetric(TestBase):
+    URL = "http://examplehost:8000/status/200"
+
+    def setUp(self):
+        super().setUp()
+        RequestsInstrumentor().instrument(meter_provider=self.meter_provider)
+
+        httpretty.enable()
+        httpretty.register_uri(httpretty.GET, self.URL, body="Hello!")
+
+    def tearDown(self):
+        super().tearDown()
+        RequestsInstrumentor().uninstrument()
+        httpretty.disable()
+
+    @staticmethod
+    def perform_request(url: str) -> requests.Response:
+        return requests.get(url)
+
+    def test_basic_metric_success(self):
+        self.perform_request(self.URL)
+
+        expected_attributes = {
+            "http.status_code": 200,
+            "http.host": "examplehost",
+            "net.peer.port": 8000,
+            "net.peer.name": "examplehost",
+            "http.method": "GET",
+            "http.flavor": "1.1",
+            "http.scheme": "http",
+        }
+
+        for (
+            resource_metrics
+        ) in self.memory_metrics_reader.get_metrics_data().resource_metrics:
+            for scope_metrics in resource_metrics.scope_metrics:
+                for metric in scope_metrics.metrics:
+                    for data_point in metric.data.data_points:
+                        self.assertDictEqual(
+                            expected_attributes, dict(data_point.attributes)
+                        )
+                        self.assertEqual(data_point.count, 1)

@@ -50,7 +50,9 @@ API
 
 import functools
 import types
-from typing import Collection
+from timeit import default_timer
+from typing import Callable, Collection, Iterable, Optional
+from urllib.parse import urlparse
 
 from requests.models import Response
 from requests.sessions import Session
@@ -67,9 +69,11 @@ from opentelemetry.instrumentation.utils import (
     _SUPPRESS_INSTRUMENTATION_KEY,
     http_status_to_status_code,
 )
+from opentelemetry.metrics import Histogram, get_meter
 from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import SpanKind, get_tracer
+from opentelemetry.trace import SpanKind, Tracer, get_tracer
+from opentelemetry.trace.span import Span
 from opentelemetry.trace.status import Status
 from opentelemetry.util.http import (
     get_excluded_urls,
@@ -84,7 +88,11 @@ _excluded_urls_from_env = get_excluded_urls("REQUESTS")
 # pylint: disable=unused-argument
 # pylint: disable=R0915
 def _instrument(
-    tracer, span_callback=None, name_callback=None, excluded_urls=None
+    tracer: Tracer,
+    duration_histogram: Histogram,
+    span_callback: Optional[Callable[[Span, Response], str]] = None,
+    name_callback: Optional[Callable[[str, str], str]] = None,
+    excluded_urls: Iterable[str] = None,
 ):
     """Enables tracing of all requests calls that go through
     :code:`requests.session.Session.request` (this includes
@@ -140,6 +148,7 @@ def _instrument(
             request.method, request.url, call_wrapped, get_or_create_headers
         )
 
+    # pylint: disable-msg=too-many-locals,too-many-branches
     def _instrumented_requests_call(
         method: str, url: str, call_wrapped, get_or_create_headers
     ):
@@ -164,6 +173,23 @@ def _instrument(
             SpanAttributes.HTTP_URL: url,
         }
 
+        metric_labels = {
+            SpanAttributes.HTTP_METHOD: method,
+        }
+
+        try:
+            parsed_url = urlparse(url)
+            metric_labels[SpanAttributes.HTTP_SCHEME] = parsed_url.scheme
+            if parsed_url.hostname:
+                metric_labels[SpanAttributes.HTTP_HOST] = parsed_url.hostname
+                metric_labels[
+                    SpanAttributes.NET_PEER_NAME
+                ] = parsed_url.hostname
+            if parsed_url.port:
+                metric_labels[SpanAttributes.NET_PEER_PORT] = parsed_url.port
+        except ValueError:
+            pass
+
         with tracer.start_as_current_span(
             span_name, kind=SpanKind.CLIENT, attributes=span_attributes
         ) as span, set_ip_on_next_http_connection(span):
@@ -175,12 +201,18 @@ def _instrument(
             token = context.attach(
                 context.set_value(_SUPPRESS_HTTP_INSTRUMENTATION_KEY, True)
             )
+
+            start_time = default_timer()
+
             try:
                 result = call_wrapped()  # *** PROCEED
             except Exception as exc:  # pylint: disable=W0703
                 exception = exc
                 result = getattr(exc, "response", None)
             finally:
+                elapsed_time = max(
+                    round((default_timer() - start_time) * 1000), 0
+                )
                 context.detach(token)
 
             if isinstance(result, Response):
@@ -191,8 +223,22 @@ def _instrument(
                     span.set_status(
                         Status(http_status_to_status_code(result.status_code))
                     )
+
+                metric_labels[
+                    SpanAttributes.HTTP_STATUS_CODE
+                ] = result.status_code
+
+                if result.raw is not None:
+                    version = getattr(result.raw, "version", None)
+                    if version:
+                        metric_labels[SpanAttributes.HTTP_FLAVOR] = (
+                            "1.1" if version == 11 else "1.0"
+                        )
+
             if span_callback is not None:
                 span_callback(span, result)
+
+            duration_histogram.record(elapsed_time, attributes=metric_labels)
 
             if exception is not None:
                 raise exception.with_traceback(exception.__traceback__)
@@ -258,8 +304,20 @@ class RequestsInstrumentor(BaseInstrumentor):
         tracer_provider = kwargs.get("tracer_provider")
         tracer = get_tracer(__name__, __version__, tracer_provider)
         excluded_urls = kwargs.get("excluded_urls")
+        meter_provider = kwargs.get("meter_provider")
+        meter = get_meter(
+            __name__,
+            __version__,
+            meter_provider,
+        )
+        duration_histogram = meter.create_histogram(
+            name="http.client.duration",
+            unit="ms",
+            description="measures the duration of the outbound HTTP request",
+        )
         _instrument(
             tracer,
+            duration_histogram,
             span_callback=kwargs.get("span_callback"),
             name_callback=kwargs.get("name_callback"),
             excluded_urls=_excluded_urls_from_env
