@@ -1,0 +1,80 @@
+---
+file_format: 1.0.0
+schema_url: https://example.com/1.7.0
+versions:
+  1.7.0:
+    logs:
+      changes:
+      - rename_attributes:
+          attribute_map:
+            process.stacktrace: application.stacktrace
+  1.5.0:
+    metrics:
+      changes:
+      - rename_metrics:
+          container.restart: container.restart.total
+  1.4.0: # The time we cared about privacy within spans and span events
+    spans:
+      changes:
+      - rename_attributes:
+          attribute_map:
+            user.operation: privacy.user.operation
+    span_events:
+      changes:
+      - rename_attributes:
+          attribute_map:
+            net.user.ip: privacy.net.user.ip
+  1.2.0:
+    all:
+      changes:
+      - rename_attributes:
+          test.suite: test.name
+  1.1.0:
+    all:
+      changes:
+      - rename_attributes:
+          test-suite: test.suite
+    resources:
+      changes:
+      - rename_attributes:
+          resource-description: resource.description
+    spans:
+      changes:
+      - rename_attributes:
+          attribute_map:
+            operation: user.operation
+      - rename_attributes:
+          attribute_map:
+            operation.failure: operation.failed.reason
+          apply_to_spans:
+          - HTTP GET
+          - HTTP POST
+    span_events:
+      changes:
+      - rename_events:
+          name_map:
+            stacktrace: stack_trace
+      - rename_attributes:
+          attribute_map:
+            net.peer.ip : net.user.ip
+      - rename_attributes:
+          attribute_map:
+            proxy-addr: proxy.addr
+        apply_to_events:
+        - proxy.dial
+    metrics:
+      changes:
+      - rename_metrics:
+          container.respawn: container.restart
+      - rename_attributes:
+          attribute_map:
+            container-exit-code: container.exit.status
+          apply_to_metrics:
+          - container.stop
+          - container.respawn
+    logs:
+      changes:
+      - rename_attributes:
+          attribute_map:
+            go.stacktrace: process.stacktrace
+  1.0.0:

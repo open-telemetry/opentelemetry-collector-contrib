@@ -37,25 +37,15 @@ type transformer struct {
 	manager translation.Manager
 }
 
-func newTransformer(
-	ctx context.Context,
-	conf config.Processor,
-	set component.ProcessorCreateSettings,
-) (*transformer, error) {
+func newTransformer(ctx context.Context, conf config.Processor, set component.ProcessorCreateSettings) (*transformer, error) {
 	cfg, ok := conf.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration provided")
 	}
 
-	net, err := cfg.ToClient(make(map[config.ComponentID]component.Extension), set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
-
 	m, err := translation.NewManager(
 		cfg.Targets,
-		translation.WithManagerLogger(set.Logger.Named("schema-manager")),
-		translation.WithManagerHTTPClient(net),
+		set.Logger.Named("schema-manager"),
 	)
 	if err != nil {
 		return nil, err
@@ -128,22 +118,25 @@ func (t transformer) processTraces(ctx context.Context, td ptrace.Traces) (ptrac
 // start will load the remote file definition if it isn't already cached
 // and resolve the schema translation file
 func (t *transformer) start(ctx context.Context, host component.Host) error {
+	var providers []translation.Provider
+	// Check for additional extensions that can be checked first before
+	// perfomring the http request
+	// TODO(MovieStoreGuy): Check for storage extensions
+
 	client, err := t.config.ToClient(host.GetExtensions(), t.telemetry)
 	if err != nil {
 		return err
 	}
-	t.manager, err = translation.NewManager(
-		t.config.Targets,
-		translation.WithManagerLogger(t.log.Named("schema-manager")),
-		translation.WithManagerHTTPClient(client),
-	)
-	if err != nil {
-		return err
-	}
+	providers = append(providers, translation.NewHTTPProvider(client))
 	go func() {
-		if err := t.manager.Start(ctx); err != nil {
+		if err := t.manager.Run(ctx, providers...); err != nil {
 			t.log.Error("Issue with trying to process requests", zap.Error(err))
 		}
 	}()
+
+	for _, schemaURL := range t.config.Prefetch {
+		_ = t.manager.RequestTranslation(ctx, schemaURL)
+	}
+
 	return nil
 }
