@@ -59,7 +59,7 @@ type (
 		// cancel a background routine early.
 		ctx        context.Context
 		schemaURL  string
-		translater *translator
+		translator *translator
 	}
 )
 
@@ -123,7 +123,7 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 			schemaURL,
 		)
 		if err != nil {
-			m.log.Error("Issue trying to create translater", zap.Error(err))
+			m.log.Error("Issue trying to create translator", zap.Error(err))
 			m.rw.Unlock()
 			return nopTranslation{}
 		}
@@ -142,7 +142,7 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 		return t
 	}
 
-	// Locking the translater now so that any
+	// Locking the translator now so that any
 	// reads are blocked until the update
 	// happens or once the context is cancelled.
 	// This ensures that applying updates are consistent
@@ -150,7 +150,7 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 	t.rw.Lock()
 	m.reqs <- &updateRequest{
 		ctx:        ctx,
-		translater: t,
+		translator: t,
 		schemaURL:  schemaURL,
 	}
 
@@ -177,13 +177,13 @@ func (m *manager) Run(ctx context.Context, providers ...Provider) error {
 					m.log.Debug("SchemaURL not present in lookup")
 					continue
 				}
-				if err := req.translater.merge(content); err != nil {
-					m.log.Error("Issue trying to update translater", zap.Error(err))
+				if err := req.translator.merge(content); err != nil {
+					m.log.Error("Issue trying to update translator", zap.Error(err))
 					continue
 				}
 				break
 			}
-			req.translater.rw.Unlock()
+			req.translator.rw.Unlock()
 		}
 	}
 }

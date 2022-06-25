@@ -125,7 +125,7 @@ func TestVersionOperators(t *testing.T) {
 	assert.False(t, b.Equal(a))
 }
 
-// ver is declared here so that the compiler doesn't optimise out the result
+// ver is declared here so that the compiler doesn't optimize out the result
 var ver *Version
 
 func BenchmarkParsingVersion(b *testing.B) {

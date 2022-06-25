@@ -30,7 +30,7 @@ func TestTranslationSupportedVersion(t *testing.T) {
 	t.Parallel()
 
 	tn, err := newTranslater(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0")
-	require.NoError(t, err, "Must not error when creating translater")
+	require.NoError(t, err, "Must not error when creating translator")
 	require.NoError(t, tn.merge(LoadTranslationVersion(t, TranslationVersion190)), "Must not have issue converting ast to translation")
 
 	tests := []struct {
@@ -196,7 +196,7 @@ func TestTranslationSpanChanges(t *testing.T) {
 			t.Cleanup(cancel)
 
 			tn, err := newTranslater(zaptest.NewLogger(t), fmt.Sprint("https://example.com/", tc.target.String()))
-			require.NoError(t, err, "Must not error creating translater")
+			require.NoError(t, err, "Must not error creating translator")
 			require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 			spans := NewExampleSpans(t, tc.income)
@@ -273,7 +273,7 @@ func TestTranslationLogChanges(t *testing.T) {
 			t.Cleanup(cancel)
 
 			tn, err := newTranslater(zaptest.NewLogger(t), fmt.Sprint("https://example.com/", tc.target.String()))
-			require.NoError(t, err, "Must not error creating translater")
+			require.NoError(t, err, "Must not error creating translator")
 			require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 			logs := NewExampleLogs(t, tc.income)
@@ -342,7 +342,7 @@ func TestTranslationMetricChanges(t *testing.T) {
 			t.Cleanup(cancel)
 
 			tn, err := newTranslater(zaptest.NewLogger(t), fmt.Sprint("https://example.com/", tc.target.String()))
-			require.NoError(t, err, "Must not error creating translater")
+			require.NoError(t, err, "Must not error creating translator")
 			require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 			logs := NewExampleMetrics(t, tc.income)
@@ -369,7 +369,7 @@ func BenchmarkTranslationColdStartTranslation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		tn, err := newTranslater(log, "https://opentelemetry.io/schemas/1.9.0")
-		assert.NoError(b, err, "Must not error when creating translater")
+		assert.NoError(b, err, "Must not error when creating translator")
 
 		b.StartTimer()
 		assert.NoError(b, tn.merge(LoadTranslationVersion(b, TranslationVersion190)), "Must not error when merging data")
@@ -385,7 +385,7 @@ func BenchmarkTranslationPartialUpdateTranslation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		tn, err := newTranslater(log, "https://opentelemetry.io/schemas/1.6.1")
-		assert.NoError(b, err, "Must not error when creating translater")
+		assert.NoError(b, err, "Must not error when creating translator")
 		assert.NoError(b, tn.merge(LoadTranslationVersion(b, TranslationVersion161)), "Must not error when merging base")
 
 		b.StartTimer()

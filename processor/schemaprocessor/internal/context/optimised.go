@@ -20,7 +20,7 @@ type (
 	Context    = context.Context
 	CancelFunc = context.CancelFunc
 
-	// optimised is a lock free implementation of context.Context.
+	// optimized is a lock free implementation of context.Context.
 	// Within the context.Done() code, there is a lock for creating
 	// and returning the channel, however, it is permisable to store
 	// the resulting done channel to be used later on since the
@@ -30,23 +30,23 @@ type (
 	// All other methods are handled by the original context that was passed in.
 	//
 	// Please see benchmark results for justification
-	optimised struct {
+	optimized struct {
 		context.Context
 
 		done <-chan struct{}
 	}
 )
 
-var _ Context = (*optimised)(nil)
+var _ Context = (*optimized)(nil)
 
-// NewOptimised returns a context that has an already computed
+// NewOptimized returns a context that has an already computed
 // done channel that allows for speed of select processing
 // or checking if the context is done.
-func NewOptimised(ctx context.Context) context.Context {
-	return &optimised{ctx, ctx.Done()}
+func NewOptimized(ctx context.Context) context.Context {
+	return &optimized{ctx, ctx.Done()}
 }
 
-func (o *optimised) Done() <-chan struct{} {
+func (o *optimized) Done() <-chan struct{} {
 	return o.done
 }
 

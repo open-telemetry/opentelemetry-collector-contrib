@@ -172,7 +172,7 @@ func newRevision(ver *Version, def ast.VersionDef) Revision {
 			}
 			if ch.RenameEvents != nil {
 				for k, v := range ch.RenameEvents.EventNameMap {
-					mod.names[string(k)] = string(v)
+					mod.names[k] = v
 				}
 			}
 			mods[i] = mod

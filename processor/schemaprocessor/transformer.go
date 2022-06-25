@@ -65,7 +65,7 @@ func newTransformer(ctx context.Context, conf config.Processor, set component.Pr
 }
 
 func (t transformer) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	ctx = context.NewOptimised(ctx)
+	ctx = context.NewOptimized(ctx)
 	for rl := 0; rl < ld.ResourceLogs().Len(); rl++ {
 		rLog := ld.ResourceLogs().At(rl)
 		t.manager.
@@ -82,7 +82,7 @@ func (t transformer) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, 
 }
 
 func (t transformer) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	ctx = context.NewOptimised(ctx)
+	ctx = context.NewOptimized(ctx)
 	for rm := 0; rm < md.ResourceMetrics().Len(); rm++ {
 		rMetric := md.ResourceMetrics().At(rm)
 		t.manager.
@@ -99,7 +99,7 @@ func (t transformer) processMetrics(ctx context.Context, md pmetric.Metrics) (pm
 }
 
 func (t transformer) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	ctx = context.NewOptimised(ctx)
+	ctx = context.NewOptimized(ctx)
 	for rt := 0; rt < td.ResourceSpans().Len(); rt++ {
 		rTrace := td.ResourceSpans().At(rt)
 		t.manager.

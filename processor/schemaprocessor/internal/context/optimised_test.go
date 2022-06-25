@@ -29,7 +29,7 @@ func TestStdLibAssertions(t *testing.T) {
 
 	ch := ctx.Done()
 
-	op := NewOptimised(ctx).(*optimised)
+	op := NewOptimized(ctx).(*optimized)
 
 	assert.Equal(t, ch, op.done, "Must have stored the done channel that was returned from ctx.Done")
 	assert.Equal(t, ch, op.Done(), "Must have stored the done channel that was returned from ctx.Done")
@@ -41,7 +41,7 @@ func TestContextTree(t *testing.T) {
 
 	parent, pDone := WithCancel(Background())
 
-	op := NewOptimised(parent)
+	op := NewOptimized(parent)
 
 	child, cDone := WithCancel(op)
 	t.Cleanup(cDone)
@@ -52,7 +52,7 @@ func TestContextTree(t *testing.T) {
 }
 
 // ch exists to ensure that the compiler
-// doesn't optimise the operation out within the benchmark
+// doesn't optimize the operation out within the benchmark
 var ch <-chan struct{}
 
 func BenchmarkBackground(b *testing.B) {
@@ -81,7 +81,7 @@ func BenchmarkStandardCanceller(b *testing.B) {
 func BenchmarkOptimisedCanceller(b *testing.B) {
 	ctx, cancel := WithCancel(context.Background())
 	b.Cleanup(cancel)
-	ctx = NewOptimised(ctx)
+	ctx = NewOptimized(ctx)
 
 	b.ReportAllocs()
 	b.ResetTimer()

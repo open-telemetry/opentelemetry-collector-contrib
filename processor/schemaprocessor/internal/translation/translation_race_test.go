@@ -30,7 +30,7 @@ func TestRaceTranslationMultiRead(t *testing.T) {
 	t.Parallel()
 
 	tn, err := newTranslater(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0")
-	require.NoError(t, err, "Must not error when creating translater")
+	require.NoError(t, err, "Must not error when creating translator")
 	require.NoError(t, tn.merge(LoadTranslationVersion(t, TranslationVersion190)), "Must not have issues trying to convert into translator")
 
 	ctx, done := context.WithCancel(context.Background())
