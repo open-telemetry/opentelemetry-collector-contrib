@@ -16,7 +16,6 @@ package simpleprometheusreceiver // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,8 +32,6 @@ const (
 	defaultEndpoint    = "localhost:9090"
 	defaultMetricsPath = "/metrics"
 )
-
-var once sync.Once
 
 var defaultCollectionInterval = 10 * time.Second
 
