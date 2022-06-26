@@ -55,9 +55,14 @@ func (v *KeyValue) String() string {
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
-		return fmt.Errorf("value should be of the format key=value")
+		return fmt.Errorf("value should be of the format key=\"value\"")
 	}
-	(*v)[kv[0]] = kv[1]
+	val := kv[1]
+	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
+		return fmt.Errorf("value should be a string wrapped in double quotes")
+	}
+
+	(*v)[kv[0]] = val[1 : len(val)-1]
 	return nil
 }
 
