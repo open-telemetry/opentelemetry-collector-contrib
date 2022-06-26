@@ -262,18 +262,24 @@ def _instrument(
     url_filter: _UrlFilterT = None,
     request_hook: _RequestHookT = None,
     response_hook: _ResponseHookT = None,
+    trace_configs: typing.Optional[aiohttp.TraceConfig] = None,
 ):
     """Enables tracing of all ClientSessions
 
     When a ClientSession gets created a TraceConfig is automatically added to
     the session's trace_configs.
     """
+
+    if trace_configs is None:
+        trace_configs = []
+
     # pylint:disable=unused-argument
     def instrumented_init(wrapped, instance, args, kwargs):
         if context_api.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
             return wrapped(*args, **kwargs)
 
-        trace_configs = list(kwargs.get("trace_configs") or ())
+        if kwargs.get("trace_configs"):
+            trace_configs.extend(kwargs.get("trace_configs"))
 
         trace_config = create_trace_config(
             url_filter=url_filter,
@@ -328,12 +334,15 @@ class AioHttpClientInstrumentor(BaseInstrumentor):
                     such as API keys or user personal information.
                 ``request_hook``: An optional callback that is invoked right after a span is created.
                 ``response_hook``: An optional callback which is invoked right before the span is finished processing a response.
+                ``trace_configs``: An optional list of aiohttp.TraceConfig items, allowing customize enrichment of spans
+                 based on aiohttp events (see specification: https://docs.aiohttp.org/en/stable/tracing_reference.html)
         """
         _instrument(
             tracer_provider=kwargs.get("tracer_provider"),
             url_filter=kwargs.get("url_filter"),
             request_hook=kwargs.get("request_hook"),
             response_hook=kwargs.get("response_hook"),
+            trace_configs=kwargs.get("trace_configs"),
         )
 
     def _uninstrument(self, **kwargs):

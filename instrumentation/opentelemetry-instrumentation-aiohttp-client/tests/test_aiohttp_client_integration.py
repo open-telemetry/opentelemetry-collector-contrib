@@ -386,6 +386,20 @@ class TestAioHttpClientInstrumentor(TestBase):
         )
         self.assertEqual(200, span.attributes[SpanAttributes.HTTP_STATUS_CODE])
 
+    def test_instrument_with_custom_trace_config(self):
+        AioHttpClientInstrumentor().uninstrument()
+        AioHttpClientInstrumentor().instrument(
+            trace_configs=[aiohttp_client.create_trace_config()]
+        )
+
+        self.assert_spans(0)
+
+        run_with_test_server(
+            self.get_default_request(), self.URL, self.default_handler
+        )
+
+        self.assert_spans(2)
+
     def test_instrument_with_existing_trace_config(self):
         trace_config = aiohttp.TraceConfig()
 
@@ -432,7 +446,7 @@ class TestAioHttpClientInstrumentor(TestBase):
         run_with_test_server(
             self.get_default_request(), self.URL, self.default_handler
         )
-        self.assert_spans(1)
+        self.assert_spans(2)
 
     def test_suppress_instrumentation(self):
         token = context.attach(
