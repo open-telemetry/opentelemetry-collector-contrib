@@ -27,7 +27,7 @@ Logz.io exporter is utilizing opentelemetry [exporter helper](https://github.com
         - `num_seconds` is the number of seconds to buffer in case of a backend outage
         - `requests_per_second` is the average number of requests per seconds.
         - default = 5000
-- `timeout`: Time to wait per individual attempt to send data to a backend. default = 5s
+- `timeout`: Time to wait per individual attempt to send data to a backend. default = 30s
 
 #### Tracing example:
 * We recommend using `batch` processor. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
