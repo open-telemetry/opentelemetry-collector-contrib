@@ -16,12 +16,14 @@ package translation
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -210,14 +212,6 @@ func TestTranslationSpanChanges(t *testing.T) {
 			}
 			expect := NewExampleSpans(t, tc.target)
 			assert.EqualValues(t, expect, spans, "Must match the expected values")
-			// expect, err := ptrace.NewJSONMarshaler().MarshalTraces(expect)
-			// require.NoError(t, err, "Must not error when marshaling traces")
-			// t.Log("Expect: ", string(expect))
-
-			// actual, err := ptrace.NewJSONMarshaler().MarshalTraces(spans)
-			// require.NoError(t, err, "Must not error when marshaling traces")
-			// t.Log("Actual: ", string(actual))
-
 		})
 	}
 }
@@ -345,9 +339,9 @@ func TestTranslationMetricChanges(t *testing.T) {
 			require.NoError(t, err, "Must not error creating translator")
 			require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
-			logs := NewExampleMetrics(t, tc.income)
-			for i := 0; i < logs.ResourceMetrics().Len(); i++ {
-				rMetrics := logs.ResourceMetrics().At(i)
+			metrics := NewExampleMetrics(t, tc.income)
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				rMetrics := metrics.ResourceMetrics().At(i)
 				tn.ApplyAllResourceChanges(ctx, rMetrics)
 				for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
 					metric := rMetrics.ScopeMetrics().At(j)
@@ -355,9 +349,90 @@ func TestTranslationMetricChanges(t *testing.T) {
 				}
 			}
 			expect := NewExampleMetrics(t, tc.target)
-			assert.EqualValues(t, expect, logs, "Must match the expected values")
+			assert.EqualValues(t, expect, metrics, "Must match the expected values")
 		})
 	}
+}
+
+func TestTranslationEquvialance_Logs(t *testing.T) {
+	t.Parallel()
+
+	ctx, done := context.WithCancel(context.Background())
+	t.Cleanup(done)
+
+	a, b := NewExampleLogs(t, Version{1, 0, 0}), NewExampleLogs(t, Version{1, 7, 0})
+
+	tn, err := newTranslater(zaptest.NewLogger(t), "https://example.com/1.4.0")
+	require.NoError(t, err, "Must not error creating translator")
+	require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
+
+	for _, logs := range []plog.Logs{a, b} {
+		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			rLogs := logs.ResourceLogs().At(i)
+			tn.ApplyAllResourceChanges(ctx, rLogs)
+			for j := 0; j < rLogs.ScopeLogs().Len(); j++ {
+				log := rLogs.ScopeLogs().At(j)
+				tn.ApplyScopeLogChanges(ctx, log)
+			}
+		}
+	}
+	expect := NewExampleLogs(t, Version{1, 4, 0})
+	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
+	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
+}
+
+func TestTranslationEquvialance_Metrics(t *testing.T) {
+	t.Parallel()
+
+	ctx, done := context.WithCancel(context.Background())
+	t.Cleanup(done)
+
+	a, b := NewExampleMetrics(t, Version{1, 0, 0}), NewExampleMetrics(t, Version{1, 7, 0})
+
+	tn, err := newTranslater(zaptest.NewLogger(t), "https://example.com/1.4.0")
+	require.NoError(t, err, "Must not error creating translator")
+	require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
+
+	for _, metrics := range []pmetric.Metrics{a, b} {
+		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			rMetrics := metrics.ResourceMetrics().At(i)
+			tn.ApplyAllResourceChanges(ctx, rMetrics)
+			for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
+				metric := rMetrics.ScopeMetrics().At(j)
+				tn.ApplyScopeMetricChanges(ctx, metric)
+			}
+		}
+	}
+	expect := NewExampleMetrics(t, Version{1, 4, 0})
+	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
+	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
+}
+
+func TestTranslationEquvialance_Traces(t *testing.T) {
+	t.Parallel()
+
+	ctx, done := context.WithCancel(context.Background())
+	t.Cleanup(done)
+
+	a, b := NewExampleSpans(t, Version{1, 0, 0}), NewExampleSpans(t, Version{1, 7, 0})
+
+	tn, err := newTranslater(zaptest.NewLogger(t), "https://example.com/1.4.0")
+	require.NoError(t, err, "Must not error creating translator")
+	require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
+
+	for _, traces := range []ptrace.Traces{a, b} {
+		for i := 0; i < traces.ResourceSpans().Len(); i++ {
+			rSpans := traces.ResourceSpans().At(i)
+			tn.ApplyAllResourceChanges(ctx, rSpans)
+			for j := 0; j < rSpans.ScopeSpans().Len(); j++ {
+				spans := rSpans.ScopeSpans().At(j)
+				tn.ApplyScopeSpanChanges(ctx, spans)
+			}
+		}
+	}
+	expect := NewExampleSpans(t, Version{1, 4, 0})
+	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
+	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
 }
 
 func BenchmarkTranslationColdStartTranslation(b *testing.B) {
@@ -390,5 +465,80 @@ func BenchmarkTranslationPartialUpdateTranslation(b *testing.B) {
 
 		b.StartTimer()
 		assert.NoError(b, tn.merge(LoadTranslationVersion(b, TranslationVersion190)), "Must not error when merging update")
+	}
+}
+
+func BenchmarkUpgradingMetrics(b *testing.B) {
+	ctx := context.Background()
+
+	tn, err := newTranslater(zap.NewNop(), "https://example.com/1.7.0")
+	require.NoError(b, err, "Must not error creating translator")
+	require.NoError(b, tn.merge(LoadTranslationVersion(b, "complex_changeset.yml")), "Must not error when trying to load translation definition")
+
+	metrics := NewExampleMetrics(b, Version{1, 0, 0})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		metrics := metrics.Clone()
+		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			rMetrics := metrics.ResourceMetrics().At(i)
+			tn.ApplyAllResourceChanges(ctx, rMetrics)
+			for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
+				metric := rMetrics.ScopeMetrics().At(j)
+				tn.ApplyScopeMetricChanges(ctx, metric)
+			}
+		}
+	}
+}
+
+func BenchmarkUpgradingTraces(b *testing.B) {
+	ctx := context.Background()
+
+	tn, err := newTranslater(zap.NewNop(), "https://example.com/1.7.0")
+	require.NoError(b, err, "Must not error creating translator")
+	require.NoError(b, tn.merge(LoadTranslationVersion(b, "complex_changeset.yml")), "Must not error when trying to load translation definition")
+
+	traces := NewExampleSpans(b, Version{1, 0, 0})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		traces := traces.Clone()
+		for i := 0; i < traces.ResourceSpans().Len(); i++ {
+			rSpans := traces.ResourceSpans().At(i)
+			tn.ApplyAllResourceChanges(ctx, rSpans)
+			for j := 0; j < rSpans.ScopeSpans().Len(); j++ {
+				spans := rSpans.ScopeSpans().At(j)
+				tn.ApplyScopeSpanChanges(ctx, spans)
+			}
+		}
+	}
+}
+
+func BenchmarkUpgradingLogs(b *testing.B) {
+	ctx := context.Background()
+
+	tn, err := newTranslater(zap.NewNop(), "https://example.com/1.7.0")
+	require.NoError(b, err, "Must not error creating translator")
+	require.NoError(b, tn.merge(LoadTranslationVersion(b, "complex_changeset.yml")), "Must not error when trying to load translation definition")
+
+	logs := NewExampleLogs(b, Version{1, 0, 0})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		logs := logs.Clone()
+		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			rLogs := logs.ResourceLogs().At(i)
+			tn.ApplyAllResourceChanges(ctx, rLogs)
+			for j := 0; j < rLogs.ScopeLogs().Len(); j++ {
+				log := rLogs.ScopeLogs().At(j)
+				tn.ApplyScopeLogChanges(ctx, log)
+			}
+		}
 	}
 }

@@ -119,9 +119,6 @@ func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias
 		return
 	}
 	it, status := t.iterator(ctx, ver)
-	if status == NoChange {
-		return
-	}
 	for rev, more := it(); more; rev, more = it() {
 		switch status {
 		case Update:
@@ -167,9 +164,6 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 		return
 	}
 	it, status := t.iterator(ctx, ver)
-	if status == NoChange {
-		return
-	}
 	for rev, more := it(); more; rev, more = it() {
 		for i := 0; i < scopeSpans.Spans().Len(); i++ {
 			span := scopeSpans.Spans().At(i)
@@ -208,9 +202,6 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 		return
 	}
 	it, status := t.iterator(ctx, ver)
-	if status == NoChange {
-		return
-	}
 	for rev, more := it(); more; rev, more = it() {
 		for i := 0; i < in.Metrics().Len(); i++ {
 			metric := in.Metrics().At(i)
@@ -337,12 +328,17 @@ func (t *translator) merge(r io.Reader) (errs error) {
 // Note: Once an iterator has been made, the passed context MUST cancel or run to completion
 //       in order for the read lock to be released if either Revert or Upgrade has been returned.
 func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int) {
-	if !t.SupportedVersion(from) {
+	status := from.Compare(t.target)
+	if status == NoChange || !t.SupportedVersion(from) {
 		return func() (r Revision, more bool) { return nil, false }, NoChange
 	}
 	t.rw.RLock()
-	status, it, stop := from.Compare(t.target), t.indexes[*from], t.indexes[*t.target]
-	// it -= status
+	it, stop := t.indexes[*from], t.indexes[*t.target]
+	if status == Update {
+		// In the event of an update, the iterator needs to also run that version
+		// for the signal to be the correct version.
+		stop++
+	}
 	return func() (Revision, bool) {
 		select {
 		case <-ctx.Done():
@@ -351,21 +347,14 @@ func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int
 		default:
 			// No action required heree
 		}
-		// The iterator only needs to stop once the version comparison flips
-		// the comparison from either revert -> update or update -> revert
-		// Once this condition has been reached, it can then stop.
-		// Or this will need to stop once it attempts to go out of bounds of
-		// the internal slice.
-		if it < 0 ||
-			it == len(t.revisions) ||
-			t.revisions[it].Version().Compare(t.revisions[stop].Version()) == -status {
 
+		// Performs a bounds check and if it has reached stop
+		if it < 0 || it == len(t.revisions) || it == stop {
 			t.rw.RUnlock()
 			return nil, false
 		}
 
 		r := t.revisions[it]
-
 		// The iterator value needs to move the opposite direction of what
 		// status is defined as so subtracting it to progress the iterator.
 		it -= status
