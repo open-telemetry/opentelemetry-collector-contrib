@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package prometheusreceiver
 
 import (
@@ -148,6 +149,7 @@ rpc_duration_seconds_count 1000 %v
 // - Start_timestamp should get reset if current scrape has lower value than previous scrape
 
 func TestHonorTimeStampsWithTrue(t *testing.T) {
+	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10356")
 	setMetricsTimestamp()
 	targets := []*testData{
 		{
@@ -164,9 +166,15 @@ func TestHonorTimeStampsWithTrue(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
+// This abstraction prevents skipped function from causing "unused" lint errors
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 // TestHonorTimeStampsWithFalse validates that with honor_timestamp config set to false,
 // valid testdata provided with explicit timestamps does not get honored.
 func TestHonorTimeStampsWithFalse(t *testing.T) {
+	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10356")
 	setMetricsTimestamp()
 	targets := []*testData{
 		{

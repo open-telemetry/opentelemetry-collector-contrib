@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,9 +39,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Processors[config.NewComponentID(typeStr)], &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.ReceiverSettings{},
-			Operators: stanza.OperatorConfigs{
+			Operators: adapter.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-			Converter: stanza.ConverterConfig{
+			Converter: adapter.ConverterConfig{
 				MaxFlushCount: 100,
 				FlushInterval: 100 * time.Millisecond,
 			},

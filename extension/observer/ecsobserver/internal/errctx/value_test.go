@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package errctx
 
 import (
@@ -25,7 +24,7 @@ import (
 func TestWithValue(t *testing.T) {
 	assert.Nil(t, WithValue(nil, "a", "b"))
 	assert.Panics(t, func() {
-		WithValue(fmt.Errorf("base"), "", nil)
+		_ = WithValue(fmt.Errorf("base"), "", nil)
 	})
 
 	e1 := WithValue(fmt.Errorf("base"), "a", "b")
@@ -49,7 +48,7 @@ func TestWithValue(t *testing.T) {
 func TestWithValues(t *testing.T) {
 	assert.Nil(t, WithValues(nil, map[string]interface{}{"a": "b"}))
 	assert.Panics(t, func() {
-		WithValues(fmt.Errorf("base"), map[string]interface{}{"": "123"})
+		_ = WithValues(fmt.Errorf("base"), map[string]interface{}{"": "123"})
 	})
 
 	e1 := WithValues(fmt.Errorf("base"), map[string]interface{}{"a": "b", "c": 123})

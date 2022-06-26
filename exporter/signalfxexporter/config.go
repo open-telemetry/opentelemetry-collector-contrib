@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -118,12 +119,12 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	ingestURL, err := cfg.getIngestURL()
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"ingest_url\": %v", err)
+		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
 	}
 
 	apiURL, err := cfg.getAPIURL()
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"api_url\": %v", err)
+		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
 	}
 
 	if cfg.Timeout == 0 {
@@ -132,7 +133,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"%s\": %v", translationRulesConfigKey, err)
+		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
 	}
 
 	return &exporterOptions{
@@ -185,7 +186,7 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Map) (err error) {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

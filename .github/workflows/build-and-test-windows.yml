@@ -9,7 +9,7 @@ env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
 
 jobs:
-  windows-unittest:
+  windows-unittest-matrix:
     strategy:
       matrix:
         group:
@@ -21,6 +21,7 @@ jobs:
           - internal
           - other
     runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -34,11 +35,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
       - name: Cache Go
         uses: actions/cache@v3
         with:
@@ -48,3 +44,9 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         run: make gotest GROUP=${{ matrix.group }}
+  windows-unittest:
+    runs-on: windows-latest
+    needs: [windows-unittest-matrix]
+    steps:
+      - name: Unit Tests Complete
+        run: echo "Windows unit tests complete"

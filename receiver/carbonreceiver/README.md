@@ -1,10 +1,14 @@
 # Carbon Receiver
 
+| Status                   |            |
+| ------------------------ |------------|
+| Stability                | [stable]   |
+| Supported pipeline types | metrics    |
+| Distributions            | [contrib]  |
+
 The [Carbon](https://github.com/graphite-project/carbon) receiver supports
 Carbon's [plaintext
 protocol](https://graphite.readthedocs.io/en/stable/feeding-carbon.html#the-plaintext-protocol).
-
-Supported pipeline types: metrics
 
 > :information_source: The `wavefront` receiver is based on Carbon and binds to the
 same port by default. This means the `carbon` and `wavefront` receivers
@@ -56,3 +60,6 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

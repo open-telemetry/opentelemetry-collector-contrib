@@ -15,7 +15,6 @@
 package file
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -32,10 +31,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-const WINDOWS_OS = "windows"
+const windowsOS = "windows"
 
 func TestMultiFileRotate(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
@@ -60,7 +59,9 @@ func TestMultiFileRotate(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	temps := make([]*os.File, 0, numFiles)
 	for i := 0; i < numFiles; i++ {
@@ -89,7 +90,7 @@ func TestMultiFileRotate(t *testing.T) {
 }
 
 func TestMultiFileRotateSlow(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
@@ -117,7 +118,9 @@ func TestMultiFileRotateSlow(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	var wg sync.WaitGroup
 	for fileNum := 0; fileNum < numFiles; fileNum++ {
@@ -163,7 +166,9 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 	}
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	var wg sync.WaitGroup
 	for fileNum := 0; fileNum < numFiles; fileNum++ {
@@ -244,7 +249,7 @@ func (rt rotationTest) expectEphemeralLines() bool {
 func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(t *testing.T) {
 	return func(t *testing.T) {
 		operator, logReceived, tempDir := newTestFileOperator(t,
-			func(cfg *InputConfig) {
+			func(cfg *Config) {
 				cfg.PollInterval = helper.NewDuration(tc.pollInterval)
 			},
 			func(out *testutil.FakeOutput) {
@@ -260,7 +265,9 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		}
 
 		require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-		defer operator.Stop()
+		defer func() {
+			require.NoError(t, operator.Stop())
+		}()
 
 		for _, message := range expected {
 			logger.Println(message)
@@ -329,7 +336,7 @@ func TestRotation(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		if runtime.GOOS != WINDOWS_OS {
+		if runtime.GOOS != windowsOS {
 			// Windows has very poor support for moving active files, so rotation is less commonly used
 			// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 			t.Run(fmt.Sprintf("%s/MoveCreateTimestamped", tc.name), tc.run(tc, false, false))
@@ -341,50 +348,46 @@ func TestRotation(t *testing.T) {
 }
 
 func TestMoveFile(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\n")
 	temp1.Close()
 
-	operator.poll(context.Background())
-	defer operator.Stop()
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 
-	// Wait until all goroutines are finished before renaming
-	operator.wg.Wait()
 	err := os.Rename(temp1.Name(), fmt.Sprintf("%s.2", temp1.Name()))
 	require.NoError(t, err)
 
-	operator.poll(context.Background())
 	expectNoMessages(t, logReceived)
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
-	if runtime.GOOS == WINDOWS_OS {
+	if runtime.GOOS == windowsOS {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\n")
 	temp1.Close()
 
-	operator.poll(context.Background())
-	defer operator.Stop()
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
-
-	// Wait until all goroutines are finished before renaming
-	operator.wg.Wait()
 
 	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
 	err := os.Mkdir(newDir, 0777)
@@ -397,7 +400,6 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	require.NoError(t, err)
 	writeString(t, movedFile, "testlog2\n")
-	operator.poll(context.Background())
 
 	waitForMessage(t, logReceived, "testlog2")
 }
@@ -407,22 +409,23 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 func TestTruncateThenWrite(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
-	operator.poll(context.Background())
-	defer operator.Stop()
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 	waitForMessage(t, logReceived, "testlog2")
 
 	require.NoError(t, temp1.Truncate(0))
-	temp1.Seek(0, 0)
+	_, err := temp1.Seek(0, 0)
+	require.NoError(t, err)
 
 	writeString(t, temp1, "testlog3\n")
-	operator.poll(context.Background())
 	waitForMessage(t, logReceived, "testlog3")
 	expectNoMessages(t, logReceived)
 }
@@ -434,17 +437,17 @@ func TestTruncateThenWrite(t *testing.T) {
 func TestCopyTruncateWriteBoth(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
-	operator.poll(context.Background())
-	defer operator.Stop()
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForMessage(t, logReceived, "testlog1")
 	waitForMessage(t, logReceived, "testlog2")
-	operator.wg.Wait() // wait for all goroutines to finish
 
 	// Copy the first file to a new file, and add another log
 	temp2 := openTemp(t, tempDir)
@@ -453,14 +456,14 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 
 	// Truncate original file
 	require.NoError(t, temp1.Truncate(0))
-	temp1.Seek(0, 0)
+	_, err = temp1.Seek(0, 0)
+	require.NoError(t, err)
 
 	// Write to original and new file
 	writeString(t, temp2, "testlog3\n")
 	writeString(t, temp1, "testlog4\n")
 
 	// Expect both messages to come through
-	operator.poll(context.Background())
 	waitForMessages(t, logReceived, []string{"testlog3", "testlog4"})
 }
 
@@ -478,7 +481,9 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 
 	// Start the operator
 	require.NoError(t, operator.Start(persister))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	waitForMessage(t, logReceived, log1)
 
 	// Stop the operator, then rename and write a new log

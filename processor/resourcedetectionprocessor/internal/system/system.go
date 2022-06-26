@@ -24,6 +24,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -43,7 +44,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider        metadataProvider
+	provider        system.Provider
 	logger          *zap.Logger
 	hostnameSources []string
 }
@@ -55,7 +56,7 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 		cfg.HostnameSources = []string{"dns", "os"}
 	}
 
-	return &Detector{provider: newSystemMetadataProvider(), logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
+	return &Detector{provider: system.NewProvider(), logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones

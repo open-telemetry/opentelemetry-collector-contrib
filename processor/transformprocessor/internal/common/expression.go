@@ -58,6 +58,10 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 }
 
 func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser) (Getter, error) {
+	if val.IsNil != nil && *val.IsNil {
+		return &literal{value: nil}, nil
+	}
+
 	if s := val.String; s != nil {
 		return &literal{value: *s}, nil
 	}
@@ -66,6 +70,12 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 	}
 	if i := val.Int; i != nil {
 		return &literal{value: *i}, nil
+	}
+	if b := val.Bool; b != nil {
+		return &literal{value: bool(*b)}, nil
+	}
+	if b := val.Bytes; b != nil {
+		return &literal{value: ([]byte)(*b)}, nil
 	}
 
 	if val.Path != nil {

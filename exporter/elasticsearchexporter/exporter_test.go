@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -106,18 +106,8 @@ func TestExporter_New(t *testing.T) {
 				env = map[string]string{defaultElasticsearchEnvName: ""}
 			}
 
-			oldEnv := make(map[string]string, len(env))
-			defer func() {
-				for k, v := range oldEnv {
-					os.Setenv(k, v)
-				}
-			}()
-
-			for k := range env {
-				oldEnv[k] = os.Getenv(k)
-			}
 			for k, v := range env {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			exporter, err := newExporter(zap.NewNop(), test.config)
@@ -133,6 +123,9 @@ func TestExporter_New(t *testing.T) {
 }
 
 func TestExporter_PushEvent(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10178")
+	}
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
@@ -25,14 +26,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 	ec2Attributes "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
@@ -87,7 +90,7 @@ type Meta struct {
 	SocketFqdn string `json:"socket-fqdn,omitempty"`
 
 	// HostAliases are other available host names
-	HostAliases []string `json:"host-aliases,omitempty"`
+	HostAliases []string `json:"host_aliases,omitempty"`
 }
 
 // metadataFromAttributes gets metadata info from attributes following
@@ -95,9 +98,10 @@ type Meta struct {
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	if hostname, ok := attributes.HostnameFromAttributes(attrs); ok {
-		hm.InternalHostname = hostname
-		hm.Meta.Hostname = hostname
+	var usePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate)
+	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
+		hm.InternalHostname = src.Identifier
+		hm.Meta.Hostname = src.Identifier
 	}
 
 	// AWS EC2 resource metadata
@@ -108,23 +112,24 @@ func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
-		gcpHostInfo := gcp.HostInfoFromAttributes(attrs)
+		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
-		azureHostInfo := azure.HostInfoFromAttributes(attrs)
+		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
 
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, hm *HostMetadata) {
+func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		hostname := GetHost(params.Logger, pcfg.ConfigHostname)
-		hm.InternalHostname = hostname
-		hm.Meta.Hostname = hostname
+		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
+			hm.InternalHostname = src.Identifier
+			hm.Meta.Hostname = src.Identifier
+		}
 	}
 
 	// This information always gets filled in here
@@ -196,7 +201,7 @@ func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCrea
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, attrs pcommon.Map) {
+func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
@@ -214,7 +219,7 @@ func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg P
 	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs)
 	}
-	fillHostMetadata(params, pcfg, hostMetadata)
+	fillHostMetadata(params, pcfg, p, hostMetadata)
 
 	// Run one first time at startup
 	pushMetadataWithRetry(retrier, params, pcfg, hostMetadata)

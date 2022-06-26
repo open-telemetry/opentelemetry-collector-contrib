@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package components
 
 import (
@@ -23,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -175,7 +178,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, processorCreationSet, getConfigFn())
-		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

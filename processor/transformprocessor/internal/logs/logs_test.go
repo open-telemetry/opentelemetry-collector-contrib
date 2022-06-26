@@ -15,7 +15,6 @@
 package logs
 
 import (
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 var (
@@ -52,7 +52,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
 	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{9, 6, 4})
+	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 
 	tests := []struct {
 		name     string
@@ -133,7 +133,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: uint32(3),
+			orig: int64(3),
 			new:  int64(4),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetFlags(uint32(4))
@@ -147,7 +147,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewTraceID(traceID),
-			new:  hex.EncodeToString(traceID2[:]),
+			new:  pcommon.NewTraceID(traceID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
@@ -160,7 +160,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewSpanID(spanID),
-			new:  hex.EncodeToString(spanID2[:]),
+			new:  pcommon.NewSpanID(spanID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
@@ -184,7 +184,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -198,7 +198,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -212,7 +212,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -226,7 +226,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -240,13 +240,13 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -254,7 +254,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -271,7 +271,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -288,7 +288,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -305,7 +305,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -322,7 +322,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -341,7 +341,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_attributes_count",
 				},
 			},
-			orig: uint32(10),
+			orig: int64(10),
 			new:  int64(20),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetDroppedAttributesCount(20)
@@ -404,7 +404,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -421,7 +421,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -438,7 +438,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -455,7 +455,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -472,13 +472,13 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -489,7 +489,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -509,7 +509,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -529,7 +529,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -549,7 +549,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -569,7 +569,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -623,7 +623,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().UpsertBool("bool", true)
 	log.Attributes().UpsertInt("int", 10)
 	log.Attributes().UpsertDouble("double", 1.2)
-	log.Attributes().UpsertMBytes("bytes", []byte{1, 3, 2})
+	log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
 
 	arrStr := pcommon.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
@@ -646,8 +646,8 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().Upsert("arr_float", arrFloat)
 
 	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{1, 2, 3})
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{2, 3, 4})
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 	log.Attributes().Upsert("arr_bytes", arrBytes)
 
 	log.SetDroppedAttributesCount(10)
@@ -665,8 +665,4 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().CopyTo(resource.Attributes())
 
 	return log, il, resource
-}
-
-func strp(s string) *string {
-	return &s
 }

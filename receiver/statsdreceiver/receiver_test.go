@@ -19,14 +19,13 @@ import (
 	"context"
 	"errors"
 	"net"
-	"runtime"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -55,7 +54,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantErr: componenterror.ErrNilNextConsumer,
+			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "unsupported transport",
@@ -94,9 +93,6 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 }
 
 func Test_statsdreceiver_EndToEnd(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10151")
-	}
 	addr := testutil.GetAvailableLocalAddress(t)
 	host, portStr, err := net.SplitHostPort(addr)
 	require.NoError(t, err)
