@@ -17,6 +17,7 @@
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
+- `splunkhecexporter`: Update limits for max_content_length settings (#11550)
 
 ### 🧰 Bug fixes 🧰
 
