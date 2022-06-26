@@ -103,6 +103,7 @@ func (c *defaultASClient) NamespaceInfo(namespace string) (map[string]string, er
 
 		}
 	}
+	info["name"] = namespace
 	return info, nil
 }
 
@@ -136,7 +137,7 @@ func (c *defaultASClient) Info() (map[string]string, error) {
 				info[parts[0]] = parts[1]
 
 			}
-		case "node":
+		default:
 			info[k] = v
 		}
 	}

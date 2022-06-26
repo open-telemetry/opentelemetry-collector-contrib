@@ -99,6 +99,7 @@ pkg/resourcetotelemetry/                             @open-telemetry/collector-c
 pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/translator/jaeger/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
 pkg/translator/zipkin/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
