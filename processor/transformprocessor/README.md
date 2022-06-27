@@ -1,10 +1,11 @@
 # Transform Processor
 
-| Status                   |                       |
-| ------------------------ | --------------------- |
-| Stability                | [alpha]               |
-| Supported pipeline types | traces, metrics, logs |
-| Distributions            | [contrib]             |
+| Status                   |                                                                                    |
+|--------------------------|------------------------------------------------------------------------------------|
+| Stability                | [alpha]                                                                            |
+| Supported pipeline types | traces, metrics, logs                                                              |
+| Distributions            | [contrib]                                                                          |
+| Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 
 The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language).
 It takes a list of queries which are performed in the order specified in the config.
@@ -141,6 +142,17 @@ All logs
 ## Contributing
  <!-- markdown-link-check-disable-next-line -->
 See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
+
+
+## Warnings
+
+The transform processor's implementation of the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language) (TQL) allows users to modify all aspects of their telemetry.  Some specific risks are listed below, but this is not an exhaustive list.  In general, understand your data before using the transform processor.  
+
+- [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
+  - Although the TQL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.
+- [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
+- [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs. 
+- The `limit` function drops attributes at random.  If there are attributes that should never be dropped then this function should not be used.  [#9734](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9734)
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
