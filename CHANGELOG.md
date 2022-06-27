@@ -11,6 +11,8 @@
 
 ### 🚀 New components 🚀
 
+- `telemetryquerylanguage`: Expose the telemetry query language as a package. (#11771)
+
 ### 💡 Enhancements 💡
 
 - `flinkmetricsreceiver`: add attribute values to metadata #11520
