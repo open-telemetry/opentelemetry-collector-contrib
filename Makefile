@@ -268,7 +268,7 @@ chlog-validate: chlog-install
 
 .PHONY: chlog-preview
 chlog-preview: chlog-install
-	chloggen preview
+	chloggen update -dry
 
 .PHONY: chlog-update
 chlog-update: chlog-install

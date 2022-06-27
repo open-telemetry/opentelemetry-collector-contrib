@@ -32,9 +32,9 @@ type summary struct {
 	BugFixes        []string
 }
 
-func generateSummary(entries []*Entry) (string, error) {
+func generateSummary(version string, entries []*Entry) (string, error) {
 	s := summary{
-		Version: "vTODO",
+		Version: version,
 	}
 
 	for _, entry := range entries {

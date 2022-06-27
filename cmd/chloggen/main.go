@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -40,10 +41,14 @@ const (
 )
 
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) < 2 {
 		usage()
 		os.Exit(1)
 	}
+
+	updateCmd := flag.NewFlagSet("preview", flag.ExitOnError)
+	version := updateCmd.String("version", "vTODO", "'version' will be rendered directly into the update text")
+	dry := updateCmd.Bool("dry", false, "dry will generate the update text and print to stdout")
 
 	switch command := os.Args[1]; command {
 	case "validate":
@@ -51,13 +56,9 @@ func main() {
 			fmt.Printf("FAIL: validate: %v\n", err)
 			os.Exit(1)
 		}
-	case "preview":
-		if err := preview(); err != nil {
-			fmt.Printf("FAIL: preview: %v\n", err)
-			os.Exit(1)
-		}
 	case "update":
-		if err := update(); err != nil {
+		updateCmd.Parse(os.Args[2:])
+		if err := update(*version, *dry); err != nil {
 			fmt.Printf("FAIL: update: %v\n", err)
 			os.Exit(1)
 		}
@@ -69,8 +70,7 @@ func main() {
 
 func usage() {
 	fmt.Println("usage: chloggen validate")
-	fmt.Println("       chloggen preview")
-	fmt.Println("       chloggen update")
+	fmt.Println("       chloggen update [-version v0.55.0] [-dry]")
 }
 
 func validate() error {
@@ -87,27 +87,7 @@ func validate() error {
 	return nil
 }
 
-func preview() error {
-	entries, err := readEntries(true)
-	if err != nil {
-		return err
-	}
-
-	if len(entries) == 0 {
-		fmt.Println("No changelog updates")
-		return nil
-	}
-
-	chlogUpdate, err := generateSummary(entries)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Generated changelog updates:")
-	fmt.Println(chlogUpdate)
-	return nil
-}
-
-func update() error {
+func update(version string, dry bool) error {
 	entries, err := readEntries(true)
 	if err != nil {
 		return err
@@ -117,9 +97,15 @@ func update() error {
 		return fmt.Errorf("no entries to add to the changelog")
 	}
 
-	chlogUpdate, err := generateSummary(entries)
+	chlogUpdate, err := generateSummary(version, entries)
 	if err != nil {
 		return err
+	}
+
+	if dry {
+		fmt.Printf("Generated changelog updates:")
+		fmt.Println(chlogUpdate)
+		return nil
 	}
 
 	oldChlogBytes, err := os.ReadFile(changelogMD)
