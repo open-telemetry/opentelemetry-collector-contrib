@@ -1,10 +1,10 @@
 # SAP HANA Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                     |
+| ------------------------ |---------------------|
+| Stability                | [in-development]    |
+| Supported pipeline types | metrics             |
+| Distributions            | [contrib]           |
 
 This receiver can fetch stats from a SAP HANA instance. It leverages the [driver](https://github.com/SAP/go-hdb) written by SAP for connecting to SAP HANA with the golang sql module to execute several monitoring queries.
 
@@ -95,5 +95,5 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 > If all of the metrics collected by a given monitoring query are marked as `enabled: false` in the receiver configration, the monitoring query will not be executed.
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#in-development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
