@@ -39,7 +39,7 @@ func TestNewExporter_err_version(t *testing.T) {
 		Database:       "not-configured",
 		RawMetricTable: "not-configured",
 	}
-	texp, err := newExporter(&c, logger, MetricsType)
+	texp, err := newExporter(&c, logger, metricsType)
 	assert.Error(t, err)
 	assert.Nil(t, texp)
 }

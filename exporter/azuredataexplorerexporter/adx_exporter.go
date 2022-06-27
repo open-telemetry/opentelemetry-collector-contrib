@@ -88,12 +88,21 @@ func (e *adxDataProducer) ingestData(b []byte) error {
 func (amp *adxDataProducer) Close(context.Context) error {
 
 	var err error
-	err = amp.managedingest.Close()
+	if amp.managedingest != nil {
+		err = amp.managedingest.Close()
+		amp.logger.Info("Closed ManagedIngest")
+	} else {
+		err = amp.queuedingest.Close()
+		amp.logger.Info("Closed QueuedIngest")
+	}
 	err2 := amp.client.Close()
 	if err == nil {
 		err = err2
 	} else {
 		err = errors.GetCombinedError(err, err2)
+	}
+	if err != nil {
+		amp.logger.Warn("Error closing connections", zap.Error(err))
 	}
 	return err
 }
@@ -175,7 +184,7 @@ func createQueuedIngester(config *Config, adxclient *kusto.Client, tablename str
 
 func getTableName(config *Config, telemetrydatatype int) string {
 	switch telemetrydatatype {
-	case MetricsType:
+	case metricsType:
 		return config.RawMetricTable
 	}
 	return "unknown"

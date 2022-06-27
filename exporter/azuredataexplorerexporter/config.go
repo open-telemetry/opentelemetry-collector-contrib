@@ -16,6 +16,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/config"
@@ -43,8 +44,8 @@ func (adxCfg *Config) Validate() error {
 		return errors.New(`mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
 	}
 
-	if !(adxCfg.IngestionType == managedingesttype || adxCfg.IngestionType == queuedingesttest || adxCfg.IngestionType == "") {
-		return errors.New(`unsupported configuration for ingestion_type`)
+	if !(adxCfg.IngestionType == managedingesttype || adxCfg.IngestionType == queuedingesttest || isEmpty(adxCfg.IngestionType)) {
+		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedingesttype, queuedingesttest, adxCfg.IngestionType)
 	}
 
 	return nil
