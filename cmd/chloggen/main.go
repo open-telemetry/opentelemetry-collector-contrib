@@ -36,12 +36,6 @@ const (
 	enhancement  = "enhancement"
 	bugFix       = "bug_fix"
 
-	breakingLabel     = "## 🛑 Breaking changes 🛑"
-	deprecationLabel  = "### 🚩 Deprecations 🚩"
-	newComponentLabel = "### 🚀 New components 🚀"
-	enhancementLabel  = "### 💡 Enhancements 💡"
-	bugFixLabel       = "### 🧰 Bug fixes 🧰"
-
 	insertPoint = "<!-- next version -->"
 )
 
@@ -104,7 +98,10 @@ func preview() error {
 		return nil
 	}
 
-	chlogUpdate := newEntriesByTypeMap(entries).toChlogString()
+	chlogUpdate, err := generateSummary(entries)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("Generated changelog updates:")
 	fmt.Println(chlogUpdate)
 	return nil
@@ -120,7 +117,10 @@ func update() error {
 		return fmt.Errorf("no entries to add to the changelog")
 	}
 
-	chlogUpdate := newEntriesByTypeMap(entries).toChlogString()
+	chlogUpdate, err := generateSummary(entries)
+	if err != nil {
+		return err
+	}
 
 	oldChlogBytes, err := os.ReadFile(changelogMD)
 	if err != nil {
@@ -162,7 +162,6 @@ func readEntries(excludeExample bool) ([]*Entry, error) {
 		return nil, err
 	}
 
-	// TODO aggregate errors and return valid entries
 	entries := make([]*Entry, 0, len(entryFiles))
 	for _, entryFile := range entryFiles {
 		if excludeExample && filepath.Base(entryFile) == exampleYAML {
@@ -199,83 +198,4 @@ func deleteEntries() error {
 		}
 	}
 	return nil
-}
-
-type entriesByTypeMap map[string][]*Entry
-
-func newEntriesByTypeMap(entries []*Entry) entriesByTypeMap {
-	entriesByType := make(map[string][]*Entry)
-	for _, entry := range entries {
-		switch entry.ChangeType {
-		case breaking:
-			entriesByType[breaking] = append(entriesByType[breaking], entry)
-		case deprecation:
-			entriesByType[deprecation] = append(entriesByType[deprecation], entry)
-		case newComponent:
-			entriesByType[newComponent] = append(entriesByType[newComponent], entry)
-		case enhancement:
-			entriesByType[enhancement] = append(entriesByType[enhancement], entry)
-		case bugFix:
-			entriesByType[bugFix] = append(entriesByType[bugFix], entry)
-		}
-	}
-	return entriesByType
-}
-
-func (m entriesByTypeMap) toChlogString() string {
-	var sb strings.Builder
-
-	sb.WriteString("\n\n## vTODO")
-
-	if len(m[breaking]) > 0 {
-		sb.WriteString("\n\n")
-		sb.WriteString(breakingLabel)
-		sb.WriteString("\n")
-		for _, entry := range m[breaking] {
-			sb.WriteString("\n")
-			sb.WriteString(entry.String())
-		}
-	}
-
-	if len(m[deprecation]) > 0 {
-		sb.WriteString("\n\n")
-		sb.WriteString(deprecationLabel)
-		sb.WriteString("\n")
-		for _, entry := range m[deprecation] {
-			sb.WriteString("\n")
-			sb.WriteString(entry.String())
-		}
-	}
-
-	if len(m[newComponent]) > 0 {
-		sb.WriteString("\n\n")
-		sb.WriteString(newComponentLabel)
-		sb.WriteString("\n")
-		for _, entry := range m[newComponent] {
-			sb.WriteString("\n")
-			sb.WriteString(entry.String())
-		}
-	}
-
-	if len(m[enhancement]) > 0 {
-		sb.WriteString("\n\n")
-		sb.WriteString(enhancementLabel)
-		sb.WriteString("\n")
-		for _, entry := range m[enhancement] {
-			sb.WriteString("\n")
-			sb.WriteString(entry.String())
-		}
-	}
-
-	if len(m[bugFix]) > 0 {
-		sb.WriteString("\n\n")
-		sb.WriteString(bugFixLabel)
-		sb.WriteString("\n")
-		for _, entry := range m[bugFix] {
-			sb.WriteString("\n")
-			sb.WriteString(entry.String())
-		}
-	}
-
-	return sb.String()
 }

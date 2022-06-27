@@ -1,0 +1,43 @@
+
+
+# {{ .Version }}
+
+{{- if .BreakingChanges }}
+
+## 🛑 Breaking changes 🛑
+{{- range $change := .BreakingChanges }}
+{{ $change }}
+{{- end }}
+{{- end }}
+
+{{- if .Deprecations }}
+
+### 🚩 Deprecations 🚩
+{{- range $change := .Deprecations }}
+{{ $change }}
+{{- end }}
+{{- end }}
+
+{{- if .NewComponents }}
+
+### 🚀 New components 🚀
+{{- range $change := .NewComponents }}
+{{ $change }}
+{{- end }}
+{{- end }}
+
+{{- if .Enhancements }}
+
+### 💡 Enhancements 💡
+{{- range $change := .Enhancements }}
+{{ $change }}
+{{- end }}
+{{- end }}
+
+{{- if .BugFixes }}
+
+### 🧰 Bug fixes 🧰
+{{- range $change := .BugFixes }}
+{{ $change }}
+{{- end }}
+{{- end }}

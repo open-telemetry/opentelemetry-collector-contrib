@@ -10,7 +10,6 @@ The following additional work should be considered:
   - `make chlog-entry -i 12345 -t enhancement -c somereceiver -m "Add foo"`
   - `make chlog-entry` copies yaml template to `changelog/<branch-name>.yaml`
 - Update `CONTRIBUTING.md` to explain process
-- Enhance validation to aggregate errors rather than fail immediately
 
 Code quality:
 - Tests
