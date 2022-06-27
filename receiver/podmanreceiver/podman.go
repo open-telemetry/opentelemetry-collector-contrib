@@ -31,43 +31,43 @@ type clientFactory func(logger *zap.Logger, cfg *Config) (PodmanClient, error)
 
 type PodmanClient interface {
 	ping(context.Context) error
-	stats(context.Context, url.Values) ([]ContainerStats, error)
-	list(context.Context, url.Values) ([]Container, error)
-	events(context.Context, url.Values) (<-chan Event, <-chan error)
+	stats(context.Context, url.Values) ([]containerStats, error)
+	list(context.Context, url.Values) ([]container, error)
+	events(context.Context, url.Values) (<-chan event, <-chan error)
 }
 
 type ContainerScraper struct {
 	client         PodmanClient
-	containers     map[string]Container
+	containers     map[string]container
 	containersLock sync.Mutex
 	logger         *zap.Logger
 	config         *Config
 }
 
-func NewContainerScraper(engineClient PodmanClient, logger *zap.Logger, config *Config) *ContainerScraper {
+func newContainerScraper(engineClient PodmanClient, logger *zap.Logger, config *Config) *ContainerScraper {
 	return &ContainerScraper{
 		client:     engineClient,
-		containers: make(map[string]Container),
+		containers: make(map[string]container),
 		logger:     logger,
 		config:     config,
 	}
 }
 
-// Containers provides a slice of Container to use for individual FetchContainerStats calls.
-func (pc *ContainerScraper) Containers() []Container {
+// containers provides a slice of container to use for individual fetchContainerStats calls.
+func (pc *ContainerScraper) getContainers() []container {
 	pc.containersLock.Lock()
 	defer pc.containersLock.Unlock()
-	containers := make([]Container, 0, len(pc.containers))
+	containers := make([]container, 0, len(pc.containers))
 	for _, container := range pc.containers {
 		containers = append(containers, container)
 	}
 	return containers
 }
 
-// LoadContainerList will load the initial running container maps for
+// loadContainerList will load the initial running container maps for
 // inspection and establishing which containers warrant stat gathering calls
 // by the receiver.
-func (pc *ContainerScraper) LoadContainerList(ctx context.Context) error {
+func (pc *ContainerScraper) loadContainerList(ctx context.Context) error {
 	params := url.Values{}
 	runningFilter := map[string][]string{
 		"status": {"running"},
@@ -76,7 +76,7 @@ func (pc *ContainerScraper) LoadContainerList(ctx context.Context) error {
 	if err != nil {
 		return nil
 	}
-	params.Add("filters", string(jsonFilter[:]))
+	params.Add("filters", string(jsonFilter))
 
 	listCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
@@ -91,11 +91,11 @@ func (pc *ContainerScraper) LoadContainerList(ctx context.Context) error {
 	return nil
 }
 
-func (pc *ContainerScraper) Events(ctx context.Context, options url.Values) (<-chan Event, <-chan error) {
+func (pc *ContainerScraper) events(ctx context.Context, options url.Values) (<-chan event, <-chan error) {
 	return pc.client.events(ctx, options)
 }
 
-func (pc *ContainerScraper) ContainerEventLoop(ctx context.Context) {
+func (pc *ContainerScraper) containerEventLoop(ctx context.Context) {
 	filters := url.Values{}
 	cidFilter := map[string][]string{
 		"status": {"died", "start"},
@@ -105,27 +105,28 @@ func (pc *ContainerScraper) ContainerEventLoop(ctx context.Context) {
 	if err != nil {
 		return
 	}
-	filters.Add("filters", string(jsonFilter[:]))
+	filters.Add("filters", string(jsonFilter))
 EVENT_LOOP:
 	for {
-		eventCh, errCh := pc.Events(ctx, filters)
+		eventCh, errCh := pc.events(ctx, filters)
 		for {
 
 			select {
 			case <-ctx.Done():
 				return
-			case event := <-eventCh:
-				switch event.Status {
+			case podmanEvent := <-eventCh:
+				pc.logger.Info("Event received", zap.String("status", podmanEvent.Status))
+				switch podmanEvent.Status {
 				case "died":
-					pc.logger.Debug("Podman container died:", zap.String("id", event.ID))
-					pc.removeContainer(event.ID)
+					pc.logger.Debug("Podman container died:", zap.String("id", podmanEvent.ID))
+					pc.removeContainer(podmanEvent.ID)
 				case "start":
 					pc.logger.Debug(
 						"Podman container started:",
-						zap.String("id", event.ID),
-						zap.String("status", event.Status),
+						zap.String("id", podmanEvent.ID),
+						zap.String("status", podmanEvent.Status),
 					)
-					pc.InspectAndPersistContainer(ctx, event.ID)
+					pc.inspectAndPersistContainer(ctx, podmanEvent.ID)
 				}
 			case err := <-errCh:
 				// We are only interested when the context hasn't been canceled since requests made
@@ -148,10 +149,10 @@ EVENT_LOOP:
 	}
 }
 
-// InspectAndPersistContainer queries inspect api and returns *Container and true when container should be queried for stats,
+// inspectAndPersistContainer queries inspect api and returns *container and true when container should be queried for stats,
 // nil and false otherwise. Persists the container in the cache if container is
 // running and not excluded.
-func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid string) (*Container, bool) {
+func (pc *ContainerScraper) inspectAndPersistContainer(ctx context.Context, cid string) (*container, bool) {
 	params := url.Values{}
 	cidFilter := map[string][]string{
 		"id": {cid},
@@ -160,7 +161,7 @@ func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid 
 	if err != nil {
 		return nil, false
 	}
-	params.Add("filters", string(jsonFilter[:]))
+	params.Add("filters", string(jsonFilter))
 	listCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
 	container, err := pc.client.list(listCtx, params)
@@ -176,8 +177,8 @@ func (pc *ContainerScraper) InspectAndPersistContainer(ctx context.Context, cid 
 	return nil, false
 }
 
-// FetchContainerStats will query the desired container stats
-func (pc *ContainerScraper) FetchContainerStats(ctx context.Context, c Container) (ContainerStats, error) {
+// fetchContainerStats will query the desired container stats
+func (pc *ContainerScraper) fetchContainerStats(ctx context.Context, c container) (containerStats, error) {
 	params := url.Values{}
 	params.Add("stream", "false")
 	params.Add("containers", c.ID)
@@ -186,12 +187,12 @@ func (pc *ContainerScraper) FetchContainerStats(ctx context.Context, c Container
 	defer cancel()
 	stats, err := pc.client.stats(statsCtx, params)
 	if err != nil || len(stats) < 1 {
-		return ContainerStats{}, err
+		return containerStats{}, err
 	}
 	return stats[0], nil
 }
 
-func (pc *ContainerScraper) persistContainer(c Container) {
+func (pc *ContainerScraper) persistContainer(c container) {
 	pc.logger.Debug("Monitoring Podman container", zap.String("id", c.ID))
 	pc.containersLock.Lock()
 	defer pc.containersLock.Unlock()

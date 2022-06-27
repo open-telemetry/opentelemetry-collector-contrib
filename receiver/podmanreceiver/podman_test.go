@@ -38,24 +38,24 @@ import (
 
 type MockClient struct {
 	PingF   func(context.Context) error
-	StatsF  func(context.Context, url.Values) ([]ContainerStats, error)
-	ListF   func(context.Context, url.Values) ([]Container, error)
-	EventsF func(context.Context, url.Values) (<-chan Event, <-chan error)
+	StatsF  func(context.Context, url.Values) ([]containerStats, error)
+	ListF   func(context.Context, url.Values) ([]container, error)
+	EventsF func(context.Context, url.Values) (<-chan event, <-chan error)
 }
 
 func (c *MockClient) ping(ctx context.Context) error {
 	return c.PingF(ctx)
 }
 
-func (c *MockClient) stats(ctx context.Context, options url.Values) ([]ContainerStats, error) {
+func (c *MockClient) stats(ctx context.Context, options url.Values) ([]containerStats, error) {
 	return c.StatsF(ctx, options)
 }
 
-func (c *MockClient) list(ctx context.Context, options url.Values) ([]Container, error) {
+func (c *MockClient) list(ctx context.Context, options url.Values) ([]container, error) {
 	return c.ListF(ctx, options)
 }
 
-func (c *MockClient) events(ctx context.Context, options url.Values) (<-chan Event, <-chan error) {
+func (c *MockClient) events(ctx context.Context, options url.Values) (<-chan event, <-chan error) {
 	return c.EventsF(ctx, options)
 }
 
@@ -63,13 +63,13 @@ var baseClient = MockClient{
 	PingF: func(context.Context) error {
 		return nil
 	},
-	StatsF: func(context.Context, url.Values) ([]ContainerStats, error) {
+	StatsF: func(context.Context, url.Values) ([]containerStats, error) {
 		return nil, nil
 	},
-	ListF: func(context.Context, url.Values) ([]Container, error) {
+	ListF: func(context.Context, url.Values) ([]container, error) {
 		return nil, nil
 	},
-	EventsF: func(context.Context, url.Values) (<-chan Event, <-chan error) {
+	EventsF: func(context.Context, url.Values) (<-chan event, <-chan error) {
 		return nil, nil
 	},
 }
@@ -87,17 +87,17 @@ func TestWatchingTimeouts(t *testing.T) {
 	client, err := newLibpodClient(zap.NewNop(), config)
 	assert.Nil(t, err)
 
-	cli := NewContainerScraper(client, zap.NewNop(), config)
+	cli := newContainerScraper(client, zap.NewNop(), config)
 	assert.NotNil(t, cli)
 
 	expectedError := "context deadline exceeded"
 
 	shouldHaveTaken := time.Now().Add(100 * time.Millisecond).UnixNano()
 
-	err = cli.LoadContainerList(context.Background())
+	err = cli.loadContainerList(context.Background())
 	require.Error(t, err)
 
-	container, err := cli.FetchContainerStats(context.Background(), Container{})
+	container, err := cli.fetchContainerStats(context.Background(), container{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedError)
 	assert.Empty(t, container)
@@ -135,10 +135,10 @@ func TestEventLoopHandlesError(t *testing.T) {
 	client, err := newLibpodClient(zap.NewNop(), config)
 	assert.Nil(t, err)
 
-	cli := NewContainerScraper(client, zap.New(observed), config)
+	cli := newContainerScraper(client, zap.New(observed), config)
 	assert.NotNil(t, cli)
 
-	go cli.ContainerEventLoop(context.Background())
+	go cli.containerEventLoop(context.Background())
 
 	assert.Eventually(t, func() bool {
 		for _, l := range logs.All() {
@@ -162,26 +162,26 @@ func TestEventLoopHandlesError(t *testing.T) {
 }
 
 func TestEventLoopHandles(t *testing.T) {
-	eventChan := make(chan Event)
+	eventChan := make(chan event)
 	errChan := make(chan error)
 
 	eventClient := baseClient
-	eventClient.EventsF = func(context.Context, url.Values) (<-chan Event, <-chan error) {
+	eventClient.EventsF = func(context.Context, url.Values) (<-chan event, <-chan error) {
 		return eventChan, errChan
 	}
-	eventClient.ListF = func(context.Context, url.Values) ([]Container, error) {
-		return []Container{{
+	eventClient.ListF = func(context.Context, url.Values) ([]container, error) {
+		return []container{{
 			ID: "c1",
 		}}, nil
 	}
 
-	cli := NewContainerScraper(&eventClient, zap.NewNop(), &Config{})
+	cli := newContainerScraper(&eventClient, zap.NewNop(), &Config{})
 	assert.NotNil(t, cli)
 
 	assert.Equal(t, 0, len(cli.containers))
 
-	go cli.ContainerEventLoop(context.Background())
-	eventChan <- Event{ID: "c1", Status: "start"}
+	go cli.containerEventLoop(context.Background())
+	eventChan <- event{ID: "c1", Status: "start"}
 
 	assert.Eventually(t, func() bool {
 		cli.containersLock.Lock()
@@ -189,7 +189,7 @@ func TestEventLoopHandles(t *testing.T) {
 		return assert.Equal(t, 1, len(cli.containers))
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 
-	eventChan <- Event{ID: "c1", Status: "died"}
+	eventChan <- event{ID: "c1", Status: "died"}
 
 	assert.Eventually(t, func() bool {
 		cli.containersLock.Lock()
@@ -200,18 +200,18 @@ func TestEventLoopHandles(t *testing.T) {
 
 func TestInspectAndPersistContainer(t *testing.T) {
 	inspectClient := baseClient
-	inspectClient.ListF = func(context.Context, url.Values) ([]Container, error) {
-		return []Container{{
+	inspectClient.ListF = func(context.Context, url.Values) ([]container, error) {
+		return []container{{
 			ID: "c1",
 		}}, nil
 	}
 
-	cli := NewContainerScraper(&inspectClient, zap.NewNop(), &Config{})
+	cli := newContainerScraper(&inspectClient, zap.NewNop(), &Config{})
 	assert.NotNil(t, cli)
 
 	assert.Equal(t, 0, len(cli.containers))
 
-	stats, ok := cli.InspectAndPersistContainer(context.Background(), "c1")
+	stats, ok := cli.inspectAndPersistContainer(context.Background(), "c1")
 	assert.True(t, ok)
 	assert.NotNil(t, stats)
 	assert.Equal(t, 1, len(cli.containers))

@@ -19,7 +19,7 @@ package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import "time"
 
-type Container struct {
+type container struct {
 	AutoRemove bool
 	Command    []string
 	Created    string
@@ -46,12 +46,12 @@ type Container struct {
 	Status     string
 }
 
-type Event struct {
+type event struct {
 	ID     string
 	Status string
 }
 
-type ContainerStats struct {
+type containerStats struct {
 	AvgCPU        float64
 	ContainerID   string
 	Name          string
@@ -73,13 +73,13 @@ type ContainerStats struct {
 	Duration      uint64
 }
 
-type ContainerStatsReportError struct {
+type containerStatsReportError struct {
 	Cause    string
 	Message  string
 	Response int64
 }
 
-type ContainerStatsReport struct {
-	Error ContainerStatsReportError
-	Stats []ContainerStats
+type containerStatsReport struct {
+	Error containerStatsReportError
+	Stats []containerStats
 }

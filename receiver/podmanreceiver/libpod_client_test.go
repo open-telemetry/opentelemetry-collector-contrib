@@ -81,7 +81,7 @@ func TestStats(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	expectedStats := ContainerStats{
+	expectedStats := containerStats{
 		AvgCPU:        42.04781177856639,
 		ContainerID:   "e6af5805edae6c950003abd5451808b277b67077e400f0a6f69d01af116ef014",
 		Name:          "charming_sutherland",
@@ -175,7 +175,7 @@ func TestList(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	expectedContainer := Container{
+	expectedContainer := container{
 
 		AutoRemove: false,
 		Command:    []string{"nginx", "-g", "daemon off;"},
@@ -248,13 +248,13 @@ func TestEvents(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	expectedEvents := []Event{
+	expectedEvents := []event{
 		{ID: "49a4c52afb06e6b36b2941422a0adf47421dbfbf40503dbe17bd56b4570b6681", Status: "start"},
 		{ID: "d5c43c6954e4bfe62170c75f9f18f81da644bd35bfd22dbfafda349192d4940a", Status: "died"},
 	}
 
 	events, errs := cli.events(context.Background(), nil)
-	var actualEvents []Event
+	var actualEvents []event
 
 loop:
 	for {

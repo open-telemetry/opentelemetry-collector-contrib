@@ -62,7 +62,7 @@ func (c *libpodClient) request(ctx context.Context, path string, params url.Valu
 	return c.conn.Do(req)
 }
 
-func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]ContainerStats, error) {
+func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]containerStats, error) {
 	resp, err := c.request(ctx, "/containers/stats", options)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]Contain
 		return nil, err
 	}
 
-	report := &ContainerStatsReport{}
+	report := &containerStatsReport{}
 	err = json.Unmarshal(bytes, report)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]Contain
 	return report.Stats, nil
 }
 
-func (c *libpodClient) list(ctx context.Context, options url.Values) ([]Container, error) {
+func (c *libpodClient) list(ctx context.Context, options url.Values) ([]container, error) {
 	resp, err := c.request(ctx, "/containers/json", options)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (c *libpodClient) list(ctx context.Context, options url.Values) ([]Containe
 		return nil, err
 	}
 
-	var report []Container
+	var report []container
 	err = json.Unmarshal(bytes, &report)
 	if err != nil {
 		return nil, err
@@ -120,9 +120,9 @@ func (c *libpodClient) ping(ctx context.Context) error {
 	return nil
 }
 
-// Events returns a stream of events. It's up to the caller to close the stream by cancelling the context.
-func (c *libpodClient) events(ctx context.Context, options url.Values) (<-chan Event, <-chan error) {
-	events := make(chan Event)
+// events returns a stream of events. It's up to the caller to close the stream by canceling the context.
+func (c *libpodClient) events(ctx context.Context, options url.Values) (<-chan event, <-chan error) {
+	events := make(chan event)
 	errs := make(chan error, 1)
 
 	started := make(chan struct{})
@@ -140,7 +140,7 @@ func (c *libpodClient) events(ctx context.Context, options url.Values) (<-chan E
 		dec := json.NewDecoder(resp.Body)
 		close(started)
 		for {
-			var e Event
+			var e event
 			select {
 			case <-ctx.Done():
 				errs <- ctx.Err()
