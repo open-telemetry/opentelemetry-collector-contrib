@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	model_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/pdata/v1"
+	model_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
 )
 
 // tracesUnmarshaller deserializes the message body.
