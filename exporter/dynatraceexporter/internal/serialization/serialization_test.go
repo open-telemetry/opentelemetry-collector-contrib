@@ -30,54 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-type simplifiedLogRecord struct {
-	message    string
-	attributes map[string]string
-}
-
-func makeSimplifiedLogRecordsFromObservedLogs(observedLogs *observer.ObservedLogs) []simplifiedLogRecord {
-	observedLogRecords := make([]simplifiedLogRecord, observedLogs.Len())
-
-	for i, observedLog := range observedLogs.All() {
-		contextStringMap := make(map[string]string, len(observedLog.ContextMap()))
-		for k, v := range observedLog.ContextMap() {
-			contextStringMap[k] = fmt.Sprint(v)
-		}
-		observedLogRecords[i] = simplifiedLogRecord{
-			message:    observedLog.Message,
-			attributes: contextStringMap,
-		}
-	}
-	return observedLogRecords
-}
-
-// tokenizes Dynatrace metric lines
-// this ensures that comparing metric lines can be done without
-// taking into account the order of dimensions, which does not matter
-// the first string contains the name, and the array contains all other tokens
-func tokenizeMetricLine(s string) (string, []string) {
-	tokens := strings.Split(s, " ")
-	if len(tokens) > 0 {
-		nameAndDims := strings.Split(tokens[0], ",")
-		if len(nameAndDims) > 0 {
-			name := nameAndDims[0]
-			result := nameAndDims[1:]
-			result = append(result, tokens[1:]...)
-			return name, result
-		}
-	}
-	return "", nil
-}
-
-// asserts that the metric name as well as the dimensions, value, and timestamps match, ignoring dimension order
-func assertMetricLineTokensEqual(t *testing.T, a string, b string) {
-	nameA, tokensA := tokenizeMetricLine(a)
-	nameB, tokensB := tokenizeMetricLine(b)
-
-	assert.Equal(t, nameA, nameB)
-	assert.ElementsMatch(t, tokensA, tokensB)
-}
-
 func TestSerializeMetric(t *testing.T) {
 	logger := zap.NewNop()
 	defaultDims := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("default", "value"))
@@ -178,4 +130,52 @@ func Test_makeCombinedDimensions(t *testing.T) {
 		}
 
 	assert.Equal(t, actual.Format(sortAndStringify), expected.Format(sortAndStringify))
+}
+
+type simplifiedLogRecord struct {
+	message    string
+	attributes map[string]string
+}
+
+func makeSimplifiedLogRecordsFromObservedLogs(observedLogs *observer.ObservedLogs) []simplifiedLogRecord {
+	observedLogRecords := make([]simplifiedLogRecord, observedLogs.Len())
+
+	for i, observedLog := range observedLogs.All() {
+		contextStringMap := make(map[string]string, len(observedLog.ContextMap()))
+		for k, v := range observedLog.ContextMap() {
+			contextStringMap[k] = fmt.Sprint(v)
+		}
+		observedLogRecords[i] = simplifiedLogRecord{
+			message:    observedLog.Message,
+			attributes: contextStringMap,
+		}
+	}
+	return observedLogRecords
+}
+
+// tokenizes Dynatrace metric lines
+// this ensures that comparing metric lines can be done without
+// taking into account the order of dimensions, which does not matter
+// the first string contains the name, and the array contains all other tokens
+func tokenizeMetricLine(s string) (string, []string) {
+	tokens := strings.Split(s, " ")
+	if len(tokens) > 0 {
+		nameAndDims := strings.Split(tokens[0], ",")
+		if len(nameAndDims) > 0 {
+			name := nameAndDims[0]
+			result := nameAndDims[1:]
+			result = append(result, tokens[1:]...)
+			return name, result
+		}
+	}
+	return "", nil
+}
+
+// asserts that the metric name as well as the dimensions, value, and timestamps match, ignoring dimension order
+func assertMetricLineTokensEqual(t *testing.T, a string, b string) {
+	nameA, tokensA := tokenizeMetricLine(a)
+	nameB, tokensB := tokenizeMetricLine(b)
+
+	assert.Equal(t, nameA, nameB)
+	assert.ElementsMatch(t, tokensA, tokensB)
 }
