@@ -71,7 +71,7 @@ func TestFillHostMetadata(t *testing.T) {
 		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
 	}
 
-	hostProvider, err := GetHostnameProvider(componenttest.NewNopTelemetrySettings(), "hostname")
+	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname")
 	require.NoError(t, err)
 
 	metadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
@@ -207,7 +207,7 @@ func TestPusher(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
-	hostProvider, err := GetHostnameProvider(componenttest.NewNopTelemetrySettings(), "")
+	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
 
 	attrs := testutils.NewAttributeMap(map[string]string{

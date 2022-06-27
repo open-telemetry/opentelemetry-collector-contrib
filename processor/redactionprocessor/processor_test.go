@@ -83,6 +83,67 @@ func TestRedactUnknownAttributes(t *testing.T) {
 	}
 }
 
+// TestAllowAllKeys validates that the processor does not delete
+// span attributes that are not the allowed keys list if Config.AllowAllKeys
+// is set to true
+func TestAllowAllKeys(t *testing.T) {
+	config := &Config{
+		AllowedKeys:  []string{"group", "id"},
+		AllowAllKeys: true,
+	}
+	allowed := map[string]pcommon.Value{
+		"group": pcommon.NewValueString("temporary"),
+		"id":    pcommon.NewValueInt(5),
+		"name":  pcommon.NewValueString("placeholder"),
+	}
+
+	library, span, next := runTest(t, allowed, nil, nil, config)
+
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
+	assert.Equal(t, span.Name(), firstOutILS.Spans().At(0).Name())
+	attr := firstOutILS.Spans().At(0).Attributes()
+	for k, v := range allowed {
+		val, ok := attr.Get(k)
+		assert.True(t, ok)
+		assert.True(t, v.Equal(val))
+	}
+	value, _ := attr.Get("name")
+	assert.Equal(t, "placeholder", value.StringVal())
+}
+
+// TestAllowAllKeysMaskValues validates that the processor still redacts
+// span attribute values if Config.AllowAllKeys is set to true
+func TestAllowAllKeysMaskValues(t *testing.T) {
+	config := &Config{
+		AllowedKeys:   []string{"group", "id", "name"},
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+		AllowAllKeys:  true,
+	}
+	allowed := map[string]pcommon.Value{
+		"group": pcommon.NewValueString("temporary"),
+		"id":    pcommon.NewValueInt(5),
+		"name":  pcommon.NewValueString("placeholder"),
+	}
+	masked := map[string]pcommon.Value{
+		"credit_card": pcommon.NewValueString("placeholder 4111111111111111"),
+	}
+
+	library, span, next := runTest(t, allowed, nil, masked, config)
+
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
+	assert.Equal(t, span.Name(), firstOutILS.Spans().At(0).Name())
+	attr := firstOutILS.Spans().At(0).Attributes()
+	for k, v := range allowed {
+		val, ok := attr.Get(k)
+		assert.True(t, ok)
+		assert.True(t, v.Equal(val))
+	}
+	value, _ := attr.Get("credit_card")
+	assert.Equal(t, "placeholder ****", value.StringVal())
+}
+
 // TODO: Test redaction with metric tags in a metrics PR
 
 // TestRedactSummaryDebug validates that the processor writes a verbose summary

@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 )
 
 const (
@@ -37,14 +38,14 @@ const (
 	testGCPIntegrationHostname = testHostName + "." + testCloudAccount
 )
 
-func TestHostnameFromAttributes(t *testing.T) {
+func TestSourceFromAttributes(t *testing.T) {
 	tests := []struct {
 		name       string
 		attrs      pcommon.Map
 		usePreview bool
 
-		ok       bool
-		hostname string
+		ok  bool
+		src source.Source
 	}{
 		{
 			name: "custom hostname",
@@ -56,16 +57,16 @@ func TestHostnameFromAttributes(t *testing.T) {
 				conventions.AttributeHostID:         testHostID,
 				conventions.AttributeHostName:       testHostName,
 			}),
-			ok:       true,
-			hostname: testCustomName,
+			ok:  true,
+			src: source.Source{Kind: source.HostnameKind, Identifier: testCustomName},
 		},
 		{
 			name: "container ID",
 			attrs: testutils.NewAttributeMap(map[string]string{
 				conventions.AttributeContainerID: testContainerID,
 			}),
-			ok:       true,
-			hostname: testContainerID,
+			ok:  true,
+			src: source.Source{Kind: source.HostnameKind, Identifier: testContainerID},
 		},
 		{
 			name: "container ID, preview",
@@ -81,8 +82,8 @@ func TestHostnameFromAttributes(t *testing.T) {
 				conventions.AttributeHostID:        testHostID,
 				conventions.AttributeHostName:      testHostName,
 			}),
-			ok:       true,
-			hostname: testHostName,
+			ok:  true,
+			src: source.Source{Kind: source.HostnameKind, Identifier: testHostName},
 		},
 		{
 			name: "AWS EC2, preview",
@@ -92,7 +93,7 @@ func TestHostnameFromAttributes(t *testing.T) {
 				conventions.AttributeHostName:      testHostName,
 			}),
 			ok:         true,
-			hostname:   testHostID,
+			src:        source.Source{Kind: source.HostnameKind, Identifier: testHostID},
 			usePreview: true,
 		},
 		{
@@ -105,8 +106,8 @@ func TestHostnameFromAttributes(t *testing.T) {
 				conventions.AttributeAWSECSTaskRevision: "example-task-revision",
 				conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
 			}),
-			ok:       true,
-			hostname: "",
+			ok:  true,
+			src: source.Source{Kind: source.AWSECSFargateKind, Identifier: "example-task-ARN"},
 		},
 		{
 			name: "GCP",
@@ -115,8 +116,8 @@ func TestHostnameFromAttributes(t *testing.T) {
 				conventions.AttributeHostID:        testHostID,
 				conventions.AttributeHostName:      testGCPHostname,
 			}),
-			ok:       true,
-			hostname: testGCPHostname,
+			ok:  true,
+			src: source.Source{Kind: source.HostnameKind, Identifier: testGCPHostname},
 		},
 		{
 			name: "GCP, preview",
@@ -128,7 +129,7 @@ func TestHostnameFromAttributes(t *testing.T) {
 			}),
 			usePreview: true,
 			ok:         true,
-			hostname:   testGCPIntegrationHostname,
+			src:        source.Source{Kind: source.HostnameKind, Identifier: testGCPIntegrationHostname},
 		},
 		{
 			name: "azure",
@@ -137,8 +138,8 @@ func TestHostnameFromAttributes(t *testing.T) {
 				conventions.AttributeHostID:        testHostID,
 				conventions.AttributeHostName:      testHostName,
 			}),
-			ok:       true,
-			hostname: testHostName,
+			ok:  true,
+			src: source.Source{Kind: source.HostnameKind, Identifier: testHostName},
 		},
 		{
 			name: "azure, preview",
@@ -149,7 +150,7 @@ func TestHostnameFromAttributes(t *testing.T) {
 			}),
 			usePreview: true,
 			ok:         true,
-			hostname:   testHostID,
+			src:        source.Source{Kind: source.HostnameKind, Identifier: testHostID},
 		},
 		{
 			name: "host id v. hostname",
@@ -157,8 +158,8 @@ func TestHostnameFromAttributes(t *testing.T) {
 				conventions.AttributeHostID:   testHostID,
 				conventions.AttributeHostName: testHostName,
 			}),
-			ok:       true,
-			hostname: testHostID,
+			ok:  true,
+			src: source.Source{Kind: source.HostnameKind, Identifier: testHostID},
 		},
 		{
 			name:  "no hostname",
@@ -174,9 +175,9 @@ func TestHostnameFromAttributes(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			hostname, ok := HostnameFromAttributes(testInstance.attrs, testInstance.usePreview)
+			source, ok := SourceFromAttributes(testInstance.attrs, testInstance.usePreview)
 			assert.Equal(t, testInstance.ok, ok)
-			assert.Equal(t, testInstance.hostname, hostname)
+			assert.Equal(t, testInstance.src, source)
 		})
 
 	}
@@ -224,7 +225,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostID:         testHostID,
 		conventions.AttributeHostName:       testHostName,
 	})
-	hostname, ok := HostnameFromAttributes(attrs, false)
+	hostname, ok := hostnameFromAttributes(attrs, false)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, "nodeName-clusterName")
 
@@ -235,7 +236,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostID:      testHostID,
 		conventions.AttributeHostName:    testHostName,
 	})
-	hostname, ok = HostnameFromAttributes(attrs, false)
+	hostname, ok = hostnameFromAttributes(attrs, false)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, "nodeName")
 
@@ -247,7 +248,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostName:      testHostName,
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 	})
-	hostname, ok = HostnameFromAttributes(attrs, false)
+	hostname, ok = hostnameFromAttributes(attrs, false)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, "nodeName")
 
@@ -259,7 +260,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostName:      testHostName,
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 	})
-	hostname, ok = HostnameFromAttributes(attrs, true)
+	hostname, ok = hostnameFromAttributes(attrs, true)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testHostID)
 
@@ -270,7 +271,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostID:         testHostID,
 		conventions.AttributeHostName:       testHostName,
 	})
-	hostname, ok = HostnameFromAttributes(attrs, false)
+	hostname, ok = hostnameFromAttributes(attrs, false)
 	assert.True(t, ok)
 	// cluster name gets ignored, fallback to next option
 	assert.Equal(t, hostname, testHostID)

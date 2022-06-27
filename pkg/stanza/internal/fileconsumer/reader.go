@@ -131,7 +131,13 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		r.fileInput.emit(ctx, r.fileAttributes, scanner.Bytes())
+		token, err := r.splitter.Encoding.Decode(scanner.Bytes())
+		if err != nil {
+			r.Errorw("decode: %w", zap.Error(err))
+		} else {
+			r.fileInput.emit(ctx, r.fileAttributes, token)
+		}
+
 		r.Offset = scanner.Pos()
 	}
 }

@@ -375,6 +375,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/pkg/translator/prometheus"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/pkg/translator/prometheusremotewrite"
     schedule:
       interval: "weekly"

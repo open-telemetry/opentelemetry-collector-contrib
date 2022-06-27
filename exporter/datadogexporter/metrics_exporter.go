@@ -33,8 +33,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
@@ -42,22 +42,22 @@ import (
 )
 
 type metricsExporter struct {
-	params       component.ExporterCreateSettings
-	cfg          *config.Config
-	ctx          context.Context
-	client       *datadog.Client
-	tr           *translator.Translator
-	scrubber     scrub.Scrubber
-	retrier      *utils.Retrier
-	onceMetadata *sync.Once
-	hostProvider provider.HostnameProvider
+	params         component.ExporterCreateSettings
+	cfg            *config.Config
+	ctx            context.Context
+	client         *datadog.Client
+	tr             *translator.Translator
+	scrubber       scrub.Scrubber
+	retrier        *utils.Retrier
+	onceMetadata   *sync.Once
+	sourceProvider source.Provider
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter config.
-func translatorFromConfig(logger *zap.Logger, cfg *config.Config, hostProvider provider.HostnameProvider) (*translator.Translator, error) {
+func translatorFromConfig(logger *zap.Logger, cfg *config.Config, sourceProvider source.Provider) (*translator.Translator, error) {
 	options := []translator.Option{
 		translator.WithDeltaTTL(cfg.Metrics.DeltaTTL),
-		translator.WithFallbackHostnameProvider(hostProvider),
+		translator.WithFallbackSourceProvider(sourceProvider),
 	}
 
 	if cfg.Metrics.HistConfig.SendCountSum {
@@ -73,7 +73,15 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config, hostProvider p
 		options = append(options, translator.WithResourceAttributesAsTags())
 	}
 
-	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags {
+	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags && cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
+		return nil, fmt.Errorf("cannot use both instrumentation_library_metadata_as_tags(deprecated) and instrumentation_scope_metadata_as_tags")
+	}
+
+	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags {
+		options = append(options, translator.WithInstrumentationScopeMetadataAsTags())
+	}
+
+	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
 		options = append(options, translator.WithInstrumentationLibraryMetadataAsTags())
 	}
 
@@ -96,7 +104,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config, hostProvider p
 	return translator.New(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, hostProvider provider.HostnameProvider) (*metricsExporter, error) {
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
@@ -105,22 +113,22 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		return nil, err
 	}
 
-	tr, err := translatorFromConfig(params.Logger, cfg, hostProvider)
+	tr, err := translatorFromConfig(params.Logger, cfg, sourceProvider)
 	if err != nil {
 		return nil, err
 	}
 
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
-		params:       params,
-		cfg:          cfg,
-		ctx:          ctx,
-		client:       client,
-		tr:           tr,
-		scrubber:     scrubber,
-		retrier:      utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
-		onceMetadata: onceMetadata,
-		hostProvider: hostProvider,
+		params:         params,
+		cfg:            cfg,
+		ctx:            ctx,
+		client:         client,
+		tr:             tr,
+		scrubber:       scrubber,
+		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		onceMetadata:   onceMetadata,
+		sourceProvider: sourceProvider,
 	}, nil
 }
 
@@ -168,7 +176,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.hostProvider, attrs)
+			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
 

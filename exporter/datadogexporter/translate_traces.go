@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
@@ -74,7 +75,7 @@ const (
 const AttributeExceptionEventName = "exception"
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td ptrace.Traces, fallbackHost string, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td ptrace.Traces, fallbackSrc source.Source, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -92,19 +93,20 @@ func convertToDatadogTd(td ptrace.Traces, fallbackHost string, cfg *config.Confi
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		host, ok := attributes.HostnameFromAttributes(rs.Resource().Attributes(), featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate))
+		src, ok := attributes.SourceFromAttributes(rs.Resource().Attributes(), featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate))
 		if !ok {
-			host = fallbackHost
+			src = fallbackSrc
 		}
 
-		if host != "" {
-			seenHosts[host] = struct{}{}
-		} else {
-			tags := attributes.RunningTagsFromAttributes(rs.Resource().Attributes())
-			for _, tag := range tags {
-				seenTags[tag] = struct{}{}
-			}
+		var host string
+		switch src.Kind {
+		case source.HostnameKind:
+			host = src.Identifier
+			seenHosts[src.Identifier] = struct{}{}
+		case source.AWSECSFargateKind:
+			seenTags[src.Tag()] = struct{}{}
 		}
+
 		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk, spanNameMap)
 
 		traces = append(traces, &payload)

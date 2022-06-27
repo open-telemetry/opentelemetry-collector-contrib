@@ -17,13 +17,13 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
-	"golang.org/x/text/encoding"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
+
+type toBodyFunc func([]byte) interface{}
 
 // Input is an operator that monitors files for entries
 type Input struct {
@@ -35,6 +35,8 @@ type Input struct {
 	FileNameField         entry.Field
 	FilePathResolvedField entry.Field
 	FileNameResolvedField entry.Field
+
+	toBody toBodyFunc
 }
 
 // Start will start the file monitoring process
@@ -52,18 +54,8 @@ func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, to
 	if len(token) == 0 {
 		return
 	}
-	var body interface{} = token
-	var err error
-	if f.fileConsumer.Encoding.Encoding != encoding.Nop {
-		// TODO push decode logic down to reader, so it can reuse decoder
-		body, err = f.fileConsumer.Encoding.Decode(token)
-		if err != nil {
-			f.Errorf("decode: %w", err)
-			return
-		}
-	}
 
-	ent, err := f.NewEntry(body)
+	ent, err := f.NewEntry(f.toBody(token))
 	if err != nil {
 		f.Errorf("create entry: %w", err)
 		return

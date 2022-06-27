@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package dbstorage
 
 import (
@@ -33,8 +36,11 @@ func TestExtensionIntegrity(t *testing.T) {
 	ctx := context.Background()
 	se := newTestExtension(t)
 	err := se.Start(context.Background(), componenttest.NewNopHost())
-	defer se.Shutdown(context.Background())
 	assert.NoError(t, err)
+	defer func() {
+		err = se.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	type mockComponent struct {
 		kind component.Kind
