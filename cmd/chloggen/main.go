@@ -26,11 +26,6 @@ import (
 )
 
 const (
-	changelogMD = "CHANGELOG.md"
-	chlogDir    = "changelog"
-	exampleYAML = "EXAMPLE.yaml"
-	tmpMD       = "changelog.tmp.MD"
-
 	breaking     = "breaking"
 	deprecation  = "deprecation"
 	newComponent = "new_component"
@@ -46,19 +41,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	newCmd := flag.NewFlagSet("new", flag.ExitOnError)
+	filename := newCmd.String("filename", "", "'filename' is required")
+
 	updateCmd := flag.NewFlagSet("preview", flag.ExitOnError)
 	version := updateCmd.String("version", "vTODO", "'version' will be rendered directly into the update text")
-	dry := updateCmd.Bool("dry", false, "dry will generate the update text and print to stdout")
+	dry := updateCmd.Bool("dry", false, "'dry' will generate the update text and print to stdout")
 
 	switch command := os.Args[1]; command {
+	case "new":
+		newCmd.Parse(os.Args[2:])
+		path := filepath.Join(defaultCtx.changelogDir, *filename)
+		if err := initialize(defaultCtx, path); err != nil {
+			fmt.Printf("FAIL: new: %v\n", err)
+			os.Exit(1)
+		}
 	case "validate":
-		if err := validate(); err != nil {
+		if err := validate(defaultCtx); err != nil {
 			fmt.Printf("FAIL: validate: %v\n", err)
 			os.Exit(1)
 		}
 	case "update":
 		updateCmd.Parse(os.Args[2:])
-		if err := update(*version, *dry); err != nil {
+		if err := update(defaultCtx, *version, *dry); err != nil {
 			fmt.Printf("FAIL: update: %v\n", err)
 			os.Exit(1)
 		}
@@ -69,12 +74,31 @@ func main() {
 }
 
 func usage() {
-	fmt.Println("usage: chloggen validate")
+	fmt.Println("usage: FILENAME=my-change chloggen new")
+	fmt.Println("       chloggen validate")
 	fmt.Println("       chloggen update [-version v0.55.0] [-dry]")
 }
 
-func validate() error {
-	entries, err := readEntries(false)
+func initialize(ctx chlogContext, path string) error {
+	switch ext := filepath.Ext(path); ext {
+	case ".yaml": // ok
+	case ".yml":
+		path = strings.TrimSuffix(path, ".yml") + ".yaml"
+	case "":
+		path = path + ".yaml"
+	default:
+		return fmt.Errorf("non-yaml extension: %s", ext)
+	}
+
+	templateBytes, err := os.ReadFile(defaultCtx.templateYAML)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, templateBytes, os.FileMode(0755))
+}
+
+func validate(ctx chlogContext) error {
+	entries, err := readEntries(ctx)
 	if err != nil {
 		return err
 	}
@@ -83,12 +107,12 @@ func validate() error {
 			return err
 		}
 	}
-	fmt.Printf("PASS: all files in ./%s/ are valid\n", chlogDir)
+	fmt.Printf("PASS: all files in ./%s/ are valid\n", ctx.changelogDir)
 	return nil
 }
 
-func update(version string, dry bool) error {
-	entries, err := readEntries(true)
+func update(ctx chlogContext, version string, dry bool) error {
+	entries, err := readEntries(ctx)
 	if err != nil {
 		return err
 	}
@@ -108,7 +132,7 @@ func update(version string, dry bool) error {
 		return nil
 	}
 
-	oldChlogBytes, err := os.ReadFile(changelogMD)
+	oldChlogBytes, err := os.ReadFile(ctx.changelogMD)
 	if err != nil {
 		return err
 	}
@@ -125,6 +149,7 @@ func update(version string, dry bool) error {
 	chlogBuilder.WriteString(chlogUpdate)
 	chlogBuilder.WriteString(chlogHistory)
 
+	tmpMD := ctx.changelogMD + ".tmp"
 	tmpChlogFile, err := os.Create(tmpMD)
 	if err != nil {
 		return err
@@ -133,28 +158,28 @@ func update(version string, dry bool) error {
 
 	tmpChlogFile.WriteString(chlogBuilder.String())
 
-	if err := os.Rename(tmpMD, changelogMD); err != nil {
+	if err := os.Rename(tmpMD, ctx.changelogMD); err != nil {
 		return err
 	}
 
-	fmt.Printf("Finished updating %s\n", changelogMD)
+	fmt.Printf("Finished updating %s\n", ctx.changelogMD)
 
-	return deleteEntries()
+	return deleteEntries(ctx)
 }
 
-func readEntries(excludeExample bool) ([]*Entry, error) {
-	entryFiles, err := filepath.Glob(filepath.Join(chlogDir, "*.yaml"))
+func readEntries(ctx chlogContext) ([]*Entry, error) {
+	entryYAMLs, err := filepath.Glob(filepath.Join(ctx.changelogDir, "*.yaml"))
 	if err != nil {
 		return nil, err
 	}
 
-	entries := make([]*Entry, 0, len(entryFiles))
-	for _, entryFile := range entryFiles {
-		if excludeExample && filepath.Base(entryFile) == exampleYAML {
+	entries := make([]*Entry, 0, len(entryYAMLs))
+	for _, entryYAML := range entryYAMLs {
+		if filepath.Base(entryYAML) == filepath.Base(ctx.templateYAML) {
 			continue
 		}
 
-		fileBytes, err := os.ReadFile(entryFile)
+		fileBytes, err := os.ReadFile(entryYAML)
 		if err != nil {
 			return nil, err
 		}
@@ -168,19 +193,19 @@ func readEntries(excludeExample bool) ([]*Entry, error) {
 	return entries, nil
 }
 
-func deleteEntries() error {
-	entryFiles, err := filepath.Glob(filepath.Join(chlogDir, "*.yaml"))
+func deleteEntries(ctx chlogContext) error {
+	entryYAMLs, err := filepath.Glob(filepath.Join(ctx.changelogDir, "*.yaml"))
 	if err != nil {
 		return err
 	}
 
-	for _, entryFile := range entryFiles {
-		if filepath.Base(entryFile) == exampleYAML {
+	for _, entryYAML := range entryYAMLs {
+		if filepath.Base(entryYAML) == filepath.Base(ctx.templateYAML) {
 			continue
 		}
 
-		if err := os.Remove(entryFile); err != nil {
-			fmt.Printf("Failed to delete: %s\n", entryFile)
+		if err := os.Remove(entryYAML); err != nil {
+			fmt.Printf("Failed to delete: %s\n", entryYAML)
 		}
 	}
 	return nil

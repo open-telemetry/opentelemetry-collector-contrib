@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"text/template"
 )
@@ -62,11 +61,7 @@ func generateSummary(version string, entries []*Entry) (string, error) {
 }
 
 func (s summary) String() (string, error) {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return "", fmt.Errorf("unable to find summary.tmpl")
-	}
-	summaryTmpl := filepath.Join(filepath.Dir(filename), "summary.tmpl")
+	summaryTmpl := filepath.Join(thisDir(), "summary.tmpl")
 
 	tmpl := template.Must(
 		template.

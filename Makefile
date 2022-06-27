@@ -262,6 +262,12 @@ generate:
 chlog-install:
 	cd cmd/chloggen && $(GOCMD) install .
 
+FILENAME?=$(shell git branch --show-current)
+.PHONY: chlog-new
+chlog-new: chlog-install
+	chloggen new -filename $(FILENAME).yaml
+	@echo "$(FILENAME).yaml has been created. Please fill in the details according to CONTRIBUTING.md"
+
 .PHONY: chlog-validate
 chlog-validate: chlog-install
 	chloggen validate
@@ -272,7 +278,7 @@ chlog-preview: chlog-install
 
 .PHONY: chlog-update
 chlog-update: chlog-install
-	chloggen update
+	chloggen update -version $(VERSION)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol

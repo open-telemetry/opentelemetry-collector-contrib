@@ -13,4 +13,3 @@ The following additional work should be considered:
 Code quality:
 - Tests
   - Golden files
-- Generation with go template

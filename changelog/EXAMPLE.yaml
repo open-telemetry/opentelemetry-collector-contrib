@@ -1,4 +1,0 @@
-change_type: enhancement # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-component: receiver/foo # Do not surround with backticks
-note: Add `foo` to `foo/bar`
-issues: [ 12345 ]
