@@ -27,9 +27,7 @@ import (
 )
 
 const (
-	containerNameLable = "io.kubernetes.container.name"
-	// TODO: https://github.com/containerd/cri/issues/922#issuecomment-423729537 the container name can be empty on containerd
-	infraContainerName = "POD"
+	containerNameLabel = "io.kubernetes.container.name"
 )
 
 func GetStats(info *cinfo.ContainerInfo) *cinfo.ContainerStats {
@@ -47,10 +45,12 @@ type CPUMemInfoProvider interface {
 
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
-	GetValue(*cinfo.ContainerInfo, CPUMemInfoProvider, string) []*CAdvisorMetric
+	GetValue(info *cinfo.ContainerInfo, CPUMemInfoProvider string) []*CAdvisorMetric
 }
 
 type CAdvisorMetric struct {
+	// source of the metric for debugging merge conflict
+	cgroupPath string
 	//key/value pairs that are typed and contain the metric (numerical) data
 	fields map[string]interface{}
 	//key/value string pairs that are used to identify the metrics
