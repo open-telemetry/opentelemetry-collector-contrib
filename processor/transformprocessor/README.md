@@ -1,11 +1,11 @@
 # Transform Processor
 
-| Status                   |                                                              |
-|--------------------------|--------------------------------------------------------------|
-| Stability                | [alpha]                                                      |
-| Supported pipeline types | traces, metrics, logs                                        |
-| Distributions            | [contrib]                                                    |
-| Warnings                 | [Identity Crisis, Unsound Transformations, Other](#warnings) |
+| Status                   |                                                                                    |
+|--------------------------|------------------------------------------------------------------------------------|
+| Stability                | [alpha]                                                                            |
+| Supported pipeline types | traces, metrics, logs                                                              |
+| Distributions            | [contrib]                                                                          |
+| Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 
 The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language).
 It takes a list of queries which are performed in the order specified in the config.
@@ -141,26 +141,11 @@ See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-
 
 The transform processor's implementation of the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language) (TQL) allows users to modify all aspects of their telemetry.  Some specific risks are listed below, but this is not an exhaustive list.  In general, understand your data before using the transform processor.  
 
-- [Identity Crisis](#identity-crisis): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
-- [Unsound Transformations](#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
+- [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
   - Although the TQL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.
-- [Orphaned Telemetry](#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs. 
+- [Identity Conflict](#https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
+- [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs. 
 - The `limit` function drops attributes at random.  If there are attributes that should never be dropped then this function should not be used.  [#9734](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9734)
-
-
-# Standard Warnings
-
-## Unsound Transformations
-Incorrect usage of the component may lead to telemetry data that is unsound i.e. not spec-compliant/meaningless.  This would most likely be caused by converting metric data types or creating new metrics from existing metrics.
-
-## Statefulness
-The component keeps state related to telemetry data and therefore needs all data from a producer to be sent to the same Collector instance to ensure a correct behavior. Examples of scenarios that require state would be computing/exporting delta metrics, tail-based sampling and grouping telemetry.  
-
-## Identity Crisis
-The component may change the ['identity' of a metric](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md#opentelemetry-protocol-data-model-producer-recommendations).  This could be down either by changing a metrics name, removing attributes, or updating existing attribute values.  Adding attributes to metrics is always safe and does not create an Identity Crisis.
-
-## Orphaned Telemetry
-The component modifies the incoming telemetry in such a way that a span becomes orphaned, that is, it contains a `trace_id` or `parent_span_id` that do not exist.  This may occur because the component can modify `span_id`, `trace_id`, or `parent_span_id` or because the component can delete telemetry.  
 
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
