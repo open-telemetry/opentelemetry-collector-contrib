@@ -49,16 +49,16 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 	return metricLines, nil
 }
 
-func makeCombinedDimensions(defaultDimensions dimensions.NormalizedDimensionList, labels pcommon.Map, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
-	dimsFromLabels := make([]dimensions.Dimension, 0, labels.Len())
+func makeCombinedDimensions(defaultDimensions dimensions.NormalizedDimensionList, dataPointAttributes pcommon.Map, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
+	dimsFromAttributes := make([]dimensions.Dimension, 0, dataPointAttributes.Len())
 
-	labels.Range(func(k string, v pcommon.Value) bool {
-		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v.AsString()))
+	dataPointAttributes.Range(func(k string, v pcommon.Value) bool {
+		dimsFromAttributes = append(dimsFromAttributes, dimensions.NewDimension(k, v.AsString()))
 		return true
 	})
 	return dimensions.MergeLists(
 		defaultDimensions,
-		dimensions.NewNormalizedDimensionList(dimsFromLabels...),
+		dimensions.NewNormalizedDimensionList(dimsFromAttributes...),
 		staticDimensions,
 	)
 }

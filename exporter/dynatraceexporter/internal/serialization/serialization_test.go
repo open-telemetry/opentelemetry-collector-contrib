@@ -151,19 +151,19 @@ func Test_makeCombinedDimensions(t *testing.T) {
 		dimensions.NewDimension("b", "default"),
 		dimensions.NewDimension("c", "default"),
 	)
-	labels := pcommon.NewMap()
-	labels.Insert("a", pcommon.NewValueString("label"))
-	labels.Insert("b", pcommon.NewValueString("label"))
+	attributes := pcommon.NewMap()
+	attributes.Insert("a", pcommon.NewValueString("attribute"))
+	attributes.Insert("b", pcommon.NewValueString("attribute"))
 	staticDims := dimensions.NewNormalizedDimensionList(
 		dimensions.NewDimension("a", "static"),
 	)
 	expected := dimensions.NewNormalizedDimensionList(
 		dimensions.NewDimension("a", "static"),
-		dimensions.NewDimension("b", "label"),
+		dimensions.NewDimension("b", "attribute"),
 		dimensions.NewDimension("c", "default"),
 	)
 
-	actual := makeCombinedDimensions(defaultDims, labels, staticDims)
+	actual := makeCombinedDimensions(defaultDims, attributes, staticDims)
 
 	sortAndStringify :=
 		func(dims []dimensions.Dimension) string {
