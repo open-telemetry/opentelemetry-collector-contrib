@@ -35,8 +35,5 @@ func getNewAndPolicy(logger *zap.Logger, config *AndCfg) (sampling.PolicyEvaluat
 
 // Return instance of and sub-policy
 func getAndSubPolicyEvaluator(logger *zap.Logger, cfg *AndSubPolicyCfg) (sampling.PolicyEvaluator, error) {
-	switch cfg.Type {
-	default:
-		return getSharedPolicyEvaluator(logger, &cfg.sharedPolicyCfg)
-	}
+	return getSharedPolicyEvaluator(logger, &cfg.sharedPolicyCfg)
 }
