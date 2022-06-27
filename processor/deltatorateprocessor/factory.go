@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 
 import (
@@ -57,7 +56,10 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
+	if err := processorConfig.Validate(); err != nil {
+		return nil, err
+	}
+
 	metricsProcessor := newDeltaToRateProcessor(processorConfig, params.Logger)
 
 	return processorhelper.NewMetricsProcessor(
