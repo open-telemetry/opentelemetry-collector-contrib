@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.40
+	github.com/aws/aws-sdk-go v1.44.42
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.54.0
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.7.5
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/semconv v0.54.0
 	go.uber.org/multierr v1.8.0
