@@ -17,6 +17,7 @@
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
+- `podmanreceiver`: Fetch containers stats one by one and add container image as metric attribute (#10421)
 
 ### 🧰 Bug fixes 🧰
 
@@ -123,7 +124,6 @@
 - `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
-- `podmanreceiver`: Fetch containers stats one by one and add container image as metric attribute (#10421)
 - `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
 - `dynatraceexporter`: Truncate unmarshalable responses to avoid long log lines (#10568)
 - `scrapertest`: Add `IgnoreResourceAttributeValue` option to metric comparison (#10828)
