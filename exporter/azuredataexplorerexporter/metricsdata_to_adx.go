@@ -26,10 +26,6 @@ const (
 	sumdescription = "(Sum total of samples)"
 	// Count used in summary , histogram and also in exponential histogram
 	countdescription = "(Count of samples)"
-	// Scope name
-	scopename = "scope.name"
-	// Scope version
-	scopeversion = "scope.version"
 )
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
@@ -295,11 +291,7 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 			scopemetric := scopeMetrics.At(j)
 			metrics := scopemetric.Metrics()
 			// get details of the scope from the scope metric
-			scopenameval := scopemetric.Scope().Name()
-			scopeversionval := scopemetric.Scope().Version()
-			scopeAttr := make(map[string]interface{}, 2)
-			scopeAttr[scopename] = scopenameval
-			scopeAttr[scopeversion] = scopeversionval
+			scopeAttr := getScopeMap(scopemetric.Scope())
 			for k := 0; k < metrics.Len(); k++ {
 				transformedadxmetrics = append(transformedadxmetrics, mapToAdxMetric(res, metrics.At(k), scopeAttr, logger)...)
 			}

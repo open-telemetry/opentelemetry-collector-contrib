@@ -20,11 +20,6 @@ func Test_mapToAdxLog(t *testing.T) {
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
 
-	scpMap := map[string]string{
-		"name":    "testscope",
-		"version": "1.0",
-	}
-
 	spanId := [8]byte{0, 0, 0, 0, 0, 0, 0, 50}
 	traceId := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}
 
@@ -57,16 +52,16 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			expectedAdxLogs: []*AdxLog{
 				{
-					Timestamp:            tstr,
-					ObservedTimestamp:    tstr,
-					SpanId:               "0000000000000032",
-					TraceId:              "00000000000000000000000000000064",
-					Body:                 "mylogsample",
-					SeverityText:         "DEBUG",
-					SeverityNumber:       int32(plog.SeverityNumberDEBUG),
-					ResourceAttributes:   tmap,
-					InstrumentationScope: scpMap,
-					LogsAttributes:       newMapFromAttr(`{"test":"value"}`),
+					Timestamp:          tstr,
+					ObservedTimestamp:  tstr,
+					SpanId:             "0000000000000032",
+					TraceId:            "00000000000000000000000000000064",
+					Body:               "mylogsample",
+					SeverityText:       "DEBUG",
+					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
+					ResourceAttributes: tmap,
+
+					LogsAttributes: newMapFromAttr(`{"test":"value", "scope.name":"testscope", "scope.version":"1.0"}`),
 				},
 			},
 		},
@@ -90,14 +85,14 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			expectedAdxLogs: []*AdxLog{
 				{
-					Timestamp:            tstr,
-					ObservedTimestamp:    tstr,
-					SpanId:               "0000000000000032",
-					TraceId:              "00000000000000000000000000000064",
-					Body:                 "mylogsample",
-					ResourceAttributes:   tmap,
-					InstrumentationScope: scpMap,
-					LogsAttributes:       newMapFromAttr(`{"test":"value"}`),
+					Timestamp:          tstr,
+					ObservedTimestamp:  tstr,
+					SpanId:             "0000000000000032",
+					TraceId:            "00000000000000000000000000000064",
+					Body:               "mylogsample",
+					ResourceAttributes: tmap,
+
+					LogsAttributes: newMapFromAttr(`{"test":"value", "scope.name":"testscope", "scope.version":"1.0"}`),
 				},
 			},
 		},
@@ -122,15 +117,15 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			expectedAdxLogs: []*AdxLog{
 				{
-					Timestamp:            tstr,
-					ObservedTimestamp:    tstr,
-					SpanId:               "0000000000000032",
-					TraceId:              "00000000000000000000000000000064",
-					SeverityText:         "DEBUG",
-					SeverityNumber:       int32(plog.SeverityNumberDEBUG),
-					ResourceAttributes:   tmap,
-					InstrumentationScope: scpMap,
-					LogsAttributes:       newMapFromAttr(`{"test":"value"}`),
+					Timestamp:          tstr,
+					ObservedTimestamp:  tstr,
+					SpanId:             "0000000000000032",
+					TraceId:            "00000000000000000000000000000064",
+					SeverityText:       "DEBUG",
+					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
+					ResourceAttributes: tmap,
+
+					LogsAttributes: newMapFromAttr(`{"test":"value", "scope.name":"testscope", "scope.version":"1.0"}`),
 				},
 			},
 		},
@@ -160,16 +155,16 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			expectedAdxLogs: []*AdxLog{
 				{
-					Timestamp:            tstr,
-					ObservedTimestamp:    tstr,
-					SpanId:               "0000000000000032",
-					TraceId:              "00000000000000000000000000000064",
-					Body:                 `{"23":45,"foo":"bar"}`,
-					SeverityText:         "DEBUG",
-					SeverityNumber:       int32(plog.SeverityNumberDEBUG),
-					ResourceAttributes:   tmap,
-					InstrumentationScope: scpMap,
-					LogsAttributes:       newMapFromAttr(`{"test":"value"}`),
+					Timestamp:          tstr,
+					ObservedTimestamp:  tstr,
+					SpanId:             "0000000000000032",
+					TraceId:            "00000000000000000000000000000064",
+					Body:               `{"23":45,"foo":"bar"}`,
+					SeverityText:       "DEBUG",
+					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
+					ResourceAttributes: tmap,
+
+					LogsAttributes: newMapFromAttr(`{"test":"value", "scope.name":"testscope", "scope.version":"1.0"}`),
 				},
 			},
 		},
@@ -183,11 +178,10 @@ func Test_mapToAdxLog(t *testing.T) {
 			logScopeFn:    pcommon.NewInstrumentationScope,
 			expectedAdxLogs: []*AdxLog{
 				{
-					Timestamp:            defaultTime,
-					ObservedTimestamp:    defaultTime,
-					ResourceAttributes:   map[string]interface{}{},
-					InstrumentationScope: map[string]string{},
-					LogsAttributes:       map[string]interface{}{},
+					Timestamp:          defaultTime,
+					ObservedTimestamp:  defaultTime,
+					ResourceAttributes: map[string]interface{}{},
+					LogsAttributes:     map[string]interface{}{},
 				},
 			},
 		},

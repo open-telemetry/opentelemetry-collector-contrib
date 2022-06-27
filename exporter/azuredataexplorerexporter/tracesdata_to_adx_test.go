@@ -19,11 +19,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
 
-	scpMap := map[string]string{
-		"name":    "testscope",
-		"version": "1.0",
-	}
-
 	spanId := [8]byte{0, 0, 0, 0, 0, 0, 0, 50}
 	traceId := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}
 
@@ -57,19 +52,18 @@ func Test_mapToAdxTrace(t *testing.T) {
 				return newScopeWithData()
 			},
 			expectedAdxTrace: &AdxTrace{
-				TraceId:              "00000000000000000000000000000064",
-				SpanId:               "0000000000000032",
-				ParentId:             "",
-				SpanName:             "spanname",
-				SpanStatus:           "STATUS_CODE_UNSET",
-				SpanKind:             "SPAN_KIND_SERVER",
-				StartTime:            tstr,
-				EndTime:              tstr,
-				ResourceAttributes:   tmap,
-				InstrumentationScope: scpMap,
-				TraceAttributes:      newMapFromAttr(`{"traceAttribKey":"traceAttribVal"}`),
-				Events:               getEmptyEvents(),
-				Links:                getEmptyLinks(),
+				TraceId:            "00000000000000000000000000000064",
+				SpanId:             "0000000000000032",
+				ParentId:           "",
+				SpanName:           "spanname",
+				SpanStatus:         "STATUS_CODE_UNSET",
+				SpanKind:           "SPAN_KIND_SERVER",
+				StartTime:          tstr,
+				EndTime:            tstr,
+				ResourceAttributes: tmap,
+				TraceAttributes:    newMapFromAttr(`{"traceAttribKey":"traceAttribVal", "scope.name":"testscope", "scope.version":"1.0"}`),
+				Events:             getEmptyEvents(),
+				Links:              getEmptyLinks(),
 			},
 		}, {
 			name: "No data",
@@ -83,15 +77,14 @@ func Test_mapToAdxTrace(t *testing.T) {
 				return newScopeWithData()
 			},
 			expectedAdxTrace: &AdxTrace{
-				SpanStatus:           "STATUS_CODE_UNSET",
-				SpanKind:             "SPAN_KIND_UNSPECIFIED",
-				StartTime:            defaultTime,
-				EndTime:              defaultTime,
-				InstrumentationScope: scpMap,
-				ResourceAttributes:   newMapFromAttr(`{}`),
-				TraceAttributes:      newMapFromAttr(`{}`),
-				Events:               getEmptyEvents(),
-				Links:                getEmptyLinks(),
+				SpanStatus:         "STATUS_CODE_UNSET",
+				SpanKind:           "SPAN_KIND_UNSPECIFIED",
+				StartTime:          defaultTime,
+				EndTime:            defaultTime,
+				ResourceAttributes: newMapFromAttr(`{}`),
+				TraceAttributes:    newMapFromAttr(`{"scope.name":"testscope", "scope.version":"1.0"}`),
+				Events:             getEmptyEvents(),
+				Links:              getEmptyLinks(),
 			},
 		}, {
 			name: "with_events_links",
@@ -125,17 +118,16 @@ func Test_mapToAdxTrace(t *testing.T) {
 				return newScopeWithData()
 			},
 			expectedAdxTrace: &AdxTrace{
-				TraceId:              "00000000000000000000000000000064",
-				SpanId:               "0000000000000032",
-				ParentId:             "",
-				SpanName:             "spanname",
-				SpanStatus:           "STATUS_CODE_UNSET",
-				SpanKind:             "SPAN_KIND_SERVER",
-				StartTime:            tstr,
-				EndTime:              tstr,
-				ResourceAttributes:   tmap,
-				InstrumentationScope: scpMap,
-				TraceAttributes:      newMapFromAttr(`{"traceAttribKey":"traceAttribVal"}`),
+				TraceId:            "00000000000000000000000000000064",
+				SpanId:             "0000000000000032",
+				ParentId:           "",
+				SpanName:           "spanname",
+				SpanStatus:         "STATUS_CODE_UNSET",
+				SpanKind:           "SPAN_KIND_SERVER",
+				StartTime:          tstr,
+				EndTime:            tstr,
+				ResourceAttributes: tmap,
+				TraceAttributes:    newMapFromAttr(`{"traceAttribKey":"traceAttribVal", "scope.name":"testscope", "scope.version":"1.0"}`),
 				Events: []*Event{
 					{
 						EventName:       "eventName",

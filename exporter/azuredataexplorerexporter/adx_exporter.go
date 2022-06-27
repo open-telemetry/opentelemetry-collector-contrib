@@ -43,6 +43,13 @@ type adxDataProducer struct {
 
 var nextline = []byte("\n")
 
+const (
+	// Scope name
+	scopename = "scope.name"
+	// Scope version
+	scopeversion = "scope.version"
+)
+
 // given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
 	metricsbytearray := make([]byte, 0)
@@ -242,14 +249,14 @@ func createQueuedIngester(config *Config, adxclient *kusto.Client, tablename str
 	return ingester, err
 }
 
-func getScopeMap(sc pcommon.InstrumentationScope) map[string]string {
-	scopeMap := map[string]string{}
+func getScopeMap(sc pcommon.InstrumentationScope) map[string]interface{} {
+	scopeMap := make(map[string]interface{}, 2)
 
 	if sc.Name() != "" {
-		scopeMap["name"] = sc.Name()
+		scopeMap[scopename] = sc.Name()
 	}
 	if sc.Version() != "" {
-		scopeMap["version"] = sc.Version()
+		scopeMap[scopeversion] = sc.Version()
 	}
 
 	return scopeMap
