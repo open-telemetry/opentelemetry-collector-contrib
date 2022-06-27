@@ -121,28 +121,30 @@ All spans
 1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `name` to the `http.route` attribute if it is set
-2) Replace the value of an attribute named `http.target` with `/user/{userId}/list/{listId}` if the value matched `/user/*/list/*`
-4) Limit all span attributes such that each span has no more than 100 attributes.
-5) Limit all resource attributes such that each resource no more than 100 attributes.
-6) Truncate all span attributes such that no string value has more than 4096 characters.
-7) Truncate all resource attributes such that no string value has more than 4096 characters.
+4) Replace the value of an attribute named `http.target` with `/user/{userId}/list/{listId}` if the value matched `/user/*/list/*`
+5) Update the value of an attribute named `process.command_line`, by replacing any substrings that match the regex `password\\=[^\\s]*(\\s?)` with `password=***`
+6) Limit all span attributes such that each span has no more than 100 attributes.
+7) Limit all resource attributes such that each resource no more than 100 attributes.
+8) Truncate all span attributes such that no string value has more than 4096 characters.
+9) Truncate all resource attributes such that no string value has more than 4096 characters.
 
 All metrics and their data points
 
 1) Set metric description to "Sum" if the metric type is "Sum"
 2) Keep only the `host.name` resource attributes
-4) Limit all data point attributes such that each data point has no more than 100 attributes.
-6) Truncate all data point attributes such that no string value has more than 4096 characters.
-7) Truncate all resource attributes such that no string value has more than 4096 characters.
-8) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
-9) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
+3) Limit all data point attributes such that each data point has no more than 100 attributes.
+4) Truncate all data point attributes such that no string value has more than 4096 characters.
+5) Truncate all resource attributes such that no string value has more than 4096 characters.
+6) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
+7) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
 
 All logs
 
 1) Set severity text to FAIL if the body contains a string text "request failed"
 2) Replace any attribute value that matches `/user/*/list/*` with `/user/{userId}/list/{listId}`
-3) Set `body` to the `http.route` attribute if it is set
-4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+3) Update the value of any attribute, by replacing any substrings that match the regex `/account/\\d{4}` with `/account/{accountId}`
+4) Set `body` to the `http.route` attribute if it is set
+5) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
 ## Contributing
  <!-- markdown-link-check-disable-next-line -->
