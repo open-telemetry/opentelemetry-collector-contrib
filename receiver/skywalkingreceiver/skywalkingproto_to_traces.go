@@ -16,9 +16,9 @@ package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"encoding/binary"
-	"reflect"
+	"encoding/hex"
+	"strings"
 	"time"
-	"unsafe"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -60,7 +60,7 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 	}
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
-	swSpansToSpanSlice(segment.GetTraceId(), swSpans, il.Spans())
+	swSpansToSpanSlice(segment.GetTraceId(), segment.GetTraceSegmentId(), swSpans, il.Spans())
 
 	return traceData
 }
@@ -86,7 +86,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 	}
 }
 
-func swSpansToSpanSlice(traceID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
+func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
 	if len(spans) == 0 {
 		return
 	}
@@ -96,17 +96,19 @@ func swSpansToSpanSlice(traceID string, spans []*agentV3.SpanObject, dest ptrace
 		if span == nil {
 			continue
 		}
-		swSpanToSpan(traceID, span, dest.AppendEmpty())
+		swSpanToSpan(traceID, segmentID, span, dest.AppendEmpty())
 	}
 }
 
-func swSpanToSpan(traceID string, span *agentV3.SpanObject, dest ptrace.Span) {
+func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
 	dest.SetTraceID(stringToTraceID(traceID))
-	dest.SetSpanID(uInt32ToSpanID(uint32(span.GetSpanId())))
+	// skywalking defines segmentId + spanId as unique identifier
+	// so use segmentId to convert to an unique otel-span
+	dest.SetSpanID(segmentIDToSpanID(segmentID, uint32(span.GetSpanId())))
 
 	// parent spanid = -1, means(root span) no parent span in skywalking,so just make otlp's parent span id empty.
 	if span.ParentSpanId != -1 {
-		dest.SetParentSpanID(uInt32ToSpanID(uint32(span.GetParentSpanId())))
+		dest.SetParentSpanID(segmentIDToSpanID(segmentID, uint32(span.GetParentSpanId())))
 	}
 
 	dest.SetName(span.OperationName)
@@ -155,7 +157,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 	for _, ref := range refs {
 		link := dest.AppendEmpty()
 		link.SetTraceID(stringToTraceID(ref.TraceId))
-		link.SetSpanID(stringToParentSpanID(ref.ParentTraceSegmentId))
+		link.SetSpanID(segmentIDToSpanID(ref.ParentTraceSegmentId, uint32(ref.ParentSpanId)))
 		link.SetTraceState("")
 		kvParis := []*common.KeyStringValuePair{
 			{
@@ -236,37 +238,68 @@ func microsecondsToTimestamp(ms int64) pcommon.Timestamp {
 }
 
 func stringToTraceID(traceID string) pcommon.TraceID {
-	return pcommon.NewTraceID(unsafeStringToBytes(traceID))
+	dst, err := stringTo16Bytes(&traceID)
+	if err != nil {
+		return pcommon.InvalidTraceID()
+	}
+	return pcommon.NewTraceID(dst)
 }
 
-func stringToParentSpanID(traceID string) pcommon.SpanID {
-	return pcommon.NewSpanID(unsafeStringTo8Bytes(traceID))
+func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
+	if i := strings.LastIndexByte(segmentID, '.'); i >= 0 && i+1 < len(segmentID) {
+		segmentID = segmentID[i+1:]
+	}
+	segments, err := stringTo8Bytes(&segmentID)
+	if err != nil {
+		return pcommon.InvalidSpanID()
+	}
+	binary.PutUvarint(segments[:], uint64(spanID))
+	return pcommon.NewSpanID(segments)
 }
 
-// uInt32ToSpanID converts the uint64 representation of a SpanID to pcommon.SpanID.
-func uInt32ToSpanID(id uint32) pcommon.SpanID {
-	spanID := [8]byte{}
-	binary.BigEndian.PutUint32(spanID[:], id)
-	return pcommon.NewSpanID(spanID)
+func stringTo16Bytes(s *string) ([16]byte, error) {
+	var dst [16]byte
+	var mid [32]byte
+	h := stringToHexBytes(s)
+	copy(mid[:], h)
+	_, err := hex.Decode(dst[:], mid[:])
+	if err != nil {
+		return dst, err
+	}
+	return dst, nil
 }
 
-func unsafeStringToBytes(s string) [16]byte {
-	p := unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&s)).Data)
-
-	var b [16]byte
-	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	hdr.Data = uintptr(p)
-	hdr.Cap = len(s)
-	hdr.Len = len(s)
-	return b
+func stringTo8Bytes(s *string) ([8]byte, error) {
+	var dst [8]byte
+	var mid [16]byte
+	copy(mid[:], ([]byte(*s)))
+	_, err := hex.Decode(dst[:], mid[:])
+	if err != nil {
+		return dst, err
+	}
+	return dst, nil
 }
 
-func unsafeStringTo8Bytes(s string) [8]byte {
-	p := unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&s)).Data)
-	var b [8]byte
-	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	hdr.Data = uintptr(p)
-	hdr.Cap = len(s)
-	hdr.Len = len(s)
-	return b
+// hex table:
+// 48-57: 0-9
+// 65-70: a-f
+// 97-102: A-F
+func stringToHexBytes(s *string) []byte {
+	src := make([]byte, 0, len(*s))
+	for i := 0; i < len(*s); i++ {
+		r := (*s)[i]
+		switch {
+		case r < 48:
+			fallthrough
+		case r > 57 && r < 65:
+			fallthrough
+		case r > 70 && r < 97:
+			fallthrough
+		case r > 102:
+			// if 'r' is not a hex digit, drop it
+			continue
+		}
+		src = append(src, r)
+	}
+	return src
 }
