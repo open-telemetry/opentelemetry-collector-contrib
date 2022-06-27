@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
+// nolint:errcheck
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
@@ -359,8 +359,8 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
 		flags := dest.Flags()
-		flags = flags & 0xFFFFFF00
-		flags = flags | uint32(ent.TraceFlags[0])
+		flags &= 0xFFFFFF00
+		flags |= uint32(ent.TraceFlags[0])
 		dest.SetFlags(flags)
 	}
 }
@@ -374,7 +374,7 @@ func insertToAttributeVal(value interface{}, dest pcommon.Value) {
 	case []string:
 		toStringArray(t).CopyTo(dest)
 	case []byte:
-		dest.SetMBytesVal(t)
+		dest.SetBytesVal(pcommon.NewImmutableByteSlice(t))
 	case int64:
 		dest.SetIntVal(t)
 	case int32:
@@ -427,7 +427,7 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pcommon.Map) {
 			arr := toStringArray(t)
 			dest.Insert(k, arr)
 		case []byte:
-			dest.InsertMBytes(k, t)
+			dest.InsertBytes(k, pcommon.NewImmutableByteSlice(t))
 		case int64:
 			dest.InsertInt(k, t)
 		case int32:
