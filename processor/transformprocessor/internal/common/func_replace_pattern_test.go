@@ -129,7 +129,6 @@ func Test_replacePattern_get_nil(t *testing.T) {
 	exprFunc(ctx)
 }
 
-
 func Test_replacePatterns_invalid_pattern(t *testing.T) {
 	target := &testGetSetter{
 		getter: func(ctx TransformContext) interface{} {
