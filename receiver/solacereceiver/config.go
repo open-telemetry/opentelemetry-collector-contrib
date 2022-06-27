@@ -46,7 +46,7 @@ type Config struct {
 	// The maximum number of unacknowledged messages the Solace broker can transmit, to configure AMQP Link
 	MaxUnacked uint32 `mapstructure:"max_unacknowledged"`
 
-	Transport Transport `mapstructure:"transport"`
+	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	Auth Authentication `mapstructure:"auth"`
 }
@@ -60,10 +60,6 @@ func (cfg *Config) Validate() error {
 		return errMissingQueueName
 	}
 	return nil
-}
-
-type Transport struct {
-	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }
 
 // Authentication defines authentication strategies.

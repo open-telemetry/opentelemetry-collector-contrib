@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 	}, primary.Auth)
 	assert.Equal(t, "queue://#trace-profile123", primary.Queue)
 	assert.Equal(t, uint32(1234), primary.MaxUnacked)
-	assert.Equal(t, Transport{TLS: configtls.TLSClientSetting{Insecure: false, InsecureSkipVerify: false}}, primary.Transport)
+	assert.Equal(t, configtls.TLSClientSetting{Insecure: false, InsecureSkipVerify: false}, primary.TLS)
 
 	// validate backup config
 	backup := cfg.Receivers[config.NewComponentIDWithName(componentType, "backup")].(*Config)
@@ -64,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 	}, backup.Auth)
 	assert.Equal(t, "queue://#trace-profileABC", backup.Queue)
 	assert.Equal(t, defaultMaxUnaked, backup.MaxUnacked)
-	assert.Equal(t, Transport{TLS: configtls.TLSClientSetting{Insecure: true, InsecureSkipVerify: false}}, backup.Transport)
+	assert.Equal(t, configtls.TLSClientSetting{Insecure: true, InsecureSkipVerify: false}, backup.TLS)
 }
 
 func TestLoadInvalidConfigMissingAuth(t *testing.T) {

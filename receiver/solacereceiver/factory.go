@@ -47,11 +47,9 @@ func createDefaultConfig() config.Receiver {
 		Broker:           []string{defaultHost},
 		MaxUnacked:       defaultMaxUnaked,
 		Auth:             Authentication{},
-		Transport: Transport{
-			TLS: configtls.TLSClientSetting{
-				InsecureSkipVerify: false,
-				Insecure:           false,
-			},
+		TLS: configtls.TLSClientSetting{
+			InsecureSkipVerify: false,
+			Insecure:           false,
 		},
 	}
 }

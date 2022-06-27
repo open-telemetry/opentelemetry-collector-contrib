@@ -13,9 +13,8 @@ receivers:
         username: otel
         bearer: otel01$
     queue: queue://#trace-profileABC
-    transport:
-      tls:
-        insecure: true
+    tls:
+      insecure: true
 
 
 processors:
