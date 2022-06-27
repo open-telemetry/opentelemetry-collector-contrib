@@ -228,12 +228,12 @@ type processDetails struct {
 func collectProcessDetails(proc *process.Process) (*processDetails, error) {
 	name, err := proc.Name()
 	if err != nil {
-		return nil, fmt.Errorf("could not get process name: %v", err)
+		return nil, fmt.Errorf("could not get process name: %w", err)
 	}
 
 	args, err := proc.Cmdline()
 	if err != nil {
-		return nil, fmt.Errorf("could not get process args: %v", err)
+		return nil, fmt.Errorf("could not get process args: %w", err)
 	}
 
 	return &processDetails{

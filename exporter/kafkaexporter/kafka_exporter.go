@@ -16,6 +16,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Shopify/sarama"
@@ -53,9 +54,10 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) 
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		if value, ok := err.(sarama.ProducerErrors); ok {
-			if len(value) > 0 {
-				return kafkaErrors{len(value), value[0].Err.Error()}
+		var prodErr sarama.ProducerErrors
+		if errors.As(err, &prodErr) {
+			if len(prodErr) > 0 {
+				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err
@@ -82,9 +84,10 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.M
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		if value, ok := err.(sarama.ProducerErrors); ok {
-			if len(value) > 0 {
-				return kafkaErrors{len(value), value[0].Err.Error()}
+		var prodErr sarama.ProducerErrors
+		if errors.As(err, &prodErr) {
+			if len(prodErr) > 0 {
+				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err
@@ -111,9 +114,10 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) erro
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		if value, ok := err.(sarama.ProducerErrors); ok {
-			if len(value) > 0 {
-				return kafkaErrors{len(value), value[0].Err.Error()}
+		var prodErr sarama.ProducerErrors
+		if errors.As(err, &prodErr) {
+			if len(prodErr) > 0 {
+				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err

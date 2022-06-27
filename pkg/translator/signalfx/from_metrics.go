@@ -140,7 +140,7 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension, promCompatible bool) []*sfxpb.DataPoint {
 	var numDPs int
 	for i := 0; i < in.Len(); i++ {
-		numDPs += 2 + len(in.At(i).MBucketCounts())
+		numDPs += 2 + in.At(i).BucketCounts().Len()
 	}
 	dps := newDpsBuilder(numDPs)
 
@@ -161,12 +161,12 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 		sum := histDP.Sum()
 		sumDP.Value.DoubleValue = &sum
 
-		bounds := histDP.MExplicitBounds()
-		counts := histDP.MBucketCounts()
+		bounds := histDP.ExplicitBounds()
+		counts := histDP.BucketCounts()
 
 		// Spec says counts is optional but if present it must have one more
 		// element than the bounds array.
-		if len(counts) > 0 && len(counts) != len(bounds)+1 {
+		if counts.Len() > 0 && counts.Len() != bounds.Len()+1 {
 			continue
 		}
 
@@ -176,11 +176,11 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 			bdKey = prometheusBucketDimensionKey
 		}
 		var val uint64
-		for j, c := range counts {
-			val += c
+		for j := 0; j < counts.Len(); j++ {
+			val += counts.At(j)
 			bound := infinityBoundSFxDimValue
-			if j < len(bounds) {
-				bound = float64ToDimValue(bounds[j])
+			if j < bounds.Len() {
+				bound = float64ToDimValue(bounds.At(j))
 			}
 			cloneDim := make([]*sfxpb.Dimension, len(dims)+1)
 			copy(cloneDim, dims)

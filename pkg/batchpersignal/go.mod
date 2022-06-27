@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersig
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/pdata v0.52.0
+	github.com/stretchr/testify v1.7.4
+	go.opentelemetry.io/collector/pdata v0.54.0
 )
 
 require (
@@ -21,5 +21,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

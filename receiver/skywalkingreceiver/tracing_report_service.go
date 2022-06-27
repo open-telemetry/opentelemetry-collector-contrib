@@ -16,6 +16,7 @@ package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -34,7 +35,7 @@ func (s *traceSegmentReportService) Collect(stream agent.TraceSegmentReportServi
 	for {
 		segmentObject, err := stream.Recv()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return stream.SendAndClose(&common.Commands{})
 			}
 			return err
