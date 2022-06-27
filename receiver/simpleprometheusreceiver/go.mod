@@ -8,7 +8,6 @@ require (
 	github.com/prometheus/prometheus v0.36.2
 	github.com/stretchr/testify v1.7.4
 	go.opentelemetry.io/collector v0.54.0
-	go.uber.org/zap v1.21.0
 	k8s.io/client-go v0.24.2
 )
 
@@ -120,6 +119,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
+	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect

@@ -24,7 +24,6 @@
 
 ### Unmaintained components
 
-- `simpleprometheusreceiver`(#11133)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
 - `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
