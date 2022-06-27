@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 type portpair struct {
@@ -108,4 +109,14 @@ func createExclusionsList(t testing.TB, exclusionsText string) []portpair {
 		}
 	}
 	return exclusions
+}
+
+// Force the state of feature gate for a test
+// usage: defer SetFeatureGateForTest("gateName", true)()
+func SetFeatureGateForTest(gate string, enabled bool) func() {
+	originalValue := featuregate.GetRegistry().IsEnabled(gate)
+	featuregate.GetRegistry().Apply(map[string]bool{gate: enabled})
+	return func() {
+		featuregate.GetRegistry().Apply(map[string]bool{gate: originalValue})
+	}
 }

@@ -1,5 +1,11 @@
 # SignalFx Receiver
 
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [stable]      |
+| Supported pipeline types | metrics, logs |
+| Distributions            | [contrib]     |
+
 The SignalFx receiver accepts:
 
 - Metrics in the [SignalFx proto
@@ -9,8 +15,6 @@ format](https://github.com/signalfx/com_signalfx_metrics_protobuf/blob/master/pr
 More information about sending custom events can be found in the [SignalFx
 Developers
 Guide](https://developers.signalfx.com/ingest_data_reference.html#tag/Send-Custom-Events).
-
-Supported pipeline types: logs, metrics
 
 ## Configuration
 
@@ -63,3 +67,6 @@ service:
       processors: [memory_limiter, batch]
       exporters: [signalfx]
 ```
+
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

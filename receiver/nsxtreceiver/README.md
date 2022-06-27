@@ -1,8 +1,13 @@
 # NSX-T Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 This receiver fetches metrics important to run virtual networking using NSX-T. The receiver ingests metrics via the [NSX Rest API](https://docs.vmware.com/en/VMware-NSX-Data-Center-for-vSphere/6.4/nsx_64_api.pdf).
 
-Supported pipeline types: `metrics`
 
 > :construction: This receiver is in **ALPHA**. Configuration fields and metric data model are subject to change.
 
@@ -64,3 +69,6 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

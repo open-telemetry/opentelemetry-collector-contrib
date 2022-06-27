@@ -247,12 +247,12 @@ func TestSpan_Matching_True(t *testing.T) {
 
 func TestServiceNameForResource(t *testing.T) {
 	td := testdata.GenerateTracesOneSpanNoResource()
-	require.Equal(t, serviceNameForResource(td.ResourceSpans().At(0).Resource()), "<nil-service-name>")
+	name := serviceNameForResource(td.ResourceSpans().At(0).Resource())
+	require.Equal(t, name, "<nil-service-name>")
 
 	td = testdata.GenerateTracesOneSpan()
 	resource := td.ResourceSpans().At(0).Resource()
-	require.Equal(t, serviceNameForResource(resource), "<nil-service-name>")
+	name = serviceNameForResource(resource)
+	require.Equal(t, name, "<nil-service-name>")
 
-	resource.Attributes().InsertString(conventions.AttributeServiceName, "test-service")
-	require.Equal(t, serviceNameForResource(resource), "test-service")
 }

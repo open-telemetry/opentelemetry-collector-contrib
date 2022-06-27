@@ -286,7 +286,7 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 func accessDroppedAttributesCount() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(plog.LogRecord).DroppedAttributesCount()
+			return int64(ctx.GetItem().(plog.LogRecord).DroppedAttributesCount())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -299,7 +299,7 @@ func accessDroppedAttributesCount() pathGetSetter {
 func accessFlags() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(plog.LogRecord).Flags()
+			return int64(ctx.GetItem().(plog.LogRecord).Flags())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -315,10 +315,8 @@ func accessTraceID() pathGetSetter {
 			return ctx.GetItem().(plog.LogRecord).TraceID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				if traceID, err := common.ParseTraceID(str); err == nil {
-					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
-				}
+			if newTraceID, ok := val.(pcommon.TraceID); ok {
+				ctx.GetItem().(plog.LogRecord).SetTraceID(newTraceID)
 			}
 		},
 	}
@@ -330,10 +328,8 @@ func accessSpanID() pathGetSetter {
 			return ctx.GetItem().(plog.LogRecord).SpanID()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				if spanID, err := common.ParseSpanID(str); err == nil {
-					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
-				}
+			if newSpanID, ok := val.(pcommon.SpanID); ok {
+				ctx.GetItem().(plog.LogRecord).SetSpanID(newSpanID)
 			}
 		},
 	}
@@ -378,7 +374,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case float64:
 		attrs.UpsertDouble(mapKey, v)
 	case []byte:
-		attrs.UpsertMBytes(mapKey, v)
+		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
 	case []string:
 		arr := pcommon.NewValueSlice()
 		for _, str := range v {
@@ -406,7 +402,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case [][]byte:
 		arr := pcommon.NewValueSlice()
 		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetMBytesVal(b)
+			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
 		}
 		attrs.Upsert(mapKey, arr)
 	default:
@@ -425,7 +421,7 @@ func setValue(value pcommon.Value, val interface{}) {
 	case float64:
 		value.SetDoubleVal(v)
 	case []byte:
-		value.SetMBytesVal(v)
+		value.SetBytesVal(pcommon.NewImmutableByteSlice(v))
 	case []string:
 		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
 			return true
@@ -459,7 +455,7 @@ func setValue(value pcommon.Value, val interface{}) {
 			return true
 		})
 		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetMBytesVal(b)
+			value.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
 		}
 	default:
 		// TODO(anuraaga): Support set of map type.

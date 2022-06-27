@@ -19,11 +19,12 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 
 	"go.uber.org/zap"
 )
 
-var _ provider.HostnameProvider = (*Provider)(nil)
+var _ source.Provider = (*Provider)(nil)
 
 type Provider struct {
 	logger              *zap.Logger
@@ -32,19 +33,19 @@ type Provider struct {
 }
 
 // Hostname returns the Kubernetes node name followed by the cluster name if available.
-func (p *Provider) Hostname(ctx context.Context) (string, error) {
+func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	nodeName, err := p.nodeNameProvider.NodeName(ctx)
 	if err != nil {
-		return "", fmt.Errorf("node name not available: %w", err)
+		return source.Source{}, fmt.Errorf("node name not available: %w", err)
 	}
 
 	clusterName, err := p.clusterNameProvider.ClusterName(ctx)
 	if err != nil {
 		p.logger.Debug("failed to get valid cluster name", zap.Error(err))
-		return nodeName, nil
+		return source.Source{Kind: source.HostnameKind, Identifier: nodeName}, nil
 	}
 
-	return fmt.Sprintf("%s-%s", nodeName, clusterName), nil
+	return source.Source{Kind: source.HostnameKind, Identifier: fmt.Sprintf("%s-%s", nodeName, clusterName)}, nil
 }
 
 // NewProvider creates a new Kubernetes hostname provider.
