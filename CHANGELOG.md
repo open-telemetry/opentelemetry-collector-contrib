@@ -11,6 +11,8 @@
 
 ### 🚀 New components 🚀
 
+- `solacereceiver`: Add Solace receiver to receive trace data from a Solace PubSub+ Event Broker. (#10572)
+
 ### 💡 Enhancements 💡
 
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
