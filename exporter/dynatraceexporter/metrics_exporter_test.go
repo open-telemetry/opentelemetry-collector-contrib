@@ -115,8 +115,8 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetMExplicitBounds([]float64{0, 2, 4, 8})
-	doubleHistogramDataPoint.SetMBucketCounts([]uint64{0, 1, 0, 1, 0})
+	doubleHistogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
+	doubleHistogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 0}))
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
 	doubleHistogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 

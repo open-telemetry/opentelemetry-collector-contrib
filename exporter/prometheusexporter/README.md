@@ -40,6 +40,10 @@ exporters:
       enabled: true
 ```
 
+## Metric names and labels normalization
+
+OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

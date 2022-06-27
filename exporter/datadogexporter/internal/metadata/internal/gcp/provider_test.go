@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
+
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,6 +57,10 @@ func (m *mockDetector) GCEHostName() (string, error) {
 	return m.instanceName, nil
 }
 
+func (m *mockDetector) GKEClusterName() (string, error) {
+	return "", fmt.Errorf("not available")
+}
+
 func TestProvider(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -83,9 +89,10 @@ func TestProvider(t *testing.T) {
 				instanceName: testInstance.instanceName,
 			}}
 
-			hostname, err := provider.Hostname(context.Background())
+			src, err := provider.Source(context.Background())
 			require.NoError(t, err)
-			assert.Equal(t, testInstance.hostname, hostname)
+			assert.Equal(t, source.HostnameKind, src.Kind)
+			assert.Equal(t, testInstance.hostname, src.Identifier)
 		})
 	}
 }

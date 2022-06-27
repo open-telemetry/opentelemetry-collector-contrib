@@ -1,29 +1,102 @@
 # Changelog
 
 ## Unreleased
-
+- `filterprocessor`: Ability to filter `Spans` (#6341)
+- 
 ## 🛑 Breaking changes 🛑
+
+- `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
 
 ### 🚩 Deprecations 🚩
 
+### 🚀 New components 🚀
+
+### 💡 Enhancements 💡
+
+- `flinkmetricsreceiver`: add attribute values to metadata #11520
+- `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
+- `saphanareceiver`: Fix component memory query, add better error handling (#11507)
+- `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
+- `internal/scrapertest` Add sortation functions for scrapertest (#10837)
+
+### 🧰 Bug fixes 🧰
+
+- `redactionprocessor`: respect allow_all_keys configuration (#11542)
+
+### Unmaintained components
+
+- `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
+- `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
+- `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
+
+### 🧰 Bug fixes 🧰
+
+- `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
+
+## v0.54.0
+
+## 🛑 Breaking changes 🛑
+
+- `transformprocessor`: `metric.is_monotonic` is now accessed via a bool literal instead of a string. (#10473)
+- `vcenterreceiver`: Changed the attribute `effective` on `vcenter.cluster.host.count` as it will now be reported as a bool rather than a string (#10914)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `instrumentation_library_metadata_as_tags` (#11135)
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
+- `observiqexporter`: Deprecate the observiq exporter (#10977)
+- `honeycombexporter`: Deprecate honeycomb exporter (#10318)
 
 ### 🚀 New components 🚀
 
 - `expvarreceiver`: Include `expvarreceiver` in components (#10847)
 - `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
+- `googlemanagedprometheusexporter` The Google Managed Service for Prometheus exporter is alpha. (#10925)
 
 ### 💡 Enhancements 💡
 
+- `tailsamplingprocessor`: Add trace_state policy (#10852)
+- `mongodbatlasreceiver` Add support for receiving alerts (#10854)
+- `cmd/mdatagen`: Allow attribute values of any types (#9245)
+- `metricstransformprocessor`: Migrate the processor from OC to pdata (#10817)
+  - This behavior can be reverted by disabling the `processor.metricstransformprocessor.UseOTLPDataModel` feature gate.
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
+- `transformprocessor`: Add Summary transform functions. (#11041)
+- `transformprocessor`: Add nil literal to the grammar. (#11150)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
+- `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
+- `datadogexporter`: Add `exporter.datadog.hostname.preview` feature flag and related warnings (#10926)
+- `datadogexporter`: Add `instrumentation_scope_metadata_as_tags` instead of `instrumentation_library_metadata_as_tags` in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0 (#11135)
 - `examples`: Add an example for scraping Couchbase metrics (#10894)
-- `internal/scrapertest` Add sortation functions for scrapertest (#10837)
+- `filestorageextension`: Add background compaction capability (#9327)
+- `googlecloudpubsubreceiver`: Added new `Endpoint` and `Insecure` connection configuration options. (#10845)
+- `dynatraceexporter`: Provide better estimated summaries for partial histograms. (#11044)
+- `mongodbreceiver`: Add integration test for mongodb receiver (#10864)
+- `mezmoexporter`: add logging for HTTP errors (#10875)
+- `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
+- `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
+- `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
+- `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
+- `transformprocessor`: Allow using trace_state with key-value struct (#11029)
 
 ### 🧰 Bug fixes 🧰
 
 - `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
+- `transformprocessor`: Fix issue where some trace fields were not working correctly in conditions. (#10471)
+- `transformprocessor`: Fix issue where some log fields were not working correctly in conditions. (#10903)
+- `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
+- `windowseventlogreceiver`: Fixed example config in readme (#10971)
+- `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
+- `exporter/awsemfexporter:`: Fix dead links in README.md. (#11027)
+- `googlecloudexporter`: Fix (self-obs) point_count metric calculation, concurrent map write panic, and dropped log attributes (#11051)
+- `signalfxexporter`: Event Type is a required field, if not set, set it to `unknown` to prevent signalfx ingest from dropping it (#11121)
+- `prometheusreceiver`: validate that combined metric points (e.g. histograms) have the same timestamp (#9385)
+- `splunkhecexporter`: Fix flaky test when exporting traces (#11418)
+- `mongodbatlasexporter`: Fix mongodbatlas.system.memory.usage.max not being reported (#11126)
+- `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
+- `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
 
 ## v0.53.0
 
@@ -42,6 +115,7 @@
 - `vcenterreceiver`: Add metrics receiver for new vcenterreceiver component (#9224)
 - `googlecloudpubsubreceiver` Activate the Google Cloud Pubsub receiver. (#10580)
 - `googlecloudpubsubexporter` Activate the Google Cloud Pubsub exporter. (#10580)
+- `aerospikereceiver`: Add implementation of Aerospike Metric Receiver. (#9961)
 
 ### 💡 Enhancements 💡
 
@@ -78,6 +152,7 @@
 
 ### 🚀 New components 🚀
 
+- `aerospikereceiver`: Add implementation of Aerospike Metrics Receiver (#9961)
 - `bigipreceiver`: Add implementation of F5 Big-IP Metric Receiver (#9680)
 - `expvarreceiver`: Initial work for a receiver designed to scrape `memstats` from Golang applications. (#9747)
 - `mezmoexporter`: Add implementation of Mezmo Log exporter (#9743)
@@ -93,6 +168,7 @@
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
 - `resourcedetectionprocessor`: Add "cname" and "lookup" hostname sources
 - `jmxreceiver`: Communicate with JMX metrics gatherer subprocess via properties file (#9685)
+- `pkg/stanza`: make multiline tests more like integration tests #10353 
 
 ### 🧰 Bug fixes 🧰
 
@@ -2084,15 +2160,15 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### Receivers
 
-| Traces | Metrics |
-|:-------:|:-------:|
-| Jaeger Legacy | Carbon |
-| SAPM (SignalFx APM) | Collectd |
-| Zipkin Scribe | K8s Cluster |
-| | Redis |
-| |  SignalFx |
-| | Simple Prometheus |
-| | Wavefront |
+|       Traces        |      Metrics      |
+| :-----------------: | :---------------: |
+|    Jaeger Legacy    |      Carbon       |
+| SAPM (SignalFx APM) |     Collectd      |
+|    Zipkin Scribe    |    K8s Cluster    |
+|                     |       Redis       |
+|                     |     SignalFx      |
+|                     | Simple Prometheus |
+|                     |     Wavefront     |
 
 ### Processors
 
@@ -2100,18 +2176,18 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### Exporters
 
-| Commercial | Community |
-|:------------:|:-----------:|
-| Alibaba Cloud Log Service | Carbon |
-| AWS X-ray | Elastic |
-| Azure Monitor | Jaeger Thrift |
-| Honeycomb | Kinesis |
-| Lightstep |
-| New Relic |
-| SAPM (SignalFx APM) |
-| SignalFx (Metrics) |
-| Splunk HEC |
-| Stackdriver (Google) |
+|        Commercial         |   Community   |
+| :-----------------------: | :-----------: |
+| Alibaba Cloud Log Service |    Carbon     |
+|         AWS X-ray         |    Elastic    |
+|       Azure Monitor       | Jaeger Thrift |
+|         Honeycomb         |    Kinesis    |
+|         Lightstep         |
+|         New Relic         |
+|    SAPM (SignalFx APM)    |
+|    SignalFx (Metrics)     |
+|        Splunk HEC         |
+|   Stackdriver (Google)    |
 
 ### Extensions
 

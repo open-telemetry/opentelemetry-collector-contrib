@@ -16,7 +16,6 @@ package router
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -29,8 +28,7 @@ import (
 )
 
 func TestTransformer(t *testing.T) {
-	os.Setenv("TEST_ROUTER_OPERATOR_ENV", "foo")
-	defer os.Unsetenv("TEST_ROUTER_OPERATOR_ENV")
+	t.Setenv("TEST_ROUTER_OPERATOR_ENV", "foo")
 
 	basicConfig := func() *Config {
 		return &Config{

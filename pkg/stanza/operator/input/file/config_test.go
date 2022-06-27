@@ -492,7 +492,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := defaultCfg()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "utf-16le"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
 				return cfg
 			}(),
 		},
@@ -501,7 +501,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := defaultCfg()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "UTF-16lE"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
 				return cfg
 			}(),
 		},
@@ -539,10 +539,8 @@ func TestBuild(t *testing.T) {
 			require.NoError,
 			func(t *testing.T, f *Input) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
 				require.Equal(t, f.FilePathField, entry.NewNilField())
 				require.Equal(t, f.FileNameField, entry.NewAttributeField("log.file.name"))
-				require.Equal(t, f.PollInterval, 10*time.Millisecond)
 			},
 		},
 		{
@@ -598,7 +596,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Encoding = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
 			},
 			require.Error,
 			nil,
@@ -684,7 +682,7 @@ func NewTestConfig() *Config {
 		LineEndPattern:   "end",
 	}
 	cfg.FingerprintSize = 1024
-	cfg.Encoding = helper.EncodingConfig{Encoding: "utf16"}
+	cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf16"}
 	return cfg
 }
 

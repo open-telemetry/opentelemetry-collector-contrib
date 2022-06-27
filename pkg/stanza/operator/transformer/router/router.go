@@ -169,7 +169,7 @@ func (p *Transformer) SetOutputs(operators []operator.Operator) error {
 	for _, route := range p.routes {
 		outputOperators, err := p.findOperators(operators, route.OutputIDs)
 		if err != nil {
-			return fmt.Errorf("failed to set outputs on route: %s", err)
+			return fmt.Errorf("failed to set outputs on route: %w", err)
 		}
 		route.OutputOperators = outputOperators
 	}

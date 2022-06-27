@@ -114,13 +114,13 @@ func (e *Input) Start(persister operator.Persister) error {
 
 	if offsetXML != "" {
 		if err := e.bookmark.Open(offsetXML); err != nil {
-			return fmt.Errorf("failed to open bookmark: %s", err)
+			return fmt.Errorf("failed to open bookmark: %w", err)
 		}
 	}
 
 	e.subscription = NewSubscription()
 	if err := e.subscription.Open(e.channel, e.startAt, e.bookmark); err != nil {
-		return fmt.Errorf("failed to open subscription: %s", err)
+		return fmt.Errorf("failed to open subscription: %w", err)
 	}
 
 	e.wg.Add(1)
@@ -134,11 +134,11 @@ func (e *Input) Stop() error {
 	e.wg.Wait()
 
 	if err := e.subscription.Close(); err != nil {
-		return fmt.Errorf("failed to close subscription: %s", err)
+		return fmt.Errorf("failed to close subscription: %w", err)
 	}
 
 	if err := e.bookmark.Close(); err != nil {
-		return fmt.Errorf("failed to close bookmark: %s", err)
+		return fmt.Errorf("failed to close bookmark: %w", err)
 	}
 
 	return nil

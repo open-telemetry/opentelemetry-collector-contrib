@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
+// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -481,7 +481,7 @@ func simpleLogWithoutID() plog.Logs {
 
 type mockLogsExporter struct {
 	component.Component
-	ConsumeLogsFn func(ctx context.Context, ld plog.Logs) error
+	consumelogsfn func(ctx context.Context, ld plog.Logs) error
 }
 
 func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
@@ -489,10 +489,10 @@ func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	if e.ConsumeLogsFn == nil {
+	if e.consumelogsfn == nil {
 		return nil
 	}
-	return e.ConsumeLogsFn(ctx, ld)
+	return e.consumelogsfn(ctx, ld)
 }
 
 type mockComponent struct {
@@ -500,17 +500,17 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
-func newMockLogsExporter(ConsumeLogsFn func(ctx context.Context, ld plog.Logs) error) component.LogsExporter {
+func newMockLogsExporter(consumelogsfn func(ctx context.Context, ld plog.Logs) error) component.LogsExporter {
 	return &mockLogsExporter{
 		Component:     mockComponent{},
-		ConsumeLogsFn: ConsumeLogsFn,
+		consumelogsfn: consumelogsfn,
 	}
 }
 
 func newNopMockLogsExporter() component.LogsExporter {
 	return &mockLogsExporter{
 		Component: mockComponent{},
-		ConsumeLogsFn: func(ctx context.Context, ld plog.Logs) error {
+		consumelogsfn: func(ctx context.Context, ld plog.Logs) error {
 			return nil
 		},
 	}

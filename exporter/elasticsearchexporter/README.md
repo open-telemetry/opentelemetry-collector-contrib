@@ -66,7 +66,8 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   verifying the server's identity, if TLS is enabled.
 - `cert_file` (optional): Client TLS certificate.
 - `key_file` (optional): Client TLS key.
-- `insecure` (optional): Disable verification of the server's identity, if TLS
+- `insecure` (optional): In gRPC when set to true, this is used to disable the client transport security. In HTTP, this disables verifying the server's certificate chain and host name.
+- `insecure_skip_verify` (optional): Will enable TLS but not verify the certificate.
   is enabled.
 
 ### Node Discovery

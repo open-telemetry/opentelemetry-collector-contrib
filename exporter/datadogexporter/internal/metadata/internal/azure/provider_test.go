@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 
 	"github.com/stretchr/testify/assert"
@@ -32,12 +33,17 @@ func TestProvider(t *testing.T) {
 		VMID:              "vmID",
 		VMSize:            "vmSize",
 		SubscriptionID:    "subscriptionID",
-		ResourceGroupName: "resourceGroup",
+		ResourceGroupName: "MC_aks-kenafeh_aks-kenafeh-eu_westeurope",
 		VMScaleSetName:    "myScaleset",
 	}, nil)
 
 	provider := &Provider{detector: mp}
-	hostname, err := provider.Hostname(context.Background())
+	src, err := provider.Source(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, "vmID", hostname)
+	assert.Equal(t, source.HostnameKind, src.Kind)
+	assert.Equal(t, "vmID", src.Identifier)
+
+	clusterName, err := provider.ClusterName(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "aks-kenafeh-eu", clusterName)
 }

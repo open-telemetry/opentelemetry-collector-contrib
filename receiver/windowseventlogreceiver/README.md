@@ -44,8 +44,9 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 
 Configuration:
 ```yaml
-- type: windowseventlog
-  channel: application
+receivers:
+    windowseventlog:
+        channel: application
 ```
 
 Output entry sample:

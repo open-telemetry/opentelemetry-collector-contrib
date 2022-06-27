@@ -149,6 +149,7 @@ rpc_duration_seconds_count 1000 %v
 // - Start_timestamp should get reset if current scrape has lower value than previous scrape
 
 func TestHonorTimeStampsWithTrue(t *testing.T) {
+	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10356")
 	setMetricsTimestamp()
 	targets := []*testData{
 		{

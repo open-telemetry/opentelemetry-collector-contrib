@@ -110,7 +110,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	url, err := cfg.getURL()
 	if err != nil {
-		return nil, fmt.Errorf(`invalid "endpoint": %v`, err)
+		return nil, fmt.Errorf(`invalid "endpoint": %w`, err)
 	}
 
 	return &exporterOptions{
