@@ -29,6 +29,7 @@ const (
 	managedingesttype = "managed"
 	queuedingesttest  = "queued"
 	unknown           = "unknown"
+	metricsType       = 1
 )
 
 // Creates a factory for the ADX Exporter
@@ -70,7 +71,7 @@ func createMetricsExporter(
 	}
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	amp, err := newMetricsExporter(adxCfg, set.Logger)
+	amp, err := newExporter(adxCfg, set.Logger, metricsType)
 
 	if err != nil {
 		return nil, err

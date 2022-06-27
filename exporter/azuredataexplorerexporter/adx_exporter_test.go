@@ -39,7 +39,7 @@ func TestNewExporter_err_version(t *testing.T) {
 		Database:       "not-configured",
 		RawMetricTable: "not-configured",
 	}
-	texp, err := newMetricsExporter(&c, logger)
+	texp, err := newExporter(&c, logger, metricsType)
 	assert.Error(t, err)
 	assert.Nil(t, texp)
 }
@@ -52,7 +52,7 @@ func TestMetricsDataPusher(t *testing.T) {
 	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower("RawMetrics")), ingest.MultiJSON)
 	managedstreamingingest, _ := ingest.NewManaged(kustoclient, "testDB", "RawMetrics")
 
-	adxMetricsProducer := &adxMetricsProducer{
+	adxMetricsProducer := &adxDataProducer{
 		client:        kustoclient,
 		managedingest: managedstreamingingest,
 		ingestoptions: ingestoptions,
@@ -73,7 +73,7 @@ func TestClose(t *testing.T) {
 	ingestoptions[1] = ingest.IngestionMappingRef(fmt.Sprintf("%s_mapping", strings.ToLower("RawMetrics")), ingest.MultiJSON)
 	managedstreamingingest, _ := ingest.NewManaged(kustoclient, "testDB", "RawMetrics")
 
-	adxMetricsProducer := &adxMetricsProducer{
+	adxMetricsProducer := &adxDataProducer{
 		client:        kustoclient,
 		managedingest: managedstreamingingest,
 		ingestoptions: ingestoptions,
