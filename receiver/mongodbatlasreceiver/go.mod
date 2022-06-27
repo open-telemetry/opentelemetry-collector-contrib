@@ -8,7 +8,7 @@ require (
 	github.com/mongodb-forks/digest v1.0.4
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/atlas v0.16.0
-	go.opentelemetry.io/collector v0.53.0
+	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/zap v1.21.0
 )
 
@@ -47,6 +47,6 @@ require (
 
 require (
 	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector/pdata v0.53.0
+	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
 	go.uber.org/multierr v1.8.0 // indirect
 )

@@ -101,7 +101,13 @@ func TestBallastMemory(t *testing.T) {
 				&testbed.PerfTestValidator{},
 				performanceResultsSummary,
 				testbed.WithSkipResults(),
-				testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxRAM: test.maxRSS}),
+				testbed.WithResourceLimits(
+					testbed.ResourceSpec{
+						ExpectedMaxRAM:         test.maxRSS,
+						ResourceCheckPeriod:    time.Second,
+						MaxConsecutiveFailures: 3,
+					},
+				),
 			)
 			tc.StartAgent()
 

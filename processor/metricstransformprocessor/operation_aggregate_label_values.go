@@ -19,6 +19,8 @@ import (
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
@@ -95,4 +97,25 @@ func (mtp *metricsTransformProcessor) newLabelValuesAsKey(labelIdx int, timeseri
 		}
 	}
 	return key, newLabelValues
+}
+
+// aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
+func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) {
+	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+		val, ok := attrs.Get(mtpOp.configOperation.Label)
+		if !ok {
+			return true
+		}
+
+		if _, ok := mtpOp.aggregatedValuesSet[val.StringVal()]; ok {
+			val.SetStringVal(mtpOp.configOperation.NewValue)
+		}
+		return true
+	})
+
+	newMetric := pmetric.NewMetric()
+	copyMetricDetails(metric, newMetric)
+	ag := groupDataPoints(metric, aggGroups{})
+	mergeDataPoints(newMetric, mtpOp.configOperation.AggregationType, ag)
+	newMetric.MoveTo(metric)
 }

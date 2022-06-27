@@ -147,6 +147,5 @@ The transform processor's implementation of the [Telemetry Query Language](https
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs. 
 - The `limit` function drops attributes at random.  If there are attributes that should never be dropped then this function should not be used.  [#9734](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9734)
 
-
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

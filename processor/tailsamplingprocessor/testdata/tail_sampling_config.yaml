@@ -46,6 +46,11 @@ processors:
             rate_limiting: {spans_per_second: 35}
          },
          {
+            name: test-policy-8,
+            type: span_count,
+            span_count: {min_spans: 2}
+         },
+         {
             name: and-policy-1,
             type: and,
             and: {
