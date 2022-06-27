@@ -46,8 +46,13 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	var metrics []*CAdvisorMetric
 
 	// Just a protection here, there is no Container level Net metrics
-	if (containerType == ci.TypePod && info.Spec.Labels[containerNameLable] != infraContainerName) || containerType == ci.TypeContainer {
+	if containerType == ci.TypePod || containerType == ci.TypeContainer {
 		return metrics
+	}
+
+	// Rename type to pod so the metric name prefix is pod_
+	if containerType == ci.TypeInfraContainer {
+		containerType = ci.TypePod
 	}
 
 	curStats := GetStats(info)

@@ -35,11 +35,12 @@ func (m *MemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 
 func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
-	if info.Spec.Labels[containerNameLable] == infraContainerName {
+	if containerType == ci.TypeInfraContainer {
 		return metrics
 	}
 
 	metric := newCadvisorMetric(containerType, m.logger)
+	metric.cgroupPath = info.Name
 	curStats := GetStats(info)
 
 	metric.fields[ci.MetricName(containerType, ci.MemUsage)] = curStats.Memory.Usage
