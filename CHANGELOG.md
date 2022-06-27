@@ -64,6 +64,16 @@
 - `transformprocessor`: replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics (#11125)
 
 ### 🧰 Bug fixes 🧰
+<<<<<<< HEAD
+=======
+
+- `redactionprocessor`: respect allow_all_keys configuration (#11542)
+- `skywalkingreceiver`: Fix skywalking traceid and spanid convertion. (#11562)
+
+### Unmaintained components
+
+- `simpleprometheusreceiver`(#11133)
+>>>>>>> Update CHANGELOG.md
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
 - `aerospikereceiver`: Fix typo in metric name. Ensure namespace transactions are collected (#12085) (#12083)
 - `coralogixexporter`: Fix metrics bearer token (#11831)
