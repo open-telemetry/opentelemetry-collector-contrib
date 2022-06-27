@@ -61,7 +61,7 @@ func newIcingaReceiver(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		client:       client,
-		parser:       icingaParser{ctx: ctx, config: config},
+		parser:       icingaParser{ctx: ctx, config: config, logger: set.Logger},
 	}
 	return r, nil
 }

@@ -52,8 +52,8 @@ type icingaEventStreamRequest struct {
 }
 
 func newClient(config icingaClientConfig) (icingaClient, error) {
-	icingaClient := icingaClient{config: config}
-	return icingaClient, nil
+	client := icingaClient{config: config}
+	return client, nil
 }
 
 func (u *icingaClient) Listen(

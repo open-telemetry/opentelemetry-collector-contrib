@@ -63,11 +63,9 @@ var (
 	nonNumbersOnly = regexp.MustCompile(`[^0-9\.]+`)
 )
 
-func (p *icingaParser) initialize() error {
+func (p *icingaParser) initialize() {
 	p.gauges = make(map[icingaMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[icingaMetricDescription]pmetric.ScopeMetrics)
-
-	return nil
 }
 
 // GetMetrics gets the metrics preparing for flushing and reset the state.
@@ -87,11 +85,8 @@ func (p *icingaParser) getMetrics() pmetric.Metrics {
 }
 
 // Aggregate for each metric.
-func (p *icingaParser) Aggregate(line string) error {
-	parsedMetrics, err := p.parseMessageToMetric(line)
-	if err != nil {
-		return err
-	}
+func (p *icingaParser) Aggregate(line string) {
+	parsedMetrics := p.parseMessageToMetric(line)
 	for _, parsedMetric := range parsedMetrics {
 		switch parsedMetric.description.metricType {
 		case GaugeType:
@@ -108,7 +103,6 @@ func (p *icingaParser) Aggregate(line string) error {
 
 		}
 	}
-	return nil
 }
 
 type CheckResultResponse struct {
@@ -123,9 +117,12 @@ type CheckResult struct {
 	PerformanceData []string `json:"performance_data"`
 }
 
-func (p *icingaParser) parseMessageToMetric(line string) ([]icingaMetric, error) {
+func (p *icingaParser) parseMessageToMetric(line string) []icingaMetric {
 	var checkResult CheckResultResponse
-	json.Unmarshal([]byte(line), &checkResult)
+	err := json.Unmarshal([]byte(line), &checkResult)
+	if err != nil {
+		p.logger.Sugar().Debugf("Failed unmarshalling message: %s", err)
+	}
 
 	var kvs []attribute.KeyValue
 	kvs = append(kvs, attribute.String(conventions.AttributeServiceInstanceID, checkResult.Host))
@@ -160,7 +157,7 @@ func (p *icingaParser) parseMessageToMetric(line string) ([]icingaMetric, error)
 
 	result = p.getPerformanceMetrics(checkResult, kvs, result, objectType)
 
-	return result, nil
+	return result
 }
 
 func (p *icingaParser) getPerformanceMetrics(checkResult CheckResultResponse, kvs []attribute.KeyValue, result []icingaMetric, objectType string) []icingaMetric {

@@ -34,7 +34,7 @@ func TestClientExpectError(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	parser := icingaParser{ctx: ctx, config: Config{}}
+	parser := icingaParser{ctx: ctx, config: Config{}, logger: zap.NewNop()}
 	err = client.Listen(ctx, parser, nil)
 	require.EqualError(t, err, "nil next Consumer")
 }
@@ -52,7 +52,7 @@ func TestClientListen(t *testing.T) {
 		logger:                 zap.NewNop().Sugar(),
 	})
 	ctx := context.Background()
-	parser := icingaParser{ctx: ctx, config: Config{}}
+	parser := icingaParser{ctx: ctx, config: Config{}, logger: zap.NewNop()}
 	parser.initialize()
 	err := client.Listen(ctx, parser, consumertest.NewNop())
 	if err != nil {
