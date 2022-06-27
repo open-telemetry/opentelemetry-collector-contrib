@@ -190,8 +190,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.5 h1:s5PTfem8p8EbKQOctVV53k6jCJt3UX4IEJzwh+C324Q=
 github.com/stretchr/testify v1.7.5/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
-github.com/wavefronthq/wavefront-sdk-go v0.9.11 h1:3qv/yyNNyLKPQftQWFrfHGUv50e/gMxKlUQnILlvHKw=
-github.com/wavefronthq/wavefront-sdk-go v0.9.11/go.mod h1:AcW8zJJcYodB7B9KYzoxVH6K0fmYd6MgpmXE1LMo+OU=
+github.com/wavefronthq/wavefront-sdk-go v0.10.1 h1:my6q/yDaSi4bADHr9006YrHBhTdjEtpU0UpT0NDaSw8=
+github.com/wavefronthq/wavefront-sdk-go v0.10.1/go.mod h1:JHflWDtew1icwZB6OEvHedBFD9T1h7Se/m+dBSjywu8=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
