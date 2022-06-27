@@ -47,9 +47,6 @@ type Config struct {
 
 	// EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
-
-	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
-	skipSanitizeLabel bool
 }
 
 var _ config.Exporter = (*Config)(nil)

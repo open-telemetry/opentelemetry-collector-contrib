@@ -153,7 +153,10 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	pbMetric, _ := c.convertDoubleHistogram(metric, pMap)
 	m := io_prometheus_client.Metric{}
-	pbMetric.Write(&m)
+	err := pbMetric.Write(&m)
+	if err != nil {
+		return
+	}
 
 	buckets := m.GetHistogram().GetBucket()
 
