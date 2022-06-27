@@ -204,7 +204,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "counter_over_time",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
@@ -236,7 +236,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "int_counter_over_time",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
@@ -269,7 +269,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "nil_counter_over_time",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
@@ -284,7 +284,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "simple_histogram_with_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			// Refers example from https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument-unit
 			metricDataFn: func() pmetric.Metric {
@@ -381,7 +381,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "nil_gauge_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
@@ -398,7 +398,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "int_gauge_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
@@ -431,7 +431,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "float_gauge_value",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
@@ -464,7 +464,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "summary",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
@@ -535,7 +535,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "nil_summary",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
@@ -562,7 +562,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		{
 			name: "unknown_type",
 			resourceFn: func() pcommon.Resource {
-				return newMetricResource()
+				return newDummyResource()
 			},
 			metricDataFn: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
@@ -603,7 +603,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 	}
 }
 
-func newMetricResource() pcommon.Resource {
+func newDummyResource() pcommon.Resource {
 	res := pcommon.NewResource()
 	res.Attributes().InsertString("key", "value")
 	res.Attributes().InsertString(hostkey, testhost)

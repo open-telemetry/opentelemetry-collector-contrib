@@ -53,7 +53,7 @@ func TestCreateMetricsExporterWhenIngestEmpty(t *testing.T) {
 	require.NoError(t, err)
 	params := componenttest.NewNopExporterCreateSettings()
 	// Load the #3 which has empty
-	adxCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "3")].(*Config)
+	adxCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, adxCfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
@@ -67,4 +67,72 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 	assert.Equal(t, unknown, cfg.Database)
 	assert.Equal(t, queuedingesttest, cfg.IngestionType)
+}
+
+// Given a new factory and no-op exporter , the LogExporter exporter should work.
+// We could add additional failing tests if the config is wrong (using Validate) , but that is already done on config
+func TestCreateLogsExporter(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg.Exporters[config.NewComponentID(typeStr)])
+	assert.NotNil(t, err)
+	assert.Nil(t, exporter)
+}
+
+// Given a new factory and no-op exporter , the NewLogs exporter should work.
+// We could add additional failing tests if the config is wrong (using Validate) , but that is already done on config
+func TestCreateLogsExporterWhenIngestEmpty(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+	params := componenttest.NewNopExporterCreateSettings()
+	// Load the #3 which has empty
+	adxCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
+	exporter, err := factory.CreateLogsExporter(context.Background(), params, adxCfg)
+	assert.NotNil(t, err)
+	assert.Nil(t, exporter)
+	// the fallback should be queued
+	assert.Equal(t, queuedingesttest, adxCfg.IngestionType)
+}
+
+// Given a new factory and no-op exporter , the LogExporter exporter should work.
+// We could add additional failing tests if the config is wrong (using Validate) , but that is already done on config
+func TestCreateTracesExporter(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewComponentID(typeStr)])
+	assert.NotNil(t, err)
+	assert.Nil(t, exporter)
+}
+
+// Given a new factory and no-op exporter , the NewLogs exporter should work.
+// We could add additional failing tests if the config is wrong (using Validate) , but that is already done on config
+func TestCreateTracesExporterWhenIngestEmpty(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+	params := componenttest.NewNopExporterCreateSettings()
+	// Load the #3 which has empty
+	adxCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, adxCfg)
+	assert.NotNil(t, err)
+	assert.Nil(t, exporter)
+	// the fallback should be queued
+	assert.Equal(t, queuedingesttest, adxCfg.IngestionType)
 }

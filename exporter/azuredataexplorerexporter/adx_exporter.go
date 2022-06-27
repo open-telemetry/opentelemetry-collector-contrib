@@ -25,7 +25,10 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -85,6 +88,66 @@ func (e *adxDataProducer) ingestData(b []byte) error {
 	return nil
 }
 
+func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs) error {
+	resourcelogs := logData.ResourceLogs()
+	logsarray := make([]byte, 0)
+	for i := 0; i < resourcelogs.Len(); i++ {
+		resource := resourcelogs.At(i)
+		scopelogs := resourcelogs.At(i).ScopeLogs()
+		for j := 0; j < scopelogs.Len(); j++ {
+			scope := scopelogs.At(j)
+			logs := scopelogs.At(j).LogRecords()
+			for k := 0; k < logs.Len(); k++ {
+				logdata := logs.At(k)
+				transformedadxlog := mapToAdxLog(resource.Resource(), scope.Scope(), logdata, e.logger)
+				adxlogjsonbytes, err := jsoniter.Marshal(transformedadxlog)
+				if err != nil {
+					e.logger.Error("Error performing serialization of data.", zap.Error(err))
+				}
+				logsarray = bytes.Join([][]byte{logsarray, adxlogjsonbytes}, nextline)
+
+			}
+		}
+	}
+	if len(logsarray) != 0 {
+		if err := e.ingestData(logsarray); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace.Traces) error {
+	resourcespans := traceData.ResourceSpans()
+	spandataarray := make([]byte, 0)
+	for i := 0; i < resourcespans.Len(); i++ {
+		resource := resourcespans.At(i)
+		scopespans := resourcespans.At(i).ScopeSpans()
+		for j := 0; j < scopespans.Len(); j++ {
+			scope := scopespans.At(j)
+			spans := scopespans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				spandata := spans.At(k)
+				transformedadxtrace := mapToAdxTrace(resource.Resource(), scope.Scope(), spandata, e.logger)
+				adxtracejsonbytes, err := jsoniter.Marshal(transformedadxtrace)
+				if err != nil {
+					e.logger.Error("Error performing serialization of data.", zap.Error(err))
+				}
+				adxtracejsonbytes = append(adxtracejsonbytes, nextline...)
+				spandataarray = append(spandataarray, adxtracejsonbytes...)
+				spandataarray = bytes.Join([][]byte{spandataarray, adxtracejsonbytes}, nextline)
+
+			}
+		}
+	}
+	if len(spandataarray) != 0 {
+		if err := e.ingestData(spandataarray); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (amp *adxDataProducer) Close(context.Context) error {
 
 	var err error
@@ -127,7 +190,6 @@ func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*ad
 		if err != nil {
 			return nil, err
 		}
-
 		managedingest = mi
 		queuedingest = nil
 		err = nil
@@ -151,12 +213,10 @@ func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*ad
 		ingestoptions: ingestoptions,
 		logger:        logger,
 	}, nil
-
 }
 
 /**
 Common functions that are used by all the 3 parts of OTEL , namely Traces , Logs and Metrics
-
 */
 
 func buildAdxClient(config *Config) (*kusto.Client, error) {
@@ -182,10 +242,27 @@ func createQueuedIngester(config *Config, adxclient *kusto.Client, tablename str
 	return ingester, err
 }
 
+func getScopeMap(sc pcommon.InstrumentationScope) map[string]string {
+	scopeMap := map[string]string{}
+
+	if sc.Name() != "" {
+		scopeMap["name"] = sc.Name()
+	}
+	if sc.Version() != "" {
+		scopeMap["version"] = sc.Version()
+	}
+
+	return scopeMap
+}
+
 func getTableName(config *Config, telemetrydatatype int) string {
 	switch telemetrydatatype {
-	case metricsType:
+	case metricstype:
 		return config.RawMetricTable
+	case logstype:
+		return config.RawLogTable
+	case tracestype:
+		return config.RawTraceTable
 	}
 	return "unknown"
 }

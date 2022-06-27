@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// There are 3 stanzas in the exporter.
-	assert.Equal(t, len(cfg.Exporters), 3)
+	assert.Equal(t, len(cfg.Exporters), 2)
 
 	exporter := cfg.Exporters[config.NewComponentID(typeStr)]
 
@@ -52,6 +52,8 @@ func TestLoadConfig(t *testing.T) {
 			TenantId:       "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
 			Database:       "oteldb",
 			RawMetricTable: "RawMetrics",
+			RawLogTable:    "RawLogs",
+			RawTraceTable:  "RawTraces",
 			IngestionType:  managedingesttype,
 		},
 		exporter)
