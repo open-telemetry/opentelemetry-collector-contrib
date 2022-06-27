@@ -27,7 +27,8 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -85,8 +86,11 @@ func TestGetPrometheusConfig(t *testing.T) {
 		{
 			name: "Test without TLS",
 			config: &Config{
-				TCPAddr: confignet.TCPAddr{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: true,
+					},
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metric",
@@ -120,20 +124,17 @@ func TestGetPrometheusConfig(t *testing.T) {
 		{
 			name: "Test with TLS",
 			config: &Config{
-				TCPAddr: confignet.TCPAddr{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
-				},
-				CollectionInterval: 10 * time.Second,
-				MetricsPath:        "/metrics",
-				httpConfig: httpConfig{
-					TLSEnabled: true,
-					TLSConfig: tlsConfig{
-						CAFile:             "path1",
-						CertFile:           "path2",
-						KeyFile:            "path3",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile: "./testdata/test_cert.pem",
+						},
 						InsecureSkipVerify: true,
 					},
 				},
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &config.Config{
@@ -156,9 +157,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							},
 							HTTPClientConfig: configutil.HTTPClientConfig{
 								TLSConfig: configutil.TLSConfig{
-									CAFile:             "path1",
-									CertFile:           "path2",
-									KeyFile:            "path3",
+									CAFile:             "./testdata/test_cert.pem",
 									InsecureSkipVerify: true,
 								},
 							},
@@ -170,14 +169,11 @@ func TestGetPrometheusConfig(t *testing.T) {
 		{
 			name: "Test with TLS - default CA",
 			config: &Config{
-				TCPAddr: confignet.TCPAddr{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
-				httpConfig: httpConfig{
-					TLSEnabled: true,
-				},
 				Labels: map[string]string{
 					"key": "value",
 				},
