@@ -72,13 +72,13 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 	}
 	tracingHost, tracingPort, err := cfg.parseTracesEndpoint()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse traces.endpoint: %v", err)
+		return nil, fmt.Errorf("failed to parse traces.endpoint: %w", err)
 	}
 	metricsPort := defaultMetricsPort
 	if cfg.hasMetricsEndpoint() {
 		_, metricsPort, err = cfg.parseMetricsEndpoint()
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse metrics.endpoint: %v", err)
+			return nil, fmt.Errorf("failed to parse metrics.endpoint: %w", err)
 		}
 	}
 
@@ -92,7 +92,7 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 		SDKMetricsTags:       map[string]string{"otel.traces.collector_version": settings.BuildInfo.Version},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
+		return nil, fmt.Errorf("failed to create proxy sender: %w", err)
 	}
 
 	return &tracesExporter{

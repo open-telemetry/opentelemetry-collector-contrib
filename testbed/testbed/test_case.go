@@ -219,13 +219,13 @@ func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
 
 // Stop stops the load generator, the agent and the backend.
 func (tc *TestCase) Stop() {
+	// Stop monitoring the agent
+	close(tc.doneSignal)
+
 	// Stop all components
 	tc.StopLoad()
 	tc.StopAgent()
 	tc.StopBackend()
-
-	// Stop logging
-	close(tc.doneSignal)
 
 	if tc.skipResults {
 		return
