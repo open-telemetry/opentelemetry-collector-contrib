@@ -2,7 +2,7 @@
 
 | Status                   |                |
 | ------------------------ | -------------- |
-| Stability                | [unmaintained] |
+| Stability                | [beta]         |
 | Supported pipeline types | metrics        |
 | Distributions            | [contrib]      |
 
@@ -72,5 +72,5 @@ Example:
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-[unmaintained]:https://github.com/open-telemetry/opentelemetry-collector#unmaintained
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

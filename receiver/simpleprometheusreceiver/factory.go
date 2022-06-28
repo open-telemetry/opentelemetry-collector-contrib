@@ -16,14 +16,12 @@ package simpleprometheusreceiver // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 // This file implements factory for prometheus_simple receiver
@@ -34,8 +32,6 @@ const (
 	defaultEndpoint    = "localhost:9090"
 	defaultMetricsPath = "/metrics"
 )
-
-var once sync.Once
 
 var defaultCollectionInterval = 10 * time.Second
 
@@ -58,12 +54,6 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func logStatus(logger *zap.Logger) {
-	once.Do(func() {
-		logger.Warn("prometheus_simple receiver is unmaintained and actively looking for contributors.")
-	})
-}
-
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
@@ -71,6 +61,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
-	logStatus(params.Logger)
 	return new(params, rCfg, nextConsumer), nil
 }
