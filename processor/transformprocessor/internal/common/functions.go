@@ -20,12 +20,16 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"keep_keys":           keepKeys,
-	"set":                 set,
-	"truncate_all":        truncateAll,
-	"limit":               limit,
-	"replace_match":       replaceMatch,
-	"replace_all_matches": replaceAllMatches,
+	"TraceID":              traceID,
+	"SpanID":               spanID,
+	"keep_keys":            keepKeys,
+	"set":                  set,
+	"truncate_all":         truncateAll,
+	"limit":                limit,
+	"replace_match":        replaceMatch,
+	"replace_all_matches":  replaceAllMatches,
+	"replace_pattern":      replacePattern,
+	"replace_all_patterns": replaceAllPatterns,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
@@ -109,6 +113,11 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 			arg = append(arg, *inv.Arguments[j].Int)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
+	case reflect.Uint8:
+		if inv.Arguments[startingIndex].Bytes == nil {
+			return fmt.Errorf("invalid argument for slice parameter at position %v, must be a byte slice literal", startingIndex)
+		}
+		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
 	default:
 		return fmt.Errorf("unsupported slice type for function %v", inv.Function)
 	}

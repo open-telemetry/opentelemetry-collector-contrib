@@ -21,8 +21,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 )
 
 type HostInfo struct {
@@ -62,7 +62,7 @@ func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
 	return hi.FQDN
 }
 
-var _ provider.HostnameProvider = (*Provider)(nil)
+var _ source.Provider = (*Provider)(nil)
 
 type Provider struct {
 	once     sync.Once
@@ -75,9 +75,9 @@ func (p *Provider) fillHostInfo() {
 	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
 }
 
-func (p *Provider) Hostname(context.Context) (string, error) {
+func (p *Provider) Source(context.Context) (source.Source, error) {
 	p.fillHostInfo()
-	return p.hostInfo.GetHostname(p.logger), nil
+	return source.Source{Kind: source.HostnameKind, Identifier: p.hostInfo.GetHostname(p.logger)}, nil
 }
 
 func (p *Provider) HostInfo() *HostInfo {

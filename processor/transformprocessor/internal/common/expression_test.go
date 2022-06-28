@@ -56,6 +56,27 @@ func Test_newGetter(t *testing.T) {
 			want: int64(12),
 		},
 		{
+			name: "bytes literal",
+			val: Value{
+				Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+			},
+			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
+		},
+		{
+			name: "nil literal",
+			val: Value{
+				IsNil: (*IsNil)(testhelper.Boolp(true)),
+			},
+			want: nil,
+		},
+		{
+			name: "bool literal",
+			val: Value{
+				Bool: (*Boolean)(testhelper.Boolp(true)),
+			},
+			want: true,
+		},
+		{
 			name: "path expression",
 			val: Value{
 				Path: &Path{

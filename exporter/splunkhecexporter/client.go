@@ -102,11 +102,11 @@ func (c *client) pushMetricsData(
 			gzipWriter.Reset(gzipBuffer)
 
 			if _, err = io.Copy(gzipWriter, buf); err != nil {
-				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
+				return fmt.Errorf("failed copying buffer to gzip writer: %w", err)
 			}
 
 			if err = gzipWriter.Close(); err != nil {
-				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
+				return fmt.Errorf("failed flushing compressed data to gzip writer: %w", err)
 			}
 
 			return c.postEvents(ctx, gzipBuffer, localHeaders, shouldCompress)
@@ -148,11 +148,11 @@ func (c *client) pushTraceData(
 			gzipWriter.Reset(gzipBuffer)
 
 			if _, err = io.Copy(gzipWriter, buf); err != nil {
-				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
+				return fmt.Errorf("failed copying buffer to gzip writer: %w", err)
 			}
 
 			if err = gzipWriter.Close(); err != nil {
-				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
+				return fmt.Errorf("failed flushing compressed data to gzip writer: %w", err)
 			}
 
 			return c.postEvents(ctx, gzipBuffer, localHeaders, shouldCompress)
@@ -203,11 +203,11 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 			gzipWriter.Reset(gzipBuffer)
 
 			if _, err = io.Copy(gzipWriter, buf); err != nil {
-				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
+				return fmt.Errorf("failed copying buffer to gzip writer: %w", err)
 			}
 
 			if err = gzipWriter.Close(); err != nil {
-				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
+				return fmt.Errorf("failed flushing compressed data to gzip writer: %w", err)
 			}
 
 			return c.postEvents(ctx, gzipBuffer, localHeaders, shouldCompress)
@@ -332,7 +332,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		// JSON encoding event and writing to buffer.
 		b, err := jsoniter.Marshal(event)
 		if err != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %w", event, err)))
 			continue
 		}
 		state.buf.Write(b)
@@ -398,7 +398,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 			// JSON encoding event and writing to buffer.
 			b, err := jsoniter.Marshal(event)
 			if err != nil {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric events: %v, error: %v", events, err)))
+				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric events: %v, error: %w", events, err)))
 				continue
 			}
 			state.buf.Write(b)
@@ -464,7 +464,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		// JSON encoding event and writing to buffer.
 		b, err := jsoniter.Marshal(event)
 		if err != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %v", event, err)))
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
 			continue
 		}
 		state.buf.Write(b)

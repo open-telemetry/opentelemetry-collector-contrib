@@ -66,11 +66,11 @@ metrics:
 | ---- | ----------- | ---- |
 | aws.volume.id | The id of the AWS Volume | String |
 | container.id | Container id used to identify container | String |
-| container.name | Container name used by container runtime | String |
 | fs.type | The filesystem type of the Volume | String |
 | gce.pd.name | The name of the persistent disk in GCE | String |
 | glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | String |
 | glusterfs.path | Glusterfs volume path | String |
+| k8s.container.name | Container name used by container runtime | String |
 | k8s.namespace.name | The name of the namespace that the pod is running in | String |
 | k8s.node.name | The name of the Node | String |
 | k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | String |

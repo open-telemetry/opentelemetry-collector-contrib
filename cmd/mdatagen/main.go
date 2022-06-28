@@ -54,7 +54,7 @@ func run(ymlPath string, useExpGen bool) error {
 
 	md, err := loadMetadata(filepath.Clean(ymlPath))
 	if err != nil {
-		return fmt.Errorf("failed loading %v: %v", ymlPath, err)
+		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
 	_, filename, _, ok := runtime.Caller(0)
@@ -106,7 +106,7 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
-		return fmt.Errorf("failed executing template: %v", err)
+		return fmt.Errorf("failed executing template: %w", err)
 	}
 
 	formatted, err := format.Source(buf.Bytes())
@@ -122,16 +122,16 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 
 	outputDir := filepath.Join(ymlDir, "internal", "metadata")
 	if err := os.MkdirAll(outputDir, 0700); err != nil {
-		return fmt.Errorf("unable to create output directory %q: %v", outputDir, err)
+		return fmt.Errorf("unable to create output directory %q: %w", outputDir, err)
 	}
 	for _, f := range []string{filepath.Join(outputDir, outputFileV1), filepath.Join(outputDir, outputFileV2)} {
 		if err := os.Remove(f); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("unable to remove genererated file %q: %v", f, err)
+			return fmt.Errorf("unable to remove genererated file %q: %w", f, err)
 		}
 	}
 	outputFilepath := filepath.Join(outputDir, outputFile)
 	if err := ioutil.WriteFile(outputFilepath, formatted, 0600); err != nil {
-		return fmt.Errorf("failed writing %q: %v", outputFilepath, err)
+		return fmt.Errorf("failed writing %q: %w", outputFilepath, err)
 	}
 
 	return nil
@@ -153,12 +153,12 @@ func generateDocumentation(ymlDir string, thisDir string, md metadata, useExpGen
 
 	tmplCtx := templateContext{metadata: md, ExpGen: useExpGen, Package: "metadata"}
 	if err := tmpl.Execute(&buf, tmplCtx); err != nil {
-		return fmt.Errorf("failed executing template: %v", err)
+		return fmt.Errorf("failed executing template: %w", err)
 	}
 
 	outputFile := filepath.Join(ymlDir, "documentation.md")
 	if err := ioutil.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
-		return fmt.Errorf("failed writing %q: %v", outputFile, err)
+		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
 	return nil

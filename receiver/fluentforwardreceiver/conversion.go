@@ -17,6 +17,7 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -434,7 +435,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 		lr := plog.NewLogRecord()
 		err := parseEntryToLogRecord(msgpReader, lr)
 		if err != nil {
-			if msgp.Cause(err) == io.EOF {
+			if errors.Is(msgp.Cause(err), io.EOF) {
 				return nil
 			}
 			return err

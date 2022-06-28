@@ -28,6 +28,8 @@ exporters:
 
     host_metadata:
       tags: [example:tag]
+      # Suppress warning related to `exporter.datadog.hostname.preview` feature gate
+      hostname_source: first_resource
 
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -44,6 +46,9 @@ exporters:
   datadog/default:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    host_metadata:
+      # Suppress warning related to `exporter.datadog.hostname.preview` feature gate
+      hostname_source: first_resource
 
   datadog/hostmetadata:
     api:
@@ -55,23 +60,14 @@ exporters:
     # Deprecated; kept here to test rename system
     use_resource_metadata: false
 
-  datadog/default2:
-
-  datadog/invalid:
-    metrics:
-      endpoint: "invalid:"
-
-    traces:
-      endpoint: "invalid:"
-
 service:
   pipelines:
     metrics:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]
 
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]

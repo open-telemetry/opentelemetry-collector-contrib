@@ -1,11 +1,15 @@
 # Docker Stats Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 The Docker Stats receiver queries the local Docker daemon's container stats API for
 all desired running containers on a configured interval.  These stats are for container
 resource usage of cpu, memory, network, and the
 [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
-
-Supported pipeline types: metrics
 
 > :information_source: Requires Docker API version 1.22+ and only Linux is supported.
 
@@ -58,3 +62,6 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

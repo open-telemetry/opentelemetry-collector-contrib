@@ -16,7 +16,6 @@ package jmxreceiver
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -33,7 +32,7 @@ func TestReceiver(t *testing.T) {
 	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
-			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
+			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 

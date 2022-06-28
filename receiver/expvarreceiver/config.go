@@ -36,7 +36,7 @@ var _ config.Receiver = (*Config)(nil)
 func (c *Config) Validate() error {
 	u, err := url.Parse(c.Endpoint)
 	if err != nil {
-		return fmt.Errorf("endpoint is not a valid URL: %v", err)
+		return fmt.Errorf("endpoint is not a valid URL: %w", err)
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("scheme must be 'http' or 'https', but was '%s'", u.Scheme)

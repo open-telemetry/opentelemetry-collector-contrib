@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package awsemfexporter
 
 import (
@@ -497,7 +496,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			setupDataPointCache()
 
 			groupedMetrics := make(map[interface{}]*groupedMetric)
-			translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
+			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
+			assert.Nil(t, err)
 			assert.NotNil(t, groupedMetrics)
 			assert.Equal(t, 2, len(groupedMetrics))
 
@@ -529,7 +529,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 	})
 }
@@ -548,12 +549,12 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	fields[oTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
-	//add stringified json as attribute values
+	// add stringified json as attribute values
 	fields["kubernetes"] = "{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]}"
 	fields["Sources"] = "[\"cadvisor\",\"pod\",\"calculated\"]"
 
 	config := &Config{
-		//include valid json string, a non-existing key, and keys whose value are not json/string
+		// include valid json string, a non-existing key, and keys whose value are not json/string
 		ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName", "spanCounter"},
 		logger:                          zap.NewNop(),
 	}
@@ -883,7 +884,8 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				logger:                logger,
 			}
 			for _, decl := range tc.metricDeclarations {
-				decl.init(logger)
+				err := decl.init(logger)
+				assert.Nil(t, err)
 			}
 			cWMetric := translateGroupedMetricToCWMetric(tc.groupedMetric, config)
 			assert.NotNil(t, cWMetric)
@@ -2070,7 +2072,8 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetric := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetric, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetric, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2092,7 +2095,8 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2114,7 +2118,8 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2136,7 +2141,8 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2153,7 +2159,8 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2221,7 +2228,8 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 		MetricNameSelectors: []string{"metric1", "metric2"},
 	}
 	logger := zap.NewNop()
-	m.init(logger)
+	err := m.init(logger)
+	assert.Nil(b, err)
 	config := &Config{
 		MetricDeclarations:    []*MetricDeclaration{m},
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -2410,7 +2418,8 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
-			translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+			err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+			assert.Nil(t, err)
 
 			assert.NotNil(t, groupedMetrics)
 			assert.Equal(t, 1, len(groupedMetrics))
