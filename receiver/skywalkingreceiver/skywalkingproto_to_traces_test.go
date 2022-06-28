@@ -187,7 +187,7 @@ func Test_stringToTraceID(t *testing.T) {
 		},
 		{
 			name:          "mock-sw-trace-id-length-overflow",
-			segmentObject: args{traceID: "de5980b8fce34a37aab9b4ac3af7eeddddddde5980"},
+			segmentObject: args{traceID: "de5980b8fce34a37aab9b4ac3af7eedd.1.16563474296430001"},
 			want:          [16]byte{222, 89, 128, 184, 252, 227, 74, 55, 170, 185, 180, 172, 58, 247, 238, 221},
 		},
 		{

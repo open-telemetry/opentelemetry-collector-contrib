@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -238,11 +239,14 @@ func microsecondsToTimestamp(ms int64) pcommon.Timestamp {
 }
 
 func stringToTraceID(traceID string) pcommon.TraceID {
-	dst, err := stringTo16Bytes(&traceID)
+	if i := strings.IndexByte(traceID, '.'); i >= 0 {
+		traceID = traceID[:i]
+	}
+	uid, err := uuid.Parse(traceID)
 	if err != nil {
 		return pcommon.InvalidTraceID()
 	}
-	return pcommon.NewTraceID(dst)
+	return pcommon.NewTraceID(uid)
 }
 
 func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
@@ -257,18 +261,6 @@ func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
 	return pcommon.NewSpanID(segments)
 }
 
-func stringTo16Bytes(s *string) ([16]byte, error) {
-	var dst [16]byte
-	var mid [32]byte
-	h := stringToHexBytes(s)
-	copy(mid[:], h)
-	_, err := hex.Decode(dst[:], mid[:])
-	if err != nil {
-		return dst, err
-	}
-	return dst, nil
-}
-
 func stringTo8Bytes(s *string) ([8]byte, error) {
 	var dst [8]byte
 	var mid [16]byte
@@ -278,28 +270,4 @@ func stringTo8Bytes(s *string) ([8]byte, error) {
 		return dst, err
 	}
 	return dst, nil
-}
-
-// hex table:
-// 48-57: 0-9
-// 65-70: a-f
-// 97-102: A-F
-func stringToHexBytes(s *string) []byte {
-	src := make([]byte, 0, len(*s))
-	for i := 0; i < len(*s); i++ {
-		r := (*s)[i]
-		switch {
-		case r < 48:
-			fallthrough
-		case r > 57 && r < 65:
-			fallthrough
-		case r > 70 && r < 97:
-			fallthrough
-		case r > 102:
-			// if 'r' is not a hex digit, drop it
-			continue
-		}
-		src = append(src, r)
-	}
-	return src
 }
