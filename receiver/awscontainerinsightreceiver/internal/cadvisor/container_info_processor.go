@@ -144,7 +144,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 		case "", infraContainerName:
 			// NOTE: the pod here is only used by NetMetricExtractor,
 			// other pod info like CPU, Mem are dealt within in processPod.
-			containerType = TypeInfraContainer
+			containerType = ci.TypeInfraContainer
 		default:
 			tags[ci.ContainerNamekey] = containerName
 			containerID := path.Base(info.Name)
@@ -153,7 +153,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 			containerType = ci.TypeContainer
 			// TODO(pvasir): wait for upstream fix https://github.com/google/cadvisor/issues/2785
 			if !info.Spec.HasFilesystem {
-				log.Printf("D! containerd does not have container filesystem metrics from cadvisor, See https://github.com/aws/amazon-cloudwatch-agent/issues/192")
+				logger.Debug("D! containerd does not have container filesystem metrics from cadvisor, See https://github.com/google/cadvisor/issues/2785")
 			}
 		}
 	} else {
