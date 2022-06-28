@@ -103,7 +103,7 @@ func main() {
 	}()
 
 	var attributes []attribute.KeyValue
-	// may be overridden by `-otlp-attributes service.name=foo`
+	// may be overridden by `-otlp-attributes service.name="foo"`
 	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
 
 	if len(cfg.ResourceAttributes) > 0 {
