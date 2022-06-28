@@ -21,6 +21,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `redactionprocessor`: respect allow_all_keys configuration (#11542)
+- `filestorageextension`: Copy values returned by Get (#11776)
 
 ### Unmaintained components
 

@@ -113,7 +113,15 @@ func (c *fileStorageClient) Batch(ctx context.Context, ops ...storage.Operation)
 		for _, op := range ops {
 			switch op.Type {
 			case storage.Get:
-				op.Value = bucket.Get([]byte(op.Key))
+				value := bucket.Get([]byte(op.Key))
+				if value != nil {
+					// the output of Bucket.Get is only valid within a transaction, so we need to make a copy
+					// to be able to return the value
+					op.Value = make([]byte, len(value))
+					copy(op.Value, value)
+				} else {
+					op.Value = nil
+				}
 			case storage.Set:
 				err = bucket.Put([]byte(op.Key), op.Value)
 			case storage.Delete:
