@@ -21,6 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 var _ config.Receiver = (*Config)(nil)
@@ -51,11 +53,14 @@ type Config struct {
 	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
-	// Whether to report all CPU metrics.  Default is false
+	// Whether to report all CPU stats.  Default is false
 	ProvidePerCoreCPUMetrics bool `mapstructure:"provide_per_core_cpu_metrics"`
 
 	// Docker client API version. Default is 1.22
 	DockerAPIVersion float64 `mapstructure:"api_version"`
+
+	// Metrics config. Enable or disable stats by name.
+	MetricsConfig metadata.MetricsSettings `mapstructure:"stats"`
 }
 
 func (config Config) Validate() error {

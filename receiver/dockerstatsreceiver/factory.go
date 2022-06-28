@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 const (
@@ -43,6 +45,7 @@ func createDefaultConfig() config.Receiver {
 		Endpoint:                  "unix:///var/run/docker.sock",
 		Timeout:                   5 * time.Second,
 		DockerAPIVersion:          defaultDockerAPIVersion,
+		MetricsConfig:             metadata.DefaultMetricsSettings(),
 	}
 }
 
