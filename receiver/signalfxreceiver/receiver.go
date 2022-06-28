@@ -131,6 +131,10 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 		return component.ErrNilNextConsumer
 	}
 
+	if r.server != nil {
+		return nil
+	}
+
 	// set up the listener
 	ln, err := r.config.HTTPServerSettings.ToListener()
 	if err != nil {

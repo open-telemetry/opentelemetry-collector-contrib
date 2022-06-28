@@ -3,22 +3,22 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.33
+	github.com/aws/aws-sdk-go v1.44.43
 	github.com/google/cadvisor v0.44.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.54.0
 	github.com/shirou/gopsutil/v3 v3.22.5
-	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.53.1-0.20220615184617-4cefca87d2c6
-	go.opentelemetry.io/collector/pdata v0.53.1-0.20220615184617-4cefca87d2c6
+	github.com/stretchr/testify v1.7.5
+	go.opentelemetry.io/collector v0.54.0
+	go.opentelemetry.io/collector/pdata v0.54.0
 	go.uber.org/zap v1.21.0
-	k8s.io/api v0.24.1
-	k8s.io/apimachinery v0.24.1
-	k8s.io/client-go v0.24.1
+	k8s.io/api v0.24.2
+	k8s.io/apimachinery v0.24.2
+	k8s.io/client-go v0.24.2
 	k8s.io/klog v1.0.0
 )
 
@@ -65,7 +65,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/klauspost/compress v1.15.6 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -79,7 +79,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.53.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.54.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect
@@ -92,12 +92,12 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.34.0 // indirect
+	github.com/prometheus/common v0.35.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20210429002308-3879420cc921 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect

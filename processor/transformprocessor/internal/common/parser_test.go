@@ -337,6 +337,30 @@ func Test_parse(t *testing.T) {
 				Condition: nil,
 			},
 		},
+		{
+			query: `set(attributes["test"], nil)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							IsNil: (*IsNil)(testhelper.Boolp(true)),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {

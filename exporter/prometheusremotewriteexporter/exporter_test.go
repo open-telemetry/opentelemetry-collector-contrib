@@ -51,7 +51,6 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-		sanitizeLabel:      true,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -679,11 +678,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_underscore",
-			map[string]string{"_key_": "val1"},
-			map[string]string{"_key_": "val1"},
-			false,
-		},
 		{"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
@@ -721,11 +715,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_underscore",
-			map[string]string{"_key_": "val1"},
-			map[string]string{"key_key_": "val1"},
-			false,
-		},
 		{"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
@@ -740,7 +729,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		cfg := createDefaultConfig().(*Config)
-		cfg.sanitizeLabel = true
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
@@ -756,7 +744,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	for _, tt := range testsWithoutSanitizelabel {
 		cfg := createDefaultConfig().(*Config)
 		//disable sanitizeLabel flag
-		cfg.sanitizeLabel = false
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)

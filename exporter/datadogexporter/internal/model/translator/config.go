@@ -14,16 +14,24 @@
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
+)
 
 type translatorConfig struct {
 	// metrics export behavior
-	HistMode                             HistogramMode
-	SendCountSum                         bool
-	Quantiles                            bool
-	SendMonotonic                        bool
-	ResourceAttributesAsTags             bool
+	HistMode                 HistogramMode
+	SendCountSum             bool
+	Quantiles                bool
+	SendMonotonic            bool
+	ResourceAttributesAsTags bool
+	// Deprecated: [0.54.0] Use InstrumentationScopeMetadataAsTags instead in favor of
+	// https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
+	// Both must not be enabled at the same time.
 	InstrumentationLibraryMetadataAsTags bool
+	InstrumentationScopeMetadataAsTags   bool
 
 	// cache configuration
 	sweepInterval int64
@@ -31,7 +39,7 @@ type translatorConfig struct {
 
 	// hostname provider configuration
 	previewHostnameFromAttributes bool
-	fallbackHostnameProvider      HostnameProvider
+	fallbackSourceProvider        source.Provider
 }
 
 // Option is a translator creation option.
@@ -53,11 +61,11 @@ func WithDeltaTTL(deltaTTL int64) Option {
 	}
 }
 
-// WithFallbackHostnameProvider sets the fallback hostname provider.
+// WithFallbackSourceProvider sets the fallback source provider.
 // By default, an empty hostname is used as a fallback.
-func WithFallbackHostnameProvider(provider HostnameProvider) Option {
+func WithFallbackSourceProvider(provider source.Provider) Option {
 	return func(t *translatorConfig) error {
-		t.fallbackHostnameProvider = provider
+		t.fallbackSourceProvider = provider
 		return nil
 	}
 }
@@ -90,6 +98,14 @@ func WithResourceAttributesAsTags() Option {
 func WithInstrumentationLibraryMetadataAsTags() Option {
 	return func(t *translatorConfig) error {
 		t.InstrumentationLibraryMetadataAsTags = true
+		return nil
+	}
+}
+
+// WithInstrumentationScopeMetadataAsTags sets instrumentation scope metadata as tags.
+func WithInstrumentationScopeMetadataAsTags() Option {
+	return func(t *translatorConfig) error {
+		t.InstrumentationScopeMetadataAsTags = true
 		return nil
 	}
 }

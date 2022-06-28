@@ -20,11 +20,12 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
 
-var _ provider.HostnameProvider = (*Provider)(nil)
+var _ source.Provider = (*Provider)(nil)
 var _ provider.ClusterNameProvider = (*Provider)(nil)
 
 var _ gcpDetector = gcp.NewDetector()
@@ -41,14 +42,14 @@ type Provider struct {
 }
 
 // Hostname returns the GCP cloud integration hostname.
-func (p *Provider) Hostname(context.Context) (string, error) {
+func (p *Provider) Source(context.Context) (source.Source, error) {
 	if p.detector.CloudPlatform() != gcp.GCE {
-		return "", fmt.Errorf("not on Google Cloud Engine")
+		return source.Source{}, fmt.Errorf("not on Google Cloud Engine")
 	}
 
 	name, err := p.detector.GCEHostName()
 	if err != nil {
-		return "", fmt.Errorf("failed to get instance name: %w", err)
+		return source.Source{}, fmt.Errorf("failed to get instance name: %w", err)
 	}
 
 	// Use the same logic as in the metadata from attributes logic.
@@ -58,10 +59,10 @@ func (p *Provider) Hostname(context.Context) (string, error) {
 
 	cloudAccount, err := p.detector.ProjectID()
 	if err != nil {
-		return "", fmt.Errorf("failed to get project ID: %w", err)
+		return source.Source{}, fmt.Errorf("failed to get project ID: %w", err)
 	}
 
-	return fmt.Sprintf("%s.%s", name, cloudAccount), nil
+	return source.Source{Kind: source.HostnameKind, Identifier: fmt.Sprintf("%s.%s", name, cloudAccount)}, nil
 }
 
 func (p *Provider) ClusterName(ctx context.Context) (string, error) {

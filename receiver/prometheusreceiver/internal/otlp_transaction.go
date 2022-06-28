@@ -32,6 +32,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	targetMetricName = "target_info"
+)
+
 type transaction struct {
 	isNew                bool
 	ctx                  context.Context
@@ -87,6 +91,12 @@ func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs i
 		if err := t.initTransaction(labels); err != nil {
 			return 0, err
 		}
+	}
+
+	// For the `target_info` metric we need to convert it to resource attributes.
+	metricName := labels.Get(model.MetricNameLabel)
+	if metricName == targetMetricName {
+		return 0, t.AddTargetInfo(labels)
 	}
 
 	return 0, t.metricBuilder.AddDataPoint(labels, atMs, value)
@@ -154,6 +164,20 @@ func (t *transaction) Commit() error {
 
 func (t *transaction) Rollback() error {
 	t.startTimeMs = -1
+	return nil
+}
+
+func (t *transaction) AddTargetInfo(labels labels.Labels) error {
+	attrs := t.nodeResource.Attributes()
+
+	for _, lbl := range labels {
+		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
+			continue
+		}
+
+		attrs.UpsertString(lbl.Name, lbl.Value)
+	}
+
 	return nil
 }
 
