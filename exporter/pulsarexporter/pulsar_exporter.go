@@ -145,8 +145,7 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	}
 
 	producer, err := client.CreateProducer(pulsar.ProducerOptions{
-		Schema: pulsar.NewBytesSchema(nil),
-		Topic:  config.Topic,
+		Topic: config.Topic,
 	})
 
 	if err != nil {
