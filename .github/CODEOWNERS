@@ -109,7 +109,7 @@ processor/groupbyattrsprocessor/                     @open-telemetry/collector-c
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/logstransformprocessor/                    @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
-processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @punya
+processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/             @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/redactionprocessor/                        @open-telemetry/collector-contrib-approvers @leonsp-ai @dmitryax @mx-psi
 processor/resourcedetectionprocessor/                @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @Aneurysm9 @dashpole
@@ -171,6 +171,7 @@ receiver/riakreceiver/                               @open-telemetry/collector-c
 receiver/saphanareceiver/                            @open-telemetry/collector-contrib-approvers @pmm-sumo @dehaansa
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
+receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @fatsheep9146            
 receiver/skywalkingreceiver/                         @open-telemetry/collector-contrib-approvers @JaredTan95
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/sqlqueryreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax @pmcollins

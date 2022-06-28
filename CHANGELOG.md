@@ -1,27 +1,34 @@
 # Changelog
 
 ## Unreleased
-- `filterprocessor`: Ability to filter `Spans` (#6341)
-- 
+
 ## 🛑 Breaking changes 🛑
 
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
 
 ### 🚩 Deprecations 🚩
 
+- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
 
+- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
+- `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
+- `filterprocessor`: Add ability to filter `Spans` (#6341)
+- `tracegen`: support add additional resource attributes. (#11145)
 
 ### 🧰 Bug fixes 🧰
 
+- `redactionprocessor`: respect allow_all_keys configuration (#11542)
+- `filestorageextension`: Copy values returned by Get (#11776)
+
 ### Unmaintained components
 
-- `simpleprometheusreceiver`(#11133)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
 - `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
@@ -60,6 +67,7 @@
 - `transformprocessor`: Add byte slice literal to the grammar.  Add new SpanID and TraceID functions that take a byte slice and return a Span/Trace ID. (#10487)
 - `transformprocessor`: Add Summary transform functions. (#11041)
 - `transformprocessor`: Add nil literal to the grammar. (#11150)
+- `transformprocessor`: Add IsMatch factory function.  This function allows regex matching in conditions (#10903)
 - `elasticsearchreceiver`: Add integration test for elasticsearch receiver (#10165)
 - `tailsamplingprocessor`: New sampler added that allows to sample based on minimum number of spans
 - `datadogexporter`: Some config validation and unmarshaling steps are now done on `Validate` and `Unmarshal` instead of `Sanitize` (#8829)
@@ -73,11 +81,13 @@
 - `mezmoexporter`: add logging for HTTP errors (#10875)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
 - `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
+- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics. (#11118)
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
+- `prometheusexporter` : Added a feature to prometheusexporter to export exemplars along with histogram metrics.
+- `cmd/tracegen`: support add additional resource attributes. (#11145)
 - `awscontainerinsightsreciever`: Pod detection Logic to support k8's on containerd runtime (#11666)
-
 
 ### 🧰 Bug fixes 🧰
 
@@ -106,6 +116,9 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
+
+### 🚩 Deprecations 🚩
+
 
 ### 🚀 New components 🚀
 
