@@ -105,10 +105,13 @@ func consumerTracesLoop(ctx context.Context, c *PulsarTracesConsumer) error {
 		if err != nil {
 			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
 				return err
-			} else {
-				time.Sleep(time.Second)
-				continue
 			}
+			if errors.Is(err, context.Canceled) {
+				c.settings.Logger.Info("exiting consume traces loop")
+				return err
+			}
+			time.Sleep(time.Second)
+			continue
 		}
 
 		traces, err := unmarshaler.Unmarshal(message.Payload())
@@ -208,10 +211,14 @@ func consumeMetricsLoop(ctx context.Context, c *PulsarMetricsConsumer) error {
 		if err != nil {
 			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
 				return err
-			} else {
-				time.Sleep(time.Second)
-				continue
 			}
+			if errors.Is(err, context.Canceled) {
+				c.settings.Logger.Info("exiting consume metrics loop")
+				return err
+			}
+
+			time.Sleep(time.Second)
+			continue
 		}
 
 		metrics, err := unmarshaler.Unmarshal(message.Payload())
@@ -314,10 +321,13 @@ func consumeLogsLoop(ctx context.Context, c *PulsarLogsConsumer) error {
 		if err != nil {
 			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
 				return err
-			} else {
-				time.Sleep(time.Second)
-				continue
 			}
+			if errors.Is(err, context.Canceled) {
+				c.settings.Logger.Info("exiting consume traces loop canceled")
+				return err
+			}
+			time.Sleep(time.Second)
+			continue
 		}
 
 		logs, err := unmarshaler.Unmarshal(message.Payload())
