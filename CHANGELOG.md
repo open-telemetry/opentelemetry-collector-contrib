@@ -24,7 +24,6 @@
 
 ### Unmaintained components
 
-- `simpleprometheusreceiver`(#11133)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
 - `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
@@ -81,6 +80,7 @@
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
+- `cmd/tracegen`: support add additional resource attributes. (#11145)
 
 ### 🧰 Bug fixes 🧰
 
