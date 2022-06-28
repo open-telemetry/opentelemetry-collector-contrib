@@ -1,4 +1,0 @@
-change_type: enhancement
-component: prometheusreceiver
-note:  Add `target_info` labels to resource attributes
-issues: [ 11034 ]

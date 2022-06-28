@@ -1,4 +1,0 @@
-change_type: enhancement
-component: tanzuobservabilityexporter
-note: remove calls to deprecated `NewProxySender` methods
-issues: [ 11510 ]

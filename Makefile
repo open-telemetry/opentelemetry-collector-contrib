@@ -266,7 +266,6 @@ FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: chlog-install
 	chloggen new -filename $(FILENAME).yaml
-	@echo "$(FILENAME).yaml has been created. Please fill in the details according to CONTRIBUTING.md"
 
 .PHONY: chlog-validate
 chlog-validate: chlog-install

@@ -1,4 +1,0 @@
-change_type: breaking
-component: prometheusexporter
-note: Automatically rename metrics with units to follow Prometheus naming convention
-issues: [ 8950 ]

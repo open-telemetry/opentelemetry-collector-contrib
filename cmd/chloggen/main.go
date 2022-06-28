@@ -50,7 +50,10 @@ func main() {
 
 	switch command := os.Args[1]; command {
 	case "new":
-		newCmd.Parse(os.Args[2:])
+		if err := newCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Printf("FAIL: new: %v\n", err)
+			os.Exit(1)
+		}
 		path := filepath.Join(defaultCtx.changelogDir, *filename)
 		if err := initialize(defaultCtx, path); err != nil {
 			fmt.Printf("FAIL: new: %v\n", err)
@@ -62,7 +65,10 @@ func main() {
 			os.Exit(1)
 		}
 	case "update":
-		updateCmd.Parse(os.Args[2:])
+		if err := updateCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Printf("FAIL: update: %v\n", err)
+			os.Exit(1)
+		}
 		if err := update(defaultCtx, *version, *dry); err != nil {
 			fmt.Printf("FAIL: update: %v\n", err)
 			os.Exit(1)
@@ -73,19 +79,15 @@ func main() {
 	}
 }
 
-func usage() {
-	fmt.Println("usage: FILENAME=my-change chloggen new")
-	fmt.Println("       chloggen validate")
-	fmt.Println("       chloggen update [-version v0.55.0] [-dry]")
-}
-
 func initialize(ctx chlogContext, path string) error {
+	var pathWithExt string
 	switch ext := filepath.Ext(path); ext {
-	case ".yaml": // ok
+	case ".yaml":
+		pathWithExt = path
 	case ".yml":
-		path = strings.TrimSuffix(path, ".yml") + ".yaml"
+		pathWithExt = strings.TrimSuffix(path, ".yml") + ".yaml"
 	case "":
-		path = path + ".yaml"
+		pathWithExt = path + ".yaml"
 	default:
 		return fmt.Errorf("non-yaml extension: %s", ext)
 	}
@@ -94,7 +96,12 @@ func initialize(ctx chlogContext, path string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, templateBytes, os.FileMode(0755))
+	err = os.WriteFile(pathWithExt, templateBytes, os.FileMode(0755))
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Changelog entry template copied to: %s\n", pathWithExt)
+	return nil
 }
 
 func validate(ctx chlogContext) error {
@@ -154,9 +161,12 @@ func update(ctx chlogContext, version string, dry bool) error {
 	if err != nil {
 		return err
 	}
-	defer tmpChlogFile.Close()
-
-	tmpChlogFile.WriteString(chlogBuilder.String())
+	if _, err := tmpChlogFile.WriteString(chlogBuilder.String()); err != nil {
+		return err
+	}
+	if err := tmpChlogFile.Close(); err != nil {
+		return err
+	}
 
 	if err := os.Rename(tmpMD, ctx.changelogMD); err != nil {
 		return err
@@ -209,4 +219,10 @@ func deleteEntries(ctx chlogContext) error {
 		}
 	}
 	return nil
+}
+
+func usage() {
+	fmt.Println("usage: [FILENAME=my-change] chloggen new")
+	fmt.Println("       chloggen validate")
+	fmt.Println("       chloggen update [-version v0.55.0] [-dry]")
 }
