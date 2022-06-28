@@ -277,6 +277,8 @@ pod_association:%s
 
 with
 
-pod_association:%s`, deprecated, actual))
+pod_association:%s
+
+`, deprecated, actual))
 	}
 }
