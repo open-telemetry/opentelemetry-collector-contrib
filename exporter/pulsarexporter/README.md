@@ -8,7 +8,7 @@ Supported pipeline types: logs, metrics, traces
 ## Get Started
 
 The following settings can be optionally configured:
-- `service_url` (default = pulsar://localhost:6650): The url of pulsar cluster.
+- `endpoint` (default = pulsar://localhost:6650): The url of pulsar cluster.
 - `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the pulsar topic to export to.
 - `encoding` (default = otlp_proto): The encoding of the traces sent to pulsar. All available encodings:
     - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs.
