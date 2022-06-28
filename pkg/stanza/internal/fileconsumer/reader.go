@@ -31,8 +31,8 @@ import (
 type FileAttributes struct {
 	Name         string
 	Path         string
-	ResolvedName string
-	ResolvedPath string
+	NameResolved string
+	PathResolved string
 }
 
 // resolveFileAttributes resolves file attributes
@@ -51,8 +51,8 @@ func (f *Input) resolveFileAttributes(path string) *FileAttributes {
 	return &FileAttributes{
 		Path:         path,
 		Name:         filepath.Base(path),
-		ResolvedPath: abs,
-		ResolvedName: filepath.Base(abs),
+		PathResolved: abs,
+		NameResolved: filepath.Base(abs),
 	}
 }
 

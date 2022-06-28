@@ -31,12 +31,8 @@ type Input struct {
 
 	fileConsumer *fileconsumer.Input
 
-	FilePathField         entry.Field
-	FileNameField         entry.Field
-	FilePathResolvedField entry.Field
-	FileNameResolvedField entry.Field
-
-	toBody toBodyFunc
+	toBody         toBodyFunc
+	preEmitOptions []preEmitOption
 }
 
 // Start will start the file monitoring process
@@ -50,7 +46,6 @@ func (f *Input) Stop() error {
 }
 
 func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
-	// Skip the entry if it's empty
 	if len(token) == 0 {
 		return
 	}
@@ -61,23 +56,29 @@ func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, to
 		return
 	}
 
-	// TODO turn these into options
-	if err := ent.Set(f.FilePathField, attrs.Path); err != nil {
-		f.Errorf("set attribute: %w", err)
-		return
-	}
-	if err := ent.Set(f.FileNameField, attrs.Name); err != nil {
-		f.Errorf("set attribute: %w", err)
-		return
-	}
-	if err := ent.Set(f.FilePathResolvedField, attrs.ResolvedPath); err != nil {
-		f.Errorf("set attribute: %w", err)
-		return
-	}
-	if err := ent.Set(f.FileNameResolvedField, attrs.ResolvedName); err != nil {
-		f.Errorf("set attribute: %w", err)
-		return
+	for _, option := range f.preEmitOptions {
+		if err := option(attrs, ent); err != nil {
+			f.Errorf("preemit: %w", err)
+		}
 	}
 
 	f.Write(ctx, ent)
+}
+
+type preEmitOption func(*fileconsumer.FileAttributes, *entry.Entry) error
+
+func setFileName(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
+	return ent.Set(entry.NewAttributeField("log.file.name"), attrs.Name)
+}
+
+func setFilePath(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
+	return ent.Set(entry.NewAttributeField("log.file.path"), attrs.Path)
+}
+
+func setFileNameResolved(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
+	return ent.Set(entry.NewAttributeField("log.file.name_resolved"), attrs.NameResolved)
+}
+
+func setFilePathResolved(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
+	return ent.Set(entry.NewAttributeField("log.file.path_resolved"), attrs.PathResolved)
 }

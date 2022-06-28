@@ -1,3 +1,2 @@
-type: file_input
 multiline:
   line_end_pattern: '%'

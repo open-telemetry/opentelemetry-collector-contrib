@@ -1,27 +1,32 @@
 # Changelog
 
 ## Unreleased
-- `filterprocessor`: Ability to filter `Spans` (#6341)
-- 
+
 ## 🛑 Breaking changes 🛑
 
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
 
 ### 🚩 Deprecations 🚩
 
+- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
 
+- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
 - `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
 - `splunkhecexporter`: Update limits for max_content_length settings (#11550)
+- `filterprocessor`: Add ability to filter `Spans` (#6341)
+- `tracegen`: support add additional resource attributes. (#11145)
 
 ### 🧰 Bug fixes 🧰
 
 - `redactionprocessor`: respect allow_all_keys configuration (#11542)
+- `filestorageextension`: Copy values returned by Get (#11776)
 
 ### Unmaintained components
 
@@ -76,6 +81,7 @@
 - `mezmoexporter`: add logging for HTTP errors (#10875)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
 - `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
+- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics. (#11118)
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
@@ -107,6 +113,9 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
+
+### 🚩 Deprecations 🚩
+
 
 ### 🚀 New components 🚀
 
