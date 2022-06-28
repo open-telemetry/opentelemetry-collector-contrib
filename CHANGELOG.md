@@ -76,6 +76,8 @@
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
+- `awscontainerinsightsreciever`: Pod detection Logic to support k8's on containerd runtime (#11666)
+
 
 ### 🧰 Bug fixes 🧰
 
