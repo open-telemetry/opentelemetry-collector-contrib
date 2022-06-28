@@ -45,7 +45,7 @@ type CPUMemInfoProvider interface {
 
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
-	GetValue(info *cinfo.ContainerInfo, CPUMemInfoProvider string) []*CAdvisorMetric
+	GetValue(*cinfo.ContainerInfo, CPUMemInfoProvider, string) []*CAdvisorMetric
 }
 
 type CAdvisorMetric struct {
