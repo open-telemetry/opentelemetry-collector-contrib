@@ -51,8 +51,7 @@ func TestNew(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := setupTestDir(t, []*Entry{})
-			path := filepath.Join(ctx.unreleasedDir, tc.filename)
-			err := initialize(ctx, path)
+			err := initialize(ctx, tc.filename)
 			if tc.wantErr != "" {
 				require.Regexp(t, tc.wantErr, err)
 				return
@@ -297,8 +296,7 @@ func setupTestDir(t *testing.T, entries []*Entry) chlogContext {
 	require.NoError(t, os.WriteFile(ctx.templateYAML, templateBytes, os.FileMode(0755)))
 
 	for i, entry := range entries {
-		filename := filepath.Join(ctx.unreleasedDir, fmt.Sprintf("%d.yaml", i))
-		require.NoError(t, writeEntryYAML(ctx, filename, entry))
+		require.NoError(t, writeEntryYAML(ctx, fmt.Sprintf("%d.yaml", i), entry))
 	}
 
 	return ctx
@@ -309,5 +307,6 @@ func writeEntryYAML(ctx chlogContext, filename string, entry *Entry) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filename, entryBytes, os.FileMode(0755))
+	path := filepath.Join(ctx.unreleasedDir, filename)
+	return os.WriteFile(path, entryBytes, os.FileMode(0755))
 }

@@ -54,8 +54,7 @@ func main() {
 			fmt.Printf("FAIL: new: %v\n", err)
 			os.Exit(1)
 		}
-		path := filepath.Join(defaultCtx.unreleasedDir, *filename)
-		if err := initialize(defaultCtx, path); err != nil {
+		if err := initialize(defaultCtx, *filename); err != nil {
 			fmt.Printf("FAIL: new: %v\n", err)
 			os.Exit(1)
 		}
@@ -79,7 +78,8 @@ func main() {
 	}
 }
 
-func initialize(ctx chlogContext, path string) error {
+func initialize(ctx chlogContext, filename string) error {
+	path := filepath.Join(ctx.unreleasedDir, filename)
 	var pathWithExt string
 	switch ext := filepath.Ext(path); ext {
 	case ".yaml":
