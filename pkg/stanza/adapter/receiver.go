@@ -105,7 +105,7 @@ func (r *receiver) emitterLoop(ctx context.Context) {
 			}
 
 			if err := r.converter.Batch(e); err != nil {
-				r.logger.Error("Could not add entry to batch")
+				r.logger.Error("Could not add entry to batch", zap.Error(err))
 			}
 		}
 	}
