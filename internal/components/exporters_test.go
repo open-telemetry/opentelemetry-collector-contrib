@@ -384,7 +384,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "logzio",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["logzio"].CreateDefaultConfig().(*logzioexporter.Config)
-				cfg.CustomEndpoint = "http://" + endpoint
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},

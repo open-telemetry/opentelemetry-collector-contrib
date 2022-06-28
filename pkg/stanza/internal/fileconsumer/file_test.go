@@ -111,8 +111,8 @@ func TestAddFileResolvedFields(t *testing.T) {
 	emitCall := waitForEmit(t, emitCalls)
 	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
 	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved), emitCall.attrs.ResolvedName)
-	require.Equal(t, resolved, emitCall.attrs.ResolvedPath)
+	require.Equal(t, filepath.Base(resolved), emitCall.attrs.NameResolved)
+	require.Equal(t, resolved, emitCall.attrs.PathResolved)
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -175,8 +175,8 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	emitCall := waitForEmit(t, emitCalls)
 	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
 	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved1), emitCall.attrs.ResolvedName)
-	require.Equal(t, resolved1, emitCall.attrs.ResolvedPath)
+	require.Equal(t, filepath.Base(resolved1), emitCall.attrs.NameResolved)
+	require.Equal(t, resolved1, emitCall.attrs.PathResolved)
 
 	// Change middleSymLink to point to file2
 	err = os.Remove(middleSymLinkPath)
@@ -190,8 +190,8 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	emitCall = waitForEmit(t, emitCalls)
 	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
 	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved2), emitCall.attrs.ResolvedName)
-	require.Equal(t, resolved2, emitCall.attrs.ResolvedPath)
+	require.Equal(t, filepath.Base(resolved2), emitCall.attrs.NameResolved)
+	require.Equal(t, resolved2, emitCall.attrs.PathResolved)
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we
@@ -262,7 +262,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, emitCalls, tempDir := newTestScenario(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
-				cfg.Encoding.Encoding = "nop"
+				cfg.Splitter.EncodingConfig.Encoding = "nop"
 			})
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -342,7 +342,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, emitCalls, tempDir := newTestScenario(t, func(cfg *Config) {
 				cfg.MaxLogSize = tc.maxLogSize
-				cfg.Encoding.Encoding = "nop"
+				cfg.Splitter.EncodingConfig.Encoding = "nop"
 			})
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -1006,89 +1006,89 @@ func TestFingerprintChangeSize(t *testing.T) {
 	}
 }
 
-// func TestEncodings(t *testing.T) {
-// 	t.Parallel()
-// 	cases := []struct {
-// 		name     string
-// 		contents []byte
-// 		encoding string
-// 		expected [][]byte
-// 	}{
-// 		{
-// 			"Nop",
-// 			[]byte{0xc5, '\n'},
-// 			"",
-// 			[][]byte{{0xc5}},
-// 		},
-// 		{
-// 			"InvalidUTFReplacement",
-// 			[]byte{0xc5, '\n'},
-// 			"utf8",
-// 			[][]byte{{0xef, 0xbf, 0xbd}},
-// 		},
-// 		{
-// 			"ValidUTF8",
-// 			[]byte("foo\n"),
-// 			"utf8",
-// 			[][]byte{[]byte("foo")},
-// 		},
-// 		{
-// 			"ChineseCharacter",
-// 			[]byte{230, 138, 152, '\n'}, // 折\n
-// 			"utf8",
-// 			[][]byte{{230, 138, 152}},
-// 		},
-// 		{
-// 			"SmileyFaceUTF16",
-// 			[]byte{216, 61, 222, 0, 0, 10}, // 😀\n
-// 			"utf-16be",
-// 			[][]byte{{240, 159, 152, 128}},
-// 		},
-// 		{
-// 			"SmileyFaceNewlineUTF16",
-// 			[]byte{216, 61, 222, 0, 0, 10, 0, 102, 0, 111, 0, 111}, // 😀\nfoo
-// 			"utf-16be",
-// 			[][]byte{{240, 159, 152, 128}, {102, 111, 111}},
-// 		},
-// 		{
-// 			"SmileyFaceNewlineUTF16LE",
-// 			[]byte{61, 216, 0, 222, 10, 0, 102, 0, 111, 0, 111, 0}, // 😀\nfoo
-// 			"utf-16le",
-// 			[][]byte{{240, 159, 152, 128}, {102, 111, 111}},
-// 		},
-// 		{
-// 			"ChineseCharacterBig5",
-// 			[]byte{167, 233, 10}, // 折\n
-// 			"big5",
-// 			[][]byte{{230, 138, 152}},
-// 		},
-// 	}
+func TestEncodings(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		contents []byte
+		encoding string
+		expected [][]byte
+	}{
+		{
+			"Nop",
+			[]byte{0xc5, '\n'},
+			"",
+			[][]byte{{0xc5}},
+		},
+		{
+			"InvalidUTFReplacement",
+			[]byte{0xc5, '\n'},
+			"utf8",
+			[][]byte{{0xef, 0xbf, 0xbd}},
+		},
+		{
+			"ValidUTF8",
+			[]byte("foo\n"),
+			"utf8",
+			[][]byte{[]byte("foo")},
+		},
+		{
+			"ChineseCharacter",
+			[]byte{230, 138, 152, '\n'}, // 折\n
+			"utf8",
+			[][]byte{{230, 138, 152}},
+		},
+		{
+			"SmileyFaceUTF16",
+			[]byte{216, 61, 222, 0, 0, 10}, // 😀\n
+			"utf-16be",
+			[][]byte{{240, 159, 152, 128}},
+		},
+		{
+			"SmileyFaceNewlineUTF16",
+			[]byte{216, 61, 222, 0, 0, 10, 0, 102, 0, 111, 0, 111}, // 😀\nfoo
+			"utf-16be",
+			[][]byte{{240, 159, 152, 128}, {102, 111, 111}},
+		},
+		{
+			"SmileyFaceNewlineUTF16LE",
+			[]byte{61, 216, 0, 222, 10, 0, 102, 0, 111, 0, 111, 0}, // 😀\nfoo
+			"utf-16le",
+			[][]byte{{240, 159, 152, 128}, {102, 111, 111}},
+		},
+		{
+			"ChineseCharacterBig5",
+			[]byte{167, 233, 10}, // 折\n
+			"big5",
+			[][]byte{{230, 138, 152}},
+		},
+	}
 
-// 	for _, tc := range cases {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			t.Parallel()
-// 			operator, receivedEntries, tempDir := newTestScenario(t, func(cfg *Config) {
-// 				cfg.Encoding = helper.EncodingConfig{Encoding: tc.encoding}
-// 			})
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			operator, emitCalls, tempDir := newTestScenario(t, func(cfg *Config) {
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: tc.encoding}
+			})
 
-// 			// Popualte the file
-// 			temp := openTemp(t, tempDir)
-// 			_, err := temp.Write(tc.contents)
-// 			require.NoError(t, err)
+			// Populate the file
+			temp := openTemp(t, tempDir)
+			_, err := temp.Write(tc.contents)
+			require.NoError(t, err)
 
-// 			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-// 			defer func() {
-// 				require.NoError(t, operator.Stop())
-// 			}()
+			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
 
-// 			for _, expected := range tc.expected {
-// 				select {
-// 				case entry := <-receivedEntries:
-// 					require.Equal(t, expected, []byte(entry.Body.(string)))
-// 				case <-time.After(500 * time.Millisecond):
-// 					require.FailNow(t, "Timed out waiting for entry to be read")
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+			for _, expected := range tc.expected {
+				select {
+				case call := <-emitCalls:
+					require.Equal(t, expected, call.token)
+				case <-time.After(500 * time.Millisecond):
+					require.FailNow(t, "Timed out waiting for entry to be read")
+				}
+			}
+		})
+	}
+}

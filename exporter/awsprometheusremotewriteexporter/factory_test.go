@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsprometheusremotewriteexporter
 
 import (
@@ -33,7 +32,7 @@ func TestType(t *testing.T) {
 	assert.Equal(t, af.Type(), config.Type(typeStr))
 }
 
-//Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
+// Tests whether the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
 func TestCreateDefaultConfig(t *testing.T) {
 	af := NewFactory()
 	cfg := af.CreateDefaultConfig()
@@ -41,7 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
-//Tests whether or not a correct Metrics Exporter from the default Config parameters
+// Tests whether a correct Metrics Exporter from the default Config parameters
 func TestCreateMetricsExporter(t *testing.T) {
 	af := NewFactory()
 	validConfigWithAuth := af.CreateDefaultConfig().(*Config)
