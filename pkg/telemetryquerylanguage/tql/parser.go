@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetryquerylanguage // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage"
+package tql // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 
 import (
 	"encoding/hex"

@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetryquerylanguage
+package tql
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/testhelper"
 )
 
 func Test_parse(t *testing.T) {
@@ -35,7 +34,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: testhelper.Strp("foo"),
+							String: tqltest.Strp("foo"),
 						},
 					},
 				},
@@ -49,7 +48,7 @@ func Test_parse(t *testing.T) {
 					Function: "met",
 					Arguments: []Value{
 						{
-							Float: testhelper.Floatp(1.2),
+							Float: tqltest.Floatp(1.2),
 						},
 					},
 				},
@@ -63,7 +62,7 @@ func Test_parse(t *testing.T) {
 					Function: "fff",
 					Arguments: []Value{
 						{
-							Int: testhelper.Intp(12),
+							Int: tqltest.Intp(12),
 						},
 					},
 				},
@@ -77,7 +76,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: testhelper.Strp("foo"),
+							String: tqltest.Strp("foo"),
 						},
 						{
 							Invocation: &Invocation{
@@ -117,7 +116,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: testhelper.Strp("bar"),
+										MapKey: tqltest.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -126,7 +125,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: testhelper.Strp("dog"),
+							String: tqltest.Strp("dog"),
 						},
 					},
 				},
@@ -147,7 +146,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: testhelper.Strp("bar"),
+										MapKey: tqltest.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -156,7 +155,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: testhelper.Strp("dog"),
+							String: tqltest.Strp("dog"),
 						},
 					},
 				},
@@ -172,7 +171,7 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "==",
 					Right: Value{
-						String: testhelper.Strp("fido"),
+						String: tqltest.Strp("fido"),
 					},
 				},
 			},
@@ -191,7 +190,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: testhelper.Strp("bar"),
+										MapKey: tqltest.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -200,7 +199,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: testhelper.Strp("dog"),
+							String: tqltest.Strp("dog"),
 						},
 					},
 				},
@@ -216,7 +215,7 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "!=",
 					Right: Value{
-						String: testhelper.Strp("fido"),
+						String: tqltest.Strp("fido"),
 					},
 				},
 			},
@@ -235,7 +234,7 @@ func Test_parse(t *testing.T) {
 									},
 									{
 										Name:   "attributes",
-										MapKey: testhelper.Strp("bar"),
+										MapKey: tqltest.Strp("bar"),
 									},
 									{
 										Name: "cat",
@@ -244,7 +243,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							String: testhelper.Strp("dog"),
+							String: tqltest.Strp("dog"),
 						},
 					},
 				},
@@ -260,7 +259,7 @@ func Test_parse(t *testing.T) {
 					},
 					Op: "==",
 					Right: Value{
-						String: testhelper.Strp("fido"),
+						String: tqltest.Strp("fido"),
 					},
 				},
 			},
@@ -272,7 +271,7 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []Value{
 						{
-							String: testhelper.Strp("fo\"o"),
+							String: tqltest.Strp("fo\"o"),
 						},
 					},
 				},
@@ -286,10 +285,10 @@ func Test_parse(t *testing.T) {
 					Function: "convert_gauge_to_sum",
 					Arguments: []Value{
 						{
-							String: testhelper.Strp("cumulative"),
+							String: tqltest.Strp("cumulative"),
 						},
 						{
-							Bool: (*Boolean)(testhelper.Boolp(false)),
+							Bool: (*Boolean)(tqltest.Boolp(false)),
 						},
 					},
 				},
@@ -303,10 +302,10 @@ func Test_parse(t *testing.T) {
 					Function: "convert_gauge_to_sum",
 					Arguments: []Value{
 						{
-							String: testhelper.Strp("cumulative"),
+							String: tqltest.Strp("cumulative"),
 						},
 						{
-							Bool: (*Boolean)(testhelper.Boolp(true)),
+							Bool: (*Boolean)(tqltest.Boolp(true)),
 						},
 					},
 				},
@@ -324,7 +323,7 @@ func Test_parse(t *testing.T) {
 								Fields: []Field{
 									{
 										Name:   "attributes",
-										MapKey: testhelper.Strp("bytes"),
+										MapKey: tqltest.Strp("bytes"),
 									},
 								},
 							},
@@ -348,13 +347,13 @@ func Test_parse(t *testing.T) {
 								Fields: []Field{
 									{
 										Name:   "attributes",
-										MapKey: testhelper.Strp("test"),
+										MapKey: tqltest.Strp("test"),
 									},
 								},
 							},
 						},
 						{
-							IsNil: (*IsNil)(testhelper.Boolp(true)),
+							IsNil: (*IsNil)(tqltest.Boolp(true)),
 						},
 					},
 				},

@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetryquerylanguage
+package tql
 
 import (
 	"errors"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/testhelper"
 )
 
 func Test_NewFunctionCall_invalid(t *testing.T) {
@@ -49,7 +48,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_getsetter",
 				Arguments: []Value{
 					{
-						String: testhelper.Strp("not path"),
+						String: tqltest.Strp("not path"),
 					},
 				},
 			},
@@ -82,7 +81,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						},
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 				},
 			},
@@ -93,7 +92,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_string",
 				Arguments: []Value{
 					{
-						Int: testhelper.Intp(10),
+						Int: tqltest.Intp(10),
 					},
 				},
 			},
@@ -104,13 +103,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_byte_slice",
 				Arguments: []Value{
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 				},
 			},
@@ -143,13 +142,13 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_string_slice",
 				Arguments: []Value{
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 				},
 			},
@@ -160,13 +159,13 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_float_slice",
 				Arguments: []Value{
 					{
-						Float: testhelper.Floatp(1.1),
+						Float: tqltest.Floatp(1.1),
 					},
 					{
-						Float: testhelper.Floatp(1.2),
+						Float: tqltest.Floatp(1.2),
 					},
 					{
-						Float: testhelper.Floatp(1.3),
+						Float: tqltest.Floatp(1.3),
 					},
 				},
 			},
@@ -177,13 +176,13 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_int_slice",
 				Arguments: []Value{
 					{
-						Int: testhelper.Intp(1),
+						Int: tqltest.Intp(1),
 					},
 					{
-						Int: testhelper.Intp(1),
+						Int: tqltest.Intp(1),
 					},
 					{
-						Int: testhelper.Intp(1),
+						Int: tqltest.Intp(1),
 					},
 				},
 			},
@@ -245,7 +244,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_getter",
 				Arguments: []Value{
 					{
-						IsNil: (*IsNil)(testhelper.Boolp(true)),
+						IsNil: (*IsNil)(tqltest.Boolp(true)),
 					},
 				},
 			},
@@ -256,7 +255,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_string",
 				Arguments: []Value{
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 				},
 			},
@@ -267,7 +266,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_float",
 				Arguments: []Value{
 					{
-						Float: testhelper.Floatp(1.1),
+						Float: tqltest.Floatp(1.1),
 					},
 				},
 			},
@@ -278,7 +277,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_int",
 				Arguments: []Value{
 					{
-						Int: testhelper.Intp(1),
+						Int: tqltest.Intp(1),
 					},
 				},
 			},
@@ -289,7 +288,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_bool",
 				Arguments: []Value{
 					{
-						Bool: (*Boolean)(testhelper.Boolp(true)),
+						Bool: (*Boolean)(tqltest.Boolp(true)),
 					},
 				},
 			},
@@ -320,19 +319,19 @@ func Test_NewFunctionCall(t *testing.T) {
 						},
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 					{
-						Float: testhelper.Floatp(1.1),
+						Float: tqltest.Floatp(1.1),
 					},
 					{
-						Int: testhelper.Intp(1),
+						Int: tqltest.Intp(1),
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 					{
-						String: testhelper.Strp("test"),
+						String: tqltest.Strp("test"),
 					},
 				},
 			},

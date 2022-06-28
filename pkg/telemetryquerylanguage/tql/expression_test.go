@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetryquerylanguage
+package tql
 
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/testhelper"
 )
 
 func hello() (ExprFunc, error) {
@@ -37,21 +36,21 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "string literal",
 			val: Value{
-				String: testhelper.Strp("str"),
+				String: tqltest.Strp("str"),
 			},
 			want: "str",
 		},
 		{
 			name: "float literal",
 			val: Value{
-				Float: testhelper.Floatp(1.2),
+				Float: tqltest.Floatp(1.2),
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
 			val: Value{
-				Int: testhelper.Intp(12),
+				Int: tqltest.Intp(12),
 			},
 			want: int64(12),
 		},
@@ -65,14 +64,14 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "nil literal",
 			val: Value{
-				IsNil: (*IsNil)(testhelper.Boolp(true)),
+				IsNil: (*IsNil)(tqltest.Boolp(true)),
 			},
 			want: nil,
 		},
 		{
 			name: "bool literal",
 			val: Value{
-				Bool: (*Boolean)(testhelper.Boolp(true)),
+				Bool: (*Boolean)(tqltest.Boolp(true)),
 			},
 			want: true,
 		},
@@ -106,7 +105,7 @@ func Test_newGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := NewGetter(tt.val, functions, testParsePath)
 			assert.NoError(t, err)
-			val := reader.Get(testhelper.TestTransformContext{
+			val := reader.Get(tqltest.TestTransformContext{
 				Item: tt.want,
 			})
 			assert.Equal(t, tt.want, val)

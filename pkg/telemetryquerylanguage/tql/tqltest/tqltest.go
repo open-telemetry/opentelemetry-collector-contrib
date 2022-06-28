@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/testhelper"
+package tqltest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"

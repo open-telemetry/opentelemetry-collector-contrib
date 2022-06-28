@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetryquerylanguage
+package tql
 
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/testhelper"
 )
 
 func Test_newConditionEvaluator(t *testing.T) {
@@ -32,10 +31,10 @@ func Test_newConditionEvaluator(t *testing.T) {
 			name: "literals match",
 			cond: &Condition{
 				Left: Value{
-					String: testhelper.Strp("hello"),
+					String: tqltest.Strp("hello"),
 				},
 				Right: Value{
-					String: testhelper.Strp("hello"),
+					String: tqltest.Strp("hello"),
 				},
 				Op: "==",
 			},
@@ -44,10 +43,10 @@ func Test_newConditionEvaluator(t *testing.T) {
 			name: "literals don't match",
 			cond: &Condition{
 				Left: Value{
-					String: testhelper.Strp("hello"),
+					String: tqltest.Strp("hello"),
 				},
 				Right: Value{
-					String: testhelper.Strp("goodbye"),
+					String: tqltest.Strp("goodbye"),
 				},
 				Op: "!=",
 			},
@@ -65,7 +64,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 					},
 				},
 				Right: Value{
-					String: testhelper.Strp("bear"),
+					String: tqltest.Strp("bear"),
 				},
 				Op: "==",
 			},
@@ -84,7 +83,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 					},
 				},
 				Right: Value{
-					String: testhelper.Strp("cat"),
+					String: tqltest.Strp("cat"),
 				},
 				Op: "!=",
 			},
@@ -99,7 +98,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath)
 			assert.NoError(t, err)
-			assert.True(t, evaluate(testhelper.TestTransformContext{
+			assert.True(t, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
 			}))
 		})
@@ -108,11 +107,11 @@ func Test_newConditionEvaluator(t *testing.T) {
 	t.Run("invalid", func(t *testing.T) {
 		_, err := newConditionEvaluator(&Condition{
 			Left: Value{
-				String: testhelper.Strp("bear"),
+				String: tqltest.Strp("bear"),
 			},
 			Op: "<>",
 			Right: Value{
-				String: testhelper.Strp("cat"),
+				String: tqltest.Strp("cat"),
 			},
 		}, DefaultFunctionsForTests(), testParsePath)
 		assert.Error(t, err)
