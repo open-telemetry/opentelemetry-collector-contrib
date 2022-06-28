@@ -1,15 +1,14 @@
-The following additional work should be considered:
+Before merge:
 - Update CI
-  - Require no changes to CHANGELOG.md (except when prepping a release)
-  - Require exactly one new `changelog/*.yaml` file
-  - Run `make chlog-validate`
-  - If any of the above fail, explain where to read about new process
-- Update release proceess to automatically run this with version parameter
-- Provide a make target for developers to easily generate a yaml file. eg
-  - `make chlog-entry -i 12345 -t enhancement -c somereceiver -m "Add foo"`
-  - `make chlog-entry` copies yaml template to `changelog/<branch-name>.yaml`
-- Update `CONTRIBUTING.md` to explain process
+  - Skip the following if PR has `Changelog Update` label
+    - Require no changes to CHANGELOG.md (except when prepping a release, via `Changelog Update` tag?)
+    - Require exactly one new (not modified) `changelog/*.yaml` file
+    - Require that `make chlog-validate` passes
+    - If any of the above fail, explain where to read about new process
 
-Code quality:
-- Tests
-  - Golden files
+Before release:
+- Migrate Unreleased entries to yaml files
+
+Later
+- Update release proceess to automatically run this with version parameter
+
