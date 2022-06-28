@@ -9,10 +9,13 @@
 
 ### 🚩 Deprecations 🚩
 
+- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
 
+- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
 - `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
@@ -109,6 +112,9 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
+
+### 🚩 Deprecations 🚩
+
 
 ### 🚀 New components 🚀
 
