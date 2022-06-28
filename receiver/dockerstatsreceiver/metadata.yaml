@@ -1,19 +1,8 @@
-# Required: name of the receiver.
 name: dockerstatsreceiver
 
-# Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
-# This attribute should be set for metrics compliant with OTel Semantic Conventions.
-#sem_conv_version: 1.9.0
+sem_conv_version: 1.6.1
 
-
-#  resourceAttr.UpsertString(conventions.AttributeContainerRuntime, "docker")
-#  resourceAttr.UpsertString(conventions.AttributeContainerID, container.ID)
-#  resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Config.Image)
-#  resourceAttr.UpsertString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
-#  resourceAttr.UpsertString("container.hostname", container.Config.Hostname)
-
-
-## todo is this possible with non-static resources? i.e. multiple containers
+# Note: there are other, additional resource attributes that the user can configure through the yaml
 resource_attributes:
   container.runtime:
     description: "The runtime of the container. For this receiver, it will always be 'docker'."
@@ -24,55 +13,49 @@ resource_attributes:
   container.image.name:
     description: "The name of the docker image in use by the container."
     type: string
+  container.name:
+    description: "The name of the container."
+    type: string
   container.hostname:
-    description: "The hostname of the container"
+    description: "The hostname of the container."
     type: string
 
-
-# Optional: map of attribute definitions with the key being the attribute name and value
-# being described below.
-#attributes:
-#  <attribute.name>:
-#    # Optional: if the attribute name as described by the key is not the actual attribute
-#    # value to be reported that value can be overridden here.
-#    value:
-#    # Required: description of the attribute.
-#    description:
-#    # Optional: array of attribute values if they are static values.
-#    enum:
-
-# todo so these metrics don't really follow the semantic convention.
-# Should probably align them...
-# Also Gauge for memory usage wtf that's so SFX
-
-# Required: map of metric names with the key being the metric name and value
-# being described below.
 metrics:
   memory.usage.limit:
     enabled: true
     description: "Memory limit of the container."
     unit: By
-    gauge:
+    sum:
       value_type: int
-    attributes: #todo
+      monotonic: false
+      aggregation: cumulative
   memory.usage.total:
     enabled: true
-    description: "Memory usage of the container."
+    description: "Memory usage of the container. This excludes the total cache."
     unit: By
-    gauge:
+    sum:
       value_type: int
-    attributes: #todo
-  memory.percent:
-    enabled: true
-    description: "Percentage of memory used"
-    unit: 1
-    gauge:
-      value_type: double
-    attributes: #todo
+      monotonic: false
+      aggregation: cumulative
+  memory.usage.total_cache:
+    enabled: false
+    description: "Total amount of memory used by the processes of this control group that can be associated with a block on a block device. Also accounts for memory used by tmpfs."
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
   memory.max:
     enabled: true
     description: "Maximum memory usage."
     unit: By
-    gauge:
+    sum:
       value_type: int
-    attributes: #todo
+      monotonic: false
+      aggregation: cumulative
+  memory.percent:
+    enabled: true
+    description: "Percentage of memory used."
+    unit: 1
+    gauge:
+      value_type: double

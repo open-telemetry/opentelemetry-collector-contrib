@@ -8,10 +8,11 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **memory.max** | Maximum memory usage. | By | Gauge(Int) | <ul> </ul> |
+| **memory.max** | Maximum memory usage. | By | Sum(Int) | <ul> </ul> |
 | **memory.percent** | Percentage of memory used | 1 | Gauge(Double) | <ul> </ul> |
-| **memory.usage.limit** | Memory limit of the container. | By | Gauge(Int) | <ul> </ul> |
-| **memory.usage.total** | Memory usage of the container. | By | Gauge(Int) | <ul> </ul> |
+| **memory.usage.limit** | Memory limit of the container. | By | Sum(Int) | <ul> </ul> |
+| **memory.usage.total** | Memory usage of the container. Note that this excludes the buffer cache | By | Sum(Int) | <ul> </ul> |
+| memory.usage.total_cache | Total amount of memory used by the processes of this control group that can be associated with a block on a block device. Also accounts for memory used by tmpfs. | By | Sum(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -29,6 +30,7 @@ metrics:
 | container.hostname | The hostname of the container | String |
 | container.id | The ID of the container. | String |
 | container.image.name | The name of the docker image in use by the container. | String |
+| container.name | The name of the container. | String |
 | container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | String |
 
 ## Metric attributes

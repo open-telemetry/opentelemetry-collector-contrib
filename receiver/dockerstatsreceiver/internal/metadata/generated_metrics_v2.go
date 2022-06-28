@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -17,10 +18,11 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for dockerstatsreceiver metrics.
 type MetricsSettings struct {
-	MemoryMax        MetricSettings `mapstructure:"memory.max"`
-	MemoryPercent    MetricSettings `mapstructure:"memory.percent"`
-	MemoryUsageLimit MetricSettings `mapstructure:"memory.usage.limit"`
-	MemoryUsageTotal MetricSettings `mapstructure:"memory.usage.total"`
+	MemoryMax             MetricSettings `mapstructure:"memory.max"`
+	MemoryPercent         MetricSettings `mapstructure:"memory.percent"`
+	MemoryUsageLimit      MetricSettings `mapstructure:"memory.usage.limit"`
+	MemoryUsageTotal      MetricSettings `mapstructure:"memory.usage.total"`
+	MemoryUsageTotalCache MetricSettings `mapstructure:"memory.usage.total_cache"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -37,6 +39,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		MemoryUsageTotal: MetricSettings{
 			Enabled: true,
 		},
+		MemoryUsageTotalCache: MetricSettings{
+			Enabled: false,
+		},
 	}
 }
 
@@ -51,14 +56,16 @@ func (m *metricMemoryMax) init() {
 	m.data.SetName("memory.max")
 	m.data.SetDescription("Maximum memory usage.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
 func (m *metricMemoryMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -66,14 +73,14 @@ func (m *metricMemoryMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricMemoryMax) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemoryMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -149,14 +156,16 @@ func (m *metricMemoryUsageLimit) init() {
 	m.data.SetName("memory.usage.limit")
 	m.data.SetDescription("Memory limit of the container.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
 func (m *metricMemoryUsageLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -164,14 +173,14 @@ func (m *metricMemoryUsageLimit) recordDataPoint(start pcommon.Timestamp, ts pco
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricMemoryUsageLimit) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemoryUsageLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -196,16 +205,18 @@ type metricMemoryUsageTotal struct {
 // init fills memory.usage.total metric with initial data.
 func (m *metricMemoryUsageTotal) init() {
 	m.data.SetName("memory.usage.total")
-	m.data.SetDescription("Memory usage of the container.")
+	m.data.SetDescription("Memory usage of the container. Note that this excludes the buffer cache")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
 func (m *metricMemoryUsageTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -213,14 +224,14 @@ func (m *metricMemoryUsageTotal) recordDataPoint(start pcommon.Timestamp, ts pco
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricMemoryUsageTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemoryUsageTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -236,18 +247,70 @@ func newMetricMemoryUsageTotal(settings MetricSettings) metricMemoryUsageTotal {
 	return m
 }
 
+type metricMemoryUsageTotalCache struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills memory.usage.total_cache metric with initial data.
+func (m *metricMemoryUsageTotalCache) init() {
+	m.data.SetName("memory.usage.total_cache")
+	m.data.SetDescription("Total amount of memory used by the processes of this control group that can be associated with a block on a block device. Also accounts for memory used by tmpfs.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricMemoryUsageTotalCache) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMemoryUsageTotalCache) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMemoryUsageTotalCache) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMemoryUsageTotalCache(settings MetricSettings) metricMemoryUsageTotalCache {
+	m := metricMemoryUsageTotalCache{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime              pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity        int                 // maximum observed number of metrics per resource.
-	resourceCapacity       int                 // maximum observed number of resource attributes.
-	metricsBuffer          pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo              component.BuildInfo // contains version information
-	metricMemoryMax        metricMemoryMax
-	metricMemoryPercent    metricMemoryPercent
-	metricMemoryUsageLimit metricMemoryUsageLimit
-	metricMemoryUsageTotal metricMemoryUsageTotal
+	startTime                   pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity             int                 // maximum observed number of metrics per resource.
+	resourceCapacity            int                 // maximum observed number of resource attributes.
+	metricsBuffer               pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                   component.BuildInfo // contains version information
+	metricMemoryMax             metricMemoryMax
+	metricMemoryPercent         metricMemoryPercent
+	metricMemoryUsageLimit      metricMemoryUsageLimit
+	metricMemoryUsageTotal      metricMemoryUsageTotal
+	metricMemoryUsageTotalCache metricMemoryUsageTotalCache
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -262,13 +325,14 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:              pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:          pmetric.NewMetrics(),
-		buildInfo:              buildInfo,
-		metricMemoryMax:        newMetricMemoryMax(settings.MemoryMax),
-		metricMemoryPercent:    newMetricMemoryPercent(settings.MemoryPercent),
-		metricMemoryUsageLimit: newMetricMemoryUsageLimit(settings.MemoryUsageLimit),
-		metricMemoryUsageTotal: newMetricMemoryUsageTotal(settings.MemoryUsageTotal),
+		startTime:                   pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:               pmetric.NewMetrics(),
+		buildInfo:                   buildInfo,
+		metricMemoryMax:             newMetricMemoryMax(settings.MemoryMax),
+		metricMemoryPercent:         newMetricMemoryPercent(settings.MemoryPercent),
+		metricMemoryUsageLimit:      newMetricMemoryUsageLimit(settings.MemoryUsageLimit),
+		metricMemoryUsageTotal:      newMetricMemoryUsageTotal(settings.MemoryUsageTotal),
+		metricMemoryUsageTotalCache: newMetricMemoryUsageTotalCache(settings.MemoryUsageTotalCache),
 	}
 	for _, op := range options {
 		op(mb)
@@ -310,6 +374,13 @@ func WithContainerImageName(val string) ResourceMetricsOption {
 	}
 }
 
+// WithContainerName sets provided value as "container.name" attribute for current resource.
+func WithContainerName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("container.name", val)
+	}
+}
+
 // WithContainerRuntime sets provided value as "container.runtime" attribute for current resource.
 func WithContainerRuntime(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
@@ -344,6 +415,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/dockerstatsreceiver")
@@ -353,6 +425,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMemoryPercent.emit(ils.Metrics())
 	mb.metricMemoryUsageLimit.emit(ils.Metrics())
 	mb.metricMemoryUsageTotal.emit(ils.Metrics())
+	mb.metricMemoryUsageTotalCache.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -390,6 +463,11 @@ func (mb *MetricsBuilder) RecordMemoryUsageLimitDataPoint(ts pcommon.Timestamp, 
 // RecordMemoryUsageTotalDataPoint adds a data point to memory.usage.total metric.
 func (mb *MetricsBuilder) RecordMemoryUsageTotalDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMemoryUsageTotal.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMemoryUsageTotalCacheDataPoint adds a data point to memory.usage.total_cache metric.
+func (mb *MetricsBuilder) RecordMemoryUsageTotalCacheDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMemoryUsageTotalCache.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
