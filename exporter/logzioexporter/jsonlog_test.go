@@ -106,7 +106,7 @@ func TestSetTimeStamp(t *testing.T) {
 	}
 	var err error
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

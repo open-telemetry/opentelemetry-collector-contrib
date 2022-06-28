@@ -170,7 +170,7 @@ func GenerateLogsManyLogRecordsSameResource(count int) plog.Logs {
 func testLogsExporter(ld plog.Logs, t *testing.T, cfg *Config) error {
 	var err error
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func newTestTraces() ptrace.Traces {
 
 func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) error {
 	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func TestNullTokenConfig(tester *testing.T) {
 		Region: "eu",
 	}
 	params := componenttest.NewNopExporterCreateSettings()
-	_, err := CreateTracesExporter(context.Background(), params, &cfg)
+	_, err := createTracesExporter(context.Background(), params, &cfg)
 	assert.Error(tester, err, "Empty token should produce error")
 }
 
