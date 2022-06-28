@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
+- `transformprocessor`: `metric.type` is now accessed as an enum/int64 instead of a string. (#11787)
 
 ### 🚩 Deprecations 🚩
 
@@ -21,11 +22,13 @@
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
 - `filterprocessor`: Add ability to filter `Spans` (#6341)
 - `tracegen`: support add additional resource attributes. (#11145)
+- `transformprocessor`: Add ability to interact with enums via sybmols. (#11787)
 
 ### 🧰 Bug fixes 🧰
 
 - `redactionprocessor`: respect allow_all_keys configuration (#11542)
 - `filestorageextension`: Copy values returned by Get (#11776)
+- `transformprocessor`: Fixed all instances where enums were not being accessed as `int64`. (#11787)
 
 ### Unmaintained components
 
