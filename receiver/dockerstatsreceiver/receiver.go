@@ -16,9 +16,11 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
+	dtypes "github.com/docker/docker/api/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,6 +30,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 const (
@@ -39,6 +42,7 @@ type receiver struct {
 	config   *Config
 	settings component.ReceiverCreateSettings
 	client   *docker.Client
+	mb       *metadata.MetricsBuilder
 }
 
 func NewReceiver(
@@ -50,12 +54,14 @@ func NewReceiver(
 	recv := receiver{
 		config:   config,
 		settings: set,
+		mb:       metadata.NewMetricsBuilder(config.MetricsConfig, set.BuildInfo),
 	}
 
 	scrp, err := scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithStart(recv.start))
 	if err != nil {
 		return nil, err
 	}
+
 	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
@@ -111,7 +117,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	for res := range results {
 		if res.err != nil {
-			// Don't know the number of failed metrics, but one container fetch is a partial error.
+			// Don't know the number of failed stats, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
@@ -119,4 +125,96 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	return md, errs
+}
+
+type resultV2 struct {
+	stats     *dtypes.StatsJSON
+	container *docker.Container
+	err       error
+}
+
+func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
+	containers := r.client.Containers()
+	results := make(chan resultV2, len(containers))
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(containers))
+	for _, container := range containers {
+		go func(c docker.Container) {
+			defer wg.Done()
+			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
+			if err != nil {
+				results <- resultV2{nil, &c, err}
+				return
+			}
+
+			results <- resultV2{
+				stats:     statsJSON,
+				container: &c,
+				err:       nil}
+		}(container)
+	}
+
+	wg.Wait()
+	close(results)
+
+	var errs error
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for res := range results {
+		if res.err != nil {
+			// Don't know the number of failed stats, but one container fetch is a partial error.
+			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
+			continue
+		}
+		//res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
+
+		r.recordContainerStats(now, res.stats, res.container)
+	}
+
+	return r.mb.Emit(), errs
+}
+
+func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) {
+
+	// Record memory metrics
+	memoryStats := &containerStats.MemoryStats
+	totalCache := memoryStats.Stats["total_cache"]
+	totalUsage := memoryStats.Usage - totalCache
+	r.mb.RecordMemoryMaxDataPoint(now, int64(memoryStats.MaxUsage))
+	r.mb.RecordMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats))
+	r.mb.RecordMemoryUsageTotalDataPoint(now, int64(totalUsage))
+	r.mb.RecordMemoryUsageTotalCacheDataPoint(now, int64(totalCache))
+	r.mb.RecordMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+
+	// Five always-present resource attrs + the user-configured resource attrs
+	resourceCapacity := 5 + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
+	resourceMetricsOptions := make([]metadata.ResourceMetricsOption, 0, resourceCapacity)
+	resourceMetricsOptions = append(resourceMetricsOptions,
+		metadata.WithContainerRuntime("docker"),
+		metadata.WithContainerHostname(container.Config.Hostname),
+		metadata.WithContainerID(container.ID),
+		metadata.WithContainerImageName(container.Config.Image),
+		metadata.WithContainerName(strings.TrimPrefix(container.Name, "/")))
+
+	for k, label := range r.config.EnvVarsToMetricLabels {
+		if v := container.EnvMap[k]; v != "" {
+			label := label
+			v := v
+			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
+				rm.Resource().Attributes().UpsertString(label, v)
+			})
+		}
+	}
+	for k, label := range r.config.ContainerLabelsToMetricLabels {
+		if v := container.Config.Labels[k]; v != "" {
+			label := label
+			v := v
+			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
+				rm.Resource().Attributes().UpsertString(label, v)
+			})
+		}
+	}
+
+	r.mb.Emit(resourceMetricsOptions...)
 }

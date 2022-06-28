@@ -177,12 +177,7 @@ func appendMemoryMetrics(dest pmetric.MetricSlice, memoryStats *dtypes.MemorySta
 	populateGauge(dest.AppendEmpty(), "memory.usage.limit", int64(memoryStats.Limit), ts)
 	populateGauge(dest.AppendEmpty(), "memory.usage.total", totalUsage, ts)
 
-	var pctUsed float64
-	if float64(memoryStats.Limit) == 0 {
-		pctUsed = 0
-	} else {
-		pctUsed = 100.0 * (float64(memoryStats.Usage) - float64(memoryStats.Stats["cache"])) / float64(memoryStats.Limit)
-	}
+	pctUsed := calculateMemoryPercent(memoryStats)
 
 	populateGaugeF(dest.AppendEmpty(), "memory.percent", "1", pctUsed, ts, nil, nil)
 	populateGauge(dest.AppendEmpty(), "memory.usage.max", int64(memoryStats.MaxUsage), ts)
@@ -281,4 +276,11 @@ func populateAttributes(dest pcommon.Map, labelKeys []string, labelValues []stri
 	for i := range labelKeys {
 		dest.UpsertString(labelKeys[i], labelValues[i])
 	}
+}
+
+func calculateMemoryPercent(memoryStats *dtypes.MemoryStats) float64 {
+	if float64(memoryStats.Limit) == 0 {
+		return 0
+	}
+	return 100.0 * (float64(memoryStats.Usage) - float64(memoryStats.Stats["cache"])) / float64(memoryStats.Limit)
 }
