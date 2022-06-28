@@ -56,7 +56,6 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	_ = processorConfig.Validate()
 	metricsProcessor := newDeltaToRateProcessor(processorConfig, params.Logger)
 
 	return processorhelper.NewMetricsProcessor(
