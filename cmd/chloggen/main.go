@@ -54,7 +54,7 @@ func main() {
 			fmt.Printf("FAIL: new: %v\n", err)
 			os.Exit(1)
 		}
-		path := filepath.Join(defaultCtx.changelogDir, *filename)
+		path := filepath.Join(defaultCtx.unreleasedDir, *filename)
 		if err := initialize(defaultCtx, path); err != nil {
 			fmt.Printf("FAIL: new: %v\n", err)
 			os.Exit(1)
@@ -114,7 +114,7 @@ func validate(ctx chlogContext) error {
 			return err
 		}
 	}
-	fmt.Printf("PASS: all files in ./%s/ are valid\n", ctx.changelogDir)
+	fmt.Printf("PASS: all files in ./%s/ are valid\n", ctx.unreleasedDir)
 	return nil
 }
 
@@ -178,7 +178,7 @@ func update(ctx chlogContext, version string, dry bool) error {
 }
 
 func readEntries(ctx chlogContext) ([]*Entry, error) {
-	entryYAMLs, err := filepath.Glob(filepath.Join(ctx.changelogDir, "*.yaml"))
+	entryYAMLs, err := filepath.Glob(filepath.Join(ctx.unreleasedDir, "*.yaml"))
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func readEntries(ctx chlogContext) ([]*Entry, error) {
 }
 
 func deleteEntries(ctx chlogContext) error {
-	entryYAMLs, err := filepath.Glob(filepath.Join(ctx.changelogDir, "*.yaml"))
+	entryYAMLs, err := filepath.Glob(filepath.Join(ctx.unreleasedDir, "*.yaml"))
 	if err != nil {
 		return err
 	}

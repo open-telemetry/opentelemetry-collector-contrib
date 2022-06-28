@@ -265,7 +265,7 @@ chlog-install:
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: chlog-install
-	chloggen new -filename $(FILENAME).yaml
+	chloggen new -filename $(FILENAME)
 
 .PHONY: chlog-validate
 chlog-validate: chlog-install

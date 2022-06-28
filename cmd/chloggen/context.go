@@ -21,23 +21,23 @@ import (
 )
 
 const (
-	changelogMD  = "CHANGELOG.md"
-	changelogDir = "changelog"
-	templateYAML = "TEMPLATE.yaml"
+	changelogMD   = "CHANGELOG.md"
+	unreleasedDir = "unreleased"
+	templateYAML  = "TEMPLATE.yaml"
 )
 
 // chlogContext enables tests by allowing them to work in an test directory
 type chlogContext struct {
-	changelogMD  string
-	changelogDir string
-	templateYAML string
+	changelogMD   string
+	unreleasedDir string
+	templateYAML  string
 }
 
 func newChlogContext(rootDir string) chlogContext {
 	return chlogContext{
-		changelogMD:  filepath.Join(rootDir, changelogMD),
-		changelogDir: filepath.Join(rootDir, changelogDir),
-		templateYAML: filepath.Join(rootDir, changelogDir, templateYAML),
+		changelogMD:   filepath.Join(rootDir, changelogMD),
+		unreleasedDir: filepath.Join(rootDir, unreleasedDir),
+		templateYAML:  filepath.Join(rootDir, unreleasedDir, templateYAML),
 	}
 }
 

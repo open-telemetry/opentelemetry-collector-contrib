@@ -51,7 +51,7 @@ func TestNew(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := setupTestDir(t, []*Entry{})
-			path := filepath.Join(ctx.changelogDir, tc.filename)
+			path := filepath.Join(ctx.unreleasedDir, tc.filename)
 			err := initialize(ctx, path)
 			if tc.wantErr != "" {
 				require.Regexp(t, tc.wantErr, err)
@@ -213,7 +213,7 @@ func TestUpdateE2E(t *testing.T) {
 
 			require.Equal(t, string(expectedBytes), string(actualBytes))
 
-			remainingYAMLs, err := filepath.Glob(filepath.Join(ctx.changelogDir, "*.yaml"))
+			remainingYAMLs, err := filepath.Glob(filepath.Join(ctx.unreleasedDir, "*.yaml"))
 			require.NoError(t, err)
 			if tc.dry {
 				require.Equal(t, 1+len(tc.entries), len(remainingYAMLs))
@@ -288,7 +288,7 @@ func setupTestDir(t *testing.T, entries []*Entry) chlogContext {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(ctx.changelogMD, changelogBytes, os.FileMode(0755)))
 
-	require.NoError(t, os.Mkdir(ctx.changelogDir, os.FileMode(0755)))
+	require.NoError(t, os.Mkdir(ctx.unreleasedDir, os.FileMode(0755)))
 
 	// Copy the entry template, for tests that ensure it is not deleted
 	templateInRootDir := defaultCtx.templateYAML
@@ -297,7 +297,7 @@ func setupTestDir(t *testing.T, entries []*Entry) chlogContext {
 	require.NoError(t, os.WriteFile(ctx.templateYAML, templateBytes, os.FileMode(0755)))
 
 	for i, entry := range entries {
-		filename := filepath.Join(ctx.changelogDir, fmt.Sprintf("%d.yaml", i))
+		filename := filepath.Join(ctx.unreleasedDir, fmt.Sprintf("%d.yaml", i))
 		require.NoError(t, writeEntryYAML(ctx, filename, entry))
 	}
 
