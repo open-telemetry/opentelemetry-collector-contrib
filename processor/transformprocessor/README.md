@@ -42,6 +42,10 @@ the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.
 
 - `replace_all_matches(target, pattern, replacement)` - `target` is a path expression to a map type field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. Each string value in `target` that matches `pattern` will get replaced with `replacement`. e.g., `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
+- `replace_pattern(target, regex, replacement)` - `target` is a path expression to a telemetry field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If one or more sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
+
+- `replace_all_patterns(target, regex, replacement)` - `target` is a path expression to a map type field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If one or more sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
+
 Metric only functions:
 - `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
 **NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#gauge). Use at your own risk.
@@ -75,9 +79,10 @@ processors:
     traces:
       queries:
         - set(status.code, 1) where attributes["http.path"] == "/health"
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region", "process.command_line")
         - set(name, attributes["http.route"])
         - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
+        - replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
         - limit(attributes, 100)
         - limit(resource.attributes, 100)
         - truncate_all(attributes, 4096)
@@ -95,6 +100,7 @@ processors:
       queries:
         - set(severity_text, "FAIL") where body == "request failed"
         - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
+        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
         - set(body, attributes["http.route"])
         - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
 service:
@@ -116,28 +122,30 @@ All spans
 1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `name` to the `http.route` attribute if it is set
-2) Replace the value of an attribute named `http.target` with `/user/{userId}/list/{listId}` if the value matched `/user/*/list/*`
-4) Limit all span attributes such that each span has no more than 100 attributes.
-5) Limit all resource attributes such that each resource no more than 100 attributes.
-6) Truncate all span attributes such that no string value has more than 4096 characters.
-7) Truncate all resource attributes such that no string value has more than 4096 characters.
+4) Replace the value of an attribute named `http.target` with `/user/{userId}/list/{listId}` if the value matched `/user/*/list/*`
+5) Update the value of an attribute named `process.command_line`, by replacing any substrings that match the regex `password\\=[^\\s]*(\\s?)` with `password=***`
+6) Limit all span attributes such that each span has no more than 100 attributes.
+7) Limit all resource attributes such that each resource no more than 100 attributes.
+8) Truncate all span attributes such that no string value has more than 4096 characters.
+9) Truncate all resource attributes such that no string value has more than 4096 characters.
 
 All metrics and their data points
 
 1) Set metric description to "Sum" if the metric type is "Sum"
 2) Keep only the `host.name` resource attributes
-4) Limit all data point attributes such that each data point has no more than 100 attributes.
-6) Truncate all data point attributes such that no string value has more than 4096 characters.
-7) Truncate all resource attributes such that no string value has more than 4096 characters.
-8) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
-9) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
+3) Limit all data point attributes such that each data point has no more than 100 attributes.
+4) Truncate all data point attributes such that no string value has more than 4096 characters.
+5) Truncate all resource attributes such that no string value has more than 4096 characters.
+6) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
+7) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
 
 All logs
 
 1) Set severity text to FAIL if the body contains a string text "request failed"
 2) Replace any attribute value that matches `/user/*/list/*` with `/user/{userId}/list/{listId}`
-3) Set `body` to the `http.route` attribute if it is set
-4) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+3) Update the value of any attribute, by replacing any substrings that match the regex `/account/\\d{4}` with `/account/{accountId}`
+4) Set `body` to the `http.route` attribute if it is set
+5) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
 ## Contributing
  <!-- markdown-link-check-disable-next-line -->
