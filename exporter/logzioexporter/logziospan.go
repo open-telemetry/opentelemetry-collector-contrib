@@ -24,11 +24,11 @@ import (
 const (
 	spanLogType = "jaegerSpan"
 	// TagDotReplacementCharacter state which character should replace the dot in es
-	TagDotReplacementCharacter = "@"
+	tagDotReplacementCharacter = "@"
 )
 
-// LogzioSpan is same as esSpan with a few different json field names and an addition on type field.
-type LogzioSpan struct {
+// logzioSpan is same as esSpan with a few different json field names and an addition on type field.
+type logzioSpan struct {
 	TraceID         dbmodel.TraceID        `json:"traceID"`
 	OperationName   string                 `json:"operationName,omitempty"`
 	SpanID          dbmodel.SpanID         `json:"spanID"`
@@ -53,12 +53,12 @@ func getTagsValues(tags []model.KeyValue) []string {
 	return values
 }
 
-// TransformToLogzioSpanBytes receives a Jaeger span, converts it to logzio span and returns it as a byte array.
+// transformToLogzioSpanBytes receives a Jaeger span, converts it to logzio span and returns it as a byte array.
 // The main differences between Jaeger span and logzio span are arrays which are represented as maps
-func TransformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
-	spanConverter := dbmodel.NewFromDomain(true, getTagsValues(span.Tags), TagDotReplacementCharacter)
+func transformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
+	spanConverter := dbmodel.NewFromDomain(true, getTagsValues(span.Tags), tagDotReplacementCharacter)
 	jsonSpan := spanConverter.FromDomainEmbedProcess(span)
-	logzioSpan := LogzioSpan{
+	newSpan := logzioSpan{
 		TraceID:         jsonSpan.TraceID,
 		OperationName:   jsonSpan.OperationName,
 		SpanID:          jsonSpan.SpanID,
@@ -74,11 +74,11 @@ func TransformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
 		Logs:            jsonSpan.Logs,
 		Type:            spanLogType,
 	}
-	return json.Marshal(logzioSpan)
+	return json.Marshal(newSpan)
 }
 
-// TransformToDbModelSpan coverts logz.io span to ElasticSearch span
-func (span *LogzioSpan) TransformToDbModelSpan() *dbmodel.Span {
+// transformToDbModelSpan coverts logz.io span to ElasticSearch span
+func (span *logzioSpan) transformToDbModelSpan() *dbmodel.Span {
 	return &dbmodel.Span{
 		OperationName:   span.OperationName,
 		Process:         span.Process,

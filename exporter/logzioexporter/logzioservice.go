@@ -23,16 +23,16 @@ import (
 
 const serviceLogType = "jaegerService"
 
-// LogzioService type, for query purposes
-type LogzioService struct {
+// logzioService type, for query purposes
+type logzioService struct {
 	OperationName string `json:"operationName"`
 	ServiceName   string `json:"serviceName"`
 	Type          string `json:"type"`
 }
 
-// NewLogzioService creates a new logzio service from a span
-func NewLogzioService(span *model.Span) LogzioService {
-	service := LogzioService{
+// newLogzioService creates a new logzio service from a span
+func newLogzioService(span *model.Span) logzioService {
+	service := logzioService{
 		ServiceName:   span.Process.ServiceName,
 		OperationName: span.OperationName,
 		Type:          serviceLogType,
@@ -41,7 +41,7 @@ func NewLogzioService(span *model.Span) LogzioService {
 }
 
 // HashCode receives a logzio service and returns a hash representation of it's service name and operation name.
-func (service *LogzioService) HashCode() (string, error) {
+func (service *logzioService) HashCode() (string, error) {
 	hash := fnv.New64a()
 	_, err := hash.Write(append([]byte(service.ServiceName), []byte(service.OperationName)...))
 	return fmt.Sprintf("%x", hash.Sum64()), err

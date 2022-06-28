@@ -338,16 +338,16 @@ func TestPushTraceData(tester *testing.T) {
 	res.Attributes().UpsertString(conventions.AttributeHostName, testHost)
 	err := testTracesExporter(td, tester, &cfg)
 	require.NoError(tester, err)
-	var logzioSpan LogzioSpan
+	var newSpan logzioSpan
 	decoded, _ := gUnzipData(recordedRequests)
 	requests := strings.Split(string(decoded), "\n")
-	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &logzioSpan))
-	assert.Equal(tester, testOperation, logzioSpan.OperationName)
-	assert.Equal(tester, testService, logzioSpan.Process.ServiceName)
-	var logzioService LogzioService
-	assert.NoError(tester, json.Unmarshal([]byte(requests[1]), &logzioService))
-	assert.Equal(tester, testOperation, logzioService.OperationName)
-	assert.Equal(tester, testService, logzioService.ServiceName)
+	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &newSpan))
+	assert.Equal(tester, testOperation, newSpan.OperationName)
+	assert.Equal(tester, testService, newSpan.Process.ServiceName)
+	var newService logzioService
+	assert.NoError(tester, json.Unmarshal([]byte(requests[1]), &newService))
+	assert.Equal(tester, testOperation, newService.OperationName)
+	assert.Equal(tester, testService, newService.ServiceName)
 }
 
 func TestPushLogsData(tester *testing.T) {

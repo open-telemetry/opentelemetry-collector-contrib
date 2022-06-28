@@ -53,8 +53,8 @@ func convertAttributeValue(value pcommon.Value, logger hclog.Logger) interface{}
 	}
 }
 
-// ConvertLogRecordToJSON Takes `plog.LogRecord` and `pcommon.Resource` input, outputs byte array that represents the log record as json string
-func ConvertLogRecordToJSON(log plog.LogRecord, resource pcommon.Resource, logger hclog.Logger) map[string]interface{} {
+// convertLogRecordToJSON Takes `plog.LogRecord` and `pcommon.Resource` input, outputs byte array that represents the log record as json string
+func convertLogRecordToJSON(log plog.LogRecord, resource pcommon.Resource, logger hclog.Logger) map[string]interface{} {
 	jsonLog := map[string]interface{}{}
 	if spanID := log.SpanID().HexString(); spanID != "" {
 		jsonLog["spanID"] = spanID

@@ -145,7 +145,7 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
-				jsonLog := ConvertLogRecordToJSON(log, resource, exporter.logger)
+				jsonLog := convertLogRecordToJSON(log, resource, exporter.logger)
 				logzioLog, err := json.Marshal(jsonLog)
 				if err != nil {
 					return err
@@ -175,7 +175,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 			span.Process = batch.Process
 			span.Tags = exporter.dropEmptyTags(span.Tags)
 			span.Process.Tags = exporter.dropEmptyTags(span.Process.Tags)
-			logzioSpan, transformErr := TransformToLogzioSpanBytes(span)
+			logzioSpan, transformErr := transformToLogzioSpanBytes(span)
 			if transformErr != nil {
 				return transformErr
 			}
@@ -187,7 +187,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 			// if the service hash already exists in cache: skip
 			// else: store service in cache and send to logz.io
 			// this prevents sending duplicate logzio services
-			service := NewLogzioService(span)
+			service := newLogzioService(span)
 			serviceHash, hashErr := service.HashCode()
 			if exporter.serviceCache.Get(serviceHash) == nil || hashErr != nil {
 				if hashErr == nil {

@@ -47,13 +47,13 @@ func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
 
 func TestConvertLogRecordToJSON(t *testing.T) {
 	logger := hclog.NewNullLogger()
-	type ConvertLogRecordToJSONTest struct {
+	type convertLogRecordToJSONTest struct {
 		log      plog.LogRecord
 		resource pcommon.Resource
 		expected map[string]interface{}
 	}
 
-	var ConvertLogRecordToJSONTests = []ConvertLogRecordToJSONTest{
+	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
 		{GenerateLogRecordWithNestedBody(),
 			pcommon.NewResource(),
 			map[string]interface{}{
@@ -82,8 +82,8 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range ConvertLogRecordToJSONTests {
-		output := ConvertLogRecordToJSON(test.log, test.resource, logger)
+	for _, test := range convertLogRecordToJSONTests {
+		output := convertLogRecordToJSON(test.log, test.resource, logger)
 		require.Equal(t, output, test.expected)
 	}
 

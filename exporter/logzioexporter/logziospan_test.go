@@ -34,16 +34,41 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 	if err != nil {
 		fmt.Println("json.Unmarshal")
 	}
-	logzioSpan, err := TransformToLogzioSpanBytes(&span)
+	newSpan, err := transformToLogzioSpanBytes(&span)
 	if err != nil {
 		tester.Fatalf(err.Error())
 	}
 	m := make(map[string]interface{})
-	err = json.Unmarshal(logzioSpan, &m)
+	err = json.Unmarshal(newSpan, &m)
 	if err != nil {
 		tester.Fatalf(err.Error())
 	}
 	if _, ok := m["JaegerTag"]; !ok {
 		tester.Error("error converting span to logzioSpan, JaegerTag is not found")
+	}
+}
+
+func TestTransformToDbModelSpan(tester *testing.T) {
+	inStr, err := ioutil.ReadFile("./testdata/span.json")
+	if err != nil {
+		tester.Fatalf(fmt.Sprintf("error opening sample span file %s", err.Error()))
+	}
+	var span model.Span
+	err = json.Unmarshal(inStr, &span)
+	if err != nil {
+		fmt.Println("json.Unmarshal")
+	}
+	newSpan, err := transformToLogzioSpanBytes(&span)
+	if err != nil {
+		tester.Fatalf(err.Error())
+	}
+	var testLogzioSpan logzioSpan
+	err = json.Unmarshal(newSpan, &testLogzioSpan)
+	if err != nil {
+		tester.Fatalf(err.Error())
+	}
+	dbModelSpan := testLogzioSpan.transformToDbModelSpan()
+	if len(dbModelSpan.References) != 3 {
+		tester.Fatalf("Error converting logzio span to dbmodel span")
 	}
 }
