@@ -17,6 +17,7 @@
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
+- `transformprocessor`: Add .string accessor to get hex string for trace_id and span_id
 
 ### 🧰 Bug fixes 🧰
 
