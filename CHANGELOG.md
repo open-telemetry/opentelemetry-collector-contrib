@@ -9,10 +9,13 @@
 
 ### 🚩 Deprecations 🚩
 
+- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
 
+- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
 - `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
@@ -45,7 +48,6 @@
 - `datadogexporter`: Deprecate `Sanitize` method of `Config` struct (#8829)
 - `observiqexporter`: Deprecate the observiq exporter (#10977)
 - `honeycombexporter`: Deprecate honeycomb exporter (#10318)
-- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
 
 ### 🚀 New components 🚀
 
@@ -55,7 +57,6 @@
 
 ### 💡 Enhancements 💡
 
-- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
 - `tailsamplingprocessor`: Add trace_state policy (#10852)
 - `mongodbatlasreceiver` Add support for receiving alerts (#10854)
 - `cmd/mdatagen`: Allow attribute values of any types (#9245)
