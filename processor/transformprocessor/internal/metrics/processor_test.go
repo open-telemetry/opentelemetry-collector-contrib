@@ -53,6 +53,7 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().InsertString("test", "pass")
 
 			},
@@ -133,6 +134,30 @@ func TestProcess(t *testing.T) {
 			query: []string{`set(attributes["test"], "pass") where negative.offset == 1`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: []string{`replace_pattern(attributes["attr1"], "test1", "pass")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
+			},
+		},
+		{
+			query: []string{`replace_all_patterns(attributes, "test1", "pass")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().UpdateString("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().UpdateString("attr1", "pass")
 			},
 		},
 		{
