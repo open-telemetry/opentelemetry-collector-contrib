@@ -75,8 +75,5 @@ func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
 }
 
 func sortMetricSlice(a, b pmetric.Metric) bool {
-	if a.Name() < b.Name() {
-		return true
-	}
-	return false
+	return a.Name() < b.Name()
 }

@@ -41,7 +41,7 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) 
 			actualMetrics.Len())
 	}
 
-	//sort ResourceMetrics
+	// sort ResourceMetrics
 	expectedMetrics.Sort(sortResourceMetrics)
 	actualMetrics.Sort(sortResourceMetrics)
 
@@ -128,7 +128,7 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 		return fmt.Errorf("number of metrics does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
 
-	//Sort MetricSlices
+	// Sort MetricSlices
 	expected.Sort(sortMetricSlice)
 	actual.Sort(sortMetricSlice)
 
