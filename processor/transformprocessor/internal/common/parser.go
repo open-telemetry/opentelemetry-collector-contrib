@@ -107,7 +107,7 @@ func (n *IsNil) Capture(_ []string) error {
 	return nil
 }
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
 
@@ -117,12 +117,12 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser)
+		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser)
+		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
