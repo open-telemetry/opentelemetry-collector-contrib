@@ -87,8 +87,8 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 
 	// custom resource attributes
 	c.ResourceAttributes = make(map[string]string)
-	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=value."+
-		"Flag may be repeated to set multiple attributes (e.g -otlp-attributes key1=value1 -otlp-attributes key2=value2)")
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\"."+
+		"Flag may be repeated to set multiple attributes (e.g -otlp-attributes key1=\"value1\" -otlp-attributes key2=\"value2\")")
 }
 
 // Run executes the test scenario.
