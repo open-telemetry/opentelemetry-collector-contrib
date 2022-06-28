@@ -1,3 +1,2 @@
-type: file_input
 multiline:
   that_random_field: "this should go nowhere"
