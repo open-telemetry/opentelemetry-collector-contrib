@@ -57,9 +57,9 @@ func TestNew(t *testing.T) {
 				require.Regexp(t, tc.wantErr, err)
 				return
 			}
-
 			require.NoError(t, err)
 
+			require.Error(t, validate(ctx), "The new entry should not be valid without user input")
 		})
 	}
 }

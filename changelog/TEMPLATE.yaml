@@ -1,11 +1,11 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type:
 
-# The name of the component, or a single word describing the area of concern
-component: filelogreceiver
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component:
 
 # A single sentence describing the change
-note: Add foo to bar
+note:
 
 # One or more tracking issues related to the change
-issues: [ 12345 ]
+issues: []
