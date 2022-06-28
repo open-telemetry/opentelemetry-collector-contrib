@@ -30,17 +30,6 @@ import (
 func TestUnmarshal(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
-			Name:      "default",
-			ExpectErr: false,
-			Expect:    NewConfig(),
-		},
-		{
-
-			Name:      "extra_field",
-			ExpectErr: false,
-			Expect:    NewConfig(),
-		},
-		{
 			Name:      "include_one",
 			ExpectErr: false,
 			Expect: func() *Config {
@@ -272,111 +261,6 @@ func TestUnmarshal(t *testing.T) {
 				cfg.FingerprintSize = helper.ByteSize(1100)
 				return cfg
 			}(),
-		},
-		{
-			Name:      "include_file_name_lower",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_name_upper",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_name_on",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_name_yes",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_lower",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_upper",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_on",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_yes",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_off",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = false
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_no",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = false
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_nonbool",
-			ExpectErr: true,
-			Expect:    nil,
 		},
 		{
 			Name:      "multiline_line_start_string",
