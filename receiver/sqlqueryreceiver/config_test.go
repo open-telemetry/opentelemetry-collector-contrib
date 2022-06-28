@@ -45,7 +45,7 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, "count", metric.ValueColumn)
 	assert.Equal(t, "type", metric.AttributeColumns[0])
 	assert.Equal(t, false, metric.Monotonic)
-	assert.Equal(t, MetricDataTypeGauge, metric.DataType)
+	assert.Equal(t, MetricDataTypeSum, metric.DataType)
 	assert.Equal(t, MetricValueTypeInt, metric.ValueType)
 	assert.Equal(t, MetricAggregationCumulative, metric.Aggregation)
 }
@@ -94,6 +94,10 @@ func TestValidateConfig_Invalid(t *testing.T) {
 		{
 			fname:     "config-invalid-missing-datasource.yaml",
 			errSubstr: "'datasource' cannot be empty",
+		},
+		{
+			fname:     "config-unnecessary-aggregation.yaml",
+			errSubstr: "aggregation=cumulative but data_type=gauge does not support aggregation",
 		},
 	}
 	for _, test := range tests {

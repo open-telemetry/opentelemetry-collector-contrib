@@ -85,10 +85,10 @@ type MetricCfg struct {
 func (c MetricCfg) Validate() error {
 	var errs error
 	if c.MetricName == "" {
-		errs = multierr.Append(errs, errors.New("metric config: 'metric_name' cannot be empty"))
+		errs = multierr.Append(errs, errors.New("'metric_name' cannot be empty"))
 	}
 	if c.ValueColumn == "" {
-		errs = multierr.Append(errs, errors.New("metric config: 'value_column' cannot be empty"))
+		errs = multierr.Append(errs, errors.New("'value_column' cannot be empty"))
 	}
 	if err := c.ValueType.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
@@ -98,6 +98,9 @@ func (c MetricCfg) Validate() error {
 	}
 	if err := c.Aggregation.Validate(); err != nil {
 		errs = multierr.Append(errs, err)
+	}
+	if c.DataType == MetricDataTypeGauge && c.Aggregation != "" {
+		errs = multierr.Append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
 	}
 	if errs != nil && c.MetricName != "" {
 		errs = multierr.Append(fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName), errs)
@@ -126,12 +129,12 @@ type MetricValueType string
 const (
 	MetricValueTypeUnspecified MetricValueType = ""
 	MetricValueTypeInt         MetricValueType = "int"
-	MetricValueTypeFloat       MetricValueType = "float"
+	MetricValueTypeDouble      MetricValueType = "double"
 )
 
 func (t MetricValueType) Validate() error {
 	switch t {
-	case MetricValueTypeUnspecified, MetricValueTypeInt, MetricValueTypeFloat:
+	case MetricValueTypeUnspecified, MetricValueTypeInt, MetricValueTypeDouble:
 		return nil
 	}
 	return fmt.Errorf("metric config has unsupported value_type: '%s'", t)

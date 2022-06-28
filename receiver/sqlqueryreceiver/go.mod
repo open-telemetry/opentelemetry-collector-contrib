@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.5
 	github.com/SAP/go-hdb v0.106.1
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/lib/pq v1.10.6
 	github.com/snowflakedb/gosnowflake v1.6.10
+	github.com/stretchr/testify v1.7.5
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/pdata v0.54.0

@@ -25,9 +25,9 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 * `value_column`(required): the column name in the returned dataset used to set the value of the metric's datapoint. The column's values must be of an integer type.
 * `attribute_columns`(optional): a list of column names in the returned dataset used to set attibutes on the datapoint.
 * `data_type` (optional): can be `gauge` or `sum`; defaults to `gauge`.
-* `value_type` (optional): can be `int` or `float`; defaults to `int`.
+* `value_type` (optional): can be `int` or `double`; defaults to `int`.
 * `monotonic` (optional): boolean; whether a cumulative sum's value is monotonically increasing (i.e. never rolls over or resets); defaults to false.
-* `aggregation` (optional): can be `cumulative` or `delta`; defaults to `cumulative`.
+* `aggregation` (optional): only applicable for `data_type=sum`; can be `cumulative` or `delta`; defaults to `cumulative`.
 * `description` (optional): the description applied to the metric.
 * `unit` (optional): the units applied to the metric.
 

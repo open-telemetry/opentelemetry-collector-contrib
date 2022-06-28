@@ -81,7 +81,7 @@ func setDataPointValue(cfg MetricCfg, str string, dest pmetric.NumberDataPoint) 
 			return fmt.Errorf("setDataPointValue: error converting to integer: %w", err)
 		}
 		dest.SetIntVal(int64(val))
-	case MetricValueTypeFloat:
+	case MetricValueTypeDouble:
 		val, err := strconv.ParseFloat(str, 64)
 		if err != nil {
 			return fmt.Errorf("setDataPointValue: error converting to double: %w", err)
