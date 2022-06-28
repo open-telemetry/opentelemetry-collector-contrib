@@ -15,6 +15,7 @@
 package traces
 
 import (
+    	"encoding/hex"
 	"testing"
 	"time"
 
@@ -95,6 +96,38 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
+		},
+		{
+		    name: "trace_id string",
+		    path: []common.Field{
+			{
+			    Name: "trace_id",
+			},
+			{
+			    Name: "string",
+			},
+		    },
+		    orig: hex.EncodeToString(traceID[:]),
+		    new:  hex.EncodeToString(traceID2[:]),
+		    modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			span.SetTraceID(pcommon.NewTraceID(traceID2))
+		    },
+		},
+		{
+		    name: "span_id string",
+		    path: []common.Field{
+			{
+			    Name: "span_id",
+			},
+			{
+			    Name: "string",
+			},
+		    },
+		    orig: hex.EncodeToString(spanID[:]),
+		    new:  hex.EncodeToString(spanID2[:]),
+		    modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			span.SetSpanID(pcommon.NewSpanID(spanID2))
+		    },
 		},
 		{
 			name: "trace_state",
