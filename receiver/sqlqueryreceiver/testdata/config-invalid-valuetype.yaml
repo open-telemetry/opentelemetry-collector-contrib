@@ -9,8 +9,8 @@ receivers:
           - metric_name: val.count
             value_column: "count"
             attribute_columns: [ "type" ]
-            data_type: sum
-            value_type: int
+            data_type: gauge
+            value_type: xyzint
             monotonic: false
             aggregation: cumulative
 exporters:

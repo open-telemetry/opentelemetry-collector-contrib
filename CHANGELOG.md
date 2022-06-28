@@ -55,6 +55,7 @@
 
 - `expvarreceiver`: Include `expvarreceiver` in components (#10847)
 - `googlemanagedprometheusexporter` Add the Google Managed Service for Prometheus exporter. (#10840)
+- `sqlqueryreceiver`: Add core functionality to SQL query receiver (#10867)
 - `googlemanagedprometheusexporter` The Google Managed Service for Prometheus exporter is alpha. (#10925)
 
 ### 💡 Enhancements 💡
@@ -276,7 +277,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
-- `sqlreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
+- `sqlqueryreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
 
 ### 💡 Enhancements 💡
 
