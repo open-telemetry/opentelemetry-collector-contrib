@@ -4,6 +4,9 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
+  - If users were disabling this feature gate, they may have to update
+    monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
 
 ### 🚩 Deprecations 🚩
@@ -18,24 +21,23 @@
 - `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
+- `sqlqueryreceiver`: Add core functionality to SQL query receiver (#10867)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
+- `splunkhecexporter`: Update limits for max_content_length settings (#11550)
 - `filterprocessor`: Add ability to filter `Spans` (#6341)
+- `prometheusexporter` : Added a feature to prometheusexporter to export exemplars along with histogram metrics (#9945)
 - `tracegen`: support add additional resource attributes. (#11145)
+- `transformprocessor`: Add IsMatch factory function.  This function allows regex matching in conditions (#10903)
+- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics. (#11125)
 
 ### 🧰 Bug fixes 🧰
-
-- `redactionprocessor`: respect allow_all_keys configuration (#11542)
-- `filestorageextension`: Copy values returned by Get (#11776)
-
-### Unmaintained components
 
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
+- `filestorageextension`: Copy values returned by Get (#11776)
+- `redactionprocessor`: respect allow_all_keys configuration (#11542)
+- `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
 - `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
-
-### 🧰 Bug fixes 🧰
-
-- `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
 
 ## v0.54.0
 
@@ -80,7 +82,6 @@
 - `mezmoexporter`: add logging for HTTP errors (#10875)
 - `googlecloudexporter`: Support writing to multiple GCP projects by setting the `gcp.project.id` resource attribute, and support service account impersonation (#11051)
 - `k8sattributeprocessor`: Add debug logs to help identify missing attributes (#11060)
-- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics. (#11118)
 - `jmxreceiver`: Add latest releases of jmx metrics gatherer & wildfly jar to supported jars hash list (#11134)
 - `rabbitmqreceiver`: Add integration test for rabbitmq receiver (#10865)
 - `transformprocessor`: Allow using trace_state with key-value struct (#11029)
@@ -112,9 +113,6 @@
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
 - `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
-
-### 🚩 Deprecations 🚩
-
 
 ### 🚀 New components 🚀
 
@@ -273,7 +271,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
-- `sqlreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
+- `sqlqueryreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
 
 ### 💡 Enhancements 💡
 
@@ -320,7 +318,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `attributesprocessor`: Remove log names from filters (#9131)
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
   - Users may have to update monitoring for a few Kubernetes cpu metrics, for
-    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
+    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
 
