@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `tailsamplingprocessor`: Add support for all sampling policies in and & composite policy (#11505)
+
+### 🧰 Bug fixes 🧰
+
+- `tailsamplingprocessor`: Fix runtime crash caused by invalid composite policy configuration (#11505)
+
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑
