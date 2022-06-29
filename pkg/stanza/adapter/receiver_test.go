@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter
 
 import (
@@ -60,7 +59,7 @@ func TestStart(t *testing.T) {
 		},
 		10*time.Second, 5*time.Millisecond, "one log entry expected",
 	)
-	logsReceiver.Shutdown(context.Background())
+	require.NoError(t, logsReceiver.Shutdown(context.Background()))
 }
 
 func TestHandleStartError(t *testing.T) {
@@ -117,7 +116,9 @@ func BenchmarkReadLine(b *testing.B) {
 	emitter := NewLogEmitter(
 		LogEmitterWithLogger(zap.NewNop().Sugar()),
 	)
-	defer emitter.Stop()
+	defer func() {
+		require.NoError(b, emitter.Stop())
+	}()
 
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
@@ -129,7 +130,8 @@ func BenchmarkReadLine(b *testing.B) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
 	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
-		file.WriteString("testlog\n")
+		_, err := file.WriteString("testlog\n")
+		require.NoError(b, err)
 	}
 
 	// // Run the actual benchmark
@@ -175,7 +177,9 @@ func BenchmarkParseAndMap(b *testing.B) {
 	emitter := NewLogEmitter(
 		LogEmitterWithLogger(zap.NewNop().Sugar()),
 	)
-	defer emitter.Stop()
+	defer func() {
+		require.NoError(b, emitter.Stop())
+	}()
 
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
@@ -187,7 +191,8 @@ func BenchmarkParseAndMap(b *testing.B) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
 	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
-		file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))
+		_, err := file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))
+		require.NoError(b, err)
 	}
 
 	// // Run the actual benchmark
