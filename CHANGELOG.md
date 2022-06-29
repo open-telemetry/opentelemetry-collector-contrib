@@ -216,6 +216,7 @@
 - `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
 - `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
+- `awscontainerinsightsreciever`: Pod detection Logic to support k8's on containerd runtime (#11666)
 
 
 ## v0.54.0
