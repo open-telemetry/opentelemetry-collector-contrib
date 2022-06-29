@@ -1,7 +1,10 @@
 # Group by Trace processor
 
-Supported pipeline types: traces
-Status: in development
+| Status                   |                  |
+| ------------------------ | ---------------- |
+| Stability                | [in development] |
+| Supported pipeline types | traces           |
+| Distributions            | [contrib]        |
 
 This processor collects all the spans from the same trace, waiting a 
 pre-determined amount of time before releasing the trace to the next processor.
@@ -58,3 +61,6 @@ The metric `otelcol_processor_groupbytrace_event_latency_bucket` is a bucket and
 Most metrics are updated when the events occur, except for the following ones, which are updated periodically:
 * `otelcol_processor_groupbytrace_num_events_in_queue`
 * `otelcol_processor_groupbytrace_num_traces_in_memory`
+
+[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
