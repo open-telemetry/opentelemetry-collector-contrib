@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package splunkhecexporter
 
 import (
@@ -224,7 +223,9 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, t *testing.T) ([]rec
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	err = exporter.ConsumeMetrics(context.Background(), metrics)
 	assert.NoError(t, err)
@@ -268,7 +269,9 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, t *testing.T) ([]r
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	err = exporter.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
@@ -320,7 +323,9 @@ func runLogExport(cfg *Config, ld plog.Logs, t *testing.T) ([]receivedRequest, e
 	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	err = exporter.ConsumeLogs(context.Background(), ld)
 	assert.NoError(t, err)
@@ -754,7 +759,9 @@ func TestErrorReceived(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	td := createTraceData(3)
 
@@ -794,8 +801,9 @@ func TestInvalidURL(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
-
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 	td := createTraceData(2)
 
 	err = exporter.ConsumeTraces(context.Background(), td)
@@ -1008,7 +1016,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	//require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
+	// require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
 	require.Contains(t, err.Error(), "HTTP/0.0 400")
 	// The returned error should contain the response body responseBody.
 	assert.Contains(t, err.Error(), responseBody)
@@ -1018,7 +1026,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	//require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
+	// require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
 	require.Contains(t, err.Error(), "HTTP 500")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
