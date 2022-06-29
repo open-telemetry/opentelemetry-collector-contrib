@@ -26,7 +26,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "elasticsearch"
+	typeStr            = "elasticsearch"
+	defaultLogsIndex   = "logs-generic-default"
+	defaultTracesIndex = "traces-generic-default"
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -45,9 +47,9 @@ func createDefaultConfig() config.Exporter {
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
-		Index:       "logs-generic-default",
-		LogsIndex:   "logs-generic-default",
-		TracesIndex: "traces-generic-default",
+		Index:       defaultLogsIndex,
+		LogsIndex:   defaultLogsIndex,
+		TracesIndex: defaultTracesIndex,
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRequests:     3,
@@ -70,6 +72,10 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
+	if cfg.(*Config).Index != defaultLogsIndex {
+		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
+	}
+
 	exporter, err := newLogsExporter(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
@@ -86,6 +92,11 @@ func createLogsExporter(
 func createTracesExporter(ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
+
+	if cfg.(*Config).Index != defaultLogsIndex {
+		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
+	}
+
 	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch traces exporter: %w", err)

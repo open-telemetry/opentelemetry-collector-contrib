@@ -41,7 +41,6 @@ type elasticsearchTracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExporter, error) {
-
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
