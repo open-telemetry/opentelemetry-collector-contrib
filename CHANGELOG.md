@@ -8,23 +8,23 @@
   - If users were disabling this feature gate, they may have to update
     monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
-- `hostmetricsreceiver`: remove direction attribute (#11820)
-  - `system.network.dropped` becomes:
-    - `system.network.dropped.receive`
-    - `system.network.dropped.transmit`
-  - `system.network.errors` becomes:
-    - `system.network.errors.receive`
-    - `system.network.errors.transmit`
-  - `system.network.io` becomes:
-    - `system.network.io.receive`
-    - `system.network.io.transmit`
-  - `system.network.packets` becomes:
-    - `system.network.packets.receive`
-    - `system.network.packets.transmit`
 
 ### 🚩 Deprecations 🚩
 
 - `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+- `hostmetricsreceiver`: remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttribute` can be set to apply the following (#11820)
+  - `system.network.dropped` will become:
+    - `system.network.dropped.receive`
+    - `system.network.dropped.transmit`
+  - `system.network.errors` will become:
+    - `system.network.errors.receive`
+    - `system.network.errors.transmit`
+  - `system.network.io` will become:
+    - `system.network.io.receive`
+    - `system.network.io.transmit`
+  - `system.network.packets` will become:
+    - `system.network.packets.receive`
+    - `system.network.packets.transmit`
 
 ### 🚀 New components 🚀
 

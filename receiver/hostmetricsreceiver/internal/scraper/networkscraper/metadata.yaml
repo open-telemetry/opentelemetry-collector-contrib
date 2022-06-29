@@ -6,6 +6,10 @@ attributes:
   device:
     description: Name of the network interface.
 
+  direction:
+    description: Direction of flow of bytes/operations (receive or transmit).
+    enum: [receive, transmit]
+
   protocol:
     description: Network protocol, e.g. TCP or UDP.
     enum: [tcp]
@@ -14,6 +18,16 @@ attributes:
     description: State of the network connection.
 
 metrics:
+  system.network.packets:
+    enabled: true
+    description: The number of packets transferred. (Deprecated)
+    unit: "{packets}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device, direction]
+
   system.network.packets.transmit:
     enabled: true
     description: The number of packets transmitted.
@@ -33,6 +47,16 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device]
+
+  system.network.dropped:
+    enabled: true
+    description: The number of packets dropped. (Deprecated)
+    unit: "{packets}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device, direction]
 
   system.network.dropped.transmit:
     enabled: true
@@ -54,6 +78,16 @@ metrics:
       monotonic: true
     attributes: [device]
 
+  system.network.errors:
+    enabled: true
+    description: The number of errors encountered. (Deprecated)
+    unit: "{errors}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device, direction]
+
   system.network.errors.transmit:
     enabled: true
     description: The number of errors encountered on transmit.
@@ -73,6 +107,16 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device]
+
+  system.network.io:
+    enabled: true
+    description: The number of bytes transmitted and received. (Deprecated)
+    unit: "By"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device, direction]
 
   system.network.io.transmit:
     enabled: true
