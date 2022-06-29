@@ -115,7 +115,7 @@ func (cfg *Config) clientOptions() (pulsar.ClientOptions, error) {
 		URL: cfg.Endpoint,
 	}
 
-	options.TLSAllowInsecureConnection = cfg.Insecure
+	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
 	if len(cfg.TLSTrustCertsFilePath) > 0 {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}
