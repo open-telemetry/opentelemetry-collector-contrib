@@ -1,3 +1,4 @@
+// Deprecated: awsprometheusremotewrite exporter is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter
 
 go 1.17
